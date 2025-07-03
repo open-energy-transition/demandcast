@@ -13,7 +13,7 @@ import os
 import cartopy.io.shapereader
 import geopandas
 import pandas
-from shapely.geometry import Polygon
+from shapely import Polygon
 
 # Load the shapefile containing the shapes of the countries from the
 # Natural Earth database.

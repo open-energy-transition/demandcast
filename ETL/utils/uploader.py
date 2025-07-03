@@ -323,6 +323,14 @@ def upload_to_zenodo(
             params={"access_token": access_token},
             data=json.dumps(data),
         )
+
+        # Check if the response is successful.
+        if response.status_code != 200:
+            logging.error(
+                f"Failed to update metadata for draft deposition in Zenodo: "
+                f"{response.text}"
+            )
+            raise Exception(f"Zenodo metadata update failed: {response.text}")
     else:
         # Create a new deposition in Zenodo.
         response = requests.post(

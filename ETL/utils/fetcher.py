@@ -140,141 +140,160 @@ def fetch_data(
     Exception
         If the request fails after the specified number of retries.
     """
-    for attempt in range(retries):
-        try:
-            if content_type == "csv":
-                # Read the CSV file from the URL.
-                return pandas.read_csv(url, **csv_kwargs)
+    # Try to fetch the data from the URL. These multiple try and except
+    # blocks are used to handle different types of errors that may occur
+    # at different stages of the request.
+    try:
+        for attempt in range(retries):
+            try:
+                try:
+                    if content_type == "csv":
+                        # Read the CSV file from the URL.
+                        return pandas.read_csv(url, **csv_kwargs)
 
-            elif content_type == "excel":
-                # Read the Excel file from the URL.
-                return pandas.read_excel(url, **excel_kwargs)
+                    elif content_type == "excel":
+                        # Read the Excel file from the URL.
+                        return pandas.read_excel(url, **excel_kwargs)
 
-            elif content_type == "html":
-                if read_with == "urllib.request":
-                    # Read the HTML content from the URL using the
-                    # urlib.request module.
-                    request = urllib.request.Request(url)
-                    for key, value in header_params.items():
-                        request.add_header(key, value)
-
-                    # Send the request and return the response as a
-                    # string.
-                    return (
-                        urllib.request.urlopen(request).read().decode("utf-8")
-                    )
-
-                elif (
-                    read_with == "requests.get" or read_with == "requests.post"
-                ):
-                    if read_with == "requests.get":
-                        # Send a GET request to the URL.
-                        response = requests.get(
-                            url,
-                            timeout=10,
-                            verify=verify_ssl,
-                            headers=header_params,
-                            params=request_params,
-                        )
-
-                    elif read_with == "requests.post":
-                        if query_aspx_webpage:
+                    elif content_type == "html":
+                        if read_with == "urllib.request":
                             # Read the HTML content from the URL using
-                            # the requests module.
-                            response = requests.get(
-                                url,
-                                timeout=10,
-                                verify=verify_ssl,
-                                headers=header_params,
-                                params=request_params,
+                            # the urlib.request module.
+                            request = urllib.request.Request(url)
+                            for key, value in header_params.items():
+                                request.add_header(key, value)
+
+                            # Send the request and return the response
+                            # as a string.
+                            return (
+                                urllib.request.urlopen(request)
+                                .read()
+                                .decode("utf-8")
                             )
 
-                            # Read the ASPX parameters from the response
-                            # and add them to the POST data parameters.
-                            post_data_params = _read_aspx_params(
-                                response, post_data_params
+                        elif (
+                            read_with == "requests.get"
+                            or read_with == "requests.post"
+                        ):
+                            if read_with == "requests.get":
+                                # Send a GET request to the URL.
+                                response = requests.get(
+                                    url,
+                                    timeout=10,
+                                    verify=verify_ssl,
+                                    headers=header_params,
+                                    params=request_params,
+                                )
+
+                            elif read_with == "requests.post":
+                                if query_aspx_webpage:
+                                    # Read the HTML content from the URL
+                                    # using the requests module.
+                                    response = requests.get(
+                                        url,
+                                        timeout=10,
+                                        verify=verify_ssl,
+                                        headers=header_params,
+                                        params=request_params,
+                                    )
+
+                                    # Read the ASPX parameters from the
+                                    # response and add them to the POST
+                                    # data parameters.
+                                    post_data_params = _read_aspx_params(
+                                        response, post_data_params
+                                    )
+
+                                # Send a POST request to the URL.
+                                response = requests.post(
+                                    url,
+                                    timeout=10,
+                                    verify=verify_ssl,
+                                    headers=header_params,
+                                    params=request_params,
+                                    data=post_data_params,
+                                )
+
+                            # Check if the request was successful.
+                            response.raise_for_status()
+
+                            if read_as == "tabular":
+                                # Return the content as a DataFrame.
+                                return pandas.read_csv(
+                                    StringIO(response.text), **csv_kwargs
+                                )
+                            elif read_as == "text":
+                                # Return the content as a string.
+                                return response.text
+                            elif read_as == "json":
+                                # Read the content of the response
+                                content = response.json()
+
+                                # Loop over the JSON keys and extract
+                                # the content.
+                                for json_key in json_keys:
+                                    content = content[json_key]
+
+                                # Return the content as a DataFrame.
+                                return pandas.DataFrame(content)
+                            elif read_as == "plain":
+                                # Return just the response.
+                                return response
+                            else:
+                                raise ValueError(
+                                    f"The read_as parameter {read_as} is not "
+                                    "supported."
+                                )
+
+                        else:
+                            raise ValueError(
+                                f"Library {read_with} is not supported."
                             )
 
-                        # Send a POST request to the URL.
-                        response = requests.post(
-                            url,
-                            timeout=10,
-                            verify=verify_ssl,
-                            headers=header_params,
-                            params=request_params,
-                            data=post_data_params,
-                        )
-
-                    # Check if the request was successful.
-                    response.raise_for_status()
-
-                    if read_as == "tabular":
-                        # Return the content as a DataFrame.
-                        return pandas.read_csv(
-                            StringIO(response.text), **csv_kwargs
-                        )
-                    elif read_as == "text":
-                        # Return the content as a string.
-                        return response.text
-                    elif read_as == "json":
-                        # Read the content of the response
-                        content = response.json()
-
-                        # Loop over the JSON keys and extract the
-                        # content.
-                        for json_key in json_keys:
-                            content = content[json_key]
-
-                        # Return the content as a DataFrame.
-                        return pandas.DataFrame(content)
-                    elif read_as == "plain":
-                        # Return just the response.
-                        return response
                     else:
                         raise ValueError(
-                            f"The read_as parameter {read_as} is not "
+                            f"The content type {content_type} is not "
                             "supported."
                         )
 
-                else:
-                    raise ValueError(f"Library {read_with} is not supported.")
+                except requests.exceptions.SSLError as e:
+                    logging.error(
+                        f"SSL error: {e}.\nPlease verify the SSL certificate."
+                    )
+                    raise Exception(f"SSL error: {e}")
 
-            else:
-                raise ValueError(
-                    f"The content type {content_type} is not supported."
+            except requests.exceptions.ConnectionError as e:
+                logging.error(
+                    f"Connection error: {e}.\n"
+                    f"Retrying ({attempt + 1}/{retries})..."
                 )
+                time.sleep(retry_delay)
 
-        except requests.exceptions.ConnectionError:
-            logging.error(
-                f"Connection error. Retrying ({attempt + 1}/{retries})..."
-            )
-            time.sleep(retry_delay)
+            except requests.exceptions.Timeout as e:
+                logging.error(
+                    f"Timeout error: {e}.\n"
+                    f"Retrying ({attempt + 1}/{retries})..."
+                )
+                time.sleep(retry_delay)
 
-        except requests.exceptions.Timeout:
-            logging.error(
-                f"Timeout error. Retrying ({attempt + 1}/{retries})..."
-            )
-            time.sleep(retry_delay)
+            except (
+                requests.exceptions.HTTPError,
+                urllib.error.HTTPError,
+            ) as e:
+                logging.error(
+                    f"HTTP error: {e}.\n"
+                    f"The URL {url} is not valid or the server is not "
+                    f"responding. Retrying ({attempt + 1}/{retries})..."
+                )
+                time.sleep(retry_delay)
 
-        except (requests.exceptions.HTTPError, urllib.error.HTTPError):
-            logging.error(
-                f"HTTP error. The URL {url} is not valid or the server is not "
-                f"responding. Retrying ({attempt + 1}/{retries})..."
-            )
-            time.sleep(retry_delay)
-
-        except requests.exceptions.SSLError as e:
-            logging.error(f"SSL error: {e}")
-            raise Exception("SSL error. Please verify the SSL certificate.")
-
-        except (
-            requests.exceptions.RequestException or urllib.error.URLError
-        ) as e:
-            logging.error(f"Request error: {e}")
-            raise Exception(
-                f"Request error. The URL {url} is not valid or the server is "
-                "not responding."
-            )
+    except (requests.exceptions.RequestException, urllib.error.URLError) as e:
+        logging.error(
+            f"Request error: {e}.\n"
+            f"The URL {url} is not valid or the server is "
+            "not responding."
+        )
+        raise Exception(f"Request error: {e}")
 
     raise Exception(
         f"Failed to fetch data from {url} after {retries} retries."

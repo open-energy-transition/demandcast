@@ -15,7 +15,7 @@ import cartopy.io.shapereader
 import geopandas
 import pandas
 import pycountry
-from shapely.geometry import Polygon
+from shapely import Polygon
 
 import utils.directories
 import utils.figures
@@ -89,6 +89,64 @@ def _remove_islands(
     return entity_shape
 
 
+def _get_name_from_code(code: str) -> str:
+    """
+    Get the name of a country or subdivision from its code.
+
+    This function retrieves the name of a country or subdivision based
+    on its code.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+
+    Returns
+    -------
+    name : str
+        The name of the country or subdivision.
+
+    Raises
+    ------
+    ValueError
+        If the country or subdivision with the given code is not found
+        in pycountry.
+    """
+    # Get the name of the country or subdivision of interest based on
+    # its code.
+    if "_" not in code and "-" not in code:
+        # Get the country information from the ISO Alpha-2 code.
+        country = pycountry.countries.get(alpha_2=code)
+
+        # If the country is not found, raise an error.
+        if country is None:
+            raise ValueError(
+                f"Country with alpha_2 code {code} not found in pycountry."
+            )
+
+        # Extract the name of the country.
+        name = country.name
+    else:
+        # Get the subdivision information from the code.
+        subdivision = pycountry.subdivisions.get(code=code.replace("_", "-"))
+
+        # If the subdivision is not found, raise an error.
+        if subdivision is None:
+            raise ValueError(
+                f"Subdivision with code {code} not found in pycountry."
+            )
+
+        # Handle if subdivision is a list or a single object.
+        if isinstance(subdivision, list):
+            raise ValueError(
+                "pycountry.subdivisions should not return a list."
+            )
+        else:
+            name = subdivision.name
+
+    return name
+
+
 def _get_standard_shape(
     code: str, remove_remote_islands: bool = True
 ) -> geopandas.GeoDataFrame:
@@ -117,21 +175,17 @@ def _get_standard_shape(
     # If there is an underscore in the code, it is a combination of ISO
     # Alpha-2 code and subdivision code, and the entity is a subdivision
     # of the country.
+
+    # Define the relevant parameters for the shapefile retrieval.
     if "_" not in code:
-        # Define the relevant parameters for the shapefile retrieval.
         shapefile_name = "admin_0_countries"
         main_keys = ["ISO_A2", "ISO_A2_EH"]
         secondary_keys = ["NAME", "NAME_LONG"]
-        target_key = code
     else:
-        # Split the code into the ISO Alpha-2 and the subdivision code.
-        iso_alpha_2_code, subdivision_code = code.split("_")
-
-        # Define the relevant parameters for the shapefile retrieval.
         shapefile_name = "admin_1_states_provinces"
         main_keys = ["iso_3166_2"]
         secondary_keys = ["name"]
-        target_key = iso_alpha_2_code + "-" + subdivision_code
+        code = code.replace("_", "-")
 
     # Load the shapefile containing the subdivision shapes from the
     # Natural Earth database.
@@ -148,15 +202,12 @@ def _get_standard_shape(
         entity_shape = [
             shape
             for shape in list(reader.records())
-            if target_key in [shape.attributes[key] for key in main_keys]
+            if code in [shape.attributes[key] for key in main_keys]
         ][0]
     except IndexError:
         # Get the name of the country or subdivision of interest based
         # on its code.
-        if "_" not in code:
-            name = pycountry.countries.get(alpha_2=target_key).name
-        else:
-            name = pycountry.subdivisions.get(code=target_key).name
+        name = _get_name_from_code(code)
 
         # Read the shape of the country or subdivision of interest by
         # searching for its name.
@@ -173,7 +224,7 @@ def _get_standard_shape(
 
     # Remove small remote islands from the shape of some countries.
     if remove_remote_islands:
-        entity_shape = _remove_islands(entity_shape, code)
+        entity_shape = _remove_islands(entity_shape, code.replace("-", "_"))
 
     return entity_shape
 

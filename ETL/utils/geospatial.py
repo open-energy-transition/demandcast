@@ -287,47 +287,44 @@ def coarsen(
     x_list = numpy.linspace(-180, 180, int(360 / target_resolution) + 1)
     y_list = numpy.linspace(-90, 90, int(180 / target_resolution) + 1)
 
+    # Calculate the left and right bounds of the x and y bins.
+    x_left_bound = (
+        next(x for x in x_list if x >= bounds[0]) - target_resolution / 2
+    )
+    x_right_bound = (
+        next(x for x in x_list if x > bounds[2]) - target_resolution / 2
+    )
+    y_left_bound = (
+        next(y for y in y_list if y >= bounds[1]) - target_resolution / 2
+    )
+    y_right_bound = (
+        next(y for y in y_list if y > bounds[3]) - target_resolution / 2
+    )
+
     # Define the bins where to aggregate the original data.
-    # The next(...) function in this case calculates the first value
-    # that satisfies the specified condition. The resulting bins are the
-    # first and last values of the x_list and y_list that are within the
-    # bounds.
     x_bins = numpy.arange(
-        x_list[next(x for x, val in enumerate(x_list) if val >= bounds[0])]
-        - 0.25 / 2,
-        x_list[next(x for x, val in enumerate(x_list) if val >= bounds[2]) + 1]
-        + 0.25 / 2,
-        0.25,
+        x_left_bound,
+        x_right_bound + target_resolution,
+        target_resolution,
     )
     y_bins = numpy.arange(
-        y_list[next(x for x, val in enumerate(y_list) if val >= bounds[1])]
-        - 0.25 / 2,
-        y_list[next(x for x, val in enumerate(y_list) if val >= bounds[3]) + 1]
-        + 0.25 / 2,
-        0.25,
+        y_left_bound,
+        y_right_bound + target_resolution,
+        target_resolution,
     )
+
+    # Calculate the midpoints of the bins in the x and y directions.
+    x_bin_centers = (x_bins[:-1] + x_bins[1:]) / 2
+    y_bin_centers = (y_bins[:-1] + y_bins[1:]) / 2
 
     # Aggregate the original data to the new coarser resolution, first
     # in the x direction and then in the y direction.
-    coarsened_xarray = original_xarray.groupby_bins("x", x_bins).sum()
-    coarsened_xarray = coarsened_xarray.groupby_bins("y", y_bins).sum()
-
-    # For each coordinate, substitute the bin range with the middle of
-    # the bin.
-    coarsened_xarray["x_bins"] = numpy.arange(
-        x_list[next(x for x, val in enumerate(x_list) if val >= bounds[0])],
-        x_list[
-            next(x for x, val in enumerate(x_list) if val >= bounds[2]) + 1
-        ],
-        0.25,
-    )
-    coarsened_xarray["y_bins"] = numpy.arange(
-        y_list[next(x for x, val in enumerate(y_list) if val >= bounds[1])],
-        y_list[
-            next(x for x, val in enumerate(y_list) if val >= bounds[3]) + 1
-        ],
-        0.25,
-    )
+    coarsened_xarray = original_xarray.groupby_bins(
+        "x", x_bins, labels=x_bin_centers
+    ).sum()
+    coarsened_xarray = coarsened_xarray.groupby_bins(
+        "y", y_bins, labels=y_bin_centers
+    ).sum()
 
     # Rename the bins to "x" and "y" and return the coarsened xarray.
     return coarsened_xarray.rename({"x_bins": "x", "y_bins": "y"})
