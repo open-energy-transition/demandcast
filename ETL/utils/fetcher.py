@@ -76,6 +76,7 @@ def fetch_data(
     retries: int = 5,
     retry_delay: int = 5,
     read_with: str = "requests.get",
+    encoding_type: str | None = None,
     read_as: str = "tabular",
     csv_kwargs: dict[str, str | int] = {},
     excel_kwargs: dict[
@@ -108,6 +109,8 @@ def fetch_data(
         The delay between retries in seconds.
     read_with : str, optional
         The library to use for reading the html content.
+    encoding_type : str, optional
+        The encoding to use for reading the content.
     read_as : str, optional
         The format to read the content as.
     csv_kwargs : dict[str, str | int], optional
@@ -207,6 +210,10 @@ def fetch_data(
 
                     # Check if the request was successful.
                     response.raise_for_status()
+
+                    # Set the encoding if provided.
+                    if encoding_type:
+                        response.encoding = encoding_type
 
                     if read_as == "tabular":
                         # Return the content as a DataFrame.

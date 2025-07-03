@@ -42,6 +42,7 @@ import retrievals.niti
 import retrievals.ons
 import retrievals.pucsl
 import retrievals.sonelgaz
+import retrievals.taiwan
 import retrievals.tepco
 import retrievals.tsoc
 import retrievals.xm
@@ -74,6 +75,7 @@ retrieval_module = {
     "ONS": retrievals.ons,
     "PUCSL": retrievals.pucsl,
     "SONELGAZ": retrievals.sonelgaz,
+    "TAIWAN": retrievals.taiwan,
     "TEPCO": retrievals.tepco,
     "TSOC": retrievals.tsoc,
     "XM": retrievals.xm,
