@@ -20,7 +20,7 @@ Description:
 import os
 
 import geopandas
-from shapely.geometry import Polygon
+from shapely import Polygon
 
 # Define the URL of the shapefile of the balancing authorities.
 url = (
