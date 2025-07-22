@@ -96,11 +96,8 @@ def download_and_extract_data() -> pandas.Series:
             downloaded_file_paths[0], sheet_name=sheet, skiprows=skiprows
         )
 
-        # Rename first column to "Date"
-        dataset = dataset.rename(columns={dataset.columns[0]: "Date"})
-
         # Keep only columns "Date" + 1 to 24
-        allowed_columns = ["Date"] + list(range(1, 25))  # 1 to 24
+        allowed_columns = ["DATE"] + list(range(1, 25))  # 1 to 24
         dataset = dataset.loc[
             :,
             dataset.columns.map(
@@ -111,17 +108,16 @@ def download_and_extract_data() -> pandas.Series:
 
         # Melt into long format
         dataset = dataset.melt(
-            id_vars=["Date"], var_name="Hour", value_name="Demand"
+            id_vars=["DATE"], var_name="Hour", value_name="Demand"
         )
         dataset["Hour"] = pandas.to_numeric(dataset["Hour"], errors="coerce")
         dataset["Demand"] = pandas.to_numeric(
             dataset["Demand"], errors="coerce"
         )
-        dataset = dataset.dropna(subset=["Date", "Hour", "Demand"])
 
         # Build full datetime
         dataset["Datetime"] = pandas.to_datetime(
-            dataset["Date"], errors="coerce"
+            dataset["DATE"], errors="coerce"
         ) + pandas.to_timedelta(dataset["Hour"] - 1, unit="h")
         dataset = dataset[["Datetime", "Demand"]].dropna()
         all_data.append(dataset)
