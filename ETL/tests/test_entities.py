@@ -125,7 +125,7 @@ def test_check_and_read_codes():
         assert "US_TEX" not in dummy_codes
 
 
-def test_check_and_read_codes_errorr():
+def test_check_and_read_codes_errors():
     """
     Test if the check_and_get_codes function handles errors correctly.
 
@@ -230,7 +230,7 @@ def test_time_zones():
         assert time_zones["FR"] == pytz.timezone("Europe/Paris")
 
 
-def test_time_zones_errors(caplog):
+def test_time_zones_errors():
     """
     Test if the time zone functions handle errors correctly.
 

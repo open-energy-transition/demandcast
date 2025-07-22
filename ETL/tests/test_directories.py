@@ -30,9 +30,37 @@ def test_load_paths():
     )
 
     # Check if the folders are read correctly.
+    assert structure["log_files_folder"] == os.path.join(absolute_path, "logs")
+    assert structure["settings_folder"] == os.path.join(
+        absolute_path, "settings"
+    )
+    assert structure["retrieval_scripts_folder"] == os.path.join(
+        absolute_path, "retrievals"
+    )
+    assert structure["figures_folder"] == os.path.join(
+        absolute_path, "figures"
+    )
     assert structure["data_folder"] == os.path.join(absolute_path, "data")
+    assert structure["manually_downloaded_data_folder"] == os.path.join(
+        absolute_path, "data", "manually_downloaded_data"
+    )
     assert structure["electricity_demand_folder"] == os.path.join(
         absolute_path, "data", "electricity_demand"
+    )
+    assert structure["annual_electricity_demand_folder"] == os.path.join(
+        absolute_path, "data", "annual_electricity_demand"
+    )
+    assert structure["population_density_folder"] == os.path.join(
+        absolute_path, "data", "population_density"
+    )
+    assert structure["gdp_folder"] == os.path.join(
+        absolute_path, "data", "gdp"
+    )
+    assert structure["weather_folder"] == os.path.join(
+        absolute_path, "data", "weather"
+    )
+    assert structure["temperature_folder"] == os.path.join(
+        absolute_path, "data", "temperature"
     )
 
 

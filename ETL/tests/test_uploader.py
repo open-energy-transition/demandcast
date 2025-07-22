@@ -374,7 +374,7 @@ def test_zenodo_error_new_version_of_deposition():
             )
 
 
-def test_zenodo_error_upating_new_version_of_deposition():
+def test_zenodo_error_update_new_version_of_deposition():
     """
     Test error handling when updating metadata.
 
@@ -413,7 +413,7 @@ def test_zenodo_error_upating_new_version_of_deposition():
             )
 
 
-def test_zenodo_error_getting_files_in_draft():
+def test_zenodo_error_get_files_in_draft():
     """
     Test error handling when getting files in a draft deposition.
 
@@ -458,7 +458,7 @@ def test_zenodo_error_getting_files_in_draft():
             )
 
 
-def test_zenodo_error_deleting_files_in_draft():
+def test_zenodo_error_delete_files_in_draft():
     """
     Test error handling when deleting files in a draft deposition.
 
@@ -540,7 +540,7 @@ def test_zenodo_error_update_draft_metadata():
             )
 
 
-def test_zenodo_error_creating_new_deposition():
+def test_zenodo_error_create_new_deposition():
     """
     Test error handling when creating a new deposition.
 
@@ -572,7 +572,7 @@ def test_zenodo_error_creating_new_deposition():
             )
 
 
-def test_zenodo_error_uploading_file_to_deposition():
+def test_zenodo_error_upload_file_to_deposition():
     """
     Test error handling when uploading a file to a deposition.
 
@@ -614,7 +614,7 @@ def test_zenodo_error_uploading_file_to_deposition():
             )
 
 
-def test_zenodo_error_publishing_deposition():
+def test_zenodo_error_publish_deposition():
     """
     Test error handling when publishing a deposition.
 

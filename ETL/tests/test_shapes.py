@@ -46,6 +46,28 @@ def test_remove_islands(dummy_geodf):
         result = utils.shapes._remove_islands(dummy_geodf.copy(), code)
         assert isinstance(result, geopandas.GeoDataFrame)
 
+    # Create a dummy GeoDataFrame with a simple polygon representing
+    # bounds.
+    dummy_bounds = geopandas.GeoSeries(
+        Polygon([(0, 0), (0.5, 0), (0.5, 0.5), (0, 0.5)])
+    )
+    dummy_bounds = geopandas.GeoDataFrame.from_features(dummy_bounds, crs=4326)
+
+    with patch("geopandas.GeoDataFrame.from_features") as mock_from_features:
+        # Mock the from_features method to return the dummy bounds.
+        mock_from_features.return_value = dummy_bounds
+
+        # Test the _remove_islands function with a country code that has
+        # islands.
+        result = utils.shapes._remove_islands(dummy_geodf.copy(), "CL")
+
+        # Check if the bounds of the result are within the expected
+        # bounds.
+        assert result.bounds.minx[0] >= dummy_bounds.bounds.minx[0]
+        assert result.bounds.miny[0] >= dummy_bounds.bounds.miny[0]
+        assert result.bounds.maxx[0] <= dummy_bounds.bounds.maxx[0]
+        assert result.bounds.maxy[0] <= dummy_bounds.bounds.maxy[0]
+
 
 def test_get_standard_shape_by_code():
     """
@@ -295,5 +317,14 @@ def test_get_entity_bounds(dummy_geodf):
         A dummy GeoDataFrame to use for testing.
     """
     bounds = utils.shapes.get_entity_bounds(dummy_geodf)
+
+    # Check if the bounds are in the expected format.
     assert isinstance(bounds, list)
     assert len(bounds) == 4
+
+    # Check if the bounds are calculated correctly based on the dummy
+    # GeoDataFrame.
+    assert bounds[0] == dummy_geodf.bounds.minx[0] - 1
+    assert bounds[1] == dummy_geodf.bounds.miny[0] - 1
+    assert bounds[2] == dummy_geodf.bounds.maxx[0] + 1
+    assert bounds[3] == dummy_geodf.bounds.maxy[0] + 1
