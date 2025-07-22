@@ -316,6 +316,7 @@ def test_get_entity_bounds(dummy_geodf):
     dummy_geodf : geopandas.GeoDataFrame
         A dummy GeoDataFrame to use for testing.
     """
+    # Get the bounds of the dummy GeoDataFrame.
     bounds = utils.shapes.get_entity_bounds(dummy_geodf)
 
     # Check if the bounds are in the expected format.
