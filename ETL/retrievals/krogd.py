@@ -7,7 +7,7 @@ Description:
     This script provides functions to retrieve the electricity demand
     data from the website of Korean Open Government Data (KROGD) portal
     in South Korea. The data is retrieved manually for the years from
-    2024-01-01 to 2024-12-31. The data is retrieved all at once.
+    2013-01-01 to 2024-12-31. The data is retrieved all at once.
 
     Source: https://www.data.go.kr/
 """
