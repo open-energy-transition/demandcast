@@ -8,16 +8,13 @@ Description:
     utility package.
 """
 
+import logging
+
 import numpy
 import pandas
 import pytest
 import pytz
-from utils.time_series import (
-    add_missing_time_steps,
-    harmonize_time_series,
-    linearly_interpolate,
-    resample_time_resolution,
-)
+import utils.time_series
 
 local_time_zone = pytz.timezone("America/New_York")
 
@@ -78,7 +75,9 @@ def test_add_missing_time_steps(sample_time_series):
     missing_data_points = time_series.isna().sum()
 
     # Add the missing time step back.
-    filled_time_series = add_missing_time_steps(time_series, local_time_zone)
+    filled_time_series = utils.time_series.add_missing_time_steps(
+        time_series, local_time_zone
+    )
 
     # Check if the missing time step is added.
     assert len(filled_time_series) == original_length
@@ -104,7 +103,9 @@ def test_resample_time_resolution(sample_time_series):
         and some missing values.
     """
     # Resample to hourly resolution.
-    resampled_time_series = resample_time_resolution(sample_time_series, "1h")
+    resampled_time_series = utils.time_series.resample_time_resolution(
+        sample_time_series, "1h"
+    )
 
     # The one-year-long time series resampled to hourly resolution
     # should have 8760 time steps.
@@ -134,7 +135,9 @@ def test_linearly_interpolate(sample_time_series):
 
     # Interpolate missing values where the two surrounding values are
     # known.
-    interpolated_time_series = linearly_interpolate(sample_time_series)
+    interpolated_time_series = utils.time_series.linearly_interpolate(
+        sample_time_series
+    )
 
     # Check if only isolated missing values are interpolated.
     assert interpolated_time_series.isna().sum() == missing_data_points - 1
@@ -163,7 +166,7 @@ def test_harmonize_time_series(sample_time_series):
     """
     # Harmonize the time series by adding missing time steps, resampling
     # the time resolution, and interpolating missing values.
-    harmonized_time_series = harmonize_time_series(
+    harmonized_time_series = utils.time_series.harmonize_time_series(
         sample_time_series, local_time_zone
     )
 
@@ -172,3 +175,87 @@ def test_harmonize_time_series(sample_time_series):
 
     # Check total number of time steps.
     assert len(harmonized_time_series) == 8760
+
+    # Test the function when both resample and interpolate are False.
+    not_harmonized_time_series = utils.time_series.harmonize_time_series(
+        sample_time_series,
+        local_time_zone,
+        resample=False,
+        interpolate_missing_values=False,
+    )
+    assert isinstance(not_harmonized_time_series, pandas.Series)
+
+
+def test_check_time_series_data_quality_logs(caplog, sample_time_series):
+    """
+    Test the check_time_series_data_quality function.
+
+    This test checks if the function correctly identifies missing values
+    in the time series and logs a warning message. It uses the caplog
+    fixture to capture log messages at the WARNING level.
+
+    Parameters
+    ----------
+    caplog : pytest.LogCaptureFixture
+        A fixture provided by pytest to capture log messages.
+    sample_time_series : pandas.Series
+        A pandas Series representing a time series with a datetime index
+        and some missing values.
+    """
+    # Test if the function logs a warning for missing values.
+    with caplog.at_level(logging.WARNING):
+        utils.time_series.check_time_series_data_quality(sample_time_series)
+        assert "missing values" in caplog.text
+
+    # Add a duplicate index and a zero value for testing.
+    time_series = pandas.concat(
+        [
+            sample_time_series,
+            pandas.Series([0], index=[sample_time_series.index[5]]),
+        ]
+    )
+
+    with caplog.at_level(logging.WARNING):
+        utils.time_series.check_time_series_data_quality(time_series)
+        assert "missing values" in caplog.text
+
+
+def test_clean_data(sample_time_series):
+    """
+    Test the clean_data function.
+
+    This test checks if the clean_data function correctly cleans the
+    time series by removing NaN values, zeros, and duplicate indices.
+    It also verifies that the cleaned time series has the expected index
+    and name.
+
+    Parameters
+    ----------
+    sample_time_series : pandas.Series
+        A pandas Series representing a time series with a datetime index
+        and some missing values.
+    """
+    # Add a duplicate index and a zero value for testing.
+    time_series = sample_time_series.copy()
+    time_series = pandas.concat(
+        [time_series, pandas.Series([0], index=[time_series.index[5]])]
+    )
+    time_series.iloc[1] = 0
+
+    cleaned_time_series = utils.time_series.clean_data(
+        time_series, "TestVariable"
+    )
+
+    # Should have no NaN, zeros, or duplicates.
+    assert cleaned_time_series.isna().sum() == 0
+    assert (cleaned_time_series == 0).sum() == 0
+    assert cleaned_time_series.index.duplicated().sum() == 0
+    assert cleaned_time_series.index.name == "Time (UTC)"
+    assert cleaned_time_series.name == "TestVariable"
+
+    # Remove the time zone from the index.
+    cleaned_time_series.index = cleaned_time_series.index.tz_localize(None)
+
+    # Check if the function raises an error for an timezone-naive index.
+    with pytest.raises(ValueError):
+        utils.time_series.clean_data(cleaned_time_series, "TestVariable")
