@@ -28,9 +28,9 @@ def redistribute() -> bool:
     bool
         True if the data can be redistributed, False otherwise.
     """
-    logging.debug("All rights reserved by KROGD.")
+    logging.debug("Open data.")
     logging.debug(
-        "Source: https://www.data.go.kr/en/ugs/selectPublicDataUseGuideView.do"
+        "Source: https://www.data.go.kr/ugs/selectPublicDataUseGuideView.do"
     )
     return False
 
@@ -55,7 +55,7 @@ def get_url() -> str:
         The URL of the electricity demand data.
     """
     # Return the URL of the electricity demand data.
-    return "https://www.data.go.kr/data/15065266/fileData.do#layer_data_infomation"
+    return "https://www.data.go.kr/data/15065266/fileData.do"
 
 
 def download_and_extract_data() -> pandas.Series:
