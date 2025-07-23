@@ -32,7 +32,7 @@ def redistribute() -> bool:
     logging.debug(
         "Source: https://www.data.go.kr/ugs/selectPublicDataUseGuideView.do"
     )
-    return False
+    return True
 
 
 def get_available_requests() -> None:
