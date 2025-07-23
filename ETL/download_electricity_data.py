@@ -35,6 +35,7 @@ import retrievals.epias
 import retrievals.eskom
 import retrievals.hydroquebec
 import retrievals.ieso
+import retrievals.krogd
 import retrievals.nbpower
 import retrievals.neso
 import retrievals.nigeria
@@ -68,6 +69,7 @@ retrieval_module = {
     "ESKOM": retrievals.eskom,
     "HYDROQUEBEC": retrievals.hydroquebec,
     "IESO": retrievals.ieso,
+    "KROGD": retrievals.krogd,
     "NBPOWER": retrievals.nbpower,
     "NESO": retrievals.neso,
     "NIGERIA": retrievals.nigeria,
