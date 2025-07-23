@@ -28,6 +28,12 @@ pycountry.countries.add_entry(
 )
 
 
+# Add countries that are not fully recognized.
+pycountry.countries.add_entry(
+    alpha_2="XK", alpha_3="XKX", name="Kosovo", numeric="926"
+)
+
+
 def _read_data_sources() -> list[str]:
     """
     Read the the names of the data sources.
@@ -321,18 +327,24 @@ def check_and_get_codes(
         # specified file.
         codes = read_codes(file_path=file_path)
 
+        # Initialize a list of the remaining codes.
+        remaining_codes = codes.copy()
+
         # Check if the codes are available.
         for code in codes:
             if code not in all_codes:
                 logging.error(f"Code {code} is not available.")
-                codes.remove(code)
+                remaining_codes.remove(code)
 
         # Check if there are any codes left.
-        if len(codes) == 0:
+        if len(remaining_codes) == 0:
             raise ValueError(
                 "None of the codes in the file are available. Please choose "
                 f"from the following: {', '.join(all_codes)}"
             )
+        else:
+            # If there are codes left, return them.
+            codes = remaining_codes
     else:
         # If no code or file path is provided, use all available codes.
         codes = all_codes
@@ -444,8 +456,9 @@ def _get_country_time_zone(iso_alpha_2_code: str) -> datetime.tzinfo:
             location = CountryInfo(country.name).capital_latlng()
 
             # Find time zone based on capital city coordinates.
-            tf = TimezoneFinder()
-            time_zone_name = tf.timezone_at(lat=location[0], lng=location[1])
+            time_zone_name = TimezoneFinder().timezone_at(
+                lat=location[0], lng=location[1]
+            )
             time_zone = pytz.timezone(time_zone_name)
         else:
             # Get the time zone of the country.
@@ -522,22 +535,26 @@ def _get_time_zones(
         # from the file.
         if "time_zone" in entity and "_" in entity_code:
             time_zone = pytz.timezone(entity["time_zone"])
+
         # If the code specifies a country, get the time zone based on
         # the country code.
         elif "time_zone" not in entity and "_" not in entity_code:
             time_zone = _get_country_time_zone(entity_code)
-        # If the code specifies a subdivision and the time zone is also
+
+        # If the code specifies a country and the time zone is also
         # defined in the file, check if the time zone is the same as the
         # one in the file.
         elif "time_zone" in entity and "_" not in entity_code:
             time_zone = _get_country_time_zone(entity_code)
+
             # Check if the time zone is the same as the one in the file.
-            if time_zone != entity["time_zone"]:
+            if time_zone != pytz.timezone(entity["time_zone"]):
                 raise ValueError(
                     f"The time zone {entity['time_zone']} in "
                     f"{os.path.basename(file_path)} for {entity_code} does "
                     f"not match the expected time zone {time_zone}."
                 )
+
         # If the code specifies a subdivision and the time zone is not
         # defined in the file, raise an error.
         else:
@@ -586,42 +603,38 @@ def get_time_zone(code: str) -> datetime.tzinfo:
     data_sources = _get_data_sources(code)
 
     # If the code is not available in any data source, raise an error.
-    if len(data_sources) == 0:
+    if not data_sources:
         raise ValueError(f"Code {code} is not available in any data source.")
 
-    # Initialize the time zone variable.
-    time_zone = None
+    # Initialize a list of potential time zones from different data
+    # sources.
+    time_zones: list[datetime.tzinfo] = []
 
     # Iterate over the data sources and read the time zones.
     for data_source in data_sources:
-        # Read the time zone from the file.
+        # Read the time zone from the file of the data source.
         data_source_time_zone = _get_time_zones(
             code=code, data_source=data_source
         )
 
         # Check if the time zone is a single datetime.tzinfo object.
         if isinstance(data_source_time_zone, datetime.tzinfo):
-            # If the time zone is not set, set it to the one from the
-            # data source.
-            if time_zone is None:
-                time_zone = data_source_time_zone
-            else:
-                # Check if the time zone is the same as the one already
-                # set.
-                if time_zone != data_source_time_zone:
-                    raise ValueError(
-                        f"The time zone {data_source_time_zone} in "
-                        f"{data_source} for {code} does not match the "
-                        f"previously defined time zone {time_zone}."
-                    )
+            time_zones.append(data_source_time_zone)
 
-    # Check if the time zone is set.
-    if time_zone is None:
+    # Remove duplicates from the list of time zones.
+    time_zones = list(set(time_zones))
+
+    if not time_zones:
         raise ValueError(
             f"The time zone is not defined for {code} in any data source."
         )
-    else:
-        return time_zone
+    elif len(time_zones) > 1:
+        raise ValueError(
+            f"Conflicting time zones found for {code}: "
+            f"{', '.join(str(tz) for tz in time_zones)}."
+        )
+
+    return time_zones[0]
 
 
 def read_date_ranges(
@@ -785,12 +798,12 @@ def get_available_years(code: str) -> list[int]:
     list[int]
         The years of the available data for the country or subdivision.
     """
+    # Get the time zone of the country or subdivision.
+    entity_time_zone = get_time_zone(code)
+
     # Read the start and end dates of the available data for the country
     # or subdivision of interest.
     start_date, end_date = read_all_date_ranges()[code]
-
-    # Get the time zone of the country or subdivision.
-    entity_time_zone = get_time_zone(code)
 
     # Convert the start and end dates to the time zone of the country or
     # subdivision.
@@ -844,7 +857,7 @@ def get_continent_code(code: str) -> str:
         # Alpha-2 code directly.
         iso_alpha_2_code = code
 
-    # Get the continent code.
+    # Get the continent code from the ISO Alpha-2 code.
     try:
         continent_code = pycountry_convert.country_alpha2_to_continent_code(
             iso_alpha_2_code
