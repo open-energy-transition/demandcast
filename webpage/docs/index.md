@@ -79,7 +79,7 @@ cd demandcast
 
 ### 2. Set up your environment
 
-This project uses [`uv`](https://github.com/astral-sh/uv) as a pacakge manager to install the required dependencies and create an environment stored in `.venv`.
+This project uses [`uv`](https://github.com/astral-sh/uv) as a package manager to install the required dependencies and create an environment stored in `.venv`.
 
 `uv` can be used within the provided Dockerfile or installed standalone (see [installing uv](https://docs.astral.sh/uv/getting-started/installation/)).
 
