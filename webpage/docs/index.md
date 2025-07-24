@@ -59,7 +59,7 @@ demandcast/
 
 ## DemandCast structure
 
-![DemandCast](figures/demancast_illustration.png)
+![DemandCast](figures/demandcast_illustration.png)
 
 ## Historical electricity demand collection progress
 
