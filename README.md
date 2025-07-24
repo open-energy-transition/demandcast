@@ -155,7 +155,7 @@ cd webpage
 uv run mkdocs serve
 ```
 
-## Mantainers
+## Maintainers
 
 The project is maintained by the [Open Energy Transition](https://openenergytransition.org/) team. The team members currently involved in this project are:
 
