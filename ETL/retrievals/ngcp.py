@@ -73,7 +73,7 @@ def download_and_extract_data() -> pandas.Series:
     ValueError
         If the extracted data is not a pandas DataFrame.
     """
-    # Get data URL and Excel sheet structure
+    # Get the URL of the electricity demand data.
     url = get_url()
 
     # Define sheet names and skiprow values
@@ -116,11 +116,12 @@ def download_and_extract_data() -> pandas.Series:
             dataset["Hour"] = pandas.to_numeric(dataset["Hour"])
             dataset["Demand"] = pandas.to_numeric(dataset["Demand"])
 
-            # Construct full datetime and DataFrame
+            # Convert date and hour columns into hourly timestamps
             dataset["Datetime"] = pandas.to_datetime(
                 dataset["DATE"]
             ) + pandas.to_timedelta(dataset["Hour"], unit="h")
 
+            # Retain only Datetime and Demand columns
             dataset = dataset[["Datetime", "Demand"]]
             all_data.append(dataset)
 
