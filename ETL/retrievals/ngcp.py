@@ -29,7 +29,7 @@ def redistribute() -> bool:
         True if the data can be redistributed, False otherwise.
     """
     logging.debug("All rights reserved by NGCP.")
-    logging.debug("Source: https://ngcp.ph/privacy")
+    logging.debug("Source: https://ngcp.ph")
     return False
 
 
@@ -56,25 +56,6 @@ def get_url() -> str:
     return "https://www.ngcp.ph/Attachment-Uploads/operations/Hourly%20Demand%20per%20Grid.xlsx"
 
 
-def _get_excel_information() -> tuple[list[str], list[int]]:
-    """
-    Get the sheet names and number of rows to skip for each sheet.
-
-    Returns
-    -------
-    tuple[list[str], list[int]]
-        List of sheet names and corresponding number of rows to skip.
-    """
-    sheet_names = [
-        "LUZON HOURLY LOAD 2013-2024",
-        "VISAYAS HOURLY LOAD 2013-2024",
-        "MINDANAO HOURLY LOAD 2013-2024",
-    ]
-    skiprows = [1, 2, 1]
-
-    return sheet_names, skiprows
-
-
 def download_and_extract_data() -> pandas.Series:
     """
     Download and extract electricity demand data.
@@ -94,12 +75,18 @@ def download_and_extract_data() -> pandas.Series:
     """
     # Get data URL and Excel sheet structure
     url = get_url()
-    sheet_names, skiprows_list = _get_excel_information()
+
+    # Define sheet names and skiprow values
+    sheets_to_read = {
+        "LUZON HOURLY LOAD 2013-2024": 1,
+        "VISAYAS HOURLY LOAD 2013-2024": 2,
+        "MINDANAO HOURLY LOAD 2013-2024": 1,
+    }
 
     all_data = []
 
     # Fetch and process each sheet individually
-    for sheet, skiprows in zip(sheet_names, skiprows_list):
+    for sheet, skiprows in sheets_to_read.items():
         dataset = utils.fetcher.fetch_data(
             url,
             "excel",
@@ -119,32 +106,22 @@ def download_and_extract_data() -> pandas.Series:
 
         else:
             # Keep only "Date" and hours 1 to 24
-            allowed_columns = ["DATE"] + list(range(1, 25))
-            dataset = dataset.loc[
-                :,
-                dataset.columns.map(
-                    lambda x: x in allowed_columns
-                    or str(x).strip() in map(str, allowed_columns)
-                ),
-            ]
+            selected_columns = ["DATE"] + list(range(1, 25))
+            dataset = dataset.loc[:, selected_columns]
 
             # Reshape to long format
             dataset = dataset.melt(
                 id_vars=["DATE"], var_name="Hour", value_name="Demand"
             )
-            dataset["Hour"] = pandas.to_numeric(
-                dataset["Hour"], errors="coerce"
-            )
-            dataset["Demand"] = pandas.to_numeric(
-                dataset["Demand"], errors="coerce"
-            )
+            dataset["Hour"] = pandas.to_numeric(dataset["Hour"])
+            dataset["Demand"] = pandas.to_numeric(dataset["Demand"])
 
-            # Construct full datetime and clean DataFrame
+            # Construct full datetime and DataFrame
             dataset["Datetime"] = pandas.to_datetime(
-                dataset["DATE"], errors="coerce"
+                dataset["DATE"]
             ) + pandas.to_timedelta(dataset["Hour"], unit="h")
-            dataset = dataset[["Datetime", "Demand"]].dropna()
 
+            dataset = dataset[["Datetime", "Demand"]]
             all_data.append(dataset)
 
     # Combine and aggregate data across all regions
