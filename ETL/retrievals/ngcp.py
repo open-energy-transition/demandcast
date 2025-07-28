@@ -77,7 +77,7 @@ def download_and_extract_data() -> pandas.Series:
 
     # Define sheet names and skiprow values.
     # Only the main regional sheets (Luzon, Visayas, and Mindanao)
-    # are selected. The other 5 sheets in the Excel file are 
+    # are selected. The other 5 sheets in the Excel file are
     # sub-regions of Visayas, and their data is already aggregated
     # in the main Visayas sheet.
     sheets_to_read = {
