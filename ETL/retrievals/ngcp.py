@@ -13,7 +13,6 @@ Description:
 """
 
 import logging
-from typing import Any, cast
 
 import pandas
 import utils.fetcher
@@ -76,7 +75,11 @@ def download_and_extract_data() -> pandas.Series:
     # Get the URL of the electricity demand data.
     url = get_url()
 
-    # Define sheet names and skiprow values
+    # Define sheet names and skiprow values.
+    # Only the main regional sheets (Luzon, Visayas, and Mindanao)
+    # are selected. The other 5 sheets in the Excel file are 
+    # sub-regions of Visayas, and their data is already aggregated
+    # in the main Visayas sheet.
     sheets_to_read = {
         "LUZON HOURLY LOAD 2013-2024": 1,
         "VISAYAS HOURLY LOAD 2013-2024": 2,
@@ -91,7 +94,7 @@ def download_and_extract_data() -> pandas.Series:
             url,
             "excel",
             excel_kwargs={
-                "storage_options": cast(Any, {"User-Agent": "Mozilla/5.0"}),
+                "storage_options": {"User-Agent": "Mozilla/5.0"},
                 "sheet_name": sheet,
                 "skiprows": skiprows,
             },

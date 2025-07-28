@@ -79,7 +79,7 @@ def fetch_data(
     read_as: str = "tabular",
     csv_kwargs: dict[str, str | int] = {},
     excel_kwargs: dict[
-        str, str | int | list[str] | list[str | int] | None
+        str, str | int | list[str] | list[str | int] | dict[str, str] | None
     ] = {},
     verify_ssl: bool = True,
     request_params: dict[str, str] = {},
@@ -113,7 +113,7 @@ def fetch_data(
     csv_kwargs : dict[str, str | int], optional
         The keyword arguments for reading CSV files.
     excel_kwargs : dict[str, str | int | list[str] | list[str | int] |
-                        None], optional
+                        dict[str, str] | None], optional
         The keyword arguments for reading Excel files.
     verify_ssl : bool, optional
         Verify the SSL certificate.
