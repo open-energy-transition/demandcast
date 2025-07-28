@@ -27,6 +27,7 @@ import retrievals.cammesa
 import retrievals.ccei
 import retrievals.cen
 import retrievals.cenace
+import retrievals.china
 import retrievals.coes
 import retrievals.eia
 import retrievals.emi
@@ -61,6 +62,7 @@ retrieval_module = {
     "CCEI": retrievals.ccei,
     "CEN": retrievals.cen,
     "CENACE": retrievals.cenace,
+    "CHINA": retrievals.china,
     "COES": retrievals.coes,
     "EIA": retrievals.eia,
     "EMI": retrievals.emi,
