@@ -38,6 +38,7 @@ import retrievals.ieso
 import retrievals.krogd
 import retrievals.nbpower
 import retrievals.neso
+import retrievals.ngcp
 import retrievals.nigeria
 import retrievals.niti
 import retrievals.ntdc
@@ -72,6 +73,7 @@ retrieval_module = {
     "KROGD": retrievals.krogd,
     "NBPOWER": retrievals.nbpower,
     "NESO": retrievals.neso,
+    "NGCP": retrievals.ngcp,
     "NIGERIA": retrievals.nigeria,
     "NITI": retrievals.niti,
     "NTDC": retrievals.ntdc,
