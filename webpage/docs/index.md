@@ -42,7 +42,6 @@ The project is in active development, we are always looking for suggestions and 
 
 ```
 demandcast/
-├── .devcontainer/          # Development container configuration
 ├── .github/                # Github specifics such as actions
 ├── ETL/                    # Scripts for extracting, transforming, and loading data
 ├── models/                 # Machine learning models for demand forecasting
