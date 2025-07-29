@@ -121,8 +121,7 @@ uv run --with jupyter jupyter lab --allow-root
 
 ```bash
 cd path/to/folder
-uv run pytest
-uv run pytest --cov --cov-report term-missing
+uv run pytest --cov=utils --cov-report=term-missing
 ```
 
 ### Pre-commit and lint code
