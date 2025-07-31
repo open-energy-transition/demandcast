@@ -4,12 +4,6 @@
     Global hourly electricity demand forecasting
 </h2>
 
-<p align="center">
-    <a href="https://open-energy-transition.github.io/demandcast/">
-        <b>Documentation</b>
-    </a>
-</p>
-
 <h3 align="center">
     <b>A project developed by</b>
 </h3>
@@ -27,6 +21,12 @@
 <p align="center">
     <a href="https://www.breakthroughenergy.org/">
         <img src="webpage/docs/figures/be_logo.png" alt="Breakthrough Energy Logo" width="512"/>
+    </a>
+</p>
+
+<p align="center">
+    <a href="https://open-energy-transition.github.io/demandcast/">
+        <b>Documentation</b>
     </a>
 </p>
 
