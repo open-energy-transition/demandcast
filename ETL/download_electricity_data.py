@@ -168,8 +168,8 @@ if __name__ == "__main__":
 
     # Run the data retrieval.
     retrievals.electricity_demand.run_data_retrieval(
-        args.code,
         args.data_source,
+        args.code,
         args.file,
         args.upload_to_gcs,
         args.upload_to_zenodo,

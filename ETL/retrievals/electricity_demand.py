@@ -4,11 +4,13 @@ License: AGPL-3.0.
 
 Description:
 
-    This module handles the retrieval of electricity demand data from
-    various sources. It retrieves the electricity demand time series
-    for specified countries and subdivisions, cleans the data, and saves
-    it in a structured format. The module supports uploading the data to
-    Google Cloud Storage (GCS) and Zenodo if specified.
+    This module downloads hourly or sub-hourly electricity demand data
+    from various data sources. Users can specify a data source and
+    optionally provide a country or subdivision code to retrieve
+    specific data. The retrieved data is cleaned and saved in a
+    structured format for further analysis. The module also supports
+    uploading the data to Google Cloud Storage (GCS) if a bucket name
+    is provided.
 """
 
 import importlib
@@ -218,9 +220,9 @@ def save_data(
 
 
 def run_data_retrieval(
-    code: str,
     data_source: str,
-    file: str,
+    code: str | None,
+    file: str | None,
     upload_to_gcs: str | None,
     upload_to_zenodo: bool,
     publish_to_zenodo: bool,
@@ -236,12 +238,12 @@ def run_data_retrieval(
 
     Parameters
     ----------
-    code : str
-        The code of the country or subdivision.
     data_source : str
         The data source from which to retrieve the electricity demand
         time series.
-    file : str
+    code : str | None
+        The code of the country or subdivision.
+    file : str | None
         The path to the yaml file containing the list of codes of the
         countries and subdivisions of interest.
     upload_to_gcs : str | None
