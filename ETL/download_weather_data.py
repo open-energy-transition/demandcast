@@ -21,7 +21,7 @@ import logging
 import os
 from datetime import datetime
 
-import pandas
+import retrievals.weather
 import utils.copernicus
 import utils.directories
 import utils.entities
@@ -91,84 +91,6 @@ def read_command_line_arguments() -> argparse.Namespace:
     return args
 
 
-def run_data_retrieval(args: argparse.Namespace) -> None:
-    """
-    Run the weather data retrieval.
-
-    This function retrieves weather data from the Copernicus Climate
-    Data Store (CDS) for the countries and subdivisions of interest.
-    The data is saved into NetCDF files in the specified directory.
-
-    Parameters
-    ----------
-    args : argparse.Namespace
-        The command line arguments.
-    """
-    # Get the directory to store the population density data.
-    result_directory = utils.directories.read_folders_structure()[
-        "weather_folder"
-    ]
-    os.makedirs(result_directory, exist_ok=True)
-
-    # Get the list of codes of the countries and subdivisions of
-    # interest.
-    codes = utils.entities.check_and_get_codes(
-        code=args.code, file_path=args.file
-    )
-
-    # Loop over the countries and subdivisions of interest.
-    for code in codes:
-        logging.info(f"Retrieving {args.variable} data for {code}.")
-
-        if args.year is not None:
-            # If the year is provided, use it.
-            years = [args.year]
-        else:
-            # Get the years of available data for the country or
-            # subdivision of interest.
-            years = utils.entities.get_available_years(code)
-
-        # Get the shape of the country or subdivision.
-        entity_shape = utils.shapes.get_entity_shape(code)
-
-        # Get the lateral bounds of the country or subdivision.
-        entity_bounds = utils.shapes.get_entity_bounds(
-            entity_shape
-        )  # West, South, East, North
-
-        # Loop over the years.
-        for year in years:
-            # Define the full file paths of the ERA5 data.
-            file_path = os.path.join(
-                result_directory, f"{code}_{args.variable}_{year}.nc"
-            )
-
-            # Check if the file does not exist or if the year is the
-            # current year.
-            if not os.path.exists(file_path) or (
-                os.path.exists(file_path)
-                and year == pandas.Timestamp.now().year
-            ):
-                logging.info(f"Retrieving data for the year {year}.")
-
-                # Download the ERA5 data from the Copernicus Climate
-                # Data Store (CDS).
-                utils.copernicus.download_data(
-                    year, args.variable, file_path, bounds=entity_bounds
-                )
-
-            else:
-                logging.info(
-                    f"Data for the year {year} already exists. Skipping "
-                    "download."
-                )
-
-        logging.info(
-            f"{args.variable} data for {code} has been successfully retrieved "
-            "and saved."
-        )
-
-
 if __name__ == "__main__":
     # Read the command line arguments.
     args = read_command_line_arguments()
@@ -189,4 +111,12 @@ if __name__ == "__main__":
     )
 
     # Run the data retrieval.
-    run_data_retrieval(args)
+    retrievals.weather.run_data_retrieval(
+        args.from_global_data,
+        args.variable,
+        args.year,
+        args.start_year,
+        args.end_year,
+        args.code,
+        args.file,
+    )
