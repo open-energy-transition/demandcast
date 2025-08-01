@@ -43,7 +43,7 @@ def read_data_sources() -> list[str]:
         folder.
     """
     # Get the paths to the yaml files of the data sources.
-    file_paths = utils.directories.list_yaml_files("retrieval_scripts_folder")
+    file_paths = utils.directories.list_yaml_files("electricity_demand_retrievals_folder")
 
     # Read the data sources from the file names.
     data_sources = [
@@ -101,7 +101,7 @@ def _read_entities_info(
         # Get the path to the yaml file of the data source.
         file_path = os.path.join(
             utils.directories.read_folders_structure()[
-                "retrieval_scripts_folder"
+                "electricity_demand_retrievals_folder"
             ],
             f"{data_source.lower()}.yaml",
         )
@@ -142,7 +142,7 @@ def _get_data_sources(code: str) -> list[str]:
         The list of data sources that contain the provided code.
     """
     # Get the paths to the yaml files of the data sources.
-    file_paths = utils.directories.list_yaml_files("retrieval_scripts_folder")
+    file_paths = utils.directories.list_yaml_files("electricity_demand_retrievals_folder")
 
     # Initialize a list to store the data sources.
     data_sources = []
@@ -226,7 +226,7 @@ def read_all_codes() -> list[str]:
     """
     # Get the path of all yaml files in the retrieval scripts folder.
     yaml_file_paths = utils.directories.list_yaml_files(
-        "retrieval_scripts_folder"
+        "electricity_demand_retrievals_folder"
     )
 
     # Define a list to store the codes.
@@ -732,7 +732,7 @@ def read_all_date_ranges() -> dict[str, tuple[datetime.date, datetime.date]]:
     """
     # Get the path to all yaml files in the retrieval scripts folder.
     yaml_file_paths = utils.directories.list_yaml_files(
-        "retrieval_scripts_folder"
+        "electricity_demand_retrievals_folder"
     )
 
     # Define a dictionary to store the start and end dates of the

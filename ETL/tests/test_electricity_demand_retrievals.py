@@ -4,8 +4,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This file contains unit tests to verify that the retrievals modules
-    in the ETL utility package have all essential functions implemented.
+    This file contains unit tests to verify that the modules in the ETL
+    utility package for retrieving electricity demand have all essential
+    functions implemented.
 """
 
 import importlib
@@ -14,15 +15,15 @@ import pytest
 import utils.entities
 
 
-def test_retrievals_functions():
+def test_retrieval_functions():
     """
-    Test if all retrievals functions are implemented.
+    Test if all retrieval functions are implemented.
 
-    This test checks if the retrievals module has all the essential
+    This test checks if the retrieval modules have all the essential
     functions implemented.
     """
     # Define the list of essential functions that should be implemented
-    # in each retrievals module.
+    # in each retrieval module.
     essential_functions = [
         "redistribute",
         "get_available_requests",
@@ -36,7 +37,7 @@ def test_retrievals_functions():
     # Iterate through each data source.
     for data_source in data_sources:
         # Get the module name for the data source.
-        module_name = f"retrievals.{data_source}"
+        module_name = f"electricity_demand.{data_source}"
 
         # Import the module.
         module = importlib.import_module(module_name)

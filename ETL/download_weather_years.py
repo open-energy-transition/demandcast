@@ -21,7 +21,7 @@ import os
 from datetime import datetime
 
 import pandas
-import retrievals.copernicus
+import utils.copernicus
 import utils.directories
 import utils.entities
 import utils.geospatial
@@ -141,7 +141,7 @@ def run_data_retrieval(args: argparse.Namespace) -> None:
             logging.info(f"Downloading global data for the year {year}.")
 
             # Download the global ERA5 data from CDS.
-            retrievals.copernicus.download_data(
+            utils.copernicus.download_data(
                 year, args.variable, global_file_path
             )
         else:
