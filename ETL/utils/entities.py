@@ -43,7 +43,9 @@ def read_data_sources() -> list[str]:
         folder.
     """
     # Get the paths to the yaml files of the data sources.
-    file_paths = utils.directories.list_yaml_files("electricity_demand_retrievals_folder")
+    file_paths = utils.directories.list_yaml_files(
+        "electricity_demand_retrievals_folder"
+    )
 
     # Read the data sources from the file names.
     data_sources = [
@@ -142,7 +144,9 @@ def _get_data_sources(code: str) -> list[str]:
         The list of data sources that contain the provided code.
     """
     # Get the paths to the yaml files of the data sources.
-    file_paths = utils.directories.list_yaml_files("electricity_demand_retrievals_folder")
+    file_paths = utils.directories.list_yaml_files(
+        "electricity_demand_retrievals_folder"
+    )
 
     # Initialize a list to store the data sources.
     data_sources = []

@@ -14,8 +14,9 @@ Description:
 import os
 
 import cdsapi
-import utils.directories
 from dotenv import load_dotenv
+
+import utils.directories
 
 
 def get_request(
