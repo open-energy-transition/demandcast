@@ -90,7 +90,7 @@ cd path/to/folder
 uv sync
 ```
 
-Alternatively, you may use `conda` to install the packages listed in the respective `pyproject.toml`.
+Alternatively, you may use a package manager of your choice (e.g., `conda`) to install the dependencies listed in the respective `pyproject.toml`. If you choose this approach, please adjust the commands below to align with the conventions of your selected package manager.
 
 ### 3. Run scripts
 
@@ -99,13 +99,6 @@ Scripts can be run directly using:
 ```bash
 cd path/to/folder
 uv run script.py
-```
-
-If you have chosen `conda` as your package manager, you can run scripts with:
-
-```bash
-cd path/to/folder
-python script.py
 ```
 
 Jupyter notebooks ([details](https://docs.astral.sh/uv/guides/integration/jupyter/#using-jupyter-within-a-project)) can be launched with:
