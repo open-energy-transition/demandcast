@@ -3,8 +3,7 @@ name: Docker
 on:
   push:
     branches: ["main"]
-    # Publish semver tags as releases.
-    tags: ["v*.*.*"]
+    tags: "v*"
   pull_request:
     branches: ["main"]
 
@@ -73,6 +72,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action

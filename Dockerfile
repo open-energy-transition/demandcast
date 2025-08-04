@@ -1,4 +1,4 @@
-FROM python:3.12
+FROM --platform=linux/amd64 python:3.12
 
 # Install Google Cloud CLI and its required packages
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \

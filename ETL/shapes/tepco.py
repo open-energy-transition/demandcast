@@ -23,7 +23,7 @@ from io import BytesIO
 import geopandas
 import pandas
 import requests
-from shapely.geometry import Polygon
+from shapely import Polygon
 
 # Define the URL of the zip file containing the shapefile of the
 # prefectures.
