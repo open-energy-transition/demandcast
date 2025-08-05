@@ -10,23 +10,17 @@
 
 <p align="center">
     <a href="https://openenergytransition.org/">
-        <img src="webpage/docs/figures/oet_logo.png" alt="OET Logo" width="256"/>
+        <img src="figures/oet_logo.png" alt="OET Logo" width="256"/>
     </a>
 </p>
 
 <h3 align="center">
-    <b>Supported by</b>
+    <p>Supported by</p>
 </h3>
 
 <p align="center">
     <a href="https://www.breakthroughenergy.org/">
-        <img src="webpage/docs/figures/be_logo.png" alt="Breakthrough Energy Logo" width="512"/>
-    </a>
-</p>
-
-<p align="center">
-    <a href="https://open-energy-transition.github.io/demandcast/">
-        <b>Documentation</b>
+        <img src="figures/be_logo.png" alt="Breakthrough Energy Logo" width="512"/>
     </a>
 </p>
 
@@ -64,15 +58,12 @@ demandcast/
 
 ## DemandCast structure
 
-![DemandCast](webpage/docs/figures/demandcast_illustration.png)
+![DemandCast](figures/demandcast_illustration.png)
 
 ## Historical electricity demand collection progress
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="webpage/docs/figures/available_entities_dark_mode.png">
-  <source media="(prefers-color-scheme: light)" srcset="webpage/docs/figures/available_entities_light_mode.png">
-  <img alt="Countries and subdivisions for which retrieval scripts of electricity demand data are available" src="webpage/docs/figures/available_entities.png">
-</picture>
+![Countries and subdivisions for which retrieval scripts of electricity demand data are available](figures/available_entities_light_mode.png#only-light)
+![Countries and subdivisions for which retrieval scripts of electricity demand data are available](figures/available_entities_dark_mode.png#only-dark)
 
 Find the code that we used to retrieve the data in their respective files inside the [ETL](https://github.com/open-energy-transition/demandcast/tree/main/ETL) folder.
 
