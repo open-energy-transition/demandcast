@@ -17,10 +17,10 @@ jobs:
         include:
           - name: etl
             context: ./ETL
-            dockerfile: ./Dockerfile
+            dockerfile: ./ETL/Dockerfile
           - name: xgboost
             context: ./models/xgboost
-            dockerfile: ./Dockerfile
+            dockerfile: ./models/xgboost/Dockerfile
 
     runs-on: ubuntu-latest
     permissions:

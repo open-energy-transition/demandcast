@@ -52,7 +52,7 @@ def test_read_codes():
     assert sample_codes == ["FR", "US_TEX"]
 
     # Read codes belonging to a specific data source and check them.
-    entsoe_codes = utils.entities.read_codes(data_source="ENTSOE")
+    entsoe_codes = utils.entities.read_codes(data_source="entsoe")
     assert isinstance(entsoe_codes, list)
     assert "FR" in entsoe_codes
     assert "US_TEX" not in entsoe_codes
@@ -91,14 +91,14 @@ def test_check_and_read_codes():
     handles errors correctly.
     """
     # Read codes belonging to a specific data source.
-    entsoe_codes = utils.entities.check_and_get_codes(data_source="ENTSOE")
+    entsoe_codes = utils.entities.check_and_get_codes(data_source="entsoe")
     assert isinstance(entsoe_codes, list)
     assert "FR" in entsoe_codes
     assert "US_TEX" not in entsoe_codes
 
     # Check the validity of a specific code for a specific data source.
     assert utils.entities.check_and_get_codes(
-        code="FR", data_source="ENTSOE"
+        code="FR", data_source="entsoe"
     ) == ["FR"]
 
     # Read codes from a specified file path and check them.
@@ -136,7 +136,7 @@ def test_check_and_read_codes_errors():
     # Check if the function raises an error for an invalid code.
     with pytest.raises(ValueError):
         utils.entities.check_and_get_codes(
-            code="INVALID_CODE", data_source="ENTSOE"
+            code="INVALID_CODE", data_source="entsoe"
         )
 
     # Check if the function raises an error for invalid codes read from
@@ -182,9 +182,9 @@ def test_check_codes():
     for a specific data source and if it raises errors for invalid
     codes or data sources.
     """
-    utils.entities.check_code("US_TEX", data_source="EIA")
+    utils.entities.check_code("US_TEX", data_source="eia")
     with pytest.raises(AssertionError):
-        utils.entities.check_code("INVALID_CODE", data_source="ENTSOE")
+        utils.entities.check_code("INVALID_CODE", data_source="entsoe")
     with pytest.raises(ValueError):
         utils.entities.check_code("FR", data_source="INVALID_DATA_SOURCE")
 
