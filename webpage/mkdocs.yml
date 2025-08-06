@@ -4,7 +4,7 @@ theme:
   icon:
     logo: octicons/zap-24
     repo: octicons/git-branch-24
-  favicon: zap-24.svg
+  favicon: lightning_logo.svg
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default

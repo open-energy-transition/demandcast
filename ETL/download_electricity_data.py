@@ -14,72 +14,45 @@ Description:
 """
 
 import argparse
+import importlib
 import logging
 import os
 from datetime import datetime
 
 import pandas
-import retrievals.aemo_nem
-import retrievals.aemo_wem
-import retrievals.aeso
-import retrievals.bchydro
-import retrievals.cammesa
-import retrievals.ccei
-import retrievals.cen
-import retrievals.cenace
-import retrievals.coes
-import retrievals.eia
-import retrievals.emi
-import retrievals.entsoe
-import retrievals.epias
-import retrievals.eskom
-import retrievals.hydroquebec
-import retrievals.ieso
-import retrievals.nbpower
-import retrievals.neso
-import retrievals.nigeria
-import retrievals.niti
-import retrievals.ntdc
-import retrievals.ons
-import retrievals.pucsl
-import retrievals.sonelgaz
-import retrievals.tepco
-import retrievals.tsoc
-import retrievals.xm
 import utils.directories
 import utils.entities
 import utils.time_series
 import utils.uploader
 
-retrieval_module = {
-    "AEMO_NEM": retrievals.aemo_nem,
-    "AEMO_WEM": retrievals.aemo_wem,
-    "AESO": retrievals.aeso,
-    "BCHYDRO": retrievals.bchydro,
-    "CAMMESA": retrievals.cammesa,
-    "CCEI": retrievals.ccei,
-    "CEN": retrievals.cen,
-    "CENACE": retrievals.cenace,
-    "COES": retrievals.coes,
-    "EIA": retrievals.eia,
-    "EMI": retrievals.emi,
-    "ENTSOE": retrievals.entsoe,
-    "EPIAS": retrievals.epias,
-    "ESKOM": retrievals.eskom,
-    "HYDROQUEBEC": retrievals.hydroquebec,
-    "IESO": retrievals.ieso,
-    "NBPOWER": retrievals.nbpower,
-    "NESO": retrievals.neso,
-    "NIGERIA": retrievals.nigeria,
-    "NITI": retrievals.niti,
-    "NTDC": retrievals.ntdc,
-    "ONS": retrievals.ons,
-    "PUCSL": retrievals.pucsl,
-    "SONELGAZ": retrievals.sonelgaz,
-    "TEPCO": retrievals.tepco,
-    "TSOC": retrievals.tsoc,
-    "XM": retrievals.xm,
-}
+
+def _str_to_bool(argument: bool | str):
+    """
+    Convert a string or boolean argument to a boolean value.
+
+    Parameters
+    ----------
+    argument : bool or str
+        The argument to convert.
+
+    Returns
+    -------
+    bool
+        The converted boolean value.
+
+    Raises
+    ------
+    argparse.ArgumentTypeError
+        If the argument is not a valid boolean value.
+    """
+    if isinstance(argument, bool):
+        return argument
+    elif argument.lower() in ("yes", "true", "t", "y", "1"):
+        return True
+    elif argument.lower() in ("no", "false", "f", "n", "0"):
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
 def read_command_line_arguments() -> argparse.Namespace:
@@ -106,7 +79,7 @@ def read_command_line_arguments() -> argparse.Namespace:
     parser.add_argument(
         "data_source",
         type=str,
-        choices=retrieval_module.keys(),
+        choices=utils.entities.read_data_sources(),
         help=(
             "The acronym of the data source as defined in the retrieval "
             'modules (example: "ENTSOE")'
@@ -159,8 +132,11 @@ def read_command_line_arguments() -> argparse.Namespace:
     parser.add_argument(
         "-m",
         "--made_by_oet",
-        type=bool,
-        help="Whether the data was made by Open Energy Transition.",
+        type=_str_to_bool,
+        help=(
+            "Whether the data was retrieved or created by Open Energy "
+            "Transition."
+        ),
         required=True,
     )
 
@@ -194,24 +170,25 @@ def retrieve_data(data_source: str, code: str) -> pandas.Series:
         len(utils.entities.read_codes(data_source=args.data_source)) == 1
     )
 
+    # Import the retrieval module for the data source.
+    retrieval_module = importlib.import_module(f"retrievals.{data_source}")
+
     # Get the list of requests to retrieve the electricity demand time
     # series.
     if one_code_in_data_source:
         # If there is only one code in the data source, there is no need
         # to specify the code.
-        requests = retrieval_module[data_source].get_available_requests()
+        requests = retrieval_module.get_available_requests()
     else:
         # If there are multiple codes in the data source, the code needs
         # to be specified.
-        requests = retrieval_module[data_source].get_available_requests(code)
+        requests = retrieval_module.get_available_requests(code)
 
     if requests is None:
         # If there are no requests (requests is None), it means that the
         # electricity demand time series can be retrieved all at once.
         # Get the retrieval function to download and extract the data.
-        retrieval_function = retrieval_module[
-            data_source
-        ].download_and_extract_data
+        retrieval_function = retrieval_module.download_and_extract_data
 
         if one_code_in_data_source:
             # If there is only one code in the data source, there is no
@@ -227,9 +204,9 @@ def retrieve_data(data_source: str, code: str) -> pandas.Series:
         # over the requests to retrieve the electricity demand time
         # series of each request.
         # Get the retrieval function to download and extract the data.
-        retrieval_function = retrieval_module[
-            data_source
-        ].download_and_extract_data_for_request
+        retrieval_function = (
+            retrieval_module.download_and_extract_data_for_request
+        )
 
         if one_code_in_data_source:
             # If there is only one code in the data source, there is no
@@ -340,7 +317,10 @@ def save_data(
             "upload_" + date_of_retrieval + "/" + identifier + ".parquet",
         )
 
-    if upload_to_zenodo and retrieval_module[data_source].redistribute():
+    # Import the retrieval module for the data source.
+    retrieval_module = importlib.import_module(f"retrievals.{data_source}")
+
+    if upload_to_zenodo and retrieval_module.redistribute():
         # Upload the parquet file of the electricity demand time series
         # to Zenodo.
         utils.uploader.upload_to_zenodo(
@@ -350,7 +330,7 @@ def save_data(
             publish=publish_to_zenodo,
             testing=True,
         )
-    elif upload_to_zenodo and not retrieval_module[data_source].redistribute():
+    elif upload_to_zenodo and not retrieval_module.redistribute():
         logging.warning(
             f"The data source {data_source} does not support redistribution "
             "to Zenodo. The data will not be uploaded to Zenodo."
