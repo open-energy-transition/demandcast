@@ -150,7 +150,8 @@ def read_command_line_arguments() -> argparse.Namespace:
     parser.add_argument(
         "-ssp",
         "--shared_socioeconomic_pathway",
-        type=str,
+        type=int,
+        choices=[1, 2, 3, 4, 5],
         help=(
             "The Shared Socioeconomic Pathways (SSP) to be used for the "
             "retrieval of the data. If not specified, all SSPs will be used."
@@ -276,7 +277,3 @@ if __name__ == "__main__":
             args.start_year,
             args.end_year,
         )
-    else:
-        logging.error(f"Unknown variable: {args.variable}")
-        raise ValueError(f"Unknown variable: {args.variable}")
-    logging.info("Data retrieval completed successfully.")

@@ -29,25 +29,32 @@ import utils.shapes
 import xarray
 
 
-def _get_years(
-    year: int | None, start_year: int | None, end_year: int | None
-) -> list[int]:
+def _get_year_and_ssp_combinations(
+    year: int | None,
+    start_year: int | None,
+    end_year: int | None,
+    ssp: int | None,
+) -> list[str]:
     """
-    Get the list of years for which GDP data will be downloaded.
+    Get the list of years and SSP combinations.
 
     Parameters
     ----------
     year : int | None
-        The specific year for which GDP data is requested.
+        The specific year for which GDP data is to be downloaded.
     start_year : int | None
-        The start year of the range of GDP data to be downloaded.
+        The start year of the range of years for which GDP data is to be
+        downloaded.
     end_year : int | None
-        The end year of the range of GDP data to be downloaded.
+        The end year of the range of years for which GDP data is to be
+        downloaded.
+    ssp : int | None
+        The Shared Socioeconomic Pathway (SSP) scenario.
 
     Returns
     -------
-    list[int]
-        A list of years for which GDP data will be downloaded.
+    year_ssp : list[str]
+        A list of strings representing the years and SSP combinations.
     """
     # Define the available years for the GDP data.
     available_years = list(range(2000, 2021)) + list(range(2025, 2101, 5))
@@ -75,19 +82,67 @@ def _get_years(
         # Use all available years.
         years = available_years
 
-    return years
+    # Define the available SSPs.
+    available_ssps = [1, 2, 3, 4, 5]
+
+    if ssp is not None:
+        assert ssp in available_ssps, (
+            f"ssp must be one of the following: {available_ssps}."
+        )
+        # Use the specified SSP.
+        ssps = [ssp]
+    else:
+        # Use all available SSPs.
+        ssps = available_ssps
+
+    # Create a list of year and SSP combinations.
+    year_ssp_list = []
+    for year in years:
+        if year in list(range(2000, 2021)):
+            # For years 2000-2020, no SSP is needed.
+            year_ssp_list.append(f"{year}")
+        elif year in list(range(2025, 2101, 5)):
+            # For years 2025-2100, SSP is needed.
+            for ssp in ssps:
+                year_ssp_list.append(f"{year}_ssp{ssp}")
+
+    return year_ssp_list
 
 
-def _get_gdp_ppp_per_capita(year: int, ssp: int | None) -> xarray.DataArray:
+def _get_gdp_ppp_per_capita() -> requests.Response:
     """
-    Download GDP PPP per capita data.
+    Download GDP PPP per capita data from Zenodo.
+
+    Returns
+    -------
+    response : requests.Response
+        The response object containing the GDP PPP per capita data.
+    """
+    # Define the URL to download the GDP PPP per capita data.
+    url = "https://zenodo.org/records/7898409/files/GDP_025d%20(2000-2100).7z?download=1"
+
+    # Fetch the data from the URL.
+    response = requests.get(url)
+
+    # Check if the request was successful.
+    response.raise_for_status()
+
+    return response
+
+
+def _extract_gdp_ppp_per_capita(
+    response: requests.Response, year_ssp: str
+) -> xarray.DataArray:
+    """
+    Extract GDP PPP per capita data for a specific year and SSP.
 
     Parameters
     ----------
-    year : int
-        The year of the GDP PPP per capita data to be downloaded.
-    ssp : int | None
-        The Shared Socioeconomic Pathway (SSP) scenario.
+    response : requests.Response
+        The response object containing the GDP PPP per capita data.
+    year_ssp : str
+        The year and SSP combination for which GDP PPP per capita data
+        is to be downloaded, formatted as "year" or "year_ssp{ssp}".
 
     Returns
     -------
@@ -95,26 +150,7 @@ def _get_gdp_ppp_per_capita(year: int, ssp: int | None) -> xarray.DataArray:
         The GDP PPP per capita data for the specified year and SSP.
     """
     # Define the path to the GDP PPP per capita data file.
-    if year in list(range(2000, 2021)):
-        relative_tif_path = f"025d/GDP{year}.tif"
-    elif year in list(range(2025, 2101, 5)):
-        assert ssp is not None, (
-            "If year is in the range 2025-2100, ssp must be specified."
-        )
-        assert ssp in [1, 2, 3, 4, 5], (
-            "ssp must be one of the following: 1, 2, 3, 4, 5."
-        )
-        relative_tif_path = f"025d/GDP{year}_ssp{ssp}.tif"
-
-    # Define the URL for the GDP data.
-    url = (
-        "https://zenodo.org/records/7898409/files/"
-        "GDP_025d%20(2000-2100).7z?download=1"
-    )
-
-    # Download the GDP PPP per capita.
-    response = requests.get(url)
-    response.raise_for_status()
+    relative_tif_path = f"025d/GDP{year_ssp}.tif"
 
     # Extract the archive from the response.
     with py7zr.SevenZipFile(io.BytesIO(response.content), mode="r") as archive:
@@ -129,7 +165,7 @@ def _get_gdp_ppp_per_capita(year: int, ssp: int | None) -> xarray.DataArray:
                 engine="rasterio",
             )
 
-        return global_gdp
+            return global_gdp
 
 
 def run_data_retrieval(
@@ -172,19 +208,34 @@ def run_data_retrieval(
     ]
     os.makedirs(result_directory, exist_ok=True)
 
-    # Get the list of years for which GDP data will be downloaded.
-    years = _get_years(year, start_year, end_year)
+    # Get the list of years and SSP combinations.
+    year_ssp_list = _get_year_and_ssp_combinations(
+        year, start_year, end_year, ssp
+    )
 
     # Get the list of codes of the countries and subdivisions of
     # interest.
     codes = utils.entities.check_and_get_codes(code=code, file_path=file)
 
-    # Loop over the years.
-    for year in years:
-        logging.info(f"Downloading GDP PPP per capita for the year {year}.")
+    # Get the GDP PPP per capita data from Zenodo.
+    dataset = _get_gdp_ppp_per_capita()
 
-        # Get the GDP data for the specified year and SSP.
-        global_gdp_ppp_per_capita = _get_gdp_ppp_per_capita(year, ssp)
+    # Loop over the years.
+    for year_ssp in year_ssp_list:
+        logging.info(
+            "Downloading GDP PPP per capita for "
+            f"the year {year_ssp.split('_')[0]}"
+            + (
+                f" and SSP {year_ssp.split('_')[1]}."
+                if "_" in year_ssp
+                else "."
+            )
+        )
+
+        # Extract the GDP data for the specified year and SSP.
+        global_gdp_ppp_per_capita = _extract_gdp_ppp_per_capita(
+            dataset, year_ssp
+        )
 
         # Harmonize the GDP data.
         global_gdp_ppp_per_capita = utils.geospatial.harmonize_coords(
@@ -200,15 +251,9 @@ def run_data_retrieval(
         for code in codes:
             # Define the file path of the population density data for
             # the country or subdivision.
-            if year in list(range(2000, 2021)):
-                file_path = os.path.join(
-                    result_directory, f"{code}_0.25_deg_{year}.nc"
-                )
-            elif year in list(range(2025, 2101, 5)):
-                file_path = os.path.join(
-                    result_directory,
-                    f"{code}_0.25_deg_{year}_ssp{ssp}.nc",
-                )
+            file_path = os.path.join(
+                result_directory, f"{code}_0.25_deg_{year_ssp}.nc"
+            )
 
             if not os.path.exists(file_path):
                 logging.info(f"Extracting GDP PPP per capita for {code}.")
@@ -236,12 +281,10 @@ def run_data_retrieval(
 
                 make_plot = False
                 if make_plot:
-                    if year in list(range(2000, 2021)):
-                        figure_name = f"gdp_{code}_{year}"
-                    elif year in list(range(2025, 2101, 5)):
-                        figure_name = f"gdp_{code}_{year}_ssp{ssp}"
                     # Make a plot of the GDP data.
-                    utils.figures.simple_plot(gdp_ppp_per_capita, figure_name)
+                    utils.figures.simple_plot(
+                        gdp_ppp_per_capita, f"gdp_{code}_{year_ssp}"
+                    )
 
                 logging.info(
                     f"GDP PPP per capita for {code} has been "
