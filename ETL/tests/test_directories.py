@@ -34,7 +34,7 @@ def test_load_paths():
     assert structure["settings_folder"] == os.path.join(
         absolute_path, "settings"
     )
-    assert structure["electricity_demand_retrievals_folder"] == os.path.join(
+    assert structure["electricity_demand_data_sources_folder"] == os.path.join(
         absolute_path, "electricity_demand"
     )
     assert structure["figures_folder"] == os.path.join(
@@ -47,14 +47,16 @@ def test_load_paths():
     assert structure["electricity_demand_folder"] == os.path.join(
         absolute_path, "data", "electricity_demand"
     )
-    assert structure["annual_electricity_demand_folder"] == os.path.join(
-        absolute_path, "data", "annual_electricity_demand"
+    assert structure[
+        "annual_electricity_demand_per_capita_folder"
+    ] == os.path.join(
+        absolute_path, "data", "annual_electricity_demand_per_capita"
     )
-    assert structure["population_density_folder"] == os.path.join(
-        absolute_path, "data", "population_density"
+    assert structure["population_folder"] == os.path.join(
+        absolute_path, "data", "population"
     )
-    assert structure["gdp_folder"] == os.path.join(
-        absolute_path, "data", "gdp"
+    assert structure["gdp_ppp_per_capita_folder"] == os.path.join(
+        absolute_path, "data", "gdp_ppp_per_capita"
     )
     assert structure["weather_folder"] == os.path.join(
         absolute_path, "data", "weather"

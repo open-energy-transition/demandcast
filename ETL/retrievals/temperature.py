@@ -16,7 +16,6 @@ Description:
     electricity demand data.
 """
 
-import argparse
 import datetime
 import logging
 import os
@@ -30,80 +29,6 @@ import utils.geospatial
 import utils.shapes
 import xarray
 from tqdm import tqdm
-
-
-def read_command_line_arguments() -> argparse.Namespace:
-    """
-    Create a parser for the command line arguments and read them.
-
-    Returns
-    -------
-    args : argparse.Namespace
-        The command line arguments.
-    """
-    # Create a parser for the command line arguments.
-    parser = argparse.ArgumentParser(
-        description=(
-            "Extract temperature data downloaded from the Copernicus Climate "
-            "Data Store (CDS) for the largest population density areas in a "
-            "given country or subdivision. It calculates the average "
-            "temperature for the largest population density areas."
-        )
-    )
-
-    # Add the command line arguments.
-    parser.add_argument(
-        "-c",
-        "--code",
-        type=str,
-        help=(
-            'The ISO Alpha-2 code (example: "FR") or a combination of ISO '
-            'Alpha-2 code and subdivision code (example: "US_CAL")'
-        ),
-        required=False,
-    )
-    parser.add_argument(
-        "-f",
-        "--file",
-        type=str,
-        help=(
-            "The path to the yaml file containing the list of codes of the "
-            "countries and subdivisions of interest"
-        ),
-        required=False,
-    )
-    parser.add_argument(
-        "-y",
-        "--year",
-        type=int,
-        help="Year of the weather data to use",
-        required=False,
-    )
-    parser.add_argument(
-        "-y_max",
-        "--year_maximum",
-        type=int,
-        help=(
-            "The maximum year for weather data to use,"
-            "available data after this year will be ignored"
-        ),
-        required=False,
-    )
-    parser.add_argument(
-        "-y_min",
-        "--year_minimum",
-        type=int,
-        help=(
-            "The minimum year for weather data to use, "
-            "available data before this year will be ignored"
-        ),
-        required=False,
-    )
-
-    # Read the arguments from the command line.
-    args = parser.parse_args()
-
-    return args
 
 
 def get_temperature_in_largest_population_density_areas(
@@ -355,7 +280,13 @@ def build_temperature_database(
     return temperature_database
 
 
-def run_temperature_calculation(args: argparse.Namespace) -> None:
+def run_temperature_calculation(
+    code: str | None,
+    file: str | None,
+    year: int | None,
+    start_year: int | None,
+    end_year: int | None,
+) -> None:
     """
     Run the calculation of the temperature data.
 
@@ -365,8 +296,21 @@ def run_temperature_calculation(args: argparse.Namespace) -> None:
 
     Parameters
     ----------
-    args : argparse.Namespace
-        The command line arguments.
+    code : str | None
+        The ISO Alpha-2 code (example: "FR") or a combination of ISO
+        Alpha-2 code and subdivision code (example: "US_CAL").
+    file : str | None
+        The path to the yaml file containing the list of codes of the
+        countries and subdivisions of interest.
+    year : int | None
+        The year of the weather data from which the temperature data
+        will be extracted.
+    start_year : int | None
+        The start year for a range of years to extract the temperature
+        data.
+    end_year : int | None
+        The end year for a range of years to extract the temperature
+        data (inclusive).
     """
     # Create a directory to store the weather data.
     result_directory = utils.directories.read_folders_structure()[
@@ -376,27 +320,26 @@ def run_temperature_calculation(args: argparse.Namespace) -> None:
 
     # Get the list of codes of the countries and subdivisions of
     # interest.
-    codes = utils.entities.check_and_get_codes(
-        code=args.code, file_path=args.file
-    )
+    codes = utils.entities.check_and_get_codes(code=code, file_path=file)
 
     # Loop over the countries and subdivisions of interest.
     for code in tqdm(codes, desc="Processing entities"):
         logging.info(f"Extracting temperature data for {code}.")
 
-        if args.year is not None:
+        if year is not None:
             # If the year is provided, use it.
-            years = [args.year]
+            years = [year]
         else:
             # Get the years of available data for the country or
             # subdivision of interest.
             years = utils.entities.get_available_years(code)
 
             # Filter years based on minimum and maximum if provided
-            if args.year_minimum is not None:
-                years = [year for year in years if year >= args.year_minimum]
-            if args.year_maximum is not None:
-                years = [year for year in years if year <= args.year_maximum]
+            if start_year is not None:
+                years = [year for year in years if year >= start_year]
+            if end_year is not None:
+                years = [year for year in years if year <= end_year]
+
         # Get the shape of the country or subdivision.
         entity_shape = utils.shapes.get_entity_shape(code, make_plot=False)
 
@@ -462,28 +405,3 @@ def run_temperature_calculation(args: argparse.Namespace) -> None:
                 logging.info(
                     f"Temperature time series for {code} already exists."
                 )
-
-
-if __name__ == "__main__":
-    # Read the command line arguments.
-    args = read_command_line_arguments()
-
-    # Set up the logging configuration.
-    log_files_directory = utils.directories.read_folders_structure()[
-        "log_files_folder"
-    ]
-    os.makedirs(log_files_directory, exist_ok=True)
-    log_file_name = (
-        "temperature_data_"
-        + datetime.datetime.now().strftime("%Y%m%d_%H%M")
-        + ".log"
-    )
-    logging.basicConfig(
-        filename=os.path.join(log_files_directory, log_file_name),
-        level=logging.INFO,
-        filemode="w",
-        format="%(asctime)s - %(levelname)s - %(message)s",
-    )
-
-    # Run the temperature calculation.
-    run_temperature_calculation(args)

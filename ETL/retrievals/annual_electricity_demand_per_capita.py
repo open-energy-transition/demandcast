@@ -14,72 +14,19 @@ Description:
     Source: https://ember-energy.org/data/yearly-electricity-data/
 """
 
-import argparse
 import logging
 import os
-from datetime import datetime
 
 import pandas
 import utils.directories
 import utils.entities
 
 
-def read_command_line_arguments() -> argparse.Namespace:
-    """
-    Create a parser for the command line arguments and read them.
-
-    Returns
-    -------
-    args : argparse.Namespace
-        The command line arguments.
-    """
-    # Create a parser for the command line arguments.
-    parser = argparse.ArgumentParser(
-        description=(
-            "Download and process annual electricity demand data from Ember. "
-            "You can specify the country or subdivision code, provide a file "
-            "containing the list of codes, or use all available codes. The "
-            "year of the electricity data can also be specified."
-        )
-    )
-
-    # Add the command line arguments.
-    parser.add_argument(
-        "-c",
-        "--code",
-        type=str,
-        help=(
-            'The ISO Alpha-2 code (example: "FR") or a combination of ISO '
-            'Alpha-2 code and subdivision code (example: "US_CAL")'
-        ),
-        required=False,
-    )
-    parser.add_argument(
-        "-f",
-        "--file",
-        type=str,
-        help=(
-            "The path to the yaml file containing the list of codes of the "
-            "countries and subdivisions of interest"
-        ),
-        required=False,
-    )
-    parser.add_argument(
-        "-y",
-        "--year",
-        type=int,
-        choices=list(range(2000, 2021)),
-        help="Year of the electricity data to be downloaded",
-        required=False,
-    )
-
-    # Read the arguments from the command line.
-    args = parser.parse_args()
-
-    return args
-
-
-def run_data_retrieval(args: argparse.Namespace) -> None:
+def run_data_retrieval(
+    code: str | None,
+    file: str | None,
+    year: int | None,
+) -> None:
     """
     Download and extract GDP data.
 
@@ -100,9 +47,7 @@ def run_data_retrieval(args: argparse.Namespace) -> None:
     os.makedirs(result_directory, exist_ok=True)
 
     # Get the list of codes of the countries and subdivisions.
-    codes = utils.entities.check_and_get_codes(
-        code=args.code, file_path=args.file
-    )
+    codes = utils.entities.check_and_get_codes(code=code, file_path=file)
 
     logging.info("Downloading annual electricity data.")
 
@@ -121,9 +66,9 @@ def run_data_retrieval(args: argparse.Namespace) -> None:
         if not os.path.exists(file_path):
             logging.info(f"Extracting annual electricity data of {code}.")
 
-            if args.year is not None:
+            if year is not None:
                 # If the year is provided, use it.
-                years = [args.year]
+                years = [year]
             else:
                 # Get the years of available data for the country or
                 # subdivision.
@@ -215,26 +160,3 @@ def run_data_retrieval(args: argparse.Namespace) -> None:
                 f"Annual electricity data of {code} already exists. Skipping "
                 "download."
             )
-
-
-if __name__ == "__main__":
-    # Read the command line arguments.
-    args = read_command_line_arguments()
-
-    # Set up the logging configuration.
-    log_file_name = (
-        "gdp_data_" + datetime.now().strftime("%Y%m%d_%H%M") + ".log"
-    )
-    log_files_directory = utils.directories.read_folders_structure()[
-        "log_files_folder"
-    ]
-    os.makedirs(log_files_directory, exist_ok=True)
-    logging.basicConfig(
-        filename=os.path.join(log_files_directory, log_file_name),
-        level=logging.INFO,
-        filemode="w",
-        format="%(asctime)s - %(levelname)s - %(message)s",
-    )
-
-    # Run the data retrieval.
-    run_data_retrieval(args)

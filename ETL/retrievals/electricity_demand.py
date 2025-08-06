@@ -50,7 +50,7 @@ def retrieve_data(data_source: str, code: str) -> pandas.Series:
 
     # Import the retrieval module for the data source.
     retrieval_module = importlib.import_module(
-        f"electricity_demand_data_sources.{data_source}"
+        f"retrievals.electricity_demand_data_sources.{data_source}"
     )
 
     # Get the list of requests to retrieve the electricity demand time
@@ -199,7 +199,7 @@ def save_data(
 
     # Import the retrieval module for the data source.
     retrieval_module = importlib.import_module(
-        f"electricity_demand_data_sources.{data_source}"
+        f"retrievals.electricity_demand_data_sources.{data_source}"
     )
 
     if upload_to_zenodo and retrieval_module.redistribute():

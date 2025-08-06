@@ -205,7 +205,7 @@ def run_data_retrieval(
                 years = utils.entities.get_available_years(code)
 
             # Get the shape of the country or subdivision.
-            entity_shape = utils.shapes.get_entity_shape(code)
+            entity_shape = utils.shapes.get_entity_shape(code, make_plot=False)
 
             # Get the lateral bounds of the country or subdivision.
             entity_bounds = utils.shapes.get_entity_bounds(

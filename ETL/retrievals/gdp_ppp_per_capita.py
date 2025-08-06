@@ -49,7 +49,9 @@ def run_data_retrieval(
         The code of the country or subdivision. If None, all available
     """
     # Get the directory to store the population density data.
-    result_directory = utils.directories.read_folders_structure()["gdp_folder"]
+    result_directory = utils.directories.read_folders_structure()[
+        "gdp_ppp_per_capita_folder"
+    ]
     os.makedirs(result_directory, exist_ok=True)
 
     if year is not None:

@@ -49,7 +49,7 @@ def run_data_retrieval(
     """
     # Get the directory to store the population density data.
     result_directory = utils.directories.read_folders_structure()[
-        "population_density_folder"
+        "population_folder"
     ]
     os.makedirs(result_directory, exist_ok=True)
 

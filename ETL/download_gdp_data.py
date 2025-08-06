@@ -20,7 +20,7 @@ import logging
 import os
 from datetime import datetime
 
-import retrievals.gdp
+import retrievals.gdp_ppp_per_capita
 import utils.directories
 import utils.entities
 import utils.figures
@@ -103,4 +103,6 @@ if __name__ == "__main__":
     )
 
     # Run the data retrieval.
-    retrievals.gdp.run_data_retrieval(args.year, args.code, args.file)
+    retrievals.gdp_ppp_per_capita.run_data_retrieval(
+        args.year, args.code, args.file
+    )
