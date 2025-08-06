@@ -37,7 +37,9 @@ def test_retrieval_functions():
     # Iterate through each data source.
     for data_source in data_sources:
         # Get the module name for the data source.
-        module_name = f"retrievals.electricity_demand_data_sources.{data_source}"
+        module_name = (
+            f"retrievals.electricity_demand_data_sources.{data_source}"
+        )
 
         # Import the module.
         module = importlib.import_module(module_name)
