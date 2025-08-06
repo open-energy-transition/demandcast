@@ -149,7 +149,7 @@ def read_command_line_arguments() -> argparse.Namespace:
     )
     parser.add_argument(
         "-ssp",
-        "--shared_socioeconomic_pathways",
+        "--shared_socioeconomic_pathway",
         type=str,
         help=(
             "The Shared Socioeconomic Pathways (SSP) to be used for the "
@@ -243,6 +243,9 @@ if __name__ == "__main__":
         # Run the data retrieval for GDP PPP per capita.
         retrievals.gdp_ppp_per_capita.run_data_retrieval(
             args.year,
+            args.start_year,
+            args.end_year,
+            args.shared_socioeconomic_pathway,
             args.code,
             args.file,
         )
