@@ -35,7 +35,7 @@ def test_load_paths():
         absolute_path, "settings"
     )
     assert structure["electricity_demand_data_sources_folder"] == os.path.join(
-        absolute_path, "electricity_demand"
+        absolute_path, "retrievals", "electricity_demand_data_sources"
     )
     assert structure["figures_folder"] == os.path.join(
         absolute_path, "figures"
