@@ -232,7 +232,8 @@ if __name__ == "__main__":
             args.made_by_oet,
         )
     elif args.variable == "annual_electricity_demand_per_capita":
-        # Run the data retrieval for annual electricity demand per capita.
+        # Run the data retrieval for annual electricity demand per
+        # capita.
         retrievals.annual_electricity_demand_per_capita.run_data_retrieval(
             args.code,
             args.file,
