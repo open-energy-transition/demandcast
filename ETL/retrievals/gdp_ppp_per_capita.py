@@ -71,7 +71,8 @@ def _get_year_and_ssp_combinations(
     elif start_year is not None and end_year is not None:
         assert start_year < end_year, "start_year must be less than end_year."
         assert start_year in available_years, (
-            f"start_year must be one of the available years: {available_years}."
+            "start_year must be one of the available years: "
+            f"{available_years}."
         )
         assert end_year in available_years, (
             f"end_year must be one of the available years: {available_years}."
@@ -98,10 +99,10 @@ def _get_year_and_ssp_combinations(
     # Create a list of year and SSP combinations.
     year_ssp_list = []
     for year in years:
-        if year in list(range(2000, 2021)):
+        if year <= 2020:
             # For years 2000-2020, no SSP is needed.
             year_ssp_list.append(f"{year}")
-        elif year in list(range(2025, 2101, 5)):
+        elif year >= 2025:
             # For years 2025-2100, SSP is needed.
             for ssp in ssps:
                 year_ssp_list.append(f"{year}_ssp{ssp}")
@@ -109,7 +110,7 @@ def _get_year_and_ssp_combinations(
     return year_ssp_list
 
 
-def _get_gdp_ppp_per_capita() -> requests.Response:
+def _download_gdp_ppp_per_capita() -> requests.Response:
     """
     Download GDP PPP per capita data from Zenodo.
 
@@ -118,6 +119,8 @@ def _get_gdp_ppp_per_capita() -> requests.Response:
     response : requests.Response
         The response object containing the GDP PPP per capita data.
     """
+    logging.info("Downloading GDP PPP per capita data from Zenodo.")
+
     # Define the URL to download the GDP PPP per capita data.
     url = "https://zenodo.org/records/7898409/files/GDP_025d%20(2000-2100).7z?download=1"
 
@@ -142,7 +145,7 @@ def _extract_gdp_ppp_per_capita(
         The response object containing the GDP PPP per capita data.
     year_ssp : str
         The year and SSP combination for which GDP PPP per capita data
-        is to be downloaded, formatted as "year" or "year_ssp{ssp}".
+        is to be downloaded.
 
     Returns
     -------
@@ -160,12 +163,22 @@ def _extract_gdp_ppp_per_capita(
 
             # Open the GDP data for the specified year
             tif_path = os.path.join(temp_dir, relative_tif_path)
-            global_gdp = xarray.open_dataarray(
+            global_gdp_ppp_per_capita = xarray.open_dataarray(
                 tif_path,
                 engine="rasterio",
             )
 
-            return global_gdp
+            # Harmonize the GDP data.
+            global_gdp_ppp_per_capita = utils.geospatial.harmonize_coords(
+                global_gdp_ppp_per_capita
+            )
+
+            # Clean the dataset.
+            global_gdp_ppp_per_capita = utils.geospatial.clean_raster(
+                global_gdp_ppp_per_capita, "gdp_ppp_per_capita"
+            )
+
+            return global_gdp_ppp_per_capita
 
 
 def run_data_retrieval(
@@ -196,8 +209,7 @@ def run_data_retrieval(
     ssp : int | None
         The Shared Socioeconomic Pathway (SSP) scenario.
     code : str | None
-        The code of the country or subdivision. If None, all available
-        codes will be used.
+        The code of the country or subdivision of interest.
     file : str | None
         The file path containing the codes of the countries or
         subdivisions of interest.
@@ -218,16 +230,16 @@ def run_data_retrieval(
     codes = utils.entities.check_and_get_codes(code=code, file_path=file)
 
     # Get the GDP PPP per capita data from Zenodo.
-    dataset = _get_gdp_ppp_per_capita()
+    dataset = _download_gdp_ppp_per_capita()
 
     # Loop over the years.
     for year_ssp in year_ssp_list:
         logging.info(
-            "Downloading GDP PPP per capita for "
+            "Extracting GDP PPP per capita for "
             f"the year {year_ssp.split('_')[0]}"
             + (
-                f" and SSP {year_ssp.split('_')[1]}."
-                if "_" in year_ssp
+                f" and SSP {year_ssp.split('_ssp')[1]}."
+                if "ssp" in year_ssp
                 else "."
             )
         )
@@ -235,16 +247,6 @@ def run_data_retrieval(
         # Extract the GDP data for the specified year and SSP.
         global_gdp_ppp_per_capita = _extract_gdp_ppp_per_capita(
             dataset, year_ssp
-        )
-
-        # Harmonize the GDP data.
-        global_gdp_ppp_per_capita = utils.geospatial.harmonize_coords(
-            global_gdp_ppp_per_capita
-        )
-
-        # Clean the dataset.
-        global_gdp_ppp_per_capita = utils.geospatial.clean_raster(
-            global_gdp_ppp_per_capita, "gdp_ppp_per_capita"
         )
 
         # Loop over the countries and subdivisions of interest.

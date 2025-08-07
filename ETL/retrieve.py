@@ -254,6 +254,9 @@ if __name__ == "__main__":
         # Run the data retrieval for population.
         retrievals.population.run_data_retrieval(
             args.year,
+            args.start_year,
+            args.end_year,
+            args.shared_socioeconomic_pathway,
             args.code,
             args.file,
         )
