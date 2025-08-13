@@ -9,10 +9,12 @@ dependencies = [
     "dotenv>=0.9.9",
     "fastapi[standard]>=0.115.12",
     "matplotlib>=3.10.1",
+    "netcdf4>=1.7.2",
     "pandas>=2.2.3",
     "pyarrow>=19.0.1",
     "pycountry>=24.6.1",
     "scikit-learn>=1.6.1",
     "tqdm>=4.67.1",
+    "xarray>=2025.7.1",
     "xgboost-cpu>=3.0.0",
 ]
