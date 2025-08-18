@@ -7,7 +7,7 @@ Description:
     This module provides functions to retrieve the electricity demand
     data from the website of the Compañía Administradora del Mercado
     Mayorista Eléctrico S.A. (CAMMESA) in Argentina. The data is
-    retrieved from 2024-08-01 to current date. The data is retrieved in
+    retrieved from 2024-12-01 to current date. The data is retrieved in
     one-day intervals.
 
     Source: https://api.cammesa.com/demanda-svc/swagger-ui.html#/demanda-ws
