@@ -33,12 +33,12 @@ import utils.shapes
 import xarray
 
 
-def _get_year_and_ssp_combinations(
+def _get_year_and_scenario_combinations(
     year: int | None,
     start_year: int | None,
     end_year: int | None,
     ssp: int | None,
-) -> list[str]:
+) -> list[tuple[int, str | None]]:
     """
     Get the list of years and SSP combinations.
 
@@ -57,8 +57,9 @@ def _get_year_and_ssp_combinations(
 
     Returns
     -------
-    year_ssp : list[str]
-        A list of strings representing the years and SSP combinations.
+    year_scenario_list : list[tuple[int, str | None]]
+        A list of tuples, where each tuple contains a year and an
+        optional SSP scenario.
     """
     # Define the available years for the population data.
     available_years = list(range(2000, 2101, 5))
@@ -101,63 +102,67 @@ def _get_year_and_ssp_combinations(
         ssps = available_ssps
 
     # Create a list of year and SSP combinations.
-    year_ssp_list = []
+    year_scenario_list: list[tuple[int, str | None]] = []
     for year in years:
         if year <= 2020:
-            # For years 2000-2020, no SSP is needed.
-            year_ssp_list.append(f"{year}")
+            year_scenario_list.append((year, None))
         elif year >= 2025:
-            # For years 2025-2100, SSP is needed.
             for ssp in ssps:
-                year_ssp_list.append(f"{year}_ssp{ssp}")
+                year_scenario_list.append((year, f"ssp{ssp}"))
 
-    return year_ssp_list
+    return year_scenario_list
 
 
-def _download_historic_population(year: int) -> xarray.DataArray:
+def _download_historic_population(result_directory: str, year: int) -> None:
     """
-    Download population data from SEDAC.
+    Download population data from SEDAC for historic years (2000-2020).
 
     Parameters
     ----------
     year : int
         The year of the population data to be downloaded.
-
-    Returns
-    -------
-    xarray.DataArray
-        The population data for the specified year.
     """
-    logging.info(
-        f"Downloading population data from SEDAC for the year {year}."
-    )
-
     assert year in list(range(2000, 2021, 5)), (
         "year must be one of the available years: "
         f"{list(range(2000, 2021, 5))}."
     )
 
-    # Define the URL of the population data.
-    url = (
-        "https://data.ghg.center/sedac-popdensity-yeargrid5yr-v4.11/"
-        f"gpw_v4_population_density_rev11_{year}_30_sec_{year}.tif"
+    # Define the directory to save the population data.
+    os.makedirs(
+        os.path.join(result_directory, "all_population"), exist_ok=True
     )
 
-    # Download the population data.
-    global_population = xarray.open_dataarray(url, engine="rasterio")
+    # Define the file path for the population data.
+    file_path = os.path.join(result_directory, "all_population", f"{year}.tif")
 
-    # Harmonize the population data.
-    global_population = utils.geospatial.harmonize_coords(global_population)
+    if not os.path.exists(file_path):
+        logging.info(
+            f"Downloading population data from SEDAC for the year {year}."
+        )
 
-    # Clean the dataset.
-    global_population = utils.geospatial.clean_raster(
-        global_population, "population"
-    )
+        # Define the URL of the population data.
+        url = (
+            "https://data.ghg.center/sedac-popdensity-yeargrid5yr-v4.11/"
+            f"gpw_v4_population_density_rev11_{year}_30_sec_{year}.tif"
+        )
 
-    return global_population
+        # Download the population data.
+        response = requests.get(url)
+
+        # Check if the request was successful.
+        response.raise_for_status()
+
+        # Save the response content.
+        with open(file_path, "wb") as file:
+            file.write(response.content)
+    else:
+        logging.info(
+            f"Population data for the year {year} already exists. "
+            "Skipping download."
+        )
 
 
-def _download_future_population(year: int, ssp: str) -> xarray.DataArray:
+def _download_future_population(result_directory: str, scenario: str) -> None:
     """
     Download future population data from Figshare.
 
@@ -167,95 +172,117 @@ def _download_future_population(year: int, ssp: str) -> xarray.DataArray:
         The year of the population data to be downloaded.
     ssp : str
         The Shared Socioeconomic Pathway (SSP) scenario.
-
-    Returns
-    -------
-    xarray.DataArray
-        The population data for the specified year and SSP.
     """
-    logging.info(
-        "Downloading population data from Figshare for the year "
-        f"{year} and {ssp.upper()}."
-    )
-
-    assert year in list(range(2025, 2101, 5)), (
-        "year must be one of the available years: "
-        f"{list(range(2025, 2101, 5))}."
-    )
-    assert ssp in ["ssp1", "ssp2", "ssp3", "ssp4", "ssp5"], (
+    assert scenario in ["ssp1", "ssp2", "ssp3", "ssp4", "ssp5"], (
         "ssp must be one of the following: ['ssp1', 'ssp2', 'ssp3', "
         "'ssp4', 'ssp5']."
     )
 
-    # Define the URL of the population data.
-    match ssp:
-        case "ssp1":
-            url = "https://figshare.com/ndownloader/files/34829160"
-        case "ssp2":
-            url = "https://figshare.com/ndownloader/files/34829370"
-        case "ssp3":
-            url = "https://figshare.com/ndownloader/files/45894312"
-        case "ssp4":
-            url = "https://figshare.com/ndownloader/files/34829385"
-        case "ssp5":
-            url = "https://figshare.com/ndownloader/files/34829391"
+    # Create the directory to save the population data if it does not
+    # already exist.
+    os.makedirs(
+        os.path.join(result_directory, "all_population"), exist_ok=True
+    )
 
-    # Fetch the data from the URL.
-    response = requests.get(url)
+    # Define the folder name for the population data for the specified
+    # SSP.
+    folder_name = os.path.join(
+        result_directory,
+        "all_population",
+        scenario.upper(),
+    )
 
-    # Check if the request was successful.
-    response.raise_for_status()
+    if not os.path.exists(folder_name):
+        logging.info(
+            "Downloading population data from Figshare for "
+            f"{scenario.upper()}."
+        )
+        # Define the URL of the population data.
+        match scenario:
+            case "ssp1":
+                url = "https://figshare.com/ndownloader/files/34829160"
+            case "ssp2":
+                url = "https://figshare.com/ndownloader/files/34829370"
+            case "ssp3":
+                url = "https://figshare.com/ndownloader/files/45894312"
+            case "ssp4":
+                url = "https://figshare.com/ndownloader/files/34829385"
+            case "ssp5":
+                url = "https://figshare.com/ndownloader/files/34829391"
 
-    return response
+        # Fetch the data from the URL.
+        response = requests.get(url)
+
+        # Check if the request was successful.
+        response.raise_for_status()
+
+        # Extract all population data from the response.
+        with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+            archive.extractall(
+                path=os.path.join(result_directory, "all_population")
+            )
+
+        # Rename the extracted folder for SSP1 because of a typo.
+        os.rename(
+            os.path.join(result_directory, "all_population", "SPP1"),
+            os.path.join(result_directory, "all_population", "SSP1"),
+        )
+    else:
+        logging.info(
+            f"Population data for {scenario.upper()} already exists. "
+            "Skipping download."
+        )
 
 
-def _extract_future_population(
-    response: requests.Response, year_ssp: str
+def _read_population(
+    result_directory: str, year: int, scenario: str | None
 ) -> xarray.DataArray:
     """
-    Extract future population data for a specific year and SSP.
+    Read the population data for the specified year and scenario.
 
     Parameters
     ----------
-    response : requests.Response
-        The response object containing the future population data.
-    year_ssp : str
-        The year and SSP combination for which population data is to be
-        extracted.
+    result_directory : str
+        The directory where the population data is stored.
+    year : int
+        The year of the population data to be read.
+    scenario : str | None
+        The Shared Socioeconomic Pathway (SSP) scenario.
 
     Returns
     -------
     xarray.DataArray
-        The population data for the specified year and SSP.
+        The population data for the specified year and scenario.
     """
-    # Extract the year and SSP from the year_ssp string.
-    year, ssp = year_ssp.split("_")
-
-    with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
-        # Find the file name that matches the year and SSP. In this way,
-        # we can handle a typo in the SSP1 folder name (actually SPP1).
-        file_name = [
-            name
-            for name in archive.namelist()
-            if ssp.upper() in name and year in name and name.endswith(".tif")
-        ][0]
-
-        global_population = xarray.open_dataarray(
-            archive.open(file_name),
-            engine="rasterio",
+    # Define the file path of the population data.
+    if scenario is None:
+        # For historic years, the file name is just the year.
+        file_path = os.path.join(
+            result_directory, "all_population", f"{year}.tif"
+        )
+    else:
+        # For future years, the file name includes the SSP scenario.
+        file_path = os.path.join(
+            result_directory,
+            "all_population",
+            scenario.upper(),
+            f"{scenario.upper()}_{year}.tif",
         )
 
-        # Harmonize the population data.
-        global_population = utils.geospatial.harmonize_coords(
-            global_population
-        )
+    # Download the population data.
+    global_population = xarray.open_dataarray(file_path, engine="rasterio")
 
-        # Clean the dataset.
-        global_population = utils.geospatial.clean_raster(
-            global_population, "population"
-        )
+    # Harmonize the population data.
+    # global_population = utils.geospatial.harmonize_coords(
+    #   global_population
+    # )
 
-        return global_population
+    # Clean the dataset.
+    # global_population = utils.geospatial.clean_raster(
+    #     global_population, "population"
+    # )
+
+    return global_population
 
 
 def run_data_retrieval(
@@ -298,7 +325,7 @@ def run_data_retrieval(
     os.makedirs(result_directory, exist_ok=True)
 
     # Get the list of years and SSP combinations.
-    year_ssp_list = _get_year_and_ssp_combinations(
+    year_scenario_list = _get_year_and_scenario_combinations(
         year, start_year, end_year, ssp
     )
 
@@ -307,38 +334,43 @@ def run_data_retrieval(
     codes = utils.entities.check_and_get_codes(code=code, file_path=file)
 
     # Loop over the years.
-    for year_ssp in year_ssp_list:
+    for year, scenario in year_scenario_list:
         logging.info(
-            f"Downloading population for the year {year_ssp.split('_')[0]}"
-            + (
-                f" and SSP {year_ssp.split('_ssp')[1]}."
-                if "ssp" in year_ssp
-                else "."
-            )
+            f"Processing population for the year {year}"
+            + (f" and {scenario.upper()}." if scenario else ".")
         )
 
-        if "ssp" not in year_ssp:
-            # For years 2000-2020, download historic population data.
-            global_population = _download_historic_population(int(year_ssp))
-        else:
-            # For years 2025-2100, download population data for the
-            # specified SSP scenario.
-            dataset_response = _download_future_population(
-                int(year_ssp.split("_")[0]), year_ssp.split("_")[1]
-            )
+        if year <= 2020:
+            # Download historic population data.
+            _download_historic_population(result_directory, year)
+        elif year >= 2025 and scenario is not None:
+            # Download future population data.
+            _download_future_population(result_directory, scenario)
 
-            # Extract the population data for the specified year and
-            # SSP.
-            global_population = _extract_future_population(
-                dataset_response, year_ssp
-            )
+        # Define the year and scenario string for the file name.
+        year_scenario = f"{year}_{scenario}" if scenario else str(year)
+
+        # Read the GDP data for the specified year and SSP.
+        global_population = _read_population(result_directory, year, scenario)
+
+        # plot the population data
+        # import matplotlib.pyplot as plt
+        # fig, ax = plt.subplots(figsize=(10, 5))
+        # global_population.plot(ax=ax, cmap="viridis")
+        # fig.savefig(
+        #     os.path.join(
+        #         result_directory,
+        #         f"population_density_{year_scenario}.png",
+        #     ),
+        #     bbox_inches="tight",
+        # )
 
         # Loop over the countries and subdivisions of interest.
         for code in codes:
             # Define the file path of the population density data for
             # the country or subdivision.
             file_path = os.path.join(
-                result_directory, f"{code}_0.25_deg_{year_ssp}.nc"
+                result_directory, f"{code}_0.25_deg_{year_scenario}.nc"
             )
 
             if not os.path.exists(file_path):
@@ -364,9 +396,9 @@ def run_data_retrieval(
 
                 # Coarsen the population density data to the same
                 # resolution as the weather data.
-                population = utils.geospatial.coarsen(
-                    population, entity_bounds
-                )
+                # population = utils.geospatial.coarsen(
+                #     population, entity_bounds
+                # )
 
                 # Save the population density data.
                 population.to_netcdf(file_path)
@@ -376,7 +408,7 @@ def run_data_retrieval(
                     # Make a plot of the population density data.
                     utils.figures.simple_plot(
                         population,
-                        f"population_density_{code}_{year_ssp}",
+                        f"population_density_{code}_{year_scenario}",
                     )
 
                 logging.info(
