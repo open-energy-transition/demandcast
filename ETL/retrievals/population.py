@@ -272,15 +272,27 @@ def _read_population(
     # Download the population data.
     global_population = xarray.open_dataarray(file_path, engine="rasterio")
 
+    if scenario is not None:
+        # For population data from SSP scenarios, the coordinates
+        # need to be converted to standard longitude and latitude.
+        global_population["x"] = (
+            global_population["x"] - global_population["x"].min()
+        ) / (global_population["x"].max() - global_population["x"].min()) * (
+            360 - 30 / 3600
+        ) - (180 - 30 / 3600)
+        global_population["y"] = (
+            global_population["y"] - global_population["y"].min()
+        ) / (global_population["y"].max() - global_population["y"].min()) * (
+            156 - 30 / 3600
+        ) - (72 - 30 / 3600)
+
     # Harmonize the population data.
-    # global_population = utils.geospatial.harmonize_coords(
-    #   global_population
-    # )
+    global_population = utils.geospatial.harmonize_coords(global_population)
 
     # Clean the dataset.
-    # global_population = utils.geospatial.clean_raster(
-    #     global_population, "population"
-    # )
+    global_population = utils.geospatial.clean_raster(
+        global_population, "population"
+    )
 
     return global_population
 
@@ -353,18 +365,6 @@ def run_data_retrieval(
         # Read the GDP data for the specified year and SSP.
         global_population = _read_population(result_directory, year, scenario)
 
-        # plot the population data
-        # import matplotlib.pyplot as plt
-        # fig, ax = plt.subplots(figsize=(10, 5))
-        # global_population.plot(ax=ax, cmap="viridis")
-        # fig.savefig(
-        #     os.path.join(
-        #         result_directory,
-        #         f"population_density_{year_scenario}.png",
-        #     ),
-        #     bbox_inches="tight",
-        # )
-
         # Loop over the countries and subdivisions of interest.
         for code in codes:
             # Define the file path of the population density data for
@@ -396,9 +396,9 @@ def run_data_retrieval(
 
                 # Coarsen the population density data to the same
                 # resolution as the weather data.
-                # population = utils.geospatial.coarsen(
-                #     population, entity_bounds
-                # )
+                population = utils.geospatial.coarsen(
+                    population, entity_bounds
+                )
 
                 # Save the population density data.
                 population.to_netcdf(file_path)
