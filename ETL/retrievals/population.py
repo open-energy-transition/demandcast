@@ -129,11 +129,13 @@ def _download_historic_population(result_directory: str, year: int) -> None:
 
     # Define the directory to save the population data.
     os.makedirs(
-        os.path.join(result_directory, "all_population"), exist_ok=True
+        os.path.join(result_directory, "downloaded_population"), exist_ok=True
     )
 
     # Define the file path for the population data.
-    file_path = os.path.join(result_directory, "all_population", f"{year}.tif")
+    file_path = os.path.join(
+        result_directory, "downloaded_population", f"{year}.tif"
+    )
 
     if not os.path.exists(file_path):
         logging.info(
@@ -181,14 +183,14 @@ def _download_future_population(result_directory: str, scenario: str) -> None:
     # Create the directory to save the population data if it does not
     # already exist.
     os.makedirs(
-        os.path.join(result_directory, "all_population"), exist_ok=True
+        os.path.join(result_directory, "downloaded_population"), exist_ok=True
     )
 
     # Define the folder name for the population data for the specified
     # SSP.
     folder_name = os.path.join(
         result_directory,
-        "all_population",
+        "downloaded_population",
         scenario.upper(),
     )
 
@@ -219,14 +221,19 @@ def _download_future_population(result_directory: str, scenario: str) -> None:
         # Extract all population data from the response.
         with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
             archive.extractall(
-                path=os.path.join(result_directory, "all_population")
+                path=os.path.join(result_directory, "downloaded_population")
             )
 
-        # Rename the extracted folder for SSP1 because of a typo.
-        os.rename(
-            os.path.join(result_directory, "all_population", "SPP1"),
-            os.path.join(result_directory, "all_population", "SSP1"),
-        )
+        if scenario == "ssp1":
+            # Rename the extracted folder for SSP1 because of a typo.
+            os.rename(
+                os.path.join(
+                    result_directory, "downloaded_population", "SPP1"
+                ),
+                os.path.join(
+                    result_directory, "downloaded_population", "SSP1"
+                ),
+            )
     else:
         logging.info(
             f"Population data for {scenario.upper()} already exists. "
@@ -258,13 +265,13 @@ def _read_population(
     if scenario is None:
         # For historic years, the file name is just the year.
         file_path = os.path.join(
-            result_directory, "all_population", f"{year}.tif"
+            result_directory, "downloaded_population", f"{year}.tif"
         )
     else:
         # For future years, the file name includes the SSP scenario.
         file_path = os.path.join(
             result_directory,
-            "all_population",
+            "downloaded_population",
             scenario.upper(),
             f"{scenario.upper()}_{year}.tif",
         )

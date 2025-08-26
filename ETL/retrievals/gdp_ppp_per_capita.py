@@ -119,7 +119,7 @@ def _download_gdp_ppp_per_capita(result_directory: str) -> None:
     """
     # Check if the file already exists.
     if not os.path.exists(
-        os.path.join(result_directory, "all_gdp_ppp_per_capita")
+        os.path.join(result_directory, "downloaded_gdp_ppp_per_capita")
     ):
         logging.info("Downloading GDP PPP per capita data from Zenodo.")
 
@@ -141,7 +141,7 @@ def _download_gdp_ppp_per_capita(result_directory: str) -> None:
 
         os.rename(
             os.path.join(result_directory, "025d"),
-            os.path.join(result_directory, "all_gdp_ppp_per_capita"),
+            os.path.join(result_directory, "downloaded_gdp_ppp_per_capita"),
         )
     else:
         logging.info(
@@ -170,7 +170,7 @@ def _read_gdp_ppp_per_capita(
     # Define the file path of the GDP PPP per capita data.
     file_path = os.path.join(
         result_directory,
-        "all_gdp_ppp_per_capita",
+        "downloaded_gdp_ppp_per_capita",
         f"GDP{year_scenario}.tif",
     )
 
