@@ -12,7 +12,7 @@ import logging
 import os
 from datetime import datetime
 
-import retrievals.annual_electricity_demand
+import retrievals.annual_electricity_demand_per_capita
 import retrievals.electricity_demand
 import retrievals.gdp_ppp_per_capita
 import retrievals.population
@@ -235,7 +235,7 @@ if __name__ == "__main__":
     elif args.variable == "annual_electricity_demand":
         # Run the data retrieval for annual electricity demand per
         # capita.
-        retrievals.annual_electricity_demand.run_data_retrieval(
+        retrievals.annual_electricity_demand_per_capita.run_data_retrieval(
             args.code,
             args.file,
             args.year,
