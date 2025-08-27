@@ -1,0 +1,196 @@
+AL: R5.2OECD # Albania
+AU: R5.2OECD # Australia
+AT: R5.2OECD # Austria
+BE: R5.2OECD # Belgium
+BA: R5.2OECD # Bosnia and Herzegovina
+BG: R5.2OECD # Bulgaria
+CA: R5.2OECD # Canada
+HR: R5.2OECD # Croatia
+CY: R5.2OECD # Cyprus
+CZ: R5.2OECD # Czech Republic
+DK: R5.2OECD # Denmark
+EE: R5.2OECD # Estonia
+FI: R5.2OECD # Finland
+FR: R5.2OECD # France
+DE: R5.2OECD # Germany
+GR: R5.2OECD # Greece
+GU: R5.2OECD # Guam
+HU: R5.2OECD # Hungary
+IS: R5.2OECD # Iceland
+IE: R5.2OECD # Ireland
+IT: R5.2OECD # Italy
+JP: R5.2OECD # Japan
+LV: R5.2OECD # Latvia
+LT: R5.2OECD # Lithuania
+LU: R5.2OECD # Luxembourg
+MT: R5.2OECD # Malta
+ME: R5.2OECD # Montenegro
+NL: R5.2OECD # Netherlands
+NZ: R5.2OECD # New Zealand
+"NO": R5.2OECD # Norway
+PL: R5.2OECD # Poland
+PT: R5.2OECD # Portugal
+PR: R5.2OECD # Puerto Rico
+RO: R5.2OECD # Romania
+RS: R5.2OECD # Serbia
+SK: R5.2OECD # Slovakia
+SI: R5.2OECD # Slovenia
+ES: R5.2OECD # Spain
+SE: R5.2OECD # Sweden
+CH: R5.2OECD # Switzerland
+MK: R5.2OECD # North Macedonia
+TR: R5.2OECD # Turkey
+GB: R5.2OECD # United Kingdom
+US: R5.2OECD # United States of America
+
+AM: R5.2REF # Armenia
+AZ: R5.2REF # Azerbaijan
+BY: R5.2REF # Belarus
+GE: R5.2REF # Georgia
+KZ: R5.2REF # Kazakhstan
+KG: R5.2REF # Kyrgyzstan
+MD: R5.2REF # Moldova
+RU: R5.2REF # Russian Federation
+TJ: R5.2REF # Tajikistan
+TM: R5.2REF # Turkmenistan
+UA: R5.2REF # Ukraine
+UZ: R5.2REF # Uzbekistan
+
+AF: R5.2ASIA # Afghanistan
+BD: R5.2ASIA # Bangladesh
+BT: R5.2ASIA # Bhutan
+BN: R5.2ASIA # Brunei Darussalam
+KH: R5.2ASIA # Cambodia
+CN: R5.2ASIA # China
+HK: R5.2ASIA # Hong Kong
+MO: R5.2ASIA # Macao
+KP: R5.2ASIA # North Korea
+FJ: R5.2ASIA # Fiji
+PF: R5.2ASIA # French Polynesia
+IN: R5.2ASIA # India
+ID: R5.2ASIA # Indonesia
+LA: R5.2ASIA # Laos
+MY: R5.2ASIA # Malaysia
+MV: R5.2ASIA # Maldives
+FM: R5.2ASIA # Micronesia (Federated States of)
+MN: R5.2ASIA # Mongolia
+MM: R5.2ASIA # Myanmar
+NP: R5.2ASIA # Nepal
+NC: R5.2ASIA # New Caledonia
+PK: R5.2ASIA # Pakistan
+PG: R5.2ASIA # Papua New Guinea
+PH: R5.2ASIA # Philippines
+KR: R5.2ASIA # South Korea
+WS: R5.2ASIA # Samoa
+SG: R5.2ASIA # Singapore
+SB: R5.2ASIA # Solomon Islands
+LK: R5.2ASIA # Sri Lanka
+TW: R5.2ASIA # Taiwan
+TH: R5.2ASIA # Thailand
+TL: R5.2ASIA # Timor-Leste
+VU: R5.2ASIA # Vanuatu
+VN: R5.2ASIA # Viet Nam
+
+DZ: R5.2MAF # Algeria
+AO: R5.2MAF # Angola
+BH: R5.2MAF # Bahrain
+BJ: R5.2MAF # Benin
+BW: R5.2MAF # Botswana
+BF: R5.2MAF # Burkina Faso
+BI: R5.2MAF # Burundi
+CM: R5.2MAF # Cameroon
+CV: R5.2MAF # Cabo Verde
+CF: R5.2MAF # Central African Republic
+TD: R5.2MAF # Chad
+KM: R5.2MAF # Comoros
+CG: R5.2MAF # Republic of the Congo
+CI: R5.2MAF # Côte d'Ivoire
+CD: R5.2MAF # Democratic Republic of the Congo
+DJ: R5.2MAF # Djibouti
+EG: R5.2MAF # Egypt
+GQ: R5.2MAF # Equatorial Guinea
+ER: R5.2MAF # Eritrea
+ET: R5.2MAF # Ethiopia
+GA: R5.2MAF # Gabon
+GM: R5.2MAF # Gambia
+GH: R5.2MAF # Ghana
+GN: R5.2MAF # Guinea
+GW: R5.2MAF # Guinea-Bissau
+IR: R5.2MAF # Iran
+IQ: R5.2MAF # Iraq
+IL: R5.2MAF # Israel
+JO: R5.2MAF # Jordan
+KE: R5.2MAF # Kenya
+KW: R5.2MAF # Kuwait
+LB: R5.2MAF # Lebanon
+LS: R5.2MAF # Lesotho
+LR: R5.2MAF # Liberia
+LY: R5.2MAF # Libya
+MG: R5.2MAF # Madagascar
+MW: R5.2MAF # Malawi
+ML: R5.2MAF # Mali
+MR: R5.2MAF # Mauritania
+MU: R5.2MAF # Mauritius
+YT: R5.2MAF # Mayotte
+MA: R5.2MAF # Morocco
+MZ: R5.2MAF # Mozambique
+NA: R5.2MAF # Namibia
+NE: R5.2MAF # Niger
+NG: R5.2MAF # Nigeria
+PS: R5.2MAF # Palestinian Territory
+OM: R5.2MAF # Oman
+QA: R5.2MAF # Qatar
+RW: R5.2MAF # Rwanda
+RE: R5.2MAF # Réunion
+SA: R5.2MAF # Saudi Arabia
+SN: R5.2MAF # Senegal
+SL: R5.2MAF # Sierra Leone
+SO: R5.2MAF # Somalia
+ZA: R5.2MAF # South Africa
+SS: R5.2MAF # South Sudan
+SD: R5.2MAF # Sudan
+SZ: R5.2MAF # Eswatini
+SY: R5.2MAF # Syria
+TG: R5.2MAF # Togo
+TN: R5.2MAF # Tunisia
+UG: R5.2MAF # Uganda
+AE: R5.2MAF # United Arab Emirates
+TZ: R5.2MAF # Tanzania
+EH: R5.2MAF # Western Sahara
+YE: R5.2MAF # Yemen
+ZM: R5.2MAF # Zambia
+ZW: R5.2MAF # Zimbabwe
+
+AR: R5.2LAM # Argentina
+AW: R5.2LAM # Aruba
+BS: R5.2LAM # Bahamas
+BB: R5.2LAM # Barbados
+BZ: R5.2LAM # Belize
+BO: R5.2LAM # Bolivia
+BR: R5.2LAM # Brazil
+CL: R5.2LAM # Chile
+CO: R5.2LAM # Colombia
+CR: R5.2LAM # Costa Rica
+CU: R5.2LAM # Cuba
+DO: R5.2LAM # Dominican Republic
+EC: R5.2LAM # Ecuador
+SV: R5.2LAM # El Salvador
+GF: R5.2LAM # French Guiana
+GD: R5.2LAM # Grenada
+GP: R5.2LAM # Guadeloupe
+GT: R5.2LAM # Guatemala
+GY: R5.2LAM # Guyana
+HT: R5.2LAM # Haiti
+HN: R5.2LAM # Honduras
+JM: R5.2LAM # Jamaica
+MQ: R5.2LAM # Martinique
+MX: R5.2LAM # Mexico
+NI: R5.2LAM # Nicaragua
+PA: R5.2LAM # Panama
+PY: R5.2LAM # Paraguay
+PE: R5.2LAM # Peru
+SR: R5.2LAM # Suriname
+TT: R5.2LAM # Trinidad and Tobago
+VI: R5.2LAM # United States Virgin Islands
+UY: R5.2LAM # Uruguay
+VE: R5.2LAM # Venezuela

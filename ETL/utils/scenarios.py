@@ -8,6 +8,10 @@ Description:
     different scenarios.
 """
 
+import os
+
+import yaml
+
 
 def get_year_and_scenario_combinations(
     year: int | None,
@@ -87,3 +91,43 @@ def get_year_and_scenario_combinations(
                 year_scenario_list.append((year, f"ssp{ssp}"))
 
     return year_scenario_list
+
+
+def get_iam_region(iso_alpha_2: str) -> str:
+    """
+    Get the IAM region for a given ISO Alpha-2 country code.
+
+    Parameters
+    ----------
+    iso_alpha_2 : str
+        The ISO Alpha-2 country code.
+
+    Returns
+    -------
+    iam_region : str
+        The corresponding IAM region.
+
+    Raises
+    ------
+    ValueError
+        If no IAM region is found for the given ISO Alpha-2 code.
+    """
+    # Define the path to the yaml file containing the mapping of ISO
+    # Alpha-2 codes to IAM regions.
+    iam_region_mappping = os.path.join(
+        os.path.dirname(__file__), "iam_region_mapping.yaml"
+    )
+
+    # Read the mapping from the yaml file.
+    with open(iam_region_mappping, "r", encoding="utf-8") as file:
+        iso_to_region = yaml.safe_load(file)
+
+    # Get the IAM region for the given ISO Alpha-2 code.
+    region_code = iso_to_region.get(iso_alpha_2, None)
+
+    if region_code is None:
+        raise ValueError(
+            f"No IAM region found for ISO Alpha-2 code: {iso_alpha_2}"
+        )
+
+    return region_code
