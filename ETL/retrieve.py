@@ -148,13 +148,12 @@ def read_command_line_arguments() -> argparse.Namespace:
         required=False,
     )
     parser.add_argument(
-        "-ssp",
-        "--shared_socioeconomic_pathway",
-        type=int,
-        choices=[1, 2, 3, 4, 5],
+        "-s",
+        "--scenario",
+        type=str,
         help=(
-            "The Shared Socioeconomic Pathways (SSP) to be used for the "
-            "retrieval of the data. If not specified, all SSPs will be used."
+            "The scenario to be used for the retrieval of the data. If not "
+            "specified, all scenarios will be used."
         ),
         required=False,
     )
@@ -239,26 +238,29 @@ if __name__ == "__main__":
             args.code,
             args.file,
             args.year,
+            args.start_year,
+            args.end_year,
+            args.scenario,
         )
     elif args.variable == "gdp_ppp_per_capita":
         # Run the data retrieval for GDP PPP per capita.
         retrievals.gdp_ppp_per_capita.run_data_retrieval(
+            args.code,
+            args.file,
             args.year,
             args.start_year,
             args.end_year,
-            args.shared_socioeconomic_pathway,
-            args.code,
-            args.file,
+            args.scenario,
         )
     elif args.variable == "population":
         # Run the data retrieval for population.
         retrievals.population.run_data_retrieval(
+            args.code,
+            args.file,
             args.year,
             args.start_year,
             args.end_year,
-            args.shared_socioeconomic_pathway,
-            args.code,
-            args.file,
+            args.scenario,
         )
     elif args.variable == "weather":
         # Run the data retrieval for weather.

@@ -23,6 +23,8 @@ import pandas
 import requests
 import utils.directories
 import utils.entities
+import utils.scenarios
+import utils.time_series
 
 
 def download_electricity_demand_per_capita_from_ember() -> pandas.DataFrame:
@@ -80,21 +82,22 @@ def download_electricity_demand_per_capita_from_world_bank() -> (
         return pandas.read_csv(archive.open(world_bank_file_name), skiprows=4)
 
 
-def extract_electricity_demand_per_capita(
-    alpha_3_code: str,
-    years_of_interest: list[int],
+def extract_historical_electricity_demand_per_capita(
     ember_electricity_demand_per_capita: pandas.DataFrame,
     world_bank_electricity_demand_per_capita: pandas.DataFrame,
+    iso_alpha_3_code: str,
 ) -> pandas.Series:
     """
     Get the electricity demand per capita.
 
     Parameters
     ----------
-    alpha_3_codes : str
+    ember_electricity_demand_per_capita : pandas.DataFrame
+        The electricity demand per capita data from Ember.
+    world_bank_electricity_demand_per_capita : pandas.DataFrame
+        The electricity demand per capita from the World Bank.
+    iso_alpha_3_code : str
         The ISO alpha-3 code of the country.
-    years_of_interest : list[int]
-        The years of interest.
 
     Returns
     -------
@@ -104,8 +107,7 @@ def extract_electricity_demand_per_capita(
     # Extract the electricity demand per capita from Ember for the
     # country and for the years of interest.
     ember_electricity_demand_per_capita = ember_electricity_demand_per_capita[
-        (ember_electricity_demand_per_capita["ISO 3 code"] == alpha_3_code)
-        & (ember_electricity_demand_per_capita["Year"].isin(years_of_interest))
+        ember_electricity_demand_per_capita["ISO 3 code"] == iso_alpha_3_code
     ]
 
     # Convert to a Series with years as index, convert MWh to kWh, and
@@ -120,13 +122,11 @@ def extract_electricity_demand_per_capita(
     world_bank_electricity_demand_per_capita = (
         world_bank_electricity_demand_per_capita[
             world_bank_electricity_demand_per_capita["Country Code"]
-            == alpha_3_code
+            == iso_alpha_3_code
         ]
         .iloc[
             0,
-            world_bank_electricity_demand_per_capita.columns.isin(
-                [str(year) for year in years_of_interest]
-            ),
+            world_bank_electricity_demand_per_capita.columns.str.isdigit(),
         ]
         .dropna()
     )
@@ -149,13 +149,98 @@ def extract_electricity_demand_per_capita(
     ).fillna(ember_electricity_demand_per_capita)
 
 
+def get_future_electricity_demand_per_capita(
+    iso_alpha_3_code: str,
+    scenario: str,
+    last_historical_value: float,
+    future_years: list[int],
+) -> pandas.Series:
+    """
+    Get the future electricity demand per capita.
+
+    Parameters
+    ----------
+    iso_alpha_3_code : str
+        The ISO alpha-3 code of the country.
+    scenario : str
+        The scenario of interest.
+    last_historical_value : float
+        The last historical value of the electricity demand per capita.
+    future_years : list[int]
+        The list of future years where the electricity demand per capita
+        is to be calculated.
+
+    Returns
+    -------
+    pandas.Series
+        The future electricity demand per capita.
+
+    Raises
+    ------
+    ValueError
+        If there is not exactly one row for the region and scenario in
+        the annual growth rates data.
+    """
+    # Define the file path of the annual growth rates of future
+    # electricity demand per capita.
+    file_path = os.path.join(
+        utils.directories.read_folders_structure()[
+            "annual_electricity_demand_per_capita_folder"
+        ],
+        "manually_downloaded_data",
+        "IAM_electricity_demand_per_capita.xlsx",
+    )
+
+    # Read the annual growth rates.
+    annual_growth_rate = pandas.read_excel(
+        file_path,
+        sheet_name="data",
+        index_col=0,
+    )
+
+    # Get the code of the region that includes the country.
+    region_code = utils.scenarios.get_iam_region(iso_alpha_3_code)
+
+    # Extract the annual growth rates of the electricity demand per
+    # capita for the region and scenario of interest.
+    annual_growth_rate = annual_growth_rate[
+        (annual_growth_rate["Region"] == region_code)
+        & (annual_growth_rate["Scenario"] == scenario)
+    ]
+
+    # Check that there is only one row.
+    if len(annual_growth_rate) != 1:
+        raise ValueError(
+            f"Expected one row for region {region_code} and scenario "
+            f"{scenario}, but got {len(annual_growth_rate)}."
+        )
+
+    # Convert to a Series with years as index by selecting only the
+    # columns that are digits and dropping NaN values.
+    annual_growth_rate = annual_growth_rate.iloc[
+        0,
+        annual_growth_rate.columns.astype(str).str.isdigit(),
+    ].dropna()
+
+    # Calculate the future electricity demand per capita by applying
+    # the annual growth rates to the last historical value.
+    return utils.scenarios.calculate_values_from_growth_rate(
+        last_historical_value,
+        future_years,
+        annual_growth_rate,
+    )
+
+
 def run_data_retrieval(
     code: str | None,
     file: str | None,
     year: int | None,
+    start_year: int | None,
+    end_year: int | None,
+    scenario: str | None,
 ) -> None:
     """
-    Download and extract GDP data.
+    Download and extract annual electricity demand per capita.
 
     This function downloads the annual electricity demand data from
     Ember and extracts the electricity data for the countries and
@@ -186,82 +271,218 @@ def run_data_retrieval(
     # Get the list of codes of the countries and subdivisions.
     codes = utils.entities.check_and_get_codes(code=code, file_path=file)
 
+    # Define the available scenarios.
+    available_scenarios = [
+        "SSP1-Baseline",
+        "SSP1-19",
+        "SSP1-26",
+        "SSP1-34",
+        "SSP1-45",
+        "SSP2-Baseline",
+        "SSP2-19",
+        "SSP2-26",
+        "SSP2-34",
+        "SSP2-45",
+        "SSP2-60",
+        "SSP3-Baseline",
+        "SSP3-34",
+        "SSP3-45",
+        "SSP3-60",
+        "SSP4-Baseline",
+        "SSP4-26",
+        "SSP4-34",
+        "SSP4-45",
+        "SSP4-60",
+        "SSP5-Baseline",
+        "SSP5-19",
+        "SSP5-26",
+        "SSP5-34",
+        "SSP5-45",
+        "SSP5-60",
+    ]
+
     # Loop over the countries and subdivisions.
     for code in codes:
+        # Get the ISO Alpha-3 code of the country.
+        iso_alpha_3_code = utils.entities.get_iso_alpha_3_code(code)
+
+        # Extract the electricity data for the country.
+        historical_electricity_demand_per_capita = (
+            extract_historical_electricity_demand_per_capita(
+                ember_electricity_demand_per_capita,
+                world_bank_electricity_demand_per_capita,
+                iso_alpha_3_code,
+            )
+        )
+
+        # Get the time zone of the country or subdivision.
+        time_zone = utils.entities.get_time_zone(code)
+
+        # Get the years of available historical data.
+        available_historical_years = (
+            historical_electricity_demand_per_capita.index.tolist()
+        )
+
+        # Get the years of available future data.
+        available_future_years = list(
+            range(max(available_historical_years) + 1, 2101)
+        )
+
+        # Get the list of year and scenario combinations.
+        year_scenario_list = (
+            utils.scenarios.get_year_and_scenario_combinations(
+                year,
+                start_year,
+                end_year,
+                available_historical_years,
+                available_future_years,
+                scenario,
+                available_scenarios,
+            )
+        )
+
         # Define the file path of the population density data for the
         # country or subdivision.
-        file_path = os.path.join(result_directory, f"{code}.parquet")
+        file_path_without_ext = os.path.join(result_directory, code)
 
-        if not os.path.exists(file_path):
-            logging.info(f"Extracting annual electricity data of {code}.")
+        # Get the selcted historical years.
+        selected_historical_years = [
+            year for year, scenario in year_scenario_list if scenario is None
+        ]
 
-            if year is not None:
-                # If the year is provided, use it.
-                years = [year]
-            else:
-                # Get the years of available data for the country or
-                # subdivision.
-                years = utils.entities.get_available_years(code)
+        # Get the selected future years.
+        selected_future_years = [
+            year
+            for year, scenario in year_scenario_list
+            if scenario is not None
+        ]
 
-            # Get the ISO Alpha-3 code of the country.
-            iso_alpha_3_code = utils.entities.get_iso_alpha_3_code(code)
+        # Get the selected scenarios.
+        selected_scenarios = list(
+            set(
+                [
+                    scenario
+                    for year, scenario in year_scenario_list
+                    if scenario is not None
+                ]
+            )
+        )
 
-            # Extract the electricity data for the country and years of
-            # interest.
-            electricity_demand_per_capita = (
-                extract_electricity_demand_per_capita(
-                    iso_alpha_3_code,
-                    years,
-                    ember_electricity_demand_per_capita,
-                    world_bank_electricity_demand_per_capita,
+        if (
+            not os.path.exists(file_path_without_ext + ".parquet")
+            or not os.path.exists(file_path_without_ext + ".csv")
+        ) and selected_historical_years:
+            logging.info(
+                f"Extracting historical annual electricity per capita "
+                f"for {code}."
+            )
+
+            # Extract the respective electricity demand per capita.
+            selected_historical_electricity_demand_per_capita = (
+                historical_electricity_demand_per_capita[
+                    historical_electricity_demand_per_capita.index.isin(
+                        selected_historical_years
+                    )
+                ]
+            )
+
+            # Convert the historical electricity demand per capita from
+            # yearly to hourly values.
+            selected_historical_electricity_demand_per_capita = (
+                utils.time_series.convert_from_yearly_to_hourly(
+                    selected_historical_electricity_demand_per_capita,
+                    time_zone,
                 )
             )
 
-            # Get the time zone of the country.
-            time_zone = utils.entities.get_time_zone(code)
-
-            # Define a new index with hourly frequency in the local time
-            # zone.
-            index = pandas.date_range(
-                start=(
-                    f"{str(electricity_demand_per_capita.index.min())}-01-01"
-                ),
-                end=(
-                    f"{str(electricity_demand_per_capita.index.max())}-12-31 "
-                    "23:00:00"
-                ),
-                freq="h",
-                tz=time_zone,
+            # Clean the time series.
+            selected_historical_electricity_demand_per_capita = (
+                utils.time_series.clean_data(
+                    selected_historical_electricity_demand_per_capita,
+                    "Annual electricity demand per capita (kWh/person)",
+                )
             )
-
-            electricity_demand_per_capita = pandas.Series(
-                index.year.map(electricity_demand_per_capita), index=index
-            )
-
-            # Convert the index to UTC and remove the time zone
-            # information.
-            electricity_demand_per_capita.index = (
-                electricity_demand_per_capita.index.tz_convert(
-                    "UTC"
-                ).tz_localize(None)
-            )
-
-            # Set the index name.
-            electricity_demand_per_capita.index.name = "Time (UTC)"
 
             # Save the electricity demand to parquet and CSV files.
-            electricity_demand_per_capita.to_parquet(file_path)
-            electricity_demand_per_capita.to_csv(
-                file_path.replace(".parquet", ".csv")
+            selected_historical_electricity_demand_per_capita.to_frame().to_parquet(
+                file_path_without_ext + ".parquet"
+            )
+            selected_historical_electricity_demand_per_capita.to_csv(
+                file_path_without_ext + ".csv",
             )
 
             logging.info(
-                f"Annual electricity data of {code} has been extracted and "
-                "saved successfully."
+                f"Historical annual electricity per capita for {code} has "
+                "been extracted and saved successfully."
             )
 
         else:
             logging.info(
-                f"Annual electricity data of {code} already exists. Skipping "
-                "download."
+                f"Historical annual electricity data of {code} already "
+                "exists. Skipping retrieval."
             )
+
+        if selected_future_years:
+            for scenario in selected_scenarios:
+                if not os.path.exists(
+                    f"{file_path_without_ext}_{scenario}.parquet"
+                ) or not os.path.exists(
+                    f"{file_path_without_ext}_{scenario}.csv"
+                ):
+                    logging.info(
+                        f"Extracting future annual electricity per capita for "
+                        f"{code} and {scenario}."
+                    )
+
+                    # Calculate the future electricity demand per
+                    # capita.
+                    future_electricity_demand_per_capita = (
+                        get_future_electricity_demand_per_capita(
+                            iso_alpha_3_code,
+                            scenario,
+                            historical_electricity_demand_per_capita.loc[
+                                max(available_historical_years)
+                            ],
+                            available_future_years,
+                        )
+                    )
+
+                    # Extract the electricity demand per capita for
+                    # the selected future years.
+                    selected_future_electricity_demand_per_capita = (
+                        future_electricity_demand_per_capita[
+                            future_electricity_demand_per_capita.index.isin(
+                                selected_future_years
+                            )
+                        ]
+                    )
+
+                    # Convert the future electricity demand per
+                    # capita from yearly to hourly values.
+                    selected_future_electricity_demand_per_capita = (
+                        utils.time_series.convert_from_yearly_to_hourly(
+                            selected_future_electricity_demand_per_capita,
+                            time_zone,
+                        )
+                    )
+
+                    # Clean the time series.
+                    selected_future_electricity_demand_per_capita = utils.time_series.clean_data(
+                        selected_future_electricity_demand_per_capita,
+                        "Annual electricity demand per capita (kWh/person)",
+                    )
+
+                    # Save the electricity demand to parquet and CSV
+                    # files.
+                    selected_future_electricity_demand_per_capita.to_frame().to_parquet(
+                        f"{file_path_without_ext}_{scenario}.parquet"
+                    )
+                    selected_future_electricity_demand_per_capita.to_csv(
+                        f"{file_path_without_ext}_{scenario}.csv",
+                    )
+
+                else:
+                    logging.info(
+                        f"Future annual electricity data of {code} for "
+                        f"{scenario} already exists. Skipping retrieval."
+                    )

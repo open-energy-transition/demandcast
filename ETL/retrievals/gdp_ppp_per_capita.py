@@ -92,7 +92,7 @@ def _read_gdp_ppp_per_capita(
     file_path = os.path.join(
         result_directory,
         "downloaded_gdp_ppp_per_capita",
-        f"GDP{year_scenario}.tif",
+        f"GDP{year_scenario.lower()}.tif",
     )
 
     # Read the GDP PPP per capita data.
@@ -110,12 +110,12 @@ def _read_gdp_ppp_per_capita(
 
 
 def run_data_retrieval(
+    code: str | None,
+    file: str | None,
     year: int | None,
     start_year: int | None,
     end_year: int | None,
-    ssp: int | None,
-    code: str | None,
-    file: str | None,
+    scenario: str | None,
 ):
     """
     Download and extract GDP PPP per capita data.
@@ -151,15 +151,24 @@ def run_data_retrieval(
     # Download the GDP PPP per capita data from Zenodo.
     _download_gdp_ppp_per_capita(result_directory)
 
-    # Define the available years for the GDP data.
-    available_years = list(range(2000, 2021)) + list(range(2025, 2101, 5))
+    # Define the available years for historical GDP data.
+    available_historical_years = list(range(2000, 2021))
 
-    # Define the available SSPs for the GDP data.
-    available_ssps = [1, 2, 3, 4, 5]
+    # Define the available years for future GDP data.
+    available_future_years = list(range(2025, 2101, 5))
 
-    # Get the list of years and SSP combinations.
+    # Define the available scenarios for the GDP data.
+    available_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
+
+    # Get the list of year and scenario combinations.
     year_scenario_list = utils.scenarios.get_year_and_scenario_combinations(
-        year, start_year, end_year, ssp, available_years, available_ssps
+        year,
+        start_year,
+        end_year,
+        available_historical_years,
+        available_future_years,
+        scenario,
+        available_scenarios,
     )
 
     # Get the list of codes of the countries and subdivisions of
@@ -170,7 +179,7 @@ def run_data_retrieval(
     for year, scenario in year_scenario_list:
         logging.info(
             f"Processing GDP PPP per capita for the year {year}"
-            + (f" and {scenario.upper()}." if scenario else ".")
+            + (f" and {scenario}." if scenario else ".")
         )
 
         # Define the year and scenario string for the file name.

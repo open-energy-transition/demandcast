@@ -193,8 +193,8 @@ def _read_population(
         file_path = os.path.join(
             result_directory,
             "downloaded_population",
-            scenario.upper(),
-            f"{scenario.upper()}_{year}.tif",
+            scenario,
+            f"{scenario}_{year}.tif",
         )
 
     # Download the population data.
@@ -226,12 +226,12 @@ def _read_population(
 
 
 def run_data_retrieval(
+    code: str | None,
+    file: str | None,
     year: int | None,
     start_year: int | None,
     end_year: int | None,
-    ssp: int | None,
-    code: str | None,
-    file: str | None,
+    scenario: str | None,
 ) -> None:
     """
     Download and extract the population data.
@@ -264,15 +264,24 @@ def run_data_retrieval(
     ]
     os.makedirs(result_directory, exist_ok=True)
 
-    # Define the available years for the population data.
-    available_years = list(range(2000, 2101, 5))
+    # Define the available years for the historic population data.
+    available_historical_years = list(range(2000, 2021, 5))
+
+    # Define the available years for the future population data.
+    available_future_years = list(range(2025, 2101, 5))
 
     # Define the available SSPs for the population data.
-    available_ssps = [1, 2, 3, 4, 5]
+    available_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
 
-    # Get the list of years and SSP combinations.
+    # Get the list of year and scenario combinations.
     year_scenario_list = utils.scenarios.get_year_and_scenario_combinations(
-        year, start_year, end_year, ssp, available_years, available_ssps
+        year,
+        start_year,
+        end_year,
+        available_historical_years,
+        available_future_years,
+        scenario,
+        available_scenarios,
     )
 
     # Get the list of codes of the countries and subdivisions of
@@ -283,7 +292,7 @@ def run_data_retrieval(
     for year, scenario in year_scenario_list:
         logging.info(
             f"Processing population for the year {year}"
-            + (f" and {scenario.upper()}." if scenario else ".")
+            + (f" and {scenario}." if scenario else ".")
         )
 
         if year <= 2020:
