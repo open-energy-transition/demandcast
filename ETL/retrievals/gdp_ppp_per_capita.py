@@ -4,14 +4,13 @@ License: AGPL-3.0.
 
 Description:
 
-    This module downloads GPD PPP per capita from a Zenodo repository.
-    It then extracts the GDP data for the countries and subdivisions of
-    interest at a 0.25-degree resolution, and saves it into NetCDF
-    files.
+    This module includes functions to download and extract GDP PPP per
+    capita data from a Zenodo repository. The GDP data is extracted for
+    the countries and subdivisions of interest at a 0.25-degree
+    resolution and saved into NetCDF files.
 
     Source: https://zenodo.org/records/7898409
     Source: https://doi.org/10.1038/s41597-022-01300-x
-
 """
 
 import io
@@ -39,9 +38,7 @@ def _download_gdp_ppp_per_capita(result_directory: str) -> None:
         The directory where the GDP PPP per capita data will be saved.
     """
     # Check if the file already exists.
-    if not os.path.exists(
-        os.path.join(result_directory, "downloaded_gdp_ppp_per_capita")
-    ):
+    if not os.path.exists(os.path.join(result_directory, "downloads")):
         logging.info("Downloading GDP PPP per capita data from Zenodo.")
 
         # Define the URL to download the GDP PPP per capita data.
@@ -62,7 +59,7 @@ def _download_gdp_ppp_per_capita(result_directory: str) -> None:
 
         os.rename(
             os.path.join(result_directory, "025d"),
-            os.path.join(result_directory, "downloaded_gdp_ppp_per_capita"),
+            os.path.join(result_directory, "downloads"),
         )
     else:
         logging.info(
@@ -91,14 +88,14 @@ def _read_gdp_ppp_per_capita(
     # Define the file path of the GDP PPP per capita data.
     file_path = os.path.join(
         result_directory,
-        "downloaded_gdp_ppp_per_capita",
+        "downloads",
         f"GDP{year_scenario.lower()}.tif",
     )
 
     # Read the GDP PPP per capita data.
     global_gdp_ppp_per_capita = xarray.open_dataarray(file_path)
 
-    # Harmonize the coordinates of the GDP data.
+    # Harmonize the coordinates of the GDP PPP per capita data.
     global_gdp_ppp_per_capita = utils.geospatial.harmonize_coords(
         global_gdp_ppp_per_capita
     )
@@ -126,21 +123,21 @@ def run_data_retrieval(
 
     Parameters
     ----------
-    year : int | None
-        The year of the GDP PPP per capita data to be downloaded.
-    start_year : int | None
-        The start year of the range of GDP PPP per capita data to be
-        downloaded.
-    end_year : int | None
-        The end year of the range of GDP PPP per capita data to be
-        downloaded.
-    ssp : int | None
-        The Shared Socioeconomic Pathway (SSP) scenario.
     code : str | None
         The code of the country or subdivision of interest.
     file : str | None
         The file path containing the codes of the countries or
         subdivisions of interest.
+    year : int | None
+        The year of the GDP PPP per capita data to be retrieved.
+    start_year : int | None
+        The start year of the range of GDP PPP per capita data to be
+        retrieved.
+    end_year : int | None
+        The end year of the range of GDP PPP per capita data to be
+        retrieved.
+    scenario : str | None
+        The scenario of the GDP PPP per capita data to be retrieved.
     """
     # Get the directory to store the population density data.
     result_directory = utils.directories.read_folders_structure()[
@@ -178,7 +175,7 @@ def run_data_retrieval(
     # Loop over the years and scenarios.
     for year, scenario in year_scenario_list:
         logging.info(
-            f"Processing GDP PPP per capita for the year {year}"
+            f"Processing GDP PPP per capita data for the year {year}"
             + (f" and {scenario}." if scenario else ".")
         )
 
@@ -200,7 +197,7 @@ def run_data_retrieval(
             )
 
             if not os.path.exists(file_path):
-                logging.info(f"Extracting GDP PPP per capita for {code}.")
+                logging.info(f"Extracting GDP PPP per capita data for {code}.")
 
                 # Get the shape of the country or subdivision.
                 entity_shape = utils.shapes.get_entity_shape(
@@ -213,31 +210,31 @@ def run_data_retrieval(
                     entity_shape
                 )  # West, South, East, North
 
-                # Select the GDP data for the country or subdivision of
-                # interest.
+                # Select the GDP per capita data within the bounds
+                # of the country or subdivision.
                 gdp_ppp_per_capita = global_gdp_ppp_per_capita.sel(
                     x=slice(entity_bounds[0], entity_bounds[2]),
                     y=slice(entity_bounds[1], entity_bounds[3]),
                 )
 
-                # Save the GDP data.
+                # Save the GDP PPP per capita data to a NetCDF file.
                 gdp_ppp_per_capita.to_netcdf(file_path)
 
                 make_plot = False
                 if make_plot:
-                    # Make a plot of the GDP data.
+                    # Make a plot of the GDP PPP per capita data.
                     utils.figures.simple_plot(
                         gdp_ppp_per_capita,
-                        f"gdp_{code}_{year_scenario}",
+                        f"gdp_ppp_per_capita_{code}_{year_scenario}",
                     )
 
                 logging.info(
-                    f"GDP PPP per capita for {code} has been "
+                    f"GDP PPP per capita data for {code} has been "
                     "successfully extracted and saved."
                 )
 
             else:
                 logging.info(
-                    f"GDP PPP per capita for {code} already exists. "
+                    f"GDP PPP per capita data for {code} already exists. "
                     "Skipping extraction."
                 )

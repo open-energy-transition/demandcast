@@ -4,14 +4,16 @@ License: AGPL-3.0.
 
 Description:
 
-    This script downloads annual electricity demand data from Ember. It
-    then extracts the electricity data for the countries and
-    subdivisions of interest and saves it into CSV and Parquet files.
-    The year of the electricity data can be specified as a command line
-    argument. If no year is provided, the script will use all the years
-    of available electricity demand data.
+    This module includes functions to download and extract historical
+    annual electricity demand per capita data from Ember and the World
+    Bank, and to calculate future annual electricity demand per capita
+    based on growth rates from the IAMC scenarios. The electricity
+    demand data is extracted for the countries and subdivisions of
+    interest and saved into CSV and Parquet files.
 
     Source: https://ember-energy.org/data/yearly-electricity-data/
+    Source: https://data.worldbank.org/indicator/EG.USE.ELEC.KH.PC
+    Source: https://tntcat.iiasa.ac.at/SspDb
 """
 
 import logging
@@ -36,7 +38,9 @@ def download_electricity_demand_per_capita_from_ember() -> pandas.DataFrame:
     pandas.DataFrame
         The electricity demand per capita data from Ember.
     """
-    # Download the data from the Ember dataset.
+    logging.info("Downloading electricity demand per capita data from Ember.")
+
+    # Download the electricity demand dataset from Ember.
     electricity_demand_dataset = pandas.read_csv(
         "https://storage.googleapis.com/emb-prod-bkt-publicdata/"
         "public-downloads/yearly_full_release_long_format.csv"
@@ -59,6 +63,11 @@ def download_electricity_demand_per_capita_from_world_bank() -> (
     pandas.DataFrame
         The electricity demand per capita from the World Bank.
     """
+    logging.info(
+        "Downloading electricity demand per capita data from the World Bank."
+    )
+
+    # Define the URL to download the electricity demand per capita data.
     url = (
         "https://api.worldbank.org/v2/en/indicator/"
         "EG.USE.ELEC.KH.PC?downloadformat=csv"
@@ -105,20 +114,19 @@ def extract_historical_electricity_demand_per_capita(
         The electricity demand per capita.
     """
     # Extract the electricity demand per capita from Ember for the
-    # country and for the years of interest.
+    # country of interest.
     ember_electricity_demand_per_capita = ember_electricity_demand_per_capita[
         ember_electricity_demand_per_capita["ISO 3 code"] == iso_alpha_3_code
     ]
 
-    # Convert to a Series with years as index, convert MWh to kWh, and
-    # return it.
+    # Convert to a Series with years as index and convert MWh to kWh.
     ember_electricity_demand_per_capita = pandas.Series(
         ember_electricity_demand_per_capita["Value"].to_numpy() * 1000,
         index=ember_electricity_demand_per_capita["Year"],
     )
 
     # Extract the electricity demand per capita from the World Bank for
-    # the country and for the years of interest.
+    # the country of interest.
     world_bank_electricity_demand_per_capita = (
         world_bank_electricity_demand_per_capita[
             world_bank_electricity_demand_per_capita["Country Code"]
@@ -149,7 +157,7 @@ def extract_historical_electricity_demand_per_capita(
     ).fillna(ember_electricity_demand_per_capita)
 
 
-def get_future_electricity_demand_per_capita(
+def _get_future_electricity_demand_per_capita(
     iso_alpha_3_code: str,
     scenario: str,
     last_historical_value: float,
@@ -187,8 +195,8 @@ def get_future_electricity_demand_per_capita(
         utils.directories.read_folders_structure()[
             "annual_electricity_demand_per_capita_folder"
         ],
-        "manually_downloaded_data",
-        "IAM_electricity_demand_per_capita.xlsx",
+        "manual_downloads",
+        "IAM_annual_electricity_per_capita_growth.xlsx",
     )
 
     # Read the annual growth rates.
@@ -242,23 +250,40 @@ def run_data_retrieval(
     """
     Download and extract annual electricity demand per capita.
 
-    This function downloads the annual electricity demand data from
-    Ember and extracts the electricity data for the countries and
-    subdivisions of interest. The data is saved into CSV and Parquet
-    files.
+    This function downloads historical electricity demand per capita
+    data from Ember and the World Bank, extracts the electricity data
+    for the countries and subdivisions of interest, calculates future
+    electricity demand per capita based on growth rates from the IAMC
+    scenarios, and saves it into CSV and Parquet files.
 
     Parameters
     ----------
-    args : argparse.Namespace
-        The command line arguments.
+    code : str | None
+        The code of the country or subdivision of interest.
+    file : str | None
+        The file path containing the codes of the countries or
+        subdivisions of interest.
+    year : int | None
+        The year of the electricity demand per capita data to be
+        retrieved.
+    start_year : int | None
+        The start year of the range of electricity demand per capita
+        data to be retrieved.
+    end_year : int | None
+        The end year of the range of electricity demand per capita
+        data to be retrieved.
+    scenario : str | None
+        The scenario of the electricity demand per capita data to be
+        retrieved.
     """
-    # Get the directory to store the population density data.
+    # Get the directory to store the annual electricity demand per
+    # capita data.
     result_directory = utils.directories.read_folders_structure()[
         "annual_electricity_demand_per_capita_folder"
     ]
     os.makedirs(result_directory, exist_ok=True)
 
-    # Download the electricity demand from Ember.
+    # Download the electricity demand per capita from Ember.
     ember_electricity_demand_per_capita = (
         download_electricity_demand_per_capita_from_ember()
     )
@@ -341,8 +366,8 @@ def run_data_retrieval(
             )
         )
 
-        # Define the file path of the population density data for the
-        # country or subdivision.
+        # Define the file path of the electricity demand per capita
+        # data of the country or subdivision.
         file_path_without_ext = os.path.join(result_directory, code)
 
         # Get the selcted historical years.
@@ -373,7 +398,7 @@ def run_data_retrieval(
             or not os.path.exists(file_path_without_ext + ".csv")
         ) and selected_historical_years:
             logging.info(
-                f"Extracting historical annual electricity per capita "
+                f"Extracting historical annual electricity per capita data "
                 f"for {code}."
             )
 
@@ -386,8 +411,8 @@ def run_data_retrieval(
                 ]
             )
 
-            # Convert the historical electricity demand per capita from
-            # yearly to hourly values.
+            # Convert the historical electricity demand per capita data
+            # from yearly to hourly values.
             selected_historical_electricity_demand_per_capita = (
                 utils.time_series.convert_from_yearly_to_hourly(
                     selected_historical_electricity_demand_per_capita,
@@ -403,7 +428,8 @@ def run_data_retrieval(
                 )
             )
 
-            # Save the electricity demand to parquet and CSV files.
+            # Save the electricity demand per capita data to parquet
+            # and CSV files.
             selected_historical_electricity_demand_per_capita.to_frame().to_parquet(
                 file_path_without_ext + ".parquet"
             )
@@ -412,14 +438,14 @@ def run_data_retrieval(
             )
 
             logging.info(
-                f"Historical annual electricity per capita for {code} has "
-                "been extracted and saved successfully."
+                f"Historical annual electricity per capita data for {code} "
+                "has been extracted and saved successfully."
             )
 
         else:
             logging.info(
-                f"Historical annual electricity data of {code} already "
-                "exists. Skipping retrieval."
+                f"Historical annual electricity per capita data of {code} "
+                "already exists. Skipping retrieval."
             )
 
         if selected_future_years:
@@ -430,14 +456,14 @@ def run_data_retrieval(
                     f"{file_path_without_ext}_{scenario}.csv"
                 ):
                     logging.info(
-                        f"Extracting future annual electricity per capita for "
-                        f"{code} and {scenario}."
+                        f"Extracting future annual electricity demand per "
+                        f"capita data for {code} and {scenario}."
                     )
 
                     # Calculate the future electricity demand per
                     # capita.
                     future_electricity_demand_per_capita = (
-                        get_future_electricity_demand_per_capita(
+                        _get_future_electricity_demand_per_capita(
                             iso_alpha_3_code,
                             scenario,
                             historical_electricity_demand_per_capita.loc[
@@ -457,8 +483,8 @@ def run_data_retrieval(
                         ]
                     )
 
-                    # Convert the future electricity demand per
-                    # capita from yearly to hourly values.
+                    # Convert the future electricity demand per capita
+                    # data from yearly to hourly values.
                     selected_future_electricity_demand_per_capita = (
                         utils.time_series.convert_from_yearly_to_hourly(
                             selected_future_electricity_demand_per_capita,
@@ -472,8 +498,8 @@ def run_data_retrieval(
                         "Annual electricity demand per capita (kWh/person)",
                     )
 
-                    # Save the electricity demand to parquet and CSV
-                    # files.
+                    # Save the electricity demand per capita data to
+                    # parquet and CSV files.
                     selected_future_electricity_demand_per_capita.to_frame().to_parquet(
                         f"{file_path_without_ext}_{scenario}.parquet"
                     )
@@ -483,6 +509,7 @@ def run_data_retrieval(
 
                 else:
                     logging.info(
-                        f"Future annual electricity data of {code} for "
-                        f"{scenario} already exists. Skipping retrieval."
+                        f"Future annual electricity demand per capita data "
+                        f"for {code} and {scenario} already exists. "
+                        "Skipping retrieval."
                     )

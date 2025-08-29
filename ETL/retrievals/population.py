@@ -4,15 +4,12 @@ License: AGPL-3.0.
 
 Description:
 
-    This module downloads population density data from SEDAC
-    (Socioeconomic Data and Applications Center). It then extracts the
-    population density data for the countries and subdivisions of
-    interest, coarsens the data to a 0.25-degree resolution, and saves
-    it into NetCDF files. The country and subdivision code can be
-    specified or a list can be provided as a yaml file. If no file or
-    code is provided, the script will use all available codes. The year
-    of the population density data can be specified as a command line
-    argument.
+    This module includes functions to download population data from
+    SEDAC for historic years (2000-2020) and from Figshare for future
+    years (2025-2100) under different Shared Socioeconomic Pathways
+    (SSPs). It then extracts the population data for the countries and
+    subdivisions of interest at a 0.25-degree resolution, and saves it
+    into NetCDF files.
 
     Source: https://data.ghg.center/sedac-popdensity-yeargrid5yr-v4.11/browseui/#sedac-popdensity-yeargrid5yr-v4.11/
     Source: https://doi.org/10.6084/m9.figshare.19608594
@@ -40,6 +37,8 @@ def _download_historic_population(result_directory: str, year: int) -> None:
 
     Parameters
     ----------
+    result_directory : str
+        The directory where the population data will be saved.
     year : int
         The year of the population data to be downloaded.
     """
@@ -49,14 +48,10 @@ def _download_historic_population(result_directory: str, year: int) -> None:
     )
 
     # Define the directory to save the population data.
-    os.makedirs(
-        os.path.join(result_directory, "downloaded_population"), exist_ok=True
-    )
+    os.makedirs(os.path.join(result_directory, "downloads"), exist_ok=True)
 
     # Define the file path for the population data.
-    file_path = os.path.join(
-        result_directory, "downloaded_population", f"{year}.tif"
-    )
+    file_path = os.path.join(result_directory, "downloads", f"{year}.tif")
 
     if not os.path.exists(file_path):
         logging.info(
@@ -91,46 +86,43 @@ def _download_future_population(result_directory: str, scenario: str) -> None:
 
     Parameters
     ----------
-    year : int
-        The year of the population data to be downloaded.
-    ssp : str
-        The Shared Socioeconomic Pathway (SSP) scenario.
+    result_directory : str
+        The directory where the population data will be saved.
+    scenario : str
+        The scenario of the population data to be downloaded.
     """
-    assert scenario in ["ssp1", "ssp2", "ssp3", "ssp4", "ssp5"], (
-        "ssp must be one of the following: ['ssp1', 'ssp2', 'ssp3', "
-        "'ssp4', 'ssp5']."
+    assert scenario in ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"], (
+        "ssp must be one of the following: ['SSP1', 'SSP2', 'SSP3', "
+        "'SSP4', 'SSP5']."
     )
 
     # Create the directory to save the population data if it does not
     # already exist.
-    os.makedirs(
-        os.path.join(result_directory, "downloaded_population"), exist_ok=True
-    )
+    os.makedirs(os.path.join(result_directory, "downloads"), exist_ok=True)
 
     # Define the folder name for the population data for the specified
-    # SSP.
+    # scenario.
     folder_name = os.path.join(
         result_directory,
-        "downloaded_population",
-        scenario.upper(),
+        "downloads",
+        scenario,
     )
 
     if not os.path.exists(folder_name):
         logging.info(
-            "Downloading population data from Figshare for "
-            f"{scenario.upper()}."
+            f"Downloading population data from Figshare for {scenario}."
         )
         # Define the URL of the population data.
         match scenario:
-            case "ssp1":
+            case "SSP1":
                 url = "https://figshare.com/ndownloader/files/34829160"
-            case "ssp2":
+            case "SSP2":
                 url = "https://figshare.com/ndownloader/files/34829370"
-            case "ssp3":
+            case "SSP3":
                 url = "https://figshare.com/ndownloader/files/45894312"
-            case "ssp4":
+            case "SSP4":
                 url = "https://figshare.com/ndownloader/files/34829385"
-            case "ssp5":
+            case "SSP5":
                 url = "https://figshare.com/ndownloader/files/34829391"
 
         # Fetch the data from the URL.
@@ -142,22 +134,18 @@ def _download_future_population(result_directory: str, scenario: str) -> None:
         # Extract all population data from the response.
         with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
             archive.extractall(
-                path=os.path.join(result_directory, "downloaded_population")
+                path=os.path.join(result_directory, "downloads")
             )
 
-        if scenario == "ssp1":
+        if scenario == "SSP1":
             # Rename the extracted folder for SSP1 because of a typo.
             os.rename(
-                os.path.join(
-                    result_directory, "downloaded_population", "SPP1"
-                ),
-                os.path.join(
-                    result_directory, "downloaded_population", "SSP1"
-                ),
+                os.path.join(result_directory, "downloads", "SPP1"),
+                os.path.join(result_directory, "downloads", "SSP1"),
             )
     else:
         logging.info(
-            f"Population data for {scenario.upper()} already exists. "
+            f"Population data for {scenario} already exists. "
             "Skipping download."
         )
 
@@ -175,7 +163,8 @@ def _read_population(
     year : int
         The year of the population data to be read.
     scenario : str | None
-        The Shared Socioeconomic Pathway (SSP) scenario.
+        The scenario of the population data to be read. If None, the
+        historic population data will be read.
 
     Returns
     -------
@@ -185,14 +174,12 @@ def _read_population(
     # Define the file path of the population data.
     if scenario is None:
         # For historic years, the file name is just the year.
-        file_path = os.path.join(
-            result_directory, "downloaded_population", f"{year}.tif"
-        )
+        file_path = os.path.join(result_directory, "downloads", f"{year}.tif")
     else:
-        # For future years, the file name includes the SSP scenario.
+        # For future years, the file name includes the scenario.
         file_path = os.path.join(
             result_directory,
-            "downloaded_population",
+            "downloads",
             scenario,
             f"{scenario}_{year}.tif",
         )
@@ -201,8 +188,8 @@ def _read_population(
     global_population = xarray.open_dataarray(file_path, engine="rasterio")
 
     if scenario is not None:
-        # For population data from SSP scenarios, the coordinates
-        # need to be converted to standard longitude and latitude.
+        # For future population data, the coordinates need to be
+        # converted to standard longitude and latitude.
         global_population["x"] = (
             global_population["x"] - global_population["x"].min()
         ) / (global_population["x"].max() - global_population["x"].min()) * (
@@ -217,12 +204,8 @@ def _read_population(
     # Harmonize the population data.
     global_population = utils.geospatial.harmonize_coords(global_population)
 
-    # Clean the dataset.
-    global_population = utils.geospatial.clean_raster(
-        global_population, "population"
-    )
-
-    return global_population
+    # Clean the dataset and return it.
+    return utils.geospatial.clean_raster(global_population, "population")
 
 
 def run_data_retrieval(
@@ -234,31 +217,32 @@ def run_data_retrieval(
     scenario: str | None,
 ) -> None:
     """
-    Download and extract the population data.
+    Download and extract population data.
 
-    This function downloads population data from SEDAC, extracts the
-    population data for the countries and subdivisions of interest,
-    coarsens the data to a 0.25-degree resolution, and saves it into
-    NetCDF files.
+    This function downloads population data from SEDAC for historic
+    years (2000-2020) and from Figshare for future years (2025-2100)
+    under different Shared Socioeconomic Pathways (SSPs). It then
+    extracts the population data for the countries and subdivisions of
+    interest at a 0.25-degree resolution, and saves it into NetCDF
+    files.
 
     Parameters
     ----------
-    year : int | None
-        The year of the population data to be downloaded.
-    start_year : int | None
-        The start year of the range of population data to be
-        downloaded.
-    end_year : int | None
-        The end year of the range of population data to be downloaded.
-    ssp : int | None
-        The Shared Socioeconomic Pathway (SSP) scenario.
     code : str | None
         The code of the country or subdivision of interest.
     file : str | None
         The path to the file containing the list of codes of the
         countries and subdivisions of interest.
+    year : int | None
+        The year of the population data to be retrieved.
+    start_year : int | None
+        The start year of the range of population data to be retrieved.
+    end_year : int | None
+        The end year of the range of population data to be retrieved.
+    scenario : str | None
+        The scenario of the population data to be retrieved.
     """
-    # Get the directory to store the population density data.
+    # Get the directory to store the population data.
     result_directory = utils.directories.read_folders_structure()[
         "population_folder"
     ]
@@ -288,10 +272,10 @@ def run_data_retrieval(
     # interest.
     codes = utils.entities.check_and_get_codes(code=code, file_path=file)
 
-    # Loop over the years.
+    # Loop over the years and scenarios.
     for year, scenario in year_scenario_list:
         logging.info(
-            f"Processing population for the year {year}"
+            f"Processing population data for the year {year}"
             + (f" and {scenario}." if scenario else ".")
         )
 
@@ -305,19 +289,19 @@ def run_data_retrieval(
         # Define the year and scenario string for the file name.
         year_scenario = f"{year}_{scenario}" if scenario else str(year)
 
-        # Read the GDP data for the specified year and SSP.
+        # Read the population data for the specified year and scenario.
         global_population = _read_population(result_directory, year, scenario)
 
         # Loop over the countries and subdivisions of interest.
         for code in codes:
-            # Define the file path of the population density data for
-            # the country or subdivision.
+            # Define the file path of the population for the country or
+            # subdivision.
             file_path = os.path.join(
                 result_directory, f"{code}_0.25_deg_{year_scenario}.nc"
             )
 
             if not os.path.exists(file_path):
-                logging.info(f"Extracting population density data of {code}.")
+                logging.info(f"Extracting population data for {code}.")
 
                 # Get the shape of the country or subdivision.
                 entity_shape = utils.shapes.get_entity_shape(
@@ -330,37 +314,37 @@ def run_data_retrieval(
                     entity_shape
                 )  # West, South, East, North
 
-                # Select the population density data in the bounding box
-                # of the country or subdivision of interest.
+                # Select the population data within the bounds of the
+                # country or subdivision.
                 population = global_population.sel(
                     x=slice(entity_bounds[0], entity_bounds[2]),
                     y=slice(entity_bounds[1], entity_bounds[3]),
                 )
 
-                # Coarsen the population density data to the same
-                # resolution as the weather data.
+                # Coarsen the population to the same resolution as the
+                # weather data.
                 population = utils.geospatial.coarsen(
                     population, entity_bounds
                 )
 
-                # Save the population density data.
+                # Save the population data to a NetCDF file.
                 population.to_netcdf(file_path)
 
                 make_plot = False
                 if make_plot:
-                    # Make a plot of the population density data.
+                    # Make a plot of the population data.
                     utils.figures.simple_plot(
                         population,
-                        f"population_density_{code}_{year_scenario}",
+                        f"population_{code}_{year_scenario}",
                     )
 
                 logging.info(
-                    f"Population density data for {code} has been "
-                    "successfully extracted and saved."
+                    f"Population data for {code} has been successfully "
+                    "extracted and saved."
                 )
 
             else:
                 logging.info(
-                    f"Population density data for {code} already exists. "
+                    f"Population data for {code} already exists. "
                     "Skipping extraction."
                 )
