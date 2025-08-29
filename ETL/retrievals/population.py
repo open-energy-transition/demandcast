@@ -31,13 +31,15 @@ import utils.shapes
 import xarray
 
 
-def _download_historic_population(result_directory: str, year: int) -> None:
+def _download_historic_population(
+    downloaded_data_directory: str, year: int
+) -> None:
     """
     Download population data from SEDAC for historic years (2000-2020).
 
     Parameters
     ----------
-    result_directory : str
+    downloaded_data_directory : str
         The directory where the population data will be saved.
     year : int
         The year of the population data to be downloaded.
@@ -47,11 +49,8 @@ def _download_historic_population(result_directory: str, year: int) -> None:
         f"{list(range(2000, 2021, 5))}."
     )
 
-    # Define the directory to save the population data.
-    os.makedirs(os.path.join(result_directory, "downloads"), exist_ok=True)
-
     # Define the file path for the population data.
-    file_path = os.path.join(result_directory, "downloads", f"{year}.tif")
+    file_path = os.path.join(downloaded_data_directory, f"{year}.tif")
 
     if not os.path.exists(file_path):
         logging.info(
@@ -80,13 +79,15 @@ def _download_historic_population(result_directory: str, year: int) -> None:
         )
 
 
-def _download_future_population(result_directory: str, scenario: str) -> None:
+def _download_future_population(
+    downloaded_data_directory: str, scenario: str
+) -> None:
     """
     Download future population data from Figshare.
 
     Parameters
     ----------
-    result_directory : str
+    downloaded_data_directory : str
         The directory where the population data will be saved.
     scenario : str
         The scenario of the population data to be downloaded.
@@ -96,15 +97,10 @@ def _download_future_population(result_directory: str, scenario: str) -> None:
         "'SSP4', 'SSP5']."
     )
 
-    # Create the directory to save the population data if it does not
-    # already exist.
-    os.makedirs(os.path.join(result_directory, "downloads"), exist_ok=True)
-
     # Define the folder name for the population data for the specified
     # scenario.
     folder_name = os.path.join(
-        result_directory,
-        "downloads",
+        downloaded_data_directory,
         scenario,
     )
 
@@ -133,15 +129,13 @@ def _download_future_population(result_directory: str, scenario: str) -> None:
 
         # Extract all population data from the response.
         with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
-            archive.extractall(
-                path=os.path.join(result_directory, "downloads")
-            )
+            archive.extractall(path=downloaded_data_directory)
 
         if scenario == "SSP1":
             # Rename the extracted folder for SSP1 because of a typo.
             os.rename(
-                os.path.join(result_directory, "downloads", "SPP1"),
-                os.path.join(result_directory, "downloads", "SSP1"),
+                os.path.join(downloaded_data_directory, "SPP1"),
+                os.path.join(downloaded_data_directory, "SSP1"),
             )
     else:
         logging.info(
@@ -248,6 +242,10 @@ def run_data_retrieval(
     ]
     os.makedirs(result_directory, exist_ok=True)
 
+    # Get the directory to store the downloaded population data.
+    downloaded_data_directory = os.path.join(result_directory, "downloads")
+    os.makedirs(downloaded_data_directory, exist_ok=True)
+
     # Define the available years for the historic population data.
     available_historical_years = list(range(2000, 2021, 5))
 
@@ -281,16 +279,18 @@ def run_data_retrieval(
 
         if year <= 2020:
             # Download historic population data.
-            _download_historic_population(result_directory, year)
+            _download_historic_population(downloaded_data_directory, year)
         elif year >= 2025 and scenario is not None:
             # Download future population data.
-            _download_future_population(result_directory, scenario)
+            _download_future_population(downloaded_data_directory, scenario)
 
         # Define the year and scenario string for the file name.
         year_scenario = f"{year}_{scenario}" if scenario else str(year)
 
         # Read the population data for the specified year and scenario.
-        global_population = _read_population(result_directory, year, scenario)
+        global_population = _read_population(
+            downloaded_data_directory, year, scenario
+        )
 
         # Loop over the countries and subdivisions of interest.
         for code in codes:
