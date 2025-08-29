@@ -41,8 +41,10 @@ def test_load_paths():
         absolute_path, "figures"
     )
     assert structure["data_folder"] == os.path.join(absolute_path, "data")
-    assert structure["manually_downloaded_data_folder"] == os.path.join(
-        absolute_path, "data", "manually_downloaded_data"
+    assert structure[
+        "manually_downloaded_electricity_demand_folder"
+    ] == os.path.join(
+        absolute_path, "data", "electricity_demand", "manual_downloads"
     )
     assert structure["electricity_demand_folder"] == os.path.join(
         absolute_path, "data", "electricity_demand"
@@ -51,6 +53,14 @@ def test_load_paths():
         "annual_electricity_demand_per_capita_folder"
     ] == os.path.join(
         absolute_path, "data", "annual_electricity_demand_per_capita"
+    )
+    assert structure[
+        "manually_downloaded_annual_electricity_demand_per_capita_folder"
+    ] == os.path.join(
+        absolute_path,
+        "data",
+        "annual_electricity_demand_per_capita",
+        "manual_downloads",
     )
     assert structure["population_folder"] == os.path.join(
         absolute_path, "data", "population"

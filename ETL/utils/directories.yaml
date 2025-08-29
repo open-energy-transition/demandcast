@@ -6,15 +6,20 @@ electricity_demand_data_sources_folder:
 figures_folder: figures
 shapes_folder: shapes
 data_folder: &data_folder data
-manually_downloaded_data_folder:
-  - *data_folder
-  - manually_downloaded_data
 electricity_demand_folder:
   - *data_folder
   - electricity_demand
+manually_downloaded_electricity_demand_folder:
+  - *data_folder
+  - electricity_demand
+  - manual_downloads
 annual_electricity_demand_per_capita_folder:
   - *data_folder
   - annual_electricity_demand_per_capita
+manually_downloaded_annual_electricity_demand_per_capita_folder:
+  - *data_folder
+  - annual_electricity_demand_per_capita
+  - manual_downloads
 population_folder:
   - *data_folder
   - population

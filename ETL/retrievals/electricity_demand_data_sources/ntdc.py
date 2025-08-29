@@ -81,7 +81,7 @@ def download_and_extract_data() -> pandas.Series:
     """
     # Get the data folder.
     data_directory = utils.directories.read_folders_structure()[
-        "manually_downloaded_data_folder"
+        "manually_downloaded_electricity_demand_folder"
     ]
 
     # Get the paths of the downloaded files that start with "NTD".
