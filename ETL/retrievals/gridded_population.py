@@ -211,7 +211,7 @@ def run_data_retrieval(
     scenario: str | None,
 ) -> None:
     """
-    Download and extract population data.
+    Download and extract gridded population data.
 
     This function downloads population data from SEDAC for historic
     years (2000-2020) and from Figshare for future years (2025-2100)
@@ -238,7 +238,7 @@ def run_data_retrieval(
     """
     # Get the directory to store the population data.
     result_directory = utils.directories.read_folders_structure()[
-        "population_folder"
+        "gridded_population_folder"
     ]
     os.makedirs(result_directory, exist_ok=True)
 

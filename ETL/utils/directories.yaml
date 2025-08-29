@@ -23,6 +23,9 @@ manually_downloaded_annual_electricity_demand_per_capita_folder:
 population_folder:
   - *data_folder
   - population
+gridded_population_folder:
+  - *data_folder
+  - gridded_population
 gdp_ppp_per_capita_folder:
   - *data_folder
   - gdp_ppp_per_capita
