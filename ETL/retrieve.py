@@ -14,7 +14,7 @@ from datetime import datetime
 
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.electricity_demand
-import retrievals.gridded_gdp_ppp_per_capita
+import retrievals.gridded_gdp_ppp
 import retrievals.gridded_population
 import retrievals.temperature
 import retrievals.weather
@@ -70,7 +70,7 @@ def read_command_line_arguments() -> argparse.Namespace:
         choices=[
             "electricity_demand",
             "annual_electricity_demand_per_capita",
-            "gridded_gdp_ppp_per_capita",
+            "gridded_gdp_ppp",
             "gridded_population",
             "weather",
             "temperature",
@@ -242,9 +242,9 @@ if __name__ == "__main__":
             args.end_year,
             args.scenario,
         )
-    elif args.variable == "gridded_gdp_ppp_per_capita":
-        # Run the data retrieval for the gridded GDP PPP per capita.
-        retrievals.gridded_gdp_ppp_per_capita.run_data_retrieval(
+    elif args.variable == "gridded_gdp_ppp":
+        # Run the data retrieval for the gridded GDP PPP.
+        retrievals.gridded_gdp_ppp.run_data_retrieval(
             args.code,
             args.file,
             args.year,

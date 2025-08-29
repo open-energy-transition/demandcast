@@ -4,10 +4,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module includes functions to download and extract GDP PPP per
-    capita data from a Zenodo repository. The GDP data is extracted for
-    the countries and subdivisions of interest at a 0.25-degree
-    resolution and saved into NetCDF files.
+    This module includes functions to download and extract GDP PPP data
+    from a Zenodo repository. The GDP data is extracted for the
+    countries and subdivisions of interest at a 0.25-degree resolution
+    and saved into NetCDF files.
 
     Source: https://zenodo.org/records/7898409
     Source: https://doi.org/10.1038/s41597-022-01300-x
@@ -28,20 +28,20 @@ import utils.shapes
 import xarray
 
 
-def _download_gdp_ppp_per_capita(result_directory: str) -> None:
+def _download_gdp_ppp(result_directory: str) -> None:
     """
-    Download GDP PPP per capita data from Zenodo.
+    Download GDP PPP data from Zenodo.
 
     Parameters
     ----------
     result_directory : str
-        The directory where the GDP PPP per capita data will be saved.
+        The directory where the GDP PPP data will be saved.
     """
     # Check if the file already exists.
     if not os.path.exists(os.path.join(result_directory, "downloads")):
-        logging.info("Downloading GDP PPP per capita data from Zenodo.")
+        logging.info("Downloading GDP PPP data from Zenodo.")
 
-        # Define the URL to download the GDP PPP per capita data.
+        # Define the URL to download the GDP PPP data.
         url = "https://zenodo.org/records/7898409/files/GDP_025d%20(2000-2100).7z?download=1"
 
         # Fetch the data from the URL.
@@ -62,48 +62,42 @@ def _download_gdp_ppp_per_capita(result_directory: str) -> None:
             os.path.join(result_directory, "downloads"),
         )
     else:
-        logging.info(
-            "GDP PPP per capita data already exists. Skipping download."
-        )
+        logging.info("GDP PPP data already exists. Skipping download.")
 
 
-def _read_gdp_ppp_per_capita(
+def _read_gdp_ppp(
     result_directory: str, year_scenario: str
 ) -> xarray.DataArray:
     """
-    Read the GDP PPP per capita for the specified year and scenario.
+    Read the GDP PPP for the specified year and scenario.
 
     Parameters
     ----------
     result_directory : str
-        The directory where the GDP PPP per capita data is stored.
+        The directory where the GDP PPP data is stored.
     year_scenario : str
         The year and SSP scenario for which the GDP data is to be read.
 
     Returns
     -------
     xarray.DataArray
-        The GDP PPP per capita data for the specified year and SSP.
+        The GDP PPP data for the specified year and SSP.
     """
-    # Define the file path of the GDP PPP per capita data.
+    # Define the file path of the GDP PPP data.
     file_path = os.path.join(
         result_directory,
         "downloads",
         f"GDP{year_scenario.lower()}.tif",
     )
 
-    # Read the GDP PPP per capita data.
-    global_gdp_ppp_per_capita = xarray.open_dataarray(file_path)
+    # Read the GDP PPP data.
+    global_gdp_ppp = xarray.open_dataarray(file_path)
 
-    # Harmonize the coordinates of the GDP PPP per capita data.
-    global_gdp_ppp_per_capita = utils.geospatial.harmonize_coords(
-        global_gdp_ppp_per_capita
-    )
+    # Harmonize the coordinates of the GDP PPP data.
+    global_gdp_ppp = utils.geospatial.harmonize_coords(global_gdp_ppp)
 
     # Clean the dataset and return it.
-    return utils.geospatial.clean_raster(
-        global_gdp_ppp_per_capita, "gdp_ppp_per_capita"
-    )
+    return utils.geospatial.clean_raster(global_gdp_ppp, "gdp_ppp")
 
 
 def run_data_retrieval(
@@ -115,12 +109,12 @@ def run_data_retrieval(
     scenario: str | None,
 ):
     """
-    Download and extract gridded GDP PPP per capita data.
+    Download and extract gridded GDP PPP data.
 
-    This function downloads GDP PPP per capita data from a Zenodo
-    repository, extracts the data for the specified countries and
-    subdivisions of interest at a 0.25-degree resolution, and saves the
-    data into NetCDF files.
+    This function downloads GDP PPP data from a Zenodo repository,
+    extracts the data for the specified countries and subdivisions of
+    interest at a 0.25-degree resolution, and saves the data into NetCDF
+    files.
 
     Parameters
     ----------
@@ -130,24 +124,24 @@ def run_data_retrieval(
         The file path containing the codes of the countries or
         subdivisions of interest.
     year : int | None
-        The year of the GDP PPP per capita data to be retrieved.
+        The year of the GDP PPP data to be retrieved.
     start_year : int | None
-        The start year of the range of GDP PPP per capita data to be
+        The start year of the range of GDP PPP data to be
         retrieved.
     end_year : int | None
-        The end year of the range of GDP PPP per capita data to be
+        The end year of the range of GDP PPP data to be
         retrieved.
     scenario : str | None
-        The scenario of the GDP PPP per capita data to be retrieved.
+        The scenario of the GDP PPP data to be retrieved.
     """
     # Get the directory to store the population density data.
     result_directory = utils.directories.read_folders_structure()[
-        "gridded_gdp_ppp_per_capita_folder"
+        "gridded_gdp_ppp_folder"
     ]
     os.makedirs(result_directory, exist_ok=True)
 
-    # Download the GDP PPP per capita data from Zenodo.
-    _download_gdp_ppp_per_capita(result_directory)
+    # Download the GDP PPP data from Zenodo.
+    _download_gdp_ppp(result_directory)
 
     # Define the available years for historical GDP data.
     available_historical_years = list(range(2000, 2021))
@@ -176,7 +170,7 @@ def run_data_retrieval(
     # Loop over the years and scenarios.
     for year, scenario in year_scenario_list:
         logging.info(
-            f"Processing GDP PPP per capita data for the year {year}"
+            f"Processing GDP PPP data for the year {year}"
             + (f" and {scenario}." if scenario else ".")
         )
 
@@ -184,9 +178,7 @@ def run_data_retrieval(
         year_scenario = f"{year}_{scenario}" if scenario else str(year)
 
         # Read the GDP data for the specified year and SSP.
-        global_gdp_ppp_per_capita = _read_gdp_ppp_per_capita(
-            result_directory, year_scenario
-        )
+        global_gdp_ppp = _read_gdp_ppp(result_directory, year_scenario)
 
         # Loop over the countries and subdivisions of interest.
         for code in codes:
@@ -198,7 +190,7 @@ def run_data_retrieval(
             )
 
             if not os.path.exists(file_path):
-                logging.info(f"Extracting GDP PPP per capita data for {code}.")
+                logging.info(f"Extracting GDP PPP data for {code}.")
 
                 # Get the shape of the country or subdivision.
                 entity_shape = utils.shapes.get_entity_shape(
@@ -211,31 +203,31 @@ def run_data_retrieval(
                     entity_shape
                 )  # West, South, East, North
 
-                # Select the GDP per capita data within the bounds
-                # of the country or subdivision.
-                gdp_ppp_per_capita = global_gdp_ppp_per_capita.sel(
+                # Select the GDP PPP data within the bounds of the
+                # country or subdivision.
+                gdp_ppp = global_gdp_ppp.sel(
                     x=slice(entity_bounds[0], entity_bounds[2]),
                     y=slice(entity_bounds[1], entity_bounds[3]),
                 )
 
-                # Save the GDP PPP per capita data to a NetCDF file.
-                gdp_ppp_per_capita.to_netcdf(file_path)
+                # Save the GDP PPP data to a NetCDF file.
+                gdp_ppp.to_netcdf(file_path)
 
                 make_plot = False
                 if make_plot:
-                    # Make a plot of the GDP PPP per capita data.
+                    # Make a plot of the GDP PPP data.
                     utils.figures.simple_plot(
-                        gdp_ppp_per_capita,
-                        f"gdp_ppp_per_capita_{code}_{year_scenario}",
+                        gdp_ppp,
+                        f"gdp_ppp_{code}_{year_scenario}",
                     )
 
                 logging.info(
-                    f"GDP PPP per capita data for {code} has been "
+                    f"GDP PPP data for {code} has been "
                     "successfully extracted and saved."
                 )
 
             else:
                 logging.info(
-                    f"GDP PPP per capita data for {code} already exists. "
+                    f"GDP PPP data for {code} already exists. "
                     "Skipping extraction."
                 )

@@ -16,10 +16,6 @@ manually_downloaded_electricity_demand_folder:
 annual_electricity_demand_per_capita_folder:
   - *data_folder
   - annual_electricity_demand_per_capita
-manually_downloaded_annual_electricity_demand_per_capita_folder:
-  - *data_folder
-  - annual_electricity_demand_per_capita
-  - manual_downloads
 population_folder:
   - *data_folder
   - population
@@ -29,9 +25,9 @@ gridded_population_folder:
 gdp_ppp_per_capita_folder:
   - *data_folder
   - gdp_ppp_per_capita
-gridded_gdp_ppp_per_capita_folder:
+gridded_gdp_ppp_folder:
   - *data_folder
-  - gridded_gdp_ppp_per_capita
+  - gridded_gdp_ppp
 weather_folder:
   - *data_folder
   - weather
