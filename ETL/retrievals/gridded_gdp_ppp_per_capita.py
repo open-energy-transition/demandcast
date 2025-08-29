@@ -115,11 +115,12 @@ def run_data_retrieval(
     scenario: str | None,
 ):
     """
-    Download and extract GDP PPP per capita data.
+    Download and extract gridded GDP PPP per capita data.
 
-    This function downloads GDP data from a Zenodo repository, extracts
-    the GDP data for the countries and subdivisions of interest at a
-    0.25-degree resolution, and saves it into NetCDF files.
+    This function downloads GDP PPP per capita data from a Zenodo
+    repository, extracts the data for the specified countries and
+    subdivisions of interest at a 0.25-degree resolution, and saves the
+    data into NetCDF files.
 
     Parameters
     ----------
@@ -141,7 +142,7 @@ def run_data_retrieval(
     """
     # Get the directory to store the population density data.
     result_directory = utils.directories.read_folders_structure()[
-        "gdp_ppp_per_capita_folder"
+        "gridded_gdp_ppp_per_capita_folder"
     ]
     os.makedirs(result_directory, exist_ok=True)
 

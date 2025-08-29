@@ -68,6 +68,9 @@ def test_load_paths():
     assert structure["gdp_ppp_per_capita_folder"] == os.path.join(
         absolute_path, "data", "gdp_ppp_per_capita"
     )
+    assert structure["gridded_gdp_ppp_per_capita_folder"] == os.path.join(
+        absolute_path, "data", "gridded_gdp_ppp_per_capita"
+    )
     assert structure["weather_folder"] == os.path.join(
         absolute_path, "data", "weather"
     )

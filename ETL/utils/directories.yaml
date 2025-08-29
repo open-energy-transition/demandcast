@@ -26,6 +26,9 @@ population_folder:
 gdp_ppp_per_capita_folder:
   - *data_folder
   - gdp_ppp_per_capita
+gridded_gdp_ppp_per_capita_folder:
+  - *data_folder
+  - gridded_gdp_ppp_per_capita
 weather_folder:
   - *data_folder
   - weather
