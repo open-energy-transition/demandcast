@@ -145,14 +145,14 @@ def _download_future_population(
 
 
 def _read_population(
-    result_directory: str, year: int, scenario: str | None
+    downloaded_data_directory: str, year: int, scenario: str | None
 ) -> xarray.DataArray:
     """
     Read the population data for the specified year and scenario.
 
     Parameters
     ----------
-    result_directory : str
+    downloaded_data_directory : str
         The directory where the population data is stored.
     year : int
         The year of the population data to be read.
@@ -168,12 +168,11 @@ def _read_population(
     # Define the file path of the population data.
     if scenario is None:
         # For historic years, the file name is just the year.
-        file_path = os.path.join(result_directory, "downloads", f"{year}.tif")
+        file_path = os.path.join(downloaded_data_directory, f"{year}.tif")
     else:
         # For future years, the file name includes the scenario.
         file_path = os.path.join(
-            result_directory,
-            "downloads",
+            downloaded_data_directory,
             scenario,
             f"{scenario}_{year}.tif",
         )
@@ -252,7 +251,7 @@ def run_data_retrieval(
     # Define the available years for the future population data.
     available_future_years = list(range(2025, 2101, 5))
 
-    # Define the available SSPs for the population data.
+    # Define the available scenarios for the population data.
     available_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
 
     # Get the list of year and scenario combinations.

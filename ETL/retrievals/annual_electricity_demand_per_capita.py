@@ -31,7 +31,7 @@ import utils.time_series
 
 def download_electricity_demand_per_capita_from_ember() -> pandas.DataFrame:
     """
-    Download the electricity demand from Ember.
+    Download historical electricity demand per capita from Ember.
 
     Returns
     -------
@@ -56,7 +56,7 @@ def download_electricity_demand_per_capita_from_world_bank() -> (
     pandas.DataFrame
 ):
     """
-    Download the electricity demand per capita from the World Bank.
+    Download historical electricity demand per capita from World Bank.
 
     Returns
     -------
@@ -97,7 +97,7 @@ def extract_historical_electricity_demand_per_capita(
     iso_alpha_3_code: str,
 ) -> pandas.Series:
     """
-    Get the electricity demand per capita.
+    Extract the historical electricity demand per capita.
 
     Parameters
     ----------
