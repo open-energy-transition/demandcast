@@ -84,6 +84,9 @@ def get_available_requests() -> list[str]:
         data_source="cammesa"
     )["AR"]
 
+    # CAMMESA only provides data for the last 9 months.
+    start_date = pandas.Timestamp(f"{end_date.year}-{end_date.month - 9}-01")
+
     # Return the available requests, which are the dates in the format
     # YYYY-MM-DD.
     return (
