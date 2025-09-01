@@ -138,7 +138,9 @@ def get_fraction_of_grid_cells_in_shape(
     """
     # Calculate the lateral bounds for the cutout based on the lateral
     # bounds of the country or subdivision of interest.
-    cutout_bounds = utils.shapes.get_entity_bounds(entity_shape)
+    cutout_bounds = utils.shapes.get_entity_bounds(
+        entity_shape, target_resolution=resolution
+    )
 
     # Create a temporary cutout to have the grid cell of the country or
     # subdivision of interest.

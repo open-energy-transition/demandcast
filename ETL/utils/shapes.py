@@ -395,7 +395,9 @@ def get_entity_shape(
     return entity_shape
 
 
-def get_entity_bounds(entity_shape: geopandas.GeoDataFrame) -> list[float]:
+def get_entity_bounds(
+    entity_shape: geopandas.GeoDataFrame, target_resolution: float = 0.25
+) -> list[float]:
     """
     Get the lateral bounds of the country or subdivision.
 
@@ -409,6 +411,9 @@ def get_entity_bounds(entity_shape: geopandas.GeoDataFrame) -> list[float]:
     ----------
     entity_shape : geopandas.GeoDataFrame
         GeoDataFrame containing the country or subdivision of interest.
+    target_resolution : float, optional
+        The target resolution in degrees to which the bounds should be
+        rounded. Default is 0.25 degrees.
 
     Returns
     -------
@@ -422,7 +427,9 @@ def get_entity_bounds(entity_shape: geopandas.GeoDataFrame) -> list[float]:
         entity_shape.union_all().buffer(1).bounds
     )  # West, South, East, North
 
-    # Round the bounds to the closest 0.25 degree.
-    entity_bounds = [round(x * 4) / 4 for x in entity_bounds]
+    # Round the bounds to the closest target resolution.
+    entity_bounds = [
+        round(x / target_resolution) * target_resolution for x in entity_bounds
+    ]
 
     return entity_bounds
