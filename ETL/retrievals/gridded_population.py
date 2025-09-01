@@ -31,39 +31,40 @@ import utils.shapes
 import xarray
 
 
-def _download_historic_population(
+def _download_historic_population_density(
     downloaded_data_directory: str, year: int
 ) -> None:
     """
-    Download population data from SEDAC for historic years (2000-2020).
+    Download population density data from SEDAC for historic years.
 
     Parameters
     ----------
     downloaded_data_directory : str
-        The directory where the population data will be saved.
+        The directory where the population density data will be saved.
     year : int
-        The year of the population data to be downloaded.
+        The year of the population density data to be downloaded.
     """
     assert year in list(range(2000, 2021, 5)), (
         "year must be one of the available years: "
         f"{list(range(2000, 2021, 5))}."
     )
 
-    # Define the file path for the population data.
+    # Define the file path for the population density data.
     file_path = os.path.join(downloaded_data_directory, f"{year}.tif")
 
     if not os.path.exists(file_path):
         logging.info(
-            f"Downloading population data from SEDAC for the year {year}."
+            "Downloading population density data from SEDAC for the year "
+            f"{year}."
         )
 
-        # Define the URL of the population data.
+        # Define the URL of the population density data.
         url = (
             "https://data.ghg.center/sedac-popdensity-yeargrid5yr-v4.11/"
             f"gpw_v4_population_density_rev11_{year}_30_sec_{year}.tif"
         )
 
-        # Download the population data.
+        # Download the population density data.
         response = requests.get(url)
 
         # Check if the request was successful.
@@ -74,31 +75,31 @@ def _download_historic_population(
             file.write(response.content)
     else:
         logging.info(
-            f"Population data for the year {year} already exists. "
+            f"Population density data for the year {year} already exists. "
             "Skipping download."
         )
 
 
-def _download_future_population(
+def _download_future_population_density(
     downloaded_data_directory: str, scenario: str
 ) -> None:
     """
-    Download future population data from Figshare.
+    Download future population density data from Figshare.
 
     Parameters
     ----------
     downloaded_data_directory : str
-        The directory where the population data will be saved.
+        The directory where the population density data will be saved.
     scenario : str
-        The scenario of the population data to be downloaded.
+        The scenario of the population density data to be downloaded.
     """
     assert scenario in ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"], (
         "ssp must be one of the following: ['SSP1', 'SSP2', 'SSP3', "
         "'SSP4', 'SSP5']."
     )
 
-    # Define the folder name for the population data for the specified
-    # scenario.
+    # Define the folder name for the population density data for the
+    # specified scenario.
     folder_name = os.path.join(
         downloaded_data_directory,
         scenario,
@@ -106,9 +107,10 @@ def _download_future_population(
 
     if not os.path.exists(folder_name):
         logging.info(
-            f"Downloading population data from Figshare for {scenario}."
+            "Downloading population density data from Figshare for "
+            f"{scenario}."
         )
-        # Define the URL of the population data.
+        # Define the URL of the population density data.
         match scenario:
             case "SSP1":
                 url = "https://figshare.com/ndownloader/files/34829160"
@@ -127,7 +129,7 @@ def _download_future_population(
         # Check if the request was successful.
         response.raise_for_status()
 
-        # Extract all population data from the response.
+        # Extract all population density data from the response.
         with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
             archive.extractall(path=downloaded_data_directory)
 
@@ -139,33 +141,33 @@ def _download_future_population(
             )
     else:
         logging.info(
-            f"Population data for {scenario} already exists. "
+            f"Population density data for {scenario} already exists. "
             "Skipping download."
         )
 
 
-def _read_population(
+def _read_population_density(
     downloaded_data_directory: str, year: int, scenario: str | None
 ) -> xarray.DataArray:
     """
-    Read the population data for the specified year and scenario.
+    Read the population density data.
 
     Parameters
     ----------
     downloaded_data_directory : str
-        The directory where the population data is stored.
+        The directory where the population density data is stored.
     year : int
-        The year of the population data to be read.
+        The year of the population density data to be read.
     scenario : str | None
-        The scenario of the population data to be read. If None, the
-        historic population data will be read.
+        The scenario of the population density data to be read. If None,
+        the historic population density data will be read.
 
     Returns
     -------
     xarray.DataArray
-        The population data for the specified year and scenario.
+        The population density data for the specified year and scenario.
     """
-    # Define the file path of the population data.
+    # Define the file path of the population density data.
     if scenario is None:
         # For historic years, the file name is just the year.
         file_path = os.path.join(downloaded_data_directory, f"{year}.tif")
@@ -178,27 +180,37 @@ def _read_population(
         )
 
     # Download the population data.
-    global_population = xarray.open_dataarray(file_path, engine="rasterio")
+    global_population_density = xarray.open_dataarray(
+        file_path, engine="rasterio"
+    )
 
     if scenario is not None:
-        # For future population data, the coordinates need to be
+        # For future population density data, the coordinates need to be
         # converted to standard longitude and latitude.
-        global_population["x"] = (
-            global_population["x"] - global_population["x"].min()
-        ) / (global_population["x"].max() - global_population["x"].min()) * (
-            360 - 30 / 3600
-        ) - (180 - 30 / 3600)
-        global_population["y"] = (
-            global_population["y"] - global_population["y"].min()
-        ) / (global_population["y"].max() - global_population["y"].min()) * (
-            156 - 30 / 3600
-        ) - (72 - 30 / 3600)
+        global_population_density["x"] = (
+            global_population_density["x"]
+            - global_population_density["x"].min()
+        ) / (
+            global_population_density["x"].max()
+            - global_population_density["x"].min()
+        ) * (360 - 30 / 3600) - (180 - 30 / 3600)
+        global_population_density["y"] = (
+            global_population_density["y"]
+            - global_population_density["y"].min()
+        ) / (
+            global_population_density["y"].max()
+            - global_population_density["y"].min()
+        ) * (156 - 30 / 3600) - (72 - 30 / 3600)
 
-    # Harmonize the population data.
-    global_population = utils.geospatial.harmonize_coords(global_population)
+    # Harmonize the population density data.
+    global_population_density = utils.geospatial.harmonize_coords(
+        global_population_density
+    )
 
     # Clean the dataset and return it.
-    return utils.geospatial.clean_raster(global_population, "population")
+    return utils.geospatial.clean_raster(
+        global_population_density, "population_density"
+    )
 
 
 def run_data_retrieval(
@@ -277,17 +289,22 @@ def run_data_retrieval(
         )
 
         if year <= 2020:
-            # Download historic population data.
-            _download_historic_population(downloaded_data_directory, year)
+            # Download historic population density data.
+            _download_historic_population_density(
+                downloaded_data_directory, year
+            )
         elif year >= 2025 and scenario is not None:
-            # Download future population data.
-            _download_future_population(downloaded_data_directory, scenario)
+            # Download future population density data.
+            _download_future_population_density(
+                downloaded_data_directory, scenario
+            )
 
         # Define the year and scenario string for the file name.
         year_scenario = f"{year}_{scenario}" if scenario else str(year)
 
-        # Read the population data for the specified year and scenario.
-        global_population = _read_population(
+        # Read the population density data for the specified year and
+        # scenario.
+        global_population_density = _read_population_density(
             downloaded_data_directory, year, scenario
         )
 
@@ -315,10 +332,15 @@ def run_data_retrieval(
 
                 # Select the population data within the bounds of the
                 # country or subdivision.
-                population = global_population.sel(
+                population_density = global_population_density.sel(
                     x=slice(entity_bounds[0], entity_bounds[2]),
                     y=slice(entity_bounds[1], entity_bounds[3]),
                 )
+
+                # Convert the population density to population count.
+                population = utils.geospatial.from_density_to_count(
+                    population_density
+                ).rename("population")
 
                 # Coarsen the population to the same resolution as the
                 # weather data.

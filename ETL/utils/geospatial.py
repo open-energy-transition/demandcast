@@ -191,6 +191,96 @@ def get_fraction_of_grid_cells_in_shape(
     return fraction_of_grid_cells_in_shape
 
 
+def from_density_to_count(
+    density: xarray.DataArray,
+) -> xarray.DataArray:
+    """
+    Convert density to count.
+
+    This function converts a density xarray to a count xarray by
+    calculating the area of each grid cell in square kilometers and
+    multiplying the density by the area.
+
+    Parameters
+    ----------
+    density : xarray.DataArray
+        The density data in counts per square kilometer.
+
+    Returns
+    -------
+    xarray.DataArray
+        The population count data.
+    """
+    # Calculate the x and y resolutions of the grid cells in degrees.
+    x_resolution = density.x[1:].values - density.x[:-1].values
+    y_resolution = density.y[1:].values - density.y[:-1].values
+
+    # Check that the resolution of the grid cells is uniform along each
+    # axis.
+    assert numpy.allclose(x_resolution, x_resolution[0]), (
+        "The x resolution must be uniform."
+    )
+    assert numpy.allclose(y_resolution, y_resolution[0]), (
+        "The y resolution must be uniform."
+    )
+
+    # Check that the resolution is the same in both directions.
+    assert numpy.allclose(x_resolution[0], y_resolution[0]), (
+        "The x and y resolutions must be the same. "
+        f"Got {x_resolution[0]} and {y_resolution[0]}."
+    )
+
+    # Get the resolution in degrees.
+    resolution = x_resolution[0]
+
+    # Extract the longitudes and latitudes values.
+    longitudes = density.x.values
+    latitudes = density.y.values
+
+    # Calculate the latitude values of the grid cell boundaries.
+    boundary_latitudes = numpy.insert(
+        0.5 * (latitudes[1:] + latitudes[:-1]),
+        0,
+        latitudes[0] - resolution / 2,
+    )
+    boundary_latitudes = numpy.append(
+        boundary_latitudes, latitudes[-1] + resolution / 2
+    )
+
+    # Create an xarray DataArray for the boundary latitudes.
+    boundary_latitudes = xarray.Dataset(
+        data_vars={
+            "upper_lat": (
+                ["y", "x"],
+                numpy.tile(boundary_latitudes[1:], (len(longitudes), 1)).T,
+            ),
+            "lower_lat": (
+                ["y", "x"],
+                numpy.tile(boundary_latitudes[:-1], (len(longitudes), 1)).T,
+            ),
+        },
+        coords={"y": latitudes, "x": longitudes},
+    )
+
+    # Define the radius of the Earth in kilometers.
+    R = 6371.0
+
+    # Calculate the area of each grid cell in square kilometers.
+    area = (
+        (numpy.pi / 180)
+        * R**2
+        * resolution
+        * (
+            numpy.sin(numpy.deg2rad(boundary_latitudes["upper_lat"]))
+            - numpy.sin(numpy.deg2rad(boundary_latitudes["lower_lat"]))
+        )
+    )
+
+    # Calculate the count by multiplying the density by
+    # the area of each grid cell.
+    return density * area
+
+
 def get_largest_values_in_shape(
     entity_shape: geopandas.GeoDataFrame,
     xarray_data: xarray.DataArray,
