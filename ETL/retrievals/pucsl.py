@@ -178,7 +178,12 @@ def download_and_extract_data_for_request(
 
     # Fetch the electricity demand data from the URL.
     dataset = utils.fetcher.fetch_data(
-        url, content_type="html", read_as="json", json_keys=["data"]
+        url,
+        content_type="html",
+        read_as="json",
+        json_keys=["data"],
+        timeout=20,
+        retry_delay=20,
     )
 
     # Make sure the dataset is a pandas DataFrame.
