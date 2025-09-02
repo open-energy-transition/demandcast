@@ -371,23 +371,33 @@ def run_data_retrieval(
         file_path_without_ext = os.path.join(result_directory, code)
 
         # Get the selcted historical years.
-        selected_historical_years = [
-            year for year, scenario in year_scenario_list if scenario is None
-        ]
+        selected_historical_years = list(
+            set(
+                [
+                    year
+                    for year, scenario in year_scenario_list
+                    if scenario is None
+                ]
+            )
+        )
 
         # Get the selected future years.
-        selected_future_years = [
-            year
-            for year, scenario in year_scenario_list
-            if scenario is not None
-        ]
+        selected_future_years = list(
+            set(
+                [
+                    year
+                    for year, scenario in year_scenario_list
+                    if scenario is not None
+                ]
+            )
+        )
 
         # Get the selected scenarios.
         selected_scenarios = list(
             set(
                 [
                     scenario
-                    for year, scenario in year_scenario_list
+                    for __, scenario in year_scenario_list
                     if scenario is not None
                 ]
             )
