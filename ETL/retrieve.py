@@ -17,9 +17,9 @@ import retrievals.electricity_demand
 import retrievals.gdp_ppp_per_capita
 import retrievals.gridded_gdp_ppp
 import retrievals.gridded_population
+import retrievals.gridded_weather
 import retrievals.population
 import retrievals.temperature
-import retrievals.weather
 import utils.directories
 import utils.entities
 
@@ -288,7 +288,7 @@ if __name__ == "__main__":
         )
     elif args.variable == "gridded_weather":
         # Run the data retrieval for weather.
-        retrievals.weather.run_data_retrieval(
+        retrievals.gridded_weather.run_data_retrieval(
             args.from_global_data,
             args.weather_variable,
             args.year,
