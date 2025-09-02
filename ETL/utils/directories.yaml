@@ -28,9 +28,9 @@ gdp_ppp_per_capita_folder:
 gridded_gdp_ppp_folder:
   - *data_folder
   - gridded_gdp_ppp
-weather_folder:
+gridded_weather_folder:
   - *data_folder
-  - weather
+  - gridded_weather
 temperature_folder:
   - *data_folder
   - temperature
