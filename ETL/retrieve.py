@@ -14,6 +14,7 @@ from datetime import datetime
 
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.electricity_demand
+import retrievals.gdp_ppp_per_capita
 import retrievals.gridded_gdp_ppp
 import retrievals.gridded_population
 import retrievals.population
@@ -246,7 +247,7 @@ if __name__ == "__main__":
             args.scenario,
         )
     elif args.variable == "population":
-        # Run the data retrieval for the gridded population.
+        # Run the data retrieval for the population.
         retrievals.population.run_data_retrieval(
             args.code,
             args.file,
@@ -258,6 +259,16 @@ if __name__ == "__main__":
     elif args.variable == "gridded_population":
         # Run the data retrieval for the gridded population.
         retrievals.gridded_population.run_data_retrieval(
+            args.code,
+            args.file,
+            args.year,
+            args.start_year,
+            args.end_year,
+            args.scenario,
+        )
+    elif args.variable == "gdp_ppp_per_capita":
+        # Run the data retrieval for the GDP PPP per capita.
+        retrievals.gdp_ppp_per_capita.run_data_retrieval(
             args.code,
             args.file,
             args.year,

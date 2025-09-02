@@ -6,8 +6,9 @@ Description:
 
     This module includes functions to download and extract historical
     population data the World Bank and future population data from the
-    IAMC scenarios. The population data is extracted for the countries
-    and subdivisions of interest and saved into CSV and Parquet files.
+    IAMC scenarios for the countries of interest. For subdivisions, the
+    population data is calculated by aggregating gridded population
+    data. The population data is saved into CSV and Parquet files.
 
     Source: https://data.worldbank.org/indicator/SP.POP.TOTL
     Source: https://tntcat.iiasa.ac.at/SspDb

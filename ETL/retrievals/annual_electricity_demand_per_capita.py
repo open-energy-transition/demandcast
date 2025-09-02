@@ -29,7 +29,9 @@ import utils.scenarios
 import utils.time_series
 
 
-def download_electricity_demand_per_capita_from_ember() -> pandas.DataFrame:
+def download_historical_electricity_demand_per_capita_from_ember() -> (
+    pandas.DataFrame
+):
     """
     Download historical electricity demand per capita from Ember.
 
@@ -52,7 +54,7 @@ def download_electricity_demand_per_capita_from_ember() -> pandas.DataFrame:
     ]
 
 
-def download_electricity_demand_per_capita_from_world_bank() -> (
+def download_historical_electricity_demand_per_capita_from_world_bank() -> (
     pandas.DataFrame
 ):
     """
@@ -157,7 +159,7 @@ def extract_historical_electricity_demand_per_capita(
     ).fillna(ember_electricity_demand_per_capita)
 
 
-def _get_future_electricity_demand_per_capita(
+def _get_future_electricity_demand_per_capita_from_iiasa(
     iso_alpha_3_code: str,
     scenario: str,
     last_historical_value: float,
@@ -196,7 +198,7 @@ def _get_future_electricity_demand_per_capita(
             "annual_electricity_demand_per_capita_folder"
         ],
         "manual_downloads",
-        "IAM_annual_electricity_per_capita_growth.xlsx",
+        "IAM_annual_electricity_demand_per_capita_growth.xlsx",
     )
 
     # Read the annual growth rates.
@@ -285,12 +287,12 @@ def run_data_retrieval(
 
     # Download the electricity demand per capita from Ember.
     ember_electricity_demand_per_capita = (
-        download_electricity_demand_per_capita_from_ember()
+        download_historical_electricity_demand_per_capita_from_ember()
     )
 
     # Download the electricity demand per capita from the World Bank.
     world_bank_electricity_demand_per_capita = (
-        download_electricity_demand_per_capita_from_world_bank()
+        download_historical_electricity_demand_per_capita_from_world_bank()
     )
 
     # Get the list of codes of the countries and subdivisions.
@@ -473,7 +475,7 @@ def run_data_retrieval(
                     # Calculate the future electricity demand per
                     # capita.
                     future_electricity_demand_per_capita = (
-                        _get_future_electricity_demand_per_capita(
+                        _get_future_electricity_demand_per_capita_from_iiasa(
                             iso_alpha_3_code,
                             scenario,
                             historical_electricity_demand_per_capita.loc[
