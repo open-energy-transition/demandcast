@@ -4,12 +4,12 @@ License: AGPL-3.0.
 
 Description:
 
-    This module includes functions to download population data from
-    SEDAC for historic years (2000-2020) and from Figshare for future
-    years (2025-2100) under different Shared Socioeconomic Pathways
-    (SSPs). It then extracts the population data for the countries and
-    subdivisions of interest at a 0.25-degree resolution, and saves it
-    into NetCDF files.
+    This module includes functions to download population density from
+    SEDAC for historical years (2000-2020) and population count from
+    Figshare for future years (2025-2100) under different Shared
+    Socioeconomic Pathways (SSPs). It then extracts the population data
+    for the countries and subdivisions of interest at a 0.25-degree
+    resolution, and saves it into NetCDF files.
 
     Source: https://data.ghg.center/sedac-popdensity-yeargrid5yr-v4.11/browseui/#sedac-popdensity-yeargrid5yr-v4.11/
     Source: https://doi.org/10.6084/m9.figshare.19608594
@@ -31,11 +31,11 @@ import utils.shapes
 import xarray
 
 
-def _download_historic_population_density(
+def _download_historical_gridded_population_density(
     downloaded_data_directory: str, year: int
 ) -> None:
     """
-    Download population density data from SEDAC for historic years.
+    Download historical population density data from SEDAC.
 
     Parameters
     ----------
@@ -80,26 +80,26 @@ def _download_historic_population_density(
         )
 
 
-def _download_future_population_density(
+def _download_future_gridded_population(
     downloaded_data_directory: str, scenario: str
 ) -> None:
     """
-    Download future population density data from Figshare.
+    Download future population data from Figshare.
 
     Parameters
     ----------
     downloaded_data_directory : str
-        The directory where the population density data will be saved.
+        The directory where the population data will be saved.
     scenario : str
-        The scenario of the population density data to be downloaded.
+        The scenario of the population data to be downloaded.
     """
     assert scenario in ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"], (
         "ssp must be one of the following: ['SSP1', 'SSP2', 'SSP3', "
         "'SSP4', 'SSP5']."
     )
 
-    # Define the folder name for the population density data for the
-    # specified scenario.
+    # Define the folder name for the population data for the specified
+    # scenario.
     folder_name = os.path.join(
         downloaded_data_directory,
         scenario,
@@ -107,10 +107,9 @@ def _download_future_population_density(
 
     if not os.path.exists(folder_name):
         logging.info(
-            "Downloading population density data from Figshare for "
-            f"{scenario}."
+            f"Downloading population data from Figshare for {scenario}."
         )
-        # Define the URL of the population density data.
+        # Define the URL of the population data.
         match scenario:
             case "SSP1":
                 url = "https://figshare.com/ndownloader/files/34829160"
@@ -129,7 +128,7 @@ def _download_future_population_density(
         # Check if the request was successful.
         response.raise_for_status()
 
-        # Extract all population density data from the response.
+        # Extract all population data from the response.
         with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
             archive.extractall(path=downloaded_data_directory)
 
@@ -141,35 +140,38 @@ def _download_future_population_density(
             )
     else:
         logging.info(
-            f"Population density data for {scenario} already exists. "
+            f"Population data for {scenario} already exists. "
             "Skipping download."
         )
 
 
-def _read_population_density(
+def _read_population_dataset(
     downloaded_data_directory: str, year: int, scenario: str | None
 ) -> xarray.DataArray:
     """
-    Read the population density data.
+    Read the population dataset.
+
+    The population dataset can be either for density in case of
+    historical years or for count in case of future years.
 
     Parameters
     ----------
     downloaded_data_directory : str
-        The directory where the population density data is stored.
+        The directory where the population dataset is stored.
     year : int
-        The year of the population density data to be read.
+        The year of the population dataset to be read.
     scenario : str | None
-        The scenario of the population density data to be read. If None,
-        the historic population density data will be read.
+        The scenario of the population dataset to be read. If None,
+        the historical population density data will be read.
 
     Returns
     -------
     xarray.DataArray
-        The population density data for the specified year and scenario.
+        The population data for the specified year and scenario.
     """
-    # Define the file path of the population density data.
+    # Define the file path of the population dataset.
     if scenario is None:
-        # For historic years, the file name is just the year.
+        # For historical years, the file name is just the year.
         file_path = os.path.join(downloaded_data_directory, f"{year}.tif")
     else:
         # For future years, the file name includes the scenario.
@@ -179,37 +181,37 @@ def _read_population_density(
             f"{scenario}_{year}.tif",
         )
 
-    # Download the population data.
-    global_population_density = xarray.open_dataarray(
+    # Download the population dataset.
+    global_population_dataset = xarray.open_dataarray(
         file_path, engine="rasterio"
     )
 
     if scenario is not None:
-        # For future population density data, the coordinates need to be
+        # For future population data, the coordinates need to be
         # converted to standard longitude and latitude.
-        global_population_density["x"] = (
-            global_population_density["x"]
-            - global_population_density["x"].min()
+        global_population_dataset["x"] = (
+            global_population_dataset["x"]
+            - global_population_dataset["x"].min()
         ) / (
-            global_population_density["x"].max()
-            - global_population_density["x"].min()
+            global_population_dataset["x"].max()
+            - global_population_dataset["x"].min()
         ) * (360 - 30 / 3600) - (180 - 30 / 3600)
-        global_population_density["y"] = (
-            global_population_density["y"]
-            - global_population_density["y"].min()
+        global_population_dataset["y"] = (
+            global_population_dataset["y"]
+            - global_population_dataset["y"].min()
         ) / (
-            global_population_density["y"].max()
-            - global_population_density["y"].min()
+            global_population_dataset["y"].max()
+            - global_population_dataset["y"].min()
         ) * (156 - 30 / 3600) - (72 - 30 / 3600)
 
-    # Harmonize the population density data.
-    global_population_density = utils.geospatial.harmonize_coords(
-        global_population_density
+    # Harmonize the population dataset.
+    global_population_dataset = utils.geospatial.harmonize_coords(
+        global_population_dataset
     )
 
     # Clean the dataset and return it.
     return utils.geospatial.clean_raster(
-        global_population_density, "population_density"
+        global_population_dataset, "population"
     )
 
 
@@ -224,12 +226,12 @@ def run_data_retrieval(
     """
     Download and extract gridded population data.
 
-    This function downloads population data from SEDAC for historic
-    years (2000-2020) and from Figshare for future years (2025-2100)
-    under different Shared Socioeconomic Pathways (SSPs). It then
-    extracts the population data for the countries and subdivisions of
-    interest at a 0.25-degree resolution, and saves it into NetCDF
-    files.
+    This function downloads population density data for historical
+    years (2000-2020) from SEDAC and population count data for future
+    years (2025-2100) from Figshare under different Shared
+    Socioeconomic Pathways (SSPs). It then extracts the population
+    data for the countries and subdivisions of interest at a
+    0.25-degree resolution, and saves it into NetCDF files.
 
     Parameters
     ----------
@@ -257,7 +259,7 @@ def run_data_retrieval(
     downloaded_data_directory = os.path.join(result_directory, "downloads")
     os.makedirs(downloaded_data_directory, exist_ok=True)
 
-    # Define the available years for the historic population data.
+    # Define the available years for the historical population data.
     available_historical_years = list(range(2000, 2021, 5))
 
     # Define the available years for the future population data.
@@ -289,22 +291,22 @@ def run_data_retrieval(
         )
 
         if year <= 2020:
-            # Download historic population density data.
-            _download_historic_population_density(
+            # Download historical population density data.
+            _download_historical_gridded_population_density(
                 downloaded_data_directory, year
             )
         elif year >= 2025 and scenario is not None:
-            # Download future population density data.
-            _download_future_population_density(
+            # Download future population data.
+            _download_future_gridded_population(
                 downloaded_data_directory, scenario
             )
 
         # Define the year and scenario string for the file name.
         year_scenario = f"{year}_{scenario}" if scenario else str(year)
 
-        # Read the population density data for the specified year and
+        # Read the population dataset for the specified year and
         # scenario.
-        global_population_density = _read_population_density(
+        global_population_dataset = _read_population_dataset(
             downloaded_data_directory, year, scenario
         )
 
@@ -332,15 +334,19 @@ def run_data_retrieval(
 
                 # Select the population data within the bounds of the
                 # country or subdivision.
-                population_density = global_population_density.sel(
+                population_dataset = global_population_dataset.sel(
                     x=slice(entity_bounds[0], entity_bounds[2]),
                     y=slice(entity_bounds[1], entity_bounds[3]),
                 )
 
-                # Convert the population density to population count.
-                population = utils.geospatial.from_density_to_count(
-                    population_density
-                ).rename("population")
+                if year in available_historical_years:
+                    # Convert the population density to population
+                    # count.
+                    population = utils.geospatial.from_density_to_count(
+                        population_dataset
+                    )
+                else:
+                    population = population_dataset
 
                 # Coarsen the population to the same resolution as the
                 # weather data.
