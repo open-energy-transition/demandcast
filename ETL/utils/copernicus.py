@@ -20,17 +20,25 @@ import utils.directories
 
 
 def get_request(
-    ERA5_variable: str, year: int, bounds: list[float] | None = None
+    variable: str,
+    year: int,
+    model: str | None,
+    scenario: str | None,
+    bounds: list[float] | None = None,
 ) -> dict[str, str | list[str] | list[float]]:
     """
-    Get the request for the ERA5 data from the Copernicus CDS.
+    Get the request to download weather data from the Copernicus CDS.
 
     Parameters
     ----------
-    ERA5_variable : str
-        The ERA5 variable of interest.
+    variable : str
+        The weather variable of interest.
     year : int
         The year of the data retrieval.
+    model : str | None
+        The weather model of interest.
+    scenario : str | None
+        The scenario of interest.
     bounds : list[float], optional
         The lateral bounds of the area of interest
         (West, South, East, North).
@@ -42,15 +50,31 @@ def get_request(
     """
     # Initialize the request with the common parameters.
     request: dict[str, str | list[str] | list[float]] = {
-        "product_type": ["reanalysis"],
-        "variable": [ERA5_variable],
-        "data_format": "netcdf",
-        "download_format": "unarchived",
         "year": [str(year)],
         "month": [f"{mm:02d}" for mm in range(1, 13)],
         "day": [f"{dd:02d}" for dd in range(1, 32)],
-        "time": [f"{tt:02d}:00" for tt in range(24)],
     }
+
+    if model is None and scenario is None:
+        # Historical reanalysis data.
+        request["product_type"] = ["reanalysis"]
+        request["variable"] = [variable]
+        request["data_format"] = "netcdf"
+        request["download_format"] = "unarchived"
+        request["time"] = [f"{tt:02d}:00" for tt in range(24)]
+    else:
+        # Climate projections.
+        if model is None or scenario is None:
+            raise ValueError(
+                "Both model and scenario must be provided for climate "
+                "projections."
+            )
+        request["temporal_resolution"] = "daily"
+        request["variable"] = variable
+        request["model"] = model.lower().replace("-", "_")
+        request["experiment"] = (
+            scenario.lower().replace("-", "_").replace(".", "_")
+        )
 
     # Add the bounds to the request if they are provided.
     if bounds is not None:
@@ -65,22 +89,33 @@ def get_request(
 
 
 def download_data(
-    year: int,
-    ERA5_variable: str,
     file_path: str,
+    year: int,
+    variable: str,
+    dataset: str,
+    model: str | None,
+    scenario: str | None,
     bounds: list[float] | None = None,
 ) -> None:
     """
-    Download the ERA5 data from the Copernicus Climate Data Store (CDS).
+    Download the weather data from the Copernicus CDS.
 
     Parameters
     ----------
+    file_path : str
+        The full file path to store the downloaded data.
     year : int
         The year of the data retrieval.
-    ERA5_variable : str
-        The ERA5 variable of interest.
-    file_path : str
-        The full file path to store the ERA5 data.
+    variable : str
+        The weather variable of interest.
+    dataset : str
+        The dataset to be used for the retrieval of the data.
+        Supported datasets are "reanalysis-era5-single-levels" and
+        "projections-cmip6".
+    model : str | None
+        The weather model of interest.
+    scenario : str | None
+        The scenario of interest.
     bounds : list of float, optional
         The lateral bounds of the area of interest
         (West, South, East, North).
@@ -100,8 +135,13 @@ def download_data(
     )
 
     # Define the dataset.
-    dataset = "reanalysis-era5-single-levels"
+    if dataset == "reanalysis-era5-single-levels" or dataset == "reanalysis":
+        dataset = "reanalysis-era5-single-levels"
+    elif dataset == "projections-cmip6" or dataset == "projections":
+        dataset = "projections-cmip6"
+    else:
+        raise ValueError(f"Dataset {dataset} is not supported.")
 
     # Define the request.
-    request = get_request(ERA5_variable, year, bounds)
+    request = get_request(variable, year, model, scenario, bounds)
     client.retrieve(dataset, request, file_path)

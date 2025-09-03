@@ -289,13 +289,14 @@ if __name__ == "__main__":
     elif args.variable == "gridded_weather":
         # Run the data retrieval for weather.
         retrievals.gridded_weather.run_data_retrieval(
-            args.from_global_data,
-            args.weather_variable,
+            args.code,
+            args.file,
             args.year,
             args.start_year,
             args.end_year,
-            args.code,
-            args.file,
+            args.model,
+            args.scenario,
+            args.weather_variable,
         )
     elif args.variable == "temperature":
         # Run the data retrieval for temperature.
