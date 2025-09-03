@@ -14,6 +14,7 @@ Description:
 
 import logging
 import os
+import zipfile
 
 import cdsapi
 import pandas
@@ -116,8 +117,9 @@ def _download_data(
 
     Parameters
     ----------
-    file_path : str
-        The full file path to store the downloaded data.
+    file_path_without_ext : str
+        The full file path without the file extension where the
+        downloaded data will be saved.
     year : int
         The year of the data retrieval.
     variable : str
@@ -137,7 +139,8 @@ def _download_data(
     Raises
     ------
     ValueError
-        If the dataset is not supported.
+        If the dataset is not supported or if the zip file contains
+        multiple .nc files.
     """
     # Get the root directory of the project.
     root_directory = utils.directories.read_folders_structure()["root_folder"]
@@ -156,14 +159,47 @@ def _download_data(
     # Define the dataset.
     if dataset == "reanalysis-era5-single-levels" or dataset == "reanalysis":
         dataset = "reanalysis-era5-single-levels"
+        file_path += ".nc"
     elif dataset == "projections-cmip6" or dataset == "projections":
         dataset = "projections-cmip6"
+        file_path += ".zip"
     else:
         raise ValueError(f"Dataset {dataset} is not supported.")
 
     # Define the request.
     request = _get_request(variable, year, model, scenario, bounds)
     client.retrieve(dataset, request, file_path)
+
+    # Unzip the file if it is a projections dataset.
+    if dataset == "projections-cmip6":
+        with zipfile.ZipFile(file_path, "r") as zip_ref:
+            zip_ref.extractall(os.path.dirname(file_path))
+
+            # Delete the extracted files that do not have a .nc
+            # extension.
+            for file in zip_ref.namelist():
+                if not file.endswith(".nc"):
+                    os.remove(os.path.join(os.path.dirname(file_path), file))
+
+            # Rename the extracted .nc file to the desired file path.
+            extracted_nc_files = [
+                file for file in zip_ref.namelist() if file.endswith(".nc")
+            ]
+            if len(extracted_nc_files) == 1:
+                os.rename(
+                    os.path.join(
+                        os.path.dirname(file_path), extracted_nc_files[0]
+                    ),
+                    file_path.replace(".zip", ".nc"),
+                )
+            else:
+                raise ValueError(
+                    "The zip file contains multiple .nc files. "
+                    "Cannot determine which one to rename."
+                )
+
+        # Remove the zip file.
+        os.remove(file_path)
 
 
 def run_data_retrieval(
@@ -320,13 +356,13 @@ def run_data_retrieval(
             )
 
             # Define the full file path for the global weather data.
-            global_file_path = os.path.join(
+            global_file_path_without_ext = os.path.join(
                 result_directory,
-                f"{case_name}.nc",
+                f"{case_name}",
             )
 
             # Check if the global file does not exist.
-            if not os.path.exists(global_file_path):
+            if not os.path.exists(global_file_path_without_ext + ".nc"):
                 logging.info(
                     f"Downloading global {variable} data for year "
                     f"{year}"
@@ -344,7 +380,7 @@ def run_data_retrieval(
 
                 # Download the global weather data from CDS.
                 _download_data(
-                    global_file_path,
+                    global_file_path_without_ext,
                     year,
                     cds_variable_name,
                     "projections" if model and scenario else "reanalysis",
@@ -353,7 +389,9 @@ def run_data_retrieval(
                 )
 
             # Load the global weather data.
-            global_data = xarray.open_dataarray(global_file_path)
+            global_data = xarray.open_dataarray(
+                global_file_path_without_ext + ".nc"
+            )
 
             # Harmonize the coordinates of the global data.
             global_data = utils.geospatial.harmonize_coords(global_data)
@@ -424,19 +462,18 @@ def run_data_retrieval(
             # Loop over the year, model, and scenario combinations.
             for year, model, scenario in year_model_scenario_list:
                 # Define the full file paths of the ERA5 data.
-                entity_file_path = os.path.join(
+                entity_file_path_without_ext = os.path.join(
                     result_directory,
                     f"{code}_{variable}_{year}"
                     + (
                         f"_{model}_{scenario.replace('-', '_').replace('.', '_')}"
                         if model and scenario
                         else ""
-                    )
-                    + ".nc",
+                    ),
                 )
 
                 # Check if the file does not exist.
-                if not os.path.exists(entity_file_path):
+                if not os.path.exists(entity_file_path_without_ext + ".nc"):
                     logging.info(
                         f"Downloading {variable} data for year {year}"
                         + (
@@ -454,7 +491,7 @@ def run_data_retrieval(
 
                     # Download the weather data from CDS.
                     _download_data(
-                        entity_file_path,
+                        entity_file_path_without_ext,
                         year,
                         cds_variable_name,
                         "projections" if model and scenario else "reanalysis",
