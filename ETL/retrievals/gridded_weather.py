@@ -305,17 +305,24 @@ def run_data_retrieval(
         for year, model, scenario in year_model_scenario_list:
             logging.info(
                 f"Processing {variable} data for the year {year}"
-                + (f", model {model}" if model else "")
-                + (f", and scenario {scenario}." if scenario else ".")
+                + (
+                    f", model {model}, and scenario {scenario}."
+                    if model and scenario
+                    else "."
+                )
+            )
+
+            # Define the case name for the file.
+            case_name = f"{variable}_{year}" + (
+                f"_{model}_{scenario.replace('-', '_').replace('.', '_')}"
+                if model and scenario
+                else ""
             )
 
             # Define the full file path for the global weather data.
             global_file_path = os.path.join(
                 result_directory,
-                f"{variable}_{year}"
-                + (f"_{model}" if model else "")
-                + (f"_{scenario}" if scenario else "")
-                + ".nc",
+                f"{case_name}.nc",
             )
 
             # Check if the global file does not exist.
@@ -323,8 +330,11 @@ def run_data_retrieval(
                 logging.info(
                     f"Downloading global {variable} data for year "
                     f"{year}"
-                    + (f", model {model}" if model else "")
-                    + (f", and scenario {scenario}." if scenario else ".")
+                    + (
+                        f", model {model}, and scenario {scenario}."
+                        if model and scenario
+                        else "."
+                    )
                 )
 
                 # Get the CDS variable name.
@@ -354,10 +364,7 @@ def run_data_retrieval(
                 # the country or subdivision.
                 entity_file_path = os.path.join(
                     result_directory,
-                    f"{code}_{variable}_{year}"
-                    + (f"_{model}" if model else "")
-                    + (f"_{scenario}" if scenario else "")
-                    + ".nc",
+                    f"{code}_{case_name}.nc",
                 )
 
                 if not os.path.exists(entity_file_path):
@@ -404,11 +411,7 @@ def run_data_retrieval(
     else:
         # Loop over the countries and subdivisions of interest.
         for code in codes:
-            logging.info(
-                f"Retrieving {variable} data for {code} for the year {year}"
-                + (f", model {model}" if model else "")
-                + (f", and scenario {scenario}." if scenario else ".")
-            )
+            logging.info(f"Retrieving {variable} data for {code}.")
 
             # Get the shape of the country or subdivision.
             entity_shape = utils.shapes.get_entity_shape(code, make_plot=False)
@@ -424,18 +427,23 @@ def run_data_retrieval(
                 entity_file_path = os.path.join(
                     result_directory,
                     f"{code}_{variable}_{year}"
-                    + (f"_{model}" if model else "")
-                    + (f"_{scenario}" if scenario else "")
+                    + (
+                        f"_{model}_{scenario.replace('-', '_').replace('.', '_')}"
+                        if model and scenario
+                        else ""
+                    )
                     + ".nc",
                 )
 
                 # Check if the file does not exist.
                 if not os.path.exists(entity_file_path):
                     logging.info(
-                        f"Downloading {variable} data for {code} "
-                        f"for year {year}"
-                        + (f", model {model}" if model else "")
-                        + (f", and scenario {scenario}" if scenario else "")
+                        f"Downloading {variable} data for year {year}"
+                        + (
+                            f", model {model}, and scenario {scenario}"
+                            if model and scenario
+                            else ""
+                        )
                         + " from Copernicus CDS."
                     )
 

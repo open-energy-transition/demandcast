@@ -300,10 +300,12 @@ if __name__ == "__main__":
         )
     elif args.variable == "temperature":
         # Run the data retrieval for temperature.
-        retrievals.temperature.run_temperature_calculation(
+        retrievals.temperature.run_data_retrieval(
             args.code,
             args.file,
             args.year,
             args.start_year,
             args.end_year,
+            args.climate_model,
+            args.scenario,
         )

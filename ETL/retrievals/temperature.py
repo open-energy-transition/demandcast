@@ -4,16 +4,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This script extracts temperature data downloaded from the Copernicus
-    Climate Data Store (CDS) for the largest population density areas in
-    a given country or subdivision. It calculates the average
-    temperature for the largest population density areas and saves the
-    results in a parquet file. The country and subdivision code can be
-    specified or a list can be provided as a yaml file. If no file or
-    code is provided, the script will use all available codes. The year
-    of the weather data can be specified as a command line argument. If
-    no year is provided, the script will use all the years of available
-    electricity demand data.
+    This module includes funtions to extract temperature data downloaded
+    from the Copernicus Climate Data Store (CDS) for the most populous
+    grid cells in a given country or subdivision. It calculates the
+    average temperature and saves the results into CSV and Parquet
+    files.
 """
 
 import datetime
@@ -26,25 +21,28 @@ import pandas
 import utils.directories
 import utils.entities
 import utils.geospatial
+import utils.scenarios
 import utils.shapes
 import xarray
-from tqdm import tqdm
 
 
-def get_temperature_in_largest_population_density_areas(
+def get_temperature_in_most_populous_cells(
     year: int,
+    climate_model: str | None,
+    climate_scenario: str | None,
     entity_shape: geopandas.GeoDataFrame,
     entity_time_zone: datetime.tzinfo,
     number_of_grid_cells: int = 1,
 ) -> pandas.Series:
     """
-    Get the temperature data for the largest population density areas.
+    Get the temperature data for the most populous grid cells.
 
     This function reads the temperature data downloaded from the
-    Copernicus Climate Data Store (CDS) for the given year and extracts
-    the temperature data for the largest population density areas in the
-    given country or subdivision. The temperature data is averaged over
-    the grid cells with the largest population densities.
+    Copernicus Climate Data Store (CDS) for the given year, model, and
+    scenario. It then extracts the temperature data for the given year
+    in local time and calculates the average temperature for the grid
+    cells with the largest population in the given country or
+    subdivision.
 
     Parameters
     ----------
@@ -60,19 +58,32 @@ def get_temperature_in_largest_population_density_areas(
     Returns
     -------
     pandas.Series
-        Temperature data for the largest population density areas in the
-        given country or subdivision.
+        Temperature data for the most populous grid cells.
+
+    Raises
+    ------
+    ValueError
+        If the scenario of the climate data is not provided when the
+        year of the temperature data is in the future, or if the
+        scenario is not valid.
     """
     # Read the temperature data downloaded from the Copernicus Climate
     # Data Store (CDS).
     temperature_data_directory = utils.directories.read_folders_structure()[
-        "weather_folder"
+        "gridded_weather_folder"
     ]
     temperature_data = xarray.open_mfdataset(
         os.path.join(
             temperature_data_directory,
-            f"{entity_shape.index[0]}_2m_temperature_*.nc",
-        )
+            f"{entity_shape.index[0]}_temperature_*"
+            + (
+                f"_{climate_model}_{climate_scenario}"
+                if climate_model and climate_scenario
+                else ""
+            )
+            + ".nc",
+        ),
+        engine="netcdf4",
     )
 
     # Harmonize the temperature data.
@@ -93,56 +104,91 @@ def get_temperature_in_largest_population_density_areas(
         valid_time=slice(start_date, end_date)
     )["t2m"].load()
 
-    # Define the years for which population density data is available.
-    available_years = numpy.array([2020])  # TO UPDATE
+    # Define the available years for the historical population data.
+    available_historical_years = list(range(2000, 2021, 5))
 
-    # Find the year of the population density data that is closest to
-    # the year of the temperature data.
-    population_density_year = available_years[
+    # Define the available years for the future population data.
+    available_future_years = list(range(2025, 2101, 5))
+
+    # Define the available scenarios for the population data.
+    available_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
+
+    # Define the available years for the population data.
+    available_years = numpy.array(
+        available_historical_years + available_future_years
+    )
+
+    # Find the year of the population data that is closest to the year
+    # of the temperature data.
+    population_year = available_years[
         numpy.abs(available_years - year).argmin()
     ]
 
-    # Read the population density data of the country or subdivision of
+    # Find the scenario of the population data if the year of the
+    # population data is in the future.
+    if population_year in available_future_years:
+        if climate_scenario is None:
+            raise ValueError(
+                "The scenario of the climate data must be provided "
+                "when the year of the temperature data is in the "
+                "future."
+            )
+        else:
+            population_scenario = None
+            for scenario in available_scenarios:
+                if scenario in climate_scenario:
+                    population_scenario = scenario
+                    break
+            if population_scenario is None:
+                raise ValueError(
+                    "The scenario of the climate data is not valid. "
+                    f"It must include one of the following: "
+                    f"{', '.join(available_scenarios)}."
+                )
+    else:
+        population_scenario = None
+
+    # Read the population data of the country or subdivision of
     # interest.
-    population_density_directory = utils.directories.read_folders_structure()[
-        "population_folder"
+    population_directory = utils.directories.read_folders_structure()[
+        "gridded_population_folder"
     ]
-    population_density = xarray.open_dataarray(
+    population = xarray.open_dataarray(
         os.path.join(
-            population_density_directory,
-            f"{entity_shape.index[0]}_0.25_deg_{population_density_year}.nc",
+            population_directory,
+            f"{entity_shape.index[0]}_0.25_deg_{population_year}"
+            + (f"_{population_scenario}" if population_scenario else "")
+            + ".nc",
         )
     )
 
-    # Get the grid cells with the largest population densities in the
-    # given shape.
-    largest_population_densities = (
-        utils.geospatial.get_largest_values_in_shape(
-            entity_shape, population_density, number_of_grid_cells
-        )
+    # Get the grid cells with the largest population in the given
+    # country or subdivision.
+    largest_population = utils.geospatial.get_largest_values_in_shape(
+        entity_shape, population, number_of_grid_cells
     )
 
     # Fix roundig errors in the coordinates of the grid cells.
-    x_coords = largest_population_densities["x"].round(2).to_numpy()
-    y_coords = largest_population_densities["y"].round(2).to_numpy()
+    x_coords = largest_population["x"].round(2).to_numpy()
+    y_coords = largest_population["y"].round(2).to_numpy()
     temperature_data["x"] = temperature_data["x"].round(2)
     temperature_data["y"] = temperature_data["y"].round(2)
 
     # Get the temperature data for the grid cells with the largest
-    # population densities.
-    temperature_in_largest_population_densities = temperature_data.sel(
+    # population.
+    temperature_in_largest_population = temperature_data.sel(
         y=y_coords,
         x=x_coords,
     )
 
     # Calculate the average temperature for the grid cells with the
-    # largest population densities.
-    average_temperature_in_largest_population_densities = (
-        temperature_in_largest_population_densities.mean(dim=("y", "x"))
+    # largest population.
+    average_temperature_in_largest_population = (
+        temperature_in_largest_population.mean(dim=("y", "x"))
     )
 
     # Convert the temperature data to a pandas Series and return it.
-    return average_temperature_in_largest_population_densities.to_series()
+    return average_temperature_in_largest_population.to_series()
 
 
 def build_temperature_database(
@@ -153,23 +199,17 @@ def build_temperature_database(
     """
     Build the temperature database for the given country or subdivision.
 
-    This function takes the temperature time series for the largest
-    population density area and the 3 largest population density areas
-    and calculates various statistics, such as monthly and annual
-    average temperatures, ranks, and percentiles. It also adds the
-    local hour of the day, weekend indicator, month of the year, and
-    year to the DataFrame. The resulting DataFrame is indexed by time
-    in UTC and contains the temperature statistics for the largest
-    population density areas.
+    This function takes the temperature time series for the most
+    populous grid cells in a given country or subdivision and adds
+    various statistics to it, such as monthly and annual averages,
+    percentiles, and time-related features.
 
     Parameters
     ----------
     temperature_time_series_top_1 : pandas.Series
-        The temperature time series for the largest population density
-        area.
+        The temperature time series for the most populous grid cell.
     temperature_time_series_top_3 : pandas.Series
-        The temperature time series for the 3 largest population density
-        areas.
+        The temperature time series for the 3 most populous grid cells.
     entity_time_zone : datetime.tzinfo
         Time zone of the country or subdivision of interest.
 
@@ -280,19 +320,23 @@ def build_temperature_database(
     return temperature_database
 
 
-def run_temperature_calculation(
+def run_data_retrieval(
     code: str | None,
     file: str | None,
     year: int | None,
     start_year: int | None,
     end_year: int | None,
+    model: str | None,
+    scenario: str | None,
 ) -> None:
     """
-    Run the calculation of the temperature data.
+    Extract temperature data for the most populous grid cells.
 
-    This function runs the calculation of the temperature data for
-    the largest population density areas in a given country or
-    subdivision.
+    This function extracts temperature data downloaded from the
+    Copernicus Climate Data Store (CDS) for tthe most populous grid
+    cells in a given country or subdivision. It calculates the
+    average temperature and saves the results into CSV and Parquet
+    files.
 
     Parameters
     ----------
@@ -311,6 +355,10 @@ def run_temperature_calculation(
     end_year : int | None
         The end year for a range of years to extract the temperature
         data (inclusive).
+    model : str | None
+        The model of the weather data.
+    scenario : str | None
+        The scenario of the weather data.
     """
     # Create a directory to store the weather data.
     result_directory = utils.directories.read_folders_structure()[
@@ -322,62 +370,124 @@ def run_temperature_calculation(
     # interest.
     codes = utils.entities.check_and_get_codes(code=code, file_path=file)
 
+    # Define the available years for the historical weather data.
+    # Historical data is available from 1940 but it is not necessary to
+    # go that far back for our purposes.
+    available_historical_years = list(range(1990, pandas.Timestamp.now().year))
+
+    # Define the available years for the future weather data.
+    available_future_years = list(range(pandas.Timestamp.now().year + 1, 2101))
+
+    # Define the available scenarios for the weather data.
+    available_scenarios_for_model = {
+        "CAMS-CSM1-0": [
+            "SSP1-1.9",
+            "SSP1-2.6",
+            "SSP2-4.5",
+            "SSP3-7.0",
+            "SSP5-8.5",
+        ],  # China
+        "CESM2": ["SSP1-2.6", "SSP2-4.5", "SSP3-7.0", "SSP5-8.5"],  # USA
+        "CNRM-ESM2-1": [
+            "SSP1-1.9",
+            "SSP1-2.6",
+            "SSP4-3.4",
+            "SSP2-4.5",
+            "SSP4-6.0",
+            "SSP3-7.0",
+            "SSP5-8.5",
+        ],  # France
+        "EC-Earth3-Veg-LR": [
+            "SSP1-1.9",
+            "SSP1-2.6",
+            "SSP2-4.5",
+            "SSP3-7.0",
+            "SSP5-8.5",
+        ],  # Europe
+        "HadGEM3-GC31-LL": ["SSP1-2.6", "SSP2-4.5", "SSP5-8.5"],  # UK
+        "MIROC-ES2L": [
+            "SSP1-1.9",
+            "SSP1-2.6",
+            "SSP2-4.5",
+            "SSP3-7.0",
+            "SSP5-8.5",
+        ],  # Japan
+        "MPI-ESM1-2-LR": [
+            "SSP1-2.6",
+            "SSP2-4.5",
+            "SSP3-7.0",
+            "SSP5-8.5",
+        ],  # Germany
+    }
+
+    # Get the list of year, model, and scenario combinations.
+    year_model_scenario_list = (
+        utils.scenarios.get_year_model_and_scenario_combinations(
+            year,
+            start_year,
+            end_year,
+            available_historical_years,
+            available_future_years,
+            model,
+            scenario,
+            available_scenarios_for_model,
+        )
+    )
+
     # Loop over the countries and subdivisions of interest.
-    for code in tqdm(codes, desc="Processing entities"):
-        logging.info(f"Extracting temperature data for {code}.")
-
-        if year is not None:
-            # If the year is provided, use it.
-            years = [year]
-        else:
-            # Get the years of available data for the country or
-            # subdivision of interest.
-            years = utils.entities.get_available_years(code)
-
-            # Filter years based on minimum and maximum if provided
-            if start_year is not None:
-                years = [year for year in years if year >= start_year]
-            if end_year is not None:
-                years = [year for year in years if year <= end_year]
+    for code in codes:
+        logging.info(f"Retrieving temperature data for {code}.")
 
         # Get the shape of the country or subdivision.
         entity_shape = utils.shapes.get_entity_shape(code, make_plot=False)
 
-        # Get the time zone information for the country or subdivision.
+        # Get the time zone of the country or subdivision.
         entity_time_zone = utils.entities.get_time_zone(code)
 
-        # Loop over the years.
-        for year in years:
-            logging.info(f"Year {year}.")
+        # Loop over the year, model, and scenario combinations.
+        for year, model, scenario in year_model_scenario_list:
+            logging.info(
+                f"Extracting temperature data for year {year}"
+                + (
+                    f", model {model}, and scenario {scenario}."
+                    if model and scenario
+                    else "."
+                )
+            )
 
             # Define the file paths of the temperature time series.
-            file_path = os.path.join(
+            file_path_without_ext = os.path.join(
                 result_directory,
-                f"{code}_temperature_time_series_{year}.parquet",
+                f"{code}_temperature_{year}"
+                + (f"_{model}_{scenario}" if model and scenario else ""),
             )
 
             # Check if the file of temperature time series for the
-            # largest population density area does not exist.
-            if not os.path.exists(file_path) or (
-                os.path.exists(file_path)
-                and year == pandas.Timestamp.now().year
-            ):
-                # Get the temperature data for the largest population
-                # density area in the given country or subdivision.
+            # given country or subdivision, year, model, and scenario
+            # already exists.
+            if not os.path.exists(
+                file_path_without_ext + ".parquet"
+            ) or not os.path.exists(file_path_without_ext + ".csv"):
+                # Get the temperature data for the most populous grid
+                # cell in the given country or subdivision.
                 temperature_time_series_top_1 = (
-                    get_temperature_in_largest_population_density_areas(
+                    get_temperature_in_most_populous_cells(
                         year,
+                        model,
+                        scenario,
                         entity_shape,
                         entity_time_zone,
                         number_of_grid_cells=1,
                     )
                 )
 
-                # Get the temperature data for the 3 largest population
-                # density areas in the given country or subdivision.
+                # Get the temperature data for the 3 most populous
+                # grid cells in the given country or subdivision.
                 temperature_time_series_top_3 = (
-                    get_temperature_in_largest_population_density_areas(
+                    get_temperature_in_most_populous_cells(
                         year,
+                        model,
+                        scenario,
                         entity_shape,
                         entity_time_zone,
                         number_of_grid_cells=3,
@@ -392,10 +502,10 @@ def run_temperature_calculation(
                 )
 
                 # Save the temperature time series.
-                temperature_database.to_parquet(file_path)
-                temperature_database.to_csv(
-                    file_path.replace(".parquet", ".csv")
+                temperature_database.to_parquet(
+                    file_path_without_ext + ".parquet"
                 )
+                temperature_database.to_csv(file_path_without_ext + ".csv")
 
                 logging.info(
                     f"Temperature time series for {code} has been "
