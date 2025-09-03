@@ -4,30 +4,166 @@ License: AGPL-3.0.
 
 Description:
 
-    This module downloads weather data from the Copernicus Climate Data
-    Store (CDS). It then extracts the weather data for the countries and
-    subdivisions of interest and saves it into NetCDF files. The country
-    and subdivision code can be specified or a list can be provided as a
-    yaml file. If no file or code is provided, the module will use all
-    available codes. The variable of the weather data can be specified
-    as a command line argument. The default variable is 2m_temperature.
-    The year of the weather data can be specified as a command line
-    argument. If no year is provided, the module will use all the years
-    of available electricity demand data.
+    This module includes functions to download weather data from the
+    Copernicus Climate Data Store (CDS). It then extracts the weather
+    data for the countries and subdivisions of interest and saves it
+    into NetCDF files.
+
+    Source: https://cds.climate.copernicus.eu/
 """
 
 import logging
 import os
 
+import cdsapi
 import pandas
-import utils.copernicus
 import utils.directories
 import utils.entities
 import utils.geospatial
 import utils.scenarios
 import utils.shapes
 import xarray
-from tqdm import tqdm
+from dotenv import load_dotenv
+
+# from tqdm import tqdm
+
+
+def _get_request(
+    variable: str,
+    year: int,
+    model: str | None,
+    scenario: str | None,
+    bounds: list[float] | None = None,
+) -> dict[str, str | list[str] | list[float]]:
+    """
+    Get the request to download weather data from the Copernicus CDS.
+
+    Parameters
+    ----------
+    variable : str
+        The weather variable of interest.
+    year : int
+        The year of the data retrieval.
+    model : str | None
+        The climate model of interest.
+    scenario : str | None
+        The scenario of interest.
+    bounds : list[float], optional
+        The lateral bounds of the area of interest
+        (West, South, East, North).
+
+    Returns
+    -------
+    request : dict[str, str | list[str] | list[float]]
+        The request for the data retrieval.
+
+    Raises
+    ------
+    ValueError
+        If only one of model or scenario is provided.
+    """
+    # Initialize the request with the common parameters.
+    request: dict[str, str | list[str] | list[float]] = {
+        "year": [str(year)],
+        "month": [f"{mm:02d}" for mm in range(1, 13)],
+        "day": [f"{dd:02d}" for dd in range(1, 32)],
+    }
+
+    if model is None and scenario is None:
+        # Historical reanalysis data.
+        request["product_type"] = ["reanalysis"]
+        request["variable"] = [variable]
+        request["data_format"] = "netcdf"
+        request["download_format"] = "unarchived"
+        request["time"] = [f"{tt:02d}:00" for tt in range(24)]
+    else:
+        # Climate projections.
+        if model is None or scenario is None:
+            raise ValueError(
+                "Both model and scenario must be provided for climate "
+                "projections."
+            )
+        request["temporal_resolution"] = "daily"
+        request["variable"] = variable
+        request["model"] = model.lower().replace("-", "_")
+        request["experiment"] = (
+            scenario.lower().replace("-", "_").replace(".", "_")
+        )
+
+    # Add the bounds to the request if they are provided.
+    if bounds is not None:
+        request["area"] = [
+            bounds[3],
+            bounds[0],
+            bounds[1],
+            bounds[2],
+        ]  # North, West, South, East
+
+    return request
+
+
+def _download_data(
+    file_path: str,
+    year: int,
+    variable: str,
+    dataset: str,
+    model: str | None,
+    scenario: str | None,
+    bounds: list[float] | None = None,
+) -> None:
+    """
+    Download the weather data from the Copernicus CDS.
+
+    Parameters
+    ----------
+    file_path : str
+        The full file path to store the downloaded data.
+    year : int
+        The year of the data retrieval.
+    variable : str
+        The weather variable of interest.
+    dataset : str
+        The dataset to be used for the retrieval of the data.
+        Supported datasets are "reanalysis-era5-single-levels" and
+        "projections-cmip6".
+    model : str | None
+        The climate model of interest.
+    scenario : str | None
+        The scenario of interest.
+    bounds : list of float, optional
+        The lateral bounds of the area of interest
+        (West, South, East, North).
+
+    Raises
+    ------
+    ValueError
+        If the dataset is not supported.
+    """
+    # Get the root directory of the project.
+    root_directory = utils.directories.read_folders_structure()["root_folder"]
+
+    # Load the environment variables.
+    load_dotenv(dotenv_path=os.path.join(root_directory, ".env"))
+
+    # Get the API key.
+    cds_key = os.getenv("CDS_API_KEY")
+
+    # Create a new CDS API client.
+    client = cdsapi.Client(
+        url="https://cds.climate.copernicus.eu/api", key=cds_key
+    )
+
+    # Define the dataset.
+    if dataset == "reanalysis-era5-single-levels" or dataset == "reanalysis":
+        dataset = "reanalysis-era5-single-levels"
+    elif dataset == "projections-cmip6" or dataset == "projections":
+        dataset = "projections-cmip6"
+    else:
+        raise ValueError(f"Dataset {dataset} is not supported.")
+
+    # Define the request.
+    request = _get_request(variable, year, model, scenario, bounds)
+    client.retrieve(dataset, request, file_path)
 
 
 def run_data_retrieval(
@@ -36,9 +172,9 @@ def run_data_retrieval(
     year: int | None,
     start_year: int | None,
     end_year: int | None,
+    variable: str,
     model: str | None,
     scenario: str | None,
-    variable: str,
 ) -> None:
     """
     Run the gridded weather data retrieval.
@@ -60,10 +196,17 @@ def run_data_retrieval(
         The start year of the range of weather data to be retrieved.
     end_year : int | None
         The end year of the range of weather data to be retrieved.
-    scenario : str | None
-        The scenario of the weather data to be retrieved.
     variable : str
         The variable of the weather data to be downloaded.
+    model : str | None
+        The model of the weather data to be retrieved.
+    scenario : str | None
+        The scenario of the weather data to be retrieved.
+
+    Raises
+    ------
+    ValueError
+        If the variable is not supported.
     """
     # Get the directory to store the population density data.
     result_directory = utils.directories.read_folders_structure()[
@@ -125,6 +268,22 @@ def run_data_retrieval(
         ],  # Germany
     }
 
+    # Define the available weather variables.
+    available_variables = ["temperature"]
+
+    if variable not in available_variables:
+        raise ValueError(
+            f"Variable {variable} is not implemented yet. "
+            f"Supported variables are: {', '.join(available_variables)}."
+        )
+
+    cds_variable_mapping = {
+        "temperature": {
+            "reanalysis": "2m_temperature",
+            "projections": "near_surface_air_temperature",
+        }
+    }
+
     # Get the list of year, model, and scenario combinations.
     year_model_scenario_list = (
         utils.scenarios.get_year_model_and_scenario_combinations(
@@ -139,10 +298,9 @@ def run_data_retrieval(
         )
     )
 
+    # If there are many codes download the global data and then
+    # extract the data for each country and subdivision.
     if len(codes) > 5:
-        # If there are many codes download the global data and then
-        # extract the data for each country and subdivision.
-
         # Loop over the year, model, and scenario combinations.
         for year, model, scenario in year_model_scenario_list:
             logging.info(
@@ -162,21 +320,26 @@ def run_data_retrieval(
 
             # Check if the global file does not exist.
             if not os.path.exists(global_file_path):
-                logging.info(f"Downloading global data for the year {year}.")
+                logging.info(
+                    f"Downloading global {variable} data for year "
+                    f"{year}"
+                    + (f", model {model}" if model else "")
+                    + (f", and scenario {scenario}." if scenario else ".")
+                )
+
+                # Get the CDS variable name.
+                cds_variable_name = cds_variable_mapping[variable][
+                    "projections" if model and scenario else "reanalysis"
+                ]
 
                 # Download the global weather data from CDS.
-                utils.copernicus.download_data(
+                _download_data(
                     global_file_path,
                     year,
-                    variable,
+                    cds_variable_name,
                     "projections" if model and scenario else "reanalysis",
                     model,
                     scenario,
-                )
-            else:
-                logging.info(
-                    f"Global data for the year {year} already exists. "
-                    "Using existing file."
                 )
 
             # Load the global weather data.
@@ -185,122 +348,114 @@ def run_data_retrieval(
             # Harmonize the coordinates of the global data.
             global_data = utils.geospatial.harmonize_coords(global_data)
 
-            # Process each country/subdivision.
-            for code in tqdm(codes, desc=f"Processing countries for {year}"):
-                logging.info(
-                    f"Processing {variable} data for {code} for year {year}."
+            # Loop over the countries and subdivisions of interest.
+            for code in codes:
+                # Define the file path for the weather data of
+                # the country or subdivision.
+                entity_file_path = os.path.join(
+                    result_directory,
+                    f"{code}_{variable}_{year}"
+                    + (f"_{model}" if model else "")
+                    + (f"_{scenario}" if scenario else "")
+                    + ".nc",
                 )
 
-                try:
-                    # Define the file path for the country-specific
-                    # data.
-                    country_file_path = os.path.join(
-                        result_directory, f"{code}_{variable}_{year}.nc"
+                if not os.path.exists(entity_file_path):
+                    logging.info(
+                        f"Extracting {variable} data for {code} for "
+                        f"the year {year}."
                     )
 
-                    # Check if the country file already exists
-                    # or if the year is the current year (to
-                    # overwrite).
-                    if not os.path.exists(country_file_path) or (
-                        os.path.exists(country_file_path)
-                        and year == pandas.Timestamp.now().year
-                    ):
-                        logging.info(
-                            f"Extracting data for {code} for the year {year}."
-                        )
-
-                        # Get the shape of the country or
-                        # subdivision.
-                        entity_shape = utils.shapes.get_entity_shape(
-                            code, make_plot=False
-                        )
-
-                        # Get the lateral bounds for the shape
-                        entity_bounds = utils.shapes.get_entity_bounds(
-                            entity_shape
-                        )  # West, South, East, North
-
-                        # Extract data for the country or
-                        # subdivision.
-                        country_data = global_data.sel(
-                            x=slice(entity_bounds[0], entity_bounds[2]),
-                            y=slice(entity_bounds[1], entity_bounds[3]),
-                        )
-
-                        # Save the country-specific data
-                        country_data.to_netcdf(country_file_path)
-
-                        logging.info(
-                            f"{variable} data for {code} for year {year} "
-                            "has been successfully extracted and saved."
-                        )
-                    else:
-                        logging.info(
-                            f"Data for {code} for year {year} already "
-                            "exists. Skipping extraction."
-                        )
-
-                except Exception as e:
-                    logging.error(
-                        f"Error processing global data for year {year}: "
-                        f"{str(e)}"
+                    # Get the shape of the country or subdivision.
+                    entity_shape = utils.shapes.get_entity_shape(
+                        code, make_plot=False
                     )
-                    continue
+
+                    # Get the lateral bounds for the shape.
+                    entity_bounds = utils.shapes.get_entity_bounds(
+                        entity_shape
+                    )  # West, South, East, North
+
+                    # Extract data for the country or subdivision.
+                    entity_data = global_data.sel(
+                        x=slice(entity_bounds[0], entity_bounds[2]),
+                        y=slice(entity_bounds[1], entity_bounds[3]),
+                    )
+
+                    # Save the data to a NetCDF file.
+                    entity_data.to_netcdf(entity_file_path)
+
+                    logging.info(
+                        f"{variable.capitalize()} data for {code} for the "
+                        f"year {year} has been successfully extracted and "
+                        "saved."
+                    )
+                else:
+                    logging.info(
+                        f"{variable.capitalize()} data for {code} for the "
+                        f"year {year} already exists. Skipping extraction."
+                    )
 
             logging.info(
                 f"Processing of {variable} data for year {year} has been "
                 "completed."
             )
 
-    # else:
-    #     # Loop over the countries and subdivisions of interest.
-    #     for code in codes:
-    #         logging.info(f"Retrieving {variable} data for {code}.")
+    else:
+        # Loop over the countries and subdivisions of interest.
+        for code in codes:
+            logging.info(
+                f"Retrieving {variable} data for {code} for the year {year}"
+                + (f", model {model}" if model else "")
+                + (f", and scenario {scenario}." if scenario else ".")
+            )
 
-    #         if year is not None:
-    #             # If the year is provided, use it.
-    #             years = [year]
-    #         else:
-    #             # Get the years of available data for the country or
-    #             # subdivision of interest.
-    #             years = utils.entities.get_available_years(code)
+            # Get the shape of the country or subdivision.
+            entity_shape = utils.shapes.get_entity_shape(code, make_plot=False)
 
-    #         # Get the shape of the country or subdivision.
-    #         entity_shape = utils.shapes.get_entity_shape(code, make_plot=False)
+            # Get the lateral bounds of the country or subdivision.
+            entity_bounds = utils.shapes.get_entity_bounds(
+                entity_shape
+            )  # West, South, East, North
 
-    #         # Get the lateral bounds of the country or subdivision.
-    #         entity_bounds = utils.shapes.get_entity_bounds(
-    #             entity_shape
-    #         )  # West, South, East, North
+            # Loop over the year, model, and scenario combinations.
+            for year, model, scenario in year_model_scenario_list:
+                # Define the full file paths of the ERA5 data.
+                entity_file_path = os.path.join(
+                    result_directory,
+                    f"{code}_{variable}_{year}"
+                    + (f"_{model}" if model else "")
+                    + (f"_{scenario}" if scenario else "")
+                    + ".nc",
+                )
 
-    #         # Loop over the years.
-    #         for year in years:
-    #             # Define the full file paths of the ERA5 data.
-    #             file_path = os.path.join(
-    #                 result_directory, f"{code}_{variable}_{year}.nc"
-    #             )
+                # Check if the file does not exist.
+                if not os.path.exists(entity_file_path):
+                    logging.info(
+                        f"Downloading {variable} data for {code} "
+                        f"for year {year}"
+                        + (f", model {model}" if model else "")
+                        + (f", and scenario {scenario}" if scenario else "")
+                        + " from Copernicus CDS."
+                    )
 
-    #             # Check if the file does not exist or if the year is the
-    #             # current year.
-    #             if not os.path.exists(file_path) or (
-    #                 os.path.exists(file_path)
-    #                 and year == pandas.Timestamp.now().year
-    #             ):
-    #                 logging.info(f"Retrieving data for the year {year}.")
+                    # Get the CDS variable name.
+                    cds_variable_name = cds_variable_mapping[variable][
+                        "projections" if model and scenario else "reanalysis"
+                    ]
 
-    #                 # Download the ERA5 data from the Copernicus Climate
-    #                 # Data Store (CDS).
-    #                 utils.copernicus.download_data(
-    #                     year, variable, file_path, bounds=entity_bounds
-    #                 )
+                    # Download the weather data from CDS.
+                    _download_data(
+                        entity_file_path,
+                        year,
+                        cds_variable_name,
+                        "projections" if model and scenario else "reanalysis",
+                        model,
+                        scenario,
+                        bounds=entity_bounds,
+                    )
 
-    #             else:
-    #                 logging.info(
-    #                     f"Data for the year {year} already exists. Skipping "
-    #                     "download."
-    #                 )
-
-    #         logging.info(
-    #             f"{variable} data for {code} has been successfully retrieved "
-    #             "and saved."
-    #         )
+            logging.info(
+                f"{variable} data for {code} has been successfully retrieved "
+                "and saved."
+            )

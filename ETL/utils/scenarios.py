@@ -14,6 +14,75 @@ import pandas
 import yaml
 
 
+def _get_years(
+    year: int | None,
+    start_year: int | None,
+    end_year: int | None,
+    available_years: list[int],
+) -> list[int]:
+    """
+    Get the list of years based on the input parameters.
+
+    Parameters
+    ----------
+    year : int | None
+        The specific year for which the data is to be downloaded.
+    start_year : int | None
+        The start year of the range of years for which the data is to be
+        downloaded.
+    end_year : int | None
+        The end year of the range of years for which the data is to be
+        downloaded.
+    available_years : list[int]
+        The list of available years for the data retrieval.
+
+    Returns
+    -------
+    years : list[int]
+        A list of years for which the data is to be downloaded.
+
+    Raises
+    ------
+    ValueError
+        If the input parameters are not valid.
+    """
+    if year is not None:
+        if start_year is not None or end_year is not None:
+            raise ValueError(
+                "If year is specified, start_year and end_year must be None."
+            )
+        if year not in available_years:
+            raise ValueError(
+                f"year must be one of the available years: {available_years}."
+            )
+        # Use the specified year.
+        years = [year]
+    elif start_year is not None and end_year is not None:
+        if start_year > end_year:
+            raise ValueError("start_year must be less than end_year.")
+        if start_year not in available_years:
+            raise ValueError(
+                "start_year must be one of the available years: "
+                f"{available_years}."
+            )
+        if end_year not in available_years:
+            raise ValueError(
+                "end_year must be one of the available years: "
+                f"{available_years}."
+            )
+        # Use the range of years from start_year to end_year.
+        years = [y for y in available_years if start_year <= y <= end_year]
+    elif (start_year is not None and end_year is None) or (
+        start_year is None and end_year is not None
+    ):
+        raise ValueError("Both start_year and end_year must be specified.")
+    else:
+        # Use all available years.
+        years = available_years
+
+    return years
+
+
 def get_year_and_scenario_combinations(
     year: int | None,
     start_year: int | None,
@@ -61,39 +130,8 @@ def get_year_and_scenario_combinations(
         available_historical_years + available_future_years
     )
 
-    if year is not None:
-        if start_year is not None or end_year is not None:
-            raise ValueError(
-                "If year is specified, start_year and end_year must be None."
-            )
-        if year not in available_years:
-            raise ValueError(
-                f"year must be one of the available years: {available_years}."
-            )
-        # Use the specified year.
-        years = [year]
-    elif start_year is not None and end_year is not None:
-        if start_year > end_year:
-            raise ValueError("start_year must be less than end_year.")
-        if start_year not in available_years:
-            raise ValueError(
-                "start_year must be one of the available years: "
-                f"{available_years}."
-            )
-        if end_year not in available_years:
-            raise ValueError(
-                "end_year must be one of the available years: "
-                f"{available_years}."
-            )
-        # Use the range of years from start_year to end_year.
-        years = [y for y in available_years if start_year <= y <= end_year]
-    elif (start_year is not None and end_year is None) or (
-        start_year is None and end_year is not None
-    ):
-        raise ValueError("Both start_year and end_year must be specified.")
-    else:
-        # Use all available years.
-        years = available_years
+    # Get the list of years based on the input parameters.
+    years = _get_years(year, start_year, end_year, available_years)
 
     # Normalize the scenario names to uppercase.
     available_scenarios = [
@@ -152,7 +190,8 @@ def get_year_model_and_scenario_combinations(
     available_years : list[int]
         The list of available years for the data retrieval.
     model : str | None
-        The specific model for which the data is to be downloaded.
+        The specific cliamte model for which the data is to be
+        downloaded.
     scenario : str | None
         The specific scenario for which the data is to be downloaded.
     available_scenarios : list[str]
@@ -162,7 +201,7 @@ def get_year_model_and_scenario_combinations(
     -------
     year_model_scenario_list : list[tuple[int, str | None, str | None]]
         A list of tuples, where each tuple contains a year, an optional
-        weather model, and an optional scenario.
+        climate model, and an optional scenario.
 
     Raises
     ------
@@ -174,39 +213,8 @@ def get_year_model_and_scenario_combinations(
         available_historical_years + available_future_years
     )
 
-    if year is not None:
-        if start_year is not None or end_year is not None:
-            raise ValueError(
-                "If year is specified, start_year and end_year must be None."
-            )
-        if year not in available_years:
-            raise ValueError(
-                f"year must be one of the available years: {available_years}."
-            )
-        # Use the specified year.
-        years = [year]
-    elif start_year is not None and end_year is not None:
-        if start_year > end_year:
-            raise ValueError("start_year must be less than end_year.")
-        if start_year not in available_years:
-            raise ValueError(
-                "start_year must be one of the available years: "
-                f"{available_years}."
-            )
-        if end_year not in available_years:
-            raise ValueError(
-                "end_year must be one of the available years: "
-                f"{available_years}."
-            )
-        # Use the range of years from start_year to end_year.
-        years = [y for y in available_years if start_year <= y <= end_year]
-    elif (start_year is not None and end_year is None) or (
-        start_year is None and end_year is not None
-    ):
-        raise ValueError("Both start_year and end_year must be specified.")
-    else:
-        # Use all available years.
-        years = available_years
+    # Get the list of years based on the input parameters.
+    years = _get_years(year, start_year, end_year, available_years)
 
     # Normalize the model and scenario names to uppercase.
     available_scenarios_for_model = {

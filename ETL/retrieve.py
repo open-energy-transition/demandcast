@@ -24,35 +24,6 @@ import utils.directories
 import utils.entities
 
 
-def _str_to_bool(argument: bool | str):
-    """
-    Convert a string or boolean argument to a boolean value.
-
-    Parameters
-    ----------
-    argument : bool or str
-        The argument to convert.
-
-    Returns
-    -------
-    bool
-        The converted boolean value.
-
-    Raises
-    ------
-    argparse.ArgumentTypeError
-        If the argument is not a valid boolean value.
-    """
-    if isinstance(argument, bool):
-        return argument
-    elif argument.lower() in ("yes", "true", "t", "y", "1"):
-        return True
-    elif argument.lower() in ("no", "false", "f", "n", "0"):
-        return False
-    else:
-        raise argparse.ArgumentTypeError("Boolean value expected.")
-
-
 def read_command_line_arguments() -> argparse.Namespace:
     """
     Create a parser for the command line arguments and read them.
@@ -82,25 +53,6 @@ def read_command_line_arguments() -> argparse.Namespace:
         help=(""),
     )
     parser.add_argument(
-        "-d",
-        "--data_source",
-        type=str,
-        choices=utils.entities.read_data_sources(),
-        help=(
-            "The acronym of the data source as defined in the retrieval "
-            'modules (example: "entsoe")'
-        ),
-        required=False,
-    )
-    parser.add_argument(
-        "-wv",
-        "--weather_variable",
-        type=str,
-        help="Variable of the weather data to be downloaded",
-        default="2m_temperature",
-        required=False,
-    )
-    parser.add_argument(
         "-c",
         "--code",
         type=str,
@@ -128,27 +80,42 @@ def read_command_line_arguments() -> argparse.Namespace:
         required=False,
     )
     parser.add_argument(
-        "-y_min",
+        "-sy",
         "--start-year",
         type=int,
         help="Start year for a range of years to download",
         required=False,
     )
     parser.add_argument(
-        "-y_max",
+        "-ey",
         "--end-year",
         type=int,
         help="End year for a range of years to download (inclusive)",
         required=False,
     )
     parser.add_argument(
-        "-fg",
-        "--from_global_data",
+        "-d",
+        "--data_source",
+        type=str,
+        choices=utils.entities.read_data_sources(),
         help=(
-            "Global weather data is first downloaded and then extracted by "
-            "country and subdivision codes."
+            "The acronym of the data source as defined in the retrieval "
+            'modules (example: "entsoe")'
         ),
-        action="store_true",
+        required=False,
+    )
+    parser.add_argument(
+        "-wv",
+        "--weather_variable",
+        type=str,
+        help="Variable of the weather data to be downloaded",
+        required=False,
+    )
+    parser.add_argument(
+        "-cm",
+        "--climate_model",
+        type=str,
+        help="The climate model to be used for the retrieval of the data.",
         required=False,
     )
     parser.add_argument(
@@ -162,7 +129,7 @@ def read_command_line_arguments() -> argparse.Namespace:
         required=False,
     )
     parser.add_argument(
-        "-g",
+        "-ug",
         "--upload_to_gcs",
         type=str,
         help=(
@@ -172,28 +139,28 @@ def read_command_line_arguments() -> argparse.Namespace:
         required=False,
     )
     parser.add_argument(
-        "-z",
+        "-uz",
         "--upload_to_zenodo",
         help="Whether to upload the data to Zenodo.",
         action="store_true",
         required=False,
     )
     parser.add_argument(
-        "-p",
+        "-pz",
         "--publish_to_zenodo",
         help="Whether to publish the data to Zenodo.",
         action="store_true",
         required=False,
     )
     parser.add_argument(
-        "-m",
+        "-mo",
         "--made_by_oet",
-        type=_str_to_bool,
+        type=str,
         help=(
             "Whether the data was retrieved or created by Open Energy "
             "Transition."
         ),
-        required=True,
+        required=False,
     )
 
     # Read the arguments from the command line.
@@ -225,6 +192,31 @@ if __name__ == "__main__":
     )
 
     if args.variable == "electricity_demand":
+        if not args.data_source:
+            raise ValueError(
+                "The data source must be specified for the retrieval of "
+                "electricity demand data."
+            )
+
+        if not args.made_by_oet:
+            raise ValueError(
+                "The argument --made_by_oet must be specified for the "
+                "retrieval of electricity demand data."
+            )
+
+        # Convert the made_by_oet argument to a boolean.
+        if args.made_by_oet.lower() in ("yes", "true", "t", "y", "1"):
+            made_by_oet = True
+        elif args.made_by_oet.lower() in ("no", "false", "f", "n", "0"):
+            made_by_oet = False
+        else:
+            raise ValueError(
+                "The argument --made_by_oet must be a string "
+                "representing a boolean value. Accepted values are: "
+                "'yes', 'true', 't', 'y', '1' for True and 'no', "
+                "'false', 'f', 'n', '0' for False."
+            )
+
         # Run the data retrieval for electricity demand.
         retrievals.electricity_demand.run_data_retrieval(
             args.data_source,
@@ -233,7 +225,7 @@ if __name__ == "__main__":
             args.upload_to_gcs,
             args.upload_to_zenodo,
             args.publish_to_zenodo,
-            args.made_by_oet,
+            made_by_oet,
         )
     elif args.variable == "annual_electricity_demand_per_capita":
         # Run the data retrieval for annual electricity demand per
@@ -294,9 +286,9 @@ if __name__ == "__main__":
             args.year,
             args.start_year,
             args.end_year,
-            args.model,
-            args.scenario,
             args.weather_variable,
+            args.climate_model,
+            args.scenario,
         )
     elif args.variable == "temperature":
         # Run the data retrieval for temperature.
