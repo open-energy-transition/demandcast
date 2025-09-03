@@ -198,24 +198,32 @@ if __name__ == "__main__":
                 "electricity demand data."
             )
 
-        if not args.made_by_oet:
-            raise ValueError(
-                "The argument --made_by_oet must be specified for the "
-                "retrieval of electricity demand data."
-            )
-
-        # Convert the made_by_oet argument to a boolean.
-        if args.made_by_oet.lower() in ("yes", "true", "t", "y", "1"):
-            made_by_oet = True
-        elif args.made_by_oet.lower() in ("no", "false", "f", "n", "0"):
-            made_by_oet = False
-        else:
-            raise ValueError(
-                "The argument --made_by_oet must be a string "
-                "representing a boolean value. Accepted values are: "
-                "'yes', 'true', 't', 'y', '1' for True and 'no', "
-                "'false', 'f', 'n', '0' for False."
-            )
+        if args.upload_to_zenodo:
+            if args.made_by_oet is None:
+                raise ValueError(
+                    "The argument --made_by_oet must be specified for the "
+                    "retrieval of electricity demand data if the data is to be "
+                    "uploaded to Zenodo."
+                )
+            else:
+                # Convert the made_by_oet argument to a boolean.
+                if args.made_by_oet.lower() in ("yes", "true", "t", "y", "1"):
+                    made_by_oet = True
+                elif args.made_by_oet.lower() in (
+                    "no",
+                    "false",
+                    "f",
+                    "n",
+                    "0",
+                ):
+                    made_by_oet = False
+                else:
+                    raise ValueError(
+                        "The argument --made_by_oet must be a string "
+                        "representing a boolean value. Accepted values are: "
+                        "'yes', 'true', 't', 'y', '1' for True and 'no', "
+                        "'false', 'f', 'n', '0' for False."
+                    )
 
         # Run the data retrieval for electricity demand.
         retrievals.electricity_demand.run_data_retrieval(
