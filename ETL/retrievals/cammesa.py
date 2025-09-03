@@ -7,7 +7,7 @@ Description:
     This module provides functions to retrieve the electricity demand
     data from the website of the Compañía Administradora del Mercado
     Mayorista Eléctrico S.A. (CAMMESA) in Argentina. The data is
-    retrieved from 2024-08-01 to current date. The data is retrieved in
+    retrieved from 2024-12-01 to current date. The data is retrieved in
     one-day intervals.
 
     Source: https://api.cammesa.com/demanda-svc/swagger-ui.html#/demanda-ws
@@ -83,6 +83,9 @@ def get_available_requests() -> list[str]:
     start_date, end_date = utils.entities.read_date_ranges(
         data_source="cammesa"
     )["AR"]
+
+    # CAMMESA only provides data for the last 9 months.
+    start_date = pandas.Timestamp(f"{end_date.year}-{end_date.month - 9}-01")
 
     # Return the available requests, which are the dates in the format
     # YYYY-MM-DD.

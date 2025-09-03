@@ -73,6 +73,7 @@ def _read_aspx_params(
 def fetch_data(
     url: str,
     content_type: str,
+    timeout: int = 10,
     retries: int = 5,
     retry_delay: int = 5,
     read_with: str = "requests.get",
@@ -103,9 +104,11 @@ def fetch_data(
         The URL of the data source.
     content_type : str
         The type of the content to be fetched.
+    timeout : int, optional
+        The timeout for the request in seconds.
     retries : int, optional
         The number of retries in case of connection errors.
-    delay : int, optional
+    retry_delay : int, optional
         The delay between retries in seconds.
     read_with : str, optional
         The library to use for reading the html content.
@@ -182,7 +185,7 @@ def fetch_data(
                                 # Send a GET request to the URL.
                                 response = requests.get(
                                     url,
-                                    timeout=10,
+                                    timeout=timeout,
                                     verify=verify_ssl,
                                     headers=header_params,
                                     params=request_params,
@@ -194,7 +197,7 @@ def fetch_data(
                                     # using the requests module.
                                     response = requests.get(
                                         url,
-                                        timeout=10,
+                                        timeout=timeout,
                                         verify=verify_ssl,
                                         headers=header_params,
                                         params=request_params,
@@ -210,7 +213,7 @@ def fetch_data(
                                 # Send a POST request to the URL.
                                 response = requests.post(
                                     url,
-                                    timeout=10,
+                                    timeout=timeout,
                                     verify=verify_ssl,
                                     headers=header_params,
                                     params=request_params,
