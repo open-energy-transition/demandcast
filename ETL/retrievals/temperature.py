@@ -25,9 +25,218 @@ import utils.scenarios
 import utils.shapes
 import xarray
 
+import retrievals.gridded_population
+import retrievals.gridded_weather
 
-def get_temperature_in_most_populous_cells(
+
+def _load_gridded_temperature_data(
+    code: str,
     year: int,
+    available_climate_years: list[int],
+    climate_model: str | None,
+    climate_scenario: str | None,
+) -> xarray.DataArray:
+    """
+    Load the gridded temperature data.
+
+    This function reads the temperature data downloaded from the
+    Copernicus Climate Data Store (CDS) for the given year, model,
+    and scenario. It loads the data for the given year as well as for
+    the previous and next year to account for time zone differences
+    when extracting the temperature data for the given year in local
+    time.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision of interest.
+    year : int
+        The year of the temperature data.
+    available_climate_years : list[int]
+        The list of available years for the climate data.
+    climate_model : str | None
+        The model of the climate data.
+    climate_scenario : str | None
+        The scenario of the climate data.
+
+    Returns
+    -------
+    xarray.DataArray
+        The gridded temperature data.
+
+    Raises
+    ------
+    ValueError
+        If the temperature variable is not found in the dataset.
+    """
+    # Define the directory where the temperature data is stored.
+    temperature_data_directory = utils.directories.read_folders_structure()[
+        "gridded_weather_folder"
+    ]
+
+    # Define the years of interest (the given year, the previous
+    # year, and the next year).
+    years_of_interest = [year - 1, year, year + 1]
+
+    # Define the file path of the temperature data for the given year,
+    # model, and scenario as well as for the previous and next year.
+    # This is done to account for time zone differences when
+    # extracting the temperature data for the given year in local
+    # time.
+    temperature_data_file_paths = [
+        os.path.join(
+            temperature_data_directory,
+            f"{code}_temperature_{y}"
+            + (
+                f"_{climate_model}_{climate_scenario.replace('-', '_').replace('.', '_')}"
+                if climate_model and climate_scenario
+                else ""
+            )
+            + ".nc",
+        )
+        for y in years_of_interest
+        if y in available_climate_years
+    ]
+
+    # Check if the temperature data files do not exist and download if
+    # necessary.
+    for file_path, y in zip(temperature_data_file_paths, years_of_interest):
+        if not os.path.exists(file_path):
+            # Download the gridded temperature data.
+            retrievals.gridded_weather.run_data_retrieval(
+                code=code,
+                file=None,
+                year=y,
+                start_year=None,
+                end_year=None,
+                variable="temperature",
+                model=climate_model,
+                scenario=climate_scenario,
+            )
+
+    # Read the temperature data.
+    temperature_data = xarray.open_mfdataset(temperature_data_file_paths)
+
+    # Extract the temperature variable.
+    if "t2m" in temperature_data:
+        temperature_data = temperature_data["t2m"]
+    elif "tas" in temperature_data:
+        temperature_data = temperature_data["tas"]
+    else:
+        raise ValueError(
+            "The temperature variable is not found in the dataset. "
+            "It must be either 't2m' or 'tas'."
+        )
+
+    # Harmonize the temperature data and return it.
+    return utils.geospatial.harmonize_coords(temperature_data)
+
+
+def _load_gridded_population_data(
+    code: str,
+    year: int,
+    climate_scenario: str | None,
+) -> xarray.DataArray:
+    """
+    Load the gridded population data.
+
+    This function reads the gridded population data for the given
+    year. It finds the year of the population data that is closest to
+    the year of the temperature data and downloads the population data
+    if it is not already available.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision of interest.
+    year : int
+        The year of the temperature data.
+    climate_scenario : str | None
+        The scenario of the climate data.
+
+    Returns
+    -------
+    xarray.DataArray
+        The gridded population data.
+
+    Raises
+    ------
+    ValueError
+        If the scenario of the climate data is not valid.
+    """
+    # Define the available years for the historical population data.
+    available_historical_population_years = numpy.arange(2000, 2021, 5)
+
+    # Define the available years for the future population data.
+    available_future_population_years = numpy.arange(2025, 2101, 5)
+
+    # Define the available scenarios for the population data.
+    available_population_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
+
+    # Find the year of the population data that is closest to the year
+    # of the temperature data.
+    if climate_scenario is None:
+        population_year = available_historical_population_years[
+            numpy.abs(available_historical_population_years - year).argmin()
+        ]
+    else:
+        population_year = available_future_population_years[
+            numpy.abs(available_future_population_years - year).argmin()
+        ]
+
+    # Find the scenario of the population data if the year of the
+    # population data is in the future.
+    if climate_scenario is not None:
+        population_scenario = None
+        for scenario in available_population_scenarios:
+            if scenario in climate_scenario:
+                population_scenario = scenario
+                break
+        if population_scenario is None:
+            raise ValueError(
+                "The scenario of the climate data is not valid. "
+                f"It must include one of the following: "
+                f"{', '.join(available_population_scenarios)}."
+            )
+    else:
+        population_scenario = None
+
+    # # Define the directory where the population data is stored.
+    population_data_directory = utils.directories.read_folders_structure()[
+        "gridded_population_folder"
+    ]
+
+    # Define the file path of the population data.
+    population_data_file_path = os.path.join(
+        population_data_directory,
+        f"{code}_0.25_deg_{population_year}"
+        + (f"_{population_scenario}" if population_scenario else "")
+        + ".nc",
+    )
+
+    # Check if the population data file does not exist and download if
+    # necessary.
+    if not os.path.exists(population_data_file_path):
+        # Download the gridded population data.
+        retrievals.gridded_population.run_data_retrieval(
+            code=code,
+            file=None,
+            year=population_year,
+            start_year=None,
+            end_year=None,
+            scenario=population_scenario,
+        )
+
+    # Read the population data.
+    population_data = xarray.open_dataarray(population_data_file_path)
+
+    # Harmonize the population data and return it.
+    return utils.geospatial.harmonize_coords(population_data)
+
+
+def _get_temperature_in_most_populous_cells(
+    year: int,
+    available_climate_years: list[int],
     climate_model: str | None,
     climate_scenario: str | None,
     entity_shape: geopandas.GeoDataFrame,
@@ -48,6 +257,12 @@ def get_temperature_in_most_populous_cells(
     ----------
     year : int
         The year of the temperature data.
+    available_climate_years : list[int]
+        The list of available years for the climate data.
+    climate_model : str | None
+        The model of the climate data.
+    climate_scenario : str | None
+        The scenario of the climate data.
     entity_shape : geopandas.GeoDataFrame
         The shape of the country or subdivision of interest.
     entity_time_zone : datetime.tzinfo
@@ -59,37 +274,17 @@ def get_temperature_in_most_populous_cells(
     -------
     pandas.Series
         Temperature data for the most populous grid cells.
-
-    Raises
-    ------
-    ValueError
-        If the scenario of the climate data is not provided when the
-        year of the temperature data is in the future, or if the
-        scenario is not valid.
     """
-    # Read the temperature data downloaded from the Copernicus Climate
-    # Data Store (CDS).
-    temperature_data_directory = utils.directories.read_folders_structure()[
-        "gridded_weather_folder"
-    ]
-    temperature_data = xarray.open_mfdataset(
-        os.path.join(
-            temperature_data_directory,
-            f"{entity_shape.index[0]}_temperature_*"
-            + (
-                f"_{climate_model}_{climate_scenario}"
-                if climate_model and climate_scenario
-                else ""
-            )
-            + ".nc",
-        ),
-        engine="netcdf4",
+    # Load the gridded temperature data.
+    temperature_data = _load_gridded_temperature_data(
+        entity_shape.index[0],
+        year,
+        available_climate_years,
+        climate_model,
+        climate_scenario,
     )
 
-    # Harmonize the temperature data.
-    temperature_data = utils.geospatial.harmonize_coords(temperature_data)
-
-    # Extract the temperature data for the given year in local time.
+    # Define the start and end date for the given year in local time.
     start_date = (
         pandas.Timestamp(str(year) + "-01-01 00:00:00", tz=entity_time_zone)
         .tz_convert("UTC")
@@ -100,98 +295,58 @@ def get_temperature_in_most_populous_cells(
         .tz_convert("UTC")
         .tz_localize(None)
     )
-    temperature_data = temperature_data.sel(
-        valid_time=slice(start_date, end_date)
-    )["t2m"].load()
 
-    # Define the available years for the historical population data.
-    available_historical_years = list(range(2000, 2021, 5))
-
-    # Define the available years for the future population data.
-    available_future_years = list(range(2025, 2101, 5))
-
-    # Define the available scenarios for the population data.
-    available_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
-
-    # Define the available years for the population data.
-    available_years = numpy.array(
-        available_historical_years + available_future_years
-    )
-
-    # Find the year of the population data that is closest to the year
-    # of the temperature data.
-    population_year = available_years[
-        numpy.abs(available_years - year).argmin()
-    ]
-
-    # Find the scenario of the population data if the year of the
-    # population data is in the future.
-    if population_year in available_future_years:
-        if climate_scenario is None:
-            raise ValueError(
-                "The scenario of the climate data must be provided "
-                "when the year of the temperature data is in the "
-                "future."
-            )
-        else:
-            population_scenario = None
-            for scenario in available_scenarios:
-                if scenario in climate_scenario:
-                    population_scenario = scenario
-                    break
-            if population_scenario is None:
-                raise ValueError(
-                    "The scenario of the climate data is not valid. "
-                    f"It must include one of the following: "
-                    f"{', '.join(available_scenarios)}."
-                )
-    else:
-        population_scenario = None
-
-    # Read the population data of the country or subdivision of
-    # interest.
-    population_directory = utils.directories.read_folders_structure()[
-        "gridded_population_folder"
-    ]
-    population = xarray.open_dataarray(
-        os.path.join(
-            population_directory,
-            f"{entity_shape.index[0]}_0.25_deg_{population_year}"
-            + (f"_{population_scenario}" if population_scenario else "")
-            + ".nc",
+    # Harmonize the time coordinate of the temperature data.
+    if climate_model is None:
+        # Reanalysis data has a time coordinate named "valid_time".
+        temperature_data = temperature_data.rename({"valid_time": "time"})
+    elif climate_model:
+        # Climate model data has a time type of cftime.DatetimeNoLeap.
+        # Convert it to datetime64.
+        temperature_data["time"] = (
+            temperature_data["time"].to_index().to_datetimeindex()
         )
+
+    # Extract the temperature data for the given year in local time.
+    temperature_data = temperature_data.sel(time=slice(start_date, end_date))
+
+    # Load the population data.
+    population_data = _load_gridded_population_data(
+        entity_shape.index[0],
+        year,
+        climate_scenario,
     )
 
     # Get the grid cells with the largest population in the given
     # country or subdivision.
-    largest_population = utils.geospatial.get_largest_values_in_shape(
-        entity_shape, population, number_of_grid_cells
+    most_populous_grid_cells = utils.geospatial.get_largest_values_in_shape(
+        entity_shape, population_data, number_of_grid_cells
     )
 
     # Fix roundig errors in the coordinates of the grid cells.
-    x_coords = largest_population["x"].round(2).to_numpy()
-    y_coords = largest_population["y"].round(2).to_numpy()
+    x_coords = most_populous_grid_cells["x"].round(2).to_numpy()
+    y_coords = most_populous_grid_cells["y"].round(2).to_numpy()
     temperature_data["x"] = temperature_data["x"].round(2)
     temperature_data["y"] = temperature_data["y"].round(2)
 
     # Get the temperature data for the grid cells with the largest
     # population.
-    temperature_in_largest_population = temperature_data.sel(
+    temperature_in_most_populous_grid_cells = temperature_data.sel(
         y=y_coords,
         x=x_coords,
     )
 
     # Calculate the average temperature for the grid cells with the
     # largest population.
-    average_temperature_in_largest_population = (
-        temperature_in_largest_population.mean(dim=("y", "x"))
+    average_temperature_in_most_populous_grid_cells = (
+        temperature_in_most_populous_grid_cells.mean(dim=("y", "x"))
     )
 
     # Convert the temperature data to a pandas Series and return it.
-    return average_temperature_in_largest_population.to_series()
+    return average_temperature_in_most_populous_grid_cells.to_series()
 
 
-def build_temperature_database(
+def _build_temperature_database(
     temperature_time_series_top_1: pandas.Series,
     temperature_time_series_top_3: pandas.Series,
     entity_time_zone: datetime.tzinfo,
@@ -373,7 +528,9 @@ def run_data_retrieval(
     # Define the available years for the historical weather data.
     # Historical data is available from 1940 but it is not necessary to
     # go that far back for our purposes.
-    available_historical_years = list(range(1990, pandas.Timestamp.now().year))
+    available_historical_years = list(
+        range(1990, pandas.Timestamp.now().year + 1)
+    )
 
     # Define the available years for the future weather data.
     available_future_years = list(range(pandas.Timestamp.now().year + 1, 2101))
@@ -458,7 +615,7 @@ def run_data_retrieval(
             # Define the file paths of the temperature time series.
             file_path_without_ext = os.path.join(
                 result_directory,
-                f"{code}_temperature_{year}"
+                f"{code}_{year}"
                 + (f"_{model}_{scenario}" if model and scenario else ""),
             )
 
@@ -471,8 +628,11 @@ def run_data_retrieval(
                 # Get the temperature data for the most populous grid
                 # cell in the given country or subdivision.
                 temperature_time_series_top_1 = (
-                    get_temperature_in_most_populous_cells(
+                    _get_temperature_in_most_populous_cells(
                         year,
+                        available_future_years
+                        if model and scenario
+                        else available_historical_years,
                         model,
                         scenario,
                         entity_shape,
@@ -484,8 +644,11 @@ def run_data_retrieval(
                 # Get the temperature data for the 3 most populous
                 # grid cells in the given country or subdivision.
                 temperature_time_series_top_3 = (
-                    get_temperature_in_most_populous_cells(
+                    _get_temperature_in_most_populous_cells(
                         year,
+                        available_future_years
+                        if model and scenario
+                        else available_historical_years,
                         model,
                         scenario,
                         entity_shape,
@@ -495,7 +658,7 @@ def run_data_retrieval(
                 )
 
                 # Add temperature statistics to the time series.
-                temperature_database = build_temperature_database(
+                temperature_database = _build_temperature_database(
                     temperature_time_series_top_1,
                     temperature_time_series_top_3,
                     entity_time_zone,

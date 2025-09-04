@@ -125,9 +125,9 @@ def get_year_and_scenario_combinations(
     ValueError
         If the input parameters are not valid.
     """
-    # Get the list of available years.
+    # Get the list of available years sorted without duplicates.
     available_years = sorted(
-        available_historical_years + available_future_years
+        list(set(available_historical_years + available_future_years))
     )
 
     # Get the list of years based on the input parameters.
@@ -153,7 +153,16 @@ def get_year_and_scenario_combinations(
     # Create a list of year and scenario combinations.
     year_scenario_list: list[tuple[int, str | None]] = []
     for year in years:
-        if year in available_historical_years:
+        if (
+            year in available_historical_years
+            and year in available_future_years
+        ):
+            # If the year is both historical and future, include both
+            # options.
+            year_scenario_list.append((year, None))
+            for scenario in scenarios:
+                year_scenario_list.append((year, scenario))
+        elif year in available_historical_years:
             year_scenario_list.append((year, None))
         elif year in available_future_years:
             for scenario in scenarios:
@@ -208,9 +217,9 @@ def get_year_model_and_scenario_combinations(
     ValueError
         If the input parameters are not valid.
     """
-    # Get the list of available years.
+    # Get the list of available years sorted without duplicates.
     available_years = sorted(
-        available_historical_years + available_future_years
+        list(set(available_historical_years + available_future_years))
     )
 
     # Get the list of years based on the input parameters.
@@ -251,7 +260,22 @@ def get_year_model_and_scenario_combinations(
     # Create a list of year, model, and scenario combinations.
     year_model_scenario_list: list[tuple[int, str | None, str | None]] = []
     for year in years:
-        if year in available_historical_years:
+        if (
+            year in available_historical_years
+            and year in available_future_years
+        ):
+            # If the year is both historical and future, include both
+            # options.
+            year_model_scenario_list.append((year, None, None))
+            for (
+                model_key,
+                scenario_keys,
+            ) in selected_scenarios_for_model.items():
+                for scenario_key in scenario_keys:
+                    year_model_scenario_list.append(
+                        (year, model_key, scenario_key)
+                    )
+        elif year in available_historical_years:
             year_model_scenario_list.append((year, None, None))
         elif year in available_future_years:
             for (
