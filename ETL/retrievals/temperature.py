@@ -15,7 +15,6 @@ import datetime
 import logging
 import os
 
-import geopandas
 import numpy
 import pandas
 import utils.directories
@@ -77,6 +76,9 @@ def _load_gridded_temperature_data(
     # Define the years of interest (the given year, the previous
     # year, and the next year).
     years_of_interest = [year - 1, year, year + 1]
+    years_of_interest = [
+        y for y in years_of_interest if y in available_climate_years
+    ]
 
     # Define the file path of the temperature data for the given year,
     # model, and scenario as well as for the previous and next year.
@@ -95,7 +97,6 @@ def _load_gridded_temperature_data(
             + ".nc",
         )
         for y in years_of_interest
-        if y in available_climate_years
     ]
 
     # Check if the temperature data files do not exist and download if
@@ -234,12 +235,122 @@ def _load_gridded_population_data(
     return utils.geospatial.harmonize_coords(population_data)
 
 
+def _extract_temperature_in_most_populous_cells(
+    temperature_data: xarray.DataArray,
+    most_populous_grid_cells: xarray.DataArray,
+) -> xarray.DataArray:
+    """
+    Extract the temperature data for the most populous grid cells.
+
+    Parameters
+    ----------
+    temperature_data : xarray.DataArray
+        The gridded temperature data.
+    most_populous_grid_cells : xarray.DataArray
+        The grid cells with the largest population in the given
+        country or subdivision.
+
+    Returns
+    -------
+    xarray.DataArray
+        The temperature data for the most populous grid cells.
+    """
+    # Extract the x and y coordinates of the grid cells with the
+    # largest population.
+    x_coords = most_populous_grid_cells["x"].to_numpy()
+    y_coords = most_populous_grid_cells["y"].to_numpy()
+
+    # Find the closest grid cell in the temperature data to each of
+    # the grid cells with the largest population.
+    selected_x_coords = numpy.array(
+        [
+            temperature_data["x"]
+            .sel(
+                x=temperature_data["x"].to_numpy()[
+                    numpy.abs(temperature_data["x"].to_numpy() - x).argmin()
+                ]
+            )
+            .to_numpy()
+            for x in x_coords
+        ]
+    )
+    selected_y_coords = numpy.array(
+        [
+            temperature_data["y"]
+            .sel(
+                y=temperature_data["y"].to_numpy()[
+                    numpy.abs(temperature_data["y"].to_numpy() - y).argmin()
+                ]
+            )
+            .to_numpy()
+            for y in y_coords
+        ]
+    )
+
+    # Extract the temperature data for the grid cells with the largest
+    # population.
+    return temperature_data.sel(y=selected_y_coords, x=selected_x_coords)
+
+
+def _extract_temperature_in_local_year(
+    temperature_data: xarray.DataArray,
+    year: int,
+    entity_time_zone: datetime.tzinfo,
+    projections: bool,
+) -> xarray.DataArray:
+    """
+    Extract the temperature data for the given year in local time.
+
+    Parameters
+    ----------
+    temperature_data : xarray.DataArray
+        The gridded temperature data.
+    year : int
+        The year of the temperature data.
+    entity_time_zone : datetime.tzinfo
+        Time zone of the country or subdivision of interest.
+    projections : bool
+        Whether the temperature data is from a climate model (True)
+        or from reanalysis data (False).
+
+    Returns
+    -------
+    xarray.DataArray
+        The temperature data for the given year in local time.
+    """
+    if projections:
+        # Add 12 hours to the time coordinate to center the daily data
+        # on noon.
+        temperature_data["time"] = temperature_data["time"] + pandas.Timedelta(
+            hours=12
+        )
+
+        # Upsample the daily data to hourly data using linear
+        # interpolation.
+        temperature_data = temperature_data.resample(time="1h").interpolate()
+
+    # Define the start and end date for the given year in local time.
+    start_date = (
+        pandas.Timestamp(str(year) + "-01-01 00:00:00", tz=entity_time_zone)
+        .tz_convert("UTC")
+        .tz_localize(None)
+    )
+    end_date = (
+        pandas.Timestamp(str(year) + "-12-31 23:59:59", tz=entity_time_zone)
+        .tz_convert("UTC")
+        .tz_localize(None)
+    )
+
+    # Extract the temperature data for the given year in local time.
+    return temperature_data.sel(time=slice(start_date, end_date))
+
+
 def _get_temperature_in_most_populous_cells(
+    code: str,
     year: int,
     available_climate_years: list[int],
     climate_model: str | None,
     climate_scenario: str | None,
-    entity_shape: geopandas.GeoDataFrame,
     entity_time_zone: datetime.tzinfo,
     number_of_grid_cells: int = 1,
 ) -> pandas.Series:
@@ -255,6 +366,8 @@ def _get_temperature_in_most_populous_cells(
 
     Parameters
     ----------
+    code : str
+        The code of the country or subdivision of interest.
     year : int
         The year of the temperature data.
     available_climate_years : list[int]
@@ -263,8 +376,6 @@ def _get_temperature_in_most_populous_cells(
         The model of the climate data.
     climate_scenario : str | None
         The scenario of the climate data.
-    entity_shape : geopandas.GeoDataFrame
-        The shape of the country or subdivision of interest.
     entity_time_zone : datetime.tzinfo
         Time zone of the country or subdivision of interest.
     number_of_grid_cells : int, optional
@@ -277,23 +388,11 @@ def _get_temperature_in_most_populous_cells(
     """
     # Load the gridded temperature data.
     temperature_data = _load_gridded_temperature_data(
-        entity_shape.index[0],
+        code,
         year,
         available_climate_years,
         climate_model,
         climate_scenario,
-    )
-
-    # Define the start and end date for the given year in local time.
-    start_date = (
-        pandas.Timestamp(str(year) + "-01-01 00:00:00", tz=entity_time_zone)
-        .tz_convert("UTC")
-        .tz_localize(None)
-    )
-    end_date = (
-        pandas.Timestamp(str(year) + "-12-31 23:59:59", tz=entity_time_zone)
-        .tz_convert("UTC")
-        .tz_localize(None)
     )
 
     # Harmonize the time coordinate of the temperature data.
@@ -304,18 +403,20 @@ def _get_temperature_in_most_populous_cells(
         # Climate model data has a time type of cftime.DatetimeNoLeap.
         # Convert it to datetime64.
         temperature_data["time"] = (
-            temperature_data["time"].to_index().to_datetimeindex()
+            temperature_data["time"]
+            .to_index()
+            .to_datetimeindex(time_unit="ns")
         )
-
-    # Extract the temperature data for the given year in local time.
-    temperature_data = temperature_data.sel(time=slice(start_date, end_date))
 
     # Load the population data.
     population_data = _load_gridded_population_data(
-        entity_shape.index[0],
+        code,
         year,
         climate_scenario,
     )
+
+    # Get the shape of the country or subdivision.
+    entity_shape = utils.shapes.get_entity_shape(code, make_plot=False)
 
     # Get the grid cells with the largest population in the given
     # country or subdivision.
@@ -323,17 +424,21 @@ def _get_temperature_in_most_populous_cells(
         entity_shape, population_data, number_of_grid_cells
     )
 
-    # Fix roundig errors in the coordinates of the grid cells.
-    x_coords = most_populous_grid_cells["x"].round(2).to_numpy()
-    y_coords = most_populous_grid_cells["y"].round(2).to_numpy()
-    temperature_data["x"] = temperature_data["x"].round(2)
-    temperature_data["y"] = temperature_data["y"].round(2)
+    # Extract the temperature data for the most populous grid cells.
+    temperature_in_most_populous_grid_cells = (
+        _extract_temperature_in_most_populous_cells(
+            temperature_data, most_populous_grid_cells
+        )
+    )
 
-    # Get the temperature data for the grid cells with the largest
-    # population.
-    temperature_in_most_populous_grid_cells = temperature_data.sel(
-        y=y_coords,
-        x=x_coords,
+    # Extract the temperature data for the given year in local time.
+    temperature_in_most_populous_grid_cells = (
+        _extract_temperature_in_local_year(
+            temperature_in_most_populous_grid_cells,
+            year,
+            entity_time_zone,
+            (climate_model is not None),
+        )
     )
 
     # Calculate the average temperature for the grid cells with the
@@ -533,7 +638,7 @@ def run_data_retrieval(
     )
 
     # Define the available years for the future weather data.
-    available_future_years = list(range(pandas.Timestamp.now().year + 1, 2101))
+    available_future_years = list(range(pandas.Timestamp.now().year, 2101))
 
     # Define the available scenarios for the weather data.
     available_scenarios_for_model = {
@@ -595,9 +700,6 @@ def run_data_retrieval(
     for code in codes:
         logging.info(f"Retrieving temperature data for {code}.")
 
-        # Get the shape of the country or subdivision.
-        entity_shape = utils.shapes.get_entity_shape(code, make_plot=False)
-
         # Get the time zone of the country or subdivision.
         entity_time_zone = utils.entities.get_time_zone(code)
 
@@ -616,26 +718,39 @@ def run_data_retrieval(
             file_path_without_ext = os.path.join(
                 result_directory,
                 f"{code}_{year}"
-                + (f"_{model}_{scenario}" if model and scenario else ""),
+                + (
+                    f"_{model}_{scenario.replace('-', '_').replace('.', '_')}"
+                    if model and scenario
+                    else ""
+                ),
             )
 
             # Check if the file of temperature time series for the
             # given country or subdivision, year, model, and scenario
-            # already exists.
-            if not os.path.exists(
-                file_path_without_ext + ".parquet"
-            ) or not os.path.exists(file_path_without_ext + ".csv"):
+            # already exists. For the current year and historical
+            # data, we re-extract the temperature data to account for
+            # possible updates in the reanalysis data.
+            if (
+                not os.path.exists(file_path_without_ext + ".parquet")
+                or not os.path.exists(file_path_without_ext + ".csv")
+            ) or (
+                os.path.exists(file_path_without_ext + ".parquet")
+                and os.path.exists(file_path_without_ext + ".csv")
+                and year == pandas.Timestamp.now().year
+                and model is None
+                and scenario is None
+            ):
                 # Get the temperature data for the most populous grid
                 # cell in the given country or subdivision.
                 temperature_time_series_top_1 = (
                     _get_temperature_in_most_populous_cells(
+                        code,
                         year,
                         available_future_years
                         if model and scenario
                         else available_historical_years,
                         model,
                         scenario,
-                        entity_shape,
                         entity_time_zone,
                         number_of_grid_cells=1,
                     )
@@ -645,13 +760,13 @@ def run_data_retrieval(
                 # grid cells in the given country or subdivision.
                 temperature_time_series_top_3 = (
                     _get_temperature_in_most_populous_cells(
+                        code,
                         year,
                         available_future_years
                         if model and scenario
                         else available_historical_years,
                         model,
                         scenario,
-                        entity_shape,
                         entity_time_zone,
                         number_of_grid_cells=3,
                     )

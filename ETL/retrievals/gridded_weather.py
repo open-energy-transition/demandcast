@@ -339,6 +339,10 @@ def run_data_retrieval(
     # If there are many codes download the global data and then
     # extract the data for each country and subdivision.
     if len(codes) > 5:
+        # Create a directory to store the downloaded global data.
+        downloaded_data_directory = os.path.join(result_directory, "downloads")
+        os.makedirs(downloaded_data_directory, exist_ok=True)
+
         # Loop over the year, model, and scenario combinations.
         for year, model, scenario in year_model_scenario_list:
             logging.info(
@@ -359,12 +363,20 @@ def run_data_retrieval(
 
             # Define the full file path for the global weather data.
             global_file_path_without_ext = os.path.join(
-                result_directory,
+                downloaded_data_directory,
                 f"{case_name}",
             )
 
-            # Check if the global file does not exist.
-            if not os.path.exists(global_file_path_without_ext + ".nc"):
+            # Check if the global file does not exist. For the
+            # current year and historical data, we re-download the
+            # global data to account for possible updates in the
+            # reanalysis data.
+            if not os.path.exists(global_file_path_without_ext + ".nc") or (
+                os.path.exists(global_file_path_without_ext + ".nc")
+                and year == pandas.Timestamp.now().year
+                and model is None
+                and scenario is None
+            ):
                 logging.info(
                     f"Downloading global {variable} data for year "
                     f"{year}"
@@ -407,7 +419,18 @@ def run_data_retrieval(
                     f"{code}_{case_name}.nc",
                 )
 
-                if not os.path.exists(entity_file_path):
+                # Check if the file of weather data for the
+                # given country or subdivision, year, model, and
+                # scenario already exists. For the current year
+                # and historical data, we re-extract the weather
+                # data to account for possible updates in the
+                # reanalysis data.
+                if not os.path.exists(entity_file_path) or (
+                    os.path.exists(entity_file_path)
+                    and year == pandas.Timestamp.now().year
+                    and model is None
+                    and scenario is None
+                ):
                     logging.info(
                         f"Extracting {variable} data for {code} for "
                         f"the year {year}."
