@@ -100,9 +100,16 @@ def _load_gridded_temperature_data(
     ]
 
     # Check if the temperature data files do not exist and download if
-    # necessary.
+    # necessary. For the current year and historical data, we
+    # re-download the data to account for possible updates in the
+    # reanalysis data.
     for file_path, y in zip(temperature_data_file_paths, years_of_interest):
-        if not os.path.exists(file_path):
+        if not os.path.exists(file_path) or (
+            os.path.exists(file_path)
+            and y == pandas.Timestamp.now().year
+            and climate_model is None
+            and climate_scenario is None
+        ):
             # Download the gridded temperature data.
             retrievals.gridded_weather.run_data_retrieval(
                 code=code,
