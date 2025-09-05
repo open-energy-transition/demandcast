@@ -519,6 +519,12 @@ def run_data_retrieval(
                         f"{file_path_without_ext}_{scenario}.csv",
                     )
 
+                    logging.info(
+                        f"Future annual electricity demand per capita data "
+                        f"for {code} and {scenario} has been extracted "
+                        "and saved successfully."
+                    )
+
                 else:
                     logging.info(
                         f"Future annual electricity demand per capita data "

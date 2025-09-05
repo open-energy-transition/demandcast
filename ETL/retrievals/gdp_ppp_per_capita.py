@@ -5,10 +5,10 @@ License: AGPL-3.0.
 Description:
 
     This module includes functions to download and extract historical
-    GDP PPP per capita data from the World Bank and future GDP PPP
-    per capita data from the IAMC scenarios. The data is extracted for
-    the countries and subdivisions of interest and saved into CSV and
-    Parquet files.
+    GDP PPP per capita data from the World Bank and calculate future
+    GDP PPP per capita based on growth rates from the IAMC scenarios.
+    The data is extracted for the countries and subdivisions of interest
+    and saved into CSV and Parquet files.
 
     Source: https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.CD
     Source: https://tntcat.iiasa.ac.at/SspDb
@@ -99,9 +99,7 @@ def extract_historical_gdp_ppp_per_capita_from_world_bank(
     world_bank_gdp_ppp_per_capita.index = (
         world_bank_gdp_ppp_per_capita.index.astype(int)
     )
-    world_bank_gdp_ppp_per_capita = world_bank_gdp_ppp_per_capita.astype(int)
-
-    return world_bank_gdp_ppp_per_capita
+    return world_bank_gdp_ppp_per_capita.astype(int)
 
 
 def _get_future_gdp_ppp_per_capita_from_iiasa(
@@ -194,9 +192,10 @@ def run_data_retrieval(
     Download and extract GDP PPP per capita data.
 
     This function downloads and extracts historical GDP PPP per capita
-    data from the World Bank and future GDP PPP per capita data from the
-    IAMC scenarios for the countries and subdivisions of interest. The
-    data is saved into CSV and Parquet files.
+    data from the World Bank and calculates future GDP PPP per capita
+    based on growth rates from the IAMC scenarios. The data is
+    extracted for the countries and subdivisions of interest and saved
+    into CSV and Parquet files.
 
     Parameters
     ----------

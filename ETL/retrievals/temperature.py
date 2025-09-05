@@ -407,8 +407,8 @@ def _get_temperature_in_most_populous_cells(
         # Reanalysis data has a time coordinate named "valid_time".
         temperature_data = temperature_data.rename({"valid_time": "time"})
     elif climate_model:
-        # Climate model data has a time type of cftime.DatetimeNoLeap.
-        # Convert it to datetime64.
+        # Climate model data has a time coordinate type of
+        # cftime.DatetimeNoLeap. Convert it to datetime64.
         temperature_data["time"] = (
             temperature_data["time"]
             .to_index()
@@ -600,7 +600,7 @@ def run_data_retrieval(
     Extract temperature data for the most populous grid cells.
 
     This function extracts temperature data downloaded from the
-    Copernicus Climate Data Store (CDS) for tthe most populous grid
+    Copernicus Climate Data Store (CDS) for the most populous grid
     cells in a given country or subdivision. It calculates the
     average temperature and saves the results into CSV and Parquet
     files.
@@ -713,7 +713,7 @@ def run_data_retrieval(
         # Loop over the year, model, and scenario combinations.
         for year, model, scenario in year_model_scenario_list:
             logging.info(
-                f"Extracting temperature data for year {year}"
+                f"Extracting temperature data for the year {year}"
                 + (
                     f", model {model}, and scenario {scenario}."
                     if model and scenario
@@ -793,10 +793,21 @@ def run_data_retrieval(
                 temperature_database.to_csv(file_path_without_ext + ".csv")
 
                 logging.info(
-                    f"Temperature time series for {code} has been "
-                    "successfully extracted and saved."
+                    f"Temperature time series for the year {year}"
+                    + (
+                        f", model {model}, and scenario {scenario}"
+                        if model and scenario
+                        else ""
+                    )
+                    + " has been successfully extracted and saved."
                 )
             else:
                 logging.info(
-                    f"Temperature time series for {code} already exists."
+                    f"Temperature time series for the year {year}"
+                    + (
+                        f", model {model}, and scenario {scenario}"
+                        if model and scenario
+                        else ""
+                    )
+                    + " already exists. Skipping extraction."
                 )

@@ -213,7 +213,7 @@ def run_data_retrieval(
     scenario: str | None,
 ) -> None:
     """
-    Run the gridded weather data retrieval.
+    Download and extract gridded weather data.
 
     This function retrieves weather data from the Copernicus Climate
     Data Store (CDS) for the countries and subdivisions of interest.
@@ -378,7 +378,7 @@ def run_data_retrieval(
                 and scenario is None
             ):
                 logging.info(
-                    f"Downloading global {variable} data for year "
+                    f"Downloading global {variable} data for the year "
                     f"{year}"
                     + (
                         f", model {model}, and scenario {scenario}."
@@ -432,8 +432,8 @@ def run_data_retrieval(
                     and scenario is None
                 ):
                     logging.info(
-                        f"Extracting {variable} data for {code} for "
-                        f"the year {year}."
+                        f"Extracting {variable} data for {code} and "
+                        f"year {year}."
                     )
 
                     # Get the shape of the country or subdivision.
@@ -456,13 +456,13 @@ def run_data_retrieval(
                     entity_data.to_netcdf(entity_file_path)
 
                     logging.info(
-                        f"{variable.capitalize()} data for {code} for the "
+                        f"{variable.capitalize()} data for {code} and "
                         f"year {year} has been successfully extracted and "
                         "saved."
                     )
                 else:
                     logging.info(
-                        f"{variable.capitalize()} data for {code} for the "
+                        f"{variable.capitalize()} data for {code} and "
                         f"year {year} already exists. Skipping extraction."
                     )
 

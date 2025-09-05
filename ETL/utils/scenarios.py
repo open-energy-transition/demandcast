@@ -5,7 +5,7 @@ License: AGPL-3.0.
 Description:
 
     This module povides utility functions for the data retrieval for
-    different scenarios.
+    different future scenarios.
 """
 
 import os
@@ -290,14 +290,14 @@ def get_year_model_and_scenario_combinations(
     return year_model_scenario_list
 
 
-def get_iam_region(iso_alpha_2_code: str) -> str:
+def get_iam_region(iso_alpha_3_code: str) -> str:
     """
-    Get the IAM region for a given ISO Alpha-2 country code.
+    Get the IAM region for a given ISO Alpha-3 country code.
 
     Parameters
     ----------
-    iso_alpha_2_code : str
-        The ISO Alpha-2 country code.
+    iso_alpha_3_code : str
+        The ISO Alpha-3 country code.
 
     Returns
     -------
@@ -307,10 +307,10 @@ def get_iam_region(iso_alpha_2_code: str) -> str:
     Raises
     ------
     ValueError
-        If no IAM region is found for the given ISO Alpha-2 code.
+        If no IAM region is found for the given ISO Alpha-3 code.
     """
     # Define the path to the yaml file containing the mapping of ISO
-    # Alpha-2 codes to IAM regions.
+    # Alpha-3 codes to IAM regions.
     iam_region_mappping = os.path.join(
         os.path.dirname(__file__), "iam_region_mapping.yaml"
     )
@@ -320,11 +320,11 @@ def get_iam_region(iso_alpha_2_code: str) -> str:
         iso_to_region = yaml.safe_load(file)
 
     # Get the IAM region for the given ISO Alpha-2 code.
-    region_code = iso_to_region.get(iso_alpha_2_code, None)
+    region_code = iso_to_region.get(iso_alpha_3_code, None)
 
     if region_code is None:
         raise ValueError(
-            f"No IAM region found for ISO Alpha-2 code: {iso_alpha_2_code}"
+            f"No IAM region found for ISO Alpha-3 code: {iso_alpha_3_code}"
         )
 
     return region_code

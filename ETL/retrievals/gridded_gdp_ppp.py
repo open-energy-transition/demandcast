@@ -171,7 +171,7 @@ def run_data_retrieval(
     for year, scenario in year_scenario_list:
         logging.info(
             f"Processing GDP PPP data for the year {year}"
-            + (f" and {scenario}." if scenario else ".")
+            + (f" and scenario {scenario}." if scenario else ".")
         )
 
         # Define the year and scenario string for the file name.

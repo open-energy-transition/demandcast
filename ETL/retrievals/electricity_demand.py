@@ -4,13 +4,12 @@ License: AGPL-3.0.
 
 Description:
 
-    This module downloads hourly or sub-hourly electricity demand data
-    from various data sources. Users can specify a data source and
-    optionally provide a country or subdivision code to retrieve
-    specific data. The retrieved data is cleaned and saved in a
-    structured format for further analysis. The module also supports
-    uploading the data to Google Cloud Storage (GCS) if a bucket name
-    is provided.
+    This module includes functions to download hourly or sub-hourly
+    electricity demand data from various data sources. The retrieved
+    data is cleaned and saved in a structured format for further
+    analysis. The module also supports uploading the data to Google
+    Cloud Storage (GCS) if a bucket name is provided and to Zenodo for
+    open access sharing.
 """
 
 import importlib
@@ -24,7 +23,7 @@ import utils.time_series
 import utils.uploader
 
 
-def retrieve_data(data_source: str, code: str) -> pandas.Series:
+def _retrieve_data(data_source: str, code: str) -> pandas.Series:
     """
     Retrieve the electricity demand data.
 
@@ -131,7 +130,7 @@ def retrieve_data(data_source: str, code: str) -> pandas.Series:
     return electricity_demand_time_series
 
 
-def save_data(
+def _save_data(
     electricity_demand_time_series: pandas.Series,
     code: str,
     data_source: str,
@@ -152,11 +151,11 @@ def save_data(
     ----------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
-    data_source : str
-        The data source.
     code : str
         The code of the country or subdivision.
-    upload_to_gcs : str
+    data_source : str
+        The data source.
+    upload_to_gcs : str | None
         The bucket name of the Google Cloud Storage (GCS) to upload the
         data.
     upload_to_zenodo : bool
@@ -269,11 +268,11 @@ def run_data_retrieval(
         logging.info(f"Retrieving data for {code}.")
 
         # Retrieve the electricity demand time series.
-        electricity_demand_time_series = retrieve_data(data_source, code)
+        electricity_demand_time_series = _retrieve_data(data_source, code)
 
         # Save the electricity demand time series to a file and upload
         # it to GCS.
-        save_data(
+        _save_data(
             electricity_demand_time_series,
             code,
             data_source,

@@ -26,6 +26,7 @@ import utils.entities
 import utils.geospatial
 import utils.scenarios
 import utils.shapes
+import utils.time_series
 import xarray
 
 import retrievals.gridded_population
@@ -474,6 +475,9 @@ def run_data_retrieval(
 
     # Loop over the countries and subdivisions.
     for code in codes:
+        # Get the time zone of the country or subdivision.
+        time_zone = utils.entities.get_time_zone(code)
+
         # Check if the code is a subdivision (contains an underscore).
         if "_" in code:
             # Define the available years for gridded population data.
@@ -556,18 +560,33 @@ def run_data_retrieval(
                 )
 
                 # Extract only the selected historical years.
-                historical_population = historical_population.loc[
+                selected_historical_population = historical_population.loc[
                     historical_population.index.isin(
                         selected_historical_years_when_interpolated
                     )
                 ]
 
+                # Convert the historical population data from yearly to
+                # hourly values.
+                selected_historical_population = (
+                    utils.time_series.convert_from_yearly_to_hourly(
+                        selected_historical_population,
+                        time_zone,
+                    )
+                )
+
+                # Clean the time series.
+                selected_historical_population = utils.time_series.clean_data(
+                    selected_historical_population,
+                    "Population",
+                )
+
                 # Save the historical population data to CSV and
                 # Parquet files.
-                historical_population.to_frame().to_parquet(
+                selected_historical_population.to_frame().to_parquet(
                     file_path_without_ext + ".parquet",
                 )
-                historical_population.to_csv(
+                selected_historical_population.to_csv(
                     file_path_without_ext + ".csv",
                 )
 
@@ -606,18 +625,35 @@ def run_data_retrieval(
                         )
 
                         # Extract only the selected future years.
-                        future_population = future_population.loc[
+                        selected_future_population = future_population.loc[
                             future_population.index.isin(
                                 selected_future_years_when_interpolated
                             )
                         ]
 
+                        # Convert the future population data from yearly
+                        # to hourly values.
+                        selected_future_population = (
+                            utils.time_series.convert_from_yearly_to_hourly(
+                                selected_future_population,
+                                time_zone,
+                            )
+                        )
+
+                        # Clean the time series.
+                        selected_future_population = (
+                            utils.time_series.clean_data(
+                                selected_future_population,
+                                "Population",
+                            )
+                        )
+
                         # Save the future population data to CSV and
                         # Parquet files.
-                        future_population.to_frame().to_parquet(
+                        selected_future_population.to_frame().to_parquet(
                             f"{file_path_without_ext}_{scenario}.parquet",
                         )
-                        future_population.to_csv(
+                        selected_future_population.to_csv(
                             f"{file_path_without_ext}_{scenario}.csv",
                         )
 
@@ -716,9 +752,20 @@ def run_data_retrieval(
                     historical_population.index.isin(selected_historical_years)
                 ]
 
-                # Rename the index and the variable.
-                selected_historical_population.index.name = "Year"
-                selected_historical_population.name = "Population"
+                # Convert the historical population data from yearly to
+                # hourly values.
+                selected_historical_population = (
+                    utils.time_series.convert_from_yearly_to_hourly(
+                        selected_historical_population,
+                        time_zone,
+                    )
+                )
+
+                # Clean the time series.
+                selected_historical_population = utils.time_series.clean_data(
+                    selected_historical_population,
+                    "Population",
+                )
 
                 # Save the historical population data to CSV and
                 # Parquet files.
@@ -760,9 +807,22 @@ def run_data_retrieval(
                             future_population.index.isin(selected_future_years)
                         ]
 
-                        # Rename the index and the variable.
-                        selected_future_population.index.name = "Year"
-                        selected_future_population.name = "Population"
+                        # Convert the future population data from yearly
+                        # to hourly values.
+                        selected_future_population = (
+                            utils.time_series.convert_from_yearly_to_hourly(
+                                selected_future_population,
+                                time_zone,
+                            )
+                        )
+
+                        # Clean the time series.
+                        selected_future_population = (
+                            utils.time_series.clean_data(
+                                selected_future_population,
+                                "Population",
+                            )
+                        )
 
                         # Save the future population data to CSV and
                         # Parquet files.

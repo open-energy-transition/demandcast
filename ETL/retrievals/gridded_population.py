@@ -287,7 +287,7 @@ def run_data_retrieval(
     for year, scenario in year_scenario_list:
         logging.info(
             f"Processing population data for the year {year}"
-            + (f" and {scenario}." if scenario else ".")
+            + (f" and scenario {scenario}." if scenario else ".")
         )
 
         if year <= 2020:
