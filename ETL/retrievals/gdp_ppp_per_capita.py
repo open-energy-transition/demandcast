@@ -5,14 +5,16 @@ License: AGPL-3.0.
 Description:
 
     This module includes functions to download and extract historical
-    GDP PPP per capita data from the World Bank and calculate future
-    GDP PPP per capita based on growth rates from the IAMC scenarios.
-    The data is extracted for the countries and subdivisions of interest
-    and saved into CSV and Parquet files.
+    GDP PPP per capita data from the World Bank and the International
+    Monetary Fund (IMF), as well as to calculate future GDP PPP per
+    capita based on growth rates from the IAMC scenarios. The data is
+    extracted for specified countries and subdivisions and saved into
+    CSV and Parquet files.
 
     Source: https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.CD
+    Source: https://www.imf.org/external/datamapper/PPPPC@WEO/OEMDC/ADVEC/WEOWORLD
     Source: https://tntcat.iiasa.ac.at/SspDb
-"""
+"""  # noqa: W505
 
 import logging
 import os
@@ -34,18 +36,15 @@ def download_historical_gdp_ppp_per_capita_from_world_bank() -> (
 
     Returns
     -------
-    pandas.DataFrame
+    gdp_ppp_per_capita : pandas.DataFrame
         The historical GDP PPP per capita data from the World Bank.
     """
     logging.info("Downloading GDP PPP per capita data from the World Bank.")
 
     # Define the URL to download the GDP PPP per capita data.
-    url = (
-        "https://api.worldbank.org/v2/en/indicator/"
-        "NY.GDP.PCAP.PP.CD?downloadformat=csv"
-    )
+    url = "https://api.worldbank.org/v2/en/indicator/NY.GDP.PCAP.PP.CD?downloadformat=csv"  # noqa: W505
 
-    # Fetch the data from the World Bank.
+    # Download the data from the World Bank.
     response = requests.get(url)
 
     # Extract the archive from the response.
@@ -58,12 +57,67 @@ def download_historical_gdp_ppp_per_capita_from_world_bank() -> (
             if not name.startswith("Metadata") and name.endswith(".csv")
         ][0]
 
-        # Extract and return the GDP PPP per capita from the archive.
-        return pandas.read_csv(archive.open(world_bank_file_name), skiprows=4)
+        # Read the GDP PPP per capita from the archive.
+        gdp_ppp_per_capita = pandas.read_csv(
+            archive.open(world_bank_file_name), skiprows=4
+        )
+
+        # Set the index to the country code.
+        gdp_ppp_per_capita = gdp_ppp_per_capita.set_index("Country Code")
+
+        # Keep only the columns that are digits (i.e., years).
+        gdp_ppp_per_capita = gdp_ppp_per_capita.iloc[
+            :, gdp_ppp_per_capita.columns.str.isdigit()
+        ]
+
+        # Convert to the correct data types.
+        gdp_ppp_per_capita.columns = gdp_ppp_per_capita.columns.astype(int)
+        gdp_ppp_per_capita.index = gdp_ppp_per_capita.index.astype(str)
+        gdp_ppp_per_capita = gdp_ppp_per_capita.astype(float)
+
+        # Rename the columns.
+        gdp_ppp_per_capita.columns.name = "Year"
+
+    return gdp_ppp_per_capita
 
 
-def extract_historical_gdp_ppp_per_capita_from_world_bank(
+def download_historical_gdp_ppp_per_capita_from_imf() -> pandas.DataFrame:
+    """
+    Download historical GDP PPP per capita data from the IMF.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The historical GDP PPP per capita data from the IMF.
+    """
+    logging.info("Downloading GDP PPP per capita data from the IMF.")
+
+    # Define the URL to download the GDP PPP per capita data.
+    url = "https://www.imf.org/external/datamapper/api/v1/PPPPC"
+
+    # Download the data from the IMF.
+    imf_gdp_ppp_per_capita = pandas.DataFrame(
+        pandas.read_json(url).loc["PPPPC"].loc["values"]
+    )
+
+    # Switch the rows with columns.
+    imf_gdp_ppp_per_capita = imf_gdp_ppp_per_capita.T
+
+    # Convert to the correct data types.
+    imf_gdp_ppp_per_capita.columns = imf_gdp_ppp_per_capita.columns.astype(int)
+    imf_gdp_ppp_per_capita.index = imf_gdp_ppp_per_capita.index.astype(str)
+    imf_gdp_ppp_per_capita = imf_gdp_ppp_per_capita.astype(float)
+
+    # Rename the index and columns.
+    imf_gdp_ppp_per_capita.index.name = "Country Code"
+    imf_gdp_ppp_per_capita.columns.name = "Year"
+
+    return imf_gdp_ppp_per_capita
+
+
+def extract_historical_gdp_ppp_per_capita(
     world_bank_gdp_ppp_per_capita: pandas.DataFrame,
+    imf_gdp_ppp_per_capita: pandas.DataFrame,
     iso_alpha_3_code: str,
 ) -> pandas.Series:
     """
@@ -73,33 +127,65 @@ def extract_historical_gdp_ppp_per_capita_from_world_bank(
     ----------
     world_bank_gdp_ppp_per_capita : pandas.DataFrame
         The historical GDP PPP per capita data from the World Bank.
+    imf_
     iso_alpha_3_code : str
-        The ISO Alpha-3 code of the country or subdivision of interest.
+        The ISO Alpha-3 code of the country of interest.
 
     Returns
     -------
     pandas.Series
-        The historical GDP PPP per capita for the given country or
-        subdivision.
-    """
-    # Extract the GDP PPP per capita for the given country or
-    # subdivision.
-    world_bank_gdp_ppp_per_capita = (
-        world_bank_gdp_ppp_per_capita[
-            world_bank_gdp_ppp_per_capita["Country Code"] == iso_alpha_3_code
-        ]
-        .iloc[
-            0,
-            world_bank_gdp_ppp_per_capita.columns.str.isdigit(),
-        ]
-        .dropna()
-    )
+        The historical GDP PPP per capita for the given country.
 
-    # Convert the index and the values to integers.
-    world_bank_gdp_ppp_per_capita.index = (
-        world_bank_gdp_ppp_per_capita.index.astype(int)
-    )
-    return world_bank_gdp_ppp_per_capita.astype(int)
+    Raises
+    ------
+    ValueError
+        If no GDP PPP per capita data is found for the given country.
+    """
+    if iso_alpha_3_code in world_bank_gdp_ppp_per_capita.index:
+        # Extract the GDP PPP per capita from the World Bank for the
+        # given country.
+        world_bank_gdp_ppp_per_capita_of_country = (
+            world_bank_gdp_ppp_per_capita.loc[iso_alpha_3_code].dropna()
+        )
+    else:
+        logging.warning(
+            f"GDP PPP per capita data from the World Bank is not "
+            f"available for {iso_alpha_3_code}."
+        )
+        world_bank_gdp_ppp_per_capita_of_country = pandas.Series(dtype=float)
+
+    if iso_alpha_3_code in imf_gdp_ppp_per_capita.index:
+        # Extract the GDP PPP per capita from the IMF for the given
+        # country.
+        imf_gdp_ppp_per_capita_of_country = imf_gdp_ppp_per_capita.loc[
+            iso_alpha_3_code
+        ].dropna()
+    else:
+        logging.warning(
+            f"GDP PPP per capita data from the IMF is not available for "
+            f"{iso_alpha_3_code}."
+        )
+        imf_gdp_ppp_per_capita_of_country = pandas.Series(dtype=float)
+
+    if (
+        world_bank_gdp_ppp_per_capita_of_country.empty
+        and imf_gdp_ppp_per_capita_of_country.empty
+    ):
+        raise ValueError(
+            f"No DP PPP per capita data found for {iso_alpha_3_code}."
+        )
+
+    # Combine the two datasets by averaging them.
+    gdp_ppp_per_capita_of_country = (
+        world_bank_gdp_ppp_per_capita_of_country
+        + imf_gdp_ppp_per_capita_of_country
+    ) / 2
+
+    # Where the combined series is NaN because one of the datasets is
+    # missing, use the other dataset.
+    return gdp_ppp_per_capita_of_country.fillna(
+        world_bank_gdp_ppp_per_capita_of_country
+    ).fillna(imf_gdp_ppp_per_capita_of_country)
 
 
 def _get_future_gdp_ppp_per_capita_from_iiasa(
@@ -150,12 +236,18 @@ def _get_future_gdp_ppp_per_capita_from_iiasa(
         index_col=0,
     )
 
-    # Extract the annual growth rates of the GDP PPP per capita for the
-    # country and scenario of interest.
-    annual_growth_rate = annual_growth_rate[
-        (annual_growth_rate["Region"] == iso_alpha_3_code)
-        & (annual_growth_rate["Scenario"] == scenario)
-    ]
+    if iso_alpha_3_code in annual_growth_rate["Region"].to_list():
+        # Extract the annual growth rates of the GDP PPP per capita for
+        # the country and scenario of interest.
+        annual_growth_rate = annual_growth_rate[
+            (annual_growth_rate["Region"] == iso_alpha_3_code)
+            & (annual_growth_rate["Scenario"] == scenario)
+        ]
+    else:
+        raise ValueError(
+            f"GDP PPP per capita growth rate data is not available for "
+            f"{iso_alpha_3_code}."
+        )
 
     # Check that there is only one row.
     if len(annual_growth_rate) != 1:
@@ -226,6 +318,9 @@ def run_data_retrieval(
         download_historical_gdp_ppp_per_capita_from_world_bank()
     )
 
+    # Download the historical GDP PPP per capita from the IMF.
+    imf_gdp_ppp_per_capita = download_historical_gdp_ppp_per_capita_from_imf()
+
     # Get the list of codes of the countries and subdivisions.
     codes = utils.entities.check_and_get_codes(code=code, file_path=file)
 
@@ -238,10 +333,10 @@ def run_data_retrieval(
         iso_alpha_3_code = utils.entities.get_iso_alpha_3_code(code)
 
         # Extract the historical GDP PPP per capita.
-        historical_gdp_ppp_per_capita = (
-            extract_historical_gdp_ppp_per_capita_from_world_bank(
-                world_bank_gdp_ppp_per_capita, iso_alpha_3_code
-            )
+        historical_gdp_ppp_per_capita = extract_historical_gdp_ppp_per_capita(
+            world_bank_gdp_ppp_per_capita,
+            imf_gdp_ppp_per_capita,
+            iso_alpha_3_code,
         )
 
         # Get the years of available historical data.
