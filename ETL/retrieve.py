@@ -4,7 +4,13 @@ License: AGPL-3.0.
 
 Description:
 
-    This script downloads
+    This script downloads various types of data for specified countries
+    and subdivisions. The data types include electricity demand,
+    annual electricity demand per capita, population, gridded
+    population, GDP PPP per capita, gridded GDP PPP, gridded weather
+    data, and temperature data. The script allows users to specify the
+    data source, time range, and other parameters through command line
+    arguments.
 """
 
 import argparse
@@ -30,11 +36,16 @@ def read_command_line_arguments() -> argparse.Namespace:
 
     Returns
     -------
-    args : argparse.Namespace
+    argparse.Namespace
         The command line arguments.
     """
     # Create a parser for the command line arguments.
-    parser = argparse.ArgumentParser(description=("Download "))
+    parser = argparse.ArgumentParser(
+        description=(
+            "Download the specified data for the specified countries and "
+            "subdivisions."
+        )
+    )
 
     # Add the command line arguments.
     parser.add_argument(
@@ -50,7 +61,7 @@ def read_command_line_arguments() -> argparse.Namespace:
             "gridded_weather",
             "temperature",
         ],
-        help=(""),
+        help="The type of data to be downloaded.",
     )
     parser.add_argument(
         "-c",
@@ -164,9 +175,7 @@ def read_command_line_arguments() -> argparse.Namespace:
     )
 
     # Read the arguments from the command line.
-    args = parser.parse_args()
-
-    return args
+    return parser.parse_args()
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ Description:
     Source: https://data.ghg.center/sedac-popdensity-yeargrid5yr-v4.11/browseui/#sedac-popdensity-yeargrid5yr-v4.11/
     Source: https://doi.org/10.6084/m9.figshare.19608594
     Source: https://doi.org/10.1038/s41597-022-01675-x
-"""
+"""  # noqa: W505
 
 import io
 import logging
