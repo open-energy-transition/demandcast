@@ -73,39 +73,36 @@ def plot(figure_directory: str) -> None:
 
     # Loop over the countries.
     for code in codes:
-        if code == "US_NW" or code == "US_CAR":  # TO FIX
-            continue
-        else:
-            # Get the shape of the country or subdivision.
-            entity_shape = utils.shapes.get_entity_shape(code, make_plot=False)
+        # Get the shape of the country or subdivision.
+        entity_shape = utils.shapes.get_entity_shape(code, make_plot=False)
 
-            # Calculate the number of years of available data.
-            n_years = (date_ranges[code][1] - date_ranges[code][0]).days / 365
+        # Calculate the number of years of available data.
+        n_years = (date_ranges[code][1] - date_ranges[code][0]).days / 365
 
-            # Define the transparency of the shape based on the number
-            # of years of available data.
-            if n_years >= 0 and n_years < 5:
-                color = map_cmap(lower_bound)
-            elif n_years >= 5 and n_years < 10:
-                color = map_cmap(lower_bound + (upper_bound - lower_bound) / 3)
-            elif n_years >= 10 and n_years < 20:
-                color = map_cmap(
-                    lower_bound + (2 * (upper_bound - lower_bound)) / 3
-                )
-            else:
-                color = map_cmap(upper_bound)
-
-            # Plot the country or subdivision.
-            entity_shape.plot(
-                ax=ax,
-                transform=data_crs,
-                facecolor=color,
-                edgecolor="black",
-                linewidth=0.5,
-                aspect=None,
-                #autolim=False,
-                alpha=alpha,
+        # Define the transparency of the shape based on the number
+        # of years of available data.
+        if n_years >= 0 and n_years < 5:
+            color = map_cmap(lower_bound)
+        elif n_years >= 5 and n_years < 10:
+            color = map_cmap(lower_bound + (upper_bound - lower_bound) / 3)
+        elif n_years >= 10 and n_years < 20:
+            color = map_cmap(
+                lower_bound + (2 * (upper_bound - lower_bound)) / 3
             )
+        else:
+            color = map_cmap(upper_bound)
+
+        # Plot the country or subdivision.
+        entity_shape.plot(
+            ax=ax,
+            transform=data_crs,
+            facecolor=color,
+            edgecolor="black",
+            linewidth=0.5,
+            aspect=None,
+            autolim=False,
+            alpha=alpha,
+        )
 
     # Extract the base colors of the colormap.
     base_colors = [
