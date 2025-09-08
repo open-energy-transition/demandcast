@@ -722,7 +722,7 @@ def plot(figure_directory: str) -> None:
     fig.savefig(
         os.path.join(
             figure_directory,
-            "data_availability_by_gpd_and_electricity_demand.png",
+            "data_availability_by_gpd_ppp_and_electricity_demand.png",
         ),
         dpi=300,
         bbox_inches="tight",
