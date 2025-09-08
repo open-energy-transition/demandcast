@@ -151,6 +151,13 @@ def test_get_fraction_of_grid_cells_in_shape(monkeypatch):
 
 
 def test_from_density_to_count():
+    """
+    Test the conversion from density to count.
+
+    This function tests the from_density_to_count utility function to
+    ensure it correctly converts a density grid (in counts per square
+    kilometer) to a count grid based on the area of each grid cell.
+    """
     # Create a simple 3x2 density grid in counts per sq km.
     lat = numpy.array([10, 10.5, 11])
     lon = numpy.array([20, 20.5])
