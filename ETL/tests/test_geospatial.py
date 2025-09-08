@@ -166,7 +166,7 @@ def test_from_density_to_count():
         data=density_values,
         coords={"y": lat, "x": lon},
         dims=["y", "x"],
-        name="density"
+        name="density",
     )
 
     # Define constants for area calculation.
@@ -174,26 +174,31 @@ def test_from_density_to_count():
     R = 6371.0
 
     # Calculate boundary latitudes.
-    boundary_lat = numpy.concatenate([
-        [lat[0] - 0.5 * resolution],
-        0.5 * (lat[1:] + lat[:-1]),
-        [lat[-1] + 0.5 * resolution]
-    ])  # [9.75, 10.25, 10.75, 11.25]
+    boundary_lat = numpy.concatenate(
+        [
+            [lat[0] - 0.5 * resolution],
+            0.5 * (lat[1:] + lat[:-1]),
+            [lat[-1] + 0.5 * resolution],
+        ]
+    )  # [9.75, 10.25, 10.75, 11.25]
 
     # For each latitide index, get lower and upper boundaries.
     lower_lat = boundary_lat[:-1]  # [9.75, 10.25, 10.75]
-    upper_lat = boundary_lat[1:]   # [10.25, 10.75, 11.25]
+    upper_lat = boundary_lat[1:]  # [10.25, 10.75, 11.25]
 
     # Compute expected area for each grid cell.
     area = (
         (numpy.pi / 180)
         * R**2
         * resolution
-        * (numpy.sin(numpy.deg2rad(upper_lat)) - numpy.sin(numpy.deg2rad(lower_lat)))
+        * (
+            numpy.sin(numpy.deg2rad(upper_lat))
+            - numpy.sin(numpy.deg2rad(lower_lat))
+        )
     )
     # Repeat area for each longitude (2 columns).
     expected_area = numpy.tile(area, (2, 1)).T  # Shape (3,2)
-    
+
     # Calculate expected counts.
     expected_counts = density_values * expected_area
 
