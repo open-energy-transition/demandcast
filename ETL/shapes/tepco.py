@@ -135,6 +135,11 @@ all_prefectures = all_prefectures.rename(
 all_prefectures["name"] = ["Kantō"]
 all_prefectures["code"] = ["JP_Kantō"]
 
+# Set the precision of the geometry to a grid size of 0.005 degrees.
+# This is done to remove small spikes in the shapes that cause issues
+# when plotting the shapes.
+all_prefectures["geometry"] = all_prefectures["geometry"].set_precision(0.005)
+
 # Save the shape of the region to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "tepco")
 os.makedirs(shapes_dir, exist_ok=True)

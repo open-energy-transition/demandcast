@@ -237,6 +237,11 @@ regions.loc[regions["name"] == "New England", "geometry"] = regions.loc[
 
 ########################################################################
 
+# Set the precision of the geometry to a grid size of 0.005 degrees.
+# This is done to remove small spikes in the shapes that cause issues
+# when plotting the shapes.
+regions["geometry"] = regions["geometry"].set_precision(0.005)
+
 # Save the shapes of the regions to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "eia")
 os.makedirs(shapes_dir, exist_ok=True)

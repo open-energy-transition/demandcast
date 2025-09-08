@@ -61,6 +61,11 @@ gb_shape["code"] = ["GB_GB"]
 # Reorder the columns.
 gb_shape = gb_shape[["name", "code", "geometry"]]
 
+# Set the precision of the geometry to a grid size of 0.005 degrees.
+# This is done to remove small spikes in the shapes that cause issues
+# when plotting the shapes.
+gb_shape["geometry"] = gb_shape["geometry"].set_precision(0.005)
+
 # Save the shape of the subdivision to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "neso")
 os.makedirs(shapes_dir, exist_ok=True)

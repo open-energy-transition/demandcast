@@ -329,6 +329,11 @@ subdivisions.loc[subdivisions["code"] == "MX_ORI", "name"] = "Oriental"
 subdivisions = subdivisions[["name", "code", "geometry"]]
 subdivisions = subdivisions.reset_index(drop=True)
 
+# Set the precision of the geometry to a grid size of 0.005 degrees.
+# This is done to remove small spikes in the shapes that cause issues
+# when plotting the shapes.
+subdivisions["geometry"] = subdivisions["geometry"].set_precision(0.005)
+
 # Save the shapes of the subdivisions to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "cenace")
 os.makedirs(shapes_dir, exist_ok=True)
