@@ -214,6 +214,11 @@ def download_and_extract_data_for_request(
         # Concatenate the daily values into a single pandas Series.
         electricity_demand_time_series = pandas.concat(dayly_values_list)
 
+        # Convert the electricity demand values to float type.
+        electricity_demand_time_series = electricity_demand_time_series.astype(
+            float
+        )
+
         # Values are in kWh with a frequency of 1 hour. Convert to MW.
         electricity_demand_time_series = electricity_demand_time_series / 1000
 
