@@ -87,7 +87,7 @@ def test_fetch_data_html_requests_get():
         # Test reading HTML content with text.
         requests.get.return_value.text = "text content"
         html_text = utils.fetcher.fetch_data(
-            "http://example.com", "html", read_as="text"
+            "http://example.com", "html", read_as="text", encoding_type="utf-8"
         )
         assert isinstance(html_text, str) and html_text == "text content"
 
