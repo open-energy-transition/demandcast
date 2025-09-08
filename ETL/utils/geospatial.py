@@ -238,14 +238,11 @@ def from_density_to_count(
     latitudes = density.y.values
 
     # Calculate the latitude values of the grid cell boundaries.
-    boundary_latitudes = numpy.insert(
+    boundary_latitudes = numpy.concatenate([
+        [latitudes[0] - resolution / 2],
         0.5 * (latitudes[1:] + latitudes[:-1]),
-        0,
-        latitudes[0] - resolution / 2,
-    )
-    boundary_latitudes = numpy.append(
-        boundary_latitudes, latitudes[-1] + resolution / 2
-    )
+        [latitudes[-1] + resolution / 2],
+    ])
 
     # Create an xarray DataArray for the boundary latitudes.
     boundary_latitudes = xarray.Dataset(

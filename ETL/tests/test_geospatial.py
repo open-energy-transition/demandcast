@@ -150,6 +150,58 @@ def test_get_fraction_of_grid_cells_in_shape(monkeypatch):
         assert expected_path.stat().st_size > 0
 
 
+def test_from_density_to_count():
+    # Create a simple 3x2 density grid in counts per sq km.
+    lat = numpy.array([10, 10.5, 11])
+    lon = numpy.array([20, 20.5])
+    density_values = numpy.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    density_grid = xarray.DataArray(
+        data=density_values,
+        coords={"y": lat, "x": lon},
+        dims=["y", "x"],
+        name="density"
+    )
+
+    # Define constants for area calculation.
+    resolution = 0.5  # degrees
+    R = 6371.0
+
+    # Calculate boundary latitudes.
+    boundary_lat = numpy.concatenate([
+        [lat[0] - 0.5 * resolution],
+        0.5 * (lat[1:] + lat[:-1]),
+        [lat[-1] + 0.5 * resolution]
+    ])  # [9.75, 10.25, 10.75, 11.25]
+
+    # For each latitide index, get lower and upper boundaries.
+    lower_lat = boundary_lat[:-1]  # [9.75, 10.25, 10.75]
+    upper_lat = boundary_lat[1:]   # [10.25, 10.75, 11.25]
+
+    # Compute expected area for each grid cell.
+    area = (
+        (numpy.pi / 180)
+        * R**2
+        * resolution
+        * (numpy.sin(numpy.deg2rad(upper_lat)) - numpy.sin(numpy.deg2rad(lower_lat)))
+    )
+    # Repeat area for each longitude (2 columns).
+    expected_area = numpy.tile(area, (2, 1)).T  # Shape (3,2)
+    
+    # Calculate expected counts.
+    expected_counts = density_values * expected_area
+
+    # Run function to convert density to count.
+    output = utils.geospatial.from_density_to_count(density_grid)
+
+    # Assert shape and values are correct.
+    assert output.shape == density_grid.shape
+    numpy.testing.assert_allclose(output.values, expected_counts, rtol=1e-6)
+
+    # Assert output coordinates match input.
+    assert numpy.all(output.x.values == density_grid.x.values)
+    assert numpy.all(output.y.values == density_grid.y.values)
+
+
 def test_get_largest_values_in_shape():
     """
     Test the extraction of the largest values in a shape.
