@@ -15,7 +15,7 @@ import re
 import time
 import urllib.error
 import urllib.request
-from io import StringIO
+from io import BytesIO, StringIO
 
 import pandas
 import requests
@@ -227,10 +227,17 @@ def fetch_data(
                             if encoding_type:
                                 response.encoding = encoding_type
 
-                            if read_as == "tabular":
-                                # Return the content as a DataFrame.
+                            if read_as == "csv_table":
+                                # Return the content read as a CSV
+                                # table.
                                 return pandas.read_csv(
                                     StringIO(response.text), **csv_kwargs
+                                )
+                            elif read_as == "excel_table":
+                                # Return the content read as an Excel
+                                # table.
+                                return pandas.read_excel(
+                                    BytesIO(response.content), **excel_kwargs
                                 )
                             elif read_as == "text":
                                 # Return the content as a string.

@@ -76,7 +76,7 @@ def download_and_extract_data() -> pandas.Series:
     url = get_url()
 
     # Fetch the data from the URL.
-    dataset = utils.fetcher.fetch_data(url, "excel")
+    dataset = utils.fetcher.fetch_data(url, "html", read_as="excel_table")
 
     # Make sure the dataset is a pandas DataFrame.
     if not isinstance(dataset, pandas.DataFrame):
