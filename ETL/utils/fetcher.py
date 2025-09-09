@@ -78,7 +78,7 @@ def fetch_data(
     retry_delay: int = 5,
     read_with: str = "requests.get",
     encoding_type: str | None = None,
-    read_as: str = "tabular",
+    read_as: str = "csv_table",
     csv_kwargs: dict[str, str | int] = {},
     excel_kwargs: dict[
         str, str | int | list[str] | list[str | int] | dict[str, str] | None
