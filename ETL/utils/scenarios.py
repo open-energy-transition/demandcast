@@ -105,10 +105,10 @@ def get_year_and_scenario_combinations(
     end_year : int | None
         The end year of the range of years for which the data is to be
         downloaded.
-    last_year_of_historical_data : int
-        The last year for which historical data is available.
-    available_years : list[int]
-        The list of available years for the data retrieval.
+    available_historical_years : list[int]
+        The list of available historical years for the data retrieval.
+    available_future_years : list[int]
+        The list of available future years for the data retrieval.
     scenario : str | None
         The specific scenario for which the data is to be downloaded.
     available_scenarios : list[str]
@@ -311,12 +311,12 @@ def get_iam_region(iso_alpha_3_code: str) -> str:
     """
     # Define the path to the yaml file containing the mapping of ISO
     # Alpha-3 codes to IAM regions.
-    iam_region_mappping = os.path.join(
+    iam_region_mapping = os.path.join(
         os.path.dirname(__file__), "iam_region_mapping.yaml"
     )
 
     # Read the mapping from the yaml file.
-    with open(iam_region_mappping, "r", encoding="utf-8") as file:
+    with open(iam_region_mapping, "r", encoding="utf-8") as file:
         iso_to_region = yaml.safe_load(file)
 
     # Get the IAM region for the given ISO Alpha-2 code.

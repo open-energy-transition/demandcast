@@ -86,7 +86,7 @@ Arguments:
 For exampl, you can download electricity data for France from ENTSO-E using:
 
 ```bash
-uv run retrieve.py electricity_data entsoe -c FR
+uv run retrieve.py electricity_demand entsoe -c FR
 ```
 
 #### Data source specific retrieval modules

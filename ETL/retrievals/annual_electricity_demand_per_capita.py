@@ -205,7 +205,8 @@ def extract_historical_electricity_demand_per_capita(
         and ember_electricity_demand_per_capita_of_country.empty
     ):
         raise ValueError(
-            f"No electricity demand per capita data found {iso_alpha_3_code}."
+            "No electricity demand per capita data found "
+            f"for {iso_alpha_3_code}."
         )
 
     # Combine the two datasets by averaging them.

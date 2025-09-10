@@ -127,7 +127,8 @@ def extract_historical_gdp_ppp_per_capita(
     ----------
     world_bank_gdp_ppp_per_capita : pandas.DataFrame
         The historical GDP PPP per capita data from the World Bank.
-    imf_
+    imf_gdp_ppp_per_capita : pandas.DataFrame
+        The historical GDP PPP per capita data from the IMF.
     iso_alpha_3_code : str
         The ISO Alpha-3 code of the country of interest.
 
@@ -172,7 +173,7 @@ def extract_historical_gdp_ppp_per_capita(
         and imf_gdp_ppp_per_capita_of_country.empty
     ):
         raise ValueError(
-            f"No DP PPP per capita data found for {iso_alpha_3_code}."
+            f"No GDP PPP per capita data found for {iso_alpha_3_code}."
         )
 
     # Combine the two datasets by averaging them.
