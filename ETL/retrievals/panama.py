@@ -6,8 +6,8 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data for Panama from a publicly available repository developed for
-    research purposes only. The data represents the electricity demand
-    that would have occurred if there were no outage events.
+    research purposes only. The data is downloaded from Jan 2, 2016 to
+    July 31, 2020. The data is retrieved all at once.
 
     Source: https://data.mendeley.com/datasets/tcmmj4t6f4/1
 """
