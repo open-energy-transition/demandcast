@@ -11,7 +11,7 @@ import argparse
 import os
 
 import figures.data_availability
-import figures.map_of_covered_countries
+import figures.map_of_available_entities
 import utils.directories
 
 
@@ -38,7 +38,7 @@ def read_command_line_arguments() -> argparse.Namespace:
         type=str,
         choices=[
             "data_availability",
-            "map_of_covered_countries",
+            "map_of_available_entities",
         ],
         help=("The figure to plot."),
     )
@@ -59,5 +59,5 @@ if __name__ == "__main__":
     # Plot the specified figure.
     if args.figure == "data_availability":
         figures.data_availability.plot(figure_directory)
-    elif args.figure == "map_of_covered_countries":
-        figures.map_of_covered_countries.plot(figure_directory)
+    elif args.figure == "map_of_available_entities":
+        figures.map_of_available_entities.plot(figure_directory)

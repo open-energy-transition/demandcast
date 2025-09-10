@@ -134,11 +134,28 @@ def plot(figure_directory: str) -> None:
     )
     cbar.ax.set_xticklabels(["0-4", "5-9", "10-19", "20+"])
     cbar.ax.tick_params(labelsize=12)
+
+    # Add a label to the colorbar for the figure without title.
+    cbar.set_label(
+        "Years of available high-resolution\nelectricity demand data",
+        fontsize=14,
+        weight="bold",
+        labelpad=10,
+    )
+
+    # Save the figure without the title.
+    fig.savefig(
+        os.path.join(figure_directory, "available_entities_no_title.png"),
+        dpi=300,
+        bbox_inches="tight",
+    )
+
+    # Change the label of the colorbar to a shorter version.
     cbar.set_label(
         "Years of available data", fontsize=14, weight="bold", labelpad=10
     )
 
-    # Add title.
+    # Add the title.
     ax.set_title(
         (
             "Countries and subdivisions for which retrieval modules\n"
@@ -149,7 +166,7 @@ def plot(figure_directory: str) -> None:
         weight="bold",
     )
 
-    # Save the figure.
+    # Save the figure with the title.
     fig.savefig(
         os.path.join(figure_directory, "available_entities.png"),
         dpi=300,
