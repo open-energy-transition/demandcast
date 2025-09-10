@@ -167,7 +167,6 @@ def download_and_extract_data_for_request(
             url,
             "html",
             read_with="requests.get",
-            read_as="tabular",
             verify_ssl=False,
         )
 
