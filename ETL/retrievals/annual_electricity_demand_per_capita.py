@@ -499,7 +499,7 @@ def run_data_retrieval(
             selected_historical_electricity_demand_per_capita = (
                 utils.time_series.clean_data(
                     selected_historical_electricity_demand_per_capita,
-                    "Annual electricity demand per capita (kWh/person)",
+                    "Annual electricity demand per capita (kWh)",
                 )
             )
 
@@ -568,9 +568,11 @@ def run_data_retrieval(
                     )
 
                     # Clean the time series.
-                    selected_future_electricity_demand_per_capita = utils.time_series.clean_data(
-                        selected_future_electricity_demand_per_capita,
-                        "Annual electricity demand per capita (kWh/person)",
+                    selected_future_electricity_demand_per_capita = (
+                        utils.time_series.clean_data(
+                            selected_future_electricity_demand_per_capita,
+                            "Annual electricity demand per capita (kWh)",
+                        )
                     )
 
                     # Save the electricity demand per capita data to

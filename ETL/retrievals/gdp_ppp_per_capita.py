@@ -26,6 +26,7 @@ import requests
 import utils.directories
 import utils.entities
 import utils.scenarios
+import utils.time_series
 
 
 def download_historical_gdp_ppp_per_capita_from_world_bank() -> (
@@ -333,6 +334,9 @@ def run_data_retrieval(
         # Get the ISO Alpha-3 code of the country.
         iso_alpha_3_code = utils.entities.get_iso_alpha_3_code(code)
 
+        # Get the time zone of the country or subdivision.
+        time_zone = utils.entities.get_time_zone(code)
+
         # Extract the historical GDP PPP per capita.
         historical_gdp_ppp_per_capita = extract_historical_gdp_ppp_per_capita(
             world_bank_gdp_ppp_per_capita,
@@ -417,10 +421,21 @@ def run_data_retrieval(
                 ]
             )
 
-            # Rename the index and the variable.
-            selected_historical_gdp_ppp_per_capita.index.name = "Year"
-            selected_historical_gdp_ppp_per_capita.name = (
-                "GDP PPP per capita (2011 int. $ / capita)"
+            # Convert the historical GDP PPP per capita data from
+            # yearly to hourly values.
+            selected_historical_gdp_ppp_per_capita = (
+                utils.time_series.convert_from_yearly_to_hourly(
+                    selected_historical_gdp_ppp_per_capita,
+                    time_zone,
+                )
+            )
+
+            # Clean the time series.
+            selected_historical_gdp_ppp_per_capita = (
+                utils.time_series.clean_data(
+                    selected_historical_gdp_ppp_per_capita,
+                    "GDP PPP per capita (current international $)",
+                )
             )
 
             # Save the historical GDP PPP per capita data to CSV and
@@ -472,10 +487,21 @@ def run_data_retrieval(
                         ]
                     )
 
-                    # Rename the index and the variable.
-                    selected_future_gdp_ppp_per_capita.index.name = "Year"
-                    selected_future_gdp_ppp_per_capita.name = (
-                        "GDP PPP per capita (2011 int. $ / capita)"
+                    # Convert the future GDP PPP per capita data from
+                    # yearly to hourly values.
+                    selected_future_gdp_ppp_per_capita = (
+                        utils.time_series.convert_from_yearly_to_hourly(
+                            selected_future_gdp_ppp_per_capita,
+                            time_zone,
+                        )
+                    )
+
+                    # Clean the time series.
+                    selected_future_gdp_ppp_per_capita = (
+                        utils.time_series.clean_data(
+                            selected_future_gdp_ppp_per_capita,
+                            "GDP PPP per capita (current international $)",
+                        )
                     )
 
                     # Save the future GDP PPP per capita data to CSV and
