@@ -9,6 +9,7 @@ CAMMESA \
 CCEI \
 CEN \
 CENACE \
+CHINA \
 COES \
 EIA \
 EMI \
@@ -17,28 +18,40 @@ EPIAS \
 ESKOM \
 HYDROQUEBEC \
 IESO \
+KROGD \
 NBPOWER \
 NESO \
+NGCP \
 NIGERIA \
+NITI \
+NTDC \
 ONS \
+PUCSL \
 SONELGAZ \
+TAIPOWER \
 TEPCO \
 TSOC \
 XM"
 
-# Iterate over each data source and download the electricity time series data.
+# Iterate over each data source and retrieve the electricity time series data.
 for source in $data_sources; do
-    uv run /workspaces/demandcast/ETL/download_electricity_data.py $source
+    uv run retrieve.py electricity_demand $source
 done
 
-# Download the population data.
-uv run /workspaces/demandcast/ETL/download_population_data.py
+# Retrieve the population data.
+uv run retrieve.py population
 
-# Download the GDP data.
-uv run /workspaces/demandcast/ETL/download_gdp_data.py
+# Retrieve the gridded population data.
+uv run retrieve.py gridded_population
 
-# Download the weather data.
-uv run /workspaces/demandcast/ETL/download_weather_data.py
+# Retrieve the GDP PPP per capita data.
+uv run retrieve.py gdp_ppp_per_capita
 
-# Extract the temperature data.
-uv run /workspaces/demandcast/ETL/get_temperature_data.py
+# Retrieve the gridded GDP PPP data.
+# uv run retrieve.py gridded_gdp_ppp
+
+# Retrieve the gridded weather data.
+uv run retrieve.py gridded_weather -wv temperature
+
+# Retrieve the temperature data.
+uv run retrieve.py temperature
