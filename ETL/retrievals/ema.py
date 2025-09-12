@@ -136,8 +136,18 @@ def download_and_extract_data_for_request(date: str) -> pandas.Series:
     # Get the URL of the electricity demand data.
     url = get_url(date)
 
+    # Set header parameters to mimic a browser request.
+    header_params = {"User-Agent": "Mozilla/5.0"}
+
     # Fetch the data from the URL.
-    dataset: pandas.DataFrame = utils.fetcher.fetch_data(url, "excel")
+    dataset = utils.fetcher.fetch_data(
+        url,
+        "html",
+        read_as="excel_table",
+        header_params=header_params,
+        excel_kwargs={"skiprows": 4},
+        get_cookies=True,
+    )
 
     # Select relevant rows/columns
     dataset = dataset.iloc[4:, [0] + [1 + 3 * i for i in range(0, 7)]]
