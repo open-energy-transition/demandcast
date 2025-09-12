@@ -135,27 +135,46 @@ def plot(figure_directory: str) -> None:
     cbar.ax.set_xticklabels(["0-4", "5-9", "10-19", "20+"])
     cbar.ax.tick_params(labelsize=12)
 
-    # Add a label to the colorbar for the figure without title.
+    # Add a label to the colorbar for the figure.
     cbar.set_label(
-        "Years of available high-resolution\nelectricity demand data",
+        "Years of available data",
         fontsize=14,
         weight="bold",
         labelpad=10,
     )
 
-    # Save the figure without the title.
+    # Add the title for the Awesome-Electricity-Demand repository.
+    url = ax.text(
+        0.5,
+        1.21,
+        "https://github.com/open-energy-transition/Awesome-Electricity-Demand",
+        fontsize=12,
+        ha="center",
+        weight="bold",
+        transform=ax.transAxes,
+        color="tab:blue",
+    )
+    aed_title = matplotlib.pyplot.text(
+        0.5,
+        1.05,
+        "Countries and subdivisions with publicly available\nhigh-resolution electricity demand data",
+        fontsize=18,
+        ha="center",
+        weight="bold",
+        transform=ax.transAxes,
+    )
+
+    # Save the figure with the title for Awesome-Electricity-Demand.
     fig.savefig(
-        os.path.join(figure_directory, "available_entities_no_title.png"),
+        os.path.join(figure_directory, "available_entities_for_aed.png"),
         dpi=300,
         bbox_inches="tight",
     )
 
-    # Change the label of the colorbar to a shorter version.
-    cbar.set_label(
-        "Years of available data", fontsize=14, weight="bold", labelpad=10
-    )
+    url.set_visible(False)
+    aed_title.set_visible(False)
 
-    # Add the title.
+    # Add the title for the DemandCast repository.
     ax.set_title(
         (
             "Countries and subdivisions for which retrieval modules\n"
@@ -166,7 +185,7 @@ def plot(figure_directory: str) -> None:
         weight="bold",
     )
 
-    # Save the figure with the title.
+    # Save the figure with the title for DemandCast.
     fig.savefig(
         os.path.join(figure_directory, "available_entities.png"),
         dpi=300,
