@@ -166,7 +166,7 @@ def test_upload_file_to_new_deposition_on_zenodo():
         patch("utils.directories.read_folders_structure"),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
-        patch("builtins.open", mock_open(read_data="test data")),
+        patch("builtins.open") as file_content,
     ):
         # Mock the response for getting depositions.
         mock_get.return_value = _zenodo_request(
@@ -190,6 +190,23 @@ def test_upload_file_to_new_deposition_on_zenodo():
 
         # Combine the mock responses for the post requests.
         mock_post.side_effect = [mock_post_1, mock_post_2, mock_post_3]
+
+        # Define a sample yaml file content for metadata.
+        sample_yaml = """
+        creators:
+        - name: Test Creator
+        contributors:
+        - name: Test Contributor
+        """
+
+        # Mock the content of the yaml file.
+        file_content_1 = mock_open(read_data=sample_yaml).return_value
+
+        # Mock the file content to be uploaded.
+        file_content_2 = mock_open(read_data="test data").return_value
+
+        # Combine the mock file contents.
+        file_content.side_effect = [file_content_1, file_content_2]
 
         # Call the function to upload a file to a new deposition.
         utils.uploader.upload_to_zenodo(
@@ -215,7 +232,7 @@ def test_upload_file_to_draft_version_on_zenodo():
         patch("utils.directories.read_folders_structure"),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
-        patch("builtins.open", mock_open(read_data="test data")),
+        patch("builtins.open") as file_content,
     ):
         # Mock the response for getting depositions.
         mock_get.return_value = _zenodo_request(
@@ -229,6 +246,23 @@ def test_upload_file_to_draft_version_on_zenodo():
         mock_post.return_value = _zenodo_request(
             request_type="post", response_type="upload_file"
         )
+
+        # Define a sample yaml file content for metadata.
+        sample_yaml = """
+        creators:
+        - name: Test Creator
+        contributors:
+        - name: Test Contributor
+        """
+
+        # Mock the content of the yaml file.
+        file_content_1 = mock_open(read_data=sample_yaml).return_value
+
+        # Mock the file content to be uploaded.
+        file_content_2 = mock_open(read_data="test data").return_value
+
+        # Combine the mock file contents.
+        file_content.side_effect = [file_content_1, file_content_2]
 
         # Call the function to upload a file to a draft version.
         utils.uploader.upload_to_zenodo(
@@ -255,7 +289,7 @@ def test_upload_file_to_new_version_on_zenodo():
         patch("utils.directories.read_folders_structure"),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
-        patch("builtins.open", mock_open(read_data="test data")),
+        patch("builtins.open") as file_content,
     ):
         # Mock the response for getting depositions.
         mock_get_1 = _zenodo_request(
@@ -287,6 +321,23 @@ def test_upload_file_to_new_version_on_zenodo():
 
         # Combine the mock responses for the post requests.
         mock_post.side_effect = [mock_post_1, mock_post_2]
+
+        # Define a sample yaml file content for metadata.
+        sample_yaml = """
+        creators:
+        - name: Test Creator
+        contributors:
+        - name: Test Contributor
+        """
+
+        # Mock the content of the yaml file.
+        file_content_1 = mock_open(read_data=sample_yaml).return_value
+
+        # Mock the file content to be uploaded.
+        file_content_2 = mock_open(read_data="test data").return_value
+
+        # Combine the mock file contents.
+        file_content.side_effect = [file_content_1, file_content_2]
 
         # Call the function to upload a file to a new version.
         utils.uploader.upload_to_zenodo(
