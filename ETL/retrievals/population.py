@@ -250,20 +250,20 @@ def _calculate_population_from_gridded_data(
 
 def _select_years_of_gridded_data(
     available_years_of_gridded_data: list[int],
-    selected_years_when_interpolated: list[int],
+    selected_years: list[int],
 ) -> list[int]:
     """
     Select the years of gridded data.
 
     The function selects the years of gridded data that cover the
-    selected years when interpolated.
+    selected years of population data.
 
     Parameters
     ----------
     available_years_of_gridded_data : list[int]
         The available years of gridded data.
-    selected_years_when_interpolated : list[int]
-        The selected years when interpolated.
+    selected_years : list[int]
+        The selected years of population data.
 
     Returns
     -------
@@ -276,7 +276,7 @@ def _select_years_of_gridded_data(
         [
             year
             for year in available_years_of_gridded_data
-            if year <= min(selected_years_when_interpolated)
+            if year <= min(selected_years)
         ]
     )
 
@@ -286,12 +286,12 @@ def _select_years_of_gridded_data(
         [
             year
             for year in available_years_of_gridded_data
-            if year >= max(selected_years_when_interpolated)
+            if year >= max(selected_years)
         ]
     )
 
     # Select and return the years of gridded data that cover the
-    # selected years when interpolated.
+    # selected years of population data.
     return [
         year
         for year in available_years_of_gridded_data
@@ -303,7 +303,7 @@ def _select_years_of_gridded_data(
 
 def _get_historical_population_from_gridded_data(
     code: str,
-    selected_historical_years_when_interpolated: list[int],
+    selected_historical_years: list[int],
     available_historical_years_of_gridded_data: list[int],
 ) -> pandas.Series:
     """
@@ -313,8 +313,8 @@ def _get_historical_population_from_gridded_data(
     ----------
     code : str
         The code of the subdivision of interest.
-    selected_historical_years_when_interpolated : list[int]
-        The selected historical years when interpolated.
+    selected_historical_years : list[int]
+        The selected historical years of population data.
     available_historical_years_of_gridded_data : list[int]
         The available historical years of gridded data.
 
@@ -327,7 +327,7 @@ def _get_historical_population_from_gridded_data(
     # selected historical years.
     selected_historical_years_of_gridded_data = _select_years_of_gridded_data(
         available_historical_years_of_gridded_data,
-        selected_historical_years_when_interpolated,
+        selected_historical_years,
     )
 
     # Extract the historical population for the subdivision.
@@ -357,7 +357,7 @@ def _get_historical_population_from_gridded_data(
 
 def _get_future_population_from_gridded_data(
     code: str,
-    selected_future_years_when_interpolated: list[int],
+    selected_future_years: list[int],
     available_future_years_of_gridded_data: list[int],
     last_available_historical_years_of_gridded_data: int,
     scenario: str,
@@ -369,8 +369,8 @@ def _get_future_population_from_gridded_data(
     ----------
     code : str
         The code of the subdivision of interest.
-    selected_future_years_when_interpolated : list[int]
-        The selected future years when interpolated.
+    selected_future_years : list[int]
+        The selected future years of population data.
     available_future_years_of_gridded_data : list[int]
         The available future years of gridded data.
     last_available_historical_years_of_gridded_data : int
@@ -389,7 +389,7 @@ def _get_future_population_from_gridded_data(
     selected_future_years_of_gridded_data = _select_years_of_gridded_data(
         [last_available_historical_years_of_gridded_data]
         + available_future_years_of_gridded_data,
-        selected_future_years_when_interpolated,
+        selected_future_years,
     )
 
     # Extract the future population for the subdivision and scenario of
@@ -470,6 +470,10 @@ def run_data_retrieval(
     # Get the list of codes of the countries and subdivisions.
     codes = utils.entities.check_and_get_codes(code=code, file_path=file)
 
+    # Define the available years for gridded population data.
+    available_historical_years_of_gridded_data = list(range(2000, 2021, 5))
+    available_future_years_of_gridded_data = list(range(2025, 2101, 5))
+
     # Define the available scenarios for the population data.
     available_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
 
@@ -480,196 +484,10 @@ def run_data_retrieval(
 
         # Check if the code is a subdivision (contains an underscore).
         if "_" in code:
-            # Define the available years for gridded population data.
-            available_historical_years_of_gridded_data = list(
-                range(2000, 2021, 5)
-            )
-            available_future_years_of_gridded_data = list(range(2025, 2101, 5))
-
             # Define the available years for the population data when
             # interpolating from gridded data.
-            available_historical_years_when_interpolated = list(
-                range(2000, 2021)
-            )
-            available_future_years_when_interpolated = list(range(2021, 2101))
-
-            # Get the list of year and scenario combinations.
-            year_scenario_list = (
-                utils.scenarios.get_year_and_scenario_combinations(
-                    year,
-                    start_year,
-                    end_year,
-                    available_historical_years_when_interpolated,
-                    available_future_years_when_interpolated,
-                    scenario,
-                    available_scenarios,
-                )
-            )
-
-            # Get the selcted historical years.
-            selected_historical_years_when_interpolated = list(
-                set(
-                    [
-                        year
-                        for year, scenario in year_scenario_list
-                        if scenario is None
-                    ]
-                )
-            )
-
-            # Get the selected future years.
-            selected_future_years_when_interpolated = list(
-                set(
-                    [
-                        year
-                        for year, scenario in year_scenario_list
-                        if scenario is not None
-                    ]
-                )
-            )
-
-            # Get the selected scenarios.
-            selected_scenarios = list(
-                set(
-                    [
-                        scenario
-                        for __, scenario in year_scenario_list
-                        if scenario is not None
-                    ]
-                )
-            )
-
-            # Define the file path of the population data of the
-            # subdivision.
-            file_path_without_ext = os.path.join(result_directory, code)
-
-            if (
-                not os.path.exists(file_path_without_ext + ".parquet")
-                or not os.path.exists(file_path_without_ext + ".csv")
-            ) and selected_historical_years_when_interpolated:
-                logging.info(
-                    f"Extracting historical population data for {code}."
-                )
-                # Get the historical population for the subdivision.
-                historical_population = (
-                    _get_historical_population_from_gridded_data(
-                        code,
-                        selected_historical_years_when_interpolated,
-                        available_historical_years_of_gridded_data,
-                    )
-                )
-
-                # Extract only the selected historical years.
-                selected_historical_population = historical_population.loc[
-                    historical_population.index.isin(
-                        selected_historical_years_when_interpolated
-                    )
-                ]
-
-                # Convert the historical population data from yearly to
-                # hourly values.
-                selected_historical_population = (
-                    utils.time_series.convert_from_yearly_to_hourly(
-                        selected_historical_population,
-                        time_zone,
-                    )
-                )
-
-                # Clean the time series.
-                selected_historical_population = utils.time_series.clean_data(
-                    selected_historical_population,
-                    "Population",
-                )
-
-                # Save the historical population data to CSV and
-                # Parquet files.
-                selected_historical_population.to_frame().to_parquet(
-                    file_path_without_ext + ".parquet",
-                )
-                selected_historical_population.to_csv(
-                    file_path_without_ext + ".csv",
-                )
-
-                logging.info(
-                    f"Historical population data for {code} has been "
-                    "extracted and saved successfully."
-                )
-
-            else:
-                logging.info(
-                    f"Historical population data for {code} already "
-                    "exists. Skipping extraction."
-                )
-
-            if selected_future_years_when_interpolated:
-                for scenario in selected_scenarios:
-                    if not os.path.exists(
-                        f"{file_path_without_ext}_{scenario}.parquet"
-                    ) or not os.path.exists(
-                        f"{file_path_without_ext}_{scenario}.csv"
-                    ):
-                        logging.info(
-                            f"Extracting future population data for "
-                            f"{code} and scenario {scenario}."
-                        )
-                        # Get the future population for the subdivision
-                        # and scenario of interest.
-                        future_population = (
-                            _get_future_population_from_gridded_data(
-                                code,
-                                selected_future_years_when_interpolated,
-                                available_future_years_of_gridded_data,
-                                available_historical_years_of_gridded_data[-1],
-                                scenario,
-                            )
-                        )
-
-                        # Extract only the selected future years.
-                        selected_future_population = future_population.loc[
-                            future_population.index.isin(
-                                selected_future_years_when_interpolated
-                            )
-                        ]
-
-                        # Convert the future population data from yearly
-                        # to hourly values.
-                        selected_future_population = (
-                            utils.time_series.convert_from_yearly_to_hourly(
-                                selected_future_population,
-                                time_zone,
-                            )
-                        )
-
-                        # Clean the time series.
-                        selected_future_population = (
-                            utils.time_series.clean_data(
-                                selected_future_population,
-                                "Population",
-                            )
-                        )
-
-                        # Save the future population data to CSV and
-                        # Parquet files.
-                        selected_future_population.to_frame().to_parquet(
-                            f"{file_path_without_ext}_{scenario}.parquet",
-                        )
-                        selected_future_population.to_csv(
-                            f"{file_path_without_ext}_{scenario}.csv",
-                        )
-
-                        logging.info(
-                            f"Future population data for {code} and "
-                            f"scenario {scenario} has been extracted "
-                            "and saved successfully."
-                        )
-
-                    else:
-                        logging.info(
-                            f"Future population data for {code} and "
-                            f"scenario {scenario} already exists. "
-                            "Skipping extraction."
-                        )
-
+            available_historical_years = list(range(2000, 2021))
+            available_future_years = list(range(2021, 2101))
         else:
             # Get the ISO Alpha-3 code of the country.
             iso_alpha_3_code = utils.entities.get_iso_alpha_3_code(code)
@@ -689,158 +507,187 @@ def run_data_retrieval(
                 range(max(available_historical_years) + 1, 2101)
             )
 
-            # Get the list of year and scenario combinations.
-            year_scenario_list = (
-                utils.scenarios.get_year_and_scenario_combinations(
-                    year,
-                    start_year,
-                    end_year,
-                    available_historical_years,
-                    available_future_years,
-                    scenario,
-                    available_scenarios,
-                )
+        # Get the list of year and scenario combinations.
+        year_scenario_list = (
+            utils.scenarios.get_year_and_scenario_combinations(
+                year,
+                start_year,
+                end_year,
+                available_historical_years,
+                available_future_years,
+                scenario,
+                available_scenarios,
             )
+        )
 
-            # Define the file path of the population data of the country
-            # or subdivision.
-            file_path_without_ext = os.path.join(result_directory, code)
-
-            # Get the selcted historical years.
-            selected_historical_years = list(
-                set(
-                    [
-                        year
-                        for year, scenario in year_scenario_list
-                        if scenario is None
-                    ]
-                )
-            )
-
-            # Get the selected future years.
-            selected_future_years = list(
-                set(
-                    [
-                        year
-                        for year, scenario in year_scenario_list
-                        if scenario is not None
-                    ]
-                )
-            )
-
-            # Get the selected scenarios.
-            selected_scenarios = list(
-                set(
-                    [
-                        scenario
-                        for __, scenario in year_scenario_list
-                        if scenario is not None
-                    ]
-                )
-            )
-
-            if (
-                not os.path.exists(file_path_without_ext + ".parquet")
-                or not os.path.exists(file_path_without_ext + ".csv")
-            ) and selected_historical_years:
-                logging.info(
-                    f"Extracting historical population data for {code}."
-                )
-
-                # Extract the selected historical population data.
-                selected_historical_population = historical_population.loc[
-                    historical_population.index.isin(selected_historical_years)
+        # Get the selcted historical years.
+        selected_historical_years = list(
+            set(
+                [
+                    year
+                    for year, scenario in year_scenario_list
+                    if scenario is None
                 ]
+            )
+        )
 
-                # Convert the historical population data from yearly to
-                # hourly values.
-                selected_historical_population = (
-                    utils.time_series.convert_from_yearly_to_hourly(
-                        selected_historical_population,
-                        time_zone,
+        # Get the selected future years.
+        selected_future_years = list(
+            set(
+                [
+                    year
+                    for year, scenario in year_scenario_list
+                    if scenario is not None
+                ]
+            )
+        )
+
+        # Get the selected scenarios.
+        selected_scenarios = list(
+            set(
+                [
+                    scenario
+                    for __, scenario in year_scenario_list
+                    if scenario is not None
+                ]
+            )
+        )
+
+        # Define the file path of the population data of the
+        # subdivision.
+        file_path_without_ext = os.path.join(result_directory, code)
+
+        if (
+            not os.path.exists(file_path_without_ext + ".parquet")
+            or not os.path.exists(file_path_without_ext + ".csv")
+        ) and selected_historical_years:
+            logging.info(f"Extracting historical population data for {code}.")
+
+            # Get the historical population for the country or
+            # subdivision of interest.
+            if "_" in code:
+                historical_population = (
+                    _get_historical_population_from_gridded_data(
+                        code,
+                        selected_historical_years,
+                        available_historical_years_of_gridded_data,
+                    )
+                )
+            else:
+                historical_population = (
+                    extract_historical_population_from_world_bank(
+                        world_bank_population, iso_alpha_3_code
                     )
                 )
 
-                # Clean the time series.
-                selected_historical_population = utils.time_series.clean_data(
+            # Extract the selected historical years.
+            selected_historical_population = historical_population.loc[
+                historical_population.index.isin(selected_historical_years)
+            ]
+
+            # Convert the historical population data from yearly to
+            # hourly values.
+            selected_historical_population = (
+                utils.time_series.convert_from_yearly_to_hourly(
                     selected_historical_population,
-                    "Population",
+                    time_zone,
                 )
+            )
 
-                # Save the historical population data to CSV and
-                # Parquet files.
-                selected_historical_population.to_frame().to_parquet(
-                    file_path_without_ext + ".parquet",
-                )
-                selected_historical_population.to_csv(
-                    file_path_without_ext + ".csv",
-                )
+            # Clean the time series.
+            selected_historical_population = utils.time_series.clean_data(
+                selected_historical_population,
+                "Population",
+            )
 
-                logging.info(
-                    f"Historical population data for {code} has been "
-                    "extracted and saved successfully."
-                )
+            # Save the historical population data to CSV and Parquet
+            # files.
+            selected_historical_population.to_frame().to_parquet(
+                file_path_without_ext + ".parquet",
+            )
+            selected_historical_population.to_csv(
+                file_path_without_ext + ".csv",
+            )
 
-            if selected_future_years:
-                for scenario in selected_scenarios:
-                    if not os.path.exists(
-                        f"{file_path_without_ext}_{scenario}.parquet"
-                    ) or not os.path.exists(
-                        f"{file_path_without_ext}_{scenario}.csv"
-                    ):
-                        logging.info(
-                            f"Extracting future population data for "
-                            f"{code} and scenario {scenario}."
+            logging.info(
+                f"Historical population data for {code} has been "
+                "extracted and saved successfully."
+            )
+
+        else:
+            logging.info(
+                f"Historical population data for {code} already "
+                "exists. Skipping extraction."
+            )
+
+        if selected_future_years:
+            for scenario in selected_scenarios:
+                if not os.path.exists(
+                    f"{file_path_without_ext}_{scenario}.parquet"
+                ) or not os.path.exists(
+                    f"{file_path_without_ext}_{scenario}.csv"
+                ):
+                    logging.info(
+                        f"Extracting future population data for "
+                        f"{code} and scenario {scenario}."
+                    )
+                    # Get the future population for the country or
+                    # subdivision and scenario of interest.
+                    if "_" in code:
+                        future_population = (
+                            _get_future_population_from_gridded_data(
+                                code,
+                                selected_future_years,
+                                available_future_years_of_gridded_data,
+                                available_historical_years_of_gridded_data[-1],
+                                scenario,
+                            )
                         )
-
-                        # Get the future population for the country and
-                        # scenario of interest.
+                    else:
                         future_population = _get_future_population_from_iiasa(
                             iso_alpha_3_code,
                             scenario,
                             available_future_years,
                         )
 
-                        # Select the future population for the selected
-                        # years.
-                        selected_future_population = future_population.loc[
-                            future_population.index.isin(selected_future_years)
-                        ]
+                    # Extract only the selected future years.
+                    selected_future_population = future_population.loc[
+                        future_population.index.isin(selected_future_years)
+                    ]
 
-                        # Convert the future population data from yearly
-                        # to hourly values.
-                        selected_future_population = (
-                            utils.time_series.convert_from_yearly_to_hourly(
-                                selected_future_population,
-                                time_zone,
-                            )
+                    # Convert the future population data from yearly to
+                    # hourly values.
+                    selected_future_population = (
+                        utils.time_series.convert_from_yearly_to_hourly(
+                            selected_future_population,
+                            time_zone,
                         )
+                    )
 
-                        # Clean the time series.
-                        selected_future_population = (
-                            utils.time_series.clean_data(
-                                selected_future_population,
-                                "Population",
-                            )
-                        )
+                    # Clean the time series.
+                    selected_future_population = utils.time_series.clean_data(
+                        selected_future_population,
+                        "Population",
+                    )
 
-                        # Save the future population data to CSV and
-                        # Parquet files.
-                        selected_future_population.to_frame().to_parquet(
-                            f"{file_path_without_ext}_{scenario}.parquet",
-                        )
-                        selected_future_population.to_csv(
-                            f"{file_path_without_ext}_{scenario}.csv",
-                        )
-                        logging.info(
-                            f"Future population data for {code} and "
-                            f"scenario {scenario} has been extracted "
-                            "and saved successfully."
-                        )
+                    # Save the future population data to CSV and Parquet
+                    # files.
+                    selected_future_population.to_frame().to_parquet(
+                        f"{file_path_without_ext}_{scenario}.parquet",
+                    )
+                    selected_future_population.to_csv(
+                        f"{file_path_without_ext}_{scenario}.csv",
+                    )
 
-                    else:
-                        logging.info(
-                            f"Future population data for {code} and "
-                            f"scenario {scenario} already exists. "
-                            "Skipping extraction."
-                        )
+                    logging.info(
+                        f"Future population data for {code} and "
+                        f"scenario {scenario} has been extracted "
+                        "and saved successfully."
+                    )
+
+                else:
+                    logging.info(
+                        f"Future population data for {code} and "
+                        f"scenario {scenario} already exists. "
+                        "Skipping extraction."
+                    )
