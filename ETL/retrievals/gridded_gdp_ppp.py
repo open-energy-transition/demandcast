@@ -26,6 +26,7 @@ import utils.geospatial
 import utils.scenarios
 import utils.shapes
 import xarray
+from tqdm import tqdm
 
 
 def _download_gdp_ppp(result_directory: str) -> None:
@@ -61,6 +62,8 @@ def _download_gdp_ppp(result_directory: str) -> None:
             os.path.join(result_directory, "025d"),
             os.path.join(result_directory, "downloads"),
         )
+
+        logging.info("GDP PPP data has been downloaded successfully.")
     else:
         logging.info("GDP PPP data already exists. Skipping download.")
 
@@ -168,7 +171,7 @@ def run_data_retrieval(
     codes = utils.entities.check_and_get_codes(code=code, file_path=file)
 
     # Loop over the years and scenarios.
-    for year, scenario in year_scenario_list:
+    for year, scenario in tqdm(year_scenario_list, desc="Years and scenarios"):
         logging.info(
             f"Processing GDP PPP data for the year {year}"
             + (f" and scenario {scenario}." if scenario else ".")

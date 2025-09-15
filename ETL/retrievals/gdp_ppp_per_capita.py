@@ -27,6 +27,7 @@ import utils.directories
 import utils.entities
 import utils.scenarios
 import utils.time_series
+from tqdm import tqdm
 
 
 def download_historical_gdp_ppp_per_capita_from_world_bank() -> (
@@ -79,6 +80,11 @@ def download_historical_gdp_ppp_per_capita_from_world_bank() -> (
         # Rename the columns.
         gdp_ppp_per_capita.columns.name = "Year"
 
+    logging.info(
+        "GDP PPP per capita data from the World Bank has been downloaded"
+        "successfully."
+    )
+
     return gdp_ppp_per_capita
 
 
@@ -112,6 +118,11 @@ def download_historical_gdp_ppp_per_capita_from_imf() -> pandas.DataFrame:
     # Rename the index and columns.
     imf_gdp_ppp_per_capita.index.name = "Country Code"
     imf_gdp_ppp_per_capita.columns.name = "Year"
+
+    logging.info(
+        "GDP PPP per capita data from the IMF has been downloaded "
+        "successfully."
+    )
 
     return imf_gdp_ppp_per_capita
 
@@ -330,7 +341,7 @@ def run_data_retrieval(
     available_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
 
     # Loop over the countries and subdivisions.
-    for code in codes:
+    for code in tqdm(codes, desc="Countries and subdivisions"):
         # Get the ISO Alpha-3 code of the country.
         iso_alpha_3_code = utils.entities.get_iso_alpha_3_code(code)
 

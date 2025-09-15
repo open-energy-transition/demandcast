@@ -29,6 +29,7 @@ import utils.geospatial
 import utils.scenarios
 import utils.shapes
 import xarray
+from tqdm import tqdm
 
 
 def _download_historical_gridded_population_density(
@@ -73,6 +74,11 @@ def _download_historical_gridded_population_density(
         # Save the response content.
         with open(file_path, "wb") as file:
             file.write(response.content)
+
+        logging.info(
+            f"Population density data for the year {year} has been "
+            "downloaded successfully."
+        )
     else:
         logging.info(
             f"Population density data for the year {year} already exists. "
@@ -138,6 +144,10 @@ def _download_future_gridded_population(
                 os.path.join(downloaded_data_directory, "SPP1"),
                 os.path.join(downloaded_data_directory, "SSP1"),
             )
+
+        logging.info(
+            f"Population data for {scenario} has been downloaded successfully."
+        )
     else:
         logging.info(
             f"Population data for {scenario} already exists. "
@@ -284,7 +294,7 @@ def run_data_retrieval(
     codes = utils.entities.check_and_get_codes(code=code, file_path=file)
 
     # Loop over the years and scenarios.
-    for year, scenario in year_scenario_list:
+    for year, scenario in tqdm(year_scenario_list, desc="Years and scenarios"):
         logging.info(
             f"Processing population data for the year {year}"
             + (f" and scenario {scenario}." if scenario else ".")

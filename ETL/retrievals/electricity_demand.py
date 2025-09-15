@@ -21,6 +21,7 @@ import utils.directories
 import utils.entities
 import utils.time_series
 import utils.uploader
+from tqdm import tqdm
 
 
 def _retrieve_data(data_source: str, code: str) -> pandas.Series:
@@ -264,8 +265,8 @@ def run_data_retrieval(
     )
 
     # Loop over the codes.
-    for code in codes:
-        logging.info(f"Retrieving data for {code}.")
+    for code in tqdm(codes, desc="Countries and subdivisions"):
+        logging.info(f"Retrieving electricity data for {code}.")
 
         # Retrieve the electricity demand time series.
         electricity_demand_time_series = _retrieve_data(data_source, code)

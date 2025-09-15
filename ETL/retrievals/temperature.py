@@ -23,6 +23,7 @@ import utils.geospatial
 import utils.scenarios
 import utils.shapes
 import xarray
+from tqdm import tqdm
 
 import retrievals.gridded_population
 import retrievals.gridded_weather
@@ -704,7 +705,7 @@ def run_data_retrieval(
     )
 
     # Loop over the countries and subdivisions of interest.
-    for code in codes:
+    for code in tqdm(codes, desc="Countries and subdivisions"):
         logging.info(f"Retrieving temperature data for {code}.")
 
         # Get the time zone of the country or subdivision.

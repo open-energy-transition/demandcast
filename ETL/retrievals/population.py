@@ -28,6 +28,7 @@ import utils.scenarios
 import utils.shapes
 import utils.time_series
 import xarray
+from tqdm import tqdm
 
 import retrievals.gridded_population
 
@@ -64,6 +65,10 @@ def download_historical_population_from_world_bank() -> pandas.DataFrame:
 
         # Extract and return the population from the archive.
         return pandas.read_csv(archive.open(world_bank_file_name), skiprows=4)
+
+    logging.info(
+        "Population data from the World Bank has been downloaded successfully."
+    )
 
 
 def extract_historical_population_from_world_bank(
@@ -478,7 +483,7 @@ def run_data_retrieval(
     available_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
 
     # Loop over the countries and subdivisions.
-    for code in codes:
+    for code in tqdm(codes, desc="Countries and subdivisions"):
         # Get the time zone of the country or subdivision.
         time_zone = utils.entities.get_time_zone(code)
 

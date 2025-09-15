@@ -27,6 +27,7 @@ import utils.directories
 import utils.entities
 import utils.scenarios
 import utils.time_series
+from tqdm import tqdm
 
 
 def download_historical_electricity_demand_per_capita_from_world_bank() -> (
@@ -89,6 +90,11 @@ def download_historical_electricity_demand_per_capita_from_world_bank() -> (
         # Rename the columns.
         electricity_demand_per_capita.columns.name = "Year"
 
+        logging.info(
+            "Electricity demand per capita data from the World Bank has been "
+            "downloaded successfully."
+        )
+
     return electricity_demand_per_capita
 
 
@@ -136,6 +142,11 @@ def download_historical_electricity_demand_per_capita_from_ember() -> (
 
     # Convert MWh to kWh.
     electricity_demand_per_capita = electricity_demand_per_capita * 1000
+
+    logging.info(
+        "Electricity demand per capita data from Ember has been downloaded "
+        "successfully."
+    )
 
     return electricity_demand_per_capita
 
@@ -392,7 +403,7 @@ def run_data_retrieval(
     ]
 
     # Loop over the countries and subdivisions.
-    for code in codes:
+    for code in tqdm(codes, desc="Countries and subdivisions"):
         # Get the ISO Alpha-3 code of the country.
         iso_alpha_3_code = utils.entities.get_iso_alpha_3_code(code)
 

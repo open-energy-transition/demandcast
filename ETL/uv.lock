@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -582,6 +582,7 @@ dependencies = [
     { name = "shapely" },
     { name = "tailwind-colors" },
     { name = "timezonefinder" },
+    { name = "tqdm" },
     { name = "xarray" },
     { name = "xlrd" },
 ]
@@ -619,6 +620,7 @@ requires-dist = [
     { name = "shapely", specifier = ">=2.0.7" },
     { name = "tailwind-colors", specifier = ">=1.3.0" },
     { name = "timezonefinder", specifier = ">=6.5.9" },
+    { name = "tqdm", specifier = ">=4.67.1" },
     { name = "xarray", specifier = ">=2025.1.2" },
     { name = "xlrd", specifier = ">=2.0.1" },
 ]

@@ -25,8 +25,7 @@ import utils.scenarios
 import utils.shapes
 import xarray
 from dotenv import load_dotenv
-
-# from tqdm import tqdm
+from tqdm import tqdm
 
 
 def _get_request(
@@ -142,6 +141,16 @@ def _download_data(
         If the dataset is not supported or if the zip file contains
         multiple .nc files.
     """
+    logging.info(
+        f"Downloading global {variable} data for the year "
+        f"{year}"
+        + (
+            f", model {model}, and scenario {scenario}."
+            if model and scenario
+            else "."
+        )
+    )
+
     # Get the root directory of the project.
     root_directory = utils.directories.read_folders_structure()["root_folder"]
 
@@ -200,6 +209,16 @@ def _download_data(
 
         # Remove the zip file.
         os.remove(file_path)
+
+        logging.info(
+            f"Global {variable} data for the year {year}"
+            + (
+                f", model {model}, and scenario {scenario} has "
+                "been successfully downloaded."
+                if model and scenario
+                else " has been successfully downloaded."
+            )
+        )
 
 
 def run_data_retrieval(
@@ -344,7 +363,9 @@ def run_data_retrieval(
         os.makedirs(downloaded_data_directory, exist_ok=True)
 
         # Loop over the year, model, and scenario combinations.
-        for year, model, scenario in year_model_scenario_list:
+        for year, model, scenario in tqdm(
+            year_model_scenario_list, desc="Years, models, and scenarios"
+        ):
             logging.info(
                 f"Processing {variable} data for the year {year}"
                 + (
@@ -377,16 +398,6 @@ def run_data_retrieval(
                 and model is None
                 and scenario is None
             ):
-                logging.info(
-                    f"Downloading global {variable} data for the year "
-                    f"{year}"
-                    + (
-                        f", model {model}, and scenario {scenario}."
-                        if model and scenario
-                        else "."
-                    )
-                )
-
                 # Get the CDS variable name.
                 cds_variable_name = cds_variable_mapping[variable][
                     "projections" if model and scenario else "reanalysis"
@@ -473,7 +484,7 @@ def run_data_retrieval(
 
     else:
         # Loop over the countries and subdivisions of interest.
-        for code in codes:
+        for code in tqdm(codes, desc="Countries and subdivisions"):
             logging.info(f"Retrieving {variable} data for {code}.")
 
             # Get the shape of the country or subdivision.
