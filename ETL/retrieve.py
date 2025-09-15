@@ -234,6 +234,22 @@ if __name__ == "__main__":
                         "'false', 'f', 'n', '0' for False."
                     )
 
+            if not made_by_oet:
+                # Check if a metadata file other than the default one
+                # for OET-created content has been provided.
+                metadata_file_path = os.path.join(
+                    utils.directories.read_folders_structure()["root_folder"],
+                    "zenodo_metadata.yaml",
+                )
+                if not os.path.exists(metadata_file_path):
+                    raise FileNotFoundError(
+                        "A file containing the metadata for the Zenodo "
+                        "upload must be provided. The file must be named "
+                        "'zenodo_metadata.yaml' and be located in the ETL "
+                        "folder. Check the file 'oet_zenodo_metadata.yaml' "
+                        "for an example of the expected format."
+                    )
+
         # Run the data retrieval for electricity demand.
         retrievals.electricity_demand.run_data_retrieval(
             args.data_source,

@@ -14,6 +14,7 @@ import os
 
 import pandas
 import requests
+import yaml
 from dotenv import load_dotenv
 from google.cloud import storage
 from google.cloud.exceptions import GoogleCloudError
@@ -168,48 +169,23 @@ def upload_to_zenodo(
 
     # Define the creators based on whether the data is made by OET.
     if made_by_oet:
-        creators = [
-            {
-                "name": "Antonini, Enrico G. A.",
-                "affiliation": "Open Energy Transition",
-                "orcid": "0000-0002-5573-0954",
-            },
-            {
-                "name": "Vamsi Priya, Goli",
-                "affiliation": "Open Energy Transition",
-            },
-            {
-                "name": "Steijn, Kevin",
-            },
-        ]
-        contributors = [
-            {
-                "name": "Open Energy Transition",
-                "type": "HostingInstitution",
-            },
-            {
-                "name": "Breakthrough Energy",
-                "type": "Sponsor",
-            },
-        ]
+        # Load the OET metadata from the YAML file.
+        author_metadata_path = os.path.join(
+            root_directory, "oet_zenodo_metadata.yaml"
+        )
     else:
-        creators = [
-            {
-                "name": "Your Name",
-                "affiliation": "Your Affiliation",
-                "orcid": "0000-0000-0000-0000",
-            },
-        ]
-        contributors = [
-            {
-                "name": "Your Institution",
-                "type": "HostingInstitution",
-            },
-            {
-                "name": "Your Sponsor",
-                "type": "Sponsor",
-            },
-        ]
+        # Load the metadata of external contributors from the YAML file.
+        author_metadata_path = os.path.join(
+            root_directory, "zenodo_metadata.yaml"
+        )
+
+    # Load the metadata from the YAML file.
+    with open(author_metadata_path, "r") as file:
+        author_metadata = yaml.safe_load(file)
+
+    # Extract creators and contributors from the metadata.
+    creators = author_metadata["creators"]
+    contributors = author_metadata["contributors"]
 
     # Define the deposition metadata for the dataset.
     data = {
