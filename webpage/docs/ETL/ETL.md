@@ -36,6 +36,7 @@ ETL/
 ├── .python-version                 # Python version for the environment
 ├── Dockerfile                      # Dockerfile to create an image for the ETL module
 ├── README.md                       # Overview of the ETL module
+├── oet_zenodo_metadata.yaml        # Metadata for Zenodo uploads
 ├── plot.py                         # Script to generate plots for the data
 ├── pyproject.toml                  # Project configuration and dependencies
 ├── retrieve.py                     # Main script to download and process data
