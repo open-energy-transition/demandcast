@@ -9,6 +9,7 @@ Description:
 
 import email.message
 import urllib.error
+from io import BytesIO
 from unittest.mock import patch
 
 import pandas
@@ -79,9 +80,26 @@ def test_fetch_data_html_requests_get():
     of HTML data, including CSV, text, and plain response.
     """
     with patch("requests.get"):
-        # Test reading of HTML content with tabular data.
+        # Test reading of HTML content with tabular data in CSV format.
         requests.get.return_value.text = "col1,col2\n1,2"
-        dataset = utils.fetcher.fetch_data("http://example.com", "html")
+        dataset = utils.fetcher.fetch_data(
+            "http://example.com", "html", read_as="csv_table"
+        )
+        assert isinstance(dataset, pandas.DataFrame)
+
+        # Prepare a mock Excel binary.
+        df_original = pandas.DataFrame({"a": [10, 20], "b": [30, 40]})
+        excel_binary = BytesIO()
+        with pandas.ExcelWriter(excel_binary) as writer:
+            df_original.to_excel(writer, index=False)
+        excel_binary.seek(0)
+
+        # Test reading of HTML content with tabular data in Excel
+        # format.
+        requests.get.return_value.content = excel_binary.getvalue()
+        dataset = utils.fetcher.fetch_data(
+            "http://example.com", "html", read_as="excel_table"
+        )
         assert isinstance(dataset, pandas.DataFrame)
 
         # Test reading HTML content with text.
