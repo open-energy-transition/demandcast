@@ -11,7 +11,7 @@ Description:
     Note:
     Retrieving data over an extended historical period (e.g., multiple
     years) may take a considerable amount of time — potentially up to
-    160 minutes in total. This is due to the large number of Excel
+    14 hours in total. This is due to the large number of Excel
     sheets that need to be processed.
 
     Source: https://erp.powergrid.gov.bd/w/report/eyJpdiI6IldsU2ZQTGkvbkRnQU9FMjZ5UHhmeGc9PSIsInZhbHVlIjoiQzhONVl5ZGxRY3E3T3ZVNCtLZGt1Zz09IiwibWFjIjoiN2JiNTI5MzNhOWIxZDVjY2NkMmFlZWU4ZDU1N2I4OWZlYjNlZWM1ZGU4NzRiNWU4ZjQ3ZDc1ODRlMTk3MDc0YyIsInRhZyI6IiJ9/show_report?page=140
@@ -24,15 +24,6 @@ import warnings
 import pandas
 import utils.fetcher
 from urllib3.exceptions import InsecureRequestWarning
-
-# Force logging setup
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    force=True,  # 👈 this overrides any previous config
-)
-
-logging.info(">>> pgcb.py module loaded")
 
 # Ignore SSL certificate warnings
 warnings.simplefilter("ignore", InsecureRequestWarning)
@@ -135,9 +126,6 @@ def get_available_requests() -> list[tuple[int, str]]:
                 )
                 break
 
-    logging.info(
-        f"All available files: {', '.join(f'{f[0]}.{f[1]}' for f in available_files)}"
-    )
     return available_files
 
 
