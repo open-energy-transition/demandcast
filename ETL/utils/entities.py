@@ -173,14 +173,14 @@ def _get_data_sources(code: str) -> list[str]:
     return data_sources
 
 
-def read_codes(file_path: str = "", data_source: str = "") -> list[str]:
+def read_codes_in(file_path: str = "", data_source: str = "") -> list[str]:
     """
     Read the codes of the countries and subdivisions.
 
-    This function reads the ISO Alpha-2 codes of the countries or the
-    combination of the ISO Alpha-2 codes and the subdivision codes from
+    This function reads the codes of the countries and subdivision from
     a specified yaml file or from the yaml file of a specified data
-    source.
+    source. It extracts the codes for each country or subdivision and
+    returns a list of codes.
 
     Parameters
     ----------
@@ -213,14 +213,14 @@ def read_codes(file_path: str = "", data_source: str = "") -> list[str]:
     ]
 
 
-def read_all_codes() -> list[str]:
+def read_all_codes_with_demand_data() -> list[str]:
     """
     Read the codes of all countries and subdivisions.
 
-    This function reads the ISO Alpha-2 codes of all countries or the
-    combination of the ISO Alpha-2 codes and the subdivision codes from
-    all yaml files in the retrieval scripts folder. It combines the
-    codes from all files and removes duplicates.
+    This function reads the codes of all countries and subdivisions for
+    which high-resolution electricity demand data is available. It
+    checks all yaml files in the retrieval scripts folder and combines
+    the codes from all files, removing duplicates.
 
     Returns
     -------
@@ -238,7 +238,7 @@ def read_all_codes() -> list[str]:
     # Iterate over the yaml files and read the codes from each file.
     for yaml_file_path in yaml_file_paths:
         # Read the codes from the file.
-        file_codes = read_codes(file_path=yaml_file_path)
+        file_codes = read_codes_in(file_path=yaml_file_path)
 
         # Append the codes to the list.
         codes.extend(file_codes)
@@ -247,9 +247,9 @@ def read_all_codes() -> list[str]:
     return list(set(codes))
 
 
-def check_code(code: str, data_source: str) -> None:
+def check_code_in_data_source(code: str, data_source: str) -> None:
     """
-    Check if the code is available.
+    Check if the code is available in the specified data source.
 
     This function checks if the provided code is valid by comparing it
     with the list of available codes from the specified data source.
@@ -263,13 +263,13 @@ def check_code(code: str, data_source: str) -> None:
         codes.
     """
     # Check if the code is valid.
-    assert code in read_codes(data_source=data_source), (
+    assert code in read_codes_in(data_source=data_source), (
         f"Invalid code: {code}. Available codes are: "
-        f"{', '.join(read_codes(data_source=data_source))}"
+        f"{', '.join(read_codes_in(data_source=data_source))}"
     )
 
 
-def check_and_get_codes(
+def check_and_get_codes_with_demand_data(
     code: str | None = None,
     data_source: str | None = None,
     file_path: str | None = None,
@@ -278,9 +278,11 @@ def check_and_get_codes(
     Check code validity (if provided) or get all available codes.
 
     This function checks if the provided code is valid by comparing it
-    with the list of available codes from the specified data source. If
-    no code is provided, it returns all available codes from the data
-    source or from the specified yaml file.
+    with the list of available codes from a specified data source or
+    from the list of all available codes for which high-resolution
+    electricity demand data is available. If a file path is provided,
+    it reads the codes from the file and checks their validity. If no
+    code or file path is provided, it returns all available codes.
 
     Parameters
     ----------
@@ -306,9 +308,9 @@ def check_and_get_codes(
     # Get the list of available countries and subdivisions according to
     # the arguments.
     if data_source is not None:
-        all_codes = read_codes(data_source=data_source)
+        all_codes = read_codes_in(data_source=data_source)
     else:
-        all_codes = read_all_codes()
+        all_codes = read_all_codes_with_demand_data()
 
     if code is not None:
         # Check if the code is available.
@@ -323,7 +325,7 @@ def check_and_get_codes(
     elif file_path is not None:
         # Get the list of countries and subdivisions available on the
         # specified file.
-        codes = read_codes(file_path=file_path)
+        codes = read_codes_in(file_path=file_path)
 
         # Initialize a list of the remaining codes.
         remaining_codes = codes.copy()

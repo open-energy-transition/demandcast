@@ -16,7 +16,7 @@ import pytz
 import utils.entities
 
 
-def test_read_codes():
+def test_read_codes_in():
     """
     Test if the entities module can read codes correctly.
 
@@ -48,17 +48,17 @@ def test_read_codes():
         "utils.entities._read_entities_info",
         return_value=entities,
     ):
-        sample_codes = utils.entities.read_codes(file_path="dummy.yaml")
+        sample_codes = utils.entities.read_codes_in(file_path="dummy.yaml")
     assert sample_codes == ["FR", "US_TEX"]
 
     # Read codes belonging to a specific data source and check them.
-    entsoe_codes = utils.entities.read_codes(data_source="entsoe")
+    entsoe_codes = utils.entities.read_codes_in(data_source="entsoe")
     assert isinstance(entsoe_codes, list)
     assert "FR" in entsoe_codes
     assert "US_TEX" not in entsoe_codes
 
     # Read all codes available in the yaml files and check them.
-    all_codes = utils.entities.read_all_codes()
+    all_codes = utils.entities.read_all_codes_with_demand_data()
     assert isinstance(all_codes, list)
     assert "FR" in all_codes
     assert "US_TEX" in all_codes
@@ -73,13 +73,13 @@ def test_read_codes_errors():
     """
     # Check if common errors in input data are handled correctly.
     with pytest.raises(ValueError):
-        utils.entities.read_codes(file_path="", data_source="")
+        utils.entities.read_codes_in(file_path="", data_source="")
     with pytest.raises(ValueError):
-        utils.entities.read_codes(
+        utils.entities.read_codes_in(
             file_path="INVALID_DATA_SOURCE", data_source="INVALID_DATA_SOURCE"
         )
     with pytest.raises(ValueError):
-        utils.entities.read_codes(data_source="INVALID_DATA_SOURCE")
+        utils.entities.read_codes_in(data_source="INVALID_DATA_SOURCE")
 
 
 def test_check_and_read_codes():
@@ -91,13 +91,15 @@ def test_check_and_read_codes():
     handles errors correctly.
     """
     # Read codes belonging to a specific data source.
-    entsoe_codes = utils.entities.check_and_get_codes(data_source="entsoe")
+    entsoe_codes = utils.entities.check_and_get_codes_with_demand_data(
+        data_source="entsoe"
+    )
     assert isinstance(entsoe_codes, list)
     assert "FR" in entsoe_codes
     assert "US_TEX" not in entsoe_codes
 
     # Check the validity of a specific code for a specific data source.
-    assert utils.entities.check_and_get_codes(
+    assert utils.entities.check_and_get_codes_with_demand_data(
         code="FR", data_source="entsoe"
     ) == ["FR"]
 
@@ -115,7 +117,7 @@ def test_check_and_read_codes():
         utils.entities.read_all_codes.return_value = ["FR", "DE", "IT"]
 
         # Check if the codes from the file are read correctly.
-        dummy_codes = utils.entities.check_and_get_codes(
+        dummy_codes = utils.entities.check_and_get_codes_with_demand_data(
             file_path="dummy.yaml"
         )
 
@@ -135,7 +137,7 @@ def test_check_and_read_codes_errors():
     """
     # Check if the function raises an error for an invalid code.
     with pytest.raises(ValueError):
-        utils.entities.check_and_get_codes(
+        utils.entities.check_and_get_codes_with_demand_data(
             code="INVALID_CODE", data_source="entsoe"
         )
 
@@ -157,7 +159,9 @@ def test_check_and_read_codes_errors():
             utils.entities.read_all_codes.return_value = ["FR", "DE", "IT"]
 
             # Check if the function raises an error for invalid codes.
-            __ = utils.entities.check_and_get_codes(file_path="dummy.yaml")
+            __ = utils.entities.check_and_get_codes_with_demand_data(
+                file_path="dummy.yaml"
+            )
 
 
 def test_read_iso_alpha_3_codes():
@@ -182,11 +186,15 @@ def test_check_codes():
     for a specific data source and if it raises errors for invalid
     codes or data sources.
     """
-    utils.entities.check_code("US_TEX", data_source="eia")
+    utils.entities.check_code_in_data_source("US_TEX", data_source="eia")
     with pytest.raises(AssertionError):
-        utils.entities.check_code("INVALID_CODE", data_source="entsoe")
+        utils.entities.check_code_in_data_source(
+            "INVALID_CODE", data_source="entsoe"
+        )
     with pytest.raises(ValueError):
-        utils.entities.check_code("FR", data_source="INVALID_DATA_SOURCE")
+        utils.entities.check_code_in_data_source(
+            "FR", data_source="INVALID_DATA_SOURCE"
+        )
 
 
 def test_time_zones():

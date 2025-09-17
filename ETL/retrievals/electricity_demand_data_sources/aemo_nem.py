@@ -56,7 +56,7 @@ def _check_input_parameters(
         The month of the data to retrieve.
     """
     # Check if the code is valid.
-    utils.entities.check_code(code, "aemo_nem")
+    utils.entities.check_code_in_data_source(code, "aemo_nem")
 
     if year is not None and month is not None:
         # Check if the year and month are valid.

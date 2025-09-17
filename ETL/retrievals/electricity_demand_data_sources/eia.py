@@ -54,7 +54,7 @@ def _check_input_parameters(
         The end date of the data retrieval.
     """
     # Check if the code is valid.
-    utils.entities.check_code(code, "eia")
+    utils.entities.check_code_in_data_source(code, "eia")
 
     if start_date is not None and end_date is not None:
         # Check that the number of time points is less than 5000.

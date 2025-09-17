@@ -45,7 +45,7 @@ def _retrieve_data(data_source: str, code: str) -> pandas.Series:
     """
     # Check if there is only one code in the data source.
     one_code_in_data_source = (
-        len(utils.entities.read_codes(data_source=data_source)) == 1
+        len(utils.entities.read_codes_in(data_source=data_source)) == 1
     )
 
     # Import the retrieval module for the data source.
@@ -258,7 +258,9 @@ def run_data_retrieval(
     """
     # Get the list of codes of the countries and subdivisions of
     # interest.
-    codes = utils.entities.check_and_get_codes(code, data_source, file)
+    codes = utils.entities.check_and_get_codes_with_demand_data(
+        code, data_source, file
+    )
 
     logging.info(
         f"Retrieving electricity data from the {data_source} website."

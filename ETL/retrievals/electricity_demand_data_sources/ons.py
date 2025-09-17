@@ -48,7 +48,7 @@ def _check_input_parameters(
         The code of the subdivision of interest.
     """
     # Check if the code is valid.
-    utils.entities.check_code(code, "ons")
+    utils.entities.check_code_in_data_source(code, "ons")
 
     if year is not None:
         # Check if the year is supported.
