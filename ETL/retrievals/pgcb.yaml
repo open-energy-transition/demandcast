@@ -1,0 +1,5 @@
+entities:
+  - country_name: Bangladesh
+    country_code: BD
+    start_date: 2013-12-31
+    end_date: today
