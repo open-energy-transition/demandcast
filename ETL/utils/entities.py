@@ -216,7 +216,7 @@ def read_codes_in(file_path: str = "", data_source: str = "") -> list[str]:
 
 def read_all_codes_with_demand_data() -> list[str]:
     """
-    Read the codes of all countries and subdivisions.
+    Read the codes of all countries and subdivisions with demand data.
 
     This function reads the codes of all countries and subdivisions for
     which high-resolution electricity demand data is available. It
@@ -226,8 +226,8 @@ def read_all_codes_with_demand_data() -> list[str]:
     Returns
     -------
     list[str]
-        A list of ISO Alpha-2 codes of the countries or the
-        combination of the ISO Alpha-2 codes and the subdivision codes.
+        A list of codes of all countries and subdivisions for which
+        high-resolution electricity demand data is available.
     """
     # Get the path of all yaml files in the retrieval scripts folder.
     yaml_file_paths = utils.directories.list_yaml_files(
@@ -279,15 +279,17 @@ def check_and_get_codes_with(
     """
     Check code validity (if provided) or get all available codes.
 
-    This function checks if the provided code is valid by comparing it
-    with the list of available codes from a specified data source or
-    from the list of all available codes for which high-resolution
-    electricity demand data is available. If a file path is provided,
-    it reads the codes from the file and checks their validity. If no
-    code or file path is provided, it returns all available codes.
+    This function checks if the code provided as an argument or the
+    codes in the specified file are valid by comparing them with the
+    list of available codes for which a certain feature is available.
+    If no code or file path is provided, it returns all available codes
+    for which the feature is available.
 
     Parameters
     ----------
+    feature : str
+        The feature of interest. Available features are "demand_data"
+        and "shape".
     code : str, optional
         The code of the country or subdivision.
     data_source : str, optional
@@ -304,9 +306,8 @@ def check_and_get_codes_with(
     Raises
     ------
     ValueError
-        If the provided code is not available, or if none of the codes
-        in the file are available, or if an invalid feature is
-        specified.
+        If the feature is not valid, or if the code is not available,
+        or if none of the codes in the file are available.
     """
     # Get the list of available countries and subdivisions according to
     # the arguments.
@@ -316,6 +317,10 @@ def check_and_get_codes_with(
         else:
             all_codes = read_all_codes_with_demand_data()
     elif feature == "shape":
+        if data_source is not None:
+            raise ValueError(
+                "The 'shape' feature is not associated with a data source."
+            )
         all_codes = utils.shapes.get_all_codes_with_shapes()
     else:
         raise ValueError(

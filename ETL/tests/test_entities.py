@@ -153,6 +153,13 @@ def test_check_and_read_codes_errors():
             "INVALID_FEATURE", code="FR", data_source="entsoe"
         )
 
+    # Check if the function raises an error when a data source is
+    # provided for the "shape" feature.
+    with pytest.raises(ValueError):
+        utils.entities.check_and_get_codes_with(
+            "shape", code="FR", data_source="entsoe"
+        )
+
     # Check if the function raises an error for an invalid code.
     with pytest.raises(ValueError):
         utils.entities.check_and_get_codes_with(
