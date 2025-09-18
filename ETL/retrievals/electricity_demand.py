@@ -258,8 +258,8 @@ def run_data_retrieval(
     """
     # Get the list of codes of the countries and subdivisions of
     # interest.
-    codes = utils.entities.check_and_get_codes_with_demand_data(
-        code, data_source, file
+    codes = utils.entities.check_and_get_codes_with(
+        "demand_data", code=code, data_source=data_source, file_path=file
     )
 
     logging.info(

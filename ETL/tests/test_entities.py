@@ -16,7 +16,7 @@ import pytz
 import utils.entities
 
 
-def test_read_codes_in():
+def test_read_codes():
     """
     Test if the entities module can read codes correctly.
 
@@ -84,41 +84,45 @@ def test_read_codes_errors():
 
 def test_check_and_read_codes():
     """
-    Test if the function check_and_get_codes works correctly.
+    Test if the function check_and_get_codes_with works correctly.
 
     This test checks if the function can read codes from a yaml file,
     from a specific data source, or from a specific code, and if it
     handles errors correctly.
     """
     # Read codes belonging to a specific data source.
-    entsoe_codes = utils.entities.check_and_get_codes_with_demand_data(
-        data_source="entsoe"
+    entsoe_codes = utils.entities.check_and_get_codes_with(
+        "demand_data", data_source="entsoe"
     )
     assert isinstance(entsoe_codes, list)
     assert "FR" in entsoe_codes
     assert "US_TEX" not in entsoe_codes
 
     # Check the validity of a specific code for a specific data source.
-    assert utils.entities.check_and_get_codes_with_demand_data(
-        code="FR", data_source="entsoe"
+    assert utils.entities.check_and_get_codes_with(
+        "demand_data", code="FR", data_source="entsoe"
     ) == ["FR"]
 
     # Read codes from a specified file path and check them.
     with (
-        patch("utils.entities.read_codes"),
-        patch("utils.entities.read_all_codes"),
+        patch("utils.entities.read_codes_in"),
+        patch("utils.entities.read_all_codes_with_demand_data"),
     ):
-        # Mock the return value of read_codes to return codes from a
+        # Mock the return value of read_codes_in to return codes from a
         # specific file.
-        utils.entities.read_codes.return_value = ["FR", "DE"]
+        utils.entities.read_codes_in.return_value = ["FR", "DE"]
 
-        # Mock the return value of read_all_codes to return all
-        # available codes.
-        utils.entities.read_all_codes.return_value = ["FR", "DE", "IT"]
+        # Mock the return value of read_all_codes_with_demand_data to
+        # return all available codes with demand data.
+        utils.entities.read_all_codes_with_demand_data.return_value = [
+            "FR",
+            "DE",
+            "IT",
+        ]
 
         # Check if the codes from the file are read correctly.
-        dummy_codes = utils.entities.check_and_get_codes_with_demand_data(
-            file_path="dummy.yaml"
+        dummy_codes = utils.entities.check_and_get_codes_with(
+            "demand_data", file_path="dummy.yaml"
         )
 
         # Check if the codes for a specific file are read correctly.
@@ -126,19 +130,33 @@ def test_check_and_read_codes():
         assert "FR" in dummy_codes
         assert "US_TEX" not in dummy_codes
 
+    # Read codes for which a shape is available.
+    shape_codes = utils.entities.check_and_get_codes_with("shape")
+    assert isinstance(shape_codes, list)
+    assert "FR" in shape_codes
+    assert "US_TEX" in shape_codes
+    assert "RU_AD" in shape_codes
+    assert "UA_40" in shape_codes
+
 
 def test_check_and_read_codes_errors():
     """
-    Test if the check_and_get_codes function handles errors correctly.
+    Test if the check_and_get_codes_with function handles errors.
 
     This test checks if the function raises errors for invalid codes,
     invalid data sources, and if the codes in the file do not match the
     expected codes.
     """
+    # Check if the function raises an error for an invalid feature.
+    with pytest.raises(ValueError):
+        utils.entities.check_and_get_codes_with(
+            "INVALID_FEATURE", code="FR", data_source="entsoe"
+        )
+
     # Check if the function raises an error for an invalid code.
     with pytest.raises(ValueError):
-        utils.entities.check_and_get_codes_with_demand_data(
-            code="INVALID_CODE", data_source="entsoe"
+        utils.entities.check_and_get_codes_with(
+            "demand_data", code="INVALID_CODE", data_source="entsoe"
         )
 
     # Check if the function raises an error for invalid codes read from
@@ -146,21 +164,25 @@ def test_check_and_read_codes_errors():
     with pytest.raises(ValueError):
         with (
             patch(
-                "utils.entities.read_codes",
+                "utils.entities.read_codes_in",
             ),
-            patch("utils.entities.read_all_codes"),
+            patch("utils.entities.read_all_codes_with_demand_data"),
         ):
-            # Mock the return value of read_codes to return invalid
+            # Mock the return value of read_codes_in to return invalid
             # codes.
-            utils.entities.read_codes.return_value = ["US_CAL", "US_TEX"]
+            utils.entities.read_codes_in.return_value = ["US_CAL", "US_TEX"]
 
-            # Mock the return value of read_all_codes to return all
-            # available codes.
-            utils.entities.read_all_codes.return_value = ["FR", "DE", "IT"]
+            # Mock the return value of read_all_codes_with_demand_data
+            # to return all available codes with demand data.
+            utils.entities.read_all_codes_with_demand_data.return_value = [
+                "FR",
+                "DE",
+                "IT",
+            ]
 
             # Check if the function raises an error for invalid codes.
-            __ = utils.entities.check_and_get_codes_with_demand_data(
-                file_path="dummy.yaml"
+            __ = utils.entities.check_and_get_codes_with(
+                "demand_data", file_path="dummy.yaml"
             )
 
 

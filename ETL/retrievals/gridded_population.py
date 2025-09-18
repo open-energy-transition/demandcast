@@ -291,7 +291,9 @@ def run_data_retrieval(
 
     # Get the list of codes of the countries and subdivisions of
     # interest.
-    codes = utils.entities.check_and_get_codes(code=code, file_path=file)
+    codes = utils.entities.check_and_get_codes_with(
+        "shape", code=code, file_path=file
+    )
 
     # Loop over the years and scenarios.
     for year, scenario in tqdm(year_scenario_list, desc="Years and scenarios"):

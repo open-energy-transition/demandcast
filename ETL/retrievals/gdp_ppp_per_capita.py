@@ -334,8 +334,11 @@ def run_data_retrieval(
     # Download the historical GDP PPP per capita from the IMF.
     imf_gdp_ppp_per_capita = download_historical_gdp_ppp_per_capita_from_imf()
 
-    # Get the list of codes of the countries and subdivisions.
-    codes = utils.entities.check_and_get_codes(code=code, file_path=file)
+    # Get the list of codes of the countries and subdivisions of
+    # interest.
+    codes = utils.entities.check_and_get_codes_with(
+        "shape", code=code, file_path=file
+    )
 
     # Define the available scenarios for the GDP PPP per capita data.
     available_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]

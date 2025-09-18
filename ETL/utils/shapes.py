@@ -433,3 +433,95 @@ def get_entity_bounds(
     ]
 
     return entity_bounds
+
+
+def get_all_codes_with_shapes() -> list[str]:
+    """
+    Get the list of all available codes for which shapes are available.
+
+    This function retrieves the list of all available codes for which
+    shapes are available. This includes both standard shapes from the
+    Natural Earth shapefile database and non-standard shapes defined by
+    the user in the shapes directory.
+
+    Returns
+    -------
+    all_codes : list[str]
+        List of all available codes for which shapes are available.
+    """
+    # Get the shape of all countries from the Natural Earth shapefile
+    # database.
+    shapes_of_all_countries = cartopy.io.shapereader.natural_earth(
+        resolution="50m", category="cultural", name="admin_0_countries"
+    )
+
+    # Define a reader for the shapefile.
+    reader = cartopy.io.shapereader.Reader(shapes_of_all_countries)
+
+    # Get the list of ISO Alpha-2 codes of all countries. Currently,
+    # the Natural Earth shapefile database contains some countries not
+    # internationally recognized and without an ISO Alpha-2 code.
+    # These are Somaliland and Northern Cyprus. Another country not
+    # internationally recognized but with an ISO Alpha-2 code is Kosovo.
+    # There are also some territories controlled by other countries or
+    # under dispute, which are the Australian Indian Ocean Territories
+    # (AU), Ashmore and Cartier Islands (AU), and the Siachen Glacier.
+    # Taiwan is included as a separate country with its own code, which
+    # is CN-TW.
+    codes_of_all_countries = []
+    for shape in list(reader.records()):
+        if shape.attributes["ISO_A2"] != "-99":
+            codes_of_all_countries.append(shape.attributes["ISO_A2"])
+        else:
+            if shape.attributes["ISO_A2_EH"] != "-99":
+                codes_of_all_countries.append(shape.attributes["ISO_A2_EH"])
+
+    # Get the shape of standard subdivisions from the Natural Earth
+    # shapefile database.
+    shapes_of_all_standard_subdivisions = cartopy.io.shapereader.natural_earth(
+        resolution="50m", category="cultural", name="admin_1_states_provinces"
+    )
+
+    # Define a reader for the shapefile.
+    reader = cartopy.io.shapereader.Reader(shapes_of_all_standard_subdivisions)
+
+    # Get the list of codes of all standard subdivisions. Standard
+    # subdivisions are available for Australia, Brazil, Canada, China,
+    # India, Russia, South Africa, Ukraine, and the United States.
+    # Subdivisions of Australia include six states and three internal
+    # territories. Subdivisions of Brazil include 26 states and one
+    # federal district. Subdivisions of Canada include 10 provinces and
+    # three territories. Subdivisions of China include 22 provinces,
+    # five autonomous regions, and four municipalities. Subdivisions
+    # of India include 28 states and eight union territories.
+    # Subdivisions of Russia include 22 republics, nine krais, 46
+    # oblasts, three federal cities, one autonomous oblast, and four
+    # autonomous okrugs. Subdivisions of South Africa include nine
+    # provinces. Sudivisions of Ukraine include Crimea and Sevastopol.
+    # Subdivisions of the United States include 50 states and one
+    # federal district.
+    codes_of_all_standard_subdivisions = [
+        shape.attributes["iso_3166_2"] for shape in list(reader.records())
+    ]
+
+    # Get the codes of all non-standard shapes defined by the user in
+    # the shapes directory.
+    codes_of_all_non_standard_subdivisions = []
+    non_standard_shape_codes = _read_non_standard_shape_codes()
+    for codes in non_standard_shape_codes.values():
+        codes_of_all_non_standard_subdivisions.extend(codes)
+
+    # Combine the lists of codes of all countries, standard
+    # subdivisions, and non-standard subdivisions.
+    all_codes = (
+        codes_of_all_countries
+        + codes_of_all_standard_subdivisions
+        + codes_of_all_non_standard_subdivisions
+    )
+
+    # Replace any hyphens with underscores, remove duplicates and sort
+    # the list of codes.
+    all_codes = list(set([code.replace("-", "_") for code in all_codes]))
+    all_codes.sort()
+
+    return all_codes

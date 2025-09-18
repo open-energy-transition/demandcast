@@ -472,8 +472,11 @@ def run_data_retrieval(
     # Download the historical population data from the World Bank.
     world_bank_population = download_historical_population_from_world_bank()
 
-    # Get the list of codes of the countries and subdivisions.
-    codes = utils.entities.check_and_get_codes(code=code, file_path=file)
+    # Get the list of codes of the countries and subdivisions of
+    # interest.
+    codes = utils.entities.check_and_get_codes_with(
+        "shape", code=code, file_path=file
+    )
 
     # Define the available years for gridded population data.
     available_historical_years_of_gridded_data = list(range(2000, 2021, 5))

@@ -329,3 +329,24 @@ def test_get_entity_bounds(dummy_geodf):
     assert bounds[1] == dummy_geodf.bounds.miny[0] - 1
     assert bounds[2] == dummy_geodf.bounds.maxx[0] + 1
     assert bounds[3] == dummy_geodf.bounds.maxy[0] + 1
+
+
+def test_get_all_codes_with_shapes():
+    """
+    Test the get_all_codes_with_shapes function.
+
+    This function checks if the function returns a list of all codes
+    that have associated shapes.
+    """
+    # Call the function to get all codes with shapes.
+    shape_codes = utils.shapes.get_all_codes_with_shapes()
+
+    # Check if the returned codes are in the expected format.
+    assert isinstance(shape_codes, list)
+    assert len(shape_codes) > 0
+
+    # Check for some known codes in the returned list.
+    assert "FR" in shape_codes
+    assert "US_TEX" in shape_codes
+    assert "RU_AD" in shape_codes
+    assert "UA_40" in shape_codes

@@ -21,6 +21,7 @@ from countryinfo import CountryInfo
 from timezonefinder import TimezoneFinder
 
 import utils.directories
+import utils.shapes
 
 # Add countries that are not fully recognized.
 pycountry.countries.add_entry(
@@ -269,7 +270,8 @@ def check_code_in_data_source(code: str, data_source: str) -> None:
     )
 
 
-def check_and_get_codes_with_demand_data(
+def check_and_get_codes_with(
+    feature: str,
     code: str | None = None,
     data_source: str | None = None,
     file_path: str | None = None,
@@ -303,14 +305,23 @@ def check_and_get_codes_with_demand_data(
     ------
     ValueError
         If the provided code is not available, or if none of the codes
-        in the file are available.
+        in the file are available, or if an invalid feature is
+        specified.
     """
     # Get the list of available countries and subdivisions according to
     # the arguments.
-    if data_source is not None:
-        all_codes = read_codes_in(data_source=data_source)
+    if feature == "demand_data":
+        if data_source is not None:
+            all_codes = read_codes_in(data_source=data_source)
+        else:
+            all_codes = read_all_codes_with_demand_data()
+    elif feature == "shape":
+        all_codes = utils.shapes.get_all_codes_with_shapes()
     else:
-        all_codes = read_all_codes_with_demand_data()
+        raise ValueError(
+            f"Invalid feature: {feature}. Available features are: "
+            "'demand_data' and 'shape'."
+        )
 
     if code is not None:
         # Check if the code is available.
