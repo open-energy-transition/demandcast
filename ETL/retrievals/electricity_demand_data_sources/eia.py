@@ -64,7 +64,9 @@ def _check_input_parameters(
 
         # Read the start date of the available data.
         start_date_of_data_availability = pandas.to_datetime(
-            utils.entities.read_date_ranges(data_source="eia")[code][0]
+            utils.entities.read_date_ranges_of_demand_in_data_source("eia")[
+                code
+            ][0]
         )
 
         # Check that the start date is greater than or equal to the
@@ -98,9 +100,9 @@ def get_available_requests(
     _check_input_parameters(code)
 
     # Read the start and end date of the available data.
-    start_date, end_date = utils.entities.read_date_ranges(data_source="eia")[
-        code
-    ]
+    start_date, end_date = (
+        utils.entities.read_date_ranges_of_demand_in_data_source("eia")[code]
+    )
 
     # Define intervals for the retrieval periods. A six-month period
     # avoids the limitation of the API to retrieve a maximum of 5000

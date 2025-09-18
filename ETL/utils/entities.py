@@ -229,17 +229,15 @@ def read_all_codes_with_demand_data() -> list[str]:
         A list of codes of all countries and subdivisions for which
         high-resolution electricity demand data is available.
     """
-    # Get the path of all yaml files in the retrieval scripts folder.
-    yaml_file_paths = utils.directories.list_yaml_files(
-        "electricity_demand_data_sources_folder"
-    )
+    # Get the available data sources.
+    data_sources = read_data_sources()
 
     # Define a list to store the codes.
     codes = []
     # Iterate over the yaml files and read the codes from each file.
-    for yaml_file_path in yaml_file_paths:
+    for data_source in data_sources:
         # Read the codes from the file.
-        file_codes = read_codes_in(file_path=yaml_file_path)
+        file_codes = read_codes_in(data_source=data_source)
 
         # Append the codes to the list.
         codes.extend(file_codes)
@@ -653,30 +651,23 @@ def get_time_zone(code: str) -> datetime.tzinfo:
     return time_zones[0]
 
 
-def read_date_ranges(
-    file_path: str = "", data_source: str = ""
+def read_date_ranges_of_demand_in_data_source(
+    data_source: str,
 ) -> dict[str, tuple[datetime.date, datetime.date]]:
     """
     Read the start and end dates of the available data.
 
     This function reads the start and end dates of the available data
-    for the countries and subdivisions from a specified yaml file or
-    from the yaml file of a specified data source. It extracts the
-    start and end dates for each country or subdivision and returns a
-    dictionary where the keys are the codes of the countries or
-    subdivisions and the values are tuples containing the start and end
-    dates.
+    for the countries and subdivisions from the yaml file of a specified
+    data source. It extracts the start and end dates for each country or
+    subdivision and returns a dictionary where the keys are the codes of
+    the countries or subdivisions and the values are tuples containing
+    the start and end dates.
 
     Parameters
     ----------
-    file_path : str, optional
-        The path to the file containing the information of the countries
-        and subdivisions. If provided, the function will read the yaml
-        file from this path.
-    data_source : str, optional
-        The name of the data source. If provided, the function will look
-        for a yaml file with the same name in the retrieval scripts
-        folder.
+    data_source : str
+        The name of the data source.
 
     Returns
     -------
@@ -688,13 +679,10 @@ def read_date_ranges(
     ------
     ValueError
         If the start date is after the end date for a country or
-        subdivision, or if both file_path and data_source are provided,
-        or if neither is provided.
+        subdivision.
     """
     # Extract the information of the countries and subdivisions.
-    entities = _read_entities_info(
-        file_path=file_path, data_source=data_source
-    )
+    entities = _read_entities_info(data_source=data_source)
 
     # Define a dictionary to store the start and end dates of the
     # available data for the countries and subdivisions.
@@ -752,10 +740,8 @@ def read_all_date_ranges() -> dict[str, tuple[datetime.date, datetime.date]]:
         The dictionary containing the start and end dates of the
         available data for the countries and subdivisions.
     """
-    # Get the path to all yaml files in the retrieval scripts folder.
-    yaml_file_paths = utils.directories.list_yaml_files(
-        "electricity_demand_data_sources_folder"
-    )
+    # Get the available data sources.
+    data_sources = read_data_sources()
 
     # Define a dictionary to store the start and end dates of the
     # available data for the countries and subdivisions.
@@ -763,9 +749,11 @@ def read_all_date_ranges() -> dict[str, tuple[datetime.date, datetime.date]]:
 
     # Iterate over the yaml files and read the start and end dates from
     # each file.
-    for yaml_file_path in yaml_file_paths:
+    for data_source in data_sources:
         # Read the start and end dates from the file.
-        file_start_and_end_dates = read_date_ranges(file_path=yaml_file_path)
+        file_start_and_end_dates = read_date_ranges_of_demand_in_data_source(
+            data_source
+        )
 
         # Check for duplicates.
         for code, (start_date, end_date) in file_start_and_end_dates.items():

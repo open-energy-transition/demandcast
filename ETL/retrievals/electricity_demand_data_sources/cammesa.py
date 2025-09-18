@@ -80,9 +80,11 @@ def get_available_requests() -> list[str]:
         The list of available requests.
     """
     # Read the start and end date of the available data.
-    start_date, end_date = utils.entities.read_date_ranges(
-        data_source="cammesa"
-    )["AR"]
+    start_date, end_date = (
+        utils.entities.read_date_ranges_of_demand_in_data_source("cammesa")[
+            "AR"
+        ]
+    )
 
     # CAMMESA only provides data for the last 9 months.
     start_date = pandas.Timestamp(f"{end_date.year}-{end_date.month - 9}-01")

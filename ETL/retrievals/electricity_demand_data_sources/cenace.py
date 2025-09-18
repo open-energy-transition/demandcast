@@ -68,7 +68,9 @@ def _check_input_parameters(
 
         # Read the start date of the available data.
         start_date_of_data_availability = pandas.to_datetime(
-            utils.entities.read_date_ranges(data_source="cenace")[code][0]
+            utils.entities.read_date_ranges_of_demand_in_data_source("cenace")[
+                code
+            ][0]
         )
 
         # Check that the start date is greater than or equal to the
@@ -101,9 +103,11 @@ def get_available_requests(
     _check_input_parameters(code)
 
     # Read the start and end date of the available data.
-    start_date, end_date = utils.entities.read_date_ranges(
-        data_source="cenace"
-    )[code]
+    start_date, end_date = (
+        utils.entities.read_date_ranges_of_demand_in_data_source("cenace")[
+            code
+        ]
+    )
 
     # Mexico has data until 15 days before the current date. Subtract
     # 10 days to the end date on top of the 5 days already considered.

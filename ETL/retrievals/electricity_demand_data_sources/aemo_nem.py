@@ -86,9 +86,11 @@ def get_available_requests(code: str) -> list[tuple[int, int]]:
     _check_input_parameters(code)
 
     # Read the start and end date of the available data.
-    start_date, end_date = utils.entities.read_date_ranges(
-        data_source="aemo_nem"
-    )[code]
+    start_date, end_date = (
+        utils.entities.read_date_ranges_of_demand_in_data_source("aemo_nem")[
+            code
+        ]
+    )
 
     # Get the list of available requests (year, month).
     values_list = (

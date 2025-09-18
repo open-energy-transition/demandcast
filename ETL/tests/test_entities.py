@@ -9,7 +9,7 @@ Description:
 """
 
 import datetime
-from unittest.mock import mock_open, patch
+from unittest.mock import patch
 
 import pytest
 import pytz
@@ -29,7 +29,7 @@ def test_read_codes():
         {
             "country_name": "France",
             "country_code": "FR",
-            "start_date": "2014-12-15",
+            "start_date": datetime.date(2014, 12, 15).isoformat(),
             "end_date": "today",
         },
         {
@@ -37,7 +37,7 @@ def test_read_codes():
             "subdivision_code": "TEX",
             "country_name": "United States",
             "country_code": "US",
-            "start_date": "2020-01-01",
+            "start_date": datetime.date(2020, 1, 1).isoformat(),
             "end_date": "today",
             "time_zone": "America/Chicago",
         },
@@ -247,7 +247,7 @@ def test_time_zones():
         {
             "country_name": "France",
             "country_code": "FR",
-            "start_date": "2014-12-15",
+            "start_date": datetime.date(2014, 12, 15).isoformat(),
             "end_date": "today",
         }
     ]
@@ -293,7 +293,7 @@ def test_time_zones_errors():
         {
             "country_name": "France",
             "country_code": "FR",
-            "start_date": "2014-12-15",
+            "start_date": datetime.date(2014, 12, 15).isoformat(),
             "end_date": "today",
             "time_zone": "America/Chicago",
         }
@@ -314,7 +314,7 @@ def test_time_zones_errors():
             "subdivision_code": "TEX",
             "country_name": "United States",
             "country_code": "US",
-            "start_date": "2020-01-01",
+            "start_date": datetime.date(2020, 1, 1).isoformat(),
             "end_date": "today",
         }
     ]
@@ -363,24 +363,33 @@ def test_date_ranges():
     file and returns a dictionary with the expected keys and values.
     """
     # Define a sample yaml file content.
-    sample_yaml = """
-    entities:
-      - country_name: France
-        country_code: FR
-        start_date: 2014-12-15
-        end_date: today
-      - subdivision_name: Texas
-        subdivision_code: TEX
-        country_name: United States
-        country_code: US
-        start_date: 2020-01-01
-        end_date: today
-        time_zone: America/Chicago
-    """
+    entities = [
+        {
+            "country_name": "France",
+            "country_code": "FR",
+            "start_date": datetime.date(2014, 12, 15),
+            "end_date": "today",
+        },
+        {
+            "subdivision_name": "Texas",
+            "subdivision_code": "TEX",
+            "country_name": "United States",
+            "country_code": "US",
+            "start_date": datetime.date(2020, 1, 1),
+            "end_date": "today",
+            "time_zone": "America/Chicago",
+        },
+    ]
 
-    # Read the date ranges from the sample yaml file.
-    with patch("builtins.open", mock_open(read_data=sample_yaml)):
-        date_ranges = utils.entities.read_date_ranges(file_path="dummy.yaml")
+    # Read the codes from the sample yaml file and check them.
+    with patch(
+        "utils.entities._read_entities_info",
+        return_value=entities,
+    ):
+        # Read the date ranges from the sample yaml file.
+        date_ranges = utils.entities.read_date_ranges_of_demand_in_data_source(
+            "dummy_data_source"
+        )
 
     # Check if function returns a list of date ranges.
     assert isinstance(date_ranges, dict)
@@ -400,21 +409,24 @@ def test_date_ranges_errors():
     ranges, such as end dates before start dates.
     """
     # Define sample yaml file content with an invalid data.
-    sample_yaml_with_invalid_date_range = """
-    entities:
-      - country_name: France
-        country_code: FR
-        start_date: 2014-12-15
-        end_date: 2012-01-01
-    """
+    entities = [
+        {
+            "country_name": "France",
+            "country_code": "FR",
+            "start_date": datetime.date(2014, 12, 15).isoformat(),
+            "end_date": datetime.date(2012, 1, 1).isoformat(),
+        }
+    ]
 
     # Check if the function raises an error for invalid date ranges.
     with pytest.raises(ValueError):
         with patch(
-            "builtins.open",
-            mock_open(read_data=sample_yaml_with_invalid_date_range),
+            "utils.entities._read_entities_info",
+            return_value=entities,
         ):
-            utils.entities.read_date_ranges(file_path="dummy.yaml")
+            utils.entities.read_date_ranges_of_demand_in_data_source(
+                "dummy_data_source"
+            )
 
 
 def test_years():
