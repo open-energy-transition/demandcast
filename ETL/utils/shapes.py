@@ -187,7 +187,7 @@ def get_standard_shape(
         shapefile_name = "admin_1_states_provinces"
         main_keys = ["iso_3166_2"]
         secondary_keys = ["name"]
-    
+
     # Replace any underscores in the code with hyphens.
     code = code.replace("_", "-")
 
@@ -479,7 +479,7 @@ def get_all_codes_with_shapes() -> list[str]:
         else:
             if shape.attributes["ISO_A2_EH"] != "-99":
                 codes_of_all_countries.append(shape.attributes["ISO_A2_EH"])
-    
+
     # Remove Antarctica (AQ) from the list of countries.
     codes_of_all_countries.remove("AQ")
 

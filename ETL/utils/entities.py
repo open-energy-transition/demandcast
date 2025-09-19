@@ -683,8 +683,8 @@ def _get_time_zone_of_subdivision(code: str) -> datetime.tzinfo:
         # shape.
         subdivision_shape = utils.shapes.get_standard_shape(code)
 
-        # Get the centroid of the subdivision shape. Suppress the 
-        # warning about the centroid method being applied to a 
+        # Get the centroid of the subdivision shape. Suppress the
+        # warning about the centroid method being applied to a
         # geographic CRS. It would be better to project the shape first,
         # but this is not straightforward for all shapes.
         with warnings.catch_warnings(action="ignore"):
