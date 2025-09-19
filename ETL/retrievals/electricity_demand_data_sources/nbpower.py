@@ -64,9 +64,9 @@ def get_available_requests() -> list[tuple[int, int]]:
     """
     # Read the start and end date of the available data.
     start_date, end_date = (
-        utils.entities.read_date_ranges_of_demand_in_data_source("nbpower")[
-            "CA_NB"
-        ]
+        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+            "nbpower"
+        )["CA_NB"]
     )
 
     # Get the list of available requests, which are the years and

@@ -126,11 +126,11 @@ def _read_entities_info(
     return content["entities"]
 
 
-def _get_data_sources(code: str) -> list[str]:
+def _get_data_sources_containing_code(code: str) -> list[str]:
     """
-    Get the data source for a given code.
+    Get the data sources containing the provided code.
 
-    This function retrieves the data source for which the provided code
+    This function retrieves the data sources for which the provided code
     is available. It checks all yaml files in the retrieval scripts
     folder and returns a list of data sources that contain the code.
 
@@ -214,7 +214,7 @@ def read_codes_in(file_path: str = "", data_source: str = "") -> list[str]:
     ]
 
 
-def read_all_codes_with_demand_data() -> list[str]:
+def read_all_codes_with_electricity_demand_data() -> list[str]:
     """
     Read the codes of all countries and subdivisions with demand data.
 
@@ -309,11 +309,11 @@ def check_and_get_codes_with(
     """
     # Get the list of available countries and subdivisions according to
     # the arguments.
-    if feature == "demand_data":
+    if feature == "electricity_demand_data":
         if data_source is not None:
             all_codes = read_codes_in(data_source=data_source)
         else:
-            all_codes = read_all_codes_with_demand_data()
+            all_codes = read_all_codes_with_electricity_demand_data()
     elif feature == "shape":
         if data_source is not None:
             raise ValueError(
@@ -323,7 +323,7 @@ def check_and_get_codes_with(
     else:
         raise ValueError(
             f"Invalid feature: {feature}. Available features are: "
-            "'demand_data' and 'shape'."
+            "'electricity_demand_data' and 'shape'."
         )
 
     if code is not None:
@@ -414,7 +414,7 @@ def get_iso_alpha_3_code(code: str) -> str:
         )
 
 
-def _get_country_time_zone(iso_alpha_2_code: str) -> datetime.tzinfo:
+def _get_time_zone_of_country(iso_alpha_2_code: str) -> datetime.tzinfo:
     """
     Get the time zone of a country.
 
@@ -485,40 +485,25 @@ def _get_country_time_zone(iso_alpha_2_code: str) -> datetime.tzinfo:
     return time_zone
 
 
-def _get_time_zones(
-    code: str = "", file_path: str = "", data_source: str = ""
-) -> datetime.tzinfo | dict[str, datetime.tzinfo]:
+def _get_time_zones_in_data_source(
+    data_source: str,
+) -> dict[str, datetime.tzinfo]:
     """
-    Get the time zones of the countries and subdivisions.
+    Get the time zones of countries and subdivisions in a data source.
 
     This function reads the time zones of the countries and subdivisions
-    from a specified yaml file or from the yaml file of a specified data
-    source. It then extracts the time zone of the specified country or
-    subdivision if the code is provided. If the code is not provided,
-    it returns the time zones of all countries and subdivisions defined
-    in the file.
+    from the yaml file of a specified data source.
 
     Parameters
     ----------
-    code : str, optional
-        The ISO Alpha-2 code of the country or the combination of the
-        ISO Alpha-2 codes and the subdivision codes. If provided, the
-        function will return its time zone.
-    file_path : str, optional
-        The path to the file containing the information of the countries
-        and subdivisions. If provided, the function will read the yaml
-        file from this path.
-    data_source : str, optional
-        The name of the data source. If provided, the function will look
-        for a yaml file with the same name in the retrieval scripts
-        folder.
+    data_source : str
+        The name of the data source.
 
     Returns
     -------
-    datetime.tzinfo | dict[str, datetime.tzinfo]
-        The time zone of the specified country or subdivision or a
-        dictionary containing the time zones of all countries and
-        subdivisions defined in the file.
+    dict[str, datetime.tzinfo]
+        A dictionary containing the time zones of all countries and
+        subdivisions defined for the specified data source.
 
     Raises
     ------
@@ -528,9 +513,7 @@ def _get_time_zones(
         zone for a country or subdivision.
     """
     # Extract the information of the countries and subdivisions.
-    entities = _read_entities_info(
-        file_path=file_path, data_source=data_source
-    )
+    entities = _read_entities_info(data_source=data_source)
 
     # Define a dictionary to store the time zones of the countries and
     # subdivisions.
@@ -553,19 +536,19 @@ def _get_time_zones(
         # If the code specifies a country, get the time zone based on
         # the country code.
         elif "time_zone" not in entity and "_" not in entity_code:
-            time_zone = _get_country_time_zone(entity_code)
+            time_zone = _get_time_zone_of_country(entity_code)
 
         # If the code specifies a country and the time zone is also
         # defined in the file, check if the time zone is the same as the
         # one in the file.
         elif "time_zone" in entity and "_" not in entity_code:
-            time_zone = _get_country_time_zone(entity_code)
+            time_zone = _get_time_zone_of_country(entity_code)
 
             # Check if the time zone is the same as the one in the file.
             if time_zone != pytz.timezone(entity["time_zone"]):
                 raise ValueError(
                     f"The time zone {entity['time_zone']} in "
-                    f"{os.path.basename(file_path)} for {entity_code} does "
+                    f"{data_source} for {entity_code} does "
                     f"not match the expected time zone {time_zone}."
                 )
 
@@ -576,15 +559,138 @@ def _get_time_zones(
                 f"The time zone is not defined for {entity_code}."
             )
 
-        # If the code is provided, return the time zone of the country
-        # or subdivision.
-        if code != "" and entity_code == code:
-            return time_zone
-
         # Add the code to the dictionary and the respective time zone.
         time_zones[entity_code] = time_zone
 
     return time_zones
+
+
+def _get_defined_time_zone_for_code(code: str) -> datetime.tzinfo:
+    """
+    Get the defined time zone of a country or subdivision.
+
+    This function retrieves the time zone of a country or subdivision
+    based on the definition of the time zone in the yaml files of the
+    data sources.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+
+    Returns
+    -------
+    datetime.tzinfo
+        The time zone of the country or subdivision defined in the yaml
+        file.
+
+    Raises
+    ------
+    ValueError
+        If the provided code is not recognized or not available, or if
+        if conflicting time zones are found for the subdivision.
+    """
+    # Get the data sources containing the provided code.
+    data_sources = _get_data_sources_containing_code(code)
+
+    if len(data_sources) == 0:
+        raise ValueError(f"Code {code} is not available in any data source.")
+
+    # Initialize a list of potential time zones from different data
+    # sources.
+    time_zones: list[datetime.tzinfo] = []
+
+    # Iterate over the data sources and read the time zones.
+    for data_source in data_sources:
+        # Read the time zone from the file of the data source.
+        time_zone_in_data_source = _get_time_zones_in_data_source(data_source)
+
+        # Extract the time zone for the provided code and add it to the
+        # list of potential time zones.
+        time_zones.append(time_zone_in_data_source[code])
+
+    # Remove duplicates from the list of time zones.
+    time_zones = list(set(time_zones))
+
+    if len(time_zones) > 1:
+        raise ValueError(
+            f"Conflicting time zones found for {code}: "
+            f"{', '.join(str(tz) for tz in time_zones)}."
+        )
+
+    return time_zones[0]
+
+
+def _get_time_zone_of_subdivision(code: str) -> datetime.tzinfo:
+    """
+    Get the time zone of a subdivision.
+
+    This function retrieves the time zone of a subdivision based on
+    the definition of the time zone in the yaml files of the data
+    sources. If the time zone is not defined in the yaml files, it
+    determines the time zone based on the coordinates of the centroid
+    of the subdivision shape.
+
+    Parameters
+    ----------
+    code : str
+        The combination of the ISO Alpha-2 codes and the subdivision
+        codes.
+
+    Returns
+    -------
+    datetime.tzinfo
+        The time zone of the subdivision.
+
+    Raises
+    ------
+    ValueError
+        If the provided code is not recognized or not available.
+    """
+    # Get the codes of all countries and subdivisions with demand data.
+    all_codes_with_electricity_demand_data = (
+        read_all_codes_with_electricity_demand_data()
+    )
+
+    # Filter out the subdivisions. These subdivisions have the time zone
+    # defined in the yaml files.
+    subdivision_codes_with_defined_time_zone = [
+        code for code in all_codes_with_electricity_demand_data if "_" in code
+    ]
+
+    # Get the codes of all countries and subdivisions with available
+    # shapes.
+    all_codes_with_shapes = utils.shapes.get_all_codes_with_shapes()
+
+    # Filter out the subdivisions. These subdivisions do not have the
+    # time zone defined in the yaml files.
+    subdivision_codes_without_defined_time_zone = [
+        code
+        for code in all_codes_with_shapes
+        if "_" in code and code not in subdivision_codes_with_defined_time_zone
+    ]
+
+    if code in subdivision_codes_with_defined_time_zone:
+        # Get the time zone defined in the yaml files.
+        return _get_defined_time_zone_for_code(code)
+
+    elif code in subdivision_codes_without_defined_time_zone:
+        # Get the shape of the subdivision, which must be a standard
+        # shape.
+        subdivision_shape = utils.shapes.get_standard_shape(code)
+
+        # Get the centroid of the subdivision shape.
+        location = subdivision_shape.geometry.centroid.iloc[0].coords[0]
+
+        # Find time zone based on subdivision coordinates.
+        time_zone_name = TimezoneFinder().timezone_at(
+            lat=location[1], lng=location[0]
+        )
+
+        return pytz.timezone(time_zone_name)
+
+    else:
+        raise ValueError(f"Code {code} is not recognized or not available.")
 
 
 def get_time_zone(code: str) -> datetime.tzinfo:
@@ -593,8 +699,10 @@ def get_time_zone(code: str) -> datetime.tzinfo:
 
     This function retrieves the time zone of a country or subdivision
     based on its ISO Alpha-2 code or a combination of the ISO Alpha-2
-    codes and the subdivision codes. It checks if the code is in the
-    dictionary of time zones and returns the corresponding time zone.
+    codes and the subdivision codes. It uses the definitions in the yaml
+    files of the data sources and, if necessary, determines the time
+    zone based on the coordinates of the capital city or the centroid
+    of the subdivision shape.
 
     Parameters
     ----------
@@ -606,52 +714,18 @@ def get_time_zone(code: str) -> datetime.tzinfo:
     -------
     datetime.tzinfo
         The time zone of the country or subdivision.
-
-    Raises
-    ------
-    ValueError
-        If the code is not available in any data source or if the time
-        zone in the data source does not match the expected time zone.
     """
-    # Get the data sources for which the code is available.
-    data_sources = _get_data_sources(code)
-
-    # If the code is not available in any data source, raise an error.
-    if not data_sources:
-        raise ValueError(f"Code {code} is not available in any data source.")
-
-    # Initialize a list of potential time zones from different data
-    # sources.
-    time_zones: list[datetime.tzinfo] = []
-
-    # Iterate over the data sources and read the time zones.
-    for data_source in data_sources:
-        # Read the time zone from the file of the data source.
-        data_source_time_zone = _get_time_zones(
-            code=code, data_source=data_source
-        )
-
-        # Check if the time zone is a single datetime.tzinfo object.
-        if isinstance(data_source_time_zone, datetime.tzinfo):
-            time_zones.append(data_source_time_zone)
-
-    # Remove duplicates from the list of time zones.
-    time_zones = list(set(time_zones))
-
-    if not time_zones:
-        raise ValueError(
-            f"The time zone is not defined for {code} in any data source."
-        )
-    elif len(time_zones) > 1:
-        raise ValueError(
-            f"Conflicting time zones found for {code}: "
-            f"{', '.join(str(tz) for tz in time_zones)}."
-        )
-
-    return time_zones[0]
+    if "_" in code:
+        # If the code specifies a subdivision, get the time zone of the
+        # subdivision.
+        return _get_time_zone_of_subdivision(code)
+    else:
+        # If the code specifies a country, get the time zone of the
+        # country.
+        return _get_time_zone_of_country(code)
 
 
-def read_date_ranges_of_demand_in_data_source(
+def read_date_ranges_of_electricity_demand_in_data_source(
     data_source: str,
 ) -> dict[str, tuple[datetime.date, datetime.date]]:
     """
@@ -751,8 +825,8 @@ def read_all_date_ranges() -> dict[str, tuple[datetime.date, datetime.date]]:
     # each file.
     for data_source in data_sources:
         # Read the start and end dates from the file.
-        file_start_and_end_dates = read_date_ranges_of_demand_in_data_source(
-            data_source
+        file_start_and_end_dates = (
+            read_date_ranges_of_electricity_demand_in_data_source(data_source)
         )
 
         # Check for duplicates.

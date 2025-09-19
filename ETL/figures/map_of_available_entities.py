@@ -39,7 +39,7 @@ def plot(figure_directory: str) -> None:
         The directory to store the figure.
     """
     # Read the codes of all countries and subdivisions.
-    codes = utils.entities.read_all_codes_with_demand_data()
+    codes = utils.entities.read_all_codes_with_electricity_demand_data()
 
     # Get the range of available data for all countries and
     # subdivisions.

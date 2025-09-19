@@ -58,7 +58,7 @@ def test_read_codes():
     assert "US_TEX" not in entsoe_codes
 
     # Read all codes available in the yaml files and check them.
-    all_codes = utils.entities.read_all_codes_with_demand_data()
+    all_codes = utils.entities.read_all_codes_with_electricity_demand_data()
     assert isinstance(all_codes, list)
     assert "FR" in all_codes
     assert "US_TEX" in all_codes
@@ -92,7 +92,7 @@ def test_check_and_read_codes():
     """
     # Read codes belonging to a specific data source.
     entsoe_codes = utils.entities.check_and_get_codes_with(
-        "demand_data", data_source="entsoe"
+        "electricity_demand_data", data_source="entsoe"
     )
     assert isinstance(entsoe_codes, list)
     assert "FR" in entsoe_codes
@@ -100,21 +100,22 @@ def test_check_and_read_codes():
 
     # Check the validity of a specific code for a specific data source.
     assert utils.entities.check_and_get_codes_with(
-        "demand_data", code="FR", data_source="entsoe"
+        "electricity_demand_data", code="FR", data_source="entsoe"
     ) == ["FR"]
 
     # Read codes from a specified file path and check them.
     with (
         patch("utils.entities.read_codes_in"),
-        patch("utils.entities.read_all_codes_with_demand_data"),
+        patch("utils.entities.read_all_codes_with_electricity_demand_data"),
     ):
         # Mock the return value of read_codes_in to return codes from a
         # specific file.
         utils.entities.read_codes_in.return_value = ["FR", "DE"]
 
-        # Mock the return value of read_all_codes_with_demand_data to
-        # return all available codes with demand data.
-        utils.entities.read_all_codes_with_demand_data.return_value = [
+        # Mock the return value of
+        # read_all_codes_with_electricity_demand_data to return all
+        # available codes with demand data.
+        utils.entities.read_all_codes_with_electricity_demand_data.return_value = [
             "FR",
             "DE",
             "IT",
@@ -122,7 +123,7 @@ def test_check_and_read_codes():
 
         # Check if the codes from the file are read correctly.
         dummy_codes = utils.entities.check_and_get_codes_with(
-            "demand_data", file_path="dummy.yaml"
+            "electricity_demand_data", file_path="dummy.yaml"
         )
 
         # Check if the codes for a specific file are read correctly.
@@ -163,7 +164,9 @@ def test_check_and_read_codes_errors():
     # Check if the function raises an error for an invalid code.
     with pytest.raises(ValueError):
         utils.entities.check_and_get_codes_with(
-            "demand_data", code="INVALID_CODE", data_source="entsoe"
+            "electricity_demand_data",
+            code="INVALID_CODE",
+            data_source="entsoe",
         )
 
     # Check if the function raises an error for invalid codes read from
@@ -173,15 +176,18 @@ def test_check_and_read_codes_errors():
             patch(
                 "utils.entities.read_codes_in",
             ),
-            patch("utils.entities.read_all_codes_with_demand_data"),
+            patch(
+                "utils.entities.read_all_codes_with_electricity_demand_data"
+            ),
         ):
             # Mock the return value of read_codes_in to return invalid
             # codes.
             utils.entities.read_codes_in.return_value = ["US_CAL", "US_TEX"]
 
-            # Mock the return value of read_all_codes_with_demand_data
+            # Mock the return value of
+            # read_all_codes_with_electricity_demand_data
             # to return all available codes with demand data.
-            utils.entities.read_all_codes_with_demand_data.return_value = [
+            utils.entities.read_all_codes_with_electricity_demand_data.return_value = [
                 "FR",
                 "DE",
                 "IT",
@@ -189,7 +195,7 @@ def test_check_and_read_codes_errors():
 
             # Check if the function raises an error for invalid codes.
             __ = utils.entities.check_and_get_codes_with(
-                "demand_data", file_path="dummy.yaml"
+                "electricity_demand_data", file_path="dummy.yaml"
             )
 
 
@@ -242,7 +248,12 @@ def test_time_zones():
         "America/Los_Angeles"
     )
 
-    # Define sample yaml file content with invalid time zone.
+    # Check the time zone of a country with multiple time zones.
+    assert utils.entities.get_time_zone("US") == pytz.timezone(
+        "America/New_York"
+    )
+
+    # Define a sample yaml file content.
     entities = [
         {
             "country_name": "France",
@@ -252,19 +263,27 @@ def test_time_zones():
         }
     ]
 
-    # Check if the function retrieves time zones from a yaml file
-    # correctly.
+    # Check if the function retrieves time zones from a specified data
+    # source.
     with patch(
         "utils.entities._read_entities_info",
         return_value=entities,
     ):
-        time_zones = utils.entities._get_time_zones(file_path="dummy.yaml")
+        time_zones = utils.entities._get_time_zones_in_data_source(
+            "dummy_data_source"
+        )
 
         # Check if the function returns a dictionary with correct time
         # zones.
         assert isinstance(time_zones, dict)
         assert "FR" in time_zones
         assert time_zones["FR"] == pytz.timezone("Europe/Paris")
+
+    # Check if the function retrieves the time zone for a subdivision
+    # not defined in any yaml file.
+    assert utils.entities.get_time_zone("RU_AD") == pytz.timezone(
+        "Europe/Moscow"
+    )
 
 
 def test_time_zones_errors():
@@ -279,16 +298,16 @@ def test_time_zones_errors():
     with pytest.raises(ValueError):
         utils.entities.get_time_zone("INVALID_CODE")
     with pytest.raises(ValueError):
-        utils.entities._get_country_time_zone("INVALID_CODE")
+        utils.entities._get_time_zone_of_country("INVALID_CODE")
     with pytest.raises(ValueError):
-        utils.entities._get_country_time_zone("INVALIDCODE")
+        utils.entities._get_time_zone_of_country("INVALIDCODE")
 
     # Test not fully recognized countries.
-    assert utils.entities._get_country_time_zone("XK") == pytz.timezone(
+    assert utils.entities._get_time_zone_of_country("XK") == pytz.timezone(
         "Europe/Belgrade"
     )
 
-    # Define sample yaml file content with invalid time zone.
+    # Define a sample yaml file content with invalid time zone.
     entity_with_invalid_time_zone = [
         {
             "country_name": "France",
@@ -305,7 +324,7 @@ def test_time_zones_errors():
             "utils.entities._read_entities_info",
             return_value=entity_with_invalid_time_zone,
         ):
-            utils.entities._get_time_zones()
+            utils.entities._get_time_zones_in_data_source("dummy_data_source")
 
     # Define sample yaml file content with missing time zone.
     entity_with_missing_time_zone = [
@@ -325,21 +344,30 @@ def test_time_zones_errors():
             "utils.entities._read_entities_info",
             return_value=entity_with_missing_time_zone,
         ):
-            utils.entities._get_time_zones()
+            utils.entities._get_time_zones_in_data_source("dummy_data_source")
 
+    # Check if the function raises errors when the code is not found in
+    # any data source, the time zone is not found, or there are
+    # conflicting time zones in multiple yaml files.
     with (
-        patch("utils.entities._get_data_sources") as mock_get_data_sources,
-        patch("utils.entities._get_time_zones") as mock_get_time_zones,
+        patch(
+            "utils.entities._get_data_sources_containing_code"
+        ) as mock_get_data_sources,
+        patch(
+            "utils.entities._get_time_zones_in_data_source"
+        ) as mock_get_time_zones,
     ):
-        # Mock the return value of _get_data_sources and
-        # _get_time_zones.
-        mock_get_data_sources.return_value = ["source1", "source2"]
-        mock_get_time_zones.return_value = None
+        # Mock the return value of _get_data_sources_containing_code
+        mock_get_data_sources.return_value = []
 
-        # Check if the function raises an error for time zones not
-        # found.
+        # Check if the function raises an error for codes not found in
+        # any data source. This error is raised when the code refers to
+        # a subdivision.
         with pytest.raises(ValueError):
-            utils.entities.get_time_zone("XX")
+            utils.entities._get_defined_time_zone_for_code("XX_YY")
+
+        # Mock the return value of _get_data_sources_containing_code.
+        mock_get_data_sources.return_value = ["source1", "source2"]
 
         # Define two different time zones.
         time_zone1 = datetime.timezone.utc
@@ -347,12 +375,15 @@ def test_time_zones_errors():
 
         # Mock the return value of _get_time_zones to return different
         # time zones for each data source.
-        mock_get_time_zones.side_effect = [time_zone1, time_zone2]
+        mock_get_time_zones.side_effect = [
+            {"YY": time_zone1},
+            {"YY": time_zone2},
+        ]
 
         # Check if the function raises an error for conflicting time
         # zones in multiple yaml files.
         with pytest.raises(ValueError):
-            utils.entities.get_time_zone("YY")
+            utils.entities._get_defined_time_zone_for_code("YY")
 
 
 def test_date_ranges():
@@ -387,7 +418,7 @@ def test_date_ranges():
         return_value=entities,
     ):
         # Read the date ranges from the sample yaml file.
-        date_ranges = utils.entities.read_date_ranges_of_demand_in_data_source(
+        date_ranges = utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "dummy_data_source"
         )
 
@@ -424,7 +455,7 @@ def test_date_ranges_errors():
             "utils.entities._read_entities_info",
             return_value=entities,
         ):
-            utils.entities.read_date_ranges_of_demand_in_data_source(
+            utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
                 "dummy_data_source"
             )
 

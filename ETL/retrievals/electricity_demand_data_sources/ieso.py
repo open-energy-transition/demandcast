@@ -68,9 +68,11 @@ def get_available_requests() -> list[tuple[int | None, bool]]:
         The list of available requests.
     """
     # Read the start and end date of the available data.
-    __, end_date = utils.entities.read_date_ranges_of_demand_in_data_source(
-        "ieso"
-    )["CA_ON"]
+    __, end_date = (
+        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+            "ieso"
+        )["CA_ON"]
+    )
 
     # Define the date that separates the two periods of data.
     date_after_Apr_2002 = pandas.Timestamp("2002-04-01")

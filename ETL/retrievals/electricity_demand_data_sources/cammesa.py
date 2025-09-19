@@ -81,9 +81,9 @@ def get_available_requests() -> list[str]:
     """
     # Read the start and end date of the available data.
     start_date, end_date = (
-        utils.entities.read_date_ranges_of_demand_in_data_source("cammesa")[
-            "AR"
-        ]
+        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+            "cammesa"
+        )["AR"]
     )
 
     # CAMMESA only provides data for the last 9 months.

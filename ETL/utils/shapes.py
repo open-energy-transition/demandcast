@@ -147,7 +147,7 @@ def _get_name_from_code(code: str) -> str:
     return name
 
 
-def _get_standard_shape(
+def get_standard_shape(
     code: str, remove_remote_islands: bool = True
 ) -> geopandas.GeoDataFrame:
     """
@@ -354,7 +354,7 @@ def get_entity_shape(
     # Alpha-2 code and subdivision code.
     if "_" not in code:
         # Get the shape of the country based on the ISO Alpha-2 code.
-        entity_shape = _get_standard_shape(code, remove_remote_islands)
+        entity_shape = get_standard_shape(code, remove_remote_islands)
     else:
         # Define a flag to check if the subdivision is in the list of
         # non-standard shapes.
@@ -383,7 +383,7 @@ def get_entity_shape(
         else:
             # Get the shape of the subdivision based on the ISO Alpha-2
             # code and the subdivision code.
-            entity_shape = _get_standard_shape(code, remove_remote_islands)
+            entity_shape = get_standard_shape(code, remove_remote_islands)
 
     # Add the code as index to the GeoDataFrame.
     entity_shape["code"] = code
