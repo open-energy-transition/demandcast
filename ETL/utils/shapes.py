@@ -177,7 +177,9 @@ def get_standard_shape(
     # of the country.
 
     # Define the relevant parameters for the shapefile retrieval.
-    if "_" not in code:
+    if "_" not in code or code == "CN_TW":
+        # Taiwan is included as a separate country with its own code,
+        # which is CN-TW.
         shapefile_name = "admin_0_countries"
         main_keys = ["ISO_A2", "ISO_A2_EH"]
         secondary_keys = ["NAME", "NAME_LONG"]
@@ -185,7 +187,9 @@ def get_standard_shape(
         shapefile_name = "admin_1_states_provinces"
         main_keys = ["iso_3166_2"]
         secondary_keys = ["name"]
-        code = code.replace("_", "-")
+    
+    # Replace any underscores in the code with hyphens.
+    code = code.replace("_", "-")
 
     # Load the shapefile containing the subdivision shapes from the
     # Natural Earth database.
@@ -475,6 +479,9 @@ def get_all_codes_with_shapes() -> list[str]:
         else:
             if shape.attributes["ISO_A2_EH"] != "-99":
                 codes_of_all_countries.append(shape.attributes["ISO_A2_EH"])
+    
+    # Remove Antarctica (AQ) from the list of countries.
+    codes_of_all_countries.remove("AQ")
 
     # Get the shape of standard subdivisions from the Natural Earth
     # shapefile database.

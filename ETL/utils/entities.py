@@ -11,6 +11,7 @@ Description:
 import datetime
 import logging
 import os
+import warnings
 
 import pandas
 import pycountry
@@ -170,7 +171,7 @@ def _get_electricity_demand_data_sources_containing_code(
                 # Add the data source to the list.
                 data_sources_containing_code.append(data_source)
 
-    return data_sources
+    return data_sources_containing_code
 
 
 def read_codes_in(file_path: str = "", data_source: str = "") -> list[str]:
@@ -464,11 +465,13 @@ def _get_time_zone_of_country(iso_alpha_2_code: str) -> datetime.tzinfo:
         # If there are multiple time zones, find the time zone based on
         # the capital city.
         if len(time_zones) > 1:
-            # Get the country name.
-            country = pycountry.countries.get(alpha_2=iso_alpha_2_code)
+            # Get the country information from CountryInfo.
+            for name, info in CountryInfo().all().items():
+                if info["ISO"]["alpha2"] == iso_alpha_2_code:
+                    break
 
             # Get the capital city coordinates.
-            location = CountryInfo(country.name).capital_latlng()
+            location = info["capital_latlng"]
 
             # Find time zone based on capital city coordinates.
             time_zone_name = TimezoneFinder().timezone_at(
@@ -604,11 +607,11 @@ def _get_defined_time_zone_for_code(code: str) -> datetime.tzinfo:
     # Iterate over the data sources and read the time zones.
     for data_source in data_sources:
         # Read the time zone from the file of the data source.
-        time_zone_in_data_source = _get_time_zones_in_data_source(data_source)
+        time_zones_in_data_source = _get_time_zones_in_data_source(data_source)
 
         # Extract the time zone for the provided code and add it to the
         # list of potential time zones.
-        time_zones.append(time_zone_in_data_source[code])
+        time_zones.append(time_zones_in_data_source[code])
 
     # Remove duplicates from the list of time zones.
     time_zones = list(set(time_zones))
@@ -680,8 +683,12 @@ def _get_time_zone_of_subdivision(code: str) -> datetime.tzinfo:
         # shape.
         subdivision_shape = utils.shapes.get_standard_shape(code)
 
-        # Get the centroid of the subdivision shape.
-        location = subdivision_shape.geometry.centroid.iloc[0].coords[0]
+        # Get the centroid of the subdivision shape. Suppress the 
+        # warning about the centroid method being applied to a 
+        # geographic CRS. It would be better to project the shape first,
+        # but this is not straightforward for all shapes.
+        with warnings.catch_warnings(action="ignore"):
+            location = subdivision_shape.geometry.centroid.iloc[0].coords[0]
 
         # Find time zone based on subdivision coordinates.
         time_zone_name = TimezoneFinder().timezone_at(
