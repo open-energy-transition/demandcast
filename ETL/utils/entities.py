@@ -34,14 +34,13 @@ def read_data_sources() -> list[str]:
     Read the the names of the data sources.
 
     This function reads the names of the data sources from the yaml
-    files in the retrieval scripts folder. The names are extracted
-    from the file names.
+    files in the folder containing the modules for electricity demand
+    retreivals. The names are extracted from the file names.
 
     Returns
     -------
     data_sources : list[str]
-        The list of data sources available in the retrieval scripts
-        folder.
+        The list of available data sources.
     """
     # Get the paths to the yaml files of the data sources.
     file_paths = utils.directories.list_yaml_files(
@@ -126,7 +125,9 @@ def _read_entities_info(
     return content["entities"]
 
 
-def _get_data_sources_containing_code(code: str) -> list[str]:
+def _get_electricity_demand_data_sources_containing_code(
+    code: str,
+) -> list[str]:
     """
     Get the data sources containing the provided code.
 
@@ -144,18 +145,16 @@ def _get_data_sources_containing_code(code: str) -> list[str]:
     data_sources : list[str]
         The list of data sources that contain the provided code.
     """
-    # Get the paths to the yaml files of the data sources.
-    file_paths = utils.directories.list_yaml_files(
-        "electricity_demand_data_sources_folder"
-    )
+    # Get the available data sources.
+    data_sources = read_data_sources()
 
-    # Initialize a list to store the data sources.
-    data_sources = []
+    # Initialize a list to store the data sources containing the code.
+    data_sources_containing_code = []
 
     # Iterate over the file paths and check if the code is in the file.
-    for file_path in file_paths:
+    for data_source in data_sources:
         # Read the content from the file.
-        entities = _read_entities_info(file_path=file_path)
+        entities = _read_entities_info(data_source=data_source)
 
         # Iterate over the entities in the file.
         for entity in entities:
@@ -169,7 +168,7 @@ def _get_data_sources_containing_code(code: str) -> list[str]:
             # Check if the provided code matches the entity code.
             if entity_code == code:
                 # Add the data source to the list.
-                data_sources.append(os.path.basename(file_path).split(".")[0])
+                data_sources_containing_code.append(data_source)
 
     return data_sources
 
@@ -229,7 +228,7 @@ def read_all_codes_with_electricity_demand_data() -> list[str]:
         A list of codes of all countries and subdivisions for which
         high-resolution electricity demand data is available.
     """
-    # Get the available data sources.
+    # Get the available data sources of electricity demand data.
     data_sources = read_data_sources()
 
     # Define a list to store the codes.
@@ -286,8 +285,8 @@ def check_and_get_codes_with(
     Parameters
     ----------
     feature : str
-        The feature of interest. Available features are "demand_data"
-        and "shape".
+        The feature of interest. Available features are
+        "electricity_demand_data" and "shape".
     code : str, optional
         The code of the country or subdivision.
     data_source : str, optional
@@ -440,9 +439,11 @@ def _get_time_zone_of_country(iso_alpha_2_code: str) -> datetime.tzinfo:
         If the provided ISO Alpha-2 code is not recognized or if it
         specifies a subdivision instead of a country.
     """
-    # Define the time zones of countries that are not fully recognized.
-    not_fully_recognized_countries = {
-        "XK": ["Europe/Belgrade"]  # Kosovo
+    # Define the time zones of territories and not fully recognized
+    # countries that are not included in pytz.
+    extra_entities = {
+        "XK": ["Europe/Belgrade"],  # Kosovo
+        "HM": ["Indian/Kerguelen"],  # Heard Island and McDonald Islands
     }
 
     if "_" not in iso_alpha_2_code:
@@ -453,8 +454,8 @@ def _get_time_zone_of_country(iso_alpha_2_code: str) -> datetime.tzinfo:
             # If the country is not on pytz, try to get the time zone
             # from the mapping dictionary of non-fully recognized
             # countries.
-            if iso_alpha_2_code in not_fully_recognized_countries:
-                time_zones = not_fully_recognized_countries[iso_alpha_2_code]
+            if iso_alpha_2_code in extra_entities:
+                time_zones = extra_entities[iso_alpha_2_code]
             else:
                 raise ValueError(
                     f"Country code {iso_alpha_2_code} is not recognized."
@@ -591,7 +592,7 @@ def _get_defined_time_zone_for_code(code: str) -> datetime.tzinfo:
         if conflicting time zones are found for the subdivision.
     """
     # Get the data sources containing the provided code.
-    data_sources = _get_data_sources_containing_code(code)
+    data_sources = _get_electricity_demand_data_sources_containing_code(code)
 
     if len(data_sources) == 0:
         raise ValueError(f"Code {code} is not available in any data source.")
