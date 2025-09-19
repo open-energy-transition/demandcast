@@ -1,5 +1,5 @@
 entities:
   - country_name: Singapore
     country_code: SG
-    start_date: 2014-12-15
+    start_date: 2014-01-06
     end_date: today
