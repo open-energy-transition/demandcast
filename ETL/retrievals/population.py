@@ -45,10 +45,7 @@ def download_historical_population_from_world_bank() -> pandas.DataFrame:
     logging.info("Downloading population data from the World Bank.")
 
     # Define the URL to download the population data.
-    url = (
-        "https://api.worldbank.org/v2/en/indicator/"
-        "SP.POP.TOTL?downloadformat=csv"
-    )
+    url = "https://api.worldbank.org/v2/en/indicator/SP.POP.TOTL?downloadformat=csv"  # noqa: W505
 
     # Fetch the data from the World Bank.
     response = requests.get(url)
@@ -109,16 +106,43 @@ def extract_historical_population_from_world_bank(
     return world_bank_population
 
 
-def _get_future_population_from_iiasa(
+def _read_future_population_from_iiasa() -> pandas.DataFrame:
+    """
+    Read the future population from the IIASA dataset.
+
+    Returns
+    -------
+    population : pandas.DataFrame
+        The future population data from the IIASA dataset.
+    """
+    # Define the file path of the future population data.
+    file_path = os.path.join(
+        utils.directories.read_folders_structure()["population_folder"],
+        "manual_downloads",
+        "IAM_population.xlsx",
+    )
+
+    # Read and return the future population data.
+    return pandas.read_excel(
+        file_path,
+        sheet_name="data",
+        index_col=0,
+    )
+
+
+def _extract_future_population_from_iiasa(
+    population: pandas.DataFrame,
     iso_alpha_3_code: str,
     scenario: str,
     future_years: list[int],
 ) -> pandas.Series:
     """
-    Get the future population from the IIASA dataset.
+    Extract the future population from the IIASA dataset.
 
     Parameters
     ----------
+    population : pandas.DataFrame
+        The future population data from the IIASA dataset.
     iso_alpha_3_code : str
         The ISO Alpha-3 code of the country of interest.
     scenario : str
@@ -138,20 +162,6 @@ def _get_future_population_from_iiasa(
         If there is not exactly one row for the region and scenario in
         the population data.
     """
-    # Define the file path of the future population data.
-    file_path = os.path.join(
-        utils.directories.read_folders_structure()["population_folder"],
-        "manual_downloads",
-        "IAM_population.xlsx",
-    )
-
-    # Read the future population data.
-    population = pandas.read_excel(
-        file_path,
-        sheet_name="data",
-        index_col=0,
-    )
-
     # Extract the population for the country and scenario of interest.
     population = population[
         (population["Region"] == iso_alpha_3_code)
@@ -472,6 +482,9 @@ def run_data_retrieval(
     # Download the historical population data from the World Bank.
     world_bank_population = download_historical_population_from_world_bank()
 
+    # Read the future population data from the IIASA dataset.
+    iiasa_population = _read_future_population_from_iiasa()
+
     # Get the list of codes of the countries and subdivisions of
     # interest.
     codes = utils.entities.check_and_get_codes_with(
@@ -490,16 +503,22 @@ def run_data_retrieval(
         # Get the time zone of the country or subdivision.
         time_zone = utils.entities.get_time_zone(code)
 
-        # Check if the code is a subdivision (contains an underscore).
-        if "_" in code:
+        # Get the ISO Alpha-3 code of the country itself or the country
+        # that the subdivision belongs to.
+        iso_alpha_3_code = utils.entities.get_iso_alpha_3_code(code)
+
+        # Check if code is a subdivision or if the country is not in
+        # the World Bank data.
+        if (
+            "_" in code
+            or iso_alpha_3_code
+            not in world_bank_population["Country Code"].to_numpy()
+        ):
             # Define the available years for the population data when
             # interpolating from gridded data.
             available_historical_years = list(range(2000, 2021))
             available_future_years = list(range(2021, 2101))
         else:
-            # Get the ISO Alpha-3 code of the country.
-            iso_alpha_3_code = utils.entities.get_iso_alpha_3_code(code)
-
             # Extract the historical population for the country.
             historical_population = (
                 extract_historical_population_from_world_bank(
@@ -571,20 +590,21 @@ def run_data_retrieval(
         ) and selected_historical_years:
             logging.info(f"Extracting historical population data for {code}.")
 
-            # Get the historical population for the country or
-            # subdivision of interest.
-            if "_" in code:
+            # Check if code is a subdivision or if the country is not in
+            # the World Bank data.
+            if (
+                "_" in code
+                or iso_alpha_3_code
+                not in world_bank_population["Country Code"].to_numpy()
+            ):
+                # Extract the historical population for the subdivision
+                # or country not in the World Bank data by aggregating
+                # gridded data.
                 historical_population = (
                     _get_historical_population_from_gridded_data(
                         code,
                         selected_historical_years,
                         available_historical_years_of_gridded_data,
-                    )
-                )
-            else:
-                historical_population = (
-                    extract_historical_population_from_world_bank(
-                        world_bank_population, iso_alpha_3_code
                     )
                 )
 
@@ -639,9 +659,17 @@ def run_data_retrieval(
                         f"Extracting future population data for "
                         f"{code} and scenario {scenario}."
                     )
-                    # Get the future population for the country or
-                    # subdivision and scenario of interest.
-                    if "_" in code:
+
+                    # Check if code is a subdivision or if the country
+                    # is not in the IIASA data.
+                    if (
+                        "_" in code
+                        or iso_alpha_3_code
+                        not in iiasa_population["Region"].to_numpy()
+                    ):
+                        # Extract the future population for the
+                        # subdivision or country not in the IIASA
+                        # dataset by aggregating gridded data.
                         future_population = (
                             _get_future_population_from_gridded_data(
                                 code,
@@ -652,10 +680,13 @@ def run_data_retrieval(
                             )
                         )
                     else:
-                        future_population = _get_future_population_from_iiasa(
-                            iso_alpha_3_code,
-                            scenario,
-                            available_future_years,
+                        future_population = (
+                            _extract_future_population_from_iiasa(
+                                iiasa_population,
+                                iso_alpha_3_code,
+                                scenario,
+                                selected_future_years,
+                            )
                         )
 
                     # Extract only the selected future years.
