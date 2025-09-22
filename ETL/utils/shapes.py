@@ -431,6 +431,23 @@ def get_entity_bounds(
         entity_shape.union_all().buffer(1).bounds
     )  # West, South, East, North
 
+    # If longitude bounds are outside the range of -180 to 180 degrees,
+    # adjust them to be within this range.
+    if entity_bounds[0] < -180:
+        entity_bounds = (
+            -180,
+            entity_bounds[1],
+            entity_bounds[2],
+            entity_bounds[3],
+        )
+    if entity_bounds[2] > 180:
+        entity_bounds = (
+            entity_bounds[0],
+            entity_bounds[1],
+            180,
+            entity_bounds[3],
+        )
+
     # Round the bounds to the closest target resolution.
     entity_bounds = [
         round(x / target_resolution) * target_resolution for x in entity_bounds

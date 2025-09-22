@@ -374,6 +374,11 @@ def coarsen(
         "Target resolution must result in an integer number when dividing 360."
     )
 
+    # Adjust the East bound if it is exactly 180 degrees to avoid issues
+    # with the binning.
+    if bounds[2] == 180:
+        bounds[2] = 179.75
+
     # Define the new coarser resolution.
     x_list = numpy.linspace(-180, 180, int(360 / target_resolution) + 1)
     y_list = numpy.linspace(-90, 90, int(180 / target_resolution) + 1)
