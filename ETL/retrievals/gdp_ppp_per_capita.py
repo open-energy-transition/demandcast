@@ -11,8 +11,8 @@ Description:
     extracted for specified countries and subdivisions and saved into
     CSV and Parquet files.
 
-    Source: https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.CD
-    Source: https://www.imf.org/external/datamapper/PPPPC@WEO/OEMDC/ADVEC/WEOWORLD
+    Source: https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD
+    Source: https://data.imf.org/en/Data-Explorer?datasetUrn=IMF.RES:WEO(6.0.0)&INDICATOR=NGDPRPPPPC
     Source: https://tntcat.iiasa.ac.at/SspDb
 """  # noqa: W505
 
@@ -23,6 +23,7 @@ from io import BytesIO
 
 import pandas
 import requests
+import sdmx
 import utils.directories
 import utils.entities
 import utils.scenarios
@@ -44,7 +45,7 @@ def download_historical_gdp_ppp_per_capita_from_world_bank() -> (
     logging.info("Downloading GDP PPP per capita data from the World Bank.")
 
     # Define the URL to download the GDP PPP per capita data.
-    url = "https://api.worldbank.org/v2/en/indicator/NY.GDP.PCAP.PP.CD?downloadformat=csv"  # noqa: W505
+    url = "https://api.worldbank.org/v2/en/indicator/NY.GDP.PCAP.PP.KD?downloadformat=csv"  # noqa: W505
 
     # Download the data from the World Bank.
     response = requests.get(url)
@@ -99,16 +100,24 @@ def download_historical_gdp_ppp_per_capita_from_imf() -> pandas.DataFrame:
     """
     logging.info("Downloading GDP PPP per capita data from the IMF.")
 
-    # Define the URL to download the GDP PPP per capita data.
-    url = "https://www.imf.org/external/datamapper/api/v1/PPPPC"
+    # Initialize the IMF SDMX client.
+    imf_client = sdmx.Client("IMF_DATA")
 
-    # Download the data from the IMF.
-    imf_gdp_ppp_per_capita = pandas.DataFrame(
-        pandas.read_json(url).loc["PPPPC"].loc["values"]
+    # Download the GDP PPP per capita data from the IMF.
+    imf_gdp_ppp_per_capita = imf_client.data("WEO", key="*.NGDPRPPPPC.A")
+
+    # Convert the data to a pandas DataFrame.
+    imf_gdp_ppp_per_capita = sdmx.to_pandas(imf_gdp_ppp_per_capita)
+
+    # Reshape the DataFrame, drop NaN values, and set the index to
+    # the country code.
+    imf_gdp_ppp_per_capita = imf_gdp_ppp_per_capita.reset_index(
+        name="value"
+    ).pivot_table(
+        index="COUNTRY",
+        columns="TIME_PERIOD",
+        values="value",
     )
-
-    # Switch the rows with columns.
-    imf_gdp_ppp_per_capita = imf_gdp_ppp_per_capita.T
 
     # Convert to the correct data types.
     imf_gdp_ppp_per_capita.columns = imf_gdp_ppp_per_capita.columns.astype(int)
@@ -233,34 +242,61 @@ def _get_future_gdp_ppp_per_capita_from_iiasa(
         If there is not exactly one row for the region and scenario in
         the GDP PPP per capita data.
     """
-    # Define the file path of the future GDP PPP per capita data.
-    file_path = os.path.join(
+    # Define the file path of the future GDP PPP per capita data at
+    # the national level.
+    file_path_of_national_data = os.path.join(
         utils.directories.read_folders_structure()[
             "gdp_ppp_per_capita_folder"
         ],
         "manual_downloads",
-        "IAM_gdp_ppp_per_capita_growth.xlsx",
+        "IAM_national_gdp_ppp_per_capita_growth.xlsx",
     )
 
     # Read the annual growth rates.
-    annual_growth_rate = pandas.read_excel(
-        file_path,
+    national_annual_growth_rate = pandas.read_excel(
+        file_path_of_national_data,
         sheet_name="data",
         index_col=0,
     )
 
-    if iso_alpha_3_code in annual_growth_rate["Region"].to_list():
+    if iso_alpha_3_code in national_annual_growth_rate["Region"].to_list():
         # Extract the annual growth rates of the GDP PPP per capita for
         # the country and scenario of interest.
-        annual_growth_rate = annual_growth_rate[
-            (annual_growth_rate["Region"] == iso_alpha_3_code)
-            & (annual_growth_rate["Scenario"] == scenario)
+        annual_growth_rate = national_annual_growth_rate[
+            (national_annual_growth_rate["Region"] == iso_alpha_3_code)
+            & (national_annual_growth_rate["Scenario"] == scenario)
         ]
     else:
-        raise ValueError(
-            f"GDP PPP per capita growth rate data is not available for "
-            f"{iso_alpha_3_code}."
+        file_path_of_regional_data = os.path.join(
+            utils.directories.read_folders_structure()[
+                "gdp_ppp_per_capita_folder"
+            ],
+            "manual_downloads",
+            "IAM_32_regional_gdp_ppp_per_capita_growth.xlsx",
         )
+
+        # Read the annual growth rates.
+        regional_annual_growth_rate = pandas.read_excel(
+            file_path_of_regional_data,
+            sheet_name="data",
+            index_col=0,
+        )
+
+        # Get the region of the country of interest.
+        region = utils.scenarios.get_iam_region(iso_alpha_3_code, n_regions=32)
+
+        if region in regional_annual_growth_rate["Region"].to_list():
+            # Extract the annual growth rates of the GDP PPP per
+            # capita for the region and scenario of interest.
+            annual_growth_rate = regional_annual_growth_rate[
+                (regional_annual_growth_rate["Region"] == region)
+                & (regional_annual_growth_rate["Scenario"] == scenario)
+            ]
+        else:
+            raise ValueError(
+                f"GDP PPP per capita growth rate data is not available for "
+                f"{iso_alpha_3_code}."
+            )
 
     # Check that there is only one row.
     if len(annual_growth_rate) != 1:

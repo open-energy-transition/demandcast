@@ -119,7 +119,7 @@ def _read_future_population_from_iiasa() -> pandas.DataFrame:
     file_path = os.path.join(
         utils.directories.read_folders_structure()["population_folder"],
         "manual_downloads",
-        "IAM_population.xlsx",
+        "IAM_national_population.xlsx",
     )
 
     # Read and return the future population data.
@@ -512,7 +512,7 @@ def run_data_retrieval(
         if (
             "_" in code
             or iso_alpha_3_code
-            not in world_bank_population["Country Code"].to_numpy()
+            not in world_bank_population["Country Code"].to_list()
         ):
             # Define the available years for the population data when
             # interpolating from gridded data.
@@ -595,7 +595,7 @@ def run_data_retrieval(
             if (
                 "_" in code
                 or iso_alpha_3_code
-                not in world_bank_population["Country Code"].to_numpy()
+                not in world_bank_population["Country Code"].to_list()
             ):
                 # Extract the historical population for the subdivision
                 # or country not in the World Bank data by aggregating
@@ -665,7 +665,7 @@ def run_data_retrieval(
                     if (
                         "_" in code
                         or iso_alpha_3_code
-                        not in iiasa_population["Region"].to_numpy()
+                        not in iiasa_population["Region"].to_list()
                     ):
                         # Extract the future population for the
                         # subdivision or country not in the IIASA

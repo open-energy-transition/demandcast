@@ -1,3 +1,4 @@
+# OECD 90 and EU member states and candidates
 ALB: R5.2OECD # Albania
 AUS: R5.2OECD # Australia
 AUT: R5.2OECD # Austria
@@ -43,6 +44,7 @@ TUR: R5.2OECD # Turkey
 GBR: R5.2OECD # United Kingdom
 USA: R5.2OECD # United States of America
 
+# Reforming Economies of Eastern Europe and the Former Soviet Union
 ARM: R5.2REF # Armenia
 AZE: R5.2REF # Azerbaijan
 BLR: R5.2REF # Belarus
@@ -56,6 +58,7 @@ TKM: R5.2REF # Turkmenistan
 UKR: R5.2REF # Ukraine
 UZB: R5.2REF # Uzbekistan
 
+# Asian countries excl. the Middle East, Japan and Former Soviet Union
 AFG: R5.2ASIA # Afghanistan
 BGD: R5.2ASIA # Bangladesh
 BTN: R5.2ASIA # Bhutan
@@ -91,6 +94,7 @@ TLS: R5.2ASIA # Timor-Leste
 VUT: R5.2ASIA # Vanuatu
 VNM: R5.2ASIA # Viet Nam
 
+# Middle East and Africa
 DZA: R5.2MAF # Algeria
 AGO: R5.2MAF # Angola
 BHR: R5.2MAF # Bahrain
@@ -161,6 +165,7 @@ YEM: R5.2MAF # Yemen
 ZMB: R5.2MAF # Zambia
 ZWE: R5.2MAF # Zimbabwe
 
+# Latin America and the Caribbean
 ARG: R5.2LAM # Argentina
 ABW: R5.2LAM # Aruba
 BHS: R5.2LAM # Bahamas

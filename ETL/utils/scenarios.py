@@ -290,7 +290,7 @@ def get_year_model_and_scenario_combinations(
     return year_model_scenario_list
 
 
-def get_iam_region(iso_alpha_3_code: str) -> str:
+def get_iam_region(iso_alpha_3_code: str, n_regions: int = 5) -> str:
     """
     Get the IAM region for a given ISO Alpha-3 country code.
 
@@ -303,6 +303,8 @@ def get_iam_region(iso_alpha_3_code: str) -> str:
     -------
     iam_region : str
         The corresponding IAM region.
+    n_regions : int, optional
+        The number of IAM regions available. Default is 5.
 
     Raises
     ------
@@ -312,7 +314,7 @@ def get_iam_region(iso_alpha_3_code: str) -> str:
     # Define the path to the yaml file containing the mapping of ISO
     # Alpha-3 codes to IAM regions.
     iam_region_mapping = os.path.join(
-        os.path.dirname(__file__), "iam_region_mapping.yaml"
+        os.path.dirname(__file__), f"iam_{n_regions}_regions_mapping.yaml"
     )
 
     # Read the mapping from the yaml file.
