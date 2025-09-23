@@ -62,15 +62,15 @@ def _check_input_parameters(
     elif not pre_reform and isinstance(month, int):
         month = f"{month:02d}"
 
-    param_tuple = (pre_reform, year, month, f"{int(day):02d}")
+    param_tuple = (pre_reform, year, month, int(day))
 
     assert param_tuple in get_available_requests(), (
-        "Unsupported request: "
-        f"{param_tuple}. Allowed: {get_available_requests()}"
+        f"Unsupported request: {param_tuple}. "
+        f"Allowed: {get_available_requests()}"
     )
 
 
-def get_available_requests() -> list[tuple[bool, int, str | int, str]]:
+def get_available_requests() -> list[tuple[bool, int, str | int, int]]:
     """
     Get the available requests.
 
@@ -85,7 +85,7 @@ def get_available_requests() -> list[tuple[bool, int, str | int, str]]:
         "SG"
     ]
     post_reform_start = pandas.Timestamp("2014-12-15")
-    requests = []
+    requests: list[tuple[bool, int, str | int, int]] = []
 
     # Pre-reform dates
     for date in pandas.date_range(
@@ -98,7 +98,7 @@ def get_available_requests() -> list[tuple[bool, int, str | int, str]]:
                 True,
                 date.year,
                 calendar.month_abbr[date.month],
-                f"{date.day:02d}",
+                date.day,
             )
         )
 
@@ -107,7 +107,12 @@ def get_available_requests() -> list[tuple[bool, int, str | int, str]]:
         start=post_reform_start, end=end_date, freq="7D"
     ):
         requests.append(
-            (False, date.year, f"{date.month:02d}", f"{date.day:02d}")
+            (
+                False,
+                date.year,
+                f"{date.month:02d}",  # str
+                date.day,  # ✅ int
+            )
         )
 
     return requests
@@ -150,7 +155,7 @@ def get_url(pre_reform: bool, year: int, month: str | int, day: int) -> str:
 
 
 def download_and_extract_data_for_request(
-    pre_reform: bool, year: int, month: str | int, day: str
+    pre_reform: bool, year: int, month: str | int, day: int
 ) -> pandas.Series:
     """
     Download and extract electricity demand data from EMA.
@@ -180,7 +185,7 @@ def download_and_extract_data_for_request(
 
     # Fetch the data from the URL.
     try:
-        dataset = utils.fetcher.fetch_data(
+        dataset: pandas.DataFrame = utils.fetcher.fetch_data(
             url,
             "html",
             read_as="excel_table",
