@@ -162,7 +162,7 @@ def download_and_extract_data_for_request(
         The year of the data.
     month : int
         The month of the data.
-    day : str
+    day : int
         The day of the data.
 
     Returns
