@@ -12,7 +12,7 @@ Description:
     Note:
     Although data is retrieved in 7-day intervals, retrieving data
     over a longer historical range (e.g., multiple years) may take
-    considerable time — up to 20 minutes in total.
+    considerable time — up to 10 minutes in total.
 
     Source: https://www.ema.gov.sg/resources/statistics/half-hourly-system-demand-data
 """  # noqa: W505
@@ -116,7 +116,7 @@ def get_url(year: int, month: int, day: int) -> str:
     ----------
     year : int
         The year of the data.
-    month : str or int
+    month : int
         The month of the data.
     day : int
         The day of the data.
@@ -160,7 +160,7 @@ def download_and_extract_data_for_request(
     ----------
     year : int
         The year of the data.
-    month : str or int
+    month : int
         The month of the data.
     day : str
         The day of the data.
