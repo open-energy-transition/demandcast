@@ -330,6 +330,24 @@ def test_get_entity_bounds(dummy_geodf):
     assert bounds[2] == dummy_geodf.bounds.maxx[0] + 1
     assert bounds[3] == dummy_geodf.bounds.maxy[0] + 1
 
+    # Define a GeoDataFrame with bounds exceeding the range [-180, 180]
+    # for the longitude.
+    dummy_geodf = geopandas.GeoDataFrame(
+        {
+            "geometry": [
+                Polygon([(-200, -100), (200, -100), (200, 100), (-200, 100)])
+            ]
+        },
+        crs="EPSG:4326",
+    )
+
+    # Get the bounds of the modified dummy GeoDataFrame.
+    bounds = utils.shapes.get_entity_bounds(dummy_geodf)
+
+    # Check if the bounds are adjusted to be within the valid range.
+    assert bounds[0] == -180
+    assert bounds[2] == 180
+
 
 def test_get_all_codes_with_shapes():
     """

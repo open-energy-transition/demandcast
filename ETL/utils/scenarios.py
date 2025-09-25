@@ -8,11 +8,6 @@ Description:
     different future scenarios.
 """
 
-import os
-
-import pandas
-import yaml
-
 
 def _get_years(
     year: int | None,
@@ -288,97 +283,3 @@ def get_year_model_and_scenario_combinations(
                     )
 
     return year_model_scenario_list
-
-
-def get_iam_region(iso_alpha_3_code: str, n_regions: int = 5) -> str:
-    """
-    Get the IAM region for a given ISO Alpha-3 country code.
-
-    Parameters
-    ----------
-    iso_alpha_3_code : str
-        The ISO Alpha-3 country code.
-
-    Returns
-    -------
-    iam_region : str
-        The corresponding IAM region.
-    n_regions : int, optional
-        The number of IAM regions available. Default is 5.
-
-    Raises
-    ------
-    ValueError
-        If no IAM region is found for the given ISO Alpha-3 code.
-    """
-    # Define the path to the yaml file containing the mapping of ISO
-    # Alpha-3 codes to IAM regions.
-    iam_region_mapping = os.path.join(
-        os.path.dirname(__file__), f"iam_{n_regions}_regions_mapping.yaml"
-    )
-
-    # Read the mapping from the yaml file.
-    with open(iam_region_mapping, "r", encoding="utf-8") as file:
-        iso_to_region = yaml.safe_load(file)
-
-    # Get the IAM region for the given ISO Alpha-2 code.
-    region_code = iso_to_region.get(iso_alpha_3_code, None)
-
-    if region_code is None:
-        raise ValueError(
-            f"No IAM region found for ISO Alpha-3 code: {iso_alpha_3_code}"
-        )
-
-    return region_code
-
-
-def calculate_values_from_growth_rate(
-    last_historical_value: float,
-    future_years: list[int],
-    annual_growth_rate: pandas.Series,
-) -> pandas.Series:
-    """
-    Calculate future values based on growth rates.
-
-    Parameters
-    ----------
-    last_historical_value : float
-        The last known historical value.
-    future_years : list[int]
-        A list of future years for which values need to be calculated.
-    annual_growth_rate : pandas.Series
-        A Series containing annual growth rates indexed by year.
-
-    Returns
-    -------
-    future_values : pandas.Series
-        A Series containing the calculated future values indexed by
-        year.
-    """
-    # Initialize a Series to store the future values.
-    future_values = pandas.Series(
-        index=future_years,
-        dtype=float,
-    )
-
-    # Set the previous value to the last historical value.
-    previous_value = last_historical_value
-
-    # Calculate the future values by applying the annual growth rates to
-    # the last historical value.
-    for year in future_years:
-        # Use the closest growth rate that is less than or equal to
-        # the year.
-        annual_growth_rate_of_year = annual_growth_rate[
-            annual_growth_rate.index < year
-        ].iloc[-1]
-
-        # Calculate the value for the year.
-        future_values[year] = previous_value * (
-            1 + annual_growth_rate_of_year / 100
-        )
-
-        # Update the previous value.
-        previous_value = future_values[year]
-
-    return future_values

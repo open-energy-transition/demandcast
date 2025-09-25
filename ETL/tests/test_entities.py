@@ -351,13 +351,14 @@ def test_time_zones_errors():
     # conflicting time zones in multiple yaml files.
     with (
         patch(
-            "utils.entities._get_data_sources_containing_code"
+            "utils.entities._get_electricity_demand_data_sources_containing_code"
         ) as mock_get_data_sources,
         patch(
             "utils.entities._get_time_zones_in_data_source"
         ) as mock_get_time_zones,
     ):
-        # Mock the return value of _get_data_sources_containing_code
+        # Mock the return value for the case when the code is not found
+        # in any data source.
         mock_get_data_sources.return_value = []
 
         # Check if the function raises an error for codes not found in
@@ -366,7 +367,8 @@ def test_time_zones_errors():
         with pytest.raises(ValueError):
             utils.entities._get_defined_time_zone_for_code("XX_YY")
 
-        # Mock the return value of _get_data_sources_containing_code.
+        # Mock the return value for the case when the code is found in
+        # multiple data sources.
         mock_get_data_sources.return_value = ["source1", "source2"]
 
         # Define two different time zones.

@@ -8,9 +8,6 @@ Description:
     utility package.
 """
 
-from unittest.mock import mock_open, patch
-
-import pandas
 import pytest
 import utils.scenarios
 
@@ -461,60 +458,3 @@ def test_get_year_model_and_scenario_combinations_errors():
             "S3",
             scenarios_for_model,
         )
-
-
-def test_get_iam_region():
-    """
-    Test the get_iam_region function.
-
-    This test checks that the correct IAM region is returned for
-    valid country codes and that a ValueError is raised for invalid
-    country codes.
-    """
-    # Define a sample yaml file content.
-    sample_yaml = """
-    CHN: R5.2ASIA
-    USA: R5.2OECD
-    """
-
-    # Mock the open function to return the sample yaml content.
-    with patch("builtins.open", mock_open(read_data=sample_yaml)):
-        # Test valid country codes.
-        assert utils.scenarios.get_iam_region("CHN") == "R5.2ASIA"
-        assert utils.scenarios.get_iam_region("USA") == "R5.2OECD"
-
-        # Test invalid country code.
-        with pytest.raises(ValueError):
-            utils.scenarios.get_iam_region("IND")
-
-
-def test_calculate_values_from_growth_rate():
-    """
-    Test the calculate_values_from_growth_rate function.
-
-    This test checks that the function correctly calculates future
-    values based on a given last value and a series of growth rates
-    for specified future years.
-    """
-    # Define test inputs.
-    last_value = 100.0  # Value for the year 2020
-    future_years = [2021, 2022, 2023]
-    growth_rates = pandas.Series([5.0, 10.0], index=[2020, 2022])
-
-    # Define the expected output calculated manually.
-    expected_values = pandas.Series(
-        [
-            last_value * (1 + 5.0 / 100),  # 2021
-            last_value * (1 + 5.0 / 100) ** 2,  # 2022
-            last_value * (1 + 5.0 / 100) ** 2 * (1 + 10.0 / 100),  # 2023
-        ],
-        index=future_years,
-    )
-
-    # Call the function to test.
-    calculated_values = utils.scenarios.calculate_values_from_growth_rate(
-        last_value, future_years, growth_rates
-    )
-
-    # Assert that the calculated values match the expected values.
-    pandas.testing.assert_series_equal(calculated_values, expected_values)

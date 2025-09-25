@@ -55,8 +55,8 @@ def _download_historical_gridded_population_density(
 
     if not os.path.exists(file_path):
         logging.info(
-            "Downloading population density data from SEDAC for the year "
-            f"{year}."
+            "Downloading global gridded population density data from SEDAC "
+            f"for the year {year}."
         )
 
         # Define the URL of the population density data.
@@ -76,13 +76,13 @@ def _download_historical_gridded_population_density(
             file.write(response.content)
 
         logging.info(
-            f"Population density data for the year {year} has been "
-            "downloaded successfully."
+            f"Global gridded population density data for the year {year} has "
+            "been downloaded successfully."
         )
     else:
         logging.info(
-            f"Population density data for the year {year} already exists. "
-            "Skipping download."
+            f"Global gridded population density data for the year {year} "
+            "already exists. Skipping download."
         )
 
 
@@ -113,7 +113,8 @@ def _download_future_gridded_population(
 
     if not os.path.exists(folder_name):
         logging.info(
-            f"Downloading population data from Figshare for {scenario}."
+            "Downloading global gridded population data from Figshare for "
+            f"{scenario}."
         )
         # Define the URL of the population data.
         match scenario:
@@ -161,11 +162,12 @@ def _download_future_gridded_population(
             )
 
         logging.info(
-            f"Population data for {scenario} has been downloaded successfully."
+            f"Global gridded population data for {scenario} has been "
+            "downloaded successfully."
         )
     else:
         logging.info(
-            f"Population data for {scenario} already exists. "
+            f"Global gridded population data for {scenario} already exists. "
             "Skipping download."
         )
 
@@ -313,7 +315,7 @@ def run_data_retrieval(
     # Loop over the years and scenarios.
     for year, scenario in tqdm(year_scenario_list, desc="Years and scenarios"):
         logging.info(
-            f"Processing population data for the year {year}"
+            f"Processing gridded population data for the year {year}"
             + (f" and scenario {scenario}." if scenario else ".")
         )
 
@@ -346,7 +348,7 @@ def run_data_retrieval(
             )
 
             if not os.path.exists(file_path):
-                logging.info(f"Extracting population data for {code}.")
+                logging.info(f"Extracting gridded population data for {code}.")
 
                 # Get the shape of the country or subdivision.
                 entity_shape = utils.shapes.get_entity_shape(
@@ -393,12 +395,12 @@ def run_data_retrieval(
                     )
 
                 logging.info(
-                    f"Population data for {code} has been successfully "
+                    f"Gridde population data for {code} has been successfully "
                     "extracted and saved."
                 )
 
             else:
                 logging.info(
-                    f"Population data for {code} already exists. "
+                    f"Gridde population data for {code} already exists. "
                     "Skipping extraction."
                 )

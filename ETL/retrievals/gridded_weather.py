@@ -142,7 +142,7 @@ def _download_data(
         multiple .nc files.
     """
     logging.info(
-        f"Downloading global {variable} data for the year "
+        f"Downloading gridded {variable} data for the year "
         f"{year}"
         + (
             f", model {model}, and scenario {scenario}."
@@ -211,7 +211,7 @@ def _download_data(
         os.remove(file_path)
 
         logging.info(
-            f"Global {variable} data for the year {year}"
+            f"Gridded {variable} data for the year {year}"
             + (
                 f", model {model}, and scenario {scenario} has "
                 "been successfully downloaded."
@@ -369,7 +369,7 @@ def run_data_retrieval(
             year_model_scenario_list, desc="Years, models, and scenarios"
         ):
             logging.info(
-                f"Processing {variable} data for the year {year}"
+                f"Processing gridded {variable} data for the year {year}"
                 + (
                     f", model {model}, and scenario {scenario}."
                     if model and scenario
@@ -445,7 +445,7 @@ def run_data_retrieval(
                     and scenario is None
                 ):
                     logging.info(
-                        f"Extracting {variable} data for {code} and "
+                        f"Extracting gridded {variable} data for {code} and "
                         f"year {year}."
                     )
 
@@ -469,25 +469,25 @@ def run_data_retrieval(
                     entity_data.to_netcdf(entity_file_path)
 
                     logging.info(
-                        f"{variable.capitalize()} data for {code} and "
+                        f"Gridded {variable} data for {code} and "
                         f"year {year} has been successfully extracted and "
                         "saved."
                     )
                 else:
                     logging.info(
-                        f"{variable.capitalize()} data for {code} and "
+                        f"Gridded {variable} data for {code} and "
                         f"year {year} already exists. Skipping extraction."
                     )
 
             logging.info(
-                f"Processing of {variable} data for year {year} has been "
-                "completed."
+                f"Processing of gridded {variable} data for year {year} has "
+                "been completed."
             )
 
     else:
         # Loop over the countries and subdivisions of interest.
         for code in tqdm(codes, desc="Countries and subdivisions"):
-            logging.info(f"Retrieving {variable} data for {code}.")
+            logging.info(f"Retrieving gridded {variable} data for {code}.")
 
             # Get the shape of the country or subdivision.
             entity_shape = utils.shapes.get_entity_shape(code, make_plot=False)
@@ -512,16 +512,6 @@ def run_data_retrieval(
 
                 # Check if the file does not exist.
                 if not os.path.exists(entity_file_path_without_ext + ".nc"):
-                    logging.info(
-                        f"Downloading {variable} data for year {year}"
-                        + (
-                            f", model {model}, and scenario {scenario}"
-                            if model and scenario
-                            else ""
-                        )
-                        + " from Copernicus CDS."
-                    )
-
                     # Get the CDS variable name.
                     cds_variable_name = cds_variable_mapping[variable][
                         "projections" if model and scenario else "reanalysis"
@@ -539,6 +529,6 @@ def run_data_retrieval(
                     )
 
             logging.info(
-                f"{variable} data for {code} has been successfully retrieved "
-                "and saved."
+                f"Gridded {variable} data for {code} has been successfully "
+                "retrieved and saved."
             )

@@ -11,7 +11,6 @@ Description:
 import datetime
 import logging
 import os
-import warnings
 
 import pandas
 import pycountry
@@ -683,16 +682,19 @@ def _get_time_zone_of_subdivision(code: str) -> datetime.tzinfo:
         # shape.
         subdivision_shape = utils.shapes.get_standard_shape(code)
 
-        # Get the centroid of the subdivision shape. Suppress the
-        # warning about the centroid method being applied to a
-        # geographic CRS. It would be better to project the shape first,
-        # but this is not straightforward for all shapes.
-        with warnings.catch_warnings(action="ignore"):
-            location = subdivision_shape.geometry.centroid.iloc[0].coords[0]
+        # Get the centroid of the subdivision shape by projecting it to
+        # an equal area projection and then back to the original
+        # projection to get accurate coordinates.
+        centroid = (
+            subdivision_shape.geometry.to_crs("+proj=cea")
+            .centroid.to_crs(subdivision_shape.crs)
+            .iloc[0]
+            .coords[0]
+        )
 
         # Find time zone based on subdivision coordinates.
         time_zone_name = TimezoneFinder().timezone_at(
-            lat=location[1], lng=location[0]
+            lat=centroid[1], lng=centroid[0]
         )
 
         return pytz.timezone(time_zone_name)

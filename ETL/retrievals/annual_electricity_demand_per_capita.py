@@ -10,309 +10,53 @@ Description:
     based on growth rates from the IAMC scenarios. The electricity
     demand data is extracted for the countries and subdivisions of
     interest and saved into CSV and Parquet files.
-
-    Source: https://ember-energy.org/data/yearly-electricity-data/
-    Source: https://data.worldbank.org/indicator/EG.USE.ELEC.KH.PC
-    Source: https://tntcat.iiasa.ac.at/SspDb
 """
 
 import logging
 import os
-import zipfile
-from io import BytesIO
 
 import pandas
-import requests
 import utils.directories
 import utils.entities
 import utils.scenarios
 import utils.time_series
 from tqdm import tqdm
 
+import retrievals.socio_economic_data_sources.ember as ember
+import retrievals.socio_economic_data_sources.iiasa as iiasa
+import retrievals.socio_economic_data_sources.world_bank as world_bank
 
-def download_historical_electricity_demand_per_capita_from_world_bank() -> (
+
+def get_historical_electricity_demand_per_capita() -> pandas.DataFrame:
+    """
+    Get historical electricity demand per capita data.
+
+    Returns
+    -------
     pandas.DataFrame
-):
+        The historical electricity demand per capita data.
     """
-    Download historical electricity demand per capita from World Bank.
-
-    Returns
-    -------
-    electricity_demand_per_capita : pandas.DataFrame
-        The electricity demand per capita from the World Bank.
-    """
-    logging.info(
-        "Downloading electricity demand per capita data from the World Bank."
+    # Download the electricity demand per capita from Ember.
+    ember_electricity_demand_per_capita = (
+        ember.download_electricity_demand_per_capita()
     )
 
-    # Define the URL to download the electricity demand per capita data.
-    url = "https://api.worldbank.org/v2/en/indicator/EG.USE.ELEC.KH.PC?downloadformat=csv"  # noqa: W505
-
-    # Fetch the data from the World Bank.
-    response = requests.get(url)
-
-    # Extract the archive from the response.
-    with zipfile.ZipFile(BytesIO(response.content), "r") as archive:
-        # Get the name of data file in the archive. It is the file that
-        # does not start with "Metadata" and ends with ".csv".
-        world_bank_file_name = [
-            name
-            for name in archive.namelist()
-            if not name.startswith("Metadata") and name.endswith(".csv")
-        ][0]
-
-        # Read the electricity demand per capita from the archive.
-        electricity_demand_per_capita = pandas.read_csv(
-            archive.open(world_bank_file_name), skiprows=4
-        )
-
-        # Set the index to the country code.
-        electricity_demand_per_capita = (
-            electricity_demand_per_capita.set_index("Country Code")
-        )
-
-        # Keep only the columns that are digits (i.e., years).
-        electricity_demand_per_capita = electricity_demand_per_capita.iloc[
-            :, electricity_demand_per_capita.columns.str.isdigit()
-        ]
-
-        # Convert to the correct data types.
-        electricity_demand_per_capita.columns = (
-            electricity_demand_per_capita.columns.astype(int)
-        )
-        electricity_demand_per_capita.index = (
-            electricity_demand_per_capita.index.astype(str)
-        )
-        electricity_demand_per_capita = electricity_demand_per_capita.astype(
-            float
-        )
-
-        # Rename the columns.
-        electricity_demand_per_capita.columns.name = "Year"
-
-        logging.info(
-            "Electricity demand per capita data from the World Bank has been "
-            "downloaded successfully."
-        )
-
-    return electricity_demand_per_capita
-
-
-def download_historical_electricity_demand_per_capita_from_ember() -> (
-    pandas.DataFrame
-):
-    """
-    Download historical electricity demand per capita from Ember.
-
-    Returns
-    -------
-    electricity_demand_per_capita : pandas.DataFrame
-        The electricity demand per capita data from Ember.
-    """
-    logging.info("Downloading electricity demand per capita data from Ember.")
-
-    # Download the electricity demand dataset from Ember.
-    electricity_dataset = pandas.read_csv(
-        "https://storage.googleapis.com/emb-prod-bkt-publicdata/public-downloads/yearly_full_release_long_format.csv"  # noqa: W505
+    # Download the electricity demand per capita from the World Bank.
+    world_bank_electricity_demand_per_capita = world_bank.download(
+        "electricity_demand_per_capita"
     )
 
-    # Extract the electricity demand per capita data.
-    electricity_demand_per_capita = electricity_dataset[
-        electricity_dataset["Variable"] == "Demand per capita"
-    ]
-
-    # Pivot the table to have years as columns and country codes as
-    # index.
-    electricity_demand_per_capita = electricity_demand_per_capita.pivot_table(
-        index=["ISO 3 code"], columns="Year", values="Value"
-    )
-
-    # Convert to the correct data types.
-    electricity_demand_per_capita.columns = (
-        electricity_demand_per_capita.columns.astype(int)
-    )
-    electricity_demand_per_capita.index = (
-        electricity_demand_per_capita.index.astype(str)
-    )
-    electricity_demand_per_capita = electricity_demand_per_capita.astype(float)
-
-    # Rename the index and columns.
-    electricity_demand_per_capita.index.name = "Country Code"
-    electricity_demand_per_capita.columns.name = "Year"
-
-    # Convert MWh to kWh.
-    electricity_demand_per_capita = electricity_demand_per_capita * 1000
-
-    logging.info(
-        "Electricity demand per capita data from Ember has been downloaded "
-        "successfully."
-    )
-
-    return electricity_demand_per_capita
-
-
-def extract_historical_electricity_demand_per_capita(
-    world_bank_electricity_demand_per_capita: pandas.DataFrame,
-    ember_electricity_demand_per_capita: pandas.DataFrame,
-    iso_alpha_3_code: str,
-) -> pandas.Series:
-    """
-    Extract the historical electricity demand per capita.
-
-    Parameters
-    ----------
-    world_bank_electricity_demand_per_capita : pandas.DataFrame
-        The electricity demand per capita from the World Bank.
-    ember_electricity_demand_per_capita : pandas.DataFrame
-        The electricity demand per capita data from Ember.
-    iso_alpha_3_code : str
-        The ISO alpha-3 code of the country.
-
-    Returns
-    -------
-    pandas.Series
-        The electricity demand per capita for the given country.
-
-    Raises
-    ------
-    ValueError
-        If no electricity demand per capita data is found for the given
-        country.
-    """
-    if iso_alpha_3_code in world_bank_electricity_demand_per_capita.index:
-        # Extract the electricity demand per capita from the World Bank
-        # for the country of interest.
-        world_bank_electricity_demand_per_capita_of_country = (
-            world_bank_electricity_demand_per_capita.loc[
-                iso_alpha_3_code
-            ].dropna()
-        )
-    else:
-        logging.warning(
-            f"Electricity demand per capita data from the World Bank is not "
-            f"available for {iso_alpha_3_code}."
-        )
-        world_bank_electricity_demand_per_capita_of_country = pandas.Series(
-            dtype=float
-        )
-
-    if iso_alpha_3_code in ember_electricity_demand_per_capita.index:
-        # Extract the electricity demand per capita from Ember for the
-        # country of interest.
-        ember_electricity_demand_per_capita_of_country = (
-            ember_electricity_demand_per_capita.loc[iso_alpha_3_code].dropna()
-        )
-    else:
-        logging.warning(
-            f"Electricity demand per capita data from Ember is not available "
-            f"for {iso_alpha_3_code}."
-        )
-        ember_electricity_demand_per_capita_of_country = pandas.Series(
-            dtype=float
-        )
-
-    if (
-        world_bank_electricity_demand_per_capita_of_country.empty
-        and ember_electricity_demand_per_capita_of_country.empty
-    ):
-        raise ValueError(
-            "No electricity demand per capita data found "
-            f"for {iso_alpha_3_code}."
-        )
-
-    # Combine the two datasets by averaging them.
-    electricity_demand_per_capita_of_country = (
-        world_bank_electricity_demand_per_capita_of_country
-        + ember_electricity_demand_per_capita_of_country
+    # Merge the two datasets by averaging them.
+    electricity_demand_per_capita = (
+        world_bank_electricity_demand_per_capita
+        + ember_electricity_demand_per_capita
     ) / 2
 
-    # Where the combined series is NaN because one of the datasets
-    # is missing, use the other dataset.
-    return electricity_demand_per_capita_of_country.fillna(
-        world_bank_electricity_demand_per_capita_of_country
-    ).fillna(ember_electricity_demand_per_capita_of_country)
-
-
-def _get_future_electricity_demand_per_capita_from_iiasa(
-    iso_alpha_3_code: str,
-    scenario: str,
-    last_historical_value: float,
-    future_years: list[int],
-) -> pandas.Series:
-    """
-    Get the future electricity demand per capita.
-
-    Parameters
-    ----------
-    iso_alpha_3_code : str
-        The ISO alpha-3 code of the country.
-    scenario : str
-        The scenario of interest.
-    last_historical_value : float
-        The last historical value of the electricity demand per capita.
-    future_years : list[int]
-        The list of future years where the electricity demand per capita
-        is to be calculated.
-
-    Returns
-    -------
-    pandas.Series
-        The future electricity demand per capita.
-
-    Raises
-    ------
-    ValueError
-        If there is not exactly one row for the region and scenario in
-        the annual growth rates data.
-    """
-    # Define the file path of the annual growth rates of future
-    # electricity demand per capita.
-    file_path = os.path.join(
-        utils.directories.read_folders_structure()[
-            "annual_electricity_demand_per_capita_folder"
-        ],
-        "manual_downloads",
-        "IAM_annual_electricity_demand_per_capita_growth.xlsx",
-    )
-
-    # Read the annual growth rates.
-    annual_growth_rate = pandas.read_excel(
-        file_path,
-        sheet_name="data",
-        index_col=0,
-    )
-
-    # Get the code of the region that includes the country.
-    region_code = utils.scenarios.get_iam_region(iso_alpha_3_code)
-
-    # Extract the annual growth rates of the electricity demand per
-    # capita for the region and scenario of interest.
-    annual_growth_rate = annual_growth_rate[
-        (annual_growth_rate["Region"] == region_code)
-        & (annual_growth_rate["Scenario"] == scenario)
-    ]
-
-    # Check that there is only one row.
-    if len(annual_growth_rate) != 1:
-        raise ValueError(
-            f"Expected one row for region {region_code} and scenario "
-            f"{scenario}, but got {len(annual_growth_rate)}."
-        )
-
-    # Convert to a Series with years as index by selecting only the
-    # columns that are digits and dropping NaN values.
-    annual_growth_rate = annual_growth_rate.iloc[
-        0,
-        annual_growth_rate.columns.astype(str).str.isdigit(),
-    ].dropna()
-
-    # Calculate the future electricity demand per capita by applying
-    # the annual growth rates to the last historical value.
-    return utils.scenarios.calculate_values_from_growth_rate(
-        last_historical_value,
-        future_years,
-        annual_growth_rate,
-    )
+    # Where the combined DataFrame is NaN because one of the datasets is
+    # missing, use the other dataset.
+    return electricity_demand_per_capita.fillna(
+        world_bank_electricity_demand_per_capita
+    ).fillna(ember_electricity_demand_per_capita)
 
 
 def run_data_retrieval(
@@ -359,14 +103,9 @@ def run_data_retrieval(
     ]
     os.makedirs(result_directory, exist_ok=True)
 
-    # Download the electricity demand per capita from Ember.
-    ember_electricity_demand_per_capita = (
-        download_historical_electricity_demand_per_capita_from_ember()
-    )
-
-    # Download the electricity demand per capita from the World Bank.
-    world_bank_electricity_demand_per_capita = (
-        download_historical_electricity_demand_per_capita_from_world_bank()
+    # Download the electricity demand per capita.
+    global_electricity_demand_per_capita = (
+        get_historical_electricity_demand_per_capita()
     )
 
     # Get the list of codes of the countries and subdivisions of
@@ -410,14 +149,17 @@ def run_data_retrieval(
         # Get the ISO Alpha-3 code of the country.
         iso_alpha_3_code = utils.entities.get_iso_alpha_3_code(code)
 
-        # Extract the electricity data for the country.
-        historical_electricity_demand_per_capita = (
-            extract_historical_electricity_demand_per_capita(
-                ember_electricity_demand_per_capita,
-                world_bank_electricity_demand_per_capita,
-                iso_alpha_3_code,
+        if iso_alpha_3_code in global_electricity_demand_per_capita.index:
+            # Extract the electricity data for the country.
+            historical_electricity_demand_per_capita = (
+                global_electricity_demand_per_capita.loc[iso_alpha_3_code]
             )
-        )
+        else:
+            logging.error(
+                f"Electricity demand per capita data for {code} "
+                "is not available. Skipping."
+            )
+            continue
 
         # Get the time zone of the country or subdivision.
         time_zone = utils.entities.get_time_zone(code)
@@ -549,17 +291,24 @@ def run_data_retrieval(
                         f"capita data for {code} and {scenario}."
                     )
 
+                    # Get the last year and value of the historical
+                    # electricity demand per capita.
+                    last_historical_year = max(available_historical_years)
+                    last_historical_value = (
+                        historical_electricity_demand_per_capita.loc[
+                            last_historical_year
+                        ]
+                    )
+
                     # Calculate the future electricity demand per
                     # capita.
-                    future_electricity_demand_per_capita = (
-                        _get_future_electricity_demand_per_capita_from_iiasa(
-                            iso_alpha_3_code,
-                            scenario,
-                            historical_electricity_demand_per_capita.loc[
-                                max(available_historical_years)
-                            ],
-                            available_future_years,
-                        )
+                    future_electricity_demand_per_capita = iiasa.get(
+                        "annual_electricity_demand_per_capita",
+                        iso_alpha_3_code,
+                        scenario,
+                        last_historical_value,
+                        last_historical_year,
+                        available_future_years,
                     )
 
                     # Extract the electricity demand per capita for

@@ -13,9 +13,9 @@ Description:
     Source: https://doi.org/10.1038/s41597-022-01300-x
 """
 
-import io
 import logging
 import os
+from io import BytesIO
 
 import py7zr
 import requests
@@ -40,7 +40,7 @@ def _download_gdp_ppp(result_directory: str) -> None:
     """
     # Check if the file already exists.
     if not os.path.exists(os.path.join(result_directory, "downloads")):
-        logging.info("Downloading GDP PPP data from Zenodo.")
+        logging.info("Downloading global gridded GDP PPP data from Zenodo.")
 
         # Define the URL to download the GDP PPP data.
         url = "https://zenodo.org/records/7898409/files/GDP_025d%20(2000-2100).7z?download=1"  # noqa: W505
@@ -53,7 +53,7 @@ def _download_gdp_ppp(result_directory: str) -> None:
 
         # Extract all files from the 7z archive.
         with py7zr.SevenZipFile(
-            io.BytesIO(response.content), mode="r"
+            BytesIO(response.content), mode="r"
         ) as archive:
             # List the contents of the archive.
             archive.extractall(path=result_directory)
@@ -63,9 +63,13 @@ def _download_gdp_ppp(result_directory: str) -> None:
             os.path.join(result_directory, "downloads"),
         )
 
-        logging.info("GDP PPP data has been downloaded successfully.")
+        logging.info(
+            "Global gridded GDP PPP data has been downloaded successfully."
+        )
     else:
-        logging.info("GDP PPP data already exists. Skipping download.")
+        logging.info(
+            "Global gridded GDP PPP data already exists. Skipping download."
+        )
 
 
 def _read_gdp_ppp(
@@ -137,7 +141,7 @@ def run_data_retrieval(
     scenario : str | None
         The scenario of the GDP PPP data to be retrieved.
     """
-    # Get the directory to store the population density data.
+    # Get the directory to store the GDP data.
     result_directory = utils.directories.read_folders_structure()[
         "gridded_gdp_ppp_folder"
     ]
@@ -175,7 +179,7 @@ def run_data_retrieval(
     # Loop over the years and scenarios.
     for year, scenario in tqdm(year_scenario_list, desc="Years and scenarios"):
         logging.info(
-            f"Processing GDP PPP data for the year {year}"
+            f"Processing gridded GDP PPP data for the year {year}"
             + (f" and scenario {scenario}." if scenario else ".")
         )
 
@@ -187,15 +191,15 @@ def run_data_retrieval(
 
         # Loop over the countries and subdivisions of interest.
         for code in codes:
-            # Define the file path of the population density data for
-            # the country or subdivision.
+            # Define the file path of the GDP data for the country or
+            # subdivision.
             file_path = os.path.join(
                 result_directory,
                 f"{code}_0.25_deg_{year_scenario}.nc",
             )
 
             if not os.path.exists(file_path):
-                logging.info(f"Extracting GDP PPP data for {code}.")
+                logging.info(f"Extracting gridded GDP PPP data for {code}.")
 
                 # Get the shape of the country or subdivision.
                 entity_shape = utils.shapes.get_entity_shape(
@@ -227,12 +231,12 @@ def run_data_retrieval(
                     )
 
                 logging.info(
-                    f"GDP PPP data for {code} has been "
+                    f"Gridded GDP PPP data for {code} has been "
                     "successfully extracted and saved."
                 )
 
             else:
                 logging.info(
-                    f"GDP PPP data for {code} already exists. "
+                    f"Gridded GDP PPP data for {code} already exists. "
                     "Skipping extraction."
                 )
