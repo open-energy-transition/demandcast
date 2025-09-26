@@ -126,7 +126,6 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
         url,
         "html",
         read_with="requests.get",
-        read_as="tabular",
         csv_kwargs={"skiprows": 2},
     )
 

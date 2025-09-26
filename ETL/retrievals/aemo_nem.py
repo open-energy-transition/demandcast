@@ -181,7 +181,6 @@ def download_and_extract_data_for_request(
         "html",
         read_with="requests.get",
         header_params={"User-Agent": "Mozilla/5.0"},
-        read_as="tabular",
     )
 
     # Make sure the dataset is a pandas DataFrame.

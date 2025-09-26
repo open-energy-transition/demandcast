@@ -15,7 +15,7 @@ import re
 import time
 import urllib.error
 import urllib.request
-from io import StringIO
+from io import BytesIO, StringIO
 
 import pandas
 import requests
@@ -78,7 +78,7 @@ def fetch_data(
     retry_delay: int = 5,
     read_with: str = "requests.get",
     encoding_type: str | None = None,
-    read_as: str = "tabular",
+    read_as: str = "csv_table",
     csv_kwargs: dict[str, str | int] = {},
     excel_kwargs: dict[
         str, str | int | list[str] | list[str | int] | dict[str, str] | None
@@ -89,6 +89,7 @@ def fetch_data(
     header_params: dict[str, str] = {},
     json_keys: list[str] = [],
     query_aspx_webpage: bool = False,
+    get_cookies: bool = False,
 ) -> pandas.DataFrame | str | requests.Response:
     """
     Fetch the data from the specified URL.
@@ -181,6 +182,33 @@ def fetch_data(
                             read_with == "requests.get"
                             or read_with == "requests.post"
                         ):
+                            if get_cookies:
+                                # Create a session to persist cookies.
+                                session = requests.Session()
+
+                                # Send a GET request to the URL to
+                                # retrieve cookies.
+                                session.get(
+                                    url,
+                                    timeout=timeout,
+                                    verify=verify_ssl,
+                                    headers=header_params,
+                                    params=request_params,
+                                )
+
+                                # Update the header parameters with
+                                # the cookies.
+                                header_params.update(
+                                    {
+                                        "Cookie": "; ".join(
+                                            [
+                                                f"{key}={value}"
+                                                for key, value in session.cookies.get_dict().items()
+                                            ]
+                                        )
+                                    }
+                                )
+
                             if read_with == "requests.get":
                                 # Send a GET request to the URL.
                                 response = requests.get(
@@ -227,10 +255,17 @@ def fetch_data(
                             if encoding_type:
                                 response.encoding = encoding_type
 
-                            if read_as == "tabular":
-                                # Return the content as a DataFrame.
+                            if read_as == "csv_table":
+                                # Return the content read as a CSV
+                                # table.
                                 return pandas.read_csv(
                                     StringIO(response.text), **csv_kwargs
+                                )
+                            elif read_as == "excel_table":
+                                # Return the content read as an Excel
+                                # table.
+                                return pandas.read_excel(
+                                    BytesIO(response.content), **excel_kwargs
                                 )
                             elif read_as == "text":
                                 # Return the content as a string.
