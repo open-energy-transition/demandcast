@@ -245,9 +245,10 @@ if __name__ == "__main__":
                     raise FileNotFoundError(
                         "A file containing the metadata for the Zenodo "
                         "upload must be provided. The file must be named "
-                        "'zenodo_metadata.yaml' and be located in the ETL "
-                        "folder. Check the file 'oet_zenodo_metadata.yaml' "
-                        "for an example of the expected format."
+                        "'zenodo_metadata.yaml' and be located in the "
+                        "ETL/utils/ folder. Check the file "
+                        "'oet_zenodo_metadata.yaml' for an example of the "
+                        "expected format."
                     )
 
         # Run the data retrieval for electricity demand.

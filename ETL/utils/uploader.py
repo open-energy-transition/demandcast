@@ -171,12 +171,12 @@ def upload_to_zenodo(
     if made_by_oet:
         # Load the OET metadata from the YAML file.
         author_metadata_path = os.path.join(
-            root_directory, "oet_zenodo_metadata.yaml"
+            os.path.dirname(__file__), "oet_zenodo_metadata.yaml"
         )
     else:
         # Load the metadata of external contributors from the YAML file.
         author_metadata_path = os.path.join(
-            root_directory, "zenodo_metadata.yaml"
+            os.path.dirname(__file__), "zenodo_metadata.yaml"
         )
 
     # Load the metadata from the YAML file.
