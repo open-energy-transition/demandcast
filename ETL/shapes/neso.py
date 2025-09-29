@@ -66,6 +66,9 @@ gb_shape = gb_shape[["name", "code", "geometry"]]
 # when plotting the shapes.
 gb_shape["geometry"] = gb_shape["geometry"].set_precision(0.005)
 
+# Add the coordinate reference system (CRS) to the shapefile.
+gb_shape = gb_shape.set_crs(epsg=4326)
+
 # Save the shape of the subdivision to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "neso")
 os.makedirs(shapes_dir, exist_ok=True)

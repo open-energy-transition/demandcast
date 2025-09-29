@@ -242,6 +242,9 @@ regions.loc[regions["name"] == "New England", "geometry"] = regions.loc[
 # when plotting the shapes.
 regions["geometry"] = regions["geometry"].set_precision(0.005)
 
+# Add the coordinate reference system (CRS) to the shapefile.
+regions = regions.set_crs(epsg=4326)
+
 # Save the shapes of the regions to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "eia")
 os.makedirs(shapes_dir, exist_ok=True)

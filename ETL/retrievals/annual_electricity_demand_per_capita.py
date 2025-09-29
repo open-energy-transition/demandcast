@@ -108,10 +108,15 @@ def run_data_retrieval(
         get_historical_electricity_demand_per_capita()
     )
 
+    # Read the growth rates of future electricity demand per capita.
+    global_electricity_demand_per_capita_growth_rates = iiasa.read(
+        "annual_electricity_demand_per_capita"
+    )
+
     # Get the list of codes of the countries and subdivisions of
     # interest.
     codes = utils.entities.check_and_get_codes_with(
-        "shape", code=code, file_path=file
+        "all_data", code=code, file_path=file
     )
 
     # Define the available scenarios.
@@ -149,20 +154,13 @@ def run_data_retrieval(
         # Get the ISO Alpha-3 code of the country.
         iso_alpha_3_code = utils.entities.get_iso_alpha_3_code(code)
 
-        if iso_alpha_3_code in global_electricity_demand_per_capita.index:
-            # Extract the electricity data for the country.
-            historical_electricity_demand_per_capita = (
-                global_electricity_demand_per_capita.loc[iso_alpha_3_code]
-            )
-        else:
-            logging.error(
-                f"Electricity demand per capita data for {code} "
-                "is not available. Skipping."
-            )
-            continue
-
         # Get the time zone of the country or subdivision.
         time_zone = utils.entities.get_time_zone(code)
+
+        # Extract the electricity data for the country.
+        historical_electricity_demand_per_capita = (
+            global_electricity_demand_per_capita.loc[iso_alpha_3_code]
+        )
 
         # Get the years of available historical data.
         available_historical_years = (
@@ -224,60 +222,60 @@ def run_data_retrieval(
             )
         )
 
-        if (
-            not os.path.exists(file_path_without_ext + ".parquet")
-            or not os.path.exists(file_path_without_ext + ".csv")
-        ) and selected_historical_years:
-            logging.info(
-                f"Extracting historical annual electricity per capita data "
-                f"for {code}."
-            )
-
-            # Extract the respective electricity demand per capita.
-            selected_historical_electricity_demand_per_capita = (
-                historical_electricity_demand_per_capita[
-                    historical_electricity_demand_per_capita.index.isin(
-                        selected_historical_years
-                    )
-                ]
-            )
-
-            # Convert the historical electricity demand per capita data
-            # from yearly to hourly values.
-            selected_historical_electricity_demand_per_capita = (
-                utils.time_series.convert_from_yearly_to_hourly(
-                    selected_historical_electricity_demand_per_capita,
-                    time_zone,
-                )
-            )
-
-            # Clean the time series.
-            selected_historical_electricity_demand_per_capita = (
-                utils.time_series.clean_data(
-                    selected_historical_electricity_demand_per_capita,
-                    "Annual electricity demand per capita (kWh)",
-                )
-            )
-
-            # Save the electricity demand per capita data to parquet
-            # and CSV files.
-            selected_historical_electricity_demand_per_capita.to_frame().to_parquet(
+        if selected_historical_years:
+            if not os.path.exists(
                 file_path_without_ext + ".parquet"
-            )
-            selected_historical_electricity_demand_per_capita.to_csv(
-                file_path_without_ext + ".csv",
-            )
+            ) or not os.path.exists(file_path_without_ext + ".csv"):
+                logging.info(
+                    f"Extracting historical annual electricity per capita data "
+                    f"for {code}."
+                )
 
-            logging.info(
-                f"Historical annual electricity per capita data for {code} "
-                "has been extracted and saved successfully."
-            )
+                # Extract the respective electricity demand per capita.
+                selected_historical_electricity_demand_per_capita = (
+                    historical_electricity_demand_per_capita[
+                        historical_electricity_demand_per_capita.index.isin(
+                            selected_historical_years
+                        )
+                    ]
+                )
 
-        else:
-            logging.info(
-                f"Historical annual electricity per capita data of {code} "
-                "already exists. Skipping retrieval."
-            )
+                # Convert the historical electricity demand per capita
+                # data from yearly to hourly values.
+                selected_historical_electricity_demand_per_capita = (
+                    utils.time_series.convert_from_yearly_to_hourly(
+                        selected_historical_electricity_demand_per_capita,
+                        time_zone,
+                    )
+                )
+
+                # Clean the time series.
+                selected_historical_electricity_demand_per_capita = (
+                    utils.time_series.clean_data(
+                        selected_historical_electricity_demand_per_capita,
+                        "Annual electricity demand per capita (kWh)",
+                    )
+                )
+
+                # Save the electricity demand per capita data to parquet
+                # and CSV files.
+                selected_historical_electricity_demand_per_capita.to_frame().to_parquet(
+                    file_path_without_ext + ".parquet"
+                )
+                selected_historical_electricity_demand_per_capita.to_csv(
+                    file_path_without_ext + ".csv",
+                )
+
+                logging.info(
+                    f"Historical annual electricity per capita data for {code} "
+                    "has been extracted and saved successfully."
+                )
+
+            else:
+                logging.info(
+                    f"Historical annual electricity per capita data of {code} "
+                    "already exists. Skipping retrieval."
+                )
 
         if selected_future_years:
             for scenario in selected_scenarios:
@@ -302,8 +300,8 @@ def run_data_retrieval(
 
                     # Calculate the future electricity demand per
                     # capita.
-                    future_electricity_demand_per_capita = iiasa.get(
-                        "annual_electricity_demand_per_capita",
+                    future_electricity_demand_per_capita = iiasa.extrapolate(
+                        global_electricity_demand_per_capita_growth_rates,
                         iso_alpha_3_code,
                         scenario,
                         last_historical_value,

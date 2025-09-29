@@ -140,6 +140,9 @@ all_prefectures["code"] = ["JP_Kantō"]
 # when plotting the shapes.
 all_prefectures["geometry"] = all_prefectures["geometry"].set_precision(0.005)
 
+# Add the coordinate reference system (CRS) to the shapefile.
+all_prefectures = all_prefectures.set_crs(epsg=4326)
+
 # Save the shape of the region to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "tepco")
 os.makedirs(shapes_dir, exist_ok=True)

@@ -334,6 +334,9 @@ subdivisions = subdivisions.reset_index(drop=True)
 # when plotting the shapes.
 subdivisions["geometry"] = subdivisions["geometry"].set_precision(0.005)
 
+# Add the coordinate reference system (CRS) to the shapefile.
+subdivisions = subdivisions.set_crs(epsg=4326)
+
 # Save the shapes of the subdivisions to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "cenace")
 os.makedirs(shapes_dir, exist_ok=True)

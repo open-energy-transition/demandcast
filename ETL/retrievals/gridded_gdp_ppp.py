@@ -173,7 +173,7 @@ def run_data_retrieval(
     # Get the list of codes of the countries and subdivisions of
     # interest.
     codes = utils.entities.check_and_get_codes_with(
-        "shape", code=code, file_path=file
+        "all_data", code=code, file_path=file
     )
 
     # Loop over the years and scenarios.

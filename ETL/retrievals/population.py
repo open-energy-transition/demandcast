@@ -71,10 +71,13 @@ def run_data_retrieval(
     # Download the historical population data.
     global_historical_population = world_bank.download("population")
 
+    # Read the future population data.
+    global_future_population = iiasa.read("population")
+
     # Get the list of codes of the countries and subdivisions of
     # interest.
     codes = utils.entities.check_and_get_codes_with(
-        "shape", code=code, file_path=file
+        "all_data", code=code, file_path=file
     )
 
     # Define the available years for gridded population data.
@@ -101,8 +104,12 @@ def run_data_retrieval(
         ):
             # Define the available years for the population data when
             # interpolating from gridded data.
-            available_historical_years = list(range(2000, 2021))
-            available_future_years = list(range(2021, 2101))
+            available_historical_years = list(
+                range(
+                    available_historical_years_of_gridded_data[0],
+                    available_historical_years_of_gridded_data[-1] + 1,
+                )
+            )
         else:
             # Extract the historical population for the country.
             historical_population = global_historical_population.loc[
@@ -112,10 +119,10 @@ def run_data_retrieval(
             # Get the years of available historical data.
             available_historical_years = historical_population.index.tolist()
 
-            # Get the years of available future data.
-            available_future_years = list(
-                range(max(available_historical_years) + 1, 2101)
-            )
+        # Get the years of available future data.
+        available_future_years = list(
+            range(max(available_historical_years) + 1, 2101)
+        )
 
         # Get the list of year and scenario combinations.
         year_scenario_list = (
@@ -167,69 +174,72 @@ def run_data_retrieval(
         # subdivision.
         file_path_without_ext = os.path.join(result_directory, code)
 
-        if (
-            not os.path.exists(file_path_without_ext + ".parquet")
-            or not os.path.exists(file_path_without_ext + ".csv")
-        ) and selected_historical_years:
-            logging.info(f"Extracting historical population data for {code}.")
+        if selected_historical_years:
+            if not os.path.exists(
+                file_path_without_ext + ".parquet"
+            ) or not os.path.exists(file_path_without_ext + ".csv"):
+                logging.info(
+                    f"Extracting historical population data for {code}."
+                )
 
-            # Check if code is a subdivision or if the country is not in
-            # the World Bank data.
-            if (
-                "_" in code
-                or iso_alpha_3_code not in global_historical_population.index
-            ):
-                # Extract the historical population for the subdivision
-                # or country not in the World Bank data by aggregating
-                # gridded data.
-                historical_population = (
-                    utils.geospatial.get_total_value_from_gridded_data(
-                        "population",
-                        code,
-                        selected_historical_years,
-                        available_historical_years_of_gridded_data,
+                # Check if code is a subdivision or if the country is
+                # not in the World Bank data.
+                if (
+                    "_" in code
+                    or iso_alpha_3_code
+                    not in global_historical_population.index
+                ):
+                    # Extract the historical population for the
+                    # subdivision or country not in the World Bank data
+                    # by aggregating gridded data.
+                    historical_population = (
+                        utils.geospatial.get_total_value_from_gridded_data(
+                            "population",
+                            code,
+                            selected_historical_years,
+                            available_historical_years_of_gridded_data,
+                        )
+                    )
+
+                # Extract the selected historical years.
+                selected_historical_population = historical_population.loc[
+                    historical_population.index.isin(selected_historical_years)
+                ]
+
+                # Convert the historical population data from yearly to
+                # hourly values.
+                selected_historical_population = (
+                    utils.time_series.convert_from_yearly_to_hourly(
+                        selected_historical_population,
+                        time_zone,
                     )
                 )
 
-            # Extract the selected historical years.
-            selected_historical_population = historical_population.loc[
-                historical_population.index.isin(selected_historical_years)
-            ]
-
-            # Convert the historical population data from yearly to
-            # hourly values.
-            selected_historical_population = (
-                utils.time_series.convert_from_yearly_to_hourly(
+                # Clean the time series.
+                selected_historical_population = utils.time_series.clean_data(
                     selected_historical_population,
-                    time_zone,
+                    "Population",
                 )
-            )
 
-            # Clean the time series.
-            selected_historical_population = utils.time_series.clean_data(
-                selected_historical_population,
-                "Population",
-            )
+                # Save the historical population data to CSV and Parquet
+                # files.
+                selected_historical_population.to_frame().to_parquet(
+                    file_path_without_ext + ".parquet",
+                )
+                selected_historical_population.to_csv(
+                    file_path_without_ext + ".csv",
+                )
 
-            # Save the historical population data to CSV and Parquet
-            # files.
-            selected_historical_population.to_frame().to_parquet(
-                file_path_without_ext + ".parquet",
-            )
-            selected_historical_population.to_csv(
-                file_path_without_ext + ".csv",
-            )
+                logging.info(
+                    f"Historical population data for {code} has been "
+                    "extracted and saved successfully."
+                )
 
-            logging.info(
-                f"Historical population data for {code} has been "
-                "extracted and saved successfully."
-            )
-
-        else:
-            logging.info(
-                f"Historical population data for {code} already "
-                "exists. Skipping extraction."
-            )
+            else:
+                logging.info(
+                    f"Historical population data for {code} already "
+                    "exists. Skipping extraction."
+                )
 
         if selected_future_years:
             for scenario in selected_scenarios:
@@ -243,8 +253,13 @@ def run_data_retrieval(
                         f"{code} and scenario {scenario}."
                     )
 
-                    # Check if code is a subdivision.
-                    if "_" in code:
+                    # Check if code is a subdivision or if the country
+                    # is not in the IIASA data.
+                    if (
+                        "_" in code
+                        or iso_alpha_3_code
+                        not in global_future_population.index
+                    ):
                         # Extract the future population for the
                         # subdivision by aggregating gridded data.
                         future_population = (
@@ -258,51 +273,11 @@ def run_data_retrieval(
                             )
                         )
                     else:
-                        # Get the last historical population value and
-                        # year.
-                        if (
-                            iso_alpha_3_code
-                            in global_historical_population.index
-                        ):
-                            last_historical_population_value = (
-                                global_historical_population.loc[
-                                    iso_alpha_3_code
-                                ]
-                                .dropna()
-                                .iloc[-1]
-                            )
-                            last_historical_year = (
-                                global_historical_population.loc[
-                                    iso_alpha_3_code
-                                ]
-                                .dropna()
-                                .index[-1]
-                            )
-                        else:
-                            # Extract the last historical population
-                            # value by aggregating gridded data.
-                            last_historical_population_value = utils.geospatial.get_total_value_from_gridded_data(
-                                "population",
-                                code,
-                                [
-                                    max(
-                                        available_historical_years_of_gridded_data
-                                    )
-                                ],
-                                available_historical_years_of_gridded_data,
-                            ).iloc[0]
-                            last_historical_year = max(
-                                available_historical_years_of_gridded_data
-                            )
-
                         # Get the future population from the IIASA data.
-                        future_population = iiasa.get(
-                            "population",
+                        future_population = iiasa.extract_and_interpolate(
+                            global_future_population,
                             iso_alpha_3_code,
                             scenario,
-                            last_historical_population_value,
-                            last_historical_year,
-                            selected_future_years,
                         )
 
                     # Extract only the selected future years.

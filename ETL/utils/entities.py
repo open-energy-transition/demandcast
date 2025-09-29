@@ -267,6 +267,60 @@ def check_code_in_data_source(code: str, data_source: str) -> None:
     )
 
 
+def _get_all_codes_with_all_data() -> list[str]:
+    """
+    Get the codes of all countries and subdivisions with all data.
+
+    This function retrieves the codes of all countries and
+    subdivisions for which all required data for the demand forecasting
+    model is available. This includes the availability of shapes,
+    historical and future population data, historical and future
+    electricity demand per capita, and historical and future GDP PPP per
+    capita.
+
+    Returns
+    -------
+    list[str]
+        A list of codes of all countries and subdivisions for which all
+        required data is available.
+    """
+    # Read the CSV file containing the available data information.
+    data = pandas.read_csv(
+        os.path.join(
+            utils.directories.read_folders_structure()["checks_folder"],
+            "available_data_summary.csv",
+        ),
+        index_col=0,
+        na_filter=False,
+    )
+
+    # Initialize a list to store the codes.
+    all_codes = []
+
+    # Filter the data to get only the countries and subdivisions with
+    # all required data available.
+    for code in data.index:
+        if (
+            data.loc[code, "historical_population"]
+            and data.loc[code, "historical_electricity_demand_per_capita"]
+            and data.loc[code, "historical_gdp_ppp_per_capita"]
+            and data.loc[code, "future_population"]
+            and data.loc[code, "future_electricity_demand_per_capita"]
+            and data.loc[code, "future_gdp_ppp_per_capita"]
+        ):
+            all_codes.append(code)
+        elif (
+            data.loc[code, "historical_electricity_demand_per_capita"]
+            and data.loc[code, "future_electricity_demand_per_capita"]
+            and data.loc[code, "area_greater_than_500_km2"]
+        ):
+            # In this case, the population and GDP PPP per capita data
+            # can be estimated by aggregating gridded data.
+            all_codes.append(code)
+
+    return all_codes
+
+
 def check_and_get_codes_with(
     feature: str,
     code: str | None = None,
@@ -286,7 +340,7 @@ def check_and_get_codes_with(
     ----------
     feature : str
         The feature of interest. Available features are
-        "electricity_demand_data" and "shape".
+        "electricity_demand_data" and "all_data".
     code : str, optional
         The code of the country or subdivision.
     data_source : str, optional
@@ -313,16 +367,16 @@ def check_and_get_codes_with(
             all_codes = read_codes_in(data_source=data_source)
         else:
             all_codes = read_all_codes_with_electricity_demand_data()
-    elif feature == "shape":
+    elif feature == "all_data":
         if data_source is not None:
             raise ValueError(
-                "The 'shape' feature is not associated with a data source."
+                "The 'all_data' feature is not associated with a data source."
             )
-        all_codes = utils.shapes.get_all_codes_with_shapes()
+        all_codes = _get_all_codes_with_all_data()
     else:
         raise ValueError(
             f"Invalid feature: {feature}. Available features are: "
-            "'electricity_demand_data' and 'shape'."
+            "'electricity_demand_data' and 'all_data'."
         )
 
     if code is not None:

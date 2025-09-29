@@ -112,6 +112,18 @@ def test_get_standard_shape_by_code():
         )
         assert isinstance(shape, geopandas.GeoDataFrame)
 
+        # Mock the cartopy Reader to return a dummy shape for Taiwan
+        # with the ISO_A2 code CN-TW.
+        mock_reader.return_value.records.return_value = [
+            DummyShape({"ISO_A2": "CN-TW", "ISO_A2_EH": "TW"}),
+        ]
+
+        # Test the get_standard_shape function for Taiwan.
+        shape = utils.shapes.get_standard_shape(
+            "TW", remove_remote_islands=False
+        )
+        assert isinstance(shape, geopandas.GeoDataFrame)
+
 
 def test_get_standard_shape_invalid_code():
     """

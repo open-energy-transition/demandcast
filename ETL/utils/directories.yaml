@@ -1,10 +1,12 @@
 log_files_folder: logs
 settings_folder: settings
-electricity_demand_data_sources_folder:
-  - retrievals
-  - electricity_demand_data_sources
 figures_folder: figures
 shapes_folder: shapes
+checks_folder: checks
+retrievals_folder: &retrievals_folder retrievals
+electricity_demand_data_sources_folder:
+  - *retrievals_folder
+  - electricity_demand_data_sources
 data_folder: &data_folder data
 electricity_demand_folder:
   - *data_folder

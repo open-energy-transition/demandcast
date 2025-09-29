@@ -305,21 +305,22 @@ def test_coarsen_function():
 
     # Create a sample data with longitude coordinates beyond valid
     # range.
-    lon = numpy.arange(170.0, 181.0, 0.1)
+    lon = numpy.arange(-181.0, 181.0, 0.1)
     data = numpy.ones((len(lat), len(lon)))
     da = xarray.DataArray(
         data, coords={"y": lat, "x": lon}, dims=["y", "x"], name="test_var"
     )
 
     # Set bounds and target resolution for coarsening.
-    bounds = [175, -0.8, 180, 0.8]  # West, South, East, North
+    bounds = [-180, -0.8, 180, 0.8]  # West, South, East, North
     target_resolution = 0.5
 
     # Apply the coarsening function.
     result = utils.geospatial.coarsen(da, bounds, target_resolution)
 
     # Check the result.
-    assert result.x[-1] == 180 - target_resolution
+    assert result.x[0] == -180
+    assert result.x[-1] == 180
 
 
 def test_aggregate_gridded_data():

@@ -192,6 +192,12 @@ def _get_fraction_of_grid_cells_in_shape(
         intersection_area / cell_area
     ).to_numpy()
 
+    # Some rounding errors can lead to fractions slightly above 1.
+    # Set these values to 1.
+    fraction_of_grid_cells_in_shape_np[
+        numpy.isclose(fraction_of_grid_cells_in_shape_np, 1)
+    ] = 1.0
+
     # Check that the fraction is between 0 and 1 and that there are
     # no NaN or infinite values.
     assert numpy.all(
@@ -396,8 +402,8 @@ def coarsen(
 
     # Check if the target resolution is greater than the original
     # resolution.
-    assert target_resolution > original_resolution, (
-        "Target resolution must be greater than the original resolution."
+    assert target_resolution > 2 * original_resolution, (
+        "Target resolution must be at least twice the original resolution."
     )
 
     # Check if the target resolution provides an integer number of bins.
@@ -405,40 +411,31 @@ def coarsen(
         "Target resolution must result in an integer number when dividing 360."
     )
 
-    # Adjust the East bound if it is exactly 180 degrees to avoid issues
-    # with the binning.
-    if bounds[2] == 180:
-        bounds[2] = 180 - target_resolution
-
     # Define the new coarser resolution.
     x_list = numpy.linspace(-180, 180, int(360 / target_resolution) + 1)
     y_list = numpy.linspace(-90, 90, int(180 / target_resolution) + 1)
 
-    # Calculate the left and right bounds of the x and y bins.
-    x_left_bound = (
-        next(x for x in x_list if x >= bounds[0]) - target_resolution / 2
+    # Define the left and right bounds of the x bins and y bins.
+    x_bins = numpy.concatenate(
+        [
+            numpy.array([-180]),
+            (x_list[:-1] + x_list[1:]) / 2,
+            numpy.array([180]),
+        ]
     )
-    x_right_bound = (
-        next(x for x in x_list if x > bounds[2]) - target_resolution / 2
-    )
-    y_left_bound = (
-        next(y for y in y_list if y >= bounds[1]) - target_resolution / 2
-    )
-    y_right_bound = (
-        next(y for y in y_list if y > bounds[3]) - target_resolution / 2
+    y_bins = numpy.concatenate(
+        [numpy.array([-90]), (y_list[:-1] + y_list[1:]) / 2, numpy.array([90])]
     )
 
-    # Define the bins where to aggregate the original data.
-    x_bins = numpy.arange(
-        x_left_bound,
-        x_right_bound + target_resolution,
-        target_resolution,
-    )
-    y_bins = numpy.arange(
-        y_left_bound,
-        y_right_bound + target_resolution,
-        target_resolution,
-    )
+    # Keep only the bins that are within the specified bounds.
+    x_bins = x_bins[
+        (x_bins >= bounds[0] - target_resolution / 2)
+        & (x_bins <= bounds[2] + target_resolution / 2)
+    ]
+    y_bins = y_bins[
+        (y_bins >= bounds[1] - target_resolution / 2)
+        & (y_bins <= bounds[3] + target_resolution / 2)
+    ]
 
     # Calculate the midpoints of the bins in the x and y directions.
     x_bin_centers = (x_bins[:-1] + x_bins[1:]) / 2
@@ -453,8 +450,36 @@ def coarsen(
         "y", y_bins, labels=y_bin_centers
     ).sum()
 
-    # Rename the bins to "x" and "y" and return the coarsened xarray.
-    return coarsened_xarray.rename({"x_bins": "x", "y_bins": "y"})
+    # Rename the bins to "x" and "y".
+    coarsened_xarray = coarsened_xarray.rename({"x_bins": "x", "y_bins": "y"})
+
+    # If the bounds cover the full longitude range, the first and last
+    # x coordinates are the centers of the edge bins (half the size of
+    # the other bins). In this case, change the first and last x
+    # coordinates to -180 and 180, respectively, and sum the values at
+    # the edges.
+    if (
+        coarsened_xarray.x[0] == -180 + target_resolution / 4
+        and coarsened_xarray.x[-1] == 180 - target_resolution / 4
+    ):
+        # Change the first and last x coordinates to -180 and 180.
+        coarsened_xarray = coarsened_xarray.assign_coords(
+            x=coarsened_xarray.x.where(
+                coarsened_xarray.x != coarsened_xarray.x[0], -180
+            )
+        )
+        coarsened_xarray = coarsened_xarray.assign_coords(
+            x=coarsened_xarray.x.where(
+                coarsened_xarray.x != coarsened_xarray.x[-1], 180
+            )
+        )
+
+        # Sum the values at the edges if the x coordinate goes from
+        # -180 to 180.
+        coarsened_xarray.loc[dict(x=-180)] += coarsened_xarray.loc[dict(x=180)]
+        coarsened_xarray.loc[dict(x=180)] = coarsened_xarray.loc[dict(x=-180)]
+
+    return coarsened_xarray
 
 
 def _aggregate_gridded_data(

@@ -102,12 +102,8 @@ def _get_electricity_demand_per_capita(
         The annual electricity demand data for the specified country and
         for the years of interest.
     """
-    # Download the electricity demand per capita data from the World
-    # Bank.
-    world_bank_electricity_data = retrievals.annual_electricity_demand_per_capita.download_historical_electricity_demand_per_capita_from_world_bank()
-
-    # Download the electricity demand data from Ember.
-    ember_electricity_data = retrievals.annual_electricity_demand_per_capita.download_historical_electricity_demand_per_capita_from_ember()
+    # Download the electricity demand per capita data.
+    electricity_demand_per_capita = retrievals.annual_electricity_demand_per_capita.get_historical_electricity_demand_per_capita()
 
     # Initialize the electricity demand data series for each country or
     # subdivision. The dictionary structure is specified bacause
@@ -117,28 +113,30 @@ def _get_electricity_demand_per_capita(
     # Loop over the ISO alpha-3 codes.
     for code in codes:
         # Extract the electricity demand data for the country.
-        annual_electricity_demand = retrievals.annual_electricity_demand_per_capita.extract_historical_electricity_demand_per_capita(
-            world_bank_electricity_data,
-            ember_electricity_data,
-            alpha_3_codes[code],
+        electricity_demand_per_capita_of_country = (
+            electricity_demand_per_capita.loc[alpha_3_codes[code]]
         )
 
         # Extract the electricity demand per capita data for the years
         # of interest.
-        annual_electricity_demand = annual_electricity_demand[
-            annual_electricity_demand.index.isin(years_of_interest[code])
-        ]
+        electricity_demand_per_capita_of_country = (
+            electricity_demand_per_capita_of_country[
+                electricity_demand_per_capita_of_country.index.isin(
+                    years_of_interest[code]
+                )
+            ]
+        )
 
         # If the country is already in the dictionary, add a new key for
         # the code.
         if alpha_3_codes[code] in electricity_demand_data:
             electricity_demand_data[alpha_3_codes[code]][code] = (
-                annual_electricity_demand
+                electricity_demand_per_capita_of_country
             )
         else:
             # If the country is not in the dictionary, add it.
             electricity_demand_data[alpha_3_codes[code]] = {
-                code: annual_electricity_demand
+                code: electricity_demand_per_capita_of_country
             }
 
     return electricity_demand_data
@@ -169,11 +167,10 @@ def _get_gdp_ppp_per_capita(
         The GDP PPP per capita data for the specified country and for
         the years of interest.
     """
-    # Download the GDP per capita data from the World Bank.
-    world_bank_gdp_data = retrievals.gdp_ppp_per_capita.download_historical_gdp_ppp_per_capita_from_world_bank()
-
-    # Download the GDP per capita data from the IMF.
-    imf_gdp_data = retrievals.gdp_ppp_per_capita.download_historical_gdp_ppp_per_capita_from_imf()
+    # Download the GDP per capita data.
+    gdp_ppp_per_capita = (
+        retrievals.gdp_ppp_per_capita.get_historical_gdp_ppp_per_capita()
+    )
 
     # Initialize the GDP data series for each country or subdivision.
     # The dictionary structure is specified bacause required by the type
@@ -183,22 +180,24 @@ def _get_gdp_ppp_per_capita(
     # Loop over the ISO alpha-3 codes.
     for code in codes:
         # Extract the GDP data for the country.
-        gdp_series = retrievals.gdp_ppp_per_capita.extract_historical_gdp_ppp_per_capita(
-            world_bank_gdp_data,
-            imf_gdp_data,
-            alpha_3_codes[code],
-        )
+        gdp_ppp_per_capita_of_country = gdp_ppp_per_capita.loc[
+            alpha_3_codes[code]
+        ]
 
         # Extract the GDP data for the years of interest.
-        gdp_series = gdp_series[gdp_series.index.isin(years_of_interest[code])]
+        gdp_ppp_per_capita_of_country = gdp_ppp_per_capita_of_country[
+            gdp_ppp_per_capita_of_country.index.isin(years_of_interest[code])
+        ]
 
         # If the country is already in the dictionary, add a new key for
         # the code.
         if alpha_3_codes[code] in gdp_data:
-            gdp_data[alpha_3_codes[code]][code] = gdp_series
+            gdp_data[alpha_3_codes[code]][code] = gdp_ppp_per_capita_of_country
         else:
             # If the country is not in the dictionary, add it.
-            gdp_data[alpha_3_codes[code]] = {code: gdp_series}
+            gdp_data[alpha_3_codes[code]] = {
+                code: gdp_ppp_per_capita_of_country
+            }
 
     return gdp_data
 

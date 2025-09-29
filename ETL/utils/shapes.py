@@ -177,19 +177,21 @@ def get_standard_shape(
     # of the country.
 
     # Define the relevant parameters for the shapefile retrieval.
-    if "_" not in code or code == "CN_TW":
-        # Taiwan is included as a separate country with its own code,
-        # which is CN-TW.
+    if "_" not in code:
         shapefile_name = "admin_0_countries"
         main_keys = ["ISO_A2", "ISO_A2_EH"]
         secondary_keys = ["NAME", "NAME_LONG"]
+        if code == "TW":
+            # Taiwan is included as a separate country with its own
+            # code, which is CN-TW.
+            code_to_search = "CN-TW"
+        else:
+            code_to_search = code
     else:
         shapefile_name = "admin_1_states_provinces"
         main_keys = ["iso_3166_2"]
         secondary_keys = ["name"]
-
-    # Replace any underscores in the code with hyphens.
-    code = code.replace("_", "-")
+        code_to_search = code.replace("_", "-")
 
     # Load the shapefile containing the subdivision shapes from the
     # Natural Earth database.
@@ -206,19 +208,20 @@ def get_standard_shape(
         entity_shape = [
             shape
             for shape in list(reader.records())
-            if code in [shape.attributes[key] for key in main_keys]
+            if code_to_search in [shape.attributes[key] for key in main_keys]
         ][0]
     except IndexError:
         # Get the name of the country or subdivision of interest based
         # on its code.
-        name = _get_name_from_code(code)
+        name_to_search = _get_name_from_code(code)
 
         # Read the shape of the country or subdivision of interest by
         # searching for its name.
         entity_shape = [
             shape
             for shape in list(reader.records())
-            if name in [shape.attributes[key] for key in secondary_keys]
+            if name_to_search
+            in [shape.attributes[key] for key in secondary_keys]
         ][0]
 
     # Convert the shape to a GeoDataFrame.
@@ -228,7 +231,7 @@ def get_standard_shape(
 
     # Remove small remote islands from the shape of some countries.
     if remove_remote_islands:
-        entity_shape = _remove_islands(entity_shape, code.replace("-", "_"))
+        entity_shape = _remove_islands(entity_shape, code)
 
     return entity_shape
 
@@ -497,8 +500,10 @@ def get_all_codes_with_shapes() -> list[str]:
             if shape.attributes["ISO_A2_EH"] != "-99":
                 codes_of_all_countries.append(shape.attributes["ISO_A2_EH"])
 
-    # Remove Antarctica (AQ) from the list of countries.
-    codes_of_all_countries.remove("AQ")
+    # Change the code of Taiwan from CN-TW to TW.
+    codes_of_all_countries = [
+        "TW" if code == "CN-TW" else code for code in codes_of_all_countries
+    ]
 
     # Get the shape of standard subdivisions from the Natural Earth
     # shapefile database.

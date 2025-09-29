@@ -11,6 +11,7 @@ Description:
 import datetime
 from unittest.mock import patch
 
+import pandas
 import pytest
 import pytz
 import utils.entities
@@ -82,7 +83,69 @@ def test_read_codes_errors():
         utils.entities.read_codes_in(data_source="INVALID_DATA_SOURCE")
 
 
-def test_check_and_read_codes():
+def test_get_all_codes_with_all_data():
+    """
+    Test if the function _get_all_codes_with_all_data works correctly.
+
+    This test checks if the function can read the available data summary
+    from a CSV file and return a list of codes for which all data is
+    available.
+    """
+    with (
+        patch("pandas.read_csv") as mock_read_csv,
+        patch("os.path.join") as mock_path_join,
+        patch("utils.directories.read_folders_structure") as mock_read_folders,
+    ):
+        # Mock folder structure
+        mock_read_folders.return_value = {"checks_folder": "/checks"}
+        mock_path_join.return_value = "/checks/available_data_summary.csv"
+
+        # Mock the return value of pandas.read_csv to return a sample
+        # DataFrame.
+        mock_read_csv.return_value = pandas.DataFrame(
+            {
+                "entity_name": [
+                    "Country 1",
+                    "Country 2",
+                    "Country 3",
+                    "Country 4",
+                ],
+                "parent_iso_alpha_3_code": ["XYZ1", "XYZ2", "XYZ3", "XYZ4"],
+                "historical_population": [True, True, True, False],
+                "historical_electricity_demand_per_capita": [
+                    True,
+                    True,
+                    False,
+                    True,
+                ],
+                "historical_gdp_ppp_per_capita": [True, False, True, True],
+                "future_population": [True, True, True, False],
+                "future_electricity_demand_per_capita": [
+                    True,
+                    True,
+                    False,
+                    True,
+                ],
+                "future_gdp_ppp_per_capita": [True, False, True, True],
+                "area_greater_than_500_km2": [True, True, True, True],
+            },
+            index=["XY1", "XY2", "XY3", "XY4"],
+        )
+
+        # Get all codes with all data available.
+        all_data_codes = utils.entities._get_all_codes_with_all_data()
+
+        # Check if the function returns a list of codes.
+        assert isinstance(all_data_codes, list)
+
+        # Check if the codes are read correctly.
+        assert "XY1" in all_data_codes
+        assert "XY2" in all_data_codes
+        assert "XY3" not in all_data_codes
+        assert "XY4" in all_data_codes
+
+
+def test_check_and_get_codes_with():
     """
     Test if the function check_and_get_codes_with works correctly.
 
@@ -105,17 +168,19 @@ def test_check_and_read_codes():
 
     # Read codes from a specified file path and check them.
     with (
-        patch("utils.entities.read_codes_in"),
-        patch("utils.entities.read_all_codes_with_electricity_demand_data"),
+        patch("utils.entities.read_codes_in") as mock_read_codes,
+        patch(
+            "utils.entities.read_all_codes_with_electricity_demand_data"
+        ) as mock_read_all_codes,
     ):
         # Mock the return value of read_codes_in to return codes from a
         # specific file.
-        utils.entities.read_codes_in.return_value = ["FR", "DE"]
+        mock_read_codes.return_value = ["FR", "DE"]
 
         # Mock the return value of
         # read_all_codes_with_electricity_demand_data to return all
         # available codes with demand data.
-        utils.entities.read_all_codes_with_electricity_demand_data.return_value = [
+        mock_read_all_codes.return_value = [
             "FR",
             "DE",
             "IT",
@@ -131,16 +196,25 @@ def test_check_and_read_codes():
         assert "FR" in dummy_codes
         assert "US_TEX" not in dummy_codes
 
-    # Read codes for which a shape is available.
-    shape_codes = utils.entities.check_and_get_codes_with("shape")
-    assert isinstance(shape_codes, list)
-    assert "FR" in shape_codes
-    assert "US_TEX" in shape_codes
-    assert "RU_AD" in shape_codes
-    assert "UA_40" in shape_codes
+    # Read codes for which all data is available.
+    with patch(
+        "utils.entities._get_all_codes_with_all_data"
+    ) as mock_get_all_codes:
+        # Mock the return value of _get_all_codes_with_all_data to
+        # return a sample list of codes.
+        mock_get_all_codes.return_value = ["XYZ1", "XYZ2"]
+
+        # Get all codes with all data available.
+        shape_codes = utils.entities.check_and_get_codes_with("all_data")
+
+        # Check if the codes are read correctly.
+        assert isinstance(shape_codes, list)
+        assert "XYZ1" in shape_codes
+        assert "XYZ2" in shape_codes
+        assert "XYZ3" not in shape_codes
 
 
-def test_check_and_read_codes_errors():
+def test_check_and_get_codes_with_errors():
     """
     Test if the check_and_get_codes_with function handles errors.
 
@@ -155,10 +229,10 @@ def test_check_and_read_codes_errors():
         )
 
     # Check if the function raises an error when a data source is
-    # provided for the "shape" feature.
+    # provided for the "all_data" feature.
     with pytest.raises(ValueError):
         utils.entities.check_and_get_codes_with(
-            "shape", code="FR", data_source="entsoe"
+            "all_data", code="FR", data_source="entsoe"
         )
 
     # Check if the function raises an error for an invalid code.
@@ -173,21 +247,19 @@ def test_check_and_read_codes_errors():
     # a file.
     with pytest.raises(ValueError):
         with (
-            patch(
-                "utils.entities.read_codes_in",
-            ),
+            patch("utils.entities.read_codes_in") as mock_read_codes,
             patch(
                 "utils.entities.read_all_codes_with_electricity_demand_data"
-            ),
+            ) as mock_read_all_codes,
         ):
             # Mock the return value of read_codes_in to return invalid
             # codes.
-            utils.entities.read_codes_in.return_value = ["US_CAL", "US_TEX"]
+            mock_read_codes.return_value = ["US_CAL", "US_TEX"]
 
             # Mock the return value of
             # read_all_codes_with_electricity_demand_data
             # to return all available codes with demand data.
-            utils.entities.read_all_codes_with_electricity_demand_data.return_value = [
+            mock_read_all_codes.return_value = [
                 "FR",
                 "DE",
                 "IT",
