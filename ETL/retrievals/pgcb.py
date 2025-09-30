@@ -68,6 +68,10 @@ def _clean_date_string(date: str) -> str:
     if len(year) == 2:
         year = f"20{year}"
 
+    # Fix a typo in one of the filenames.
+    if year == "20223":
+        year = "2023"
+
     # Add leading zero to month if needed.
     if len(month) == 1:
         month = f"0{month}"
@@ -154,7 +158,6 @@ def get_url(file_number: str, extension: str, unformatted_date: str) -> str:
     str
         The URL for the electricity demand data request.
     """
-    # Return the URL of the electricity demand data.
     return (
         "https://erp.powergrid.gov.bd/web/files/download?"
         f"location=erp%2Fweb%2Freport_docs%2F{file_number}.{extension}"
@@ -209,7 +212,7 @@ def download_and_extract_data_for_request(
     # Read the sheet containing the demand data.
     dataset = pandas.read_excel(excel_file, sheet_name=demand_sheet)
 
-    # Find the row that contains both "TIME" and "TOTAL"
+    # Find the row that contains both "TIME" and "TOTAL".
     header_row = None
     time_col = None
     total_col = None
