@@ -68,6 +68,10 @@ def _clean_date_string(date: str) -> str:
     if len(year) == 2:
         year = f"20{year}"
 
+    # Add leading zero to month if needed.
+    if len(month) == 1:
+        month = f"0{month}"
+
     # Reconstruct the date string.
     date = f"{year}-{month}-{day}"
 
