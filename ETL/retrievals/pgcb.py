@@ -14,22 +14,16 @@ Description:
     14 hours in total. This is due to the large number of Excel
     sheets that need to be processed.
 
-    Source: https://erp.powergrid.gov.bd/w/report/eyJpdiI6IldsU2ZQTGkvbkRnQU9FMjZ5UHhmeGc9PSIsInZhbHVlIjoiQzhONVl5ZGxRY3E3T3ZVNCtLZGt1Zz09IiwibWFjIjoiN2JiNTI5MzNhOWIxZDVjY2NkMmFlZWU4ZDU1N2I4OWZlYjNlZWM1ZGU4NzRiNWU4ZjQ3ZDc1ODRlMTk3MDc0YyIsInRhZyI6IiJ9/show_report?page=140
+    Source: https://erp.powergrid.gov.bd/w/report/eyJpdiI6IldsU2ZQTGkvbkRnQU9FMjZ5UHhmeGc9PSIsInZhbHVlIjoiQzhONVl5ZGxRY3E3T3ZVNCtLZGt1Zz09IiwibWFjIjoiN2JiNTI5MzNhOWIxZDVjY2NkMmFlZWU4ZDU1N2I4OWZlYjNlZWM1ZGU4NzRiNWU4ZjQ3ZDc1ODRlMTk3MDc0YyIsInRhZyI6IiJ9/show_report
 """  # noqa: W505
 
 import logging
-import ssl
-import warnings
+import re
 
+import numpy
 import pandas
+import requests
 import utils.fetcher
-from urllib3.exceptions import InsecureRequestWarning
-
-# Ignore SSL certificate warnings
-warnings.simplefilter("ignore", InsecureRequestWarning)
-
-# Globally ignore SSL certificate verification
-ssl._create_default_https_context = ssl._create_unverified_context
 
 
 def redistribute() -> bool:
@@ -46,113 +40,127 @@ def redistribute() -> bool:
     return False
 
 
-def _check_input_parameters(
-    file_info: tuple[int, str], available_files: list[tuple[int, str]]
-) -> None:
+def _clean_date_string(date: str) -> str:
     """
-    Check if the input parameters are valid.
+    Clean the date string to the correct format.
 
     Parameters
     ----------
-    file_info : tuple[int, str]
-        A tuple containing the file number and the extension.
-    available_files : list of tuple[int, str]
-        Pre-fetched list of available (file_number, extension) pairs.
-    """
-    # Check if the (file_number, extension) pair is supported
-    assert file_info in available_files, (
-        f"File {file_info[0]}.{file_info[1]} is not supported."
-    )
-
-
-def get_available_requests() -> list[tuple[int, str]]:
-    """
-    Get the available requests.
-
-    This function retrieves the available file numbers and their
-    extensions from the PGCB website.
+    date : str
+        The date string to be cleaned.
 
     Returns
     -------
-    list of tuple[int, str]
-        The list of available (file_number, extension) requests.
+    str
+        The cleaned date string in the format YYYY-MM-DD.
     """
-    available_files = []
+    # Clean the date string.
+    date = date.replace("%2F", "-")
+    date = date.replace(".", "-")
+    date = date.replace("%20", "")
 
-    # Define ranges with preferred extensions
-    ranges = [
-        (197, 846, "xlsm"),
-        (847, 2292, "xls"),
-        (2293, 4432, "xlsm"),
-        (4433, 99999, "xlsx"),  # large upper bound for open-ended
-    ]
+    # Extract the date components.
+    day = date.split("-")[0]
+    month = date.split("-")[1]
+    year = date.split("-")[2]
 
-    for start, end, preferred_ext in ranges:
-        consecutive_missing = 0
-        for file_number in range(start, end + 1):
-            found = False
+    # Add leading thousand to year if needed.
+    if len(year) == 2:
+        year = f"20{year}"
 
-            for extension in [preferred_ext]:
-                url = (
-                    f"https://erp.powergrid.gov.bd/web/files/download?"
-                    f"location=erp%2Fweb%2Freport_docs%2F{file_number}.{extension}"
-                )
-                try:
-                    utils.fetcher.fetch_data(
-                        url=url,
-                        content_type="html",
-                        read_as="plain",
-                        retries=1,
-                        verify_ssl=False,
-                    )
-                    available_files.append((file_number, extension))
-                    logging.info(
-                        f"Found available file: {file_number}.{extension}"
-                    )
-                    found = True
-                    break  # stop checking other extensions for this file_number
-                except Exception:
-                    continue
+    # Reconstruct the date string.
+    date = f"{year}-{month}-{day}"
 
-            if found:
-                consecutive_missing = 0  # reset counter on success
-            else:
-                consecutive_missing += 1
-
-            if consecutive_missing >= 20:
-                logging.info(
-                    f"Stopping early in range {start}-{end} after "
-                    f"{consecutive_missing} consecutive missing files."
-                )
-                break
-
-    return available_files
+    return date
 
 
-def get_url(file_info: tuple[int, str]) -> str:
+def _check_input_parameters() -> None:
+    """Check if the input parameters are valid."""
+    logging.debug(
+        "Checking if the input parameters are valis would be extremely "
+        "time-consuming. Skipping this step."
+    )
+
+
+def get_available_requests() -> list[tuple[str, str, str]]:
+    """
+    Get the available requests.
+
+    This function retrieves the available requests for the electricity
+    demand data from the PGCB website. Each request corresponds to
+    a specific Excel file identified by a unique number, file
+    extension, and date. The function scrapes the website to find
+    all available files and returns a list of tuples containing
+    the file number, file extension, and date.
+
+    Returns
+    -------
+    available_requests : list[tuple[str, str, str]
+        A list of tuples, each containing the file number, file
+        extension, and date in the format.
+    """
+    # Initialize an empty list to store available requests.
+    available_requests = []
+
+    # Iterate through a reasonable range of pages to find all available
+    # files. The maximum page number is currently 142, but we use 200
+    # to include any future additions.
+    for page_number in range(1, 200):
+        # Construct the URL for the current page.
+        page_url = (
+            "https://erp.powergrid.gov.bd/w/report/eyJpdiI6IldsU2ZQTGkvbkRnQU9"
+            "FMjZ5UHhmeGc9PSIsInZhbHVlIjoiQzhONVl5ZGxRY3E3T3ZVNCtLZGt1Zz09Iiwi"
+            "bWFjIjoiN2JiNTI5MzNhOWIxZDVjY2NkMmFlZWU4ZDU1N2I4OWZlYjNlZWM1ZGU4N"
+            "zRiNWU4ZjQ3ZDc1ODRlMTk3MDc0YyIsInRhZyI6IiJ9/"
+            f"show_report?page={page_number}"
+        )
+
+        # Fetch the HTML content of the page.
+        html_content: requests.Response = utils.fetcher.fetch_data(
+            url=page_url,
+            content_type="html",
+            read_as="plain",
+            verify_ssl=False,
+        )
+
+        # Parse the HTML content to find the parameters in the URLs.
+        available_requests += re.findall(
+            r'"https://erp.powergrid.gov.bd/web/files/download\?location=erp%2Fweb%2Freport_docs%2F(\d+).(xlsm|xls|xlsx)&amp;title=Daily%20Report%20(.+)"target',  # noqa: W505
+            html_content.text,
+        )
+
+    return available_requests
+
+
+def get_url(file_number: str, extension: str, unformatted_date: str) -> str:
     """
     Get the URL of the electricity demand data on the PGCB website.
 
     Parameters
     ----------
-    file_info : tuple[int, str]
-        A tuple containing the file number and the extension.
+    file_number : str
+        The file number of the Excel file.
+    extension : str
+        The file extension of the Excel file (xls, xlsx, xlsm).
+    unformatted_date : str
+        The date in the format DD-MM-YYYY or similar.
 
     Returns
     -------
     str
         The URL for the electricity demand data request.
     """
-    file_number, extension = file_info
+    # Return the URL of the electricity demand data.
     return (
         "https://erp.powergrid.gov.bd/web/files/download?"
         f"location=erp%2Fweb%2Freport_docs%2F{file_number}.{extension}"
+        f"&title=Daily%20Report%20{unformatted_date}"
     )
 
 
 def download_and_extract_data_for_request(
-    file_number: int, extension: str
-) -> pandas.Series | None:
+    file_number: str, extension: str, unformatted_date: str
+) -> pandas.Series:
     """
     Download and extract electricity demand data.
 
@@ -161,10 +169,12 @@ def download_and_extract_data_for_request(
 
     Parameters
     ----------
-    file_number : int
-        The number of the file to read.
+    file_number : str
+        The file number of the Excel file.
     extension : str
-        The file extension (xls, xlsm, xlsx).
+        The file extension of the Excel file (xls, xlsx, xlsm).
+    unformatted_date : str
+        The date in the format DD-MM-YYYY or similar.
 
     Returns
     -------
@@ -172,126 +182,77 @@ def download_and_extract_data_for_request(
         The electricity demand time series in MW.
         Returns None if no valid sheet/date/header is found.
     """
-    file_info = (file_number, extension)
+    # Convert date to the correct format.
+    date = _clean_date_string(unformatted_date)
 
-    logging.info(
-        "Retrieving electricity demand data from the "
-        f"file {file_number}.{extension}."
-    )
+    logging.info(f"Retrieving electricity demand data for {date}.")
 
     # Get the URL of the electricity demand data.
-    url = get_url(file_info)
-    possible_sheets = ["L-Curve", "L.curve"]
+    url = get_url(file_number, extension, unformatted_date)
 
-    dataset = None
-    sheet_date = None
-
-    # Try all possible sheets
-    for sheet_name in possible_sheets:
-        try:
-            raw_data = utils.fetcher.fetch_data(
-                url,
-                "excel",
-                excel_kwargs={"sheet_name": sheet_name, "header": None},
-                verify_ssl=False,
-            )
-        except Exception:
-            continue
-
-        # Detect sheet date from first few rows
-        for i in range(5):
-            cell_value = str(raw_data.iloc[i, 1]).strip()
-            possible_date = None
-
-            try:
-                if 850 <= file_number <= 2292:
-                    # Range 2: mm/dd/yy
-                    possible_date = pandas.to_datetime(
-                        cell_value, dayfirst=False, errors="coerce"
-                    )
-
-                elif file_number >= 4433:
-                    # Range 4: dd/mm/yyyy
-                    possible_date = pandas.to_datetime(
-                        cell_value, dayfirst=True, errors="coerce"
-                    )
-
-                else:
-                    # Range 1 & 3: dd-mon-yy
-                    possible_date = pandas.to_datetime(
-                        cell_value, errors="raise"
-                    )
-
-                # If parsing failed, try automatic detection
-                if possible_date is pandas.NaT or possible_date is None:
-                    possible_date = pandas.to_datetime(
-                        cell_value, errors="coerce"
-                    )
-
-                if (
-                    possible_date is not pandas.NaT
-                    and possible_date is not None
-                ):
-                    sheet_date = possible_date.date()
-                    break
-
-            except Exception:
-                continue
-
-        if sheet_date is None:
-            continue
-
-        # Detect header row
-        header_row = None
-        for i in range(5):
-            row = raw_data.iloc[i].astype(str).str.upper()
-            if "TIME" in row.to_numpy() and "TOTAL" in row.to_numpy():
-                header_row = i
-                break
-        if header_row is None:
-            continue
-
-        try:
-            dataset = utils.fetcher.fetch_data(
-                url,
-                "excel",
-                excel_kwargs={"sheet_name": sheet_name, "header": header_row},
-                verify_ssl=False,
-            )
-        except Exception:
-            dataset = None
-            continue
-
-    # If nothing usable was found, return empty Series
-    if dataset is None or sheet_date is None:
-        logging.warning(
-            f"Skipping file {file_number}.{extension}: could not find valid sheet, date, or header."
-        )
-        return pandas.Series(dtype="float64")  # empty
-
-    # Remove any rows where TIME is '24:00'
-    dataset = dataset[dataset["TIME"] != "24:00"]
-
-    # Build the DateTime column by combining sheet_date and TIME column
-    dataset["DateTime"] = pandas.to_datetime(
-        dataset["TIME"].apply(lambda t: f"{sheet_date} {t}"),
-        errors="coerce",
+    # Fetch the data from the URL.
+    excel_file: pandas.ExcelFile = utils.fetcher.fetch_data(
+        url, "html", read_as="excel_file", verify_ssl=False
     )
 
-    # Drop rows with invalid DateTime or TOTAL
-    dataset = dataset.dropna(subset=["DateTime", "TOTAL"])
+    # Extract the name of the sheet containing the demand data.
+    demand_sheet = [
+        sheet
+        for sheet in excel_file.sheet_names
+        if "L-Curve" in sheet or "L.curve" in sheet
+    ][0]
 
-    # Remove duplicates just in case (e.g., 00:00 appearing twice)
-    dataset = dataset.drop_duplicates(subset=["DateTime"])
+    # Read the sheet containing the demand data.
+    dataset = pandas.read_excel(excel_file, sheet_name=demand_sheet)
+
+    # Find the row that contains both "TIME" and "TOTAL"
+    header_row = None
+    time_col = None
+    total_col = None
+    for id in range(len(dataset)):
+        row = dataset.iloc[id].astype(str).str.upper()
+        if "TIME" in row.to_list() and "TOTAL" in row.to_list():
+            header_row = id
+            time_col = dataset.iloc[id][row == "TIME"].iloc[0]
+            total_col = dataset.iloc[id][row == "TOTAL"].iloc[0]
+            break
+
+    if header_row is None or time_col is None or total_col is None:
+        logging.error(
+            f"No valid Excel sheet/date/header found for {date}. "
+            "Skipping this date."
+        )
+        return pandas.Series(dtype=float)
+
+    # Extract the following 48 rows containing the time and demand data.
+    dataset = pandas.read_excel(
+        excel_file,
+        sheet_name=demand_sheet,
+        header=header_row + 1,
+        nrows=48,
+        usecols=[time_col, total_col],
+    )
+
+    # Define the new index.
+    index = pandas.to_datetime([f"{date} {t}" for t in dataset[time_col]])
+
+    # Raise an error if the index is not unique.
+    if not index.is_unique:
+        logging.error(f"The index is not unique for {date}.")
+    if numpy.any(numpy.isnan(index.to_numpy().astype(float))):
+        logging.error(f"The index contains NaN values for {date}.")
+    if numpy.any(numpy.isnan(dataset["TOTAL"].values)):
+        logging.error(f"The data contains NaN values for {date}.")
 
     # Define the electricity demand time series.
     electricity_demand_time_series = pandas.Series(
-        dataset["TOTAL"].values, index=dataset["DateTime"]
+        dataset["TOTAL"].values, index=index
     )
 
-    # Sort the index.
-    electricity_demand_time_series = (
-        electricity_demand_time_series.sort_index()
+    # Add 30 minutes to each timestamp to represent the end of
+    # the half-hour period.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index + pandas.Timedelta(minutes=30)
     )
 
     # Add the timezone information.

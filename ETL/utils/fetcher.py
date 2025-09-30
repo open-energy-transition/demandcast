@@ -89,7 +89,7 @@ def fetch_data(
     header_params: dict[str, str] = {},
     json_keys: list[str] = [],
     query_aspx_webpage: bool = False,
-) -> pandas.DataFrame | str | requests.Response:
+) -> pandas.DataFrame | pandas.ExcelFile | str | requests.Response:
     """
     Fetch the data from the specified URL.
 
@@ -238,6 +238,12 @@ def fetch_data(
                                 # table.
                                 return pandas.read_excel(
                                     BytesIO(response.content), **excel_kwargs
+                                )
+                            elif read_as == "excel_file":
+                                # Return the content read as an Excel
+                                # file.
+                                return pandas.ExcelFile(
+                                    BytesIO(response.content)
                                 )
                             elif read_as == "text":
                                 # Return the content as a string.
