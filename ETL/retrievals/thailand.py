@@ -10,11 +10,12 @@ Description:
     Jan 1, 2025. The data is retrieved all at once.
 
     Source: https://zenodo.org/records/17109911
-"""  # noqa: W505
+"""
 
 import logging
 
 import pandas
+import utils.entities
 import utils.fetcher
 
 
@@ -34,18 +35,18 @@ def redistribute() -> bool:
     return True
 
 
-def _check_input_parameters(file_number: int) -> None:
+def _check_input_parameters(year: int) -> None:
     """
     Check if the input parameters are valid.
 
     Parameters
     ----------
-    file_number : int
-        The number of the file to read.
+    year : int
+        The year of the data to retrieve.
     """
-    # Check if the file number is supported.
-    assert file_number in get_available_requests(), (
-        f"File number {file_number} is not supported."
+    # Check if the year is supported.
+    assert year in get_available_requests(), (
+        f"The year {year} is not in the supported range."
     )
 
 
@@ -61,44 +62,40 @@ def get_available_requests() -> list[int]:
     list[int]
         The list of available requests.
     """
-    # Return the available requests, which are the numbers of the Excel
-    # files available on the Zenodo website.
-    return [1, 2]
+    # Read the start and end date of the available data.
+    start_date, end_date = utils.entities.read_date_ranges(
+        data_source="thailand"
+    )["TH"]
+
+    # Return the available requests, which are the years.
+    return list(range(start_date.year, end_date.year))
 
 
-def get_url(file_number: int) -> str:
+def get_url(year: int) -> str:
     """
     Get the URL of the electricity demand data for Thailand.
 
     Parameters
     ----------
-    file_number : int
-        The number of the file to read.
+    year : int
+        The year of the electricity demand data.
 
     Returns
     -------
     url : str
         The URL of the electricity demand data.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(file_number)
+    # Check if input parameters are valid.
+    _check_input_parameters(year)
 
-    # Define the URL of the electricity demand data.
-    if file_number == 1:
-        url = (
-            "https://zenodo.org/records/17109911/files/"
-            "system_2023.csv?download=1"
-        )
-    elif file_number == 2:
-        url = (
-            "https://zenodo.org/records/17109911/files/"
-            "system_2024.csv?download=1"
-        )
-
-    return url
+    # Return the URL of the electricity demand data.
+    return (
+        "https://zenodo.org/records/17109911/files/"
+        f"system_{year}.csv?download=1"
+    )
 
 
-def download_and_extract_data_for_request(file_number: int) -> pandas.Series:
+def download_and_extract_data_for_request(year: int) -> pandas.Series:
     """
     Download and extract electricity demand data.
 
@@ -107,8 +104,8 @@ def download_and_extract_data_for_request(file_number: int) -> pandas.Series:
 
     Parameters
     ----------
-    file_number : int
-        The number of the file to read.
+    year : int
+        The year of the electricity demand data.
 
     Returns
     -------
@@ -121,15 +118,12 @@ def download_and_extract_data_for_request(file_number: int) -> pandas.Series:
         If the extracted data is not a pandas DataFrame.
     """
     # Check if the input parameters are valid.
-    _check_input_parameters(file_number)
+    _check_input_parameters(year)
 
-    logging.info(
-        "Retrieving electricity demand data from the "
-        f"file number {file_number}."
-    )
+    logging.info(f"Retrieving electricity demand data for the year {year}.")
 
     # Get the URL of the electricity demand data.
-    url = get_url(file_number)
+    url = get_url(year)
 
     # Fetch the electricity demand data from the URL.
     dataset = utils.fetcher.fetch_data(url, "csv")
