@@ -5,14 +5,14 @@ License: AGPL-3.0.
 Description:
     This module provides functions to retrieve electricity demand data
     from the website of the Power Grid Company of Bangladesh (PGCB),
-    now Power Grid Bangladesh PLC. The data spans from 2014 to the present
-    and is obtained from the Excel files available on the PGCB website.
+    now Power Grid Bangladesh PLC. The data spans from 2014 to the
+    present and is obtained from the Excel files available on the PGCB
+    website.
 
     Note:
-    Retrieving data over an extended historical period (e.g., multiple
-    years) may take a considerable amount of time — potentially up to
-    14 hours in total. This is due to the large number of Excel
-    sheets that need to be processed.
+    Retrieving all the data take a considerable amount of time,
+    potentially up to 14 hours in total. This is due to the large number
+    of Excel sheets that need to be processed.
 
     Source: https://erp.powergrid.gov.bd/w/report/eyJpdiI6IldsU2ZQTGkvbkRnQU9FMjZ5UHhmeGc9PSIsInZhbHVlIjoiQzhONVl5ZGxRY3E3T3ZVNCtLZGt1Zz09IiwibWFjIjoiN2JiNTI5MzNhOWIxZDVjY2NkMmFlZWU4ZDU1N2I4OWZlYjNlZWM1ZGU4NzRiNWU4ZjQ3ZDc1ODRlMTk3MDc0YyIsInRhZyI6IiJ9/show_report
 """  # noqa: W505
@@ -24,6 +24,10 @@ import numpy
 import pandas
 import requests
 import utils.fetcher
+
+# import os
+# os.chdir(os.getcwd()+"/ETL")
+# file_number, extension, date = get_available_requests()[0]
 
 
 def redistribute() -> bool:
@@ -40,44 +44,68 @@ def redistribute() -> bool:
     return False
 
 
-def _clean_date_string(date: str) -> str:
+def _clean_and_format(date: str) -> str:
     """
-    Clean the date string to the correct format.
+    Clean and format the date string to YYYY-MM-DD.
 
     Parameters
     ----------
     date : str
-        The date string to be cleaned.
+        The date string to be cleaned and formatted.
 
     Returns
     -------
     str
-        The cleaned date string in the format YYYY-MM-DD.
+        The date string in the format YYYY-MM-DD.
+
+    Raises
+    ------
+    ValueError
+        If the date string cannot be inferred.
     """
-    # Clean the date string.
-    date = date.replace("%2F", "-")
-    date = date.replace(".", "-")
-    date = date.replace("%20", "")
+    # Create a dictionary to fix known typos in the date strings.
+    # The file name for 2022-04-25 does not have the date in it. The
+    # regular expression captures only "t". Add it manually.
+    fix_typo = {
+        "t": "25-04-2022",
+        "2209-2023": "22-09-2023",
+        "21-8-20223": "21-08-2023",
+        "149.2.2023": "19-02-2023",
+        "31.2.2022": "31-12-2022",
+        "03/01/202": "03-01-2022",
+        "05-052020": "05-05-2020",
+        "04-11-219": "04-11-2019",
+    }
+
+    # Fix known typos in the date string.
+    if date in fix_typo:
+        date = fix_typo[date]
+
+    # Clean the date strings from trailing whitespaces and dots and
+    # replace different separators with a hyphen.
+    date = date.strip().strip(".").replace(".", "-").replace("/", "-")
 
     # Extract the date components.
     day = date.split("-")[0]
     month = date.split("-")[1]
     year = date.split("-")[2]
 
-    # Add leading thousand to year if needed.
-    if len(year) == 2:
-        year = f"20{year}"
-
-    # Fix a typo in one of the filenames.
-    if year == "20223":
-        year = "2023"
-
     # Add leading zero to month if needed.
     if len(month) == 1:
         month = f"0{month}"
 
+    # Add leading thousand to year if needed.
+    if len(year) == 2:
+        year = f"20{year}"
+
     # Reconstruct the date string.
     date = f"{year}-{month}-{day}"
+
+    try:
+        # Validate the date format.
+        pandas.to_datetime(date, format="%Y-%m-%d")
+    except ValueError:
+        raise ValueError(f"Cannot infer the date from the string: {date}.")
 
     return date
 
@@ -85,7 +113,7 @@ def _clean_date_string(date: str) -> str:
 def _check_input_parameters() -> None:
     """Check if the input parameters are valid."""
     logging.debug(
-        "Checking if the input parameters are valis would be extremely "
+        "Checking if the input parameters are valid would be extremely "
         "time-consuming. Skipping this step."
     )
 
@@ -107,6 +135,8 @@ def get_available_requests() -> list[tuple[str, str, str]]:
         A list of tuples, each containing the file number, file
         extension, and date in the format.
     """
+    logging.info("Retrieving the available requests from the PGCB website.")
+
     # Initialize an empty list to store available requests.
     available_requests = []
 
@@ -131,16 +161,40 @@ def get_available_requests() -> list[tuple[str, str, str]]:
             verify_ssl=False,
         )
 
-        # Parse the HTML content to find the parameters in the URLs.
-        available_requests += re.findall(
-            r'"https://erp.powergrid.gov.bd/web/files/download\?location=erp%2Fweb%2Freport_docs%2F(\d+).(xlsm|xls|xlsx)&amp;title=Daily%20Report%20(.+)"target',  # noqa: W505
+        # Use regular expressions to find all file numbers and
+        # extensions.
+        file_info = re.findall(
+            r"https://erp\.powergrid\.gov\.bd/web/files/download\?location=erp%2Fweb%2Freport_docs%2F(\d+)\.(xlsm|xlsx|xls)",  # noqa: W505
             html_content.text,
         )
+
+        # Remove duplicates and keep the order.
+        file_info = list(dict.fromkeys(file_info))
+
+        # Use regular expressions to find all dates.
+        dates = re.findall(
+            r'<td style="text-align: left; font-size: 14px;">(?:[a-zA-Z]+)(?:[\s_]+)(?:[a-zA-Z]+)(?:[\s_-]*)(.+)</td>',  # noqa: W505
+            html_content.text,
+        )
+
+        # Format the dates to YYYY-MM-DD.
+        dates = [_clean_and_format(date) for date in dates]
+
+        # Combine the file numbers, extensions, and dates into a list
+        # of tuples.
+        requests_on_page = [
+            (file_number, extension, date)
+            for (file_number, extension), date in zip(file_info, dates)
+        ]
+
+        # Add the requests from the current page to the list of
+        # available requests.
+        available_requests += requests_on_page
 
     return available_requests
 
 
-def get_url(file_number: str, extension: str, unformatted_date: str) -> str:
+def get_url(file_number: str, extension: str) -> str:
     """
     Get the URL of the electricity demand data on the PGCB website.
 
@@ -150,8 +204,6 @@ def get_url(file_number: str, extension: str, unformatted_date: str) -> str:
         The file number of the Excel file.
     extension : str
         The file extension of the Excel file (xls, xlsx, xlsm).
-    unformatted_date : str
-        The date in the format DD-MM-YYYY or similar.
 
     Returns
     -------
@@ -161,12 +213,11 @@ def get_url(file_number: str, extension: str, unformatted_date: str) -> str:
     return (
         "https://erp.powergrid.gov.bd/web/files/download?"
         f"location=erp%2Fweb%2Freport_docs%2F{file_number}.{extension}"
-        f"&title=Daily%20Report%20{unformatted_date}"
     )
 
 
 def download_and_extract_data_for_request(
-    file_number: str, extension: str, unformatted_date: str
+    file_number: str, extension: str, date: str
 ) -> pandas.Series:
     """
     Download and extract electricity demand data.
@@ -180,8 +231,8 @@ def download_and_extract_data_for_request(
         The file number of the Excel file.
     extension : str
         The file extension of the Excel file (xls, xlsx, xlsm).
-    unformatted_date : str
-        The date in the format DD-MM-YYYY or similar.
+    date : str
+        The date in the format YYYY-MM-DD.
 
     Returns
     -------
@@ -189,13 +240,10 @@ def download_and_extract_data_for_request(
         The electricity demand time series in MW.
         Returns None if no valid sheet/date/header is found.
     """
-    # Convert date to the correct format.
-    date = _clean_date_string(unformatted_date)
-
     logging.info(f"Retrieving electricity demand data for {date}.")
 
     # Get the URL of the electricity demand data.
-    url = get_url(file_number, extension, unformatted_date)
+    url = get_url(file_number, extension)
 
     # Fetch the data from the URL.
     excel_file: pandas.ExcelFile = utils.fetcher.fetch_data(
