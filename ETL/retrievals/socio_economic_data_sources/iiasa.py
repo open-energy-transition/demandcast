@@ -24,7 +24,7 @@ import yaml
 
 
 def _map_from_region_to_country(
-    iiasa_data: pandas.DataFrame
+    iiasa_data: pandas.DataFrame,
 ) -> pandas.DataFrame:
     """
     Map the data of regions to countries.
@@ -45,7 +45,7 @@ def _map_from_region_to_country(
     # Define the path to the yaml file containing the mapping of ISO
     # Alpha-3 codes to IAM regions.
     iam_region_mapping = os.path.join(
-        os.path.dirname(__file__), f"iam_regions_mapping.yaml"
+        os.path.dirname(__file__), "iam_regions_mapping.yaml"
     )
 
     # Read the mapping from the yaml file.

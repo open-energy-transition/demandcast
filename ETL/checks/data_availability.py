@@ -30,6 +30,7 @@ import retrievals.socio_economic_data_sources.ember as ember
 import retrievals.socio_economic_data_sources.iiasa as iiasa
 import retrievals.socio_economic_data_sources.imf as imf
 import retrievals.socio_economic_data_sources.world_bank as world_bank
+import utils.directories
 import utils.shapes
 import yaml
 
@@ -157,14 +158,17 @@ def run_check() -> None:
         iiasa_future_gdp_ppp_per_capita.index
     )
 
+    # Define the retreivals directory.
+    retrievals_directory = utils.directories.read_folders_structure()[
+        "retrievals_folder"
+    ]
+
     # Read codes available for future electricity demand per capita
     # projections from the IIASA SSP database.
     iiasa_future_electricity_demand_per_capita_mapping = yaml.safe_load(
         open(
             os.path.join(
-                os.path.dirname(__file__),
-                "..",
-                "retrievals",
+                retrievals_directory,
                 "socio_economic_data_sources",
                 "iam_regions_mapping.yaml",
             ),
