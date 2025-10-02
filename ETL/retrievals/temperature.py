@@ -4,10 +4,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module includes funtions to extract temperature data downloaded
-    from the Copernicus Climate Data Store (CDS) for the most populous
-    grid cells in a given country or subdivision. It calculates the
-    average temperature and saves the results into CSV and Parquet
+    This module includes functions to extract temperature data
+    downloaded from the Copernicus Climate Data Store (CDS) for the most
+    populous grid cells in a given country or subdivision. It calculates
+    the average temperature and saves the results into CSV and Parquet
     files.
 """
 

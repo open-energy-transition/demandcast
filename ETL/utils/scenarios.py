@@ -4,7 +4,7 @@ License: AGPL-3.0.
 
 Description:
 
-    This module povides utility functions for the data retrieval for
+    This module provides utility functions for the data retrieval for
     different future scenarios.
 """
 

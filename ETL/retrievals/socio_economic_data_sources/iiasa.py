@@ -171,9 +171,8 @@ def _from_iiasa_name_to_iso_alpha_3_code(name: str) -> str:
     Raises
     ------
     ValueError
-        If the country name is not found.
-    Exception
-        If multiple countries are found for the given name.
+        If the country name is not found or if multiple countries are
+        found.
     """
     # Define the mapping from country names to ISO Alpha-3 codes for
     # countries not found by pycountry.
@@ -193,7 +192,7 @@ def _from_iiasa_name_to_iso_alpha_3_code(name: str) -> str:
         except LookupError:
             country = pycountry.countries.search_fuzzy(name)
             if len(country) > 1:
-                raise Exception(
+                raise ValueError(
                     f"Multiple countries found for name '{name}': "
                     f"{[c.name for c in country]}"
                 )

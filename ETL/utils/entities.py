@@ -107,7 +107,7 @@ def read_data_sources() -> list[str]:
 
     This function reads the names of the data sources from the yaml
     files in the folder containing the modules for electricity demand
-    retreivals. The names are extracted from the file names.
+    retrievals. The names are extracted from the file names.
 
     Returns
     -------
