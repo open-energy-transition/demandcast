@@ -90,6 +90,7 @@ def fetch_data(
     header_params: dict[str, str] = {},
     json_keys: list[str] = [],
     query_aspx_webpage: bool = False,
+    get_cookies: bool = False,
 ) -> pandas.DataFrame | str | requests.Response:
     """
     Fetch the data from the specified URL.
@@ -182,6 +183,33 @@ def fetch_data(
                             read_with == "requests.get"
                             or read_with == "requests.post"
                         ):
+                            if get_cookies:
+                                # Create a session to persist cookies.
+                                session = requests.Session()
+
+                                # Send a GET request to the URL to
+                                # retrieve cookies.
+                                session.get(
+                                    url,
+                                    timeout=timeout,
+                                    verify=verify_ssl,
+                                    headers=header_params,
+                                    params=request_params,
+                                )
+
+                                # Update the header parameters with
+                                # the cookies.
+                                header_params.update(
+                                    {
+                                        "Cookie": "; ".join(
+                                            [
+                                                f"{key}={value}"
+                                                for key, value in session.cookies.get_dict().items()
+                                            ]
+                                        )
+                                    }
+                                )
+
                             if read_with == "requests.get":
                                 # Send a GET request to the URL.
                                 response = requests.get(
