@@ -2,63 +2,63 @@ entities:
   - subdivision_name: Baja California
     subdivision_code: BCA
     country_name: Mexico
-    country_code: MX
+    country_code: MEX
     start_date: 2016-01-27
     end_date: today
     time_zone: America/Tijuana
   - subdivision_name: Baja California Sur
     subdivision_code: BCS
     country_name: Mexico
-    country_code: MX
+    country_code: MEX
     start_date: 2016-03-23
     end_date: today
     time_zone: America/Mazatlan
   - subdivision_name: Noroeste
     subdivision_code: NOR
     country_name: Mexico
-    country_code: MX
+    country_code: MEX
     start_date: 2016-01-29
     end_date: today
     time_zone: America/Mazatlan
   - subdivision_name: Norte
     subdivision_code: NTE
     country_name: Mexico
-    country_code: MX
+    country_code: MEX
     start_date: 2016-01-29
     end_date: today
     time_zone: America/Chihuahua
   - subdivision_name: Noreste
     subdivision_code: NES
     country_name: Mexico
-    country_code: MX
+    country_code: MEX
     start_date: 2016-01-29
     end_date: today
     time_zone: America/Monterrey
   - subdivision_name: Occidental
     subdivision_code: OCC
     country_name: Mexico
-    country_code: MX
+    country_code: MEX
     start_date: 2016-01-29
     end_date: today
     time_zone: America/Bahia_Banderas
   - subdivision_name: Central
     subdivision_code: CEN
     country_name: Mexico
-    country_code: MX
+    country_code: MEX
     start_date: 2016-01-29
     end_date: today
     time_zone: America/Mexico_City
   - subdivision_name: Oriental
     subdivision_code: ORI
     country_name: Mexico
-    country_code: MX
+    country_code: MEX
     start_date: 2016-01-29
     end_date: today
     time_zone: America/Mexico_City
   - subdivision_name: Peninsular
     subdivision_code: PEN
     country_name: Mexico
-    country_code: MX
+    country_code: MEX
     start_date: 2016-01-29
     end_date: today
     time_zone: America/Merida

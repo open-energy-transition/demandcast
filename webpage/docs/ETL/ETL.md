@@ -26,6 +26,7 @@ Export cleaned data to local or cloud storage in Parquet or CSV format.
 
 ```bash
 ETL/
+├── checks/                         # Modules to perform data availability and quality checks
 ├── figures/                        # Modules to plot figures and resulting figures
 ├── retrieval/                      # Modules to retrieve data from various sources
 ├── shapes/                         # Scripts to generate shapes for non-standard subdivisions and resulting shapefiles
@@ -37,6 +38,7 @@ ETL/
 ├── Dockerfile                      # Dockerfile to create an image for the ETL module
 ├── README.md                       # Overview of the ETL module
 ├── oet_zenodo_metadata.yaml        # Metadata for Zenodo uploads
+├── check.py                        # Script to run data checks
 ├── plot.py                         # Script to generate plots for the data
 ├── pyproject.toml                  # Project configuration and dependencies
 ├── retrieve.py                     # Main script to download and process data
@@ -77,7 +79,7 @@ uv run retrieve.py electricity_demand [-d data_source] [-c country_or_subdivisio
 Arguments:
 
 - `-d, --data_source`: (Required) The acronym of the data source as defined in the retrieval modules (e.g., `entsoe`).
-- `-c, --code`: (Optional) The ISO Alpha-2 code (e.g., `FR`) or a combination of ISO Alpha-2 code and subdivision code (e.g., `US_CAL`).
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
 - `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
 - `-ug, --upload_to_gcs`: (Optional) The bucket name of the Google Cloud Storage (GCS) to upload the data.
 - `-uz, --upload_to_zenodo`: (Optional) If set, the script will upload the data to a new or existing Zenodo record.
@@ -87,7 +89,7 @@ Arguments:
 For example, you can download electricity data for France from ENTSO-E using:
 
 ```bash
-uv run retrieve.py electricity_demand -d entsoe -c FR
+uv run retrieve.py electricity_demand -d entsoe -c FRA
 ```
 
 #### Data source specific retrieval modules
@@ -105,7 +107,7 @@ Each retrieval module in the `retrieval/electricity_demand_data_sources/` folder
 For each retrieval module in the `retrieval/electricity_demand_data_sources/` folder, a corresponding YAML file must be created. The YAML file should contain a list of dictionaries, each representing a country or subdivision from the respective data source. The following rules apply:
 
 - Names and codes should adhere to the ISO 3166 standard.
-- For countries and standard subdivisions, use alpha-2 codes.
+- For countries and standard subdivisions, use Alpha-3 codes.
 - For non-standard subdivisions, use a widely accepted name and code.
 - Data time range must be specified.
 - For subdivisions, time zone must be specified.
@@ -124,7 +126,7 @@ uv run retrieve.py annual_electricity_demand_per_capita [-c country_or_subdivisi
 
 Arguments:
 
-- `-c, --code`: (Optional) The ISO Alpha-2 code (e.g., `FR`) or a combination of ISO Alpha-2 code and subdivision code (e.g., `US_CAL`).
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
 - `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
 - `-y, --year`: (Optional) The year of the annual electricity demand data to be downloaded.
 - `-sy, --start_year`: (Optional) The start year of the annual electricity demand data to be downloaded.
@@ -144,7 +146,7 @@ uv run retrieve.py population [-c country_or_subdivision_code] [-f code_file] [-
 
 Arguments:
 
-- `-c, --code`: (Optional) The ISO Alpha-2 code (e.g., `FR`) or a combination of ISO Alpha-2 code and subdivision code (e.g., `US_CAL`).
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
 - `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
 - `-y, --year`: (Optional) The year of the population data to be downloaded.
 - `-sy, --start_year`: (Optional) The start year of the population data to be downloaded.
@@ -163,7 +165,7 @@ uv run retrieve.py gridded_population [-c country_or_subdivision_code] [-f code_
 
 Arguments:
 
-- `-c, --code`: (Optional) The ISO Alpha-2 code (e.g., `FR`) or a combination of ISO Alpha-2 code and subdivision code (e.g., `US_CAL`).
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
 - `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
 - `-y, --year`: (Optional) The year of the population density data to be downloaded.
 - `-sy, --start_year`: (Optional) The start year of the population density data to be downloaded.
@@ -182,7 +184,7 @@ uv run retrieve.py gdp_ppp_per_capita [-c country_or_subdivision_code] [-f code_
 
 Arguments:
 
-- `-c, --code`: (Optional) The ISO Alpha-2 code (e.g., `FR`) or a combination of ISO Alpha-2 code and subdivision code (e.g., `US_CAL`).
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
 - `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
 - `-y, --year`: (Optional) The year of the GDP, PPP per capita data to be downloaded.
 - `-sy, --start_year`: (Optional) The start year of the GDP, PPP per capita data to be downloaded.
@@ -201,7 +203,7 @@ uv run retrieve.py gridded_gdp_ppp [-c country_or_subdivision_code] [-f code_fil
 
 Arguments:
 
-- `-c, --code`: (Optional) The ISO Alpha-2 code (e.g., `FR`) or a combination of ISO Alpha-2 code and subdivision code (e.g., `US_CAL`).
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
 - `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
 - `-y, --year`: (Optional) The year of the GDP, PPP data to be downloaded.
 - `-sy, --start_year`: (Optional) The start year of the GDP, PPP data to be downloaded.
@@ -220,7 +222,7 @@ uv run retrieve.py gridded_weather [-c country_or_subdivision_code] [-f code_fil
 
 Arguments:
 
-- `-c, --code`: (Optional) The ISO Alpha-2 code (e.g., `FR`) or a combination of ISO Alpha-2 code and subdivision code (e.g., `US_CAL`).
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
 - `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
 - `-y, --year`: (Optional) The year of the weather data to be downloaded.
 - `-sy, --start_year`: (Optional) The start year of the weather data to be downloaded.
@@ -241,7 +243,7 @@ uv run retrieve.py temperature [-c country_or_subdivision_code] [-f code_file] [
 
 Arguments:
 
-- `-c, --code`: (Optional) The ISO Alpha-2 code (e.g., `FR`) or a combination of ISO Alpha-2 code and subdivision code (e.g., `US_CAL`).
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
 - `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
 - `-y, --year`: (Optional) The year of the temperature data to be downloaded.
 - `-sy, --start_year`: (Optional) The start year of the temperature data to be downloaded.

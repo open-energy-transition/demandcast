@@ -142,7 +142,7 @@ def get_url(
     end_date : pandas.Timestamp
         The end date of the data retrieval.
     code : str
-        The ISO Alpha-2 code of the country.
+        The ISO Alpha-3 code of the country.
 
     Returns
     -------
@@ -210,7 +210,7 @@ def download_and_extract_data_for_request(
     end_date : pandas.Timestamp
         The end date of the data retrieval period.
     code : str
-        The ISO Alpha-2 code of the country.
+        The ISO Alpha-3 code of the country.
 
     Returns
     -------

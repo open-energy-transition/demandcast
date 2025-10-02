@@ -1,5 +1,5 @@
 entities:
   - country_name: Cyprus
-    country_code: CY
+    country_code: CYP
     start_date: 2008-01-01
     end_date: today

@@ -609,8 +609,7 @@ def run_data_retrieval(
     Parameters
     ----------
     code : str | None
-        The ISO Alpha-2 code (example: "FR") or a combination of ISO
-        Alpha-2 code and subdivision code (example: "US_CAL").
+        The code of the country or subdivision of interest.
     file : str | None
         The path to the yaml file containing the list of codes of the
         countries and subdivisions of interest.

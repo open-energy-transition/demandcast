@@ -15,9 +15,11 @@ import cartopy.io.shapereader
 import geopandas
 import pandas
 import pycountry
+import pycountry_convert
 from shapely import Polygon
 
 import utils.directories
+import utils.entities
 import utils.figures
 
 
@@ -49,31 +51,31 @@ def _remove_islands(
     # Create a GeoSeries containing the new bounds of the country or
     # subdivision of interest.
     match code:
-        case "CL":  # Chile
+        case "CHL":  # Chile
             new_bounds = geopandas.GeoSeries(
                 Polygon([(-80, -60), (-60, -60), (-60, 0), (-80, 0)])
             )
-        case "ES":  # Spain
+        case "ESP":  # Spain
             new_bounds = geopandas.GeoSeries(
                 Polygon([(-10, 35), (5, 35), (5, 45), (-10, 45)])
             )
-        case "FR":  # France
+        case "FRA":  # France
             new_bounds = geopandas.GeoSeries(
                 Polygon([(-5, 40), (10, 40), (10, 55), (-5, 55)])
             )
-        case "NL":  # Netherlands
+        case "NLD":  # Netherlands
             new_bounds = geopandas.GeoSeries(
                 Polygon([(0, 50), (10, 50), (10, 55), (0, 55)])
             )
-        case "NO":  # Norway
+        case "NOR":  # Norway
             new_bounds = geopandas.GeoSeries(
                 Polygon([(0, 55), (35, 55), (35, 73), (0, 73)])
             )
-        case "NZ":  # New Zealand
+        case "NZL":  # New Zealand
             new_bounds = geopandas.GeoSeries(
                 Polygon([(165, -50), (180, -50), (180, -30), (165, -30)])
             )
-        case "PT":  # Portugal
+        case "PRT":  # Portugal
             new_bounds = geopandas.GeoSeries(
                 Polygon([(-10, 35), (0, 35), (0, 45), (-10, 45)])
             )
@@ -89,64 +91,6 @@ def _remove_islands(
     return entity_shape
 
 
-def _get_name_from_code(code: str) -> str:
-    """
-    Get the name of a country or subdivision from its code.
-
-    This function retrieves the name of a country or subdivision based
-    on its code.
-
-    Parameters
-    ----------
-    code : str
-        The code of the country or subdivision.
-
-    Returns
-    -------
-    name : str
-        The name of the country or subdivision.
-
-    Raises
-    ------
-    ValueError
-        If the country or subdivision with the given code is not found
-        in pycountry.
-    """
-    # Get the name of the country or subdivision of interest based on
-    # its code.
-    if "_" not in code and "-" not in code:
-        # Get the country information from the ISO Alpha-2 code.
-        country = pycountry.countries.get(alpha_2=code)
-
-        # If the country is not found, raise an error.
-        if country is None:
-            raise ValueError(
-                f"Country with alpha_2 code {code} not found in pycountry."
-            )
-
-        # Extract the name of the country.
-        name = country.name
-    else:
-        # Get the subdivision information from the code.
-        subdivision = pycountry.subdivisions.get(code=code.replace("_", "-"))
-
-        # If the subdivision is not found, raise an error.
-        if subdivision is None:
-            raise ValueError(
-                f"Subdivision with code {code} not found in pycountry."
-            )
-
-        # Handle if subdivision is a list or a single object.
-        if isinstance(subdivision, list):
-            raise ValueError(
-                "pycountry.subdivisions should not return a list."
-            )
-        else:
-            name = subdivision.name
-
-    return name
-
-
 def get_standard_shape(
     code: str, remove_remote_islands: bool = True
 ) -> geopandas.GeoDataFrame:
@@ -159,8 +103,8 @@ def get_standard_shape(
     Parameters
     ----------
     code : str
-        The code of the entity (ISO Alpha-2 code or a combination of ISO
-        Alpha-2 code and subdivision code).
+        The code of the entity (ISO Alpha-3 code or a combination of ISO
+        Alpha-3 code and subdivision code).
     remove_remote_islands : bool, optional
         Whether to remove small remote islands from the shape of some
         countries.
@@ -170,28 +114,35 @@ def get_standard_shape(
     entity_shape : geopandas.GeoDataFrame
         GeoDataFrame containing the shape of the country or subdivision.
     """
-    # If there isn't an underscore in the code, it is the ISO Alpha-2
+    # If there isn't an underscore in the code, it is the ISO Alpha-3
     # code of the country, and the entity is therefore the country.
     # If there is an underscore in the code, it is a combination of ISO
-    # Alpha-2 code and subdivision code, and the entity is a subdivision
+    # Alpha-3 code and subdivision code, and the entity is a subdivision
     # of the country.
 
-    # Define the relevant parameters for the shapefile retrieval.
     if "_" not in code:
+        # Define the relevant parameters for the shapefile retrieval.
         shapefile_name = "admin_0_countries"
-        main_keys = ["ISO_A2", "ISO_A2_EH"]
+        main_keys = ["ISO_A3", "ISO_A3_EH"]
         secondary_keys = ["NAME", "NAME_LONG"]
-        if code == "TW":
-            # Taiwan is included as a separate country with its own
-            # code, which is CN-TW.
-            code_to_search = "CN-TW"
-        else:
-            code_to_search = code
+        code_to_search = code
     else:
+        # Define the relevant parameters for the shapefile retrieval.
         shapefile_name = "admin_1_states_provinces"
         main_keys = ["iso_3166_2"]
         secondary_keys = ["name"]
-        code_to_search = code.replace("_", "-")
+
+        # Split the code into ISO Alpha-3 code and subdivision code.
+        iso_alpha_3_code, subdivision_code = code.split("_")
+
+        # Get the ISO Alpha-2 code from the ISO Alpha-3 code.
+        iso_alpha_2_code = pycountry_convert.country_alpha3_to_country_alpha2(
+            iso_alpha_3_code
+        )
+
+        # Combine the ISO Alpha-2 code and the subdivision code to
+        # match the format used in the shapefile database.
+        code_to_search = f"{iso_alpha_2_code}-{subdivision_code}"
 
     # Load the shapefile containing the subdivision shapes from the
     # Natural Earth database.
@@ -213,7 +164,7 @@ def get_standard_shape(
     except IndexError:
         # Get the name of the country or subdivision of interest based
         # on its code.
-        name_to_search = _get_name_from_code(code)
+        name_to_search = utils.entities.get_name_from_code(code)
 
         # Read the shape of the country or subdivision of interest by
         # searching for its name.
@@ -296,7 +247,7 @@ def _get_non_standard_shape(
     Parameters
     ----------
     code : str
-        The combination of ISO Alpha-2 code and subdivision code.
+        The combination of ISO Alpha-3 code and subdivision code.
     data_source : str
         The data source of the subdivision shape.
 
@@ -334,16 +285,15 @@ def get_entity_shape(
     Get the shape of a country or subdivision of interest.
 
     This function retrieves the shape of a country or subdivision of
-    interest based on its code. If the code is an ISO Alpha-2 code, it
-    retrieves the shape of the country. If the code is a combination of
-    an ISO Alpha-2 code and a subdivision code, it retrieves the shape
-    of the subdivision.
+    interest based on its code. If the country or subdivision is not
+    found in the Natural Earth shapefile database, it checks if it is a
+    non-standard shape defined by the user in the shapes directory.
 
     Parameters
     ----------
     code : str
-        The code of the entity (ISO Alpha-2 code or a combination of ISO
-        Alpha-2 code and subdivision code).
+        The code of the entity (ISO Alpha-3 code or a combination of ISO
+        Alpha-3 code and subdivision code).
     make_plot : bool, optional
         Whether to make a plot of the entity of interest.
     remove_remote_islands : bool, optional
@@ -355,12 +305,12 @@ def get_entity_shape(
     entity_shape : geopandas.GeoDataFrame
         GeoDataFrame containing the country or subdivision of interest.
     """
-    # If there isn't an underscore in the code, it is the ISO Alpha-2
-    # code of the country.
-    # If there is an underscore in the code, it is a combination of ISO
-    # Alpha-2 code and subdivision code.
+    # If there isn't an underscore in the code, it is the ISO Alpha-3
+    # code of the country. If there is an underscore in the code, it is
+    # a combination of ISO Alpha-3 code and subdivision code.
     if "_" not in code:
-        # Get the shape of the country based on the ISO Alpha-2 code.
+        # Get the shape of the country from the Natural Earth
+        # shapefile database.
         entity_shape = get_standard_shape(code, remove_remote_islands)
     else:
         # Define a flag to check if the subdivision is in the list of
@@ -384,12 +334,12 @@ def get_entity_shape(
                 break
 
         if is_non_standard_shape:
-            # Get the shape of the subdivision based on its code and
-            # respective data source.
+            # Get the shape of the subdivision from the user-defined
+            # shapes in the shapes directory.
             entity_shape = _get_non_standard_shape(code, selected_data_source)
         else:
-            # Get the shape of the subdivision based on the ISO Alpha-2
-            # code and the subdivision code.
+            # Get the shape of the subdivision from the Natural Earth
+            # shapefile database.
             entity_shape = get_standard_shape(code, remove_remote_islands)
 
     # Add the code as index to the GeoDataFrame.
@@ -482,28 +432,22 @@ def get_all_codes_with_shapes() -> list[str]:
     # Define a reader for the shapefile.
     reader = cartopy.io.shapereader.Reader(shapes_of_all_countries)
 
-    # Get the list of ISO Alpha-2 codes of all countries. Currently,
+    # Get the list of ISO Alpha-3 codes of all countries. Currently,
     # the Natural Earth shapefile database contains some countries not
-    # internationally recognized and without an ISO Alpha-2 code.
+    # internationally recognized and without an ISO Alpha-3 code.
     # These are Somaliland and Northern Cyprus. Another country not
-    # internationally recognized but with an ISO Alpha-2 code is Kosovo.
+    # internationally recognized but with an ISO Alpha-3 code is Kosovo.
     # There are also some territories controlled by other countries or
     # under dispute, which are the Australian Indian Ocean Territories
     # (AU), Ashmore and Cartier Islands (AU), and the Siachen Glacier.
     # Taiwan is included as a separate country with its own code, which
-    # is CN-TW.
+    # is TWN.
     codes_of_all_countries = []
     for shape in list(reader.records()):
-        if shape.attributes["ISO_A2"] != "-99":
-            codes_of_all_countries.append(shape.attributes["ISO_A2"])
-        else:
-            if shape.attributes["ISO_A2_EH"] != "-99":
-                codes_of_all_countries.append(shape.attributes["ISO_A2_EH"])
-
-    # Change the code of Taiwan from CN-TW to TW.
-    codes_of_all_countries = [
-        "TW" if code == "CN-TW" else code for code in codes_of_all_countries
-    ]
+        if shape.attributes["ISO_A3"] != "-99":
+            codes_of_all_countries.append(shape.attributes["ISO_A3"])
+        elif shape.attributes["ISO_A3_EH"] != "-99":
+            codes_of_all_countries.append(shape.attributes["ISO_A3_EH"])
 
     # Get the shape of standard subdivisions from the Natural Earth
     # shapefile database.
@@ -533,6 +477,17 @@ def get_all_codes_with_shapes() -> list[str]:
         shape.attributes["iso_3166_2"] for shape in list(reader.records())
     ]
 
+    # Replace the ISO Alpha-2 code in the subdivision codes with the
+    # corresponding ISO Alpha-3 code.
+    for i, code in enumerate(codes_of_all_standard_subdivisions):
+        iso_alpha_2_code, subdivision_code = code.split("-")
+        iso_alpha_3_code = pycountry.countries.get(
+            alpha_2=iso_alpha_2_code
+        ).alpha_3
+        codes_of_all_standard_subdivisions[i] = (
+            iso_alpha_3_code + "_" + subdivision_code
+        )
+
     # Get the codes of all non-standard shapes defined by the user in
     # the shapes directory.
     codes_of_all_non_standard_subdivisions = []
@@ -548,9 +503,5 @@ def get_all_codes_with_shapes() -> list[str]:
         + codes_of_all_non_standard_subdivisions
     )
 
-    # Replace any hyphens with underscores, remove duplicates and sort
-    # the list of codes.
-    all_codes = list(set([code.replace("-", "_") for code in all_codes]))
-    all_codes.sort()
-
-    return all_codes
+    # Remove any duplicates and sort the list of codes.
+    return sorted(list(set(all_codes)))

@@ -17,6 +17,41 @@ import pytz
 import utils.entities
 
 
+def test_get_name_from_code():
+    """
+    Test the _get_name_from_code function with various country codes.
+
+    This function checks if the function returns the correct name for
+    the provided country code.
+    """
+    # Test the function with a valid ISO_A3 code.
+    name = utils.entities.get_name_from_code("FRA")
+    assert name == "France"
+
+    # Test the function with a valid iso_3166_2 code.
+    name = utils.entities.get_name_from_code("AUS_VIC")
+    assert name == "Victoria"
+
+    # Test the function with a valid iso_3166_2 code.
+    name = utils.entities.get_name_from_code("USA-CA")
+    assert name == "California"
+
+    with (
+        patch(
+            "pycountry_convert.country_alpha3_to_country_alpha2"
+        ) as mock_convert,
+        patch("pycountry.subdivisions.get") as mock_get,
+    ):
+        # Mock the pycountry_convert and pycountry.subdivisions.get
+        # methods to return invalid values.
+        mock_convert.return_value = "INVALID_CODE"
+        mock_get.return_value = ["Invalid", "Code"]
+
+        # Test the function with a code that does not match any country.
+        with pytest.raises(ValueError):
+            utils.entities.get_name_from_code("INVALID_CODE")
+
+
 def test_read_codes():
     """
     Test if the entities module can read codes correctly.
@@ -29,7 +64,7 @@ def test_read_codes():
     entities = [
         {
             "country_name": "France",
-            "country_code": "FR",
+            "country_code": "FRA",
             "start_date": datetime.date(2014, 12, 15).isoformat(),
             "end_date": "today",
         },
@@ -37,7 +72,7 @@ def test_read_codes():
             "subdivision_name": "Texas",
             "subdivision_code": "TEX",
             "country_name": "United States",
-            "country_code": "US",
+            "country_code": "USA",
             "start_date": datetime.date(2020, 1, 1).isoformat(),
             "end_date": "today",
             "time_zone": "America/Chicago",
@@ -50,19 +85,19 @@ def test_read_codes():
         return_value=entities,
     ):
         sample_codes = utils.entities.read_codes_in(file_path="dummy.yaml")
-    assert sample_codes == ["FR", "US_TEX"]
+    assert sample_codes == ["FRA", "USA_TEX"]
 
     # Read codes belonging to a specific data source and check them.
     entsoe_codes = utils.entities.read_codes_in(data_source="entsoe")
     assert isinstance(entsoe_codes, list)
-    assert "FR" in entsoe_codes
-    assert "US_TEX" not in entsoe_codes
+    assert "FRA" in entsoe_codes
+    assert "USA_TEX" not in entsoe_codes
 
     # Read all codes available in the yaml files and check them.
     all_codes = utils.entities.read_all_codes_with_electricity_demand_data()
     assert isinstance(all_codes, list)
-    assert "FR" in all_codes
-    assert "US_TEX" in all_codes
+    assert "FRA" in all_codes
+    assert "USA_TEX" in all_codes
 
 
 def test_read_codes_errors():
@@ -104,13 +139,6 @@ def test_get_all_codes_with_all_data():
         # DataFrame.
         mock_read_csv.return_value = pandas.DataFrame(
             {
-                "entity_name": [
-                    "Country 1",
-                    "Country 2",
-                    "Country 3",
-                    "Country 4",
-                ],
-                "parent_iso_alpha_3_code": ["XYZ1", "XYZ2", "XYZ3", "XYZ4"],
                 "historical_population": [True, True, True, False],
                 "historical_electricity_demand_per_capita": [
                     True,
@@ -158,13 +186,13 @@ def test_check_and_get_codes_with():
         "electricity_demand_data", data_source="entsoe"
     )
     assert isinstance(entsoe_codes, list)
-    assert "FR" in entsoe_codes
-    assert "US_TEX" not in entsoe_codes
+    assert "FRA" in entsoe_codes
+    assert "USA_TEX" not in entsoe_codes
 
     # Check the validity of a specific code for a specific data source.
     assert utils.entities.check_and_get_codes_with(
-        "electricity_demand_data", code="FR", data_source="entsoe"
-    ) == ["FR"]
+        "electricity_demand_data", code="FRA", data_source="entsoe"
+    ) == ["FRA"]
 
     # Read codes from a specified file path and check them.
     with (
@@ -175,15 +203,15 @@ def test_check_and_get_codes_with():
     ):
         # Mock the return value of read_codes_in to return codes from a
         # specific file.
-        mock_read_codes.return_value = ["FR", "DE"]
+        mock_read_codes.return_value = ["FRA", "DEU"]
 
         # Mock the return value of
         # read_all_codes_with_electricity_demand_data to return all
         # available codes with demand data.
         mock_read_all_codes.return_value = [
-            "FR",
-            "DE",
-            "IT",
+            "FRA",
+            "DEU",
+            "ITA",
         ]
 
         # Check if the codes from the file are read correctly.
@@ -193,8 +221,8 @@ def test_check_and_get_codes_with():
 
         # Check if the codes for a specific file are read correctly.
         assert isinstance(dummy_codes, list)
-        assert "FR" in dummy_codes
-        assert "US_TEX" not in dummy_codes
+        assert "FRA" in dummy_codes
+        assert "USA_TEX" not in dummy_codes
 
     # Read codes for which all data is available.
     with patch(
@@ -225,14 +253,14 @@ def test_check_and_get_codes_with_errors():
     # Check if the function raises an error for an invalid feature.
     with pytest.raises(ValueError):
         utils.entities.check_and_get_codes_with(
-            "INVALID_FEATURE", code="FR", data_source="entsoe"
+            "INVALID_FEATURE", code="FRA", data_source="entsoe"
         )
 
     # Check if the function raises an error when a data source is
     # provided for the "all_data" feature.
     with pytest.raises(ValueError):
         utils.entities.check_and_get_codes_with(
-            "all_data", code="FR", data_source="entsoe"
+            "all_data", code="FRA", data_source="entsoe"
         )
 
     # Check if the function raises an error for an invalid code.
@@ -254,35 +282,21 @@ def test_check_and_get_codes_with_errors():
         ):
             # Mock the return value of read_codes_in to return invalid
             # codes.
-            mock_read_codes.return_value = ["US_CAL", "US_TEX"]
+            mock_read_codes.return_value = ["USA_CAL", "USA_TEX"]
 
             # Mock the return value of
             # read_all_codes_with_electricity_demand_data
             # to return all available codes with demand data.
             mock_read_all_codes.return_value = [
-                "FR",
-                "DE",
-                "IT",
+                "FRA",
+                "DEU",
+                "ITA",
             ]
 
             # Check if the function raises an error for invalid codes.
             __ = utils.entities.check_and_get_codes_with(
                 "electricity_demand_data", file_path="dummy.yaml"
             )
-
-
-def test_read_iso_alpha_3_codes():
-    """
-    Test if the function get_iso_alpha_3_code works correctly.
-
-    This test checks if the function can convert ISO alpha-2 codes to
-    ISO alpha-3 codes and if it raises an error for invalid codes.
-    """
-    # Check if ISO alpha-3 codes are read correctly.
-    assert utils.entities.get_iso_alpha_3_code("FR") == "FRA"
-    assert utils.entities.get_iso_alpha_3_code("US_TEX") == "USA"
-    with pytest.raises(ValueError):
-        utils.entities.get_iso_alpha_3_code("INVALID_CODE")
 
 
 def test_check_codes():
@@ -293,14 +307,14 @@ def test_check_codes():
     for a specific data source and if it raises errors for invalid
     codes or data sources.
     """
-    utils.entities.check_code_in_data_source("US_TEX", data_source="eia")
+    utils.entities.check_code_in_data_source("USA_TEX", data_source="eia")
     with pytest.raises(AssertionError):
         utils.entities.check_code_in_data_source(
             "INVALID_CODE", data_source="entsoe"
         )
     with pytest.raises(ValueError):
         utils.entities.check_code_in_data_source(
-            "FR", data_source="INVALID_DATA_SOURCE"
+            "FRA", data_source="INVALID_DATA_SOURCE"
         )
 
 
@@ -313,15 +327,15 @@ def test_time_zones():
     zones are correctly set for the specified codes.
     """
     # Check the time zone of a country.
-    assert utils.entities.get_time_zone("FR") == pytz.timezone("Europe/Paris")
+    assert utils.entities.get_time_zone("FRA") == pytz.timezone("Europe/Paris")
 
     # Check the time zone of a subdivision.
-    assert utils.entities.get_time_zone("US_CAL") == pytz.timezone(
+    assert utils.entities.get_time_zone("USA_CAL") == pytz.timezone(
         "America/Los_Angeles"
     )
 
     # Check the time zone of a country with multiple time zones.
-    assert utils.entities.get_time_zone("US") == pytz.timezone(
+    assert utils.entities.get_time_zone("USA") == pytz.timezone(
         "America/New_York"
     )
 
@@ -329,7 +343,7 @@ def test_time_zones():
     entities = [
         {
             "country_name": "France",
-            "country_code": "FR",
+            "country_code": "FRA",
             "start_date": datetime.date(2014, 12, 15).isoformat(),
             "end_date": "today",
         }
@@ -348,12 +362,12 @@ def test_time_zones():
         # Check if the function returns a dictionary with correct time
         # zones.
         assert isinstance(time_zones, dict)
-        assert "FR" in time_zones
-        assert time_zones["FR"] == pytz.timezone("Europe/Paris")
+        assert "FRA" in time_zones
+        assert time_zones["FRA"] == pytz.timezone("Europe/Paris")
 
     # Check if the function retrieves the time zone for a subdivision
     # not defined in any yaml file.
-    assert utils.entities.get_time_zone("RU_AD") == pytz.timezone(
+    assert utils.entities.get_time_zone("RUS_AD") == pytz.timezone(
         "Europe/Moscow"
     )
 
@@ -375,7 +389,7 @@ def test_time_zones_errors():
         utils.entities._get_time_zone_of_country("INVALIDCODE")
 
     # Test not fully recognized countries.
-    assert utils.entities._get_time_zone_of_country("XK") == pytz.timezone(
+    assert utils.entities._get_time_zone_of_country("XKX") == pytz.timezone(
         "Europe/Belgrade"
     )
 
@@ -383,7 +397,7 @@ def test_time_zones_errors():
     entity_with_invalid_time_zone = [
         {
             "country_name": "France",
-            "country_code": "FR",
+            "country_code": "FRA",
             "start_date": datetime.date(2014, 12, 15).isoformat(),
             "end_date": "today",
             "time_zone": "America/Chicago",
@@ -404,7 +418,7 @@ def test_time_zones_errors():
             "subdivision_name": "Texas",
             "subdivision_code": "TEX",
             "country_name": "United States",
-            "country_code": "US",
+            "country_code": "USA",
             "start_date": datetime.date(2020, 1, 1).isoformat(),
             "end_date": "today",
         }
@@ -471,7 +485,7 @@ def test_date_ranges():
     entities = [
         {
             "country_name": "France",
-            "country_code": "FR",
+            "country_code": "FRA",
             "start_date": datetime.date(2014, 12, 15),
             "end_date": "today",
         },
@@ -479,7 +493,7 @@ def test_date_ranges():
             "subdivision_name": "Texas",
             "subdivision_code": "TEX",
             "country_name": "United States",
-            "country_code": "US",
+            "country_code": "USA",
             "start_date": datetime.date(2020, 1, 1),
             "end_date": "today",
             "time_zone": "America/Chicago",
@@ -500,7 +514,7 @@ def test_date_ranges():
     assert isinstance(date_ranges, dict)
 
     # Check if the date ranges are read correctly.
-    assert date_ranges["FR"] == (
+    assert date_ranges["FRA"] == (
         datetime.date(2014, 12, 15),
         (datetime.datetime.today() - datetime.timedelta(days=5)).date(),
     )
@@ -517,7 +531,7 @@ def test_date_ranges_errors():
     entities = [
         {
             "country_name": "France",
-            "country_code": "FR",
+            "country_code": "FRA",
             "start_date": datetime.date(2014, 12, 15).isoformat(),
             "end_date": datetime.date(2012, 1, 1).isoformat(),
         }
@@ -543,7 +557,7 @@ def test_years():
     """
     # Check if the function retrieves available years for a specific
     # country code
-    years = utils.entities.get_available_years("FR")
+    years = utils.entities.get_available_years("FRA")
 
     # Check if the years are read correctly.
     assert isinstance(years, list)
@@ -564,8 +578,9 @@ def test_continents():
     """
     # Check if the function retrieves the continent for a specific
     # country code.
-    assert utils.entities.get_continent_code("FR") == "EU"
-    assert utils.entities.get_continent_code("US_TEX") == "NA"
+    assert utils.entities.get_continent_code("FRA") == "EU"
+    assert utils.entities.get_continent_code("USA_TEX") == "NA"
+    assert utils.entities.get_continent_code("XKX") == "EU"
 
     # Check if the function catches errors for invalid codes.
     with pytest.raises(ValueError):

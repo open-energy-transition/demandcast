@@ -1,5 +1,5 @@
 entities:
   - country_name: Turkey
-    country_code: TR
+    country_code: TUR
     start_date: 2015-12-31
     end_date: today

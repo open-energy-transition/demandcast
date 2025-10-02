@@ -23,10 +23,82 @@ from timezonefinder import TimezoneFinder
 import utils.directories
 import utils.shapes
 
-# Add countries that are not fully recognized.
-pycountry.countries.add_entry(
-    alpha_2="XK", alpha_3="XKX", name="Kosovo", numeric="926"
-)
+# Define the time zones of not fully recognized countries that are not
+# included in pytz.
+extra_entity_time_zone = {
+    "XKX": ["Europe/Belgrade"],  # Kosovo
+}
+
+# Define the continent codes of not fully recognized countries that
+# are not included in pycountry_convert.
+extra_entity_continent = {
+    "XKX": "EU",  # Kosovo
+}
+
+
+def get_name_from_code(code: str) -> str:
+    """
+    Get the name of a country or subdivision from its code.
+
+    This function retrieves the name of a country or subdivision based
+    on its code.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+
+    Returns
+    -------
+    name : str
+        The name of the country or subdivision.
+
+    Raises
+    ------
+    ValueError
+        If the country or subdivision with the given code is not found
+        in pycountry.
+    """
+    # Extract the ISO Alpha-3 code from the code.
+    if "_" not in code and "-" not in code:
+        iso_alpha_3_code = code
+    elif "_" in code:
+        iso_alpha_3_code = code.split("_")[0]
+    else:
+        iso_alpha_3_code = code.split("-")[0]
+
+    # Get the ISO Alpha-2 code of the country itself or the country to
+    # which the subdivision belongs.
+    iso_alpha_2_code = pycountry_convert.country_alpha3_to_country_alpha2(
+        iso_alpha_3_code
+    )
+
+    # Get the name of the country or subdivision of interest based on
+    # its code.
+    if "_" not in code and "-" not in code:
+        # Get the country name from the ISO Alpha-3 code.
+        name = pycountry_convert.country_alpha2_to_country_name(
+            iso_alpha_2_code
+        )
+    else:
+        # Reconstruct the subdivision code.
+        if "_" in code:
+            subdivision_code = iso_alpha_2_code + "-" + code.split("_")[1]
+        else:
+            subdivision_code = iso_alpha_2_code + "-" + code.split("-")[1]
+
+        # Get the subdivision information from the code.
+        subdivision = pycountry.subdivisions.get(code=subdivision_code)
+
+        # Handle if subdivision is a list or a single object.
+        if isinstance(subdivision, list):
+            raise ValueError(
+                "pycountry.subdivisions should not return a list."
+            )
+        else:
+            name = subdivision.name
+
+    return name
 
 
 def read_data_sources() -> list[str]:
@@ -196,8 +268,8 @@ def read_codes_in(file_path: str = "", data_source: str = "") -> list[str]:
     Returns
     -------
     list[str]
-        A list of ISO Alpha-2 codes of the countries or the
-        combination of the ISO Alpha-2 codes and the subdivision codes.
+        A list of ISO Alpha-3 codes of the countries or the
+        combination of the ISO Alpha-3 codes and the subdivision codes.
     """
     # Extract the information of the countries and subdivisions.
     entities = _read_entities_info(
@@ -288,7 +360,7 @@ def _get_all_codes_with_all_data() -> list[str]:
     data = pandas.read_csv(
         os.path.join(
             utils.directories.read_folders_structure()["checks_folder"],
-            "available_data_summary.csv",
+            "data_availability_summary.csv",
         ),
         index_col=0,
         na_filter=False,
@@ -419,68 +491,20 @@ def check_and_get_codes_with(
     return codes
 
 
-def get_iso_alpha_3_code(code: str) -> str:
-    """
-    Get the ISO Alpha-3 code of a country.
-
-    This function extracts the ISO Alpha-2 code of the country from the
-    provided code, which can be either the ISO Alpha-2 code of the
-    country or a combination of the ISO Alpha-2 codes and the
-    subdivision codes. It then retrieves the ISO Alpha-3 code of the
-    country using the pycountry library.
-
-    Parameters
-    ----------
-    code : str
-        The ISO Alpha-2 code of the country or the combination of the
-        ISO Alpha-2 codes and the subdivision codes.
-
-    Returns
-    -------
-    str
-        The ISO Alpha-3 code of the country.
-
-    Raises
-    ------
-    ValueError
-        If the provided code is not recognized or not available.
-    """
-    # Check if the code specifies a subdivision.
-    if "_" in code:
-        # Extract the ISO Alpha-2 code of the country.
-        iso_alpha_2_code = code.split("_")[0]
-    else:
-        # If the code does not specify a subdivision, use the ISO
-        # Alpha-2 code directly.
-        iso_alpha_2_code = code
-
-    # Get the country information.
-    country_info = pycountry.countries.get(alpha_2=iso_alpha_2_code)
-
-    # Get the ISO Alpha-3 code of the country.
-    if country_info is not None:
-        return country_info.alpha_3
-    else:
-        raise ValueError(
-            f"Country code {iso_alpha_2_code} is not recognized or not "
-            "available."
-        )
-
-
-def _get_time_zone_of_country(iso_alpha_2_code: str) -> datetime.tzinfo:
+def _get_time_zone_of_country(iso_alpha_3_code: str) -> datetime.tzinfo:
     """
     Get the time zone of a country.
 
     This function retrieves the time zone of a country based on its ISO
-    Alpha-2 code. If the country has multiple time zones, it determines
+    Alpha-3 code. If the country has multiple time zones, it determines
     the appropriate time zone based on the capital city coordinates. If
     the country is not fully recognized, it uses a predefined mapping
     for the time zone.
 
     Parameters
     ----------
-    iso_alpha_2_code : str
-        The ISO Alpha-2 code of the country.
+    iso_alpha_3_code : str
+        The ISO Alpha-3 code of the country.
 
     Returns
     -------
@@ -490,54 +514,48 @@ def _get_time_zone_of_country(iso_alpha_2_code: str) -> datetime.tzinfo:
     Raises
     ------
     ValueError
-        If the provided ISO Alpha-2 code is not recognized or if it
-        specifies a subdivision instead of a country.
+        If the provided ISO Alpha-3 code is not available in either
+        pycountry or pytz.
     """
-    # Define the time zones of territories and not fully recognized
-    # countries that are not included in pytz.
-    extra_entities = {
-        "XK": ["Europe/Belgrade"],  # Kosovo
-        "HM": ["Indian/Kerguelen"],  # Heard Island and McDonald Islands
-    }
-
-    if "_" not in iso_alpha_2_code:
-        # Get the list of time zones for the country.
-        try:
-            time_zones = pytz.country_timezones[iso_alpha_2_code]
-        except KeyError:
-            # If the country is not on pytz, try to get the time zone
-            # from the mapping dictionary of non-fully recognized
-            # countries.
-            if iso_alpha_2_code in extra_entities:
-                time_zones = extra_entities[iso_alpha_2_code]
-            else:
-                raise ValueError(
-                    f"Country code {iso_alpha_2_code} is not recognized."
-                )
-
-        # If there are multiple time zones, find the time zone based on
-        # the capital city.
-        if len(time_zones) > 1:
-            # Get the country information from CountryInfo.
-            for name, info in CountryInfo().all().items():
-                if info["ISO"]["alpha2"] == iso_alpha_2_code:
-                    break
-
-            # Get the capital city coordinates.
-            location = info["capital_latlng"]
-
-            # Find time zone based on capital city coordinates.
-            time_zone_name = TimezoneFinder().timezone_at(
-                lat=location[0], lng=location[1]
-            )
-            time_zone = pytz.timezone(time_zone_name)
-        else:
-            # Get the time zone of the country.
-            time_zone = pytz.timezone(time_zones[0])
-    else:
-        raise ValueError(
-            f"Expected ISO Alpha-2 code, but got {iso_alpha_2_code}."
+    try:
+        # Get the ISO Alpha-2 code of the country.
+        iso_alpha_2_code = pycountry_convert.country_alpha3_to_country_alpha2(
+            iso_alpha_3_code
         )
+
+        # Get the list of time zones for the country.
+        time_zones = pytz.country_timezones[iso_alpha_2_code]
+    except KeyError:
+        # If the country is not on pytz, try to get the time zone
+        # from the mapping dictionary of non-fully recognized
+        # countries.
+        if iso_alpha_3_code in extra_entity_time_zone:
+            time_zones = extra_entity_time_zone[iso_alpha_3_code]
+        else:
+            raise ValueError(
+                f"Country code {iso_alpha_3_code} is not available in "
+                "pytz and no predefined time zone is set for it."
+            )
+
+    # If there are multiple time zones, find the time zone based on
+    # the capital city.
+    if len(time_zones) > 1:
+        # Get the country information from CountryInfo.
+        for __, info in CountryInfo().all().items():
+            if info["ISO"]["alpha3"] == iso_alpha_3_code:
+                break
+
+        # Get the capital city coordinates.
+        location = info["capital_latlng"]
+
+        # Find time zone based on capital city coordinates.
+        time_zone_name = TimezoneFinder().timezone_at(
+            lat=location[0], lng=location[1]
+        )
+        time_zone = pytz.timezone(time_zone_name)
+    else:
+        # Get the time zone of the country.
+        time_zone = pytz.timezone(time_zones[0])
 
     return time_zone
 
@@ -691,7 +709,7 @@ def _get_time_zone_of_subdivision(code: str) -> datetime.tzinfo:
     Parameters
     ----------
     code : str
-        The combination of the ISO Alpha-2 codes and the subdivision
+        The combination of the ISO Alpha-3 codes and the subdivision
         codes.
 
     Returns
@@ -709,21 +727,21 @@ def _get_time_zone_of_subdivision(code: str) -> datetime.tzinfo:
         read_all_codes_with_electricity_demand_data()
     )
 
-    # Filter out the subdivisions. These subdivisions have the time zone
-    # defined in the yaml files.
+    # Extract the subdivisions that have the time zone defined in the
+    # yaml files.
     subdivision_codes_with_defined_time_zone = [
         code for code in all_codes_with_electricity_demand_data if "_" in code
     ]
 
-    # Get the codes of all countries and subdivisions with available
-    # shapes.
-    all_codes_with_shapes = utils.shapes.get_all_codes_with_shapes()
+    # Get the codes of all countries and subdivisions with all data
+    # available.
+    all_available_codes = _get_all_codes_with_all_data()
 
-    # Filter out the subdivisions. These subdivisions do not have the
-    # time zone defined in the yaml files.
+    # Extract the subdivisions that do not have the time zone defined
+    # in the yaml files.
     subdivision_codes_without_defined_time_zone = [
         code
-        for code in all_codes_with_shapes
+        for code in all_available_codes
         if "_" in code and code not in subdivision_codes_with_defined_time_zone
     ]
 
@@ -762,17 +780,19 @@ def get_time_zone(code: str) -> datetime.tzinfo:
     Get the time zone of a country or subdivision.
 
     This function retrieves the time zone of a country or subdivision
-    based on its ISO Alpha-2 code or a combination of the ISO Alpha-2
-    codes and the subdivision codes. It uses the definitions in the yaml
-    files of the data sources and, if necessary, determines the time
-    zone based on the coordinates of the capital city or the centroid
-    of the subdivision shape.
+    based on its code. It uses the ISO Alpha-3 code for countries and a
+    combination of the ISO Alpha-3 codes and the subdivision codes for
+    subdivisions. If the code specifies a country, it retrieves the time
+    zone from the pytz library. If the code specifies a subdivision, it
+    retrieves the time zone from the yaml files of the data sources or
+    determines it based on the coordinates of the centroid of the
+    subdivision shape.
 
     Parameters
     ----------
     code : str
-        The ISO Alpha-2 code of the country or the combination of the
-        ISO Alpha-2 codes and the subdivision codes.
+        The ISO Alpha-3 code of the country or the combination of the
+        ISO Alpha-3 codes and the subdivision codes.
 
     Returns
     -------
@@ -922,18 +942,16 @@ def get_available_years(code: str) -> list[int]:
     Get the years of the available data for a country or subdivision.
 
     This function retrieves the years of the available data for a
-    country or subdivision based on its ISO Alpha-2 code or a
-    combination of the ISO Alpha-2 codes and the subdivision codes. It
-    reads the start and end dates of the available data for the country
-    or subdivision, converts them to the time zone of the country or
-    subdivision, and returns a list of years for which data is
-    available.
+    country or subdivision based on its code. It reads the start and end
+    dates of the available data for the country or subdivision, converts
+    them to the time zone of the country or subdivision, and returns a
+    list of years for which data is available.
 
     Parameters
     ----------
     code : str
-        The ISO Alpha-2 code of the country or the combination of the
-        ISO Alpha-2 and the subdivision code.
+        The ISO Alpha-3 code of the country or the combination of the
+        ISO Alpha-3 and the subdivision code.
 
     Returns
     -------
@@ -969,16 +987,15 @@ def get_continent_code(code: str) -> str:
     Get the continent of a country or subdivision.
 
     This function retrieves the continent code of a country or
-    subdivision based on its ISO Alpha-2 code or a combination of the
-    ISO Alpha-2 codes and the subdivision codes. It uses the
-    pycountry_convert library to get the continent code from the ISO
-    Alpha-2 code of the country.
+    subdivision based on its code. It uses the pycountry_convert library
+    to get the continent code from the ISO Alpha-3 code of the country
+    itself or the country to which the subdivision belongs.
 
     Parameters
     ----------
     code : str
-        The ISO Alpha-2 code of the country or the combination of the
-        ISO Alpha-2 and the subdivision code.
+        The ISO Alpha-3 code of the country or the combination of the
+        ISO Alpha-3 and the subdivision code.
 
     Returns
     -------
@@ -988,25 +1005,37 @@ def get_continent_code(code: str) -> str:
     Raises
     ------
     ValueError
-        If the provided code is not recognized or not available.
+        If the provided code is not available in either pycountry or
+        pycountry_convert.
     """
     # Check if the code specifies a subdivision.
     if "_" in code:
-        # Extract the ISO Alpha-2 code of the country.
-        iso_alpha_2_code = code.split("_")[0]
+        # Extract the ISO Alpha-3 code of the country.
+        iso_alpha_3_code = code.split("_")[0]
     else:
         # If the code does not specify a subdivision, use the ISO
-        # Alpha-2 code directly.
-        iso_alpha_2_code = code
+        # Alpha-3 code directly.
+        iso_alpha_3_code = code
 
-    # Get the continent code from the ISO Alpha-2 code.
+    # Get the continent code from the ISO Alpha-3 code.
     try:
+        # Get the ISO Alpha-2 code of the country.
+        iso_alpha_2_code = pycountry_convert.country_alpha3_to_country_alpha2(
+            iso_alpha_3_code
+        )
+
+        # Get the continent code of the country.
         continent_code = pycountry_convert.country_alpha2_to_continent_code(
             iso_alpha_2_code
         )
     except KeyError:
-        raise ValueError(
-            f"Invalid or unknown ISO Alpha-2 code: {iso_alpha_2_code}"
-        )
+        if iso_alpha_3_code in extra_entity_continent:
+            continent_code = extra_entity_continent[iso_alpha_3_code]
+        else:
+            raise ValueError(
+                f"Country code {iso_alpha_3_code} is not available in "
+                "pycountry_convert and no predefined continent code is set "
+                "for it."
+            )
 
     return continent_code

@@ -56,7 +56,7 @@ gb_shape = uk_shape.overlay(new_bounds, how="intersection")
 
 # Add the name and code of the subdivision.
 gb_shape["name"] = ["Great Britain"]
-gb_shape["code"] = ["GB_GB"]
+gb_shape["code"] = ["GBR_GB"]
 
 # Reorder the columns.
 gb_shape = gb_shape[["name", "code", "geometry"]]

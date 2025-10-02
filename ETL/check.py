@@ -10,7 +10,7 @@ Description:
 
 import argparse
 
-import checks.available_data
+import checks.data_availability
 
 
 def read_command_line_arguments() -> argparse.Namespace:
@@ -34,7 +34,7 @@ def read_command_line_arguments() -> argparse.Namespace:
         "check",
         type=str,
         choices=[
-            "available_data",
+            "data_availability",
         ],
         help=("The check to perform."),
     )
@@ -47,5 +47,5 @@ if __name__ == "__main__":
     args = read_command_line_arguments()
 
     # Plot the specified figure.
-    if args.check == "available_data":
-        checks.available_data.run_check()
+    if args.check == "data_availability":
+        checks.data_availability.run_check()

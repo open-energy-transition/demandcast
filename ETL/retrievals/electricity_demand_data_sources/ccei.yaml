@@ -2,70 +2,70 @@ entities:
   - subdivision_name: Alberta
     subdivision_code: AB
     country_name: Canada
-    country_code: CA
+    country_code: CAN
     start_date: 2023-02-07
     end_date: today
     time_zone: America/Edmonton
   - subdivision_name: British Columbia
     subdivision_code: BC
     country_name: Canada
-    country_code: CA
+    country_code: CAN
     start_date: 2001-04-01
     end_date: 2024-08-11
     time_zone: America/Vancouver
   - subdivision_name: New Brunswick
     subdivision_code: NB
     country_name: Canada
-    country_code: CA
+    country_code: CAN
     start_date: 2016-01-01
     end_date: today
     time_zone: "America/Moncton"
   - subdivision_name: Newfoundland and Labrador
     subdivision_code: NL
     country_name: Canada
-    country_code: CA
+    country_code: CAN
     start_date: 2022-09-13
     end_date: today
     time_zone: America/St_Johns
   - subdivision_name: Nova Scotia
     subdivision_code: NS
     country_name: Canada
-    country_code: CA
+    country_code: CAN
     start_date: 2022-02-20
     end_date: today
     time_zone: America/Halifax
   - subdivision_name: Ontario
     subdivision_code: "ON"
     country_name: Canada
-    country_code: CA
+    country_code: CAN
     start_date: 2002-05-01
     end_date: today
     time_zone: America/Toronto
   - subdivision_name: Prince Edward Island
     subdivision_code: PE
     country_name: Canada
-    country_code: CA
+    country_code: CAN
     start_date: 2012-11-13
     end_date: today
     time_zone: America/Halifax
   - subdivision_name: Quebec
     subdivision_code: QC
     country_name: Canada
-    country_code: CA
+    country_code: CAN
     start_date: 2021-10-05
     end_date: today
     time_zone: America/Montreal
   # - subdivision_name: Saskatchewan  # Data is at daily resolution
   #   subdivision_code: SK
   #   country_name: Canada
-  #   country_code: CA
+  #   country_code: CAN
   #   start_date: 2024-09-29
   #   end_date: today
   #   time_zone: America/Regina
   - subdivision_name: Yukon
     subdivision_code: YT
     country_name: Canada
-    country_code: CA
+    country_code: CAN
     start_date: 2024-10-09
     end_date: today
     time_zone: America/Whitehorse

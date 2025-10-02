@@ -154,7 +154,7 @@ def _calculate_gdp_ppp_per_capita(
     return gdp_ppp_per_capita
 
 
-def _from_name_to_iso_alpha_3_code(name: str) -> str:
+def _from_iiasa_name_to_iso_alpha_3_code(name: str) -> str:
     """
     Convert a country name to its ISO Alpha-3 code.
 
@@ -244,7 +244,7 @@ def read(variable: str) -> pandas.DataFrame:
         # Convert the region names to ISO Alpha-3 codes.
         for region in iiasa_data["Region"]:
             iiasa_data.loc[iiasa_data["Region"] == region, "Region"] = (
-                _from_name_to_iso_alpha_3_code(region)
+                _from_iiasa_name_to_iso_alpha_3_code(region)
             )
 
         # Convert population from millions to number of people.
@@ -272,25 +272,47 @@ def read(variable: str) -> pandas.DataFrame:
         # Convert the region names to ISO Alpha-3 codes.
         iiasa_data = _map_from_region_to_country(iiasa_data, n_regions=5)
     elif variable == "gdp_ppp_per_capita":
-        logging.info("Loading future GDP PPP per capita data from IIASA.")
-        # Read population and GDP PPP data.
-        iiasa_population_data = pandas.read_csv(
-            os.path.join(base_file_path, "IAM_national_population.csv"),
-        ).iloc[:-1, :]
-        iiasa_gdp_ppp_data = pandas.read_csv(
-            os.path.join(base_file_path, "IAM_national_gdp_ppp.csv"),
-        ).iloc[:-1, :]
-
-        # Calculate the GDP PPP per capita.
-        iiasa_data = _calculate_gdp_ppp_per_capita(
-            iiasa_gdp_ppp_data,
-            iiasa_population_data,
+        # Define the path to the GDP PPP per capita file.
+        gdp_ppp_per_capita_file_path = os.path.join(
+            base_file_path, "IAM_national_gdp_ppp_per_capita.csv"
         )
+
+        if not os.path.exists(gdp_ppp_per_capita_file_path):
+            logging.info(
+                "Calculating future GDP PPP per capita data from GDP PPP and "
+                "population data."
+            )
+            # Read population and GDP PPP data.
+            iiasa_population_data = pandas.read_csv(
+                os.path.join(base_file_path, "IAM_national_population.csv"),
+            ).iloc[:-1, :]
+            iiasa_gdp_ppp_data = pandas.read_csv(
+                os.path.join(base_file_path, "IAM_national_gdp_ppp.csv"),
+            ).iloc[:-1, :]
+
+            # Calculate the GDP PPP per capita.
+            iiasa_data = _calculate_gdp_ppp_per_capita(
+                iiasa_gdp_ppp_data,
+                iiasa_population_data,
+            )
+
+            # Save the GDP PPP per capita data to a CSV file for future
+            # use.
+            iiasa_data.to_csv(
+                os.path.join(gdp_ppp_per_capita_file_path),
+                index=False,
+            )
+        else:
+            logging.info("Loading future GDP PPP per capita data from IIASA.")
+            # Read the GDP PPP per capita data.
+            iiasa_data = pandas.read_csv(
+                os.path.join(gdp_ppp_per_capita_file_path),
+            )
 
         # Convert the region names to ISO Alpha-3 codes.
         for region in iiasa_data["Region"]:
             iiasa_data.loc[iiasa_data["Region"] == region, "Region"] = (
-                _from_name_to_iso_alpha_3_code(region)
+                _from_iiasa_name_to_iso_alpha_3_code(region)
             )
     else:
         raise ValueError(

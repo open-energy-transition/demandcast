@@ -203,7 +203,7 @@ def test_fetch_entsoe_demand():
         )
         result = utils.fetcher.fetch_entsoe_demand(
             "dummy",
-            "FR",
+            "FRA",
             pandas.Timestamp("2023-01-01"),
             pandas.Timestamp("2023-01-02"),
         )
@@ -226,7 +226,7 @@ def test_fetch_entsoe_demand_errors():
         with pytest.raises(ConnectionError):
             utils.fetcher.fetch_entsoe_demand(
                 "dummy",
-                "FR",
+                "FRA",
                 pandas.Timestamp("2023-01-01"),
                 pandas.Timestamp("2023-01-02"),
                 retries=2,
@@ -239,7 +239,7 @@ def test_fetch_entsoe_demand_errors():
         )
         result = utils.fetcher.fetch_entsoe_demand(
             "dummy",
-            "FR",
+            "FRA",
             pandas.Timestamp("2023-01-01"),
             pandas.Timestamp("2023-01-02"),
         )

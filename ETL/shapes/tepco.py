@@ -133,7 +133,7 @@ all_prefectures = all_prefectures.rename(
 
 # Rename the region name and code.
 all_prefectures["name"] = ["Kantō"]
-all_prefectures["code"] = ["JP_Kantō"]
+all_prefectures["code"] = ["JPN_Kantō"]
 
 # Set the precision of the geometry to a grid size of 0.005 degrees.
 # This is done to remove small spikes in the shapes that cause issues

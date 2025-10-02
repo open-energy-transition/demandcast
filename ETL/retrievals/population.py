@@ -89,19 +89,24 @@ def run_data_retrieval(
 
     # Loop over the countries and subdivisions.
     for code in tqdm(codes, desc="Countries and subdivisions"):
+        # Get the ISO Alpha-3 code of the country itself or the country
+        # to which the subdivision belongs.
+        iso_alpha_3_code = code.split("_")[0]
+
         # Get the time zone of the country or subdivision.
         time_zone = utils.entities.get_time_zone(code)
 
-        # Get the ISO Alpha-3 code of the country itself or the country
-        # that the subdivision belongs to.
-        iso_alpha_3_code = utils.entities.get_iso_alpha_3_code(code)
+        # Check if code is in the historical population data. If so,
+        # it means that it is an ISO Alpha-3 code of a country.
+        if code in global_historical_population.index:
+            # Extract the historical population for the country.
+            historical_population = global_historical_population.loc[
+                code
+            ].dropna()
 
-        # Check if code is a subdivision or if the country is not in the
-        # population data.
-        if (
-            "_" in code
-            or iso_alpha_3_code not in global_historical_population.index
-        ):
+            # Get the years of available historical data.
+            available_historical_years = historical_population.index.tolist()
+        else:
             # Define the available years for the population data when
             # interpolating from gridded data.
             available_historical_years = list(
@@ -110,14 +115,6 @@ def run_data_retrieval(
                     available_historical_years_of_gridded_data[-1] + 1,
                 )
             )
-        else:
-            # Extract the historical population for the country.
-            historical_population = global_historical_population.loc[
-                iso_alpha_3_code
-            ].dropna()
-
-            # Get the years of available historical data.
-            available_historical_years = historical_population.index.tolist()
 
         # Get the years of available future data.
         available_future_years = list(
@@ -182,16 +179,12 @@ def run_data_retrieval(
                     f"Extracting historical population data for {code}."
                 )
 
-                # Check if code is a subdivision or if the country is
-                # not in the World Bank data.
-                if (
-                    "_" in code
-                    or iso_alpha_3_code
-                    not in global_historical_population.index
-                ):
-                    # Extract the historical population for the
-                    # subdivision or country not in the World Bank data
-                    # by aggregating gridded data.
+                # Check if code is in the historical population data. If
+                # not, it means that it is a subdivision or a country
+                # not included in the World Bank data.
+                if code not in global_historical_population.index:
+                    # Extract the historical population for the country
+                    # or subdivision by aggregating gridded data.
                     historical_population = (
                         utils.geospatial.get_total_value_from_gridded_data(
                             "population",
@@ -253,15 +246,19 @@ def run_data_retrieval(
                         f"{code} and scenario {scenario}."
                     )
 
-                    # Check if code is a subdivision or if the country
-                    # is not in the IIASA data.
-                    if (
-                        "_" in code
-                        or iso_alpha_3_code
-                        not in global_future_population.index
-                    ):
-                        # Extract the future population for the
-                        # subdivision by aggregating gridded data.
+                    # Check if code is in the future population data. If
+                    # so, it means that it is an ISO Alpha-3 code of a
+                    # country.
+                    if code in global_future_population.index:
+                        # Get the future population from the IIASA data.
+                        future_population = iiasa.extract_and_interpolate(
+                            global_future_population,
+                            iso_alpha_3_code,
+                            scenario,
+                        )
+                    else:
+                        # Extract the future population for the country
+                        # or subdivision by aggregating gridded data.
                         future_population = (
                             utils.geospatial.get_total_value_from_gridded_data(
                                 "population",
@@ -271,13 +268,6 @@ def run_data_retrieval(
                                 available_historical_years_of_gridded_data[-1],
                                 scenario,
                             )
-                        )
-                    else:
-                        # Get the future population from the IIASA data.
-                        future_population = iiasa.extract_and_interpolate(
-                            global_future_population,
-                            iso_alpha_3_code,
-                            scenario,
                         )
 
                     # Extract only the selected future years.

@@ -1,5 +1,5 @@
 entities:
   - country_name: Argentina
-    country_code: AR
+    country_code: ARG
     start_date: 2025-01-01
     end_date: today

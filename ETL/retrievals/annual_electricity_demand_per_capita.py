@@ -27,7 +27,7 @@ import retrievals.socio_economic_data_sources.iiasa as iiasa
 import retrievals.socio_economic_data_sources.world_bank as world_bank
 
 
-def get_historical_electricity_demand_per_capita() -> pandas.DataFrame:
+def get_historical_data() -> pandas.DataFrame:
     """
     Get historical electricity demand per capita data.
 
@@ -103,13 +103,11 @@ def run_data_retrieval(
     ]
     os.makedirs(result_directory, exist_ok=True)
 
-    # Download the electricity demand per capita.
-    global_electricity_demand_per_capita = (
-        get_historical_electricity_demand_per_capita()
-    )
+    # Download the historical electricity demand per capita data.
+    global_historical_electricity_demand_per_capita = get_historical_data()
 
     # Read the growth rates of future electricity demand per capita.
-    global_electricity_demand_per_capita_growth_rates = iiasa.read(
+    global_future_electricity_demand_per_capita_growth_rates = iiasa.read(
         "annual_electricity_demand_per_capita"
     )
 
@@ -151,15 +149,18 @@ def run_data_retrieval(
 
     # Loop over the countries and subdivisions.
     for code in tqdm(codes, desc="Countries and subdivisions"):
-        # Get the ISO Alpha-3 code of the country.
-        iso_alpha_3_code = utils.entities.get_iso_alpha_3_code(code)
+        # Get the ISO Alpha-3 code of the country itself or the country
+        # to which the subdivision belongs.
+        iso_alpha_3_code = code.split("_")[0]
 
         # Get the time zone of the country or subdivision.
         time_zone = utils.entities.get_time_zone(code)
 
         # Extract the electricity data for the country.
         historical_electricity_demand_per_capita = (
-            global_electricity_demand_per_capita.loc[iso_alpha_3_code]
+            global_historical_electricity_demand_per_capita.loc[
+                iso_alpha_3_code
+            ]
         )
 
         # Get the years of available historical data.
@@ -301,7 +302,7 @@ def run_data_retrieval(
                     # Calculate the future electricity demand per
                     # capita.
                     future_electricity_demand_per_capita = iiasa.extrapolate(
-                        global_electricity_demand_per_capita_growth_rates,
+                        global_future_electricity_demand_per_capita_growth_rates,
                         iso_alpha_3_code,
                         scenario,
                         last_historical_value,

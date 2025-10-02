@@ -68,8 +68,8 @@ def read_command_line_arguments() -> argparse.Namespace:
         "--code",
         type=str,
         help=(
-            'The ISO Alpha-2 code (example: "FR") or a combination of ISO '
-            'Alpha-2 code and subdivision code (example: "US_CAL")'
+            'The ISO Alpha-3 code (example: "FRA") or a combination of ISO '
+            'Alpha-3 code and subdivision code (example: "USA_CAL")'
         ),
         required=False,
     )
