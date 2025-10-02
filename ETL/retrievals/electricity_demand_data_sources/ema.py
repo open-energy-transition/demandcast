@@ -71,9 +71,11 @@ def get_available_requests() -> list[tuple[int, int, int]]:
         List of tuples in the format (year, month, day).
     """
     # Get the start and end dates for Singapore.
-    start_date, end_date = utils.entities.read_date_ranges(data_source="ema")[
-        "SG"
-    ]
+    start_date, end_date = (
+        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+            data_source="ema"
+        )["SG"]
+    )
 
     # Subtract one week from the end date to ensure that the last
     # request is within the available data range.

@@ -135,6 +135,8 @@ def fetch_data(
         The keys to extract from the JSON response.
     query_aspx_webpage : bool, optional
         Whether to query the ASPX webpage.
+    get_cookies : bool, optional
+        Whether to get cookies from the initial GET request.
 
     Returns
     -------

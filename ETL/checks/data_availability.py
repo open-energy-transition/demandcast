@@ -34,8 +34,6 @@ import utils.directories
 import utils.shapes
 import yaml
 
-# os.chdir(os.getcwd()+"/ETL")
-
 
 def run_check() -> None:
     """

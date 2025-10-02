@@ -118,6 +118,28 @@ def test_fetch_data_html_requests_get():
         assert isinstance(response, requests.Response)
 
 
+def test_fetch_data_html_requests_get_with_cookies():
+    """
+    Test fetching HTML data using requests.get with cookies.
+
+    This test mocks the requests.get and requests.Session functions to
+    simulate fetching data with cookies. It checks that the fetch_data
+    function returns a DataFrame.
+    """
+    with patch("requests.get"), patch("requests.Session"):
+        requests.get.return_value.text = "col1,col2\n1,2"
+        requests.Session.return_value.cookies.get_dict.return_value = {
+            "sessionid": "12345"
+        }
+        dataset = utils.fetcher.fetch_data(
+            "http://example.com",
+            "html",
+            read_with="requests.get",
+            get_cookies=True,
+        )
+        assert isinstance(dataset, pandas.DataFrame)
+
+
 def test_fetch_data_html_requests_post_json():
     """
     Test fetching HTML data using requests.post with JSON response.
