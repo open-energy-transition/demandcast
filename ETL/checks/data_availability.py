@@ -166,7 +166,7 @@ def run_check() -> None:
                 "..",
                 "retrievals",
                 "socio_economic_data_sources",
-                "iam_5_regions_mapping.yaml",
+                "iam_regions_mapping.yaml",
             ),
             "r",
         )

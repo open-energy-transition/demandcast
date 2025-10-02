@@ -24,7 +24,7 @@ import yaml
 
 
 def _map_from_region_to_country(
-    iiasa_data: pandas.DataFrame, n_regions: int
+    iiasa_data: pandas.DataFrame
 ) -> pandas.DataFrame:
     """
     Map the data of regions to countries.
@@ -45,7 +45,7 @@ def _map_from_region_to_country(
     # Define the path to the yaml file containing the mapping of ISO
     # Alpha-3 codes to IAM regions.
     iam_region_mapping = os.path.join(
-        os.path.dirname(__file__), f"iam_{n_regions}_regions_mapping.yaml"
+        os.path.dirname(__file__), f"iam_regions_mapping.yaml"
     )
 
     # Read the mapping from the yaml file.
@@ -265,12 +265,12 @@ def read(variable: str) -> pandas.DataFrame:
         iiasa_data = pandas.read_excel(
             os.path.join(
                 base_file_path,
-                "IAM_5_regional_annual_electricity_demand_per_capita_growth.xlsx",
+                "IAM_regional_annual_electricity_demand_per_capita_growth.xlsx",
             ),
         ).iloc[:-2, :-2]
 
         # Convert the region names to ISO Alpha-3 codes.
-        iiasa_data = _map_from_region_to_country(iiasa_data, n_regions=5)
+        iiasa_data = _map_from_region_to_country(iiasa_data)
     elif variable == "gdp_ppp_per_capita":
         # Define the path to the GDP PPP per capita file.
         gdp_ppp_per_capita_file_path = os.path.join(
