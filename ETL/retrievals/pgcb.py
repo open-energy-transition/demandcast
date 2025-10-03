@@ -11,7 +11,7 @@ Description:
 
     Note:
     Retrieving all the data take a considerable amount of time,
-    potentially up to 14 hours in total. This is due to the large number
+    potentially up to 2 hours in total. This is due to the large number
     of Excel sheets that need to be processed.
 
     Source: https://erp.powergrid.gov.bd/w/report/eyJpdiI6IldsU2ZQTGkvbkRnQU9FMjZ5UHhmeGc9PSIsInZhbHVlIjoiQzhONVl5ZGxRY3E3T3ZVNCtLZGt1Zz09IiwibWFjIjoiN2JiNTI5MzNhOWIxZDVjY2NkMmFlZWU4ZDU1N2I4OWZlYjNlZWM1ZGU4NzRiNWU4ZjQ3ZDc1ODRlMTk3MDc0YyIsInRhZyI6IiJ9/show_report
@@ -20,14 +20,9 @@ Description:
 import logging
 import re
 
-import numpy
 import pandas
 import requests
 import utils.fetcher
-
-# import os
-# os.chdir(os.getcwd()+"/ETL")
-# file_number, extension, date = get_available_requests()[0]
 
 
 def redistribute() -> bool:
@@ -245,10 +240,13 @@ def download_and_extract_data_for_request(
     # Get the URL of the electricity demand data.
     url = get_url(file_number, extension)
 
-    # Fetch the data from the URL.
-    excel_file: pandas.ExcelFile = utils.fetcher.fetch_data(
-        url, "html", read_as="excel_file", verify_ssl=False
-    )
+    try:
+        # Fetch the data from the URL.
+        excel_file: pandas.ExcelFile = utils.fetcher.fetch_data(
+            url, "html", read_as="excel_file", verify_ssl=False
+        )
+    except Exception:
+        return pandas.Series(dtype=float)
 
     # Extract the name of the sheet containing the demand data.
     demand_sheet = [
@@ -273,10 +271,6 @@ def download_and_extract_data_for_request(
             break
 
     if header_row is None or time_col is None or total_col is None:
-        logging.error(
-            f"No valid Excel sheet/date/header found for {date}. "
-            "Skipping this date."
-        )
         return pandas.Series(dtype=float)
 
     # Extract the following 48 rows containing the time and demand data.
@@ -290,14 +284,6 @@ def download_and_extract_data_for_request(
 
     # Define the new index.
     index = pandas.to_datetime([f"{date} {t}" for t in dataset[time_col]])
-
-    # Raise an error if the index is not unique.
-    if not index.is_unique:
-        logging.error(f"The index is not unique for {date}.")
-    if numpy.any(numpy.isnan(index.to_numpy().astype(float))):
-        logging.error(f"The index contains NaN values for {date}.")
-    if numpy.any(numpy.isnan(dataset["TOTAL"].values)):
-        logging.error(f"The data contains NaN values for {date}.")
 
     # Define the electricity demand time series.
     electricity_demand_time_series = pandas.Series(
