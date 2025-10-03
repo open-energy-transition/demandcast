@@ -1,0 +1,8 @@
+entities:
+  - subdivision_name: Johor
+    subdivision_code: Johor
+    country_name: Malaysia
+    country_code: MY
+    start_date: 2009-01-01
+    end_date: 2010-12-31
+    time_zone: Asia/Kuala_Lumpur
