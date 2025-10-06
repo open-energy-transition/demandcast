@@ -258,7 +258,6 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
-        Returns None if no valid sheet/date/header is found.
     """
     logging.info(f"Retrieving electricity demand data for {date}.")
 
