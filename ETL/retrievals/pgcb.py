@@ -132,7 +132,7 @@ def get_available_requests() -> list[tuple[str, str, str]]:
     logging.info("Retrieving the available requests from the PGCB website.")
 
     # List of dates for which the files are known to be unavailable.
-    dates_not_available = [
+    file_dates_not_available = [
         "2014-04-12",  # Some data is missing in this file.
         "2016-01-07",  # File corrupted.
         "2016-01-23",  # Missing file.
@@ -190,21 +190,21 @@ def get_available_requests() -> list[tuple[str, str, str]]:
         # Remove duplicates and keep the order.
         file_info = list(dict.fromkeys(file_info))
 
-        # Use regular expressions to find all dates.
-        dates = re.findall(
+        # Use regular expressions to find all file dates.
+        file_dates = re.findall(
             r'<td style="text-align: left; font-size: 14px;">(?:[a-zA-Z]+)(?:[\s_]+)(?:[a-zA-Z]+)(?:[\s_-]*)(.+)</td>',  # noqa: W505
             html_content.text,
         )
 
         # Format the dates to YYYY-MM-DD.
-        dates = [_clean_and_format(date) for date in dates]
+        file_dates = [_clean_and_format(date) for date in file_dates]
 
         # Combine the file numbers, extensions, and dates into a list
         # of tuples.
         requests_on_page = [
             (file_number, extension, date)
-            for (file_number, extension), date in zip(file_info, dates)
-            if date not in dates_not_available
+            for (file_number, extension), date in zip(file_info, file_dates)
+            if date not in file_dates_not_available
         ]
 
         # Add the requests from the current page to the list of
@@ -259,7 +259,9 @@ def download_and_extract_data_for_request(
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
     """
-    logging.info(f"Retrieving electricity demand data for {date}.")
+    logging.info(
+        f"Retrieving electricity demand data from file with date {date}."
+    )
 
     # Get the URL of the electricity demand data.
     url = get_url(file_number, extension)
@@ -308,6 +310,10 @@ def download_and_extract_data_for_request(
 
     # Define the new index.
     index = pandas.to_datetime([f"{date} {t}" for t in dataset[time_col]])
+
+    # Subtract 1 day from the index because the data in the file refers
+    # to the day before the date in the file name.
+    index = index - pandas.Timedelta(days=1)
 
     # Define the electricity demand time series.
     electricity_demand_time_series = pandas.Series(
