@@ -270,11 +270,13 @@ def download_and_extract_data_for_request(
     )
 
     # Extract the name of the sheet containing the demand data.
-    demand_sheet = [
-        sheet
-        for sheet in excel_file.sheet_names
-        if "L-Curve" in sheet or "L.curve" in sheet
-    ][0]
+    if "L-Curve" in excel_file.sheet_names:
+        demand_sheet = "L-Curve"
+    elif "L.curve" in excel_file.sheet_names:
+        demand_sheet = "L.curve"
+    else:
+        logging.error("No valid sheet found. Skipping this file.")
+        return pandas.Series(dtype=float)
 
     # Read the sheet containing the demand data.
     dataset = pandas.read_excel(excel_file, sheet_name=demand_sheet)
@@ -292,7 +294,7 @@ def download_and_extract_data_for_request(
             break
 
     if header_row is None or time_col is None or total_col is None:
-        logging.error("No valid sheet/date/header found. Skipping this file.")
+        logging.error("No valid header/row found. Skipping this file.")
         return pandas.Series(dtype=float)
 
     # Extract the following 48 rows containing the time and demand data.
