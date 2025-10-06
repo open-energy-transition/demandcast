@@ -310,8 +310,9 @@ def fetch_data(
                 except requests.exceptions.SSLError as e:
                     logging.error(
                         f"SSL error: {e}.\nPlease verify the SSL certificate."
+                        f"Retrying ({attempt + 1}/{retries})..."
                     )
-                    raise Exception(f"SSL error: {e}")
+                    time.sleep(retry_delay)
 
             except requests.exceptions.ConnectionError as e:
                 logging.error(

@@ -132,6 +132,30 @@ def get_available_requests() -> list[tuple[str, str, str]]:
     """
     logging.info("Retrieving the available requests from the PGCB website.")
 
+    # List of dates for which the files are known to be unavailable.
+    dates_not_available = [
+        "2022-06-14",  # Missing file.
+        "2014-04-12",  # Some data is missing in this file.
+        "2016-01-07",  # File corrupted.
+        "2016-01-23",  # Missing file.
+        "2016-01-24",  # Missing file.
+        "2016-01-25",  # Missing file.
+        "2016-01-26",  # Missing file.
+        "2016-01-27",  # Missing file.
+        "2016-01-28",  # Missing file.
+        "2016-01-29",  # Missing file.
+        "2016-01-30",  # Missing file.
+        "2016-01-31",  # Missing file.
+        "2016-02-01",  # Missing file.
+        "2016-02-02",  # Missing file.
+        "2017-02-13",  # Missing file.
+        "2017-02-14",  # Missing file.
+        "2017-02-15",  # Missing file.
+        "2017-02-16",  # Missing file.
+        "2018-02-26",  # Missing file.
+        "2018-11-10",  # Missing file.
+    ]
+
     # Initialize an empty list to store available requests.
     available_requests = []
 
@@ -180,6 +204,7 @@ def get_available_requests() -> list[tuple[str, str, str]]:
         requests_on_page = [
             (file_number, extension, date)
             for (file_number, extension), date in zip(file_info, dates)
+            if date not in dates_not_available
         ]
 
         # Add the requests from the current page to the list of
@@ -240,13 +265,10 @@ def download_and_extract_data_for_request(
     # Get the URL of the electricity demand data.
     url = get_url(file_number, extension)
 
-    try:
-        # Fetch the data from the URL.
-        excel_file: pandas.ExcelFile = utils.fetcher.fetch_data(
-            url, "html", read_as="excel_file", verify_ssl=False
-        )
-    except Exception:
-        return pandas.Series(dtype=float)
+    # Fetch the data from the URL.
+    excel_file: pandas.ExcelFile = utils.fetcher.fetch_data(
+        url, "html", read_as="excel_file", verify_ssl=False
+    )
 
     # Extract the name of the sheet containing the demand data.
     demand_sheet = [
@@ -271,6 +293,7 @@ def download_and_extract_data_for_request(
             break
 
     if header_row is None or time_col is None or total_col is None:
+        logging.error("No valid sheet/date/header found. Skipping this file.")
         return pandas.Series(dtype=float)
 
     # Extract the following 48 rows containing the time and demand data.
