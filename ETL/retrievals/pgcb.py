@@ -10,9 +10,8 @@ Description:
     website.
 
     Note:
-    Retrieving all the data take a considerable amount of time,
-    potentially up to 2 hours in total. This is due to the large number
-    of Excel sheets that need to be processed.
+     Retrieving all the data takes a few hours due to the large
+     number of Excel files that need to be processed.
 
     Source: https://erp.powergrid.gov.bd/w/report/eyJpdiI6IldsU2ZQTGkvbkRnQU9FMjZ5UHhmeGc9PSIsInZhbHVlIjoiQzhONVl5ZGxRY3E3T3ZVNCtLZGt1Zz09IiwibWFjIjoiN2JiNTI5MzNhOWIxZDVjY2NkMmFlZWU4ZDU1N2I4OWZlYjNlZWM1ZGU4NzRiNWU4ZjQ3ZDc1ODRlMTk3MDc0YyIsInRhZyI6IiJ9/show_report
 """  # noqa: W505
