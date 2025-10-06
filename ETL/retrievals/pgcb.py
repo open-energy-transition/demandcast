@@ -134,7 +134,6 @@ def get_available_requests() -> list[tuple[str, str, str]]:
 
     # List of dates for which the files are known to be unavailable.
     dates_not_available = [
-        "2022-06-14",  # Missing file.
         "2014-04-12",  # Some data is missing in this file.
         "2016-01-07",  # File corrupted.
         "2016-01-23",  # Missing file.
@@ -154,6 +153,8 @@ def get_available_requests() -> list[tuple[str, str, str]]:
         "2017-02-16",  # Missing file.
         "2018-02-26",  # Missing file.
         "2018-11-10",  # Missing file.
+        "2022-06-14",  # Missing file.
+        "2023-01-13",  # Missing file.
     ]
 
     # Initialize an empty list to store available requests.
