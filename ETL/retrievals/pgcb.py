@@ -153,7 +153,6 @@ def get_available_requests() -> list[tuple[str, str, str]]:
         "2018-02-26",  # Missing file.
         "2018-11-10",  # Missing file.
         "2022-06-14",  # Missing file.
-        "2023-01-13",  # Missing file.
     ]
 
     # Initialize an empty list to store available requests.
