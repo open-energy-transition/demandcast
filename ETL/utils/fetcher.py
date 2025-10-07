@@ -90,7 +90,7 @@ def fetch_data(
     json_keys: list[str] = [],
     query_aspx_webpage: bool = False,
     get_cookies: bool = False,
-) -> pandas.DataFrame | str | requests.Response:
+) -> pandas.DataFrame | pandas.ExcelFile | str | requests.Response:
     """
     Fetch the data from the specified URL.
 
@@ -267,6 +267,12 @@ def fetch_data(
                                 return pandas.read_excel(
                                     BytesIO(response.content), **excel_kwargs
                                 )
+                            elif read_as == "excel_file":
+                                # Return the content read as an Excel
+                                # file.
+                                return pandas.ExcelFile(
+                                    BytesIO(response.content)
+                                )
                             elif read_as == "text":
                                 # Return the content as a string.
                                 return response.text
@@ -304,8 +310,9 @@ def fetch_data(
                 except requests.exceptions.SSLError as e:
                     logging.error(
                         f"SSL error: {e}.\nPlease verify the SSL certificate."
+                        f"Retrying ({attempt + 1}/{retries})..."
                     )
-                    raise Exception(f"SSL error: {e}")
+                    time.sleep(retry_delay)
 
             except requests.exceptions.ConnectionError as e:
                 logging.error(
