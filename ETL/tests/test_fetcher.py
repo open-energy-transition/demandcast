@@ -102,6 +102,13 @@ def test_fetch_data_html_requests_get():
         )
         assert isinstance(dataset, pandas.DataFrame)
 
+        # Test reading of HTML content with tabular data as Excel file.
+        requests.get.return_value.content = excel_binary.getvalue()
+        dataset = utils.fetcher.fetch_data(
+            "http://example.com", "html", read_as="excel_file"
+        )
+        assert isinstance(dataset, pandas.ExcelFile)
+
         # Test reading HTML content with text.
         requests.get.return_value.text = "text content"
         html_text = utils.fetcher.fetch_data(
