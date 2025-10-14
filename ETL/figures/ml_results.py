@@ -4,8 +4,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module contains funtions to plot the machine learning results
-    and validate against actual data.
+    This module contains funtions to plot the mean absolute percentage
+    error (MAPE) of machine learning model predictions. The MAPE values
+    are plotted for all countries and subdivisions, and can also be
+    plotted by group (income level and continent) or compared between
+    two versions of the model.
 """
 
 import os
@@ -51,7 +54,7 @@ def _read_mape(
 
     # Read the MAPE values for all countries and subdivisions.
     mape[f"{version}_all_entities"] = pandas.read_csv(
-        results_directory + f"{version}_test_mape.csv",
+        results_directory + f"{version}_mape.csv",
         usecols=["entity_code", "MAPE_test"],
         index_col="entity_code",
     )
@@ -60,7 +63,7 @@ def _read_mape(
         # Read the MAPE values for all countries and subdivisions for
         # the version to compare with.
         mape[f"{compare_with_version}_all_entities"] = pandas.read_csv(
-            results_directory + f"{compare_with_version}_test_mape.csv",
+            results_directory + f"{compare_with_version}_mape.csv",
             usecols=["entity_code", "MAPE_test"],
             index_col="entity_code",
         )
@@ -71,7 +74,7 @@ def _read_mape(
                 # Read the MAPE values for the current group.
                 mape[f"{version}_{group}"] = pandas.read_csv(
                     os.path.join(results_directory, case)
-                    + f"/{version}_{group}_test_mape.csv",
+                    + f"/{version}_{group}_mape.csv",
                     usecols=["entity_code", "MAPE_test"],
                     index_col="entity_code",
                 )
@@ -81,7 +84,7 @@ def _read_mape(
                     # the version to compare with.
                     mape[f"{compare_with_version}_{group}"] = pandas.read_csv(
                         os.path.join(results_directory, case)
-                        + f"/{compare_with_version}_{group}_test_mape.csv",
+                        + f"/{compare_with_version}_{group}_mape.csv",
                         usecols=["entity_code", "MAPE"],
                         index_col="entity_code",
                     )
@@ -308,7 +311,9 @@ def _plot_by_group(
         for i, group in enumerate(groups[case]):
             # Select the entities belonging to the current group that
             # have a MAPE value.
-            mape_to_plot = mape[case][mape[case][group].notna()]
+            mape_to_plot = mape[
+                [f"{version}_all_entities", f"{version}_{group}"]
+            ][mape[f"{version}_{group}"].notna()]
 
             # Sort the entities by their MAPE values for better
             # visualization.
