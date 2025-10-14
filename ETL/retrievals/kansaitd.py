@@ -6,7 +6,7 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of Kansai Transmission and Distribution
-    (KANSAI) in Japan. The data is retrieved for the years from
+    (KANSAITD) in Japan. The data is retrieved for the years from
     2016 to the current date. The data is retrieved from the available
     CSV files on the kansai website.
 
@@ -69,7 +69,7 @@ def get_available_requests() -> list[tuple[int, int | None, bool]]:
     """
     # Read the start and end date of the available data.
     start_date, end_date = utils.entities.read_date_ranges(
-        data_source="kansai"
+        data_source="kansaitd"
     )["JP_KANSAI"]
 
     # Define the date that separates the two periods of data.
@@ -239,7 +239,7 @@ def download_and_extract_data_for_request(
                 index=pandas.to_datetime(dataset["DATE_TIME"]),
             )
 
-            # Add one hour to the time index because the time values
+            # Add 30 minutes to the time index because the time values
             # appear to be provided at the beginning of the time
             # interval.
             electricity_demand_time_series.index += pandas.Timedelta(
