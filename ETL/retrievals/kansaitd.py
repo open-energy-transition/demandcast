@@ -6,7 +6,7 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of Kansai Transmission and Distribution
-    (KANSAITD) in Japan. The data is retrieved for the years from
+    (KansaiTD) in Japan. The data is retrieved for the years from
     2016 to the current date. The data is retrieved from the available
     CSV files on the kansai website.
 
@@ -29,14 +29,12 @@ def redistribute() -> bool:
     bool
         True if the data can be redistributed, False otherwise.
     """
-    logging.debug("All rights reserved by KANSAI.")
+    logging.debug("All rights reserved by KansaiTD.")
     logging.debug("Source: https://www.kansai-td.co.jp/english/siteinfo/")
     return False
 
 
-def _check_input_parameters(
-    year: int, month: int | None, before_Mar_2024: bool
-) -> None:
+def _check_input_parameters(year: int, month: int | None) -> None:
     """
     Check if the input parameters are valid.
 
@@ -46,72 +44,54 @@ def _check_input_parameters(
         The year of the data to retrieve.
     month : int | None
         The month of the data to retrieve.
-    before_Mar_2024 : bool
-        Whether the url is for the time period before March 2024.
     """
     # Check if the request is supported.
-    assert (year, month, before_Mar_2024) in get_available_requests(), (
+    assert (year, month) in get_available_requests(), (
         "The request is not available."
     )
 
 
-def get_available_requests() -> list[tuple[int, int | None, bool]]:
+def get_available_requests() -> list[tuple[int, int | None]]:
     """
     Get the available requests.
 
     This function retrieves the available requests for the electricity
-    demand data from the KANSAI website.
+    demand data from the KansaiTD website.
 
     Returns
     -------
-    list[tuple[int, int | None, bool]]
+    list[tuple[int, int | None]]
         The list of available requests.
     """
     # Read the start and end date of the available data.
     start_date, end_date = utils.entities.read_date_ranges(
         data_source="kansaitd"
-    )["JP_KANSAI"]
+    )["JP_Kansai"]
 
-    # Define the date that separates the two periods of data.
-    date_after_Mar_2024 = pandas.Timestamp("2024-03-01")
+    # Define the date that separates the two types of requests.
+    Mar_2024 = pandas.Timestamp("2024-03-01")
 
-    # Requests before March 2024
-    requests_before: list[tuple[int, int | None, bool]] = [
-        (year, None, True)
-        for year in range(start_date.year, date_after_Mar_2024.year)
+    # Requests before March 2024.
+    requests_before: list[tuple[int, int | None]] = [
+        (year, None) for year in range(start_date.year, Mar_2024.year)
     ]
 
     # Requests after March 2024
-    requests_after: list[tuple[int, int | None, bool]] = []
-    for year in range(date_after_Mar_2024.year, end_date.year + 1):
-        start_month = 1
-        end_month = 12
-        if year == date_after_Mar_2024.year:
-            start_month = date_after_Mar_2024.month
-        if year == end_date.year:
-            end_month = end_date.month
-        for month in range(start_month, end_month + 1):
-            requests_after.append((year, month, False))
+    requests_after: list[tuple[int, int | None]] = [
+        (year, month)
+        for year in range(Mar_2024.year, end_date.year + 1)
+        for month in range(1, 13)
+        if (year < end_date.year or month <= end_date.month)
+        and (year > Mar_2024.year or month >= Mar_2024.month)
+    ]
 
-    # Return the available requests, which are a combination of a year
-    # number, month number and a boolean indicating whether the data
-    # is before March 2024.
-    # available_requests = [
-    #       (year = 2016, month = None, before_Mar_2024 = True),
-    #       (year = 2017, month = None, before_Mar_2024 = True),
-    #       ...
-    #       (year = 2024, month = 03, before_Mar_2024 = False),
-    #       (year = 2024, month = 04, before_Mar_2024 = False),
-    #       ...
-    #       (year = last year, month = last month,
-    #        before_Mar_2024 = False)]
-
+    # Return the list of available requests.
     return requests_before + requests_after
 
 
-def get_url(year: int, month: int | None, before_Mar_2024: bool) -> str:
+def get_url(year: int, month: int | None) -> str:
     """
-    Get the URL of the electricity demand data on the KANSAI website.
+    Get the URL of the electricity demand data on the KansaiTD website.
 
     Parameters
     ----------
@@ -119,8 +99,6 @@ def get_url(year: int, month: int | None, before_Mar_2024: bool) -> str:
         The year of the data to retrieve.
     month : int | None
         The month of the data to retrieve.
-    before_Mar_2024 : bool
-        Whether the url is for the time period before March 2024.
 
     Returns
     -------
@@ -128,21 +106,15 @@ def get_url(year: int, month: int | None, before_Mar_2024: bool) -> str:
         The URL of the electricity demand data.
     """
     # Check if the input parameters are valid.
-    _check_input_parameters(
-        year=year, month=month, before_Mar_2024=before_Mar_2024
-    )
+    _check_input_parameters(year, month)
 
     # Define the URL of the electricity demand data.
-    if before_Mar_2024:
+    if month is None:
         url = (
             "https://www.kansai-td.co.jp/denkiyoho/area-performance/csv/"
             f"area_jyukyu_jisseki_{year:04d}.csv"
         )
-    elif (
-        month is not None
-        and year >= 2024
-        and year <= pandas.Timestamp.now().year
-    ):
+    else:
         url = (
             "https://www.kansai-td.co.jp/interchange/denkiyoho/area-performance/"
             f"eria_jukyu_{year:04d}{month:02d}_06.csv"
@@ -152,13 +124,13 @@ def get_url(year: int, month: int | None, before_Mar_2024: bool) -> str:
 
 
 def download_and_extract_data_for_request(
-    year: int, month: int | None, before_Mar_2024: bool
+    year: int, month: int | None
 ) -> pandas.Series:
     """
     Download and extract electricity demand data.
 
     This function downloads and extracts the electricity demand data
-    from the KANSAI website.
+    from the KansaiTD website.
 
     Parameters
     ----------
@@ -166,8 +138,6 @@ def download_and_extract_data_for_request(
         The year of the data to retrieve.
     month : int | None
         The month of the data to retrieve.
-    before_Mar_2024 : bool
-        Whether the url is for the time period before March 2024.
 
     Returns
     -------
@@ -180,14 +150,12 @@ def download_and_extract_data_for_request(
         If the extracted data is not a pandas DataFrame.
     """
     # Check if the input parameters are valid.
-    _check_input_parameters(
-        year=year, month=month, before_Mar_2024=before_Mar_2024
-    )
+    _check_input_parameters(year, month)
 
     # Get the URL of the electricity demand data.
-    url = get_url(year=year, month=month, before_Mar_2024=before_Mar_2024)
+    url = get_url(year, month)
 
-    # Determine number of rows to skip
+    # Determine number of rows to skip.
     skip_rows = 3 if year == 2021 else 1
 
     # Fetch CSV content from the URL with proper encoding.
@@ -207,7 +175,7 @@ def download_and_extract_data_for_request(
             "expected a pandas DataFrame."
         )
     else:
-        if before_Mar_2024:
+        if month is None:
             logging.info(
                 f"Retrieving electricity demand data for the year {year}."
             )
@@ -225,18 +193,19 @@ def download_and_extract_data_for_request(
 
         else:
             logging.info(
-                f"Retrieving electricity demand data for the year {year} and {month}."
+                f"Retrieving electricity demand data for the year {year} and "
+                f"{month}."
             )
 
-            # Convert date and hour columns into hourly timestamps
-            dataset["DATE_TIME"] = pandas.to_datetime(
-                dataset["DATE"]
-            ) + pandas.to_timedelta(dataset["TIME"].astype(str) + ":00")
+            # Convert date and hour columns into hourly timestamps.
+            index = pandas.to_datetime(dataset["DATE"]) + pandas.to_timedelta(
+                dataset["TIME"].astype(str) + ":00"
+            )
 
             # Extract the electricity demand time series.
             electricity_demand_time_series = pandas.Series(
                 dataset["エリア需要"].values,
-                index=pandas.to_datetime(dataset["DATE_TIME"]),
+                index=index,
             )
 
             # Add 30 minutes to the time index because the time values
