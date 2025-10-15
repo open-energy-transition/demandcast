@@ -1,6 +1,6 @@
 entities:
   - subdivision_name: Kansai
-    subdivision_code: "KANSAI"
+    subdivision_code: Kansai
     country_name: Japan
     country_code: JP
     start_date: 2016-01-01
