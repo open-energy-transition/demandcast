@@ -5,9 +5,13 @@ License: AGPL-3.0.
 Description:
 
     This script generates the shape of the Japanese region served by
-    Kansai Transmission and Distribution (KANSAITD). This includes
-    the main Kansai prefectures: Osaka, Kyoto, Hyogo, Nara, Shiga,
-    Wakayama, and parts of Mie Prefecture.
+    Kansai Transmission and Distribution (KANSAITD).
+
+    KANSAITD serves the Kansai region, which includes:
+        - Entire prefectures: Shiga, Kyoto, Osaka, Nara, Wakayama
+        - Most of Hyōgo Prefecture (excluding Awaji Island)
+        - Southern portion of Fukui Prefecture
+        - Western portion of Mie Prefecture
 
     Sources:
         https://en.wikipedia.org/wiki/Electricity_sector_in_Japan#/media/File:Power_Grid_of_Japan.svg
@@ -55,12 +59,11 @@ prefectures = geopandas.read_file(
 prefectures = prefectures.to_crs(epsg=4326)
 
 
-# Define the codes of the prefectures of interest.
+# Define the codes of the prefectures fully included.
 codes_of_whole_prefectures = [
     "JP25",
     "JP26",
     "JP27",
-    "JP28",
     "JP29",
     "JP30",
 ]
@@ -70,42 +73,62 @@ whole_prefectures = prefectures[
     prefectures["ADM1_PCODE"].isin(codes_of_whole_prefectures)
 ]
 
-# Merge all the prefectures into a single geometry.
+## Merge all the prefectures into a single geometry.
 whole_prefectures = whole_prefectures.dissolve(by="ADM0_EN")
 whole_prefectures = whole_prefectures.reset_index()
 
-
-# Define the code of the prefecture to be cut.
-codes_of_prefecture_to_cut = "JP24"
-
-# Select the prefecture to be cut.
-prefecture_to_cut = prefectures[
-    prefectures["ADM1_PCODE"] == codes_of_prefecture_to_cut
-]
-
-# Define a polygon to cut the prefecture.
-new_bounds = geopandas.GeoSeries(
+# Polygon mask for mainland Hyōgo (exclude Awaji Island)
+hyogo = prefectures[prefectures["ADM1_PCODE"] == "JP28"]
+mask_hyogo = geopandas.GeoSeries(
     Polygon(
         [
-            (138.48, 35.7),
-            (138.48, 35.22),
-            (138.68, 35),
-            (138.68, 34.5),
-            (139.5, 34.5),
-            (139.5, 35.7),
+            (133.2, 34.5),
+            (134.9, 34.5),
+            (135.5, 35.5),
+            (134.5, 36.5),
+            (133.0, 36.5),
+            (133.0, 35.0),
         ]
     )
 )
-new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
+mask_hyogo = geopandas.GeoDataFrame(geometry=mask_hyogo, crs=4326)
+hyogo_cut = hyogo.overlay(mask_hyogo, how="intersection")
 
-# Cut the prefecture.
-cut_prefecture = prefecture_to_cut.overlay(new_bounds, how="intersection")
+# Polygon mask for southern Fukui Prefecture
+fukui = prefectures[prefectures["ADM1_PCODE"] == "JP18"]
+mask_fukui = geopandas.GeoSeries(
+    Polygon(
+        [
+            (135.3, 35.4),
+            (136.4, 35.4),
+            (136.4, 36.0),
+            (135.3, 36.0),
+        ]
+    )
+)
+mask_fukui = geopandas.GeoDataFrame(geometry=mask_fukui, crs=4326)
+fukui_cut = fukui.overlay(mask_fukui, how="intersection")
 
-# Merge the cut prefecture with the whole prefectures.
-all_prefectures = pandas.concat([whole_prefectures, cut_prefecture])
-all_prefectures = all_prefectures.dissolve(by="ADM0_EN")
-all_prefectures = all_prefectures.reset_index()
+# Polygon mask for western Mie Prefecture
+mie = prefectures[prefectures["ADM1_PCODE"] == "JP24"]
+mask_mie = geopandas.GeoSeries(
+    Polygon(
+        [
+            (135.0, 33.8),
+            (136.3, 33.8),
+            (136.3, 35.0),
+            (135.0, 35.0),
+        ]
+    )
+)
+mask_mie = geopandas.GeoDataFrame(geometry=mask_mie, crs=4326)
+mie_cut = mie.overlay(mask_mie, how="intersection")
 
+# Merge all prefectures into one geometry
+all_prefectures = pandas.concat(
+    [whole_prefectures, hyogo_cut, fukui_cut, mie_cut]
+)
+all_prefectures = all_prefectures.dissolve(by="ADM0_EN").reset_index()
 
 # Select the columns of interest.
 all_prefectures = all_prefectures[["ADM1_EN", "ADM1_PCODE", "geometry"]]
