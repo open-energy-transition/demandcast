@@ -5,9 +5,10 @@ License: AGPL-3.0.
 Description:
 
     This module provides functions to retrieve the electricity demand
-    data for Panama from a publicly available repository developed for
-    research purposes only. The data is downloaded from Jan 2, 2016 to
-    July 31, 2020. The data is retrieved all at once.
+    data for Panama from a publicly available repository containing
+    data from the Centro Nacional de Despacho (CND). The data is
+    available from Jan 2, 2016 to July 31, 2020. The data is retrieved
+    all at once.
 
     Source: https://data.mendeley.com/datasets/tcmmj4t6f4/1
 """
@@ -37,14 +38,14 @@ def get_available_requests() -> None:
     Get the available requests.
 
     This function retrieves the available requests for the electricity
-    demand data for Panama.
+    demand data from CND.
     """
     logging.debug("The data is retrieved all at once.")
 
 
 def get_url() -> str:
     """
-    Get the URL of the electricity demand data for Panama.
+    Get the URL of the electricity demand data from CND.
 
     Returns
     -------
@@ -60,7 +61,7 @@ def download_and_extract_data() -> pandas.Series:
     Download and extract electricity demand data.
 
     This function downloads and extracts the electricity demand data
-    for Panama.
+    from CND.
 
     Returns
     -------

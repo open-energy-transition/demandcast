@@ -6,8 +6,8 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the National Grid Corporation of the
-    Philippines (NGCP) in Philippines. The data is downloaded from
-    Jan 1, 2013 to Dec 31, 2024. The data is retrieved all at once.
+    Philippines (NGCP). The data is downloaded from Jan 1, 2013 to Dec
+    31, 2024. The data is retrieved all at once.
 
     Source: https://www.ngcp.ph/operations#operations
 """

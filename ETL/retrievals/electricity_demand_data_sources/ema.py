@@ -74,7 +74,7 @@ def get_available_requests() -> list[tuple[int, int, int]]:
     start_date, end_date = (
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             data_source="ema"
-        )["SG"]
+        )["SGP"]
     )
 
     # Subtract one week from the end date to ensure that the last

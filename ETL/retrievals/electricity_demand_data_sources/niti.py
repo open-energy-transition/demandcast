@@ -7,7 +7,8 @@ Description:
     This script provides functions to retrieve the electricity demand
     data from the website of National Institution for Transforming India
     (NITI) Aayog in India. The data is retrieved by submitting a request
-    to the NITI Aayog website. The user then able to download the data.
+    to the NITI Aayog website. The user is then able to download the
+    data.
 
     Source: https://iced.niti.gov.in
 """

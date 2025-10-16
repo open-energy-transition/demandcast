@@ -6,7 +6,7 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data for China from a publicly available repository developed for
-    research purposes. The data is downloaded from Jan 1, 2018 to
+    research purposes. The data is available from Jan 1, 2018 to
     Dec 31, 2018. The data is retrieved all at once.
 
     Source: https://zenodo.org/records/8322210

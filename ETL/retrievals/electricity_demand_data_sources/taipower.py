@@ -5,8 +5,8 @@ License: AGPL-3.0.
 Description:
 
     This module provides functions to retrieve the electricity demand
-    data for Taiwan from a publicly available repository developed for
-    research purposes. The data is downloaded from Jan 1, 2017 to
+    data for Taiwan from a publicly available repository with data
+    provided by Taipower. The data is available from Jan 1, 2017 to
     July 1, 2022. The data is retrieved all at once.
 
     Note:

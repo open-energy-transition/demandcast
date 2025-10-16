@@ -5,9 +5,10 @@ License: AGPL-3.0.
 Description:
 
     This module provides functions to retrieve the electricity demand
-    data for Thailand from a publicly available repository developed for
-    research purposes. The data is downloaded from Jan 1, 2023 to
-    Jan 1, 2025. The data is retrieved all at once.
+    data for Thailand from a publicly available repository containing
+    data from the Electricity Generating Authority of Thailand (EGAT).
+    The data is available from Jan 1, 2023 to Jan 1, 2025. The data is
+    retrieved all at once.
 
     Source: https://zenodo.org/records/17109911
 """
@@ -55,7 +56,7 @@ def get_available_requests() -> list[int]:
     Get the available requests.
 
     This function retrieves the available requests for the electricity
-    demand data for Thailand.
+    demand data from EGAT.
 
     Returns
     -------
@@ -66,7 +67,7 @@ def get_available_requests() -> list[int]:
     start_date, end_date = (
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             data_source="thailand"
-        )["TH"]
+        )["THA"]
     )
 
     # Return the available requests, which are the years.
@@ -75,7 +76,7 @@ def get_available_requests() -> list[int]:
 
 def get_url(year: int) -> str:
     """
-    Get the URL of the electricity demand data for Thailand.
+    Get the URL of the electricity demand data from EGAT.
 
     Parameters
     ----------
@@ -102,7 +103,7 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
     Download and extract electricity demand data.
 
     This function downloads and extracts the electricity demand data
-    for Thailand.
+    from EGAT.
 
     Parameters
     ----------
@@ -137,7 +138,7 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
             "expected a pandas DataFrame."
         )
     else:
-        # Sum the regional demand columns to get total national demand
+        # Sum the regional demand columns to get total national demand.
         dataset["National Demand"] = (
             dataset["north_demand"]
             + dataset["south_demand"]

@@ -49,7 +49,7 @@ def _check_input_parameters(start_date: pandas.Timestamp) -> None:
     start_date_of_data_availability = pandas.to_datetime(
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "tsoc"
-        )["CY"][0]
+        )["CYP"][0]
     )
 
     # Check that the start date is greater than or equal to the
@@ -76,7 +76,7 @@ def get_available_requests() -> list[pandas.Timestamp]:
     start_date, end_date = (
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "tsoc"
-        )["CY"]
+        )["CYP"]
     )
 
     # Return the available requests, which are the start dates of the
