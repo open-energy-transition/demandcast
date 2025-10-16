@@ -66,7 +66,7 @@ def get_available_requests() -> list[int]:
     start_date, end_date = (
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "bchydro"
-        )["CA_BC"]
+        )["CAN_BC"]
     )
 
     # Return the available requests, which are the years.

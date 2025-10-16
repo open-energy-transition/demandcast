@@ -71,7 +71,7 @@ def get_available_requests() -> list[tuple[int | None, bool]]:
     __, end_date = (
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "ieso"
-        )["CA_ON"]
+        )["CAN_ON"]
     )
 
     # Define the date that separates the two periods of data.

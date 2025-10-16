@@ -80,7 +80,7 @@ def get_available_requests() -> list[tuple[bool, int, int | None, int | None]]:
     start_date, end_date = (
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "aemo_wem"
-        )["AU_WA"]
+        )["AUS_WA"]
     )
 
     # Define the date that marks the beginning of the post-reform

@@ -138,12 +138,12 @@ def download_and_extract_data(code: str) -> pandas.Series:
             "expected a pandas DataFrame."
         )
     else:
-        if code == "CA_NB":
+        if code == "CAN_NB":
             # Remove unknown code from the time step values.
             dataset["TIME_PERIOD"] = dataset["TIME_PERIOD"].str.replace(
                 ".000Z", ""
             )
-        if code == "CA_ON":
+        if code == "CAN_ON":
             # Remove dummy time steps where the time is equal to
             # 06:59:59 right before the daylight saving time change.
             dataset = dataset[~dataset["TIME_PERIOD"].str.contains("06:59:59")]
