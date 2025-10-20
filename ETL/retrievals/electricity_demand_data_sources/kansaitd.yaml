@@ -1,0 +1,8 @@
+entities:
+  - subdivision_name: Kansai
+    subdivision_code: Kansai
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-01-01
+    end_date: today
+    time_zone: Asia/Tokyo

@@ -73,7 +73,7 @@ def get_available_requests() -> list[tuple[int, int, int]]:
     # Get the start and end dates for Singapore.
     start_date, end_date = (
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            data_source="ema"
+            "ema"
         )["SGP"]
     )
 
