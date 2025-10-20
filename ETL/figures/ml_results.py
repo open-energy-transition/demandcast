@@ -115,33 +115,66 @@ def _plot_overall(
     # Sort the entities by their MAPE values for better visualization.
     mape_to_plot = mape.sort_values(by=f"{version}_all_entities")
 
-    # Create a bar plot where for each entity, the MAPE value is shown.
-    fig, ax = matplotlib.pyplot.subplots(figsize=(10, 5), layout="constrained")
+    # Initialize the plot.
+    fig, axs = matplotlib.pyplot.subplots(
+        1,
+        2,
+        figsize=(10, 5),
+        layout="constrained",
+        sharey=True,
+        gridspec_kw={"width_ratios": [1, 5]},
+    )
+
+    # Add a box and whisker plot to show the distribution of MAPE
+    # values.
+    medianprops = dict(linewidth=3, color="tab:red")
+    meanpointprops = dict(
+        marker="D",
+        markersize=10,
+        markerfacecolor="tab:green",
+        markeredgecolor="black",
+    )
+    axs[0].boxplot(
+        mape_to_plot[f"{version}_all_entities"],
+        showmeans=True,
+        medianprops=medianprops,
+        meanprops=meanpointprops,
+        widths=0.2,
+    )
+    axs[0].set_xticks(
+        [1],
+        [f"{version}"],
+        rotation=60,
+        ha="right",
+        weight="bold",
+        color="tab:blue",
+    )
+    axs[0].set_ylabel("Mean Absolute Percentage Error (MAPE)", weight="bold")
+
+    # Add a bar plot where for each entity, the MAPE value is shown.
     indices = numpy.arange(len(mape_to_plot))
-    ax.bar(
+    axs[1].bar(
         indices,
         mape_to_plot[f"{version}_all_entities"],
         color="tab:blue",
     )
-    ax.set_xticks(indices, mape_to_plot.index, rotation=90, fontsize=5)
-    ax.set_xlim(
+    axs[1].set_xticks(indices, mape_to_plot.index, rotation=90, fontsize=5)
+    axs[1].set_xlim(
         -0.02 * (len(mape_to_plot) - 1), 1.02 * (len(mape_to_plot) - 1)
     )
+    axs[1].set_xlabel("Country or subdivision", weight="bold")
 
     # Add the average MAPE value.
-    mean_mape = mape_to_plot[f"{version}_all_entities"].mean()
-    ax.text(
-        0.05,
-        0.90,
-        f"Average MAPE: {(mean_mape):.2f}%",
-        color="tab:blue",
-        ha="left",
-        transform=ax.transAxes,
-        weight="bold",
-    )
-
-    ax.set_ylabel("Mean Absolute Percentage Error (MAPE)", weight="bold")
-    ax.set_xlabel("Country or subdivision", weight="bold")
+    # mean_mape = mape_to_plot[f"{version}_all_entities"].mean()
+    # axs[1].text(
+    #     0.05,
+    #     0.90,
+    #     f"Average MAPE: {(mean_mape):.2f}%",
+    #     color="tab:blue",
+    #     ha="left",
+    #     transform=axs[1].transAxes,
+    #     weight="bold",
+    # )
 
     # Save the plot to a file.
     matplotlib.pyplot.savefig(
@@ -175,54 +208,93 @@ def _plot_comparison(
     # Sort the entities by their MAPE values for better visualization.
     mape_to_plot = mape.sort_values(by=f"{version}_all_entities")
 
-    # Create a bar plot where for each entity, the MAPE values from
+    # Initialize the plot.
+    fig, axs = matplotlib.pyplot.subplots(
+        1,
+        2,
+        figsize=(10, 5),
+        layout="constrained",
+        sharey=True,
+        gridspec_kw={"width_ratios": [1, 5]},
+    )
+
+    # Add a box and whisker plot to show the distribution of MAPE
+    # values for both versions.
+    medianprops = dict(linewidth=3, color="tab:red")
+    meanpointprops = dict(
+        marker="D",
+        markersize=10,
+        markerfacecolor="tab:green",
+        markeredgecolor="black",
+    )
+    axs[0].boxplot(
+        [
+            mape_to_plot[f"{version}_all_entities"],
+            mape_to_plot[f"{compare_with_version}_all_entities"],
+        ],
+        showmeans=True,
+        medianprops=medianprops,
+        meanprops=meanpointprops,
+        widths=0.4,
+    )
+    axs[0].set_xticks(
+        [1, 2],
+        [f"{version}", f"{compare_with_version}"],
+        rotation=60,
+        ha="right",
+        weight="bold",
+    )
+    for xtick, color in zip(
+        axs[0].get_xticklabels(), ["tab:blue", "tab:orange"]
+    ):
+        xtick.set_color(color)
+    axs[0].set_ylabel("Mean Absolute Percentage Error (MAPE)", weight="bold")
+
+    # Add a bar plot where for each entity, the MAPE values from
     # both versions are shown side by side.
-    fig, ax = matplotlib.pyplot.subplots(figsize=(10, 5), layout="constrained")
     width = 0.4
     indices = numpy.arange(len(mape_to_plot))
-    ax.bar(
+    axs[1].bar(
         indices - width / 2,
         mape_to_plot[f"{version}_all_entities"],
         width,
         color="tab:blue",
     )
-    ax.bar(
+    axs[1].bar(
         indices + width / 2,
         mape_to_plot[f"{compare_with_version}_all_entities"],
         width,
         color="tab:orange",
     )
-    ax.set_xticks(indices, mape_to_plot.index, rotation=90, fontsize=5)
-    ax.set_xlim(
+    axs[1].set_xticks(indices, mape_to_plot.index, rotation=90, fontsize=5)
+    axs[1].set_xlim(
         -0.02 * (len(mape_to_plot) - 1), 1.02 * (len(mape_to_plot) - 1)
     )
+    axs[1].set_xlabel("Country or subdivision", weight="bold")
 
     # Add the average MAPE values for both versions.
-    mean_mape_version = mape_to_plot[f"{version}_all_entities"].mean()
-    mean_mape_compare = mape_to_plot[
-        f"{compare_with_version}_all_entities"
-    ].mean()
-    ax.text(
-        0.05,
-        0.90,
-        f"Average MAPE: {(mean_mape_version):.2f}%",
-        color="tab:blue",
-        ha="left",
-        transform=ax.transAxes,
-        weight="bold",
-    )
-    ax.text(
-        0.05,
-        0.85,
-        f"Average MAPE: {(mean_mape_compare):.2f}%",
-        color="tab:orange",
-        ha="left",
-        transform=ax.transAxes,
-        weight="bold",
-    )
-
-    ax.set_ylabel("Mean Absolute Percentage Error (MAPE)", weight="bold")
-    ax.set_xlabel("Country or subdivision", weight="bold")
+    # mean_mape_version = mape_to_plot[f"{version}_all_entities"].mean()
+    # mean_mape_compare = mape_to_plot[
+    #     f"{compare_with_version}_all_entities"
+    # ].mean()
+    # axs[1].text(
+    #     0.05,
+    #     0.90,
+    #     f"Average MAPE: {(mean_mape_version):.2f}%",
+    #     color="tab:blue",
+    #     ha="left",
+    #     transform=axs[1].transAxes,
+    #     weight="bold",
+    # )
+    # axs[1].text(
+    #     0.05,
+    #     0.85,
+    #     f"Average MAPE: {(mean_mape_compare):.2f}%",
+    #     color="tab:orange",
+    #     ha="left",
+    #     transform=axs[1].transAxes,
+    #     weight="bold",
+    # )
 
     # Add a legend.
     fig.text(
