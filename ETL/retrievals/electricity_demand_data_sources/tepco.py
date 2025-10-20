@@ -65,7 +65,7 @@ def get_available_requests() -> list[int]:
     start_date, end_date = (
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "tepco"
-        )["JP_Kantō"]
+        )["JPN_Kantō"]
     )
 
     # Return the available requests, which are the years.
@@ -137,24 +137,24 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Define the index of the time series.
-        index = pandas.to_datetime(
-            [
-                date + " " + time
-                for date, time in zip(dataset["DATE"], dataset["TIME"])
-            ]
-        ).tz_localize("Asia/Tokyo")
 
-        # Extract the electricity demand time series. Multiply by 10 to
-        # convert from 10,000 kW (Japanese way of expressing unit of
-        # power) to MW.
-        electricity_demand_time_series = (
-            pandas.Series(dataset["ÀÑ(kW)"].values, index=index) * 10
-        )
+    # Define the index of the time series.
+    index = pandas.to_datetime(
+        [
+            date + " " + time
+            for date, time in zip(dataset["DATE"], dataset["TIME"])
+        ]
+    ).tz_localize("Asia/Tokyo")
 
-        # Add one hour to the time index because the time values appear
-        # to be provided at the beginning of the time interval.
-        electricity_demand_time_series.index += pandas.Timedelta(hours=1)
+    # Extract the electricity demand time series. Multiply by 10 to
+    # convert from 10,000 kW (Japanese way of expressing unit of
+    # power) to MW.
+    electricity_demand_time_series = (
+        pandas.Series(dataset["ÀÑ(kW)"].values, index=index) * 10
+    )
 
-        return electricity_demand_time_series
+    # Add one hour to the time index because the time values appear
+    # to be provided at the beginning of the time interval.
+    electricity_demand_time_series.index += pandas.Timedelta(hours=1)
+
+    return electricity_demand_time_series

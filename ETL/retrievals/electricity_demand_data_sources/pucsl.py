@@ -64,7 +64,7 @@ def _check_input_parameters(
     start_date_of_data_availability = pandas.to_datetime(
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "pucsl"
-        )["LK"][0]
+        )["LKA"][0]
     )
 
     # Check that the start date is greater than or equal to the
@@ -93,7 +93,7 @@ def get_available_requests() -> list[
     start_date, end_date = (
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "pucsl"
-        )["LK"]
+        )["LKA"]
     )
 
     # Define intervals for the retrieval periods.
@@ -196,31 +196,29 @@ def download_and_extract_data_for_request(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Convert timestamps to datetime
-        dataset["reportTimestamp"] = pandas.to_datetime(
-            dataset["reportTimestamp"]
-        )
 
-        # Aggregate total generation (in MW) across all
-        # power plants for each timestamp
-        dataset_grouped = dataset.groupby("reportTimestamp", as_index=False)[
-            "dispatchValueInMW"
-        ].sum()
+    # Convert timestamps to datetime
+    dataset["reportTimestamp"] = pandas.to_datetime(dataset["reportTimestamp"])
 
-        # Extract the electricity demand time series
-        electricity_demand_time_series = pandas.Series(
-            dataset_grouped["dispatchValueInMW"].values,
-            index=dataset_grouped["reportTimestamp"],
-        )
+    # Aggregate total generation (in MW) across all
+    # power plants for each timestamp
+    dataset_grouped = dataset.groupby("reportTimestamp", as_index=False)[
+        "dispatchValueInMW"
+    ].sum()
 
-        # Add 15 minutes to the index because the electricity demand
-        # seems to be provided at the beginning of the time-interval
-        electricity_demand_time_series.index += pandas.Timedelta(minutes=15)
+    # Extract the electricity demand time series
+    electricity_demand_time_series = pandas.Series(
+        dataset_grouped["dispatchValueInMW"].values,
+        index=dataset_grouped["reportTimestamp"],
+    )
 
-        # Add the time zone information to the time series.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index.tz_convert("Asia/Colombo")
-        )
+    # Add 15 minutes to the index because the electricity demand
+    # seems to be provided at the beginning of the time-interval
+    electricity_demand_time_series.index += pandas.Timedelta(minutes=15)
 
-        return electricity_demand_time_series
+    # Add the time zone information to the time series.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index.tz_convert("Asia/Colombo")
+    )
+
+    return electricity_demand_time_series

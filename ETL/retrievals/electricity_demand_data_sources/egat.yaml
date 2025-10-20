@@ -1,5 +1,5 @@
 entities:
   - country_name: Thailand
-    country_code: TH
+    country_code: THA
     start_date: 2023-01-01
-    end_date: 2025-01-01
+    end_date: 2024-12-31

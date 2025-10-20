@@ -91,24 +91,22 @@ def download_and_extract_data() -> pandas.Series:
             f"{type(electricity_demand_time_series)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Set the date as the index.
-        electricity_demand_time_series = (
-            electricity_demand_time_series.set_index(
-                "date", drop=True
-            ).squeeze()
-        )
 
-        # Convert the index to a datetime object.
-        electricity_demand_time_series.index = pandas.to_datetime(
-            electricity_demand_time_series.index,
-            format="%Y-%m-%dT%H:%M:%S%z",
-            utc=True,
-        )
+    # Set the date as the index.
+    electricity_demand_time_series = electricity_demand_time_series.set_index(
+        "date", drop=True
+    ).squeeze()
 
-        # Sort the index.
-        electricity_demand_time_series = (
-            electricity_demand_time_series.sort_index()
-        )
+    # Convert the index to a datetime object.
+    electricity_demand_time_series.index = pandas.to_datetime(
+        electricity_demand_time_series.index,
+        format="%Y-%m-%dT%H:%M:%S%z",
+        utc=True,
+    )
 
-        return electricity_demand_time_series
+    # Sort the index.
+    electricity_demand_time_series = (
+        electricity_demand_time_series.sort_index()
+    )
+
+    return electricity_demand_time_series

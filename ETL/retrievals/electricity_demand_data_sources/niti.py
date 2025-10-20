@@ -7,7 +7,8 @@ Description:
     This script provides functions to retrieve the electricity demand
     data from the website of National Institution for Transforming India
     (NITI) Aayog in India. The data is retrieved by submitting a request
-    to the NITI Aayog website. The user then able to download the data.
+    to the NITI Aayog website. The user is then able to download the
+    data.
 
     Source: https://iced.niti.gov.in
 """
@@ -68,6 +69,11 @@ def download_and_extract_data() -> pandas.Series:
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the data file is not found in the specified folder.
     """
     # Get the data folder.
     data_directory = utils.directories.read_folders_structure()[
@@ -80,6 +86,14 @@ def download_and_extract_data() -> pandas.Series:
         for file in os.listdir(data_directory)
         if file.startswith("NIT")
     ]
+
+    if not downloaded_file_paths:
+        raise FileNotFoundError(
+            f"The data for NITI Aayog has not been found in the folder "
+            f"{data_directory}. Please download the data manually from "
+            f"{get_url()} after submitting a request via the form on the "
+            f"website. The data files must be named starting with 'NIT'."
+        )
 
     # Load the data from the downloaded files into a pandas DataFrame.
     dataset = pandas.concat(

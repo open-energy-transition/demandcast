@@ -230,117 +230,117 @@ def download_and_extract_data_for_request(
             f"The extracted response is a {type(response)} object, "
             "expected a requests.Response object."
         )
-    else:
-        # Extract the zip file from the HTML content.
-        archive = zipfile.ZipFile(BytesIO(response.content), "r")
 
-        # Get the names of the files in the archive.
-        file_names = archive.namelist()
+    # Extract the zip file from the HTML content.
+    archive = zipfile.ZipFile(BytesIO(response.content), "r")
 
-        # Get all the dates in the time range.
-        dates = (
-            pandas.date_range(start_date, end_date, freq="d")
-            .strftime("%Y-%m-%d")
-            .tolist()
+    # Get the names of the files in the archive.
+    file_names = archive.namelist()
+
+    # Get all the dates in the time range.
+    dates = (
+        pandas.date_range(start_date, end_date, freq="d")
+        .strftime("%Y-%m-%d")
+        .tolist()
+    )
+
+    # Get the subdivision code.
+    subdivision_code = code.split("_")[1]
+
+    # Get the time zone of the country or subdivision.
+    time_zone = utils.entities.get_time_zone(code)
+
+    # Initialize the list to store the daily values.
+    daily_values_list = []
+
+    # Iterate over the dates and extract the corresponding files.
+    for date in dates:
+        # Define the file version to be extracted. Start with the
+        # latest version and go backwards.
+        file_version = -1
+
+        # Define a flag to indicate if the data for the date was
+        # found.
+        found_data = False
+
+        # Loop until the data for the date is found or all file
+        # versions are exhausted.
+        while not found_data:
+            # Get the file name corresponding to the date.
+            file_name = [name for name in file_names if date in name][
+                file_version
+            ]
+
+            # Extract the file content from the archive.
+            file_content = archive.open(file_name).read().decode("utf-8")
+
+            # Find the line that contains the header of the CSV
+            # file.
+            skip_rows = file_content.split("\n").index(
+                [
+                    line
+                    for line in file_content.split("\n")
+                    if "Estimacion de Demanda por Balance (MWh)" in line
+                ][0]
+            )
+
+            # Check if the line after the header has some data.
+            if file_content.split("\n")[skip_rows + 1] != "":
+                found_data = True
+            else:
+                # If the line after the header is empty, try the
+                # previous version of the file.
+                file_version -= 1
+
+                if file_version < -len(file_names):
+                    # If there are no more versions of the file,
+                    # raise an error.
+                    raise ValueError(
+                        f"No data found for the date {date} "
+                        f"in the file {file_name}."
+                    )
+
+        # Read the file content into a pandas DataFrame.
+        dataset = pandas.read_csv(
+            StringIO(file_content), skiprows=skip_rows, index_col=False
         )
 
-        # Get the subdivision code.
-        subdivision_code = code.split("_")[1]
-
-        # Get the time zone of the country or subdivision.
-        time_zone = utils.entities.get_time_zone(code)
-
-        # Initialize the list to store the daily values.
-        daily_values_list = []
-
-        # Iterate over the dates and extract the corresponding files.
-        for date in dates:
-            # Define the file version to be extracted. Start with the
-            # latest version and go backwards.
-            file_version = -1
-
-            # Define a flag to indicate if the data for the date was
-            # found.
-            found_data = False
-
-            # Loop until the data for the date is found or all file
-            # versions are exhausted.
-            while not found_data:
-                # Get the file name corresponding to the date.
-                file_name = [name for name in file_names if date in name][
-                    file_version
-                ]
-
-                # Extract the file content from the archive.
-                file_content = archive.open(file_name).read().decode("utf-8")
-
-                # Find the line that contains the header of the CSV
-                # file.
-                skip_rows = file_content.split("\n").index(
-                    [
-                        line
-                        for line in file_content.split("\n")
-                        if "Estimacion de Demanda por Balance (MWh)" in line
-                    ][0]
-                )
-
-                # Check if the line after the header has some data.
-                if file_content.split("\n")[skip_rows + 1] != "":
-                    found_data = True
-                else:
-                    # If the line after the header is empty, try the
-                    # previous version of the file.
-                    file_version -= 1
-
-                    if file_version < -len(file_names):
-                        # If there are no more versions of the file,
-                        # raise an error.
-                        raise ValueError(
-                            f"No data found for the date {date} "
-                            f"in the file {file_name}."
-                        )
-
-            # Read the file content into a pandas DataFrame.
-            dataset = pandas.read_csv(
-                StringIO(file_content), skiprows=skip_rows, index_col=False
-            )
-
-            # Define the column name for the subdivision code.
-            column_name = (
-                "Sistema"
-                if subdivision_code == "BCA" or subdivision_code == "BCS"
-                else " Area"
-            )
-
-            # Extract the daily values for the subdivision.
-            daily_values = dataset[dataset[column_name] == subdivision_code][
-                " Estimacion de Demanda por Balance (MWh) "
-            ].reset_index(drop=True)
-
-            # For the Norte subdivision on 2022-10-30, there seems to be
-            # an extra hour in the data.
-            if subdivision_code == "NTE" and date == "2022-10-30":
-                # Remove the third value from the list.
-                daily_values = daily_values.drop(2)
-
-            # Set a new index with the date and time for each hour of
-            # the day.
-            daily_values.index = pandas.date_range(
-                start=date + " 00:00:00",
-                end=date + " 23:59:59",
-                freq="h",
-                tz=time_zone,
-            )
-
-            # Append the daily values to the list.
-            daily_values_list.append(daily_values)
-
-        # Concatenate the daily values into a single pandas Series.
-        electricity_demand_time_series = pandas.concat(daily_values_list)
-
-        # Add 1 hour to the index to indicate the end of the hour.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index + pandas.Timedelta("1h")
+        # Define the column name for the subdivision code.
+        column_name = (
+            "Sistema"
+            if subdivision_code == "BCA" or subdivision_code == "BCS"
+            else " Area"
         )
 
-        return electricity_demand_time_series
+        # Extract the daily values for the subdivision.
+        daily_values = dataset[dataset[column_name] == subdivision_code][
+            " Estimacion de Demanda por Balance (MWh) "
+        ].reset_index(drop=True)
+
+        # For the Norte subdivision on 2022-10-30, there seems to be
+        # an extra hour in the data.
+        if subdivision_code == "NTE" and date == "2022-10-30":
+            # Remove the third value from the list.
+            daily_values = daily_values.drop(2)
+
+        # Set a new index with the date and time for each hour of
+        # the day.
+        daily_values.index = pandas.date_range(
+            start=date + " 00:00:00",
+            end=date + " 23:59:59",
+            freq="h",
+            tz=time_zone,
+        )
+
+        # Append the daily values to the list.
+        daily_values_list.append(daily_values)
+
+    # Concatenate the daily values into a single pandas Series.
+    electricity_demand_time_series = pandas.concat(daily_values_list)
+
+    # Add 1 hour to the index to indicate the end of the hour.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index + pandas.Timedelta("1h")
+    )
+
+    return electricity_demand_time_series

@@ -78,6 +78,8 @@ def download_and_extract_data() -> pandas.Series:
     ------
     ValueError
         If the extracted data is not a pandas DataFrame.
+    FileNotFoundError
+        If the data file is not found in the specified folder.
     """
     # Get the data folder.
     data_directory = utils.directories.read_folders_structure()[
@@ -91,6 +93,14 @@ def download_and_extract_data() -> pandas.Series:
         if file.startswith("NTD")
     ]
 
+    if not downloaded_file_paths:
+        raise FileNotFoundError(
+            f"The data for NTDC has not been found in the folder "
+            f"{data_directory}. Please download the data manually from "
+            f"{get_url()} after registering on the website. The data "
+            f"files must be named starting with 'NTD'."
+        )
+
     # Load the data from the downloaded files into a pandas DataFrame.
     dataset = pandas.concat(
         [pandas.read_csv(file_path) for file_path in downloaded_file_paths]
@@ -102,30 +112,30 @@ def download_and_extract_data() -> pandas.Series:
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Define the new index.
-        index = pandas.to_datetime(
-            dataset.iloc[:, 0].astype(str)
-            + " "
-            + (dataset.iloc[:, 1].astype(str).astype(int) - 1).astype(str),
-            format="%d/%m/%Y %H",
-        ) + pandas.Timedelta(hours=1)
 
-        # Remove commas and convert SYSLOAD to numeric.
-        dataset["SYSLOAD"] = pandas.to_numeric(
-            dataset["SYSLOAD"].astype(str).str.replace(",", ""),
-            errors="coerce",
-        )
+    # Define the new index.
+    index = pandas.to_datetime(
+        dataset.iloc[:, 0].astype(str)
+        + " "
+        + (dataset.iloc[:, 1].astype(str).astype(int) - 1).astype(str),
+        format="%d/%m/%Y %H",
+    ) + pandas.Timedelta(hours=1)
 
-        # Define the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
-            dataset["SYSLOAD"].values,
-            index=index,
-        )
+    # Remove commas and convert SYSLOAD to numeric.
+    dataset["SYSLOAD"] = pandas.to_numeric(
+        dataset["SYSLOAD"].astype(str).str.replace(",", ""),
+        errors="coerce",
+    )
 
-        # Add the timezone information.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index.tz_localize("Asia/Karachi")
-        )
+    # Define the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset["SYSLOAD"].values,
+        index=index,
+    )
 
-        return electricity_demand_time_series
+    # Add the timezone information.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index.tz_localize("Asia/Karachi")
+    )
+
+    return electricity_demand_time_series

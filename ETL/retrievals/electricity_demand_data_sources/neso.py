@@ -66,7 +66,7 @@ def get_available_requests() -> list[int]:
     start_date, end_date = (
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "neso"
-        )["GB_GB"]
+        )["GBR_GB"]
     )
 
     # Return the available requests, which are the years.
@@ -169,16 +169,16 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Extract the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
-            dataset["ND"].values,
-            index=pandas.date_range(
-                start=f"{year}-01-01 00:30",
-                periods=len(dataset),
-                freq="30min",
-                tz="Europe/London",
-            ),
-        )
 
-        return electricity_demand_time_series
+    # Extract the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset["ND"].values,
+        index=pandas.date_range(
+            start=f"{year}-01-01 00:30",
+            periods=len(dataset),
+            freq="30min",
+            tz="Europe/London",
+        ),
+    )
+
+    return electricity_demand_time_series

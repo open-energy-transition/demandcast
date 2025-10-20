@@ -191,18 +191,18 @@ def download_and_extract_data_for_request(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Extract the electricity demand data from the dataset.
-        electricity_demand_time_series = pandas.Series(
-            dataset["TOTALDEMAND"].values,
-            index=pandas.to_datetime(dataset["SETTLEMENTDATE"]),
-        )
 
-        # Add the time zone information to the index.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index.tz_localize(
-                "Australia/Sydney", ambiguous="NaT", nonexistent="NaT"
-            )
-        )
+    # Extract the electricity demand data from the dataset.
+    electricity_demand_time_series = pandas.Series(
+        dataset["TOTALDEMAND"].values,
+        index=pandas.to_datetime(dataset["SETTLEMENTDATE"]),
+    )
 
-        return electricity_demand_time_series
+    # Add the time zone information to the index.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index.tz_localize(
+            "Australia/Sydney", ambiguous="NaT", nonexistent="NaT"
+        )
+    )
+
+    return electricity_demand_time_series

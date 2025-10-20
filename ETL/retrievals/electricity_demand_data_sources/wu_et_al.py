@@ -6,7 +6,7 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data for China from a publicly available repository developed for
-    research purposes. The data is downloaded from Jan 1, 2018 to
+    research purposes. The data is available from Jan 1, 2018 to
     Dec 31, 2018. The data is retrieved all at once.
 
     Source: https://zenodo.org/records/8322210
@@ -83,33 +83,32 @@ def download_and_extract_data() -> pandas.Series:
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Split semicolon-delimited columns
-        # (original CSV is single-column)
-        dataset = dataset.iloc[:, 0].str.split(";", expand=True)
 
-        # Convert all columns except the first one to numeric
-        for i in range(1, dataset.shape[1]):
-            dataset.iloc[:, i] = pandas.to_numeric(dataset.iloc[:, i])
+    # Split semicolon-delimited columns (original CSV is single-column).
+    dataset = dataset.iloc[:, 0].str.split(";", expand=True)
 
-        # Sum the regional demand columns to get total national demand
-        dataset["National Demand"] = dataset.iloc[:, 1:].sum(axis=1)
+    # Convert all columns except the first one to numeric.
+    for i in range(1, dataset.shape[1]):
+        dataset.iloc[:, i] = pandas.to_numeric(dataset.iloc[:, i])
 
-        # Construct the index of the electricity demand time series.
-        timestamps = pandas.date_range(
-            start="2018-01-01 01:00:00",
-            periods=8760,
-            freq="h",
-        )
+    # Sum the regional demand columns to get total national demand.
+    dataset["National Demand"] = dataset.iloc[:, 1:].sum(axis=1)
 
-        # Extract the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
-            dataset["National Demand"].values, index=timestamps
-        )
+    # Construct the index of the electricity demand time series.
+    timestamps = pandas.date_range(
+        start="2018-01-01 01:00:00",
+        periods=8760,
+        freq="h",
+    )
 
-        # Add the timezone information to the index.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index.tz_localize("Asia/Shanghai")
-        )
+    # Extract the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset["National Demand"].values, index=timestamps
+    )
+
+    # Add the timezone information to the index.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index.tz_localize("Asia/Shanghai")
+    )
 
     return electricity_demand_time_series

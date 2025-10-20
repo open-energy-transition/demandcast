@@ -49,7 +49,7 @@ def _check_input_parameters(start_date: pandas.Timestamp) -> None:
     start_date_of_data_availability = pandas.to_datetime(
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "tsoc"
-        )["CY"][0]
+        )["CYP"][0]
     )
 
     # Check that the start date is greater than or equal to the
@@ -76,7 +76,7 @@ def get_available_requests() -> list[pandas.Timestamp]:
     start_date, end_date = (
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "tsoc"
-        )["CY"]
+        )["CYP"]
     )
 
     # Return the available requests, which are the start dates of the
@@ -235,23 +235,21 @@ def download_and_extract_data_for_request(
         raise ValueError(
             f"The extracted page is a {type(page)} object, expected a string."
         )
-    else:
-        # Extract time and generation data.
-        dates, hours, minutes, generation = _read_timestamp_and_generation(
-            page
-        )
 
-        # Construct datetime index with time zone.
-        date_time = pandas.to_datetime(
-            [
-                f"{date} {hour}:{minute}"
-                for date, hour, minute in zip(dates, hours, minutes)
-            ]
-        ).tz_localize("Asia/Nicosia", nonexistent="NaT", ambiguous="NaT")
+    # Extract time and generation data.
+    dates, hours, minutes, generation = _read_timestamp_and_generation(page)
 
-        # Create a Pandas Series for the electricity generation data.
-        electricity_generation_time_series = pandas.Series(
-            data=generation, index=date_time
-        )
+    # Construct datetime index with time zone.
+    date_time = pandas.to_datetime(
+        [
+            f"{date} {hour}:{minute}"
+            for date, hour, minute in zip(dates, hours, minutes)
+        ]
+    ).tz_localize("Asia/Nicosia", nonexistent="NaT", ambiguous="NaT")
 
-        return electricity_generation_time_series
+    # Create a Pandas Series for the electricity generation data.
+    electricity_generation_time_series = pandas.Series(
+        data=generation, index=date_time
+    )
+
+    return electricity_generation_time_series

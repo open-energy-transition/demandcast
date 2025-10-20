@@ -166,11 +166,11 @@ def read_command_line_arguments() -> argparse.Namespace:
     parser.add_argument(
         "-mo",
         "--made_by_oet",
-        type=str,
         help=(
             "Whether the data was retrieved or created by Open Energy "
             "Transition."
         ),
+        action="store_true",
         required=False,
     )
 
@@ -184,10 +184,13 @@ if __name__ == "__main__":
 
     # Set up the logging configuration.
     log_file_name = (
-        f"electricity_demand_from_{args.data_source}_"
-        if args.variable == "electricity_demand"
-        else ""
-        f"{args.variable}_" + datetime.now().strftime("%Y%m%d_%H%M") + ".log"
+        (
+            f"electricity_demand_from_{args.data_source}_"
+            if args.variable == "electricity_demand"
+            else f"{args.variable}_"
+        )
+        + datetime.now().strftime("%Y%m%d_%H%M")
+        + ".log"
     )
     log_files_directory = utils.directories.read_folders_structure()[
         "log_files_folder"
@@ -208,33 +211,7 @@ if __name__ == "__main__":
             )
 
         if args.upload_to_zenodo:
-            if args.made_by_oet is None:
-                raise ValueError(
-                    "The argument --made_by_oet must be specified for the "
-                    "retrieval of electricity demand data if the data is to be "
-                    "uploaded to Zenodo."
-                )
-            else:
-                # Convert the made_by_oet argument to a boolean.
-                if args.made_by_oet.lower() in ("yes", "true", "t", "y", "1"):
-                    made_by_oet = True
-                elif args.made_by_oet.lower() in (
-                    "no",
-                    "false",
-                    "f",
-                    "n",
-                    "0",
-                ):
-                    made_by_oet = False
-                else:
-                    raise ValueError(
-                        "The argument --made_by_oet must be a string "
-                        "representing a boolean value. Accepted values are: "
-                        "'yes', 'true', 't', 'y', '1' for True and 'no', "
-                        "'false', 'f', 'n', '0' for False."
-                    )
-
-            if not made_by_oet:
+            if not args.made_by_oet:
                 # Check if a metadata file other than the default one
                 # for OET-created content has been provided.
                 metadata_file_path = os.path.join(
@@ -243,8 +220,10 @@ if __name__ == "__main__":
                 )
                 if not os.path.exists(metadata_file_path):
                     raise FileNotFoundError(
-                        "A file containing the metadata for the Zenodo "
-                        "upload must be provided. The file must be named "
+                        "If the data is not retrieved or created by Open "
+                        "Energy Transition (made_by_oet = False), a file "
+                        "containing the metadata for the Zenodo upload must "
+                        "be provided. The file must be named "
                         "'zenodo_metadata.yaml' and be located in the "
                         "ETL/utils/ folder. Check the file "
                         "'oet_zenodo_metadata.yaml' for an example of the "
@@ -259,7 +238,7 @@ if __name__ == "__main__":
             args.upload_to_gcs,
             args.upload_to_zenodo,
             args.publish_to_zenodo,
-            made_by_oet,
+            args.made_by_oet,
         )
     elif args.variable == "annual_electricity_demand_per_capita":
         # Run the data retrieval for annual electricity demand per

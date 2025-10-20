@@ -5,8 +5,8 @@ License: AGPL-3.0.
 Description:
 
     This module provides functions to retrieve the electricity demand
-    data for Taiwan from a publicly available repository developed for
-    research purposes. The data is downloaded from Jan 1, 2017 to
+    data for Taiwan from a publicly available repository with data
+    provided by Taipower. The data is available from Jan 1, 2017 to
     July 1, 2022. The data is retrieved all at once.
 
     Note:
@@ -91,30 +91,30 @@ def download_and_extract_data() -> pandas.Series:
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Sum the regional demand columns to get total national demand
-        dataset["National Demand"] = (
-            dataset["south"]
-            + dataset["north"]
-            + dataset["east"]
-            + dataset["central"]
-        )
 
-        # Extract the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
-            dataset["National Demand"].values,
-            index=pandas.to_datetime(dataset["datetime"]),
-        )
+    # Sum the regional demand columns to get total national demand
+    dataset["National Demand"] = (
+        dataset["south"]
+        + dataset["north"]
+        + dataset["east"]
+        + dataset["central"]
+    )
 
-        # Add 10 minutes to the index because the electricity demand
-        # seems to be provided at the beginning of the time-interval
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index + pandas.Timedelta(minutes=10)
-        )
+    # Extract the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset["National Demand"].values,
+        index=pandas.to_datetime(dataset["datetime"]),
+    )
 
-        # Add the timezone information to the index.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index.tz_localize("Asia/Taipei")
-        )
+    # Add 10 minutes to the index because the electricity demand
+    # seems to be provided at the beginning of the time-interval
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index + pandas.Timedelta(minutes=10)
+    )
 
-        return electricity_demand_time_series
+    # Add the timezone information to the index.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index.tz_localize("Asia/Taipei")
+    )
+
+    return electricity_demand_time_series

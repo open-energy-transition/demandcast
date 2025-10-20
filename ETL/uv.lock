@@ -353,6 +353,21 @@ wheels = [
 ]
 
 [[package]]
+name = "cpi"
+version = "2.0.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "pandas" },
+    { name = "python-dateutil" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/19/52/12f74a4dae2d8edd378794e646b63dbf22bea74694769652ceafecfad2c8/cpi-2.0.8.tar.gz", hash = "sha256:61809e5cd0d7d6b6f1f2ca18aa2d2c77b5f5b076c71b65e248f7eebdff35cb26", size = 17337314, upload-time = "2025-09-19T13:01:40.131Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cf/dd/7670ddfb3dfb47c5f58b4735bdec523d0eeb288e68009f32bab7de946a12/cpi-2.0.8-py2.py3-none-any.whl", hash = "sha256:7fbea1b9404f88f38336f499b7c29528f6d5ae29d9ad9028e155ad992d52c793", size = 18758937, upload-time = "2025-09-19T13:01:37.881Z" },
+]
+
+[[package]]
 name = "cycler"
 version = "0.12.1"
 source = { registry = "https://pypi.org/simple" }
@@ -409,6 +424,7 @@ dependencies = [
     { name = "cartopy" },
     { name = "cdsapi" },
     { name = "countryinfo" },
+    { name = "cpi" },
     { name = "entsoe-py" },
     { name = "geopandas" },
     { name = "google-cloud-storage" },
@@ -448,6 +464,7 @@ requires-dist = [
     { name = "cartopy", specifier = ">=0.24.1" },
     { name = "cdsapi", specifier = ">=0.7.5" },
     { name = "countryinfo", specifier = ">=0.1.2" },
+    { name = "cpi", specifier = ">=2.0.8" },
     { name = "entsoe-py", specifier = ">=0.6.18" },
     { name = "geopandas", specifier = ">=1.0.1" },
     { name = "google-cloud-storage", specifier = ">=3.1.0" },
