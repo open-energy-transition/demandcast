@@ -90,38 +90,37 @@ def download_and_extract_data() -> pandas.Series:
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # The column names have the time information. Rearrange the
-        # columns to have the time information on another column.
-        dataset = dataset.melt(
-            id_vars=dataset.columns[0], var_name="Hour", value_name="Value"
-        )
 
-        # Define the new index.
-        index = pandas.to_datetime(
-            dataset.iloc[:, 0].astype(str)
-            + " "
-            + (
-                dataset.iloc[:, 1].astype(str).str.replace("h", "").astype(int)
-                - 1
-            ).astype(str),
-            format="%Y-%m-%d %H",
-        ) + pandas.Timedelta(hours=1)
+    # The column names have the time information. Rearrange the
+    # columns to have the time information on another column.
+    dataset = dataset.melt(
+        id_vars=dataset.columns[0], var_name="Hour", value_name="Value"
+    )
 
-        # Define the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
-            dataset["Value"].values,
-            index=index,
-        )
+    # Define the new index.
+    index = pandas.to_datetime(
+        dataset.iloc[:, 0].astype(str)
+        + " "
+        + (
+            dataset.iloc[:, 1].astype(str).str.replace("h", "").astype(int) - 1
+        ).astype(str),
+        format="%Y-%m-%d %H",
+    ) + pandas.Timedelta(hours=1)
 
-        # Sort the index.
-        electricity_demand_time_series = (
-            electricity_demand_time_series.sort_index()
-        )
+    # Define the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset["Value"].values,
+        index=index,
+    )
 
-        # Add the timezone information.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index.tz_localize("Africa/Algiers")
-        )
+    # Sort the index.
+    electricity_demand_time_series = (
+        electricity_demand_time_series.sort_index()
+    )
 
-        return electricity_demand_time_series
+    # Add the timezone information.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index.tz_localize("Africa/Algiers")
+    )
+
+    return electricity_demand_time_series

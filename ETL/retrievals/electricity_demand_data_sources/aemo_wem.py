@@ -211,28 +211,27 @@ def download_and_extract_data_for_request(
                 f"The extracted data is a {type(dataset)} object, "
                 "expected a pandas DataFrame."
             )
-        else:
-            # Extract the electricity demand data from the dataset.
-            electricity_demand_time_series = pandas.Series(
-                dataset["Operational Demand (MW)"].values,
-                index=pandas.to_datetime(dataset["Trading Interval"]),
-            )
 
-            # Add the timezone information to the index.
-            electricity_demand_time_series.index = (
-                electricity_demand_time_series.index.tz_localize(
-                    "Australia/Perth",
-                    ambiguous="NaT",
-                    nonexistent="NaT",
-                ).tz_convert("UTC")
-            )
+        # Extract the electricity demand data from the dataset.
+        electricity_demand_time_series = pandas.Series(
+            dataset["Operational Demand (MW)"].values,
+            index=pandas.to_datetime(dataset["Trading Interval"]),
+        )
 
-            # Add 30 minutes to the index because the demand data seems
-            # to be reported at the beginning of the trading interval.
-            electricity_demand_time_series.index = (
-                electricity_demand_time_series.index
-                + pandas.Timedelta(minutes=30)
-            )
+        # Add the timezone information to the index.
+        electricity_demand_time_series.index = (
+            electricity_demand_time_series.index.tz_localize(
+                "Australia/Perth",
+                ambiguous="NaT",
+                nonexistent="NaT",
+            ).tz_convert("UTC")
+        )
+
+        # Add 30 minutes to the index because the demand data seems
+        # to be reported at the beginning of the trading interval.
+        electricity_demand_time_series.index = (
+            electricity_demand_time_series.index + pandas.Timedelta(minutes=30)
+        )
 
     else:
         logging.info(
@@ -258,11 +257,11 @@ def download_and_extract_data_for_request(
                 f"The extracted data is a {type(dataset)} object, "
                 "expected a pandas DataFrame."
             )
-        else:
-            # Extract the electricity demand data from the dataset.
-            electricity_demand_time_series = pandas.Series(
-                dataset["operationalDemand"].values,
-                index=pandas.to_datetime(dataset["asAtTimeStamp"], utc=True),
-            )
+
+        # Extract the electricity demand data from the dataset.
+        electricity_demand_time_series = pandas.Series(
+            dataset["operationalDemand"].values,
+            index=pandas.to_datetime(dataset["asAtTimeStamp"], utc=True),
+        )
 
     return electricity_demand_time_series

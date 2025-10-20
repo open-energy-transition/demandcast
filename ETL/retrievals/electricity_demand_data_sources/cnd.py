@@ -85,22 +85,22 @@ def download_and_extract_data() -> pandas.Series:
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Extract the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
-            dataset["Carga Real"].values,
-            index=pandas.to_datetime(dataset["Fecha Hora"]),
-        )
 
-        # Add one hour to the index because the electricity demand seems
-        # to be provided at the beginning of the hour.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index + pandas.Timedelta(hours=1)
-        )
+    # Extract the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset["Carga Real"].values,
+        index=pandas.to_datetime(dataset["Fecha Hora"]),
+    )
 
-        # Add the timezone information to the index.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index.tz_localize("America/Panama")
-        )
+    # Add one hour to the index because the electricity demand seems
+    # to be provided at the beginning of the hour.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index + pandas.Timedelta(hours=1)
+    )
 
-        return electricity_demand_time_series
+    # Add the timezone information to the index.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index.tz_localize("America/Panama")
+    )
+
+    return electricity_demand_time_series

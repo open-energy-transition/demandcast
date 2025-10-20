@@ -80,14 +80,16 @@ def get_available_requests() -> list[str]:
         The list of available requests.
     """
     # Read the start and end date of the available data.
-    start_date, end_date = (
+    __, end_date = (
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "cammesa"
         )["ARG"]
     )
 
     # CAMMESA only provides data for the last 9 months.
-    start_date = pandas.Timestamp(f"{end_date.year}-{end_date.month - 9}-01")
+    start_date = pandas.Timestamp(
+        f"{end_date.year}-{end_date.month}-01"
+    ) - pandas.DateOffset(months=8)
 
     # Return the available requests, which are the dates in the format
     # YYYY-MM-DD.
@@ -167,17 +169,17 @@ def download_and_extract_data_for_request(date: str) -> pandas.Series:
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Remove rows with NaN values for demand.
-        dataset = dataset.dropna(subset=["dem"])
 
-        # Extract the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
-            dataset["dem"].values, index=pandas.to_datetime(dataset["fecha"])
-        )
+    # Remove rows with NaN values for demand.
+    dataset = dataset.dropna(subset=["dem"])
 
-        # Drop the last value of the time series because it belongs to
-        # the following day.
-        electricity_demand_time_series = electricity_demand_time_series[:-1]
+    # Extract the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset["dem"].values, index=pandas.to_datetime(dataset["fecha"])
+    )
 
-        return electricity_demand_time_series
+    # Drop the last value of the time series because it belongs to
+    # the following day.
+    electricity_demand_time_series = electricity_demand_time_series[:-1]
+
+    return electricity_demand_time_series

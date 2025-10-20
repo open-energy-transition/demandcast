@@ -189,50 +189,50 @@ def download_and_extract_data_for_request(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Initialize the list to store the daily values.
-        dayly_values_list = []
 
-        # Iterate over the dates in the dataset.
-        for date in dataset["Date"]:
-            # Extract the row corresponding to the date.
-            values_dict = dataset[dataset["Date"] == date]
+    # Initialize the list to store the daily values.
+    dayly_values_list = []
 
-            # Extract the values for each hour of the day.
-            hourly_values = [
-                (values_dict["Values"].to_numpy()[0])[f"Hour{hour:02d}"]
-                for hour in range(1, 25)
-            ]
+    # Iterate over the dates in the dataset.
+    for date in dataset["Date"]:
+        # Extract the row corresponding to the date.
+        values_dict = dataset[dataset["Date"] == date]
 
-            # Define the date and time for each hour of the day.
-            date_and_time = [date + f" {hour:02d}:00" for hour in range(24)]
+        # Extract the values for each hour of the day.
+        hourly_values = [
+            (values_dict["Values"].to_numpy()[0])[f"Hour{hour:02d}"]
+            for hour in range(1, 25)
+        ]
 
-            # Create and append a pandas Series for the day.
-            dayly_values_list.append(
-                pandas.Series(
-                    hourly_values,
-                    index=pandas.to_datetime(date_and_time),
-                )
+        # Define the date and time for each hour of the day.
+        date_and_time = [date + f" {hour:02d}:00" for hour in range(24)]
+
+        # Create and append a pandas Series for the day.
+        dayly_values_list.append(
+            pandas.Series(
+                hourly_values,
+                index=pandas.to_datetime(date_and_time),
             )
-
-        # Concatenate the daily values into a single pandas Series.
-        electricity_demand_time_series = pandas.concat(dayly_values_list)
-
-        # Convert the electricity demand values to float type.
-        electricity_demand_time_series = electricity_demand_time_series.astype(
-            float
         )
 
-        # Values are in kWh with a frequency of 1 hour. Convert to MW.
-        electricity_demand_time_series = electricity_demand_time_series / 1000
+    # Concatenate the daily values into a single pandas Series.
+    electricity_demand_time_series = pandas.concat(dayly_values_list)
 
-        # Add the timezone to the index.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index.tz_localize("America/Bogota")
-        )
+    # Convert the electricity demand values to float type.
+    electricity_demand_time_series = electricity_demand_time_series.astype(
+        float
+    )
 
-        # Add 1 hour to the index to account for the fact that the time
-        # is given at the beginning of the hour.
-        electricity_demand_time_series.index += pandas.Timedelta(hours=1)
+    # Values are in kWh with a frequency of 1 hour. Convert to MW.
+    electricity_demand_time_series = electricity_demand_time_series / 1000
 
-        return electricity_demand_time_series
+    # Add the timezone to the index.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index.tz_localize("America/Bogota")
+    )
+
+    # Add 1 hour to the index to account for the fact that the time
+    # is given at the beginning of the hour.
+    electricity_demand_time_series.index += pandas.Timedelta(hours=1)
+
+    return electricity_demand_time_series

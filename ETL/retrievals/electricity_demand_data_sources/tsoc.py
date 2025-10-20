@@ -235,23 +235,21 @@ def download_and_extract_data_for_request(
         raise ValueError(
             f"The extracted page is a {type(page)} object, expected a string."
         )
-    else:
-        # Extract time and generation data.
-        dates, hours, minutes, generation = _read_timestamp_and_generation(
-            page
-        )
 
-        # Construct datetime index with time zone.
-        date_time = pandas.to_datetime(
-            [
-                f"{date} {hour}:{minute}"
-                for date, hour, minute in zip(dates, hours, minutes)
-            ]
-        ).tz_localize("Asia/Nicosia", nonexistent="NaT", ambiguous="NaT")
+    # Extract time and generation data.
+    dates, hours, minutes, generation = _read_timestamp_and_generation(page)
 
-        # Create a Pandas Series for the electricity generation data.
-        electricity_generation_time_series = pandas.Series(
-            data=generation, index=date_time
-        )
+    # Construct datetime index with time zone.
+    date_time = pandas.to_datetime(
+        [
+            f"{date} {hour}:{minute}"
+            for date, hour, minute in zip(dates, hours, minutes)
+        ]
+    ).tz_localize("Asia/Nicosia", nonexistent="NaT", ambiguous="NaT")
 
-        return electricity_generation_time_series
+    # Create a Pandas Series for the electricity generation data.
+    electricity_generation_time_series = pandas.Series(
+        data=generation, index=date_time
+    )
+
+    return electricity_generation_time_series

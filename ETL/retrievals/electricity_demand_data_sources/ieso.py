@@ -180,27 +180,27 @@ def download_and_extract_data_for_request(
                 f"The extracted data is a {type(dataset)} object, "
                 "expected a pandas DataFrame."
             )
-        else:
-            # Extract the electricity demand time series.
-            electricity_demand_time_series = pandas.Series(
-                dataset["OntarioDemand"].values,
-                index=pandas.to_datetime(dataset["DateTime"]),
+
+        # Extract the electricity demand time series.
+        electricity_demand_time_series = pandas.Series(
+            dataset["OntarioDemand"].values,
+            index=pandas.to_datetime(dataset["DateTime"]),
+        )
+
+        # Convert the time zone of the electricity demand time
+        # series to UTC.
+        electricity_demand_time_series.index = (
+            electricity_demand_time_series.index.tz_localize(
+                "America/Toronto", ambiguous="NaT", nonexistent="NaT"
             )
+        )
 
-            # Convert the time zone of the electricity demand time
-            # series to UTC.
-            electricity_demand_time_series.index = (
-                electricity_demand_time_series.index.tz_localize(
-                    "America/Toronto", ambiguous="NaT", nonexistent="NaT"
-                )
-            )
+        # Add one hour to the time index because the time values
+        # appear to be provided at the beginning of the time
+        # interval.
+        electricity_demand_time_series.index += pandas.Timedelta(hours=1)
 
-            # Add one hour to the time index because the time values
-            # appear to be provided at the beginning of the time
-            # interval.
-            electricity_demand_time_series.index += pandas.Timedelta(hours=1)
-
-            return electricity_demand_time_series
+        return electricity_demand_time_series
 
     else:
         logging.info(
@@ -218,20 +218,18 @@ def download_and_extract_data_for_request(
                 f"The extracted data is a {type(dataset)} object, "
                 "expected a pandas DataFrame."
             )
-        else:
-            # Extract the index of the electricity demand time series.
-            index = pandas.to_datetime(
-                [
-                    date + " " + str(time - 1) + ":00"
-                    for date, time in zip(dataset["Date"], dataset["Hour"])
-                ]
-            ).tz_localize(
-                "America/Toronto", ambiguous="NaT", nonexistent="NaT"
-            )
 
-            # Extract the electricity demand time series.
-            electricity_demand_time_series = pandas.Series(
-                dataset["Ontario Demand"].values, index=index
-            )
+        # Extract the index of the electricity demand time series.
+        index = pandas.to_datetime(
+            [
+                date + " " + str(time - 1) + ":00"
+                for date, time in zip(dataset["Date"], dataset["Hour"])
+            ]
+        ).tz_localize("America/Toronto", ambiguous="NaT", nonexistent="NaT")
 
-            return electricity_demand_time_series
+        # Extract the electricity demand time series.
+        electricity_demand_time_series = pandas.Series(
+            dataset["Ontario Demand"].values, index=index
+        )
+
+        return electricity_demand_time_series

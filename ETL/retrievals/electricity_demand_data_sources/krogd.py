@@ -75,6 +75,11 @@ def download_and_extract_data() -> pandas.Series:
     ------
     ValueError
         If the extracted data is not a pandas DataFrame.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the data file is not found in the specified folder.
     """
     # Get the data folder.
     data_directory = utils.directories.read_folders_structure()[
@@ -88,6 +93,13 @@ def download_and_extract_data() -> pandas.Series:
         if file.startswith("KRO")
     ]
 
+    if not downloaded_file_paths:
+        raise FileNotFoundError(
+            f"The data for KROGD has not been found in the folder "
+            f"{data_directory}. Please download the data manually from "
+            f"{get_url()}. The data files must be named starting with 'KRO'."
+        )
+
     # Load the data from the downloaded files into a pandas DataFrame.
     dataset = pandas.concat(
         [
@@ -96,42 +108,32 @@ def download_and_extract_data() -> pandas.Series:
         ]
     )
 
-    # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
-        raise ValueError(
-            f"The extracted data is a {type(dataset)} object, "
-            "expected a pandas DataFrame."
-        )
-    else:
-        # The column names have the time information. Rearrange the
-        # columns to have the time information on another column.
-        dataset = dataset.melt(
-            id_vars=dataset.columns[0], var_name="Hour", value_name="Value"
-        )
+    # The column names have the time information. Rearrange the
+    # columns to have the time information on another column.
+    dataset = dataset.melt(
+        id_vars=dataset.columns[0], var_name="Hour", value_name="Value"
+    )
 
-        # Define the new index.
-        index = pandas.to_datetime(
-            dataset.iloc[:, 0].astype(str)
-            + " "
-            + (
-                dataset.iloc[:, 1]
-                .astype(str)
-                .str.replace("시", "")
-                .astype(int)
-                - 1
-            ).astype(str),
-            format="%Y-%m-%d %H",
-        ) + pandas.Timedelta(hours=1)
+    # Define the new index.
+    index = pandas.to_datetime(
+        dataset.iloc[:, 0].astype(str)
+        + " "
+        + (
+            dataset.iloc[:, 1].astype(str).str.replace("시", "").astype(int)
+            - 1
+        ).astype(str),
+        format="%Y-%m-%d %H",
+    ) + pandas.Timedelta(hours=1)
 
-        # Define the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
-            dataset["Value"].values,
-            index=index,
-        )
+    # Define the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset["Value"].values,
+        index=index,
+    )
 
-        # Add the timezone information.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index.tz_localize("Asia/Seoul")
-        )
+    # Add the timezone information.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index.tz_localize("Asia/Seoul")
+    )
 
-        return electricity_demand_time_series
+    return electricity_demand_time_series

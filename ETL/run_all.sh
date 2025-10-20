@@ -52,7 +52,7 @@ uv run retrieve.py gridded_population
 uv run retrieve.py gdp_ppp_per_capita
 
 # Retrieve the gridded GDP PPP data.
-# uv run retrieve.py gridded_gdp_ppp
+uv run retrieve.py gridded_gdp_ppp
 
 # Retrieve the gridded weather data.
 uv run retrieve.py gridded_weather -wv temperature

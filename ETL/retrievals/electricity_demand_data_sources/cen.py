@@ -193,33 +193,33 @@ def download_and_extract_data_for_request(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Merge the date and time columns into a single column. Consider
-        # that the time is given at the end of the hour. In some years
-        # where there is the switch to or from daylight saving time,
-        # there is a 25th hour.
-        dataset["date and time"] = [
-            date + f" {(min(time, 24) - 1):02d}:00"
-            for date, time in zip(dataset["fecha"], dataset["hora"])
-        ]
 
-        # Sort the dataset by date and time.
-        dataset = dataset.sort_values(by="date and time", ascending=True)
+    # Merge the date and time columns into a single column. Consider
+    # that the time is given at the end of the hour. In some years
+    # where there is the switch to or from daylight saving time,
+    # there is a 25th hour.
+    dataset["date and time"] = [
+        date + f" {(min(time, 24) - 1):02d}:00"
+        for date, time in zip(dataset["fecha"], dataset["hora"])
+    ]
 
-        # Extract the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
-            dataset["demanda"].values,
-            index=pandas.to_datetime(dataset["date and time"]),
+    # Sort the dataset by date and time.
+    dataset = dataset.sort_values(by="date and time", ascending=True)
+
+    # Extract the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset["demanda"].values,
+        index=pandas.to_datetime(dataset["date and time"]),
+    )
+
+    # Add the timezone to the index.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index.tz_localize(
+            "America/Santiago", ambiguous="NaT", nonexistent="NaT"
         )
+    )
 
-        # Add the timezone to the index.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index.tz_localize(
-                "America/Santiago", ambiguous="NaT", nonexistent="NaT"
-            )
-        )
+    # Add 1 hour to the index to match the original dataset.
+    electricity_demand_time_series.index += pandas.Timedelta(hours=1)
 
-        # Add 1 hour to the index to match the original dataset.
-        electricity_demand_time_series.index += pandas.Timedelta(hours=1)
-
-        return electricity_demand_time_series
+    return electricity_demand_time_series

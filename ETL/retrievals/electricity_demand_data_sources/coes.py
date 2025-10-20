@@ -141,21 +141,21 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Extract the electricity demand data from the dataset.
-        dataset = pandas.DataFrame(
-            dataset[dataset["Name"] == "Ejecutado"]["Data"][0]
-        )
 
-        # Extract the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
-            dataset["Valor"].values,
-            index=pandas.to_datetime(dataset["Nombre"]),
-        )
+    # Extract the electricity demand data from the dataset.
+    dataset = pandas.DataFrame(
+        dataset[dataset["Name"] == "Ejecutado"]["Data"][0]
+    )
 
-        # Add timezone information to the index.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index.tz_localize("America/Lima")
-        )
+    # Extract the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset["Valor"].values,
+        index=pandas.to_datetime(dataset["Nombre"]),
+    )
 
-        return electricity_demand_time_series
+    # Add timezone information to the index.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index.tz_localize("America/Lima")
+    )
+
+    return electricity_demand_time_series

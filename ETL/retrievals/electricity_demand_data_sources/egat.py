@@ -66,12 +66,12 @@ def get_available_requests() -> list[int]:
     # Read the start and end date of the available data.
     start_date, end_date = (
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            data_source="thailand"
+            data_source="egat"
         )["THA"]
     )
 
     # Return the available requests, which are the years.
-    return list(range(start_date.year, end_date.year))
+    return list(range(start_date.year, end_date.year + 1))
 
 
 def get_url(year: int) -> str:
@@ -137,31 +137,31 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Sum the regional demand columns to get total national demand.
-        dataset["National Demand"] = (
-            dataset["north_demand"]
-            + dataset["south_demand"]
-            + dataset["metropolitan_demand"]
-            + dataset["central_demand"]
-            + dataset["northeast_demand"]
-        )
 
-        # Extract the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
-            dataset["National Demand"].values,
-            index=pandas.to_datetime(dataset["datetime"]),
-        )
+    # Sum the regional demand columns to get total national demand.
+    dataset["National Demand"] = (
+        dataset["north_demand"]
+        + dataset["south_demand"]
+        + dataset["metropolitan_demand"]
+        + dataset["central_demand"]
+        + dataset["northeast_demand"]
+    )
 
-        # Add one hour to the index because the electricity demand seems
-        # to be provided at the beginning of the hour.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index + pandas.Timedelta(hours=1)
-        )
+    # Extract the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset["National Demand"].values,
+        index=pandas.to_datetime(dataset["datetime"], format="%d/%m/%Y %H:%M"),
+    )
 
-        # Add the timezone information to the index.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index.tz_localize("Asia/Bangkok")
-        )
+    # Add one hour to the index because the electricity demand seems
+    # to be provided at the beginning of the hour.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index + pandas.Timedelta(hours=1)
+    )
 
-        return electricity_demand_time_series
+    # Add the timezone information to the index.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index.tz_localize("Asia/Bangkok")
+    )
+
+    return electricity_demand_time_series

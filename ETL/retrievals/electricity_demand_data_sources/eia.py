@@ -240,11 +240,11 @@ def download_and_extract_data_for_request(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Create the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
-            dataset["value"].values,
-            index=pandas.to_datetime(dataset["period"]),
-        ).tz_localize("UTC")
 
-        return electricity_demand_time_series
+    # Create the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset["value"].values,
+        index=pandas.to_datetime(dataset["period"]),
+    ).tz_localize("UTC")
+
+    return electricity_demand_time_series

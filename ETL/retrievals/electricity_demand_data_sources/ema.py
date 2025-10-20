@@ -202,55 +202,53 @@ def download_and_extract_data_for_request(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
+
+    # Find the row that contains the string "00:30" in the first
+    # column.
+    start_row = dataset[dataset.iloc[:, 0] == "00:30"].index[0]
+
+    # Keep only the rows from the start row and the following 48
+    # rows.
+    dataset = dataset.iloc[start_row : start_row + 48, :]
+
+    # Reconstruct the request date.
+    request_date = pandas.Timestamp(year=year, month=month, day=day)
+
+    # Keep only the columns with system demand data.
+    if request_date == pandas.Timestamp("2014-11-03"):
+        dataset = dataset.iloc[:, [1 + 2 * i for i in range(0, 7)]]
+    elif request_date <= pandas.Timestamp("2014-09-22"):
+        dataset = dataset.iloc[:, 1:8]
     else:
-        # Find the row that contains the string "00:30" in the first
-        # column.
-        start_row = dataset[dataset.iloc[:, 0] == "00:30"].index[0]
+        dataset = dataset.iloc[:, [1 + 3 * i for i in range(0, 7)]]
 
-        # Keep only the rows from the start row and the following 48
-        # rows.
-        dataset = dataset.iloc[start_row : start_row + 48, :]
+    # Add a column for the hour of the day.
+    dataset["Hour"] = pandas.date_range(
+        "00:00", periods=48, freq="30min"
+    ).strftime("%H:%M")
 
-        # Reconstruct the request date.
-        request_date = pandas.Timestamp(year=year, month=month, day=day)
+    # Rename the columns to the corresponding dates.
+    dataset.columns = [
+        date.strftime("%Y-%m-%d")
+        for date in pandas.date_range(start=request_date, periods=7)
+    ] + ["Hour"]
 
-        # Keep only the columns with system demand data.
-        if request_date == pandas.Timestamp("2014-11-03"):
-            dataset = dataset.iloc[:, [1 + 2 * i for i in range(0, 7)]]
-        elif request_date <= pandas.Timestamp("2014-09-22"):
-            dataset = dataset.iloc[:, 1:8]
-        else:
-            dataset = dataset.iloc[:, [1 + 3 * i for i in range(0, 7)]]
+    # Reshape the dataset from wide to long format.
+    dataset = dataset.melt(id_vars="Hour", var_name="Date", value_name="Value")
 
-        # Add a column for the hour of the day.
-        dataset["Hour"] = pandas.date_range(
-            "00:00", periods=48, freq="30min"
-        ).strftime("%H:%M")
+    # Define the new index.
+    index = pandas.to_datetime(
+        dataset["Date"] + " " + dataset["Hour"], format="%Y-%m-%d %H:%M"
+    )
 
-        # Rename the columns to the corresponding dates.
-        dataset.columns = [
-            date.strftime("%Y-%m-%d")
-            for date in pandas.date_range(start=request_date, periods=7)
-        ] + ["Hour"]
+    # Define the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset["Value"].values, index=index
+    )
 
-        # Reshape the dataset from wide to long format.
-        dataset = dataset.melt(
-            id_vars="Hour", var_name="Date", value_name="Value"
-        )
+    # Add the timezone information.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index.tz_localize("Asia/Singapore")
+    )
 
-        # Define the new index.
-        index = pandas.to_datetime(
-            dataset["Date"] + " " + dataset["Hour"], format="%Y-%m-%d %H:%M"
-        )
-
-        # Define the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
-            dataset["Value"].values, index=index
-        )
-
-        # Add the timezone information.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index.tz_localize("Asia/Singapore")
-        )
-
-        return electricity_demand_time_series
+    return electricity_demand_time_series

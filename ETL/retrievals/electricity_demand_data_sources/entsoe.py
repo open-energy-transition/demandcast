@@ -247,32 +247,30 @@ def download_and_extract_data_for_request(
             "The ENTSO-E API key is not set. Please set the ENTSO_API_KEY "
             "environment variable."
         )
-    else:
-        # Download the electricity demand time series from the ENTSO-E
-        # API.
-        electricity_demand_time_series = utils.fetcher.fetch_entsoe_demand(
-            api_key, code, start_date, end_date
+
+    # Download the electricity demand time series from the ENTSO-E
+    # API.
+    electricity_demand_time_series = utils.fetcher.fetch_entsoe_demand(
+        api_key, code, start_date, end_date
+    )
+
+    if not electricity_demand_time_series.empty:
+        # The time values are provided at the beginning of the time
+        # step. Set them at the end of the time step for
+        # consistency.
+        if len(electricity_demand_time_series) > 1:
+            # Calculate the time difference between the time values.
+            time_difference = (
+                electricity_demand_time_series.index.to_series().diff().min()
+            )
+        else:
+            # Assume a one-hour time difference if there is only one
+            # time value.
+            time_difference = pandas.Timedelta("1h")
+
+        # Add the time difference to the time values.
+        electricity_demand_time_series.index = (
+            electricity_demand_time_series.index + time_difference
         )
 
-        if not electricity_demand_time_series.empty:
-            # The time values are provided at the beginning of the time
-            # step. Set them at the end of the time step for
-            # consistency.
-            if len(electricity_demand_time_series) > 1:
-                # Calculate the time difference between the time values.
-                time_difference = (
-                    electricity_demand_time_series.index.to_series()
-                    .diff()
-                    .min()
-                )
-            else:
-                # Assume a one-hour time difference if there is only one
-                # time value.
-                time_difference = pandas.Timedelta("1h")
-
-            # Add the time difference to the time values.
-            electricity_demand_time_series.index = (
-                electricity_demand_time_series.index + time_difference
-            )
-
-        return electricity_demand_time_series
+    return electricity_demand_time_series

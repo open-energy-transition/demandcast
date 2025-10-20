@@ -35,7 +35,7 @@ def redistribute() -> bool:
 
 
 def _check_input_parameters(
-    year: int | None = None, code: str = "BR_N"
+    year: int | None = None, code: str = "BRA_N"
 ) -> None:
     """
     Check if the input parameters are valid.
@@ -158,18 +158,18 @@ def download_and_extract_data_for_request(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Filter the dataset for the subdivision of interest.
-        dataset = dataset[dataset["id_subsistema"] == subdivision_code]
 
-        # Extract the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
-            dataset["val_cargaenergiahomwmed"].values,
-            index=pandas.to_datetime(dataset["din_instante"]),
-        ).tz_localize("America/Sao_Paulo", ambiguous="NaT", nonexistent="NaT")
+    # Filter the dataset for the subdivision of interest.
+    dataset = dataset[dataset["id_subsistema"] == subdivision_code]
 
-        # Add one hour to the time index because the time values appear
-        # to be provided at the beginning of the time interval.
-        electricity_demand_time_series.index += pandas.Timedelta(hours=1)
+    # Extract the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset["val_cargaenergiahomwmed"].values,
+        index=pandas.to_datetime(dataset["din_instante"]),
+    ).tz_localize("America/Sao_Paulo", ambiguous="NaT", nonexistent="NaT")
 
-        return electricity_demand_time_series
+    # Add one hour to the time index because the time values appear
+    # to be provided at the beginning of the time interval.
+    electricity_demand_time_series.index += pandas.Timedelta(hours=1)
+
+    return electricity_demand_time_series

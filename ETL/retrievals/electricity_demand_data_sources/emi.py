@@ -180,21 +180,21 @@ def download_and_extract_data_for_request(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        # Extract the electricity demand time series. Convert GWh to MW
-        # considering a 0.5-hour time step.
-        electricity_demand_time_series = pandas.Series(
-            dataset["Demand (GWh)"].to_numpy() * 1000 / 0.5,
-            index=pandas.to_datetime(
-                dataset["Period end"], format="%d/%m/%Y %H:%M:%S"
-            ),
-        )
 
-        # Add the time zone information to the time series.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index.tz_localize(
-                "Pacific/Auckland", ambiguous="NaT", nonexistent="NaT"
-            )
-        )
+    # Extract the electricity demand time series. Convert GWh to MW
+    # considering a 0.5-hour time step.
+    electricity_demand_time_series = pandas.Series(
+        dataset["Demand (GWh)"].to_numpy() * 1000 / 0.5,
+        index=pandas.to_datetime(
+            dataset["Period end"], format="%d/%m/%Y %H:%M:%S"
+        ),
+    )
 
-        return electricity_demand_time_series
+    # Add the time zone information to the time series.
+    electricity_demand_time_series.index = (
+        electricity_demand_time_series.index.tz_localize(
+            "Pacific/Auckland", ambiguous="NaT", nonexistent="NaT"
+        )
+    )
+
+    return electricity_demand_time_series

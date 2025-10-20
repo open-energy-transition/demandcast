@@ -137,21 +137,21 @@ def download_and_extract_data(code: str) -> pandas.Series:
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
-    else:
-        if code == "CAN_NB":
-            # Remove unknown code from the time step values.
-            dataset["TIME_PERIOD"] = dataset["TIME_PERIOD"].str.replace(
-                ".000Z", ""
-            )
-        if code == "CAN_ON":
-            # Remove dummy time steps where the time is equal to
-            # 06:59:59 right before the daylight saving time change.
-            dataset = dataset[~dataset["TIME_PERIOD"].str.contains("06:59:59")]
 
-        # Extract the electricity demand time series with UTC time zone.
-        electricity_demand_time_series = pandas.Series(
-            data=dataset["OBS_VALUE"].values,
-            index=pandas.to_datetime(dataset["TIME_PERIOD"]),
-        ).tz_localize("UTC")
+    if code == "CAN_NB":
+        # Remove unknown code from the time step values.
+        dataset["TIME_PERIOD"] = dataset["TIME_PERIOD"].str.replace(
+            ".000Z", ""
+        )
+    if code == "CAN_ON":
+        # Remove dummy time steps where the time is equal to
+        # 06:59:59 right before the daylight saving time change.
+        dataset = dataset[~dataset["TIME_PERIOD"].str.contains("06:59:59")]
 
-        return electricity_demand_time_series
+    # Extract the electricity demand time series with UTC time zone.
+    electricity_demand_time_series = pandas.Series(
+        data=dataset["OBS_VALUE"].values,
+        index=pandas.to_datetime(dataset["TIME_PERIOD"]),
+    ).tz_localize("UTC")
+
+    return electricity_demand_time_series
