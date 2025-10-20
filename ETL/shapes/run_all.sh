@@ -3,6 +3,7 @@
 # Define the name of the scripts that generate the shapefiles.
 scripts="cenace \
 eia \
+kansaitd \
 neso \
 ons \
 tepco"
