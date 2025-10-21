@@ -95,6 +95,169 @@ def _read_mape(
     return mape
 
 
+def _add_box_and_bar_plot(
+    axs: list[matplotlib.pyplot.Axes],
+    data: list[pandas.Series],
+    marker_size: int = 10,
+    line_width: float = 2.0,
+    fontsize: float = 5.0,
+) -> None:
+    """
+    Add a box and whisker plot and a bar plot to the given axes.
+
+    Parameters
+    ----------
+    axs : list[matplotlib.pyplot.Axes]
+        The axes where to plot the box and whisker plot and the bar
+        plot.
+    data : list[pandas.Series]
+        The data to be plotted.
+    marker_size : int, optional
+        The size of the marker for the mean point.
+    line_width : float, optional
+        The width of the lines in the box plot.
+    fontsize : float, optional
+        The font size for the x-tick labels.
+
+    Raises
+    ------
+    ValueError
+        If the axs parameter does not contain exactly two axes, or if
+        the data parameter does not contain one or two series.
+    """
+    if len(axs) != 2:
+        raise ValueError("The axs parameter must contain exactly two axes.")
+    if len(data) < 1 or len(data) > 2:
+        raise ValueError("The data parameter must contain one or two series.")
+
+    # Define the colors to be used for each series.
+    colors = ["tab:blue", "tab:orange"]
+
+    # Define the properties of the box and whisker plot common to all
+    # series.
+    medianprops = dict(linewidth=line_width * 1.5, color="tab:red")
+    meanpointprops = dict(
+        marker="D",
+        markersize=marker_size,
+        markerfacecolor="tab:green",
+        markeredgecolor="black",
+    )
+
+    # Define the box width based on the number of series.
+    box_width = 0.2 if len(data) == 1 else 0.4
+
+    for i, series in enumerate(data):
+        # Define the properties of the box and whisker plot for the
+        # current series.
+        boxprops = dict(color=colors[i], linewidth=line_width)
+        whiskerprops = dict(color=colors[i], linewidth=line_width)
+        capprops = dict(color=colors[i], linewidth=line_width)
+        flierprops = dict(markeredgecolor=colors[i], linewidth=line_width)
+
+        # Add the box and whisker plot to the axes.
+        axs[0].boxplot(
+            series,
+            showmeans=True,
+            medianprops=medianprops,
+            meanprops=meanpointprops,
+            boxprops=boxprops,
+            whiskerprops=whiskerprops,
+            capprops=capprops,
+            flierprops=flierprops,
+            widths=box_width,
+            positions=[i],
+        )
+
+    # Remove the x-ticks.
+    axs[0].set_xticks([])
+
+    # Determine the width of the x-axis of the bar plot.
+    x_axis_width = len(data[0])
+
+    # Define the indices for the bars.
+    indices = numpy.arange(x_axis_width)
+
+    # Add the bars to the axes.
+    for i, series in enumerate(data):
+        axs[1].bar(
+            indices,
+            series,
+            width=0.8 if len(data) == 1 else -0.4 if i == 0 else 0.4,
+            align="edge" if len(data) == 2 else "center",
+            color=colors[i],
+        )
+
+    # Set the x-ticks, x-tick labels, and x-axis limits.
+    axs[1].set_xticks(indices)
+    axs[1].set_xticklabels(data[0].index, rotation=90, fontsize=fontsize)
+
+
+def _add_legend(
+    fig: matplotlib.pyplot.Figure,
+    versions: list[str],
+    y_pos: float = 1.05,
+) -> None:
+    """
+    Add a legend to the figure.
+
+    Parameters
+    ----------
+    fig : matplotlib.pyplot.Figure
+        The figure where to add the legend.
+    versions : list[str]
+        The versions to be included in the legend.
+    """
+    # Define the colors to be used for each version.
+    colors = ["tab:blue", "tab:orange"]
+
+    # Define the positions for the legend entries.
+    positions = (
+        [[0.54, y_pos]]
+        if len(versions) == 1
+        else [[0.38, y_pos], [0.68, y_pos]]
+    )
+
+    # Add a legend.
+    for i, version in enumerate(versions):
+        fig.text(
+            positions[i][0],
+            positions[i][1],
+            version,
+            color="white",
+            ha="center",
+            weight="bold",
+            fontsize=12,
+            bbox=dict(
+                boxstyle="square", facecolor=colors[i], edgecolor="none"
+            ),
+        )
+
+
+def _add_explanatory_text(
+    fig: matplotlib.pyplot.Figure,
+) -> None:
+    """
+    Add explanatory text to the figure.
+
+    Parameters
+    ----------
+    fig : matplotlib.pyplot.Figure
+        The figure where to add the explanatory text.
+    """
+    # Add a text to indicate that lower MAPE is better.
+    fig.text(
+        1.035,
+        0.5,
+        "Lower MAPE is better",
+        ha="center",
+        va="center",
+        weight="bold",
+        fontsize=12,
+        rotation=90,
+        bbox=dict(boxstyle="larrow", facecolor="lightgrey", edgecolor="none"),
+    )
+
+
 def _plot_overall(
     figure_directory: str,
     version: str,
@@ -125,56 +288,24 @@ def _plot_overall(
         gridspec_kw={"width_ratios": [1, 5]},
     )
 
-    # Add a box and whisker plot to show the distribution of MAPE
-    # values.
-    medianprops = dict(linewidth=3, color="tab:red")
-    meanpointprops = dict(
-        marker="D",
-        markersize=10,
-        markerfacecolor="tab:green",
-        markeredgecolor="black",
+    # Add a box and whisker plot and a bar plot.
+    _add_box_and_bar_plot(
+        [axs[0], axs[1]], [mape_to_plot[f"{version}_all_entities"]]
     )
-    axs[0].boxplot(
-        mape_to_plot[f"{version}_all_entities"],
-        showmeans=True,
-        medianprops=medianprops,
-        meanprops=meanpointprops,
-        widths=0.2,
+    axs[0].set_ylabel(
+        "Mean Absolute Percentage Error (MAPE)", weight="bold", fontsize=12
     )
-    axs[0].set_xticks(
-        [1],
-        [f"{version}"],
-        rotation=60,
-        ha="right",
+    axs[1].set_xlabel(
+        "Country or subdivision",
         weight="bold",
-        color="tab:blue",
+        fontsize=12,
     )
-    axs[0].set_ylabel("Mean Absolute Percentage Error (MAPE)", weight="bold")
 
-    # Add a bar plot where for each entity, the MAPE value is shown.
-    indices = numpy.arange(len(mape_to_plot))
-    axs[1].bar(
-        indices,
-        mape_to_plot[f"{version}_all_entities"],
-        color="tab:blue",
-    )
-    axs[1].set_xticks(indices, mape_to_plot.index, rotation=90, fontsize=5)
-    axs[1].set_xlim(
-        -0.02 * (len(mape_to_plot) - 1), 1.02 * (len(mape_to_plot) - 1)
-    )
-    axs[1].set_xlabel("Country or subdivision", weight="bold")
+    # Add a text to indicate that lower MAPE is better.
+    _add_explanatory_text(fig)
 
-    # Add the average MAPE value.
-    # mean_mape = mape_to_plot[f"{version}_all_entities"].mean()
-    # axs[1].text(
-    #     0.05,
-    #     0.90,
-    #     f"Average MAPE: {(mean_mape):.2f}%",
-    #     color="tab:blue",
-    #     ha="left",
-    #     transform=axs[1].transAxes,
-    #     weight="bold",
-    # )
+    # Add a legend.
+    _add_legend(fig, [f"Version {version}"])
 
     # Save the plot to a file.
     matplotlib.pyplot.savefig(
@@ -218,103 +349,24 @@ def _plot_comparison(
         gridspec_kw={"width_ratios": [1, 5]},
     )
 
-    # Add a box and whisker plot to show the distribution of MAPE
-    # values for both versions.
-    medianprops = dict(linewidth=3, color="tab:red")
-    meanpointprops = dict(
-        marker="D",
-        markersize=10,
-        markerfacecolor="tab:green",
-        markeredgecolor="black",
-    )
-    axs[0].boxplot(
+    # Add a box and whisker plot and a bar plot.
+    _add_box_and_bar_plot(
+        [axs[0], axs[1]],
         [
             mape_to_plot[f"{version}_all_entities"],
             mape_to_plot[f"{compare_with_version}_all_entities"],
         ],
-        showmeans=True,
-        medianprops=medianprops,
-        meanprops=meanpointprops,
-        widths=0.4,
     )
-    axs[0].set_xticks(
-        [1, 2],
-        [f"{version}", f"{compare_with_version}"],
-        rotation=60,
-        ha="right",
-        weight="bold",
+    axs[0].set_ylabel(
+        "Mean Absolute Percentage Error (MAPE)", weight="bold", fontsize=12
     )
-    for xtick, color in zip(
-        axs[0].get_xticklabels(), ["tab:blue", "tab:orange"]
-    ):
-        xtick.set_color(color)
-    axs[0].set_ylabel("Mean Absolute Percentage Error (MAPE)", weight="bold")
+    axs[1].set_xlabel("Country or subdivision", weight="bold", fontsize=12)
 
-    # Add a bar plot where for each entity, the MAPE values from
-    # both versions are shown side by side.
-    width = 0.4
-    indices = numpy.arange(len(mape_to_plot))
-    axs[1].bar(
-        indices - width / 2,
-        mape_to_plot[f"{version}_all_entities"],
-        width,
-        color="tab:blue",
-    )
-    axs[1].bar(
-        indices + width / 2,
-        mape_to_plot[f"{compare_with_version}_all_entities"],
-        width,
-        color="tab:orange",
-    )
-    axs[1].set_xticks(indices, mape_to_plot.index, rotation=90, fontsize=5)
-    axs[1].set_xlim(
-        -0.02 * (len(mape_to_plot) - 1), 1.02 * (len(mape_to_plot) - 1)
-    )
-    axs[1].set_xlabel("Country or subdivision", weight="bold")
-
-    # Add the average MAPE values for both versions.
-    # mean_mape_version = mape_to_plot[f"{version}_all_entities"].mean()
-    # mean_mape_compare = mape_to_plot[
-    #     f"{compare_with_version}_all_entities"
-    # ].mean()
-    # axs[1].text(
-    #     0.05,
-    #     0.90,
-    #     f"Average MAPE: {(mean_mape_version):.2f}%",
-    #     color="tab:blue",
-    #     ha="left",
-    #     transform=axs[1].transAxes,
-    #     weight="bold",
-    # )
-    # axs[1].text(
-    #     0.05,
-    #     0.85,
-    #     f"Average MAPE: {(mean_mape_compare):.2f}%",
-    #     color="tab:orange",
-    #     ha="left",
-    #     transform=axs[1].transAxes,
-    #     weight="bold",
-    # )
+    # Add a text to indicate that lower MAPE is better.
+    _add_explanatory_text(fig)
 
     # Add a legend.
-    fig.text(
-        0.38,
-        1.03,
-        f"Version {version}",
-        color="white",
-        ha="center",
-        weight="bold",
-        bbox=dict(boxstyle="square", facecolor="tab:blue", edgecolor="none"),
-    )
-    fig.text(
-        0.68,
-        1.03,
-        f"Version {compare_with_version}",
-        color="white",
-        ha="center",
-        weight="bold",
-        bbox=dict(boxstyle="square", facecolor="tab:orange", edgecolor="none"),
-    )
+    _add_legend(fig, [f"Version {version}", f"Version {compare_with_version}"])
 
     # Save the plot to a file.
     matplotlib.pyplot.savefig(
@@ -346,40 +398,42 @@ def _plot_by_group(
     groups : dict[str, list[str]]
         Dictionary mapping case names to their respective groups.
     """
+    # Define the group labels for the legend.
+    group_labels = {
+        "lower_middle_income": "Lower middle income",
+        "upper_middle_income": "Upper middle income",
+        "high_income": "High income",
+        "AF": "Africa",
+        "AS": "Asia",
+        "EU": "Europe",
+        "OC": "Oceania",
+        "NA": "North America",
+        "SA": "South America",
+    }
+
     for case in groups.keys():
-        # Initialize the plot.
+        # Initialize the the plot where to show the MAPE values by
+        # group.
         if case == "continent":
-            fig, ax = matplotlib.pyplot.subplots(
+            fig, axs = matplotlib.pyplot.subplots(
                 2,
-                3,
+                9,
                 figsize=(10, 5),
                 sharey=True,
                 layout="constrained",
+                gridspec_kw={"width_ratios": [1, 5, 0.3] * 2 + [1, 5, 0.001]},
             )
         elif case == "income":
-            fig, ax = matplotlib.pyplot.subplots(
+            fig, axs = matplotlib.pyplot.subplots(
                 1,
-                3,
+                9,
                 figsize=(10, 2.5),
                 sharey=True,
                 layout="constrained",
+                gridspec_kw={"width_ratios": [1, 5, 0.3] * 2 + [1, 5, 0.001]},
             )
-        ax = ax.flatten()
+        axs = axs.flatten()
 
-        # Define the group labels for the legend.
-        group_labels = {
-            "lower_middle_income": "Lower middle income",
-            "upper_middle_income": "Upper middle income",
-            "high_income": "High income",
-            "AF": "Africa",
-            "AS": "Asia",
-            "EU": "Europe",
-            "OC": "Oceania",
-            "NA": "North America",
-            "SA": "South America",
-        }
-
-        # For each group, create a bar plot.
         for i, group in enumerate(groups[case]):
             # Select the entities belonging to the current group that
             # have a MAPE value.
@@ -393,89 +447,33 @@ def _plot_by_group(
                 by=f"{version}_all_entities"
             )
 
-            # Create a bar plot for the current group where for each
-            # entity, the MAPE values from all_countries and the current
-            # group are shown side by side.
-            width = 0.35
-            indices = numpy.arange(len(mape_to_plot))
-            ax[i].bar(
-                indices - width / 2,
-                mape_to_plot[f"{version}_all_entities"],
-                width,
-                label="Trained on all data",
-                color="tab:blue",
+            # Add a box and whisker plot and a bar plot.
+            _add_box_and_bar_plot(
+                [axs[3 * i], axs[3 * i + 1]],
+                [
+                    mape_to_plot[f"{version}_all_entities"],
+                    mape_to_plot[f"{version}_{group}"],
+                ],
+                marker_size=5,
+                line_width=1.5,
+                fontsize=3.5,
             )
-            ax[i].bar(
-                indices + width / 2,
-                mape_to_plot[f"{version}_{group}"],
-                width,
-                label="Trained on data in group",
-                color="tab:orange",
+            axs[3 * i + 1].set_title(
+                group_labels[group], weight="bold", x=0.38
             )
-            ax[i].set_title(group_labels[group], weight="bold")
-            ax[i].set_xticks(indices)
-            ax[i].set_xticklabels(mape_to_plot.index, rotation=90, fontsize=5)
 
-            # Add the mean MAPE values for the all_countries group and
-            # the current group.
-            mean_mape_all = mape_to_plot[f"{version}_all_entities"].mean()
-            mean_mape_group = mape_to_plot[f"{version}_{group}"].mean()
-            ax[i].text(
-                0.02,
-                0.90,
-                f"Average MAPE: {(mean_mape_all):.2f}%",
-                color="tab:blue",
-                ha="left",
-                transform=ax[i].transAxes,
-                weight="bold",
-            )
-            ax[i].text(
-                0.02,
-                0.80,
-                f"Average MAPE: {(mean_mape_group):.2f}%",
-                color="tab:orange",
-                ha="left",
-                transform=ax[i].transAxes,
-                weight="bold",
-            )
+            # Turn off the axis for spacing.
+            axs[3 * i + 2].set_axis_off()
 
         # Add a legend.
-        fig.text(
-            0.35,
-            1.06 if case == "continent" else 1.15,
-            "Trained on all data",
-            color="white",
-            ha="center",
-            weight="bold",
-            bbox=dict(
-                boxstyle="square", facecolor="tab:blue", edgecolor="none"
-            ),
-        )
-        fig.text(
-            0.65,
-            1.06 if case == "continent" else 1.15,
-            "Trained on data in group",
-            color="white",
-            ha="center",
-            weight="bold",
-            bbox=dict(
-                boxstyle="square", facecolor="tab:orange", edgecolor="none"
-            ),
+        _add_legend(
+            fig,
+            ["Trained on all data", "Trained on data in group"],
+            y_pos=1.06 if case == "continent" else 1.15,
         )
 
         # Add a text to indicate that lower MAPE is better.
-        fig.text(
-            1.035,
-            0.5,
-            "Lower MAPE is better",
-            ha="center",
-            va="center",
-            weight="bold",
-            rotation=90,
-            bbox=dict(
-                boxstyle="larrow", facecolor="lightgrey", edgecolor="none"
-            ),
-        )
+        _add_explanatory_text(fig)
 
         fig.supylabel(
             "Mean Absolute Percentage Error (MAPE)", weight="bold", x=-0.03
