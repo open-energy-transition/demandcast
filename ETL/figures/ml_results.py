@@ -53,8 +53,8 @@ def _read_mape(
     mape = pandas.DataFrame()
 
     # Read the MAPE values for all countries and subdivisions.
-    mape[f"{version}_all_entities"] = pandas.read_csv(
-        results_directory + f"/{version}.csv",
+    mape[f"{version}_all"] = pandas.read_csv(
+        os.path.join(results_directory, version, "all.csv"),
         usecols=["entity_code", "MAPE_test"],
         index_col="entity_code",
     )
@@ -62,8 +62,8 @@ def _read_mape(
     if compare_with_version is not None:
         # Read the MAPE values for all countries and subdivisions for
         # the version to compare with.
-        mape[f"{compare_with_version}_all_entities"] = pandas.read_csv(
-            results_directory + f"/{compare_with_version}.csv",
+        mape[f"{compare_with_version}_all"] = pandas.read_csv(
+            os.path.join(results_directory, compare_with_version, "all.csv"),
             usecols=["entity_code", "MAPE_test"],
             index_col="entity_code",
         )
@@ -73,7 +73,7 @@ def _read_mape(
             for group in groups[case]:
                 # Read the MAPE values for the current group.
                 mape[f"{version}_{group}"] = pandas.read_csv(
-                    results_directory + f"/{version}_{group}.csv",
+                    os.path.join(results_directory, version, f"{group}.csv"),
                     usecols=["entity_code", "MAPE_test"],
                     index_col="entity_code",
                 )
@@ -82,8 +82,11 @@ def _read_mape(
                     # Read the MAPE values for the current group for
                     # the version to compare with.
                     mape[f"{compare_with_version}_{group}"] = pandas.read_csv(
-                        results_directory
-                        + f"/{compare_with_version}_{group}_mape.csv",
+                        os.path.join(
+                            results_directory,
+                            compare_with_version,
+                            f"{group}.csv",
+                        ),
                         usecols=["entity_code", "MAPE"],
                         index_col="entity_code",
                     )
@@ -275,7 +278,7 @@ def _plot_overall(
         A DataFrame containing MAPE values.
     """
     # Sort the entities by their MAPE values for better visualization.
-    mape_to_plot = mape.sort_values(by=f"{version}_all_entities")
+    mape_to_plot = mape.sort_values(by=f"{version}_all")
 
     # Initialize the plot.
     fig, axs = matplotlib.pyplot.subplots(
@@ -288,9 +291,7 @@ def _plot_overall(
     )
 
     # Add a box and whisker plot and a bar plot.
-    _add_box_and_bar_plot(
-        [axs[0], axs[1]], [mape_to_plot[f"{version}_all_entities"]]
-    )
+    _add_box_and_bar_plot([axs[0], axs[1]], [mape_to_plot[f"{version}_all"]])
     axs[0].set_ylabel(
         "Mean Absolute Percentage Error (MAPE)", weight="bold", fontsize=12
     )
@@ -336,7 +337,7 @@ def _plot_comparison(
         A DataFrame containing MAPE values.
     """
     # Sort the entities by their MAPE values for better visualization.
-    mape_to_plot = mape.sort_values(by=f"{version}_all_entities")
+    mape_to_plot = mape.sort_values(by=f"{version}_all")
 
     # Initialize the plot.
     fig, axs = matplotlib.pyplot.subplots(
@@ -352,8 +353,8 @@ def _plot_comparison(
     _add_box_and_bar_plot(
         [axs[0], axs[1]],
         [
-            mape_to_plot[f"{version}_all_entities"],
-            mape_to_plot[f"{compare_with_version}_all_entities"],
+            mape_to_plot[f"{version}_all"],
+            mape_to_plot[f"{compare_with_version}_all"],
         ],
     )
     axs[0].set_ylabel(
@@ -436,24 +437,22 @@ def _plot_by_group(
         for i, group in enumerate(groups[case]):
             # Select the entities belonging to the current group that
             # have a MAPE value.
-            mape_to_plot = mape[
-                [f"{version}_all_entities", f"{version}_{group}"]
-            ][mape[f"{version}_{group}"].notna()]
+            mape_to_plot = mape[[f"{version}_all", f"{version}_{group}"]][
+                mape[f"{version}_{group}"].notna()
+            ]
 
             # Sort the entities by their MAPE values for better
             # visualization.
-            mape_to_plot = mape_to_plot.sort_values(
-                by=f"{version}_all_entities"
-            )
+            mape_to_plot = mape_to_plot.sort_values(by=f"{version}_all")
 
             # Add a box and whisker plot and a bar plot.
             _add_box_and_bar_plot(
                 [axs[3 * i], axs[3 * i + 1]],
                 [
-                    mape_to_plot[f"{version}_all_entities"],
+                    mape_to_plot[f"{version}_all"],
                     mape_to_plot[f"{version}_{group}"],
                 ],
-                marker_size=5,
+                marker_size=4,
                 line_width=1.5,
                 fontsize=3.5,
             )
