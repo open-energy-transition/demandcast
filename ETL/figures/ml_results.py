@@ -54,7 +54,7 @@ def _read_mape(
 
     # Read the MAPE values for all countries and subdivisions.
     mape[f"{version}_all_entities"] = pandas.read_csv(
-        results_directory + f"{version}_mape.csv",
+        results_directory + f"/{version}.csv",
         usecols=["entity_code", "MAPE_test"],
         index_col="entity_code",
     )
@@ -63,7 +63,7 @@ def _read_mape(
         # Read the MAPE values for all countries and subdivisions for
         # the version to compare with.
         mape[f"{compare_with_version}_all_entities"] = pandas.read_csv(
-            results_directory + f"{compare_with_version}_mape.csv",
+            results_directory + f"/{compare_with_version}.csv",
             usecols=["entity_code", "MAPE_test"],
             index_col="entity_code",
         )
@@ -73,8 +73,7 @@ def _read_mape(
             for group in groups[case]:
                 # Read the MAPE values for the current group.
                 mape[f"{version}_{group}"] = pandas.read_csv(
-                    os.path.join(results_directory, case)
-                    + f"/{version}_{group}_mape.csv",
+                    results_directory + f"/{version}_{group}.csv",
                     usecols=["entity_code", "MAPE_test"],
                     index_col="entity_code",
                 )
@@ -83,7 +82,7 @@ def _read_mape(
                     # Read the MAPE values for the current group for
                     # the version to compare with.
                     mape[f"{compare_with_version}_{group}"] = pandas.read_csv(
-                        os.path.join(results_directory, case)
+                        results_directory
                         + f"/{compare_with_version}_{group}_mape.csv",
                         usecols=["entity_code", "MAPE"],
                         index_col="entity_code",
@@ -520,9 +519,9 @@ def plot(
 
     # Define the directory containing the CSV files.
     results_directory = os.path.join(
-        root_directory, "..", "models", "xgboost", "public"
+        root_directory,
+        "mapes",
     )
-    results_directory = os.path.dirname(__file__) + "/"
 
     # Define the groups for the two cases (income level and continent).
     # Note that currently there are no validation results for the
