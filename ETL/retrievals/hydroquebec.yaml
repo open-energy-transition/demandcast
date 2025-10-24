@@ -1,8 +1,0 @@
-entities:
-  - subdivision_name: Quebec
-    subdivision_code: QC
-    country_name: Canada
-    country_code: CA
-    start_date: 2019-01-01
-    end_date: 2023-12-31
-    time_zone: America/Montreal

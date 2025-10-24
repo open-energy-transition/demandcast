@@ -1,6 +1,6 @@
 # Extract Transform Load (ETL)
 
-This module contains all scripts related to the extraction, transformation, and loading of electricity demand, weather, and population data. It is designed to provide a standardized pipeline to prepare data for downstream modeling and analysis.
+ETL contains all scripts related to the extraction, transformation, and loading of electricity demand, population, weather, and GDP data. It is designed to provide a standardized pipeline to prepare data for downstream modeling and analysis.
 
 ## Overview
 
@@ -26,32 +26,29 @@ Export cleaned data to local or cloud storage in Parquet or CSV format.
 
 ```bash
 ETL/
-├── download_electricity_data.py    # Main script to download electricity demand data
-├── download_population_data.py     # Script to retrieve population data from SEDAC
-├── download_weather_data.py        # Script to retrieve weather data from Copernicus
-├── get_temperature_data.py         # Script to extract temperature time series
-├── retrieval/                      # Data source-specific scripts and configuration
-│   ├── entsoe.py, eia.py, ...      # Retrieval logic for each data provider
-│   ├── entsoe.yaml, eia.yaml, ...  # Lists of country/subdivision information per source
-│   └── copernicus.py               # Copernicus Climate Data Store (CDS) retrieval functions
-├── shapes/                         # Non-standard subdivision shapes
-│   └── eia.py, ons.py, ...         # Scripts that generate non-standard shapefiles
-├── util/                           # Shared utilities
-│   ├── directories.py              # Functions to read directories
-│   ├── directories.yaml            # Keys to define the ETL folder structure
-│   ├── entities.py                 # Functions to read country and subdivision information
-│   ├── fetcher.py                  # Functions to fetch online content
-│   ├── figures.py                  # Functions to plot basic figures
-│   ├── geospatial.py               # Functions to process geospatial data
-│   ├── shapes.py                   # Functions to read country and subdivision shapes
-│   ├── time_series.py              # Time series processing
-│   └── uploader.py                 # Functions for cloud storage uploads
-└── .env                            # API keys (not included in repo)
+├── checks/                         # Modules to perform data availability and quality checks
+├── figures/                        # Modules to plot figures and resulting figures
+├── retrieval/                      # Modules to retrieve data from various sources
+├── shapes/                         # Scripts to generate shapes for non-standard subdivisions and resulting shapefiles
+├── tests/                          # Unit tests for the ETL utilities and retrieval scripts
+├── utils/                          # Shared utilities for data fetching, processing, and uploading
+├── .dockerignore                   # Files and directories to ignore in Docker build context
+├── .env                            # API keys (not included in repo)
+├── .python-version                 # Python version for the environment
+├── Dockerfile                      # Dockerfile to create an image for the ETL module
+├── README.md                       # Overview of the ETL module
+├── oet_zenodo_metadata.yaml        # Metadata for Zenodo uploads
+├── check.py                        # Script to run data checks
+├── plot.py                         # Script to generate plots for the data
+├── pyproject.toml                  # Project configuration and dependencies
+├── retrieve.py                     # Main script to download and process data
+├── run_all.sh                      # Shell script to run all ETL processes sequentially
+└── uv.lock                         # Locked dependencies for the project
 ```
 
 ## Application Programming Interface (API) keys
 
-Some scripts require API keys to access data from external services. These keys should be stored in a `.env` file in the `ETL/` directory. The `.env` file should not be included in the repository and should contain the following environment variables:
+Some modules require API keys to access data from external services. These keys should be stored in a `.env` file in the `ETL/` directory. The `.env` file should not be included in the repository and should contain the following environment variables:
 
 ```plaintext
 CDS_API_KEY=<your_key>             # For data retrieval from Copernicus CDS
@@ -61,129 +58,206 @@ ZENODO_API_KEY=<your_key>          # For data upload to Zenodo
 SANDBOX_ZENODO_API_KEY=<your_key>  # For data upload to Zenodo Sandbox
 ```
 
-## Electricity demand data
+## Main script for downloading and processing data
 
-Scripts in this section download and process electricity demand data from multiple sources such as ENTSO-E, EIA, and CCEI. The data is processed to have all timestamps in UTC and electricity demand in MW.
-
-### Main script
-
-Run the main script with:
+The main script `retrieve.py` is used to download and process various types of data, including electricity demand, population, weather, and GDP data. The script can be run with the following command:
 
 ```bash
-uv run download_electricity_data.py <data_source> [-c country_or_subdivision_code] [-f code_file] [-g bucket_name] [-z] [-p]
+uv run retrieve.py <data_type> [arguments]
+```
+
+### Electricity demand
+
+The module `retrievals/electricity_demand.py` downloads and processes historical electricity demand data from multiple sources such as ENTSO-E, EIA, and CCEI. The data is processed to have all timestamps in UTC and electricity demand in MW.
+
+To run the electricity demand data retrieval, use the following command:
+
+```bash
+uv run retrieve.py electricity_demand [-d data_source] [-c country_or_subdivision_code] [-f path_to_file_with_codes] [-ug gcs_bucket_name] [-uz] [-pz] [-mo bool]
 ```
 
 Arguments:
 
-- `<data_source>`: The acronym of the data source as defined in the retrieval modules (e.g., `ENTSOE`).
-- `-c, --code`: (Optional) The ISO Alpha-2 code (e.g., `FR`) or a combination of ISO Alpha-2 code and subdivision code (e.g., `US_CAL`).
+- `-d, --data_source`: (Required) The acronym of the data source as defined in the retrieval modules (e.g., `entsoe`).
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
 - `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
-- `-g, --upload_to_gcs`: (Optional) The bucket name of the Google Cloud Storage (GCS) to upload the data.
-- `-z, --upload_to_zenodo`: (Optional) If set, the script will upload the data to a new or existing Zenodo record.
-- `-p, --publish_to_zenodo`: (Optional) If set, the script will publish the Zenodo record after uploading.
+- `-ug, --upload_to_gcs`: (Optional) The bucket name of the Google Cloud Storage (GCS) to upload the data.
+- `-uz, --upload_to_zenodo`: (Optional) If set, the script will upload the data to a new or existing Zenodo record.
+- `-pz, --publish_to_zenodo`: (Optional) If set, the script will publish the Zenodo record after uploading.
+- `-mo, --made_by_oet`: (Required if uploading to Zenodo) A boolean flag indicating whether the data is generated by the Open Energy Transition (OET).
 
-#### Example
-
-Download electricity data for France from ENTSO-E:
+For example, you can download electricity data for France from ENTSO-E using:
 
 ```bash
-uv run download_electricity_data.py ENTSOE -c FR
+uv run retrieve.py electricity_demand -d entsoe -c FRA
 ```
 
-### Retrieval scripts
+#### Data source specific retrieval modules
 
-Each retrieval script in the `retrieval/` folder is designed to fetch electricity demand data from a specific data source. The main functions in each script typically include:
+Each retrieval module in the `retrieval/electricity_demand_data_sources/` folder is designed to fetch electricity demand data from a specific data source. The main functions in each module typically include:
 
+- **Redistribution rights (`redistribute`)**: Information about the redistribution rights of the data source.
 - **Check input parameters (`_check_input_parameters`)**: Checks that the input parameters are valid.
 - **Data request construction (`get_available_requests`)**: Builds all data requests based on the availability of the data source.
 - **URL construction (`get_url`)**: Generates the appropriate web request URL.
 - **Data download and processing (`download_and_extract_data_for_request`)**: Fetches the data using `utils.fetcher` functions and transforms it into a `pandas.Series`.
 
-### Names, codes, time zones, and data time ranges for countries and subdivisions
+#### Names, codes, time zones, and data time ranges for countries and subdivisions
 
-For each retrieval script in the `retrieval/` folder, a corresponding YAML file must be created. The YAML file should contain a list of dictionaries, each representing a country or subdivision from the respective data source. The following rules apply:
+For each retrieval module in the `retrieval/electricity_demand_data_sources/` folder, a corresponding YAML file must be created. The YAML file should contain a list of dictionaries, each representing a country or subdivision from the respective data source. The following rules apply:
 
 - Names and codes should adhere to the ISO 3166 standard.
-- For countries and standard subdivisions, use alpha-2 codes.
+- For countries and standard subdivisions, use Alpha-3 codes.
 - For non-standard subdivisions, use a widely accepted name and code.
 - Data time range must be specified.
 - For subdivisions, time zone must be specified.
 
-### Non-standard subdivisions
+#### Non-standard subdivisions
 
-Some countries have subdivisions that are not standard ISO subdivisions. For these cases, the `shapes/` folder contains scripts to generate the shapes of these subdivisions. The scripts are named after the data source (e.g., `eia.py`, `ons.py`) and contain functions to generate the shapes. The generated shapes are then used in the retrieval scripts and for plotting.
+Some countries have subdivisions that are not standard ISO subdivisions. For these cases, the `shapes/` folder contains scripts to generate the shapes of these subdivisions. The scripts are named after the data source (e.g., `eia.py`, `ons.py`) and contain functions to generate the shapes. The generated shapes are then used in the retrieval modules and for plotting.
 
-## Population data
+### Annual electricity demand per capita
 
-To download and prepare population data from the Socioeconomic Data and Applications Center (SEDAC):
+The module `retrievals/annual_electricity_demand_per_capita.py` retrieves annual electricity demand per capita data from the World Bank and Ember for the historical period and from the Integrated Assessment Modeling Consortium (IAMC) database for different future scenarios. The annual electricity demand per capita data is saved into CSV and Parquet files.
 
 ```bash
-uv run download_population_data.py [-c country_or_subdivision_code] [-f code_file] [-y year]
+uv run retrieve.py annual_electricity_demand_per_capita [-c country_or_subdivision_code] [-f code_file] [-y year] [-sy start_year] [-ey end_year] [-s scenario]
 ```
 
 Arguments:
 
-- `-c, --code`: (Optional) The ISO Alpha-2 code (e.g., `FR`) or a combination of ISO Alpha-2 code and subdivision code (e.g., `US_CAL`).
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
+- `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
+- `-y, --year`: (Optional) The year of the annual electricity demand data to be downloaded.
+- `-sy, --start_year`: (Optional) The start year of the annual electricity demand data to be downloaded.
+- `-ey, --end_year`: (Optional) The end year of the annual electricity demand data to be downloaded (inclusive).
+- `-s, --scenario`: (Optional) The scenario of the annual electricity demand data to be downloaded (e.g., `SSP2-26`).
+
+The script will store annual electricity demand per capita data in `data/annual_electricity_demand_per_capita/`.
+
+
+### Population
+
+The module `retrievals/population.py` retrieves total population count from the World Bank for the historical period and from the Integrated Assessment Modeling Consortium (IAMC) database for different future scenarios. For subdivisions, the population data is calculated by aggregating gridded population data. The population data is saved into CSV and Parquet files.
+
+```bash
+uv run retrieve.py population [-c country_or_subdivision_code] [-f code_file] [-y year] [-sy start_year] [-ey end_year] [-s scenario]
+```
+
+Arguments:
+
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
 - `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
 - `-y, --year`: (Optional) The year of the population data to be downloaded.
+- `-sy, --start_year`: (Optional) The start year of the population data to be downloaded.
+- `-ey, --end_year`: (Optional) The end year of the population data to be downloaded (inclusive).
+- `-s, --scenario`: (Optional) The scenario of the population data to be downloaded (e.g., `SSP2`).
 
-The script:
+The script will store population data in `data/population/`.
 
-- Downloads 30-second resolution data from SEDAC.
-- Aggregates to 0.25° resolution to match weather data.
-- Saves `.nc` files in `data/population_density/`.
+### Gridded population
 
-## Weather data
+The module `retrievals/gridded_population.py` retrieves gridded population density data from the Socioeconomic Data and Applications Center (SEDAC) for the historical period and gridded population count from a Figshare repository for future scenarios. From the global gridded population at 30-arcsecond resolution, the module calculates when necessary the population count from the density, aggregates to 0.25° resolution to match the weather data, and extracts subsets of gridded population count for the countries and subdivisions of interest.
+
+```bash
+uv run retrieve.py gridded_population [-c country_or_subdivision_code] [-f code_file] [-y year] [-sy start_year] [-ey end_year] [-s scenario]
+```
+
+Arguments:
+
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
+- `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
+- `-y, --year`: (Optional) The year of the population density data to be downloaded.
+- `-sy, --start_year`: (Optional) The start year of the population density data to be downloaded.
+- `-ey, --end_year`: (Optional) The end year of the population density data to be downloaded (inclusive).
+- `-s, --scenario`: (Optional) The scenario of the population density data to be downloaded (e.g., `SSP2`).
+
+The script will store gridded population data in `data/gridded_population/`.
+
+### Gross Domestic Product (GDP), Purchasing Power Parity (PPP) per capita
+
+The module `retrievals/gdp_ppp_per_capita.py` retrieves country-level GDP, PPP per capita data from the World Bank and the International Monetary Fund (IMF) for the historical period and from the Integrated Assessment Modeling Consortium (IAMC) database for different future scenarios. The GDP, PPP per capita data is saved into CSV and Parquet files.
+
+```bash
+uv run retrieve.py gdp_ppp_per_capita [-c country_or_subdivision_code] [-f code_file] [-y year] [-sy start_year] [-ey end_year] [-s scenario]
+```
+
+Arguments:
+
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
+- `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
+- `-y, --year`: (Optional) The year of the GDP, PPP per capita data to be downloaded.
+- `-sy, --start_year`: (Optional) The start year of the GDP, PPP per capita data to be downloaded.
+- `-ey, --end_year`: (Optional) The end year of the GDP, PPP per capita data to be downloaded (inclusive).
+- `-s, --scenario`: (Optional) The scenario of the GDP, PPP per capita data to be downloaded (e.g., `SSP2`).
+
+The script will store GDP, PPP per capita data in `data/gdp_ppp_per_capita/`.
+
+### Gridded GDP PPP
+
+The module `retrievals/gridded_gdp_ppp.py` retrieves gridded GDP, PPP data from a Zenodo repository for both the historical period and future scenarios. From the global gridded GDP, PPP at 0.25° resolution, the module extracts subsets of gridded GDP, PPP for the countries and subdivisions of interest.
+
+```bash
+uv run retrieve.py gridded_gdp_ppp [-c country_or_subdivision_code] [-f code_file] [-y year] [-sy start_year] [-ey end_year] [-s scenario]
+```
+
+Arguments:
+
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
+- `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
+- `-y, --year`: (Optional) The year of the GDP, PPP data to be downloaded.
+- `-sy, --start_year`: (Optional) The start year of the GDP, PPP data to be downloaded.
+- `-ey, --end_year`: (Optional) The end year of the GDP, PPP data to be downloaded (inclusive).
+- `-s, --scenario`: (Optional) The scenario of the GDP, PPP data to be downloaded (e.g., `SSP2`).
+
+### Gridded weather
+
+The module `retrievals/gridded_weather.py` retrieves gridded weather data from the Copernicus Climate Data Store (CDS). The weather data is stored in NetCDF format for each country and subdivision of interest.
 
 To retrieve weather data from the Copernicus Climate Data Store (CDS), first ensure that you are registered on the website and have your API key stored in the `.env` file. Instructions for the API key can be found [here](https://cds.climate.copernicus.eu/how-to-api). Then run:
 
 ```bash
-uv run download_weather_data.py [-c country_or_subdivision_code] [-f code_file] [-y year]
+uv run retrieve.py gridded_weather [-c country_or_subdivision_code] [-f code_file] [-y year] [-sy start_year] [-ey end_year] [-wv weather_variable] [-cm climate_model] [-s scenario]
 ```
 
 Arguments:
 
-- `-c, --code`: (Optional) The ISO Alpha-2 code (e.g., `FR`) or a combination of ISO Alpha-2 code and subdivision code (e.g., `US_CAL`).
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
 - `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
 - `-y, --year`: (Optional) The year of the weather data to be downloaded.
+- `-sy, --start_year`: (Optional) The start year of the weather data to be downloaded.
+- `-ey, --end_year`: (Optional) The end year of the weather data to be downloaded (inclusive).
+- `-wv, --weather_variable`: (Optional) The weather variable to be downloaded (only `temperature` is currently supported).
+- `-cm, --climate_model`: (Optional) The climate model to be used for future scenarios (e.g., `CESM2`).
+- `-s, --scenario`: (Optional) The scenario of the weather data to be downloaded (e.g., `SSP2-4.5`).
 
-The script:
+The script will store weather data in `data/weather/`. Note that the size of weather data files is on the order of 100 MB per country per year, so ensure you have sufficient storage space.
 
-- Retrieves temperature data from the Copernicus Climate Data Store.
-- Stores `.nc` files in `data/weather/`.
+### Temperature
 
-Note that the size of weather data files is on the order of 100 MB per country per year, so ensure you have sufficient storage space.
-
-## Gross Domestic Product (GDP) data
-
-To retrieve gridded GDP data, run:
+The module `retrievals/temperature.py` extracts temperature time series from the gridded weather data based on population count. It uses both the gridded weather data and the gridded population data to identify the most populated areas and extract temperature time series for those areas. The temperature time series is saved into CSV and Parquet files.
 
 ```bash
-uv run download_gdp_data.py [-c country_or_subdivision_code] [-f code_file] [-y year]
+uv run retrieve.py temperature [-c country_or_subdivision_code] [-f code_file] [-y year] [-sy start_year] [-ey end_year] [-cm climate_model] [-s scenario]
 ```
 
 Arguments:
 
-- `-c, --code`: (Optional) The ISO Alpha-2 code (e.g., `FR`) or a combination of ISO Alpha-2 code and subdivision code (e.g., `US_CAL`).
+- `-c, --code`: (Optional) The ISO Alpha-3 code (e.g., `FRA`) or a combination of ISO Alpha-3 code and subdivision code (e.g., `USA_CAL`).
 - `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
-- `-y, --year`: (Optional) The year of the GDP data to be downloaded.
+- `-y, --year`: (Optional) The year of the temperature data to be downloaded.
+- `-sy, --start_year`: (Optional) The start year of the temperature data to be downloaded.
+- `-ey, --end_year`: (Optional) The end year of the temperature data to be downloaded (inclusive).
+- `-cm, --climate_model`: (Optional) The climate model used for the weather data (e.g., `CESM2`).
+- `-s, --scenario`: (Optional) The scenario of the weather data used to extract temperature (e.g., `SSP2-4.5`).
 
-The script will download GDP data from Zenodo and store it in `data/gdp/`.
+The script will store temperature data in `data/temperature/`.
 
-## Temperature time series extraction
+## Main script for plotting data
 
-Generate temperature time series based on population-weighted regions:
+The script `plot.py` generates plots that visualize on a map the countries and subdivisions for which data has been retrieved, as well as the availability of electricity demand data clustered by GDP, PPP per capita and annual electricity demand per capita. To plot these figures, run:
 
 ```bash
-uv run ETL/get_temperature_data.py
+uv run plot.py map_of_available_entities
+uv run plot.py data_availability
 ```
-
-Arguments:
-
-- `-c, --code`: (Optional) The ISO Alpha-2 code (e.g., `FR`) or a combination of ISO Alpha-2 code and subdivision code (e.g., `US_CAL`).
-- `-f, --file`: (Optional) The path to the YAML file containing the list of codes for the countries and subdivisions of interest.
-- `-y, --year`: (Optional) The year of the weather data to use.
-
-The script will extract time series of temperature based on the largest and three largest population density areas and output `.csv` or `.parquet` files in `data/temperature/`.
-
-Note that the `get_temperature_data.py` script requires both weather and population data to be available in the specified directories.

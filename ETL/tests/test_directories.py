@@ -34,30 +34,40 @@ def test_load_paths():
     assert structure["settings_folder"] == os.path.join(
         absolute_path, "settings"
     )
-    assert structure["retrieval_scripts_folder"] == os.path.join(
-        absolute_path, "retrievals"
+    assert structure["electricity_demand_data_sources_folder"] == os.path.join(
+        absolute_path, "retrievals", "electricity_demand_data_sources"
     )
     assert structure["figures_folder"] == os.path.join(
         absolute_path, "figures"
     )
     assert structure["data_folder"] == os.path.join(absolute_path, "data")
-    assert structure["manually_downloaded_data_folder"] == os.path.join(
-        absolute_path, "data", "manually_downloaded_data"
+    assert structure[
+        "manually_downloaded_electricity_demand_folder"
+    ] == os.path.join(
+        absolute_path, "data", "electricity_demand", "manual_downloads"
     )
     assert structure["electricity_demand_folder"] == os.path.join(
         absolute_path, "data", "electricity_demand"
     )
-    assert structure["annual_electricity_demand_folder"] == os.path.join(
-        absolute_path, "data", "annual_electricity_demand"
+    assert structure[
+        "annual_electricity_demand_per_capita_folder"
+    ] == os.path.join(
+        absolute_path, "data", "annual_electricity_demand_per_capita"
     )
-    assert structure["population_density_folder"] == os.path.join(
-        absolute_path, "data", "population_density"
+    assert structure["population_folder"] == os.path.join(
+        absolute_path, "data", "population"
     )
-    assert structure["gdp_folder"] == os.path.join(
-        absolute_path, "data", "gdp"
+    assert structure["gridded_population_folder"] == os.path.join(
+        absolute_path, "data", "gridded_population"
     )
-    assert structure["weather_folder"] == os.path.join(
-        absolute_path, "data", "weather"
+    assert structure["gdp_ppp_per_capita_folder"] == os.path.join(
+        absolute_path, "data", "gdp_ppp_per_capita"
+    )
+    assert structure["gridded_gdp_ppp_folder"] == os.path.join(
+        absolute_path, "data", "gridded_gdp_ppp"
+    )
+    assert structure["gridded_weather_folder"] == os.path.join(
+        absolute_path, "data", "gridded_weather"
     )
     assert structure["temperature_folder"] == os.path.join(
         absolute_path, "data", "temperature"

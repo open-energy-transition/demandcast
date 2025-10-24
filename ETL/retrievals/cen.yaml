@@ -1,5 +1,0 @@
-entities:
-  - country_name: Chile
-    country_code: CL
-    start_date: 1999-01-01
-    end_date: today

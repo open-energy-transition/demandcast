@@ -9,6 +9,7 @@ Description:
 
 import email.message
 import urllib.error
+from io import BytesIO
 from unittest.mock import patch
 
 import pandas
@@ -79,15 +80,39 @@ def test_fetch_data_html_requests_get():
     of HTML data, including CSV, text, and plain response.
     """
     with patch("requests.get"):
-        # Test reading of HTML content with tabular data.
+        # Test reading of HTML content with tabular data in CSV format.
         requests.get.return_value.text = "col1,col2\n1,2"
-        dataset = utils.fetcher.fetch_data("http://example.com", "html")
+        dataset = utils.fetcher.fetch_data(
+            "http://example.com", "html", read_as="csv_table"
+        )
         assert isinstance(dataset, pandas.DataFrame)
+
+        # Prepare a mock Excel binary.
+        df_original = pandas.DataFrame({"a": [10, 20], "b": [30, 40]})
+        excel_binary = BytesIO()
+        with pandas.ExcelWriter(excel_binary) as writer:
+            df_original.to_excel(writer, index=False)
+        excel_binary.seek(0)
+
+        # Test reading of HTML content with tabular data in Excel
+        # format.
+        requests.get.return_value.content = excel_binary.getvalue()
+        dataset = utils.fetcher.fetch_data(
+            "http://example.com", "html", read_as="excel_table"
+        )
+        assert isinstance(dataset, pandas.DataFrame)
+
+        # Test reading of HTML content with tabular data as Excel file.
+        requests.get.return_value.content = excel_binary.getvalue()
+        dataset = utils.fetcher.fetch_data(
+            "http://example.com", "html", read_as="excel_file"
+        )
+        assert isinstance(dataset, pandas.ExcelFile)
 
         # Test reading HTML content with text.
         requests.get.return_value.text = "text content"
         html_text = utils.fetcher.fetch_data(
-            "http://example.com", "html", read_as="text"
+            "http://example.com", "html", read_as="text", encoding_type="utf-8"
         )
         assert isinstance(html_text, str) and html_text == "text content"
 
@@ -98,6 +123,28 @@ def test_fetch_data_html_requests_get():
             "http://example.com", "html", read_as="plain"
         )
         assert isinstance(response, requests.Response)
+
+
+def test_fetch_data_html_requests_get_with_cookies():
+    """
+    Test fetching HTML data using requests.get with cookies.
+
+    This test mocks the requests.get and requests.Session functions to
+    simulate fetching data with cookies. It checks that the fetch_data
+    function returns a DataFrame.
+    """
+    with patch("requests.get"), patch("requests.Session"):
+        requests.get.return_value.text = "col1,col2\n1,2"
+        requests.Session.return_value.cookies.get_dict.return_value = {
+            "sessionid": "12345"
+        }
+        dataset = utils.fetcher.fetch_data(
+            "http://example.com",
+            "html",
+            read_with="requests.get",
+            get_cookies=True,
+        )
+        assert isinstance(dataset, pandas.DataFrame)
 
 
 def test_fetch_data_html_requests_post_json():
@@ -185,7 +232,7 @@ def test_fetch_entsoe_demand():
         )
         result = utils.fetcher.fetch_entsoe_demand(
             "dummy",
-            "FR",
+            "FRA",
             pandas.Timestamp("2023-01-01"),
             pandas.Timestamp("2023-01-02"),
         )
@@ -208,7 +255,7 @@ def test_fetch_entsoe_demand_errors():
         with pytest.raises(ConnectionError):
             utils.fetcher.fetch_entsoe_demand(
                 "dummy",
-                "FR",
+                "FRA",
                 pandas.Timestamp("2023-01-01"),
                 pandas.Timestamp("2023-01-02"),
                 retries=2,
@@ -221,7 +268,7 @@ def test_fetch_entsoe_demand_errors():
         )
         result = utils.fetcher.fetch_entsoe_demand(
             "dummy",
-            "FR",
+            "FRA",
             pandas.Timestamp("2023-01-01"),
             pandas.Timestamp("2023-01-02"),
         )

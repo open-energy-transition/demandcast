@@ -252,6 +252,35 @@ def harmonize_time_series(
     return time_series
 
 
+def convert_from_yearly_to_hourly(
+    time_series: pandas.Series, time_zone: datetime.tzinfo
+) -> pandas.Series:
+    """
+    Convert a yearly time series to an hourly time series.
+
+    Parameters
+    ----------
+    time_series : pandas.Series
+        The yearly time series to convert.
+    time_zone : datetime.tzinfo
+        The time zone of the time series.
+
+    Returns
+    -------
+    pandas.Series
+        The hourly time series.
+    """
+    # Define a new index with hourly frequency in the local time zone.
+    index = pandas.date_range(
+        start=(f"{str(time_series.index.min())}-01-01"),
+        end=(f"{str(time_series.index.max())}-12-31 23:00:00"),
+        freq="h",
+        tz=time_zone,
+    )
+
+    return pandas.Series(index.year.map(time_series), index=index)
+
+
 def clean_data(
     time_series: pandas.Series, variable_name: str
 ) -> pandas.Series:

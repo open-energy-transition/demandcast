@@ -7,11 +7,16 @@ Description:
     This module provides functions to handle geospatial data.
 """
 
-import atlite.gis
+import importlib
+import os
+
 import geopandas
 import numpy
+import pandas
 import xarray
+from shapely import box
 
+import utils.directories
 import utils.figures
 import utils.shapes
 
@@ -106,9 +111,9 @@ def clean_raster(
     return xarray_data.rename(variable_name)
 
 
-def get_fraction_of_grid_cells_in_shape(
+def _get_fraction_of_grid_cells_in_shape(
+    xarray_data: xarray.DataArray,
     entity_shape: geopandas.GeoDataFrame,
-    resolution: float = 0.25,
     make_plot: bool = True,
 ) -> xarray.DataArray:
     """
@@ -116,10 +121,11 @@ def get_fraction_of_grid_cells_in_shape(
 
     This function calculates the fraction of each grid cell that is
     contained within the specified country or subdivision shape. It
-    creates a temporary cutout of the grid cells based on the bounds of
-    the entity shape and computes the fraction of each grid cell that
-    intersects with the shape. The resulting fraction is normalized to
-    ensure that the values are between 0 and 1.
+    takes the grid cells defined by the xarray data and computes the
+    intersection with the provided shape, returning a new xarray
+    DataArray with the fraction of each grid cell that is in the shape.
+    The resulting fraction is normalized to ensure that the values are
+    between 0 and 1.
 
     Parameters
     ----------
@@ -136,48 +142,81 @@ def get_fraction_of_grid_cells_in_shape(
     fraction_of_grid_cells_in_shape : xarray.DataArray
         Fraction of each grid cell that is in the given shape.
     """
-    # Calculate the lateral bounds for the cutout based on the lateral
-    # bounds of the country or subdivision of interest.
-    cutout_bounds = utils.shapes.get_entity_bounds(entity_shape)
+    # Ensure that the bounds of the entity shape are within gridded data
+    # limits.
+    assert (
+        entity_shape.total_bounds[0] >= xarray_data.x.min().item()
+        and entity_shape.total_bounds[2] <= xarray_data.x.max().item()
+        and entity_shape.total_bounds[1] >= xarray_data.y.min().item()
+        and entity_shape.total_bounds[3] <= xarray_data.y.max().item()
+    ), (
+        "The bounds of the entity shape must be within the bounds of the "
+        "gridded data."
+    )
 
-    # Create a temporary cutout to have the grid cell of the country or
-    # subdivision of interest.
-    cutout = atlite.Cutout(
-        "temporary_cutout",
-        module="era5",
-        bounds=cutout_bounds,
-        dx=resolution,
-        dy=resolution,
-        time=slice("2013-01-01", "2013-01-02"),
+    # Get the coordinates of the xarray data as a matrix.
+    x_coords, y_coords = numpy.meshgrid(
+        xarray_data.x.to_numpy(), xarray_data.y.to_numpy()
+    )
+
+    # Reshape the coordinates to a list of (x, y) pairs.
+    coords = numpy.vstack([x_coords.ravel(), y_coords.ravel()]).T
+
+    # Calculate half the grid cell size.
+    half_cell = (coords[len(xarray_data.x) + 1] - coords[0]) / 2
+
+    # Define the grid cells as boxes.
+    grid_cells = [
+        box(*c) for c in numpy.hstack((coords - half_cell, coords + half_cell))
+    ]
+
+    # Create the grid as a GeoDataFrame where each row has the
+    # coordinates and the geometry of the grid cell.
+    grid = geopandas.GeoDataFrame(
+        {"x": coords[:, 0], "y": coords[:, 1], "geometry": grid_cells},
+        crs="EPSG:4326",
+    )
+
+    # Calculate the cell area and the intersection area in an equal
+    # area projection to get the fraction of each grid cell that is in
+    # the shape.
+    cell_area = grid.geometry.to_crs("+proj=cea").area
+    intersection_area = (
+        grid.geometry.intersection(entity_shape.union_all())
+        .to_crs("+proj=cea")
+        .area
     )
 
     # Calculate the fraction of each grid cell that is in the shape.
-    fraction_of_grid_cells_in_shape_np = atlite.gis.compute_indicatormatrix(
-        cutout.grid, entity_shape, orig_crs=4326, dest_crs=4326
-    ).toarray()
+    fraction_of_grid_cells_in_shape_np = (
+        intersection_area / cell_area
+    ).to_numpy()
 
-    # Fix NaN and Inf values to 0.0 to avoid numerical issues.
-    fraction_of_grid_cells_in_shape_np = numpy.nan_to_num(
-        (
-            fraction_of_grid_cells_in_shape_np.T
-            / fraction_of_grid_cells_in_shape_np.sum(axis=1)
-        ).T,
-        nan=0.0,
-        posinf=0.0,
-        neginf=0.0,
+    # Some rounding errors can lead to fractions slightly above 1.
+    # Set these values to 1.
+    fraction_of_grid_cells_in_shape_np[
+        numpy.isclose(fraction_of_grid_cells_in_shape_np, 1)
+    ] = 1.0
+
+    # Check that the fraction is between 0 and 1 and that there are
+    # no NaN or infinite values.
+    assert numpy.all(
+        (fraction_of_grid_cells_in_shape_np >= 0)
+        & (fraction_of_grid_cells_in_shape_np <= 1)
+    ), "The fraction of grid cells in shape must be between 0 and 1."
+    assert not numpy.any(numpy.isnan(fraction_of_grid_cells_in_shape_np)), (
+        "The fraction of grid cells in shape must not contain NaN values."
+    )
+    assert not numpy.any(numpy.isinf(fraction_of_grid_cells_in_shape_np)), (
+        "The fraction of grid cells in shape must not contain infinite values."
     )
 
     # Convert the numpy array to a xarray DataArray.
     fraction_of_grid_cells_in_shape = xarray.DataArray(
         fraction_of_grid_cells_in_shape_np.reshape(
-            len(cutout.data["y"]), len(cutout.data["x"])
+            len(xarray_data.y), len(xarray_data.x)
         ),
-        coords={"y": cutout.data["y"], "x": cutout.data["x"]},
-    )
-
-    # Clip the values between 0 and 1.
-    fraction_of_grid_cells_in_shape = (
-        fraction_of_grid_cells_in_shape / fraction_of_grid_cells_in_shape.max()
+        coords={"y": xarray_data.y, "x": xarray_data.x},
     )
 
     if make_plot:
@@ -187,6 +226,95 @@ def get_fraction_of_grid_cells_in_shape(
         )
 
     return fraction_of_grid_cells_in_shape
+
+
+def from_density_to_count(
+    density: xarray.DataArray,
+) -> xarray.DataArray:
+    """
+    Convert density to count.
+
+    This function converts a density xarray to a count xarray by
+    calculating the area of each grid cell in square kilometers and
+    multiplying the density by the area.
+
+    Parameters
+    ----------
+    density : xarray.DataArray
+        The density data in counts per square kilometer.
+
+    Returns
+    -------
+    xarray.DataArray
+        The counts in the grid cells.
+    """
+    # Calculate the x and y resolutions of the grid cells in degrees.
+    x_resolution = density.x[1:].to_numpy() - density.x[:-1].to_numpy()
+    y_resolution = density.y[1:].to_numpy() - density.y[:-1].to_numpy()
+
+    # Check that the resolution of the grid cells is uniform along each
+    # axis.
+    assert numpy.allclose(x_resolution, x_resolution[0]), (
+        "The x resolution must be uniform."
+    )
+    assert numpy.allclose(y_resolution, y_resolution[0]), (
+        "The y resolution must be uniform."
+    )
+
+    # Check that the resolution is the same in both directions.
+    assert numpy.allclose(x_resolution[0], y_resolution[0]), (
+        "The x and y resolutions must be the same. "
+        f"Got {x_resolution[0]} and {y_resolution[0]}."
+    )
+
+    # Get the resolution in degrees.
+    resolution = x_resolution[0]
+
+    # Extract the longitudes and latitudes values.
+    longitudes = density.x.to_numpy()
+    latitudes = density.y.to_numpy()
+
+    # Calculate the latitude values of the grid cell boundaries.
+    boundary_latitudes = numpy.concatenate(
+        [
+            [latitudes[0] - resolution / 2],
+            0.5 * (latitudes[1:] + latitudes[:-1]),
+            [latitudes[-1] + resolution / 2],
+        ]
+    )
+
+    # Create an xarray DataArray for the boundary latitudes.
+    boundary_latitudes = xarray.Dataset(
+        data_vars={
+            "upper_lat": (
+                ["y", "x"],
+                numpy.tile(boundary_latitudes[1:], (len(longitudes), 1)).T,
+            ),
+            "lower_lat": (
+                ["y", "x"],
+                numpy.tile(boundary_latitudes[:-1], (len(longitudes), 1)).T,
+            ),
+        },
+        coords={"y": latitudes, "x": longitudes},
+    )
+
+    # Define the radius of the Earth in kilometers.
+    R = 6371.0
+
+    # Calculate the area of each grid cell in square kilometers.
+    area = (
+        (numpy.pi / 180)
+        * R**2
+        * resolution
+        * (
+            numpy.sin(numpy.deg2rad(boundary_latitudes["upper_lat"]))
+            - numpy.sin(numpy.deg2rad(boundary_latitudes["lower_lat"]))
+        )
+    )
+
+    # Calculate the count by multiplying the density by
+    # the area of each grid cell.
+    return density * area
 
 
 def get_largest_values_in_shape(
@@ -219,13 +347,13 @@ def get_largest_values_in_shape(
         The grid cells with the largest values in the given shape.
     """
     # Calculate the fraction of each grid cell that is in the shapes.
-    fraction_of_grid_cells_in_shape = get_fraction_of_grid_cells_in_shape(
-        entity_shape, make_plot=False
+    fraction_of_grid_cells_in_shape = _get_fraction_of_grid_cells_in_shape(
+        xarray_data, entity_shape, make_plot=False
     )
 
     # Rearrange the xarray data.
     xarray_data_rearranged = (
-        xarray_data.where(fraction_of_grid_cells_in_shape > 0.0)
+        xarray_data.where(fraction_of_grid_cells_in_shape > 0.0)  # noqa: PD013
         .stack(z=("y", "x"))
         .dropna(dim="z")
     )
@@ -274,8 +402,8 @@ def coarsen(
 
     # Check if the target resolution is greater than the original
     # resolution.
-    assert target_resolution > original_resolution, (
-        "Target resolution must be greater than the original resolution."
+    assert target_resolution > 2 * original_resolution, (
+        "Target resolution must be at least twice the original resolution."
     )
 
     # Check if the target resolution provides an integer number of bins.
@@ -287,31 +415,27 @@ def coarsen(
     x_list = numpy.linspace(-180, 180, int(360 / target_resolution) + 1)
     y_list = numpy.linspace(-90, 90, int(180 / target_resolution) + 1)
 
-    # Calculate the left and right bounds of the x and y bins.
-    x_left_bound = (
-        next(x for x in x_list if x >= bounds[0]) - target_resolution / 2
+    # Define the left and right bounds of the x bins and y bins.
+    x_bins = numpy.concatenate(
+        [
+            numpy.array([-180]),
+            (x_list[:-1] + x_list[1:]) / 2,
+            numpy.array([180]),
+        ]
     )
-    x_right_bound = (
-        next(x for x in x_list if x > bounds[2]) - target_resolution / 2
-    )
-    y_left_bound = (
-        next(y for y in y_list if y >= bounds[1]) - target_resolution / 2
-    )
-    y_right_bound = (
-        next(y for y in y_list if y > bounds[3]) - target_resolution / 2
+    y_bins = numpy.concatenate(
+        [numpy.array([-90]), (y_list[:-1] + y_list[1:]) / 2, numpy.array([90])]
     )
 
-    # Define the bins where to aggregate the original data.
-    x_bins = numpy.arange(
-        x_left_bound,
-        x_right_bound + target_resolution,
-        target_resolution,
-    )
-    y_bins = numpy.arange(
-        y_left_bound,
-        y_right_bound + target_resolution,
-        target_resolution,
-    )
+    # Keep only the bins that are within the specified bounds.
+    x_bins = x_bins[
+        (x_bins >= bounds[0] - target_resolution / 2)
+        & (x_bins <= bounds[2] + target_resolution / 2)
+    ]
+    y_bins = y_bins[
+        (y_bins >= bounds[1] - target_resolution / 2)
+        & (y_bins <= bounds[3] + target_resolution / 2)
+    ]
 
     # Calculate the midpoints of the bins in the x and y directions.
     x_bin_centers = (x_bins[:-1] + x_bins[1:]) / 2
@@ -326,5 +450,297 @@ def coarsen(
         "y", y_bins, labels=y_bin_centers
     ).sum()
 
-    # Rename the bins to "x" and "y" and return the coarsened xarray.
-    return coarsened_xarray.rename({"x_bins": "x", "y_bins": "y"})
+    # Rename the bins to "x" and "y".
+    coarsened_xarray = coarsened_xarray.rename({"x_bins": "x", "y_bins": "y"})
+
+    # If the bounds cover the full longitude range, the first and last
+    # x coordinates are the centers of the edge bins (half the size of
+    # the other bins). In this case, change the first and last x
+    # coordinates to -180 and 180, respectively, and sum the values at
+    # the edges.
+    if (
+        coarsened_xarray.x[0] == -180 + target_resolution / 4
+        and coarsened_xarray.x[-1] == 180 - target_resolution / 4
+    ):
+        # Change the first and last x coordinates to -180 and 180.
+        coarsened_xarray = coarsened_xarray.assign_coords(
+            x=coarsened_xarray.x.where(
+                coarsened_xarray.x != coarsened_xarray.x[0], -180
+            )
+        )
+        coarsened_xarray = coarsened_xarray.assign_coords(
+            x=coarsened_xarray.x.where(
+                coarsened_xarray.x != coarsened_xarray.x[-1], 180
+            )
+        )
+
+        # Sum the values at the edges if the x coordinate goes from
+        # -180 to 180.
+        coarsened_xarray.loc[dict(x=-180)] += coarsened_xarray.loc[dict(x=180)]
+        coarsened_xarray.loc[dict(x=180)] = coarsened_xarray.loc[dict(x=-180)]
+
+    return coarsened_xarray
+
+
+def _aggregate_gridded_data(
+    variable: str, code: str, year: int, scenario: str | None
+) -> float:
+    """
+    Aggregate gridded data for a country or subdivision.
+
+    Parameters
+    ----------
+    variable : str
+        The variable to aggregate. Available options are "population"
+        and "gdp_ppp".
+    code : str
+        The code of the country or subdivision of interest.
+    year : int
+        The year of the data to be retrieved.
+    scenario : str
+        The scenario of the data to be retrieved.
+
+    Returns
+    -------
+    float
+        The total value of the variable for the country or subdivision.
+    """
+    # Define the path to the gridded data.
+    gridded_data_path = os.path.join(
+        utils.directories.read_folders_structure()[
+            f"gridded_{variable}_folder"
+        ],
+        f"{code}_0.25_deg_{year}"
+        + (f"_{scenario}" if scenario else "")
+        + ".nc",
+    )
+
+    if not os.path.exists(gridded_data_path):
+        # Import the retrieval module for the gridded data.
+        retrieval_module = importlib.import_module(
+            f"retrievals.gridded_{variable}"
+        )
+
+        # Run the data retrieval for the gridded data.
+        retrieval_module.run_data_retrieval(
+            code=code,
+            file=None,
+            year=year,
+            start_year=None,
+            end_year=None,
+            scenario=scenario,
+        )
+
+    # Read the gridded data.
+    gridded_data = xarray.open_dataarray(gridded_data_path)
+
+    # Get the shape of the country or subdivision.
+    shape = utils.shapes.get_entity_shape(
+        code, make_plot=False, remove_remote_islands=False
+    )
+
+    # Calculate the fraction of the grid cells that belong to the
+    # country or subdivision.
+    fraction_of_grid_cells_in_shape = _get_fraction_of_grid_cells_in_shape(
+        gridded_data, shape, make_plot=False
+    )
+
+    # Multiply the gridded data by the fractions and sum over all grid
+    # cells to get the total value for the country or subdivision.
+    return (gridded_data * fraction_of_grid_cells_in_shape).sum().item()
+
+
+def _select_years_of_gridded_data(
+    available_years_of_gridded_data: list[int],
+    selected_years: list[int],
+) -> list[int]:
+    """
+    Select the years of gridded data.
+
+    The function selects the years of gridded data that cover the
+    years of interest. It finds the first year of available gridded
+    data that is less than or equal to the minimum selected year and
+    the last year of available gridded data that is greater than or
+    equal to the maximum selected year.
+
+    Parameters
+    ----------
+    available_years_of_gridded_data : list[int]
+        The available years of gridded data.
+    selected_years : list[int]
+        The years of interest.
+
+    Returns
+    -------
+    list[int]
+        The selected years of gridded data.
+    """
+    # Get the first year of available gridded data that is less than
+    # or equal to the minimum selected year.
+    first_selected_year_of_gridded_data = max(
+        [
+            year
+            for year in available_years_of_gridded_data
+            if year <= min(selected_years)
+        ]
+    )
+
+    # Get the last year of available gridded data that is greater than
+    # or equal to the maximum selected year.
+    last_selected_year_of_gridded_data = min(
+        [
+            year
+            for year in available_years_of_gridded_data
+            if year >= max(selected_years)
+        ]
+    )
+
+    # Select and return the years of gridded data that cover the years
+    # of interest.
+    return [
+        year
+        for year in available_years_of_gridded_data
+        if first_selected_year_of_gridded_data
+        <= year
+        <= last_selected_year_of_gridded_data
+    ]
+
+
+def get_total_value_from_gridded_data(
+    variable: str,
+    code: str,
+    selected_years: list[int],
+    available_years_of_gridded_data: list[int],
+    last_available_historical_years_of_gridded_data: int | None = None,
+    scenario: str | None = None,
+) -> pandas.Series:
+    """
+    Get the total value of a variable from gridded data.
+
+    This function retrieves the total value of a specified variable
+    (e.g., population or GDP PPP) for a given country or subdivision
+    over a range of selected years. It utilizes gridded data files,
+    which are aggregated based on the provided shape of the country or
+    subdivision. The function can handle both historical data and
+    future projections based on scenarios.
+
+    Parameters
+    ----------
+    variable : str
+        The variable to retrieve. It can be either "population" or
+        "gdp_ppp".
+    code : str
+        The code of the subdivision of interest.
+    selected_years : list[int]
+        The years of interest.
+    available_years_of_gridded_data : list[int]
+        The available years of gridded data.
+    last_available_historical_years_of_gridded_data :
+        int | None, optional
+        The last available year of historical gridded data without
+        scenario.
+    scenario : str | None, optional
+        The scenario of interest for future projections.
+
+    Returns
+    -------
+    pandas.Series
+        The total value of the variable for the selected years.
+
+    Raises
+    ------
+    ValueError
+        If the variable is not "population" or "gdp_ppp".
+        If only one of scenario or
+        last_available_historical_years_of_gridded_data is provided.
+        If last_available_historical_years_of_gridded_data is greater
+        than the minimum available year of gridded data.
+    """
+    if variable not in ["population", "gdp_ppp"]:
+        raise ValueError(
+            "The variable must be either 'population' or 'gdp_ppp'."
+        )
+
+    if scenario is None and last_available_historical_years_of_gridded_data:
+        raise ValueError(
+            "If last_available_historical_years_of_gridded_data is "
+            "provided, scenario must also be provided."
+        )
+
+    if scenario and not last_available_historical_years_of_gridded_data:
+        raise ValueError(
+            "If scenario is provided, "
+            "last_available_historical_years_of_gridded_data must also be "
+            "provided."
+        )
+
+    if last_available_historical_years_of_gridded_data and (
+        last_available_historical_years_of_gridded_data
+        > min(available_years_of_gridded_data)
+    ):
+        raise ValueError(
+            "last_available_historical_years_of_gridded_data must be less "
+            "than the minimum available (future) year of gridded data."
+        )
+
+    # If an extra available year of gridded data is provided, add it
+    # to the list of available years of gridded data.
+    if last_available_historical_years_of_gridded_data:
+        available_years_of_gridded_data = [
+            last_available_historical_years_of_gridded_data
+        ] + available_years_of_gridded_data
+
+    # Sort the available years of gridded data.
+    available_years_of_gridded_data.sort()
+
+    # Get years of available gridded data that cover the selected years.
+    selected_years_of_gridded_data = _select_years_of_gridded_data(
+        available_years_of_gridded_data,
+        selected_years,
+    )
+
+    # Initialize the list to store the total values.
+    total_value_list = []
+
+    for year in selected_years_of_gridded_data:
+        if (
+            last_available_historical_years_of_gridded_data
+            and year == last_available_historical_years_of_gridded_data
+        ):
+            # Extract the total value for the last year of
+            # historical gridded data without scenario.
+            total_value_list.append(
+                _aggregate_gridded_data(variable, code, year, scenario=None)
+            )
+        else:
+            # Extract the total value for the year and
+            # scenario of interest.
+            total_value_list.append(
+                _aggregate_gridded_data(
+                    variable, code, year, scenario=scenario
+                )
+            )
+
+    # Construct a Series with the total values and the selected
+    # years of gridded data as index.
+    total_values = pandas.Series(
+        data=total_value_list,
+        index=selected_years_of_gridded_data,
+    )
+
+    # Set the name of the Series and its index.
+    total_values.index.name = "Year"
+    if variable == "population":
+        total_values.name = "Population"
+    elif variable == "gdp_ppp":
+        total_values.name = "GDP PPP"
+
+    # Interpolate to the selected years and return it.
+    return total_values.reindex(
+        list(
+            range(
+                total_values.index.min(),
+                total_values.index.max() + 1,
+            )
+        )
+    ).interpolate()

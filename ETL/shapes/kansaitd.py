@@ -5,9 +5,9 @@ License: AGPL-3.0.
 Description:
 
     This script generates the shape of the Japanese region served by
-    Kansai Transmission and Distribution (KANSAITD).
+    Kansai Transmission and Distribution (KansaiTD).
 
-    KANSAITD serves the Kansai region, which includes:
+    KansaiTD serves the Kansai region, which includes:
         - Entire prefectures: Shiga, Kyoto, Osaka, Nara, Wakayama
         - Most of Hyōgo Prefecture (excluding Awaji Island)
         - Southern portion of Fukui Prefecture
@@ -42,7 +42,7 @@ url = (
 response = requests.get(url)
 
 # Define the folder where to extract the shapefile.
-temporary_dir = os.path.join(os.path.dirname(__file__), "kansai_temp")
+temporary_dir = os.path.join(os.path.dirname(__file__), "kansaitd_temp")
 os.makedirs(temporary_dir, exist_ok=True)
 
 # Extract the zip file.
@@ -152,7 +152,7 @@ all_prefectures = all_prefectures.rename(
 
 # Rename the region name and code.
 all_prefectures["name"] = ["Kansai"]
-all_prefectures["code"] = ["JP_Kansai"]
+all_prefectures["code"] = ["JPN_Kansai"]
 
 # Save the shape of the region to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "kansaitd")

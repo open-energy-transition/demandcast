@@ -1,12 +1,8 @@
-<h1 align="center">DemandCast</h1>
+<h1 align="center"><b>DemandCast</b></h1>
 
-<h2 align="center">
-    Global hourly electricity demand forecasting
-</h2>
+<h2 align="center"><b>Global hourly electricity demand forecasting</b></h2>
 
-<h3 align="center">
-    <b>A project developed by</b>
-</h3>
+<h3 align="center"><b>A project developed by</b></h3>
 
 <p align="center">
     <a href="https://openenergytransition.org/">
@@ -14,9 +10,7 @@
     </a>
 </p>
 
-<h3 align="center">
-    <p>Supported by</p>
-</h3>
+<h3 align="center"><b>Supported by</b></h3>
 
 <p align="center">
     <a href="https://www.breakthroughenergy.org/">

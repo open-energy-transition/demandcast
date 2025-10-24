@@ -1,0 +1,8 @@
+entities:
+  - subdivision_name: British Columbia
+    subdivision_code: BC
+    country_name: Canada
+    country_code: CAN
+    start_date: 2001-04-01
+    end_date: today
+    time_zone: America/Vancouver
