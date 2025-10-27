@@ -104,7 +104,7 @@ Each retrieval module in the `retrieval/electricity_demand_data_sources/` folder
 
 #### Names, codes, time zones, and data time ranges for countries and subdivisions
 
-For each retrieval module in the `retrieval/electricity_demand_data_sources/` folder, a corresponding YAML file must be created. The YAML file should contain a list of dictionaries, each representing a country or subdivision from the respective data source. The following rules apply:
+For each retrieval module in the `retrievals/electricity_demand_data_sources/` folder, a corresponding YAML file must be created. The YAML file should contain a list of dictionaries, each representing a country or subdivision from the respective data source. The following rules apply:
 
 - Names and codes should adhere to the ISO 3166 standard.
 - For countries and standard subdivisions, use Alpha-3 codes.
@@ -252,12 +252,3 @@ Arguments:
 - `-s, --scenario`: (Optional) The scenario of the weather data used to extract temperature (e.g., `SSP2-4.5`).
 
 The script will store temperature data in `data/temperature/`.
-
-## Main script for plotting data
-
-The script `plot.py` generates plots that visualize on a map the countries and subdivisions for which data has been retrieved, as well as the availability of electricity demand data clustered by GDP, PPP per capita and annual electricity demand per capita. To plot these figures, run:
-
-```bash
-uv run plot.py map_of_available_entities
-uv run plot.py data_availability
-```
