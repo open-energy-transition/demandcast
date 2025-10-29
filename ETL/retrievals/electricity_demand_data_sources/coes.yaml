@@ -1,0 +1,5 @@
+entities:
+  - country_name: Peru
+    country_code: PER
+    start_date: 1997-01-01
+    end_date: today

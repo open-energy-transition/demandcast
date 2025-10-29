@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 import geopandas
 import pytest
+import utils.entities
 import utils.shapes
 from shapely import Polygon
 
@@ -41,7 +42,7 @@ def test_remove_islands(dummy_geodf):
     dummy_geodf : geopandas.GeoDataFrame
         A dummy GeoDataFrame to test the function.
     """
-    countries = ["CL", "ES", "FR", "NL", "NO", "NZ", "PT", "XX"]
+    countries = ["CHL", "ESP", "FRA", "NLD", "NOR", "NZL", "PRT", "XXX"]
     for code in countries:
         result = utils.shapes._remove_islands(dummy_geodf.copy(), code)
         assert isinstance(result, geopandas.GeoDataFrame)
@@ -59,7 +60,7 @@ def test_remove_islands(dummy_geodf):
 
         # Test the _remove_islands function with a country code that has
         # islands.
-        result = utils.shapes._remove_islands(dummy_geodf.copy(), "CL")
+        result = utils.shapes._remove_islands(dummy_geodf.copy(), "CHL")
 
         # Check if the bounds of the result are within the expected
         # bounds.
@@ -71,7 +72,7 @@ def test_remove_islands(dummy_geodf):
 
 def test_get_standard_shape_by_code():
     """
-    Test the _get_standard_shape function with valid country codes.
+    Test the get_standard_shape function with valid country codes.
 
     This function mocks the cartopy Reader to return dummy shapes for
     specified country codes and checks if the returned shape is a
@@ -87,15 +88,15 @@ def test_get_standard_shape_by_code():
 
     with patch("cartopy.io.shapereader.Reader") as mock_reader:
         # Mock the cartopy Reader to return dummy shapes for France and
-        # Italy with ISO_A2 codes.
+        # Italy with ISO_A3 codes.
         mock_reader.return_value.records.return_value = [
-            DummyShape({"ISO_A2": "FR", "ISO_A2_EH": "FR"}),
-            DummyShape({"ISO_A2": "IT", "ISO_A2_EH": "IT"}),
+            DummyShape({"ISO_A3": "FRA", "ISO_A3_EH": "FRA"}),
+            DummyShape({"ISO_A3": "ITA", "ISO_A3_EH": "ITA"}),
         ]
 
-        # Test the _get_standard_shape function for France.
-        shape = utils.shapes._get_standard_shape(
-            "FR", remove_remote_islands=True
+        # Test the get_standard_shape function for France.
+        shape = utils.shapes.get_standard_shape(
+            "FRA", remove_remote_islands=True
         )
         assert isinstance(shape, geopandas.GeoDataFrame)
 
@@ -106,16 +107,16 @@ def test_get_standard_shape_by_code():
             DummyShape({"iso_3166_2": "CA-ON"}),
         ]
 
-        # Test the _get_standard_shape function for Victoria, Australia.
-        shape = utils.shapes._get_standard_shape(
-            "AU_VIC", remove_remote_islands=False
+        # Test the get_standard_shape function for Victoria, Australia.
+        shape = utils.shapes.get_standard_shape(
+            "AUS_VIC", remove_remote_islands=False
         )
         assert isinstance(shape, geopandas.GeoDataFrame)
 
 
 def test_get_standard_shape_invalid_code():
     """
-    Test the _get_standard_shape function with invalid country codes.
+    Test the get_standard_shape function with invalid country codes.
 
     This function mocks the cartopy Reader to return dummy shapes for
     specified country codes that do not match any valid ISO_A2 or
@@ -136,27 +137,27 @@ def test_get_standard_shape_invalid_code():
         mock_reader.return_value.records.return_value = [
             DummyShape(
                 {
-                    "ISO_A2": "INVALID",
-                    "ISO_A2_EH": "INVALID",
+                    "ISO_A3": "INVALID",
+                    "ISO_A3_EH": "INVALID",
                     "NAME": "France",
                     "NAME_LONG": "France",
                 }
             ),
             DummyShape(
                 {
-                    "ISO_A2": "INVALID",
-                    "ISO_A2_EH": "INVALID",
+                    "ISO_A3": "INVALID",
+                    "ISO_A3_EH": "INVALID",
                     "NAME": "Italy",
                     "NAME_LONG": "Italy",
                 }
             ),
         ]
 
-        # Test the _get_standard_shape function for France with an
+        # Test the get_standard_shape function for France with an
         # invalid code. It should then read the shape using the country
         # name instead.
-        shape = utils.shapes._get_standard_shape(
-            "FR", remove_remote_islands=False
+        shape = utils.shapes.get_standard_shape(
+            "FRA", remove_remote_islands=False
         )
         assert isinstance(shape, geopandas.GeoDataFrame)
 
@@ -167,53 +168,13 @@ def test_get_standard_shape_invalid_code():
             DummyShape({"iso_3166_2": "INVALID", "name": "Ontario"}),
         ]
 
-        # Test the _get_standard_shape function for Victoria, Australia
+        # Test the get_standard_shape function for Victoria, Australia
         # with an invalid code. It should then read the shape using the
         # region name instead.
-        shape = utils.shapes._get_standard_shape(
-            "AU_VIC", remove_remote_islands=False
+        shape = utils.shapes.get_standard_shape(
+            "AUS_VIC", remove_remote_islands=False
         )
         assert isinstance(shape, geopandas.GeoDataFrame)
-
-
-def test_get_name_from_code():
-    """
-    Test the _get_name_from_code function with various country codes.
-
-    This function checks if the function returns the correct name for
-    the provided country code.
-    """
-    # Test the function with a valid ISO_A2 code.
-    name = utils.shapes._get_name_from_code("FR")
-    assert name == "France"
-
-    # Test the function with a valid iso_3166_2 code.
-    name = utils.shapes._get_name_from_code("AU_VIC")
-    assert name == "Victoria"
-
-    with patch("pycountry.countries.get") as mock_get:
-        # Mock the pycountry.countries.get method to return None.
-        mock_get.return_value = None
-
-        # Test the function with a code that does not match any country.
-        with pytest.raises(ValueError):
-            utils.shapes._get_name_from_code("INVALIDCODE")
-
-    with patch("pycountry.subdivisions.get") as mock_get:
-        # Mock the pycountry.subdivisions.get method to return None.
-        mock_get.return_value = None
-
-        # Test the function with a code that does not match any country.
-        with pytest.raises(ValueError):
-            utils.shapes._get_name_from_code("INVALID_CODE")
-
-        # Mock the pycountry.subdivisions.get method to return a list.
-        mock_get.return_value = ["Invalid", "Code"]
-
-        # Test the function with a list of codes that should not be
-        # returned.
-        with pytest.raises(ValueError):
-            utils.shapes._get_name_from_code("INVALID_CODE")
 
 
 def test_read_non_standard_shape_codes():
@@ -231,8 +192,8 @@ def test_read_non_standard_shape_codes():
     assert "eia" in codes.keys()
     assert "tepco" in codes.keys()
     assert "neso" in codes.keys()
-    assert "BR_N" in codes["ons"]
-    assert "MX_PEN" in codes["cenace"]
+    assert "BRA_N" in codes["ons"]
+    assert "MEX_PEN" in codes["cenace"]
 
 
 def test_get_non_standard_shape():
@@ -244,7 +205,7 @@ def test_get_non_standard_shape():
     """
     # Test the function with a known non-standard shape code and data
     # source.
-    shape = utils.shapes._get_non_standard_shape("MX_PEN", "cenace")
+    shape = utils.shapes._get_non_standard_shape("MEX_PEN", "cenace")
     assert isinstance(shape, geopandas.GeoDataFrame)
 
 
@@ -262,25 +223,25 @@ def test_get_entity_shape(dummy_geodf):
         A dummy GeoDataFrame to use as a mock shape.
     """
     # Prepare a dummy GeoDataFrame with a code column for testing.
-    dummy_geodf["code"] = "FR"
+    dummy_geodf["code"] = "FRA"
     dummy_geodf = dummy_geodf.set_index("code")
 
     with (
-        patch("utils.shapes._get_standard_shape") as mock_standard,
+        patch("utils.shapes.get_standard_shape") as mock_standard,
         patch(
             "utils.shapes._read_non_standard_shape_codes"
         ) as mock_read_codes,
         patch("utils.shapes._get_non_standard_shape") as mock_nonstandard,
         patch("utils.figures.simple_plot") as mock_plot,
     ):
-        # Mock the return values for the _get_standard_shape and
+        # Mock the return values for the get_standard_shape and
         # simple_plot functions.
         mock_standard.return_value = dummy_geodf
         mock_plot.return_value = None
 
         # Test the get_entity_shape function for a country with a
         # standard shape.
-        result = utils.shapes.get_entity_shape("FR")
+        result = utils.shapes.get_entity_shape("FRA")
         assert isinstance(result, geopandas.GeoDataFrame)
 
         # Mock the return value for the _read_non_standard_shape_codes
@@ -329,3 +290,42 @@ def test_get_entity_bounds(dummy_geodf):
     assert bounds[1] == dummy_geodf.bounds.miny[0] - 1
     assert bounds[2] == dummy_geodf.bounds.maxx[0] + 1
     assert bounds[3] == dummy_geodf.bounds.maxy[0] + 1
+
+    # Define a GeoDataFrame with bounds exceeding the range [-180, 180]
+    # for the longitude.
+    dummy_geodf = geopandas.GeoDataFrame(
+        {
+            "geometry": [
+                Polygon([(-200, -100), (200, -100), (200, 100), (-200, 100)])
+            ]
+        },
+        crs="EPSG:4326",
+    )
+
+    # Get the bounds of the modified dummy GeoDataFrame.
+    bounds = utils.shapes.get_entity_bounds(dummy_geodf)
+
+    # Check if the bounds are adjusted to be within the valid range.
+    assert bounds[0] == -180
+    assert bounds[2] == 180
+
+
+def test_get_all_codes_with_shapes():
+    """
+    Test the get_all_codes_with_shapes function.
+
+    This function checks if the function returns a list of all codes
+    that have associated shapes.
+    """
+    # Call the function to get all codes with shapes.
+    shape_codes = utils.shapes.get_all_codes_with_shapes()
+
+    # Check if the returned codes are in the expected format.
+    assert isinstance(shape_codes, list)
+    assert len(shape_codes) > 0
+
+    # Check for some known codes in the returned list.
+    assert "FRA" in shape_codes
+    assert "USA_TEX" in shape_codes
+    assert "RUS_AD" in shape_codes
+    assert "UKR_40" in shape_codes

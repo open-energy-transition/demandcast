@@ -220,6 +220,44 @@ def test_check_time_series_data_quality_logs(caplog, sample_time_series):
         assert "missing values" in caplog.text
 
 
+def test_convert_from_yearly_to_hourly():
+    """
+    Test the conversion from yearly to hourly time series.
+
+    This test checks if the function correctly converts a yearly time
+    series to an hourly time series, ensuring that the length of the
+    resulting series matches the expected number of hours for the given
+    years.
+    """
+    # Prepare sample yearly data for 2020 and 2021.
+    values = pandas.Series([100, 200], index=pandas.Index([2020, 2021]))
+
+    # Convert to hourly.
+    hourly_series = utils.time_series.convert_from_yearly_to_hourly(
+        values, local_time_zone
+    )
+
+    # Check the length of the resulting series.
+    expected_hours_2020 = 366 * 24
+    expected_hours_2021 = 365 * 24
+    assert len(hourly_series) == expected_hours_2020 + expected_hours_2021
+
+    # Check the index type and timezone.
+    assert str(hourly_series.index.tz) == str(local_time_zone)
+
+    # Check that each year's values are correctly assigned
+    assert hourly_series.iloc[0] == 100
+    idx_2020 = pandas.Timestamp("2020-12-31 23:00:00", tz=local_time_zone)
+    assert hourly_series[idx_2020] == 100
+    idx_2021 = pandas.Timestamp("2021-01-01 00:00:00", tz=local_time_zone)
+    assert hourly_series[idx_2021] == 200
+    idx_2021_end = pandas.Timestamp("2021-12-31 23:00:00", tz=local_time_zone)
+    assert hourly_series[idx_2021_end] == 200
+
+    # Check all unique values are as expected
+    assert set(hourly_series.values) == {100, 200}
+
+
 def test_clean_data(sample_time_series):
     """
     Test the clean_data function.

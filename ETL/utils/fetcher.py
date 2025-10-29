@@ -18,6 +18,7 @@ import urllib.request
 from io import BytesIO, StringIO
 
 import pandas
+import pycountry_convert
 import requests
 import requests.exceptions
 from entsoe import EntsoePandasClient
@@ -134,6 +135,8 @@ def fetch_data(
         The keys to extract from the JSON response.
     query_aspx_webpage : bool, optional
         Whether to query the ASPX webpage.
+    get_cookies : bool, optional
+        Whether to get cookies from the initial GET request.
 
     Returns
     -------
@@ -354,7 +357,7 @@ def fetch_data(
 
 def fetch_entsoe_demand(
     api_key: str,
-    iso_alpha_2_code: str,
+    iso_alpha_3_code: str,
     start_date_and_time: pandas.Timestamp,
     end_date_and_time: pandas.Timestamp,
     retries: int = 3,
@@ -372,8 +375,8 @@ def fetch_entsoe_demand(
     ----------
     api_key : str
         The API key for the ENTSO-E API.
-    iso_alpha_2_code : str
-        The ISO Alpha-2 code of the country.
+    iso_alpha_3_code : str
+        The ISO Alpha-3 code of the country.
     start_date_and_time : pandas.Timestamp
         The start date and time of the data retrieval.
     end_date_and_time : pandas.Timestamp
@@ -394,6 +397,11 @@ def fetch_entsoe_demand(
         If the connection to the ENTSO-E API fails after the specified
         number of retries.
     """
+    # Get the ISO Alpha-2 code of the country.
+    iso_alpha_2_code = pycountry_convert.country_alpha3_to_country_alpha2(
+        iso_alpha_3_code
+    )
+
     # Define the ENTSO-E API client.
     client = EntsoePandasClient(api_key=api_key)
 
@@ -419,7 +427,7 @@ def fetch_entsoe_demand(
     except NoMatchingDataError:
         # If the data is not available, skip to the next country.
         logging.warning(
-            f"No data available for {iso_alpha_2_code} between "
+            f"No data available for {iso_alpha_3_code} between "
             f"{start_date_and_time.date()} and {end_date_and_time.date()}."
         )
 
