@@ -2,7 +2,7 @@ entities:
   - subdivision_name: California
     subdivision_code: CAL
     country_name: United States
-    country_code: US
+    country_code: USA
     start_date: 2019-01-01
     end_date: today
     time_zone: America/Los_Angeles

@@ -6,7 +6,7 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the California ISO (CAISO) in California
-    US. The data is retrieved for the years from 2019 to the current
+    USA. The data is retrieved for the years from 2019 to the current
     date. The data is retrieved from the available Excel files on the
     Caiso website.
 
@@ -64,10 +64,12 @@ def get_available_requests() -> list[tuple[int, int | None]]:
     list[tuple[int, int | None]]
         The list of available requests.
     """
-    # Read the start and end date of the available data.
-    start_date, end_date = utils.entities.read_date_ranges(
-        data_source="caiso"
-    )["US_CAL"]
+    # Get the start and end dates for California.
+    start_date, end_date = (
+        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+            "caiso"
+        )["USA_CAL"]
+    )
 
     # Define the date that separates the two types of requests.
     Jan_2024 = pandas.Timestamp("2024-01-01")
