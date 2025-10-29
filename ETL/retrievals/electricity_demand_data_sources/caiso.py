@@ -71,23 +71,20 @@ def get_available_requests() -> list[tuple[int, int | None]]:
         )["USA_CAL"]
     )
 
-    # Define the date that separates the two types of requests.
-    Jan_2024 = pandas.Timestamp("2024-01-01")
-
-    # Requests before January 2024.
+    # Requests before 2024.
     requests_before: list[tuple[int, int | None]] = [
-        (year, None) for year in range(start_date.year, Jan_2024.year)
+        (year, None) for year in range(start_date.year, 2024)
     ]
 
-    # Requests after January 2024
-    requests_after: list[tuple[int, int | None]] = []
-    for year in range(Jan_2024.year, end_date.year + 1):
-        start_month = 1
-        end_month = 12
-        if year == end_date.year:
-            end_month = end_date.month - 2
-        for month in range(start_month, end_month + 1):
-            requests_after.append((year, month))
+    # Requests from 2024 onward.
+    requests_after: list[tuple[int, int | None]] = [
+        (date.year, date.month)
+        for date in pandas.date_range(
+            start=pandas.Timestamp(2024, 1, 1),
+            end=end_date - pandas.DateOffset(months=2),
+            freq="MS",
+        )
+    ]
 
     # Return the list of available requests.
     return requests_before + requests_after
@@ -115,15 +112,15 @@ def get_url(year: int, month: int | None) -> str:
     # Define the base URL of the electricity demand data.
     base_url = "https://www.caiso.com/documents/"
 
-    # Yearly data (2019–2023)
+    # Define the full URL based on the year and month.
     if month is None:
+        # Yearly data before 2024.
         if year <= 2022:
             url = f"{base_url}historicalemshourlyload-{year}.xlsx"
         elif year == 2023:
             url = f"{base_url}historicalemshourlyloadfor{year}.xlsx"
-
-    # Monthly data (2024 onward)
     else:
+        # Monthly data from 2024 onward.
         month_name = calendar.month_name[month]
         if year == 2024 and month in [1, 2, 3]:  # Jan–Mar 2024
             url = (
@@ -131,6 +128,7 @@ def get_url(year: int, month: int | None) -> str:
             )
         elif year >= 2024:  # April 2024 onwards
             url = f"{base_url}historical-ems-hourly-load-for-{month_name}-{year}.xlsx"
+
     return url
 
 
@@ -163,6 +161,15 @@ def download_and_extract_data_for_request(
     # Check if the input parameters are valid.
     _check_input_parameters(year, month)
 
+    logging.info(
+        "Retrieving electricity demand data for "
+        + (
+            f"{calendar.month_name[month]} {year}"
+            if month is not None
+            else f"{year}"
+        )
+    )
+
     # Get the URL of the electricity demand data.
     url = get_url(year, month)
 
@@ -173,46 +180,34 @@ def download_and_extract_data_for_request(
         read_as="excel_table",
     )
 
-    logging.info(
-        "Retrieving electricity demand data for "
-        + (
-            f"{calendar.month_name[month]} {year}"
-            if month is not None
-            else f"{year}"
-        )
-    )
-
     # Make sure the dataset is a pandas DataFrame.
     if not isinstance(dataset, pandas.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
+
+    # Keep only rows with valid data.
+    dataset = dataset[
+        pandas.to_datetime(dataset["Date"], errors="coerce").notna()
+    ]
+
+    # Define the column names based on the year.
+    if year <= 2020:
+        hourly_column = "HE"
+        demand_column = "CAISO Total"
     else:
-        # Keep only valid dates.
-        dataset = dataset[
-            pandas.to_datetime(dataset["Date"], errors="coerce").notna()
-        ]
+        hourly_column = "HR"
+        demand_column = "CAISO"
 
-        if year <= 2020:
-            # Define the new index.
-            index = pandas.to_datetime(dataset["Date"]) + pandas.to_timedelta(
-                dataset["HE"], unit="h"
-            )
+    # Define the new index.
+    index = index = pandas.to_datetime(dataset["Date"]) + pandas.to_timedelta(
+        dataset[hourly_column], unit="h"
+    )
 
-            # Define the electricity demand time series.
-            electricity_demand_time_series = pandas.Series(
-                dataset["CAISO Total"].values, index=index
-            ).tz_localize("UTC")
-        else:
-            # Define the new index.
-            index = pandas.to_datetime(dataset["Date"]) + pandas.to_timedelta(
-                dataset["HR"], unit="h"
-            )
+    # Define the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset[demand_column].values, index=index
+    ).tz_localize("America/Los_Angeles", nonexistent="NaT", ambiguous="NaT")
 
-            # Define the electricity demand time series.
-            electricity_demand_time_series = pandas.Series(
-                dataset["CAISO"].values, index=index
-            ).tz_localize("UTC")
-
-        return electricity_demand_time_series
+    return electricity_demand_time_series
