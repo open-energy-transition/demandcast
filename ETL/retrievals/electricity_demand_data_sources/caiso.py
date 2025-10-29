@@ -201,7 +201,7 @@ def download_and_extract_data_for_request(
         demand_column = "CAISO"
 
     # Define the new index.
-    index = index = pandas.to_datetime(dataset["Date"]) + pandas.to_timedelta(
+    index = pandas.to_datetime(dataset["Date"]) + pandas.to_timedelta(
         dataset[hourly_column], unit="h"
     )
 
