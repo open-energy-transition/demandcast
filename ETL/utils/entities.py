@@ -30,7 +30,7 @@ extra_entities = {
         "name": "Kosovo",
         "iso_alpha_2": "XK",
         "time_zone": "Europe/Belgrade",
-        "continent": "EU",
+        "continent_code": "EU",
     },
 }
 
