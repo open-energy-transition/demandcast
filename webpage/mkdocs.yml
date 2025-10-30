@@ -45,4 +45,5 @@ nav:
   - Models:
       - Models/index.md
       - Models/xgboost.md
+  - Figures.md
   - Deployment/index.md

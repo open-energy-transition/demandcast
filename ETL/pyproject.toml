@@ -5,7 +5,6 @@ description = "Extract Transform Load (ETL) functionalities for DemandCast"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "atlite>=0.4.0",
     "beautifulsoup4>=4.13.3",
     "cartopy>=0.24.1",
     "cdsapi>=0.7.5",
@@ -26,6 +25,7 @@ dependencies = [
     "pytest>=8.4.0",
     "python-dotenv>=1.0.1",
     "pytz>=2025.1",
+    "pyyaml>=6.0.3",
     "rasterio>=1.4.3",
     "rioxarray>=0.19.0",
     "sdmx1>=2.22.0",
