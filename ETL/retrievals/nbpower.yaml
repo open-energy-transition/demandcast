@@ -1,8 +1,0 @@
-entities:
-  - subdivision_name: New Brunswick
-    subdivision_code: NB
-    country_name: Canada
-    country_code: CA
-    start_date: 2018-01-01
-    end_date: today
-    time_zone: America/Moncton

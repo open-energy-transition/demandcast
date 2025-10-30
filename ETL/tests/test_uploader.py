@@ -152,6 +152,25 @@ def _zenodo_request(
     return response
 
 
+def _oet_metadata():
+    """
+    Return a mock object with sample metadata for OET.
+
+    Returns
+    -------
+    Mock
+        A mock object containing sample metadata for OET.
+    """
+    return mock_open(
+        read_data="""
+    creators:
+    - name: OET Creator
+    contributors:
+    - name: OET Contributor
+    """
+    ).return_value
+
+
 def test_upload_file_to_new_deposition_on_zenodo():
     """
     Test upload_to_zenodo for creating a new deposition.
@@ -166,7 +185,7 @@ def test_upload_file_to_new_deposition_on_zenodo():
         patch("utils.directories.read_folders_structure"),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
-        patch("builtins.open", mock_open(read_data="test data")),
+        patch("builtins.open") as mock_open_file,
     ):
         # Mock the response for getting depositions.
         mock_get.return_value = _zenodo_request(
@@ -190,6 +209,15 @@ def test_upload_file_to_new_deposition_on_zenodo():
 
         # Combine the mock responses for the post requests.
         mock_post.side_effect = [mock_post_1, mock_post_2, mock_post_3]
+
+        # Mock the content of the yaml file for OET metadata.
+        yaml_content = _oet_metadata()
+
+        # Mock the file content to be uploaded.
+        file_content = mock_open(read_data="test data").return_value
+
+        # Combine the mock file contents.
+        mock_open_file.side_effect = [yaml_content, file_content]
 
         # Call the function to upload a file to a new deposition.
         utils.uploader.upload_to_zenodo(
@@ -215,7 +243,7 @@ def test_upload_file_to_draft_version_on_zenodo():
         patch("utils.directories.read_folders_structure"),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
-        patch("builtins.open", mock_open(read_data="test data")),
+        patch("builtins.open") as mock_open_file,
     ):
         # Mock the response for getting depositions.
         mock_get.return_value = _zenodo_request(
@@ -229,6 +257,15 @@ def test_upload_file_to_draft_version_on_zenodo():
         mock_post.return_value = _zenodo_request(
             request_type="post", response_type="upload_file"
         )
+
+        # Mock the content of the yaml file for OET metadata.
+        yaml_content = _oet_metadata()
+
+        # Mock the file content to be uploaded.
+        file_content = mock_open(read_data="test data").return_value
+
+        # Combine the mock file contents.
+        mock_open_file.side_effect = [yaml_content, file_content]
 
         # Call the function to upload a file to a draft version.
         utils.uploader.upload_to_zenodo(
@@ -255,7 +292,7 @@ def test_upload_file_to_new_version_on_zenodo():
         patch("utils.directories.read_folders_structure"),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
-        patch("builtins.open", mock_open(read_data="test data")),
+        patch("builtins.open") as mock_open_file,
     ):
         # Mock the response for getting depositions.
         mock_get_1 = _zenodo_request(
@@ -287,6 +324,15 @@ def test_upload_file_to_new_version_on_zenodo():
 
         # Combine the mock responses for the post requests.
         mock_post.side_effect = [mock_post_1, mock_post_2]
+
+        # Mock the content of the yaml file for OET metadata.
+        yaml_content = _oet_metadata()
+
+        # Mock the file content to be uploaded.
+        file_content = mock_open(read_data="test data").return_value
+
+        # Combine the mock file contents.
+        mock_open_file.side_effect = [yaml_content, file_content]
 
         # Call the function to upload a file to a new version.
         utils.uploader.upload_to_zenodo(
@@ -327,10 +373,14 @@ def test_zenodo_error_get_depositions():
         patch("utils.directories.read_folders_structure"),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
+        patch("builtins.open") as mock_open_file,
     ):
         # Mock the response for getting depositions to simulate an
         # error.
         mock_get.return_value = _zenodo_request(error=True)
+
+        # Mock the content of the yaml file for OET metadata.
+        mock_open_file.return_value = _oet_metadata()
 
         with pytest.raises(Exception):
             utils.uploader.upload_to_zenodo(
@@ -355,6 +405,7 @@ def test_zenodo_error_new_version_of_deposition():
         patch("utils.directories.read_folders_structure"),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
+        patch("builtins.open") as mock_open_file,
     ):
         # Mock the response for getting depositions.
         mock_get.return_value = _zenodo_request(
@@ -363,6 +414,9 @@ def test_zenodo_error_new_version_of_deposition():
 
         # Mock the response for creating a new deposition with an error.
         mock_post.return_value = _zenodo_request(error=True)
+
+        # Mock the content of the yaml file for OET metadata.
+        mock_open_file.return_value = _oet_metadata()
 
         with pytest.raises(Exception):
             utils.uploader.upload_to_zenodo(
@@ -388,6 +442,7 @@ def test_zenodo_error_update_new_version_of_deposition():
         patch("utils.directories.read_folders_structure"),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
+        patch("builtins.open") as mock_open_file,
     ):
         # Mock the response for getting depositions.
         mock_get.return_value = _zenodo_request(
@@ -402,6 +457,9 @@ def test_zenodo_error_update_new_version_of_deposition():
         # Mock the response for updating the deposition metadata with an
         # error.
         mock_put.return_value = _zenodo_request(error=True)
+
+        # Mock the content of the yaml file for OET metadata.
+        mock_open_file.return_value = _oet_metadata()
 
         with pytest.raises(Exception):
             utils.uploader.upload_to_zenodo(
@@ -427,6 +485,7 @@ def test_zenodo_error_get_files_in_draft():
         patch("utils.directories.read_folders_structure"),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
+        patch("builtins.open") as mock_open_file,
     ):
         # Mock the response for getting depositions.
         mock_get_1 = _zenodo_request(
@@ -447,6 +506,9 @@ def test_zenodo_error_get_files_in_draft():
 
         # Combine the mock responses for the get requests.
         mock_get.side_effect = [mock_get_1, mock_get_2]
+
+        # Mock the content of the yaml file for OET metadata.
+        mock_open_file.return_value = _oet_metadata()
 
         with pytest.raises(Exception):
             utils.uploader.upload_to_zenodo(
@@ -473,6 +535,7 @@ def test_zenodo_error_delete_files_in_draft():
         patch("utils.directories.read_folders_structure"),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
+        patch("builtins.open") as mock_open_file,
     ):
         # Mock the response for getting the depositions.
         mock_get_1 = _zenodo_request(
@@ -497,6 +560,9 @@ def test_zenodo_error_delete_files_in_draft():
         # Combine the mock responses for the get requests.
         mock_get.side_effect = [mock_get_1, mock_get_2]
 
+        # Mock the content of the yaml file for OET metadata.
+        mock_open_file.return_value = _oet_metadata()
+
         with pytest.raises(Exception):
             utils.uploader.upload_to_zenodo(
                 "/fake/root/file1.csv",
@@ -520,6 +586,7 @@ def test_zenodo_error_update_draft_metadata():
         patch("utils.directories.read_folders_structure"),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
+        patch("builtins.open") as mock_open_file,
     ):
         # Moch the response for getting the depositions.
         mock_get.return_value = _zenodo_request(
@@ -529,6 +596,9 @@ def test_zenodo_error_update_draft_metadata():
         # Mock the response for updating the deposition metadata with an
         # error.
         mock_put.return_value = _zenodo_request(error=True)
+
+        # Mock the content of the yaml file for OET metadata.
+        mock_open_file.return_value = _oet_metadata()
 
         with pytest.raises(Exception):
             utils.uploader.upload_to_zenodo(
@@ -553,6 +623,7 @@ def test_zenodo_error_create_new_deposition():
         patch("utils.directories.read_folders_structure"),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
+        patch("builtins.open") as mock_open_file,
     ):
         # Mock the response for getting depositions.
         mock_get.return_value = _zenodo_request(
@@ -561,6 +632,9 @@ def test_zenodo_error_create_new_deposition():
 
         # Mock the response for creating a new deposition with an error.
         mock_post.return_value = _zenodo_request(error=True)
+
+        # Mock the content of the yaml file for OET metadata.
+        mock_open_file.return_value = _oet_metadata()
 
         with pytest.raises(Exception):
             utils.uploader.upload_to_zenodo(
@@ -585,7 +659,7 @@ def test_zenodo_error_upload_file_to_deposition():
         patch("utils.directories.read_folders_structure"),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
-        patch("builtins.open", mock_open(read_data="test data")),
+        patch("builtins.open") as mock_open_file,
     ):
         # Mock the response for getting depositions.
         mock_get.return_value = _zenodo_request(
@@ -603,6 +677,15 @@ def test_zenodo_error_upload_file_to_deposition():
 
         # Combine the mock responses for the post requests.
         mock_post.side_effect = [mock_post_1, mock_post_2]
+
+        # Mock the content of the yaml file for OET metadata.
+        yaml_content = _oet_metadata()
+
+        # Mock the file content to be uploaded.
+        file_content = mock_open(read_data="test data").return_value
+
+        # Combine the mock file contents.
+        mock_open_file.side_effect = [yaml_content, file_content]
 
         with pytest.raises(Exception):
             utils.uploader.upload_to_zenodo(
@@ -627,7 +710,7 @@ def test_zenodo_error_publish_deposition():
         patch("utils.directories.read_folders_structure"),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
-        patch("builtins.open", mock_open(read_data="test data")),
+        patch("builtins.open") as mock_open_file,
     ):
         # Mock the response for getting depositions.
         mock_get.return_value = _zenodo_request(
@@ -649,6 +732,15 @@ def test_zenodo_error_publish_deposition():
 
         # Combine the mock responses for the post requests.
         mock_post.side_effect = [mock_post_1, mock_post_2, mock_post_3]
+
+        # Mock the content of the yaml file for OET metadata.
+        yaml_content = _oet_metadata()
+
+        # Mock the file content to be uploaded.
+        file_content = mock_open(read_data="test data").return_value
+
+        # Combine the mock file contents.
+        mock_open_file.side_effect = [yaml_content, file_content]
 
         with pytest.raises(Exception):
             utils.uploader.upload_to_zenodo(

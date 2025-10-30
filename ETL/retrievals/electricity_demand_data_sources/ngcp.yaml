@@ -1,0 +1,5 @@
+entities:
+  - country_name: Philippines
+    country_code: PHL
+    start_date: 2013-01-01
+    end_date: 2024-12-31

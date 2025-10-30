@@ -19,41 +19,41 @@ import pandas
 # Define the codes of the Brazilian states and their corresponding
 # subdivisions.
 codes_of_brazilian_subdivisions = {
-    "BR-AC": "BR_N",
-    "BR-AP": "BR_N",
-    "BR-AM": "BR_N",
-    "BR-PA": "BR_N",
-    "BR-RO": "BR_N",
-    "BR-RR": "BR_N",
-    "BR-TO": "BR_N",
-    "BR-AL": "BR_NE",
-    "BR-BA": "BR_NE",
-    "BR-CE": "BR_NE",
-    "BR-MA": "BR_NE",
-    "BR-PB": "BR_NE",
-    "BR-PI": "BR_NE",
-    "BR-PE": "BR_NE",
-    "BR-RN": "BR_NE",
-    "BR-SE": "BR_NE",
-    "BR-ES": "BR_SE",
-    "BR-MG": "BR_SE",
-    "BR-RJ": "BR_SE",
-    "BR-SP": "BR_SE",
-    "BR-GO": "BR_SE",
-    "BR-MT": "BR_SE",
-    "BR-MS": "BR_SE",
-    "BR-DF": "BR_SE",
-    "BR-PR": "BR_S",
-    "BR-SC": "BR_S",
-    "BR-RS": "BR_S",
+    "BR-AC": "BRA_N",
+    "BR-AP": "BRA_N",
+    "BR-AM": "BRA_N",
+    "BR-PA": "BRA_N",
+    "BR-RO": "BRA_N",
+    "BR-RR": "BRA_N",
+    "BR-TO": "BRA_N",
+    "BR-AL": "BRA_NE",
+    "BR-BA": "BRA_NE",
+    "BR-CE": "BRA_NE",
+    "BR-MA": "BRA_NE",
+    "BR-PB": "BRA_NE",
+    "BR-PI": "BRA_NE",
+    "BR-PE": "BRA_NE",
+    "BR-RN": "BRA_NE",
+    "BR-SE": "BRA_NE",
+    "BR-ES": "BRA_SE",
+    "BR-MG": "BRA_SE",
+    "BR-RJ": "BRA_SE",
+    "BR-SP": "BRA_SE",
+    "BR-GO": "BRA_SE",
+    "BR-MT": "BRA_SE",
+    "BR-MS": "BRA_SE",
+    "BR-DF": "BRA_SE",
+    "BR-PR": "BRA_S",
+    "BR-SC": "BRA_S",
+    "BR-RS": "BRA_S",
 }
 
 # Define the names of the Brazilian subdivisions.
 names_of_brazilian_subdivisions = {
-    "BR_N": "North",
-    "BR_NE": "North-East",
-    "BR_SE": "South-East",
-    "BR_S": "South",
+    "BRA_N": "North",
+    "BRA_NE": "North-East",
+    "BRA_SE": "South-East",
+    "BRA_S": "South",
 }
 
 # Load the shapefile containing the subdivision shapes from the Natural
@@ -107,6 +107,14 @@ for subdivision_code in subdivisions["code"]:
     subdivisions.loc[subdivisions["code"] == subdivision_code, "name"] = (
         names_of_brazilian_subdivisions[subdivision_code]
     )
+
+# Set the precision of the geometry to a grid size of 0.005 degrees.
+# This is done to remove small spikes in the shapes that cause issues
+# when plotting the shapes.
+subdivisions["geometry"] = subdivisions["geometry"].set_precision(0.005)
+
+# Add the coordinate reference system (CRS) to the shapefile.
+subdivisions = subdivisions.set_crs(epsg=4326)
 
 # Save the shapes of the subdivisions to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "ons")

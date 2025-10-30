@@ -41,8 +41,9 @@ repo_url: https://github.com/open-energy-transition/demandcast
 
 nav:
   - index.md
-  - ETL/ETL.md
+  - ETL.md
   - Models:
       - Models/index.md
       - Models/xgboost.md
+  - Figures.md
   - Deployment/index.md

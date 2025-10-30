@@ -1,8 +1,0 @@
-entities:
-  - subdivision_name: Ontario
-    subdivision_code: "ON"
-    country_name: Canada
-    country_code: CA
-    start_date: 1994-01-01
-    end_date: today
-    time_zone: America/Toronto
