@@ -1,0 +1,5 @@
+entities:
+  - country_name: Colombia
+    country_code: COL
+    start_date: 2000-01-01
+    end_date: today

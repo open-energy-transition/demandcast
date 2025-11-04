@@ -1,0 +1,153 @@
+entities:
+  - country_name: Albania
+    country_code: ALB
+    start_date: 2015-01-04
+    end_date: today
+  - country_name: Austria
+    country_code: AUT
+    start_date: 2014-12-01
+    end_date: today
+  - country_name: Belgium
+    country_code: BEL
+    start_date: 2014-11-24
+    end_date: today
+  - country_name: Bosnia and Herzegovina
+    country_code: BIH
+    start_date: 2017-02-28
+    end_date: today
+  - country_name: Bulgaria
+    country_code: BGR
+    start_date: 2015-01-01
+    end_date: today
+  - country_name: Croatia
+    country_code: HRV
+    start_date: 2015-01-01
+    end_date: today
+  - country_name: Cyprus
+    country_code: CYP
+    start_date: 2016-09-21
+    end_date: today
+  - country_name: Czech Republic
+    country_code: CZE
+    start_date: 2014-12-26
+    end_date: today
+  - country_name: Denmark
+    country_code: DNK
+    start_date: 2015-01-01
+    end_date: today
+  - country_name: Estonia
+    country_code: EST
+    start_date: 2014-12-15
+    end_date: today
+  - country_name: Finland
+    country_code: FIN
+    start_date: 2014-12-19
+    end_date: today
+  - country_name: France
+    country_code: FRA
+    start_date: 2014-12-15
+    end_date: today
+  - country_name: Georgia
+    country_code: GEO
+    start_date: 2021-12-19
+    end_date: today
+  - country_name: Germany
+    country_code: DEU
+    start_date: 2015-01-01
+    end_date: today
+  - country_name: Greece
+    country_code: GRC
+    start_date: 2014-12-29
+    end_date: today
+  - country_name: Hungary
+    country_code: HUN
+    start_date: 2014-12-23
+    end_date: today
+  - country_name: Ireland
+    country_code: IRL
+    start_date: 2015-01-01
+    end_date: today
+  - country_name: Italy
+    country_code: ITA
+    start_date: 2015-01-01
+    end_date: today
+  - country_name: Kosovo
+    country_code: XKX
+    start_date: 2021-07-01
+    end_date: today
+  - country_name: Latvia
+    country_code: LVA
+    start_date: 2014-12-22
+    end_date: today
+  - country_name: Lithuania
+    country_code: LTU
+    start_date: 2015-01-02
+    end_date: today
+  - country_name: Luxembourg
+    country_code: LUX
+    start_date: 2014-12-16
+    end_date: today
+  - country_name: Moldova
+    country_code: MDA
+    start_date: 2020-01-10
+    end_date: today
+  - country_name: Montenegro
+    country_code: MNE
+    start_date: 2015-01-01
+    end_date: today
+  - country_name: Netherlands
+    country_code: NLD
+    start_date: 2014-10-19
+    end_date: today
+  - country_name: North Macedonia
+    country_code: MKD
+    start_date: 2015-01-15
+    end_date: today
+  - country_name: Norway
+    country_code: NOR
+    start_date: 2014-12-14
+    end_date: today
+  - country_name: Poland
+    country_code: POL
+    start_date: 2014-12-31
+    end_date: today
+  - country_name: Portugal
+    country_code: PRT
+    start_date: 2014-12-08
+    end_date: today
+  - country_name: Romania
+    country_code: ROU
+    start_date: 2015-01-05
+    end_date: today
+  - country_name: Serbia
+    country_code: SRB
+    start_date: 2015-01-02
+    end_date: today
+  - country_name: Slovakia
+    country_code: SVK
+    start_date: 2014-12-18
+    end_date: today
+  - country_name: Slovenia
+    country_code: SVN
+    start_date: 2014-12-30
+    end_date: today
+  - country_name: Spain
+    country_code: ESP
+    start_date: 2014-12-19
+    end_date: today
+  - country_name: Sweden
+    country_code: SWE
+    start_date: 2015-01-01
+    end_date: today
+  - country_name: Switzerland
+    country_code: CHE
+    start_date: 2014-10-23
+    end_date: today
+  - country_name: Ukraine
+    country_code: UKR
+    start_date: 2017-09-24
+    end_date: 2022-02-25
+  - country_name: United Kingdom
+    country_code: GBR
+    start_date: 2014-12-22
+    end_date: 2021-06-14

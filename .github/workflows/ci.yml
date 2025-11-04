@@ -10,26 +10,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
+  pre-commit:
     timeout-minutes: 10
-    name: "lint"
+    name: "pre-commit"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
-
-      - name: "Install uv"
-        uses: astral-sh/setup-uv@v5
-
-      - name: "Python format"
-        run: uvx ruff format --diff .
-
-      - name: "Python lint"
-        run: uvx ruff check .
-
-      - name: "Python type check"
-        run: uvx mypy
 
       - uses: pre-commit/action@v3.0.1
 
@@ -50,10 +38,6 @@ jobs:
       - name: "Install uv"
         uses: astral-sh/setup-uv@v5
 
-      - name: "Pytest run tests"
-        run: uv run pytest
-        working-directory: ${{ matrix.working-directory }}
-
-      - name: "Pytest check coverage report"
-        run: uv run pytest --cov
+      - name: "Run pytest with coverage report"
+        run: uv run pytest --cov=utils --cov-report=term-missing --cov-fail-under=95
         working-directory: ${{ matrix.working-directory }}

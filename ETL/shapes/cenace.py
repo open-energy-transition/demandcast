@@ -23,7 +23,7 @@ from io import BytesIO
 import geopandas
 import pandas
 import requests
-from shapely.geometry import Polygon
+from shapely import Polygon
 
 # Define the URL of the zip file containing the shapefile of the Mexican
 # states.
@@ -64,15 +64,15 @@ states = states.rename(columns={"ISO3166-2": "code"})
 # a manual process and each step had to be checked visually.
 ########################################################################
 
-# Add the shape of Baja California and set the code to "MX_BCA".
+# Add the shape of Baja California and set the code to "MEX_BCA".
 subdivisions = states[states["code"] == "MX-BCN"]
-subdivisions.loc[subdivisions["code"] == "MX-BCN", "code"] = "MX_BCA"
+subdivisions.loc[subdivisions["code"] == "MX-BCN", "code"] = "MEX_BCA"
 
-# Add the shape of Baja California Sur and set the code to "MX_BCS".
+# Add the shape of Baja California Sur and set the code to "MEX_BCS".
 subdivisions = pandas.concat(
     [subdivisions, states[states["code"] == "MX-BCS"]]
 )
-subdivisions.loc[subdivisions["code"] == "MX-BCS", "code"] = "MX_BCS"
+subdivisions.loc[subdivisions["code"] == "MX-BCS", "code"] = "MEX_BCS"
 
 # Get the shapes of Sonora and Sinaloa.
 shapes_to_merge = states[states["code"].isin(["MX-SON", "MX-SIN"])]
@@ -82,10 +82,10 @@ merged_shape = shapes_to_merge.dissolve(by="is_in_coun")
 merged_shape = merged_shape.reset_index()
 
 # Add the merged shape, Noroeste, to the subdivisions and set the name
-# to Noroeste and code to "MX_NOR".
+# to Noroeste and code to "MEX_NOR".
 subdivisions = pandas.concat([subdivisions, merged_shape])
-subdivisions.loc[subdivisions["code"] == "MX-SON", "code"] = "MX_NOR"
-subdivisions.loc[subdivisions["code"] == "MX_NOR", "name"] = "Noroeste"
+subdivisions.loc[subdivisions["code"] == "MX-SON", "code"] = "MEX_NOR"
+subdivisions.loc[subdivisions["code"] == "MEX_NOR", "name"] = "Noroeste"
 
 # Get the shapes of Chihuahua and Durango.
 shapes_to_merge = states[states["code"].isin(["MX-CHH", "MX-DUR"])]
@@ -95,10 +95,10 @@ merged_shape = shapes_to_merge.dissolve(by="is_in_coun")
 merged_shape = merged_shape.reset_index()
 
 # Add the merged shape, Norte, to the subdivisions and set the name to
-# Norte and code to "MX_NOR".
+# Norte and code to "MEX_NOR".
 subdivisions = pandas.concat([subdivisions, merged_shape])
-subdivisions.loc[subdivisions["code"] == "MX-CHH", "code"] = "MX_NTE"
-subdivisions.loc[subdivisions["code"] == "MX_NTE", "name"] = "Norte"
+subdivisions.loc[subdivisions["code"] == "MX-CHH", "code"] = "MEX_NTE"
+subdivisions.loc[subdivisions["code"] == "MEX_NTE", "name"] = "Norte"
 
 # Get the shapes of Campeche, Quintana Roo and Yucatan.
 shapes_to_merge = states[states["code"].isin(["MX-CAM", "MX-ROO", "MX-YUC"])]
@@ -125,10 +125,10 @@ new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 merged_shape = merged_shape.overlay(new_bounds, how="difference")
 
 # Add the merged shape, Peninsular, to the subdivisions and set the name
-# to Peninsular and code to "MX_PEN".
+# to Peninsular and code to "MEX_PEN".
 subdivisions = pandas.concat([subdivisions, merged_shape])
-subdivisions.loc[subdivisions["code"] == "MX-CAM", "code"] = "MX_PEN"
-subdivisions.loc[subdivisions["code"] == "MX_PEN", "name"] = "Peninsular"
+subdivisions.loc[subdivisions["code"] == "MX-CAM", "code"] = "MEX_PEN"
+subdivisions.loc[subdivisions["code"] == "MEX_PEN", "name"] = "Peninsular"
 
 # Get the shapes of Coahuila, Nuevo Leon and Tamaulipas.
 shapes_to_merge = states[states["code"].isin(["MX-COA", "MX-NLE", "MX-TAM"])]
@@ -183,10 +183,10 @@ merged_shape = shapes_to_merge.dissolve(by="is_in_coun")
 merged_shape = merged_shape.reset_index()
 
 # Add the merged shape, Noreste, to the subdivisions and set the name to
-# Noreste and code to "MX_NES".
+# Noreste and code to "MEX_NES".
 subdivisions = pandas.concat([subdivisions, merged_shape])
-subdivisions.loc[subdivisions["code"] == "MX-NLE", "code"] = "MX_NES"
-subdivisions.loc[subdivisions["code"] == "MX_NES", "name"] = "Noreste"
+subdivisions.loc[subdivisions["code"] == "MX-NLE", "code"] = "MEX_NES"
+subdivisions.loc[subdivisions["code"] == "MEX_NES", "name"] = "Noreste"
 
 # Get the shapes of Nayarit, Zacatecas, Yalisco, Aguascalientes and
 # Colima.
@@ -254,10 +254,10 @@ merged_shape = shapes_to_merge.dissolve(by="is_in_coun")
 merged_shape = merged_shape.reset_index()
 
 # Add the merged shape, Occidental, to the subdivisions and set the name
-# to Occidental and code to "MX_OCC".
+# to Occidental and code to "MEX_OCC".
 subdivisions = pandas.concat([subdivisions, merged_shape])
-subdivisions.loc[subdivisions["code"] == "MX-AGU", "code"] = "MX_OCC"
-subdivisions.loc[subdivisions["code"] == "MX_OCC", "name"] = "Occidental"
+subdivisions.loc[subdivisions["code"] == "MX-AGU", "code"] = "MEX_OCC"
+subdivisions.loc[subdivisions["code"] == "MEX_OCC", "name"] = "Occidental"
 
 # Get the shapes of Queretaro, Mexico, and Mexico City.
 shapes_to_merge = states[states["code"].isin(["MX-QUE", "MX-MEX", "MX-CMX"])]
@@ -297,14 +297,14 @@ merged_shape = merged_shape.reset_index()
 # Remove the Northwestern part of the merged shape with the shape of
 # Occidental region.
 merged_shape = merged_shape.overlay(
-    subdivisions[subdivisions["code"] == "MX_OCC"], how="difference"
+    subdivisions[subdivisions["code"] == "MEX_OCC"], how="difference"
 )
 
 # Add the merged shape, Central, to the subdivisions and set the name to
-# Central and code to "MX_CEN".
+# Central and code to "MEX_CEN".
 subdivisions = pandas.concat([subdivisions, merged_shape])
-subdivisions.loc[subdivisions["code"] == "MX-CMX", "code"] = "MX_CEN"
-subdivisions.loc[subdivisions["code"] == "MX_CEN", "name"] = "Central"
+subdivisions.loc[subdivisions["code"] == "MX-CMX", "code"] = "MEX_CEN"
+subdivisions.loc[subdivisions["code"] == "MEX_CEN", "name"] = "Central"
 
 # Merge all the states.
 merged_states = states.dissolve(by="is_in_coun")
@@ -318,16 +318,24 @@ merged_subdivisions = merged_subdivisions.reset_index()
 merged_states = merged_states.overlay(merged_subdivisions, how="difference")
 
 # Add the merged shape, Oriental, to the subdivisions and set the name
-# to Oriental and code to "MX_ORI".
+# to Oriental and code to "MEX_ORI".
 subdivisions = pandas.concat([subdivisions, merged_states])
-subdivisions.loc[subdivisions["code"] == "MX-AGU", "code"] = "MX_ORI"
-subdivisions.loc[subdivisions["code"] == "MX_ORI", "name"] = "Oriental"
+subdivisions.loc[subdivisions["code"] == "MX-AGU", "code"] = "MEX_ORI"
+subdivisions.loc[subdivisions["code"] == "MEX_ORI", "name"] = "Oriental"
 
 ########################################################################
 
 # Keep only the columns of interest.
 subdivisions = subdivisions[["name", "code", "geometry"]]
 subdivisions = subdivisions.reset_index(drop=True)
+
+# Set the precision of the geometry to a grid size of 0.005 degrees.
+# This is done to remove small spikes in the shapes that cause issues
+# when plotting the shapes.
+subdivisions["geometry"] = subdivisions["geometry"].set_precision(0.005)
+
+# Add the coordinate reference system (CRS) to the shapefile.
+subdivisions = subdivisions.set_crs(epsg=4326)
 
 # Save the shapes of the subdivisions to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "cenace")

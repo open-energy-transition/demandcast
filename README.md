@@ -1,22 +1,26 @@
-<h1 align="center">DemandCast</h1>
+<h1 align="center"><b>DemandCast</b></h1>
 
-<h2 align="center">
-    Global hourly electricity demand forecasting
-</h2>
+<h2 align="center"><b>Global hourly electricity demand forecasting</b></h2>
+
+<h3 align="center"><b>A project developed by</b></h3>
+
+<p align="center">
+    <a href="https://openenergytransition.org/">
+        <img src="webpage/docs/figures/oet_logo.png" alt="OET Logo" width="256"/>
+    </a>
+</p>
+
+<h3 align="center"><b>Supported by</b></h3>
+
+<p align="center">
+    <a href="https://www.breakthroughenergy.org/">
+        <img src="webpage/docs/figures/be_logo.png" alt="Breakthrough Energy Logo" width="512"/>
+    </a>
+</p>
 
 <p align="center">
     <a href="https://open-energy-transition.github.io/demandcast/">
         <b>Documentation</b>
-    </a>
-</p>
-
-<h3 align="center">
-    <b>Supported by</b>
-</h3>
-
-<p align="center">
-    <a href="https://www.breakthroughenergy.org/">
-        <img src="docs/BE_logo.png" alt="Breakthrough Energy Logo" width="512"/>
     </a>
 </p>
 
@@ -38,28 +42,30 @@ The project is in active development, we are always looking for suggestions and 
 
 ```
 demandcast/
-├── docs/                   # Project documentation (MkDocs)
+├── .github/                # Github specifics such as actions
 ├── ETL/                    # Scripts for extracting, transforming, and loading data
 ├── models/                 # Machine learning models for demand forecasting
-├── .devcontainer/          # Development container configuration
-├── .github/                # Github specifics such as actions
+├── webpage/                # Documentation website files (MkDocs)
+├── .gitattributes          # Git attributes for handling line endings
 ├── .gitignore              # File lists that git ignores
 ├── .pre-commit-config.yaml # Pre-commit configuration
-├── .python-version         # Python version
 ├── CONTRIBUTING.md         # Guide to contributing
-├── Dockerfile              # Docker setup for containerized runs
-├── mkdocs.yml              # Documentation configuration file
-├── pyproject.toml          # Project metadata and dependencies
+├── LICENSE                 # License file
+├── README.md               # Project overview and instructions
 ├── ruff.toml               # Ruff configuration
-└── uv.lock                 # Lockfile for project's dependencies
+└── security.md             # Security policy
 ```
 
-## Data collection progress
+## DemandCast structure
+
+![DemandCast](webpage/docs/figures/demandcast_illustration.png)
+
+## Historical electricity demand collection progress
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="ETL/figures/available_entities_dark_mode.png">
-  <source media="(prefers-color-scheme: light)" srcset="ETL/figures/available_entities_light_mode.png">
-  <img alt="Countries and subdivisions for which retrieval scripts of electricity demand data are available" src="ETL/figures/available_entities.png">
+  <source media="(prefers-color-scheme: dark)" srcset="webpage/docs/figures/available_entities_dark_mode.png">
+  <source media="(prefers-color-scheme: light)" srcset="webpage/docs/figures/available_entities_light_mode.png">
+  <img alt="Countries and subdivisions for which retrieval scripts of electricity demand data are available" src="webpage/docs/figures/available_entities.png">
 </picture>
 
 Find the code that we used to retrieve the data in their respective files inside the [ETL](https://github.com/open-energy-transition/demandcast/tree/main/ETL) folder.
@@ -75,31 +81,33 @@ cd demandcast
 
 ### 2. Set up your environment
 
-This project uses [`uv`](https://github.com/astral-sh/uv) as a pacakge manager. It can be used within the provided Dockerfile or installed standalone (see [installing uv](https://docs.astral.sh/uv/getting-started/installation/))
+This project uses [`uv`](https://github.com/astral-sh/uv) as a package manager to install the required dependencies and create an environment stored in `.venv`.
 
+`uv` can be used within the provided Dockerfile or installed standalone (see [installing uv](https://docs.astral.sh/uv/getting-started/installation/)).
+
+The `ETL` folder and each subfolder in the `models` directory—each representing a separate model—contain their own `pyproject.toml` files that define the dependencies for that module.
+
+To set up the environment, run:
 ```bash
+cd path/to/folder
 uv sync
 ```
 
-Alternatively, you may use `conda` to install the packages listed in `pyproject.toml`.
+Alternatively, you may use a package manager of your choice (e.g., `conda`) to install the dependencies listed in the respective `pyproject.toml`. If you choose this approach, please adjust the commands below to align with the conventions of your selected package manager.
 
 ### 3. Run scripts
 
 Scripts can be run directly using:
 
 ```bash
-uv run path/to/script.py
-```
-
-If you have chosen `conda` as your package manager, you can run scripts with:
-
-```bash
-python path/to/script.py
+cd path/to/folder
+uv run script.py
 ```
 
 Jupyter notebooks ([details](https://docs.astral.sh/uv/guides/integration/jupyter/#using-jupyter-within-a-project)) can be launched with:
 
 ```bash
+cd path/to/folder
 uv run --with jupyter jupyter lab --allow-root
 ```
 
@@ -108,16 +116,16 @@ uv run --with jupyter jupyter lab --allow-root
 ### Run tests and check test coverage
 
 ```bash
-uv run pytest
-uv run pytest --cov --cov-report term-missing
+cd path/to/folder
+uv run pytest --cov=utils --cov-report=term-missing
 ```
 
 ### Pre-commit and lint code
 
+To ensure code quality, we use [pre-commit](https://pre-commit.com/) hooks. These hooks automatically run checks on your code before committing changes. Among the pre-commit hooks, we also use [ruff](https://docs.astral.sh/ruff/) to enforce code style and linting. All the pre-commit hooks are defined in the `.pre-commit-config.yaml` file.
+
+To run pre-commit hooks, you can use:
 ```bash
-uvx ruff format
-uvx ruff check --fix
-uvx mypy
 uvx pre-commit
 ```
 
@@ -128,8 +136,17 @@ The [documentation](https://open-energy-transition.github.io/demandcast/) is cur
 To run it locally:
 
 ```bash
+cd webpage
 uv run mkdocs serve
 ```
+
+## Maintainers
+
+The project is maintained by the [Open Energy Transition](https://openenergytransition.org/) team. The team members currently involved in this project are:
+
+- [Kevin Steijn](https://github.com/ElectricMountains) (kevin.steijn at openenergytransition dot org)
+- [Vamsi Priya Goli](https://github.com/Vamsipriya22) (goli.vamsi at openenergytransition dot org)
+- [Enrico Antonini](https://github.com/eantonini) (enrico.antonini at openenergytransition dot org)
 
 ## Contributing
 

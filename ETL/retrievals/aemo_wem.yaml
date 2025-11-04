@@ -1,8 +1,0 @@
-entities:
-  - subdivision_name: Western Australia
-    subdivision_code: WA
-    country_name: Australia
-    country_code: AU
-    start_date: 2006-09-20
-    end_date: today
-    time_zone: Australia/Perth

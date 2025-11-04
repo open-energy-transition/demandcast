@@ -30,15 +30,51 @@ def test_load_paths():
     )
 
     # Check if the folders are read correctly.
+    assert structure["log_files_folder"] == os.path.join(absolute_path, "logs")
+    assert structure["settings_folder"] == os.path.join(
+        absolute_path, "settings"
+    )
+    assert structure["electricity_demand_data_sources_folder"] == os.path.join(
+        absolute_path, "retrievals", "electricity_demand_data_sources"
+    )
+    assert structure["figures_folder"] == os.path.join(
+        absolute_path, "figures"
+    )
     assert structure["data_folder"] == os.path.join(absolute_path, "data")
+    assert structure[
+        "manually_downloaded_electricity_demand_folder"
+    ] == os.path.join(
+        absolute_path, "data", "electricity_demand", "manual_downloads"
+    )
     assert structure["electricity_demand_folder"] == os.path.join(
         absolute_path, "data", "electricity_demand"
     )
+    assert structure[
+        "annual_electricity_demand_per_capita_folder"
+    ] == os.path.join(
+        absolute_path, "data", "annual_electricity_demand_per_capita"
+    )
+    assert structure["population_folder"] == os.path.join(
+        absolute_path, "data", "population"
+    )
+    assert structure["gridded_population_folder"] == os.path.join(
+        absolute_path, "data", "gridded_population"
+    )
+    assert structure["gdp_ppp_per_capita_folder"] == os.path.join(
+        absolute_path, "data", "gdp_ppp_per_capita"
+    )
+    assert structure["gridded_gdp_ppp_folder"] == os.path.join(
+        absolute_path, "data", "gridded_gdp_ppp"
+    )
+    assert structure["gridded_weather_folder"] == os.path.join(
+        absolute_path, "data", "gridded_weather"
+    )
+    assert structure["temperature_folder"] == os.path.join(
+        absolute_path, "data", "temperature"
+    )
 
 
-@patch("utils.directories.read_folders_structure")
-@patch("utils.directories.os.listdir")
-def test_list_yaml_files(mock_listdir, mock_read_folders_structure):
+def test_list_yaml_files():
     """
     Test if the yaml files in a specified folder are listed correctly.
 
@@ -47,22 +83,10 @@ def test_list_yaml_files(mock_listdir, mock_read_folders_structure):
     the behavior of the `os.listdir` function and the
     `read_folders_structure` function, allowing the test to run without
     needing actual files or directories.
-
-    Parameters
-    ----------
-    mock_listdir : unittest.mock.Mock
-        Mock for the os.listdir function.
-    mock_read_folders_structure : unittest.mock.Mock
-        Mock for the read_folders_structure function.
     """
     # Define the folder name and target path for the test.
     folder_name = "config"
-    target_path = "/mocked/path/config"
-
-    # Mock the return values of the read_folders_structure and
-    # os.listdir functions.
-    mock_read_folders_structure.return_value = {folder_name: target_path}
-    mock_listdir.return_value = ["file1.yaml", "file2.yaml", "ignore.txt"]
+    target_path = "/mocked/path/config/"
 
     # Define the expected result.
     expected = [
@@ -70,8 +94,22 @@ def test_list_yaml_files(mock_listdir, mock_read_folders_structure):
         os.path.join(target_path, "file2.yaml"),
     ]
 
-    # Call the function to test.
-    result = utils.directories.list_yaml_files(folder_name)
+    with (
+        patch("utils.directories.read_folders_structure"),
+        patch("os.listdir"),
+    ):
+        # Mock the return value of read_folders_structure to return a
+        # dictionary with the folder name and target path.
+        utils.directories.read_folders_structure.return_value = {
+            folder_name: target_path
+        }
 
-    # Check if the result matches the expected output.
-    assert result == expected, f"Expected {expected}, got {result}"
+        # Mock the return value of os.listdir to simulate the presence
+        # of yaml files and other files in the directory.
+        os.listdir.return_value = ["file1.yaml", "file2.yaml", "ignore.txt"]
+
+        # Call the function to test.
+        result = utils.directories.list_yaml_files(folder_name)
+
+        # Check if the result matches the expected output.
+        assert result == expected, f"Expected {expected}, got {result}"
