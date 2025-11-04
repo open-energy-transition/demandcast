@@ -102,7 +102,7 @@ ax.text(
 ax.text(
     0.78,
     0.05,
-    "Forecasted",
+    "Forecast",
     transform=ax.transAxes,
     ha="center",
     va="bottom",
