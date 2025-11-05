@@ -70,8 +70,8 @@ The table below provides an overview of the data sources currently used in Deman
 
 The map below shows the countries and subdivisions for which retrieval modules of electricity demand data are currently available in DemandCast.
 
-![Countries and subdivisions for which retrieval scripts of electricity demand data are available](figures/available_entities_light_mode.png#only-light)
-![Countries and subdivisions for which retrieval scripts of electricity demand data are available](figures/available_entities_dark_mode.png#only-dark)
+![Countries and subdivisions for which retrieval modules of electricity demand data are available](figures/available_entities_light_mode.png#only-light)
+![Countries and subdivisions for which retrieval modules of electricity demand data are available](figures/available_entities_dark_mode.png#only-dark)
 
 Find the code that we used to retrieve the data in their respective files inside the [ETL/retrievals](https://github.com/open-energy-transition/demandcast/tree/main/ETL/retrievals) folder.
 
