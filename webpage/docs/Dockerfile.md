@@ -85,4 +85,3 @@ This final step activates the virtual environment by prepending its binary direc
 - The container is ready to run the ETL pipeline, models, or any other project scripts
 
 This approach is cleaner than traditional virtual environment activation in Docker, as it doesnt require sourcing activation scripts in each RUN command.
-
