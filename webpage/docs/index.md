@@ -54,12 +54,26 @@ demandcast/
 
 ![DemandCast](figures/demandcast_illustration.png)
 
-## Historical electricity demand collection progress
+## Data sources
 
-![Countries and subdivisions for which retrieval scripts of electricity demand data are available](figures/available_entities_light_mode.png#only-light)
-![Countries and subdivisions for which retrieval scripts of electricity demand data are available](figures/available_entities_dark_mode.png#only-dark)
+The table below provides an overview of the data sources currently used in DemandCast for hourly and sub-hourly electricity demand, weather, and socio-economic data for both historical and forecasted periods.
 
-Find the code that we used to retrieve the data in their respective files inside the [ETL](https://github.com/open-energy-transition/demandcast/tree/main/ETL) folder.
+|Data type|Historical data source|Forecast data source|
+|---|---|---|
+|Hourly and sub-hourly<br>electricity demand|Various public sources listed in the<br>[Awesome Electricity Demand repository](https://github.com/open-energy-transition/Awesome-Electricity-Demand)|**DemandCast**
+|Temperature|[ERA5](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels)|[CMIP6](https://cds.climate.copernicus.eu/datasets/projections-cmip6)|
+|Gridded population|[SEDAC GPW v4](https://data.ghg.center/sedac-popdensity-yeargrid5yr-v4.11/browseui/#sedac-popdensity-yeargrid5yr-v4.11/)|[Wang X. et al. (2022)](https://doi.org/10.6084/m9.figshare.19608594)|
+|National population|[World Bank](https://data.worldbank.org/indicator/SP.POP.TOTL)|[IIASA SSP Database](https://data.ece.iiasa.ac.at/ssp)|
+|Gridded GDP, PPP|[Wang T. et al. (2022)](https://zenodo.org/records/7898409)|[Wang T. et al. (2022)](https://zenodo.org/records/7898409)|
+|National GDP per capita, PPP|[World Bank](https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD), [IMF](https://data.imf.org/en/Data-Explorer?datasetUrn=IMF.RES:WEO(6.0.0)&INDICATOR=NGDPRPPPPC)|[IIASA SSP Database](https://data.ece.iiasa.ac.at/ssp)|
+|National annual electricity<br>demand per capita|[Ember](https://ember-energy.org/data/yearly-electricity-data/), [World Bank](https://data.worldbank.org/indicator/EG.USE.ELEC.KH.PC)|[IIASA SSP Database](https://tntcat.iiasa.ac.at/SspDb)|
+
+The map below shows the countries and subdivisions for which retrieval modules of electricity demand data are currently available in DemandCast.
+
+![Countries and subdivisions for which retrieval modules of electricity demand data are available](figures/available_entities_light_mode.png#only-light)
+![Countries and subdivisions for which retrieval modules of electricity demand data are available](figures/available_entities_dark_mode.png#only-dark)
+
+Find the code that we used to retrieve the data in their respective files inside the [ETL/retrievals](https://github.com/open-energy-transition/demandcast/tree/main/ETL/retrievals) folder.
 
 ## Getting started
 
