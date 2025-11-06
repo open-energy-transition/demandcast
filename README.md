@@ -24,6 +24,10 @@
     </a>
 </p>
 
+## News
+
+Our [paper](https://arxiv.org/abs/2510.08000) got accepted at the NeurIPS 2025 Workshop: Tackling Climate Change with Machine Learning 🎉
+
 ## About
 
 DemandCast is a Python-based project focused on collecting, processing, and forecasting hourly electricity demand data. The aim of this project is to support energy planning studies by using machine learning models to generate hourly time series of future electricity demand or for countries without available data.
