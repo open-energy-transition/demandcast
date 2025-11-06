@@ -1,7 +1,13 @@
 # Dockerfile
 
-We assume you have some familiarity with containers, if not there are a lot of materials out there to learn from.
-This page explains the contents of the Dockerfile and the reasoning behind what we included.
+We assume you have some familiarity with containers,
+as there are a lot of materials out there to learn from.
+For simplicity we give one example on how to build the container:
+```bash
+cd ETL/
+docker build -t demandcast .
+```
+Below we explain the contents of the Dockerfile and the reasoning behind what we included.
 The container ensures that all team members and deployment environments run with the same environment.
 
 ## Base Image
@@ -66,7 +72,7 @@ This command synchronizes the project dependencies using uv:
   - Consistent dependency versions in development and production
   - Faster installation by skipping dependency resolution
 
-This is particularly important for the demandcast project, which has dependencies on:
+This is particularly important for the DemandCast project, which has dependencies on:
 - Geospatial libraries (pyogrio, geopandas)
 - Machine learning frameworks (XGBoost)
 - Data processing tools (pandas, numpy)

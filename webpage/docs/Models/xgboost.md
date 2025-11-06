@@ -21,7 +21,7 @@ The following features are used by the model:
 
 ### Economic
 
-- **Global Domestic Product** (`year_gdp`): Annual Global Domestic Product
+- **Gross Domestic Product** (`year_gdp`): Annual Gross Domestic Product
 
 ### Temporal
 
