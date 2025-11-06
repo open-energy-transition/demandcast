@@ -44,3 +44,5 @@ nav:
   - ETL.md
   - Models/xgboost.md
   - Dockerfile.md
+  - Figures.md
+  - Deployment/index.md

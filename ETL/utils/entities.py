@@ -23,16 +23,15 @@ from timezonefinder import TimezoneFinder
 import utils.directories
 import utils.shapes
 
-# Define the time zones of not fully recognized countries that are not
-# included in pytz.
-extra_entity_time_zone = {
-    "XKX": ["Europe/Belgrade"],  # Kosovo
-}
-
-# Define the continent codes of not fully recognized countries that
-# are not included in pycountry_convert.
-extra_entity_continent = {
-    "XKX": "EU",  # Kosovo
+# Define information for entities not fully recognized in pycountry,
+# pycountry_convert, or pytz.
+extra_entities = {
+    "XKX": {
+        "name": "Kosovo",
+        "iso_alpha_2": "XK",
+        "time_zone": "Europe/Belgrade",
+        "continent_code": "EU",
+    },
 }
 
 
@@ -69,17 +68,23 @@ def get_name_from_code(code: str) -> str:
 
     # Get the ISO Alpha-2 code of the country itself or the country to
     # which the subdivision belongs.
-    iso_alpha_2_code = pycountry_convert.country_alpha3_to_country_alpha2(
-        iso_alpha_3_code
-    )
+    if iso_alpha_3_code in extra_entities:
+        iso_alpha_2_code = extra_entities[iso_alpha_3_code]["iso_alpha_2"]
+    else:
+        iso_alpha_2_code = pycountry_convert.country_alpha3_to_country_alpha2(
+            iso_alpha_3_code
+        )
 
     # Get the name of the country or subdivision of interest based on
     # its code.
     if "_" not in code and "-" not in code:
         # Get the country name from the ISO Alpha-3 code.
-        name = pycountry_convert.country_alpha2_to_country_name(
-            iso_alpha_2_code
-        )
+        if iso_alpha_3_code in extra_entities:
+            name = extra_entities[iso_alpha_3_code]["name"]
+        else:
+            name = pycountry_convert.country_alpha2_to_country_name(
+                iso_alpha_2_code
+            )
     else:
         # Reconstruct the subdivision code.
         if "_" in code:
@@ -529,8 +534,8 @@ def _get_time_zone_of_country(iso_alpha_3_code: str) -> datetime.tzinfo:
         # If the country is not on pytz, try to get the time zone
         # from the mapping dictionary of non-fully recognized
         # countries.
-        if iso_alpha_3_code in extra_entity_time_zone:
-            time_zones = extra_entity_time_zone[iso_alpha_3_code]
+        if iso_alpha_3_code in extra_entities:
+            time_zones = [extra_entities[iso_alpha_3_code]["time_zone"]]
         else:
             raise ValueError(
                 f"Country code {iso_alpha_3_code} is not available in "
@@ -1029,8 +1034,8 @@ def get_continent_code(code: str) -> str:
             iso_alpha_2_code
         )
     except KeyError:
-        if iso_alpha_3_code in extra_entity_continent:
-            continent_code = extra_entity_continent[iso_alpha_3_code]
+        if iso_alpha_3_code in extra_entities:
+            continent_code = extra_entities[iso_alpha_3_code]["continent_code"]
         else:
             raise ValueError(
                 f"Country code {iso_alpha_3_code} is not available in "
