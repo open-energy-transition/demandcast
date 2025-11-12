@@ -26,7 +26,6 @@ import pandas
 import utils.fetcher
 
 
-
 def redistribute() -> bool:
     """
     Return a boolean indicating if the data can be redistributed.
@@ -96,7 +95,7 @@ def get_url(bs_month: int) -> str:
         1: "0c8d8aa5-ccbe-434b-86f9-d94c3bc0e045",  # Baisakh
         2: "c7c75530-1dbb-4aae-a83e-795391f1766f",  # Jestha
         3: "fee50cff-506d-4ad3-b34e-4f175c92387f",  # Ashadh
-        # 4: "0a9a3631-0249-4f48-8627-ce82691e2c79",  # Shrawan (missing data)
+        # 4: "0a9a3631-0249-4f48-8627-ce82691e2c79",  # Shrawan
         5: "21977d9c-5c14-498b-90e0-9018e85098da",  # Bhadra
         6: "12b1493b-06c9-4dfc-851b-d9e62c4db39b",  # Ashoj
         7: "7b63130f-9ebd-4aea-8d11-7ec76fb00be5",  # Kartik
@@ -130,6 +129,11 @@ def download_and_extract_data_for_request(bs_month: int) -> pandas.DataFrame:
     -------
     pandas.DataFrame
         The electricity demand data for the given month.
+
+    Raises
+    ------
+    ValueError
+        If the extracted data is not a pandas DataFrame.
     """
     # Check if input parameters are valid.
     _check_input_parameters(bs_month)
@@ -138,7 +142,7 @@ def download_and_extract_data_for_request(bs_month: int) -> pandas.DataFrame:
         f"Retrieving electricity demand data for the Bikram Sambat month "
         f"{bs_month} of the year 2074."
     )
-                 
+
     # Get the URL for the given month.
     url = get_url(bs_month)
 
@@ -176,9 +180,9 @@ def download_and_extract_data_for_request(bs_month: int) -> pandas.DataFrame:
     # Create a Nepali date and time list.
     nepali_date_and_time = [
         (
-            2074, 
-            bs_month, 
-            int(row["Day"]), 
+            2074,
+            bs_month,
+            int(row["Day"]),
             int(row["Time"].split(":")[0])
             if int(row["Time"].split(":")[0]) != 0
             else 24,
@@ -198,19 +202,19 @@ def download_and_extract_data_for_request(bs_month: int) -> pandas.DataFrame:
         gregorian_date = bs_date.to_datetime_date()
 
         # Combine date and time to form a complete datetime.
-        gregorian_datetime = pandas.to_datetime(gregorian_date) + pandas.Timedelta(hours=dt[3], minutes=dt[4])
+        gregorian_datetime = pandas.to_datetime(
+            gregorian_date
+        ) + pandas.Timedelta(hours=dt[3], minutes=dt[4])
 
         # Append to the index.
         index.append(pandas.Index([gregorian_datetime]))
 
     # Define the electricity demand time series.
     electricity_demand_time_series = pandas.Series(
-        dataset["Demand"].values.astype(float),
-        index=pandas.DatetimeIndex([dt[0] for dt in index], tz="Asia/Kathmandu"),
+        dataset["Demand"].astype(float).to_numpy(),
+        index=pandas.DatetimeIndex(
+            [dt[0] for dt in index], tz="Asia/Kathmandu"
+        ),
     ).sort_index()
 
     return electricity_demand_time_series
-            
-
-
-    
