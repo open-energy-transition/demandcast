@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Define all the data sources for which the retrieval process is automated.
-automated_data_sources="aemo_nem \
+automated_data_sources="adme \
+aemo_nem \
 aemo_wem \
 aeso \
 bchydro \
