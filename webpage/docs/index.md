@@ -30,7 +30,19 @@ DemandCast is a Python-based project focused on collecting, processing, and fore
 - Modular design for adding new countries or data sources.
 - Support for reproducible, containerized development.
 
-The project is in active development, we are always looking for suggestions and contributions!
+#### Feature roadmap
+
+The project is in active development and we are always looking for suggestions and contributions. Below is a non-exhaustive list of planned features:
+
+- Add support to forecast electricity demand in user-defined subnational regions.
+- Enhance model training by integrating new datasets:
+    - New countries and subdivisions with available electricity demand data,
+    - Sectoral electricity demand (agriculture, industry, transport, buildings),
+    - Adoption of EVs, air conditioning, and heat pumps.
+- Add and test new machine learning models for forecasting (e.g., [timesfm](https://github.com/google-research/timesfm)).
+- Add quality checks of electricity demand time series.
+- Improve validation by considering simultaneity of peaks between actual and forecast electricity demand.
+- Package the project for easier installation and usage.
 
 ## Repository structure
 
