@@ -6,17 +6,18 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of Administrador del Mercado Eléctrico (ADME)
-    in  Uruguay. The data is retrieved manually for the years from
-    2019-01-01 to 2025-09-30. The data is retrieved all at once.
+    in  Uruguay. The data is retrieved for the years from 2019 to the
+    current date. The data is retrieved from the available CSV files
+    on the ADME website.
 
     Source: https://adme.com.uy/controlpanel.php
 """
 
 import logging
-import os
 
 import pandas
-import utils.directories
+import utils.entities
+import utils.fetcher
 
 
 def redistribute() -> bool:
@@ -33,36 +34,116 @@ def redistribute() -> bool:
     return True
 
 
-def get_available_requests() -> None:
+def _check_input_parameters(
+    start_date: pandas.Timestamp,
+    end_date: pandas.Timestamp,
+) -> None:
+    """
+    Check if the input parameters are valid.
+
+    Parameters
+    ----------
+    start_date : pandas.Timestamp
+        The start date of the data retrieval.
+    end_date : pandas.Timestamp
+        The end date of the data retrieval.
+    """
+    # Check if the retrieval period is less than 1 year.
+    assert (end_date - start_date) <= pandas.Timedelta("366days"), (
+        "The retrieval period must be less than or equal to 1 year. "
+        f"start_date: {start_date}, end_date: {end_date}"
+    )
+
+    # Read the start date of the available data.
+    start_date_of_data_availability = pandas.to_datetime(
+        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+            "adme"
+        )["URY"][0]
+    )
+
+    # Check that the start date is greater than or equal to the
+    # beginning of the data availability.
+    assert start_date >= start_date_of_data_availability, (
+        "The beginning of the data availability is "
+        f"{start_date_of_data_availability}."
+    )
+
+
+def get_available_requests() -> list[
+    tuple[pandas.Timestamp, pandas.Timestamp]
+]:
     """
     Get the available requests.
 
     This function retrieves the available requests for the electricity
     demand data from the ADME website.
+
+    Returns
+    -------
+    list[tuple[pandas.Timestamp, pandas.Timestamp]]
+        The list of available requests.
     """
-    logging.debug("The data is retrieved manually.")
+    # Read the start and end date of the available data.
+    start_date, end_date = (
+        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+            "adme"
+        )["URY"]
+    )
+
+    # Define intervals for the retrieval periods.
+    intervals = pandas.date_range(start_date, end_date, freq="YS")
+    intervals = intervals.union(pandas.to_datetime([start_date, end_date]))
+
+    # Define start and end dates of the retrieval periods.
+    start_dates_and_times = intervals[:-1]
+    end_dates_and_times = intervals[1:]
+
+    # Return the available requests, which are the beginning and end of
+    # each one-year period.
+    return list(zip(start_dates_and_times, end_dates_and_times))
 
 
-def get_url() -> str:
+def get_url(start_date: pandas.Timestamp, end_date: pandas.Timestamp) -> str:
     """
-    Get the URL of the electricity demand data from the ADME website.
+    Get the URL of the electricity demand data on the ADME website.
+
+    Parameters
+    ----------
+    start_date : pandas.Timestamp
+        The start date and time of the data retrieval.
+    end_date : pandas.Timestamp
+        The end date and time of the data retrieval.
 
     Returns
     -------
     str
         The URL of the electricity demand data.
     """
-    # Return the URL of the electricity demand data.
-    return "https://adme.com.uy/panelControl/gpf.php"
+    # Check if the input parameters are valid.
+    _check_input_parameters(start_date, end_date)
+
+    return (
+        "https://adme.com.uy/panelControl/gpf.php?anod="
+        f"{start_date.year}&mesd={start_date.month}&anoh="
+        f"{end_date.year}&mesh={end_date.month}&granularidad=1&fuente=1&tipo=1"
+    )
 
 
-def download_and_extract_data() -> pandas.Series:
+def download_and_extract_data_for_request(
+    start_date: pandas.Timestamp, end_date: pandas.Timestamp
+) -> pandas.Series:
     """
-    Extract electricity demand data.
+    Download and extract electricity demand data.
 
-    This function extracts the electricity demand data from the ADME
-    website. This function assumes that the data has been downloaded and
-    is available in the specified folder.
+    This function downloads and extracts the electricity demand data
+    from the ADME website.
+
+    Parameters
+    ----------
+    start_date : pandas.Timestamp
+        The start date and time of the data retrieval.
+    end_date : pandas.Timestamp
+        The end date and time of the data retrieval.
 
     Returns
     -------
@@ -73,34 +154,22 @@ def download_and_extract_data() -> pandas.Series:
     ------
     ValueError
         If the extracted data is not a pandas DataFrame.
-    FileNotFoundError
-        If the data file is not found in the specified folder.
     """
-    # Get the data folder.
-    data_directory = utils.directories.read_folders_structure()[
-        "manually_downloaded_electricity_demand_folder"
-    ]
+    # Check if the input parameters are valid.
+    _check_input_parameters(start_date, end_date)
 
-    # Get the paths of the downloaded files that start with "ADM".
-    downloaded_file_paths = [
-        os.path.join(data_directory, file)
-        for file in os.listdir(data_directory)
-        if file.startswith("ADM")
-    ]
+    logging.info(
+        f"Retrieving data from {start_date.date()} to {end_date.date()}."
+    )
 
-    if not downloaded_file_paths:
-        raise FileNotFoundError(
-            f"The data for ADME has not been found in the folder "
-            f"{data_directory}. Please download the data manually from "
-            f"{get_url()}. The data files must be named starting with 'ADM'."
-        )
+    # Get the URL of the electricity demand data.
+    url = get_url(start_date, end_date)
 
-    # Load the data from the downloaded files into a pandas DataFrame.
-    dataset = pandas.concat(
-        [
-            pandas.read_csv(file_path, sep=";")
-            for file_path in downloaded_file_paths
-        ],
+    # Fetch the electricity demand data from the URL.
+    dataset = utils.fetcher.fetch_data(
+        url,
+        content_type="csv",
+        csv_kwargs={"sep": ";"},
     )
 
     # Make sure the dataset is a pandas DataFrame.
@@ -116,7 +185,7 @@ def download_and_extract_data() -> pandas.Series:
         index=pandas.to_datetime(dataset["Fecha"], format="%d-%m-%Y %H:%M"),
     )
 
-    # Add the timezone information.
+    # Add the time zone information to the time series.
     electricity_demand_time_series.index = (
         electricity_demand_time_series.index.tz_localize("America/Montevideo")
     )

@@ -2,4 +2,4 @@ entities:
   - country_name: Uruguay
     country_code: URY
     start_date: 2019-01-01
-    end_date: 2025-09-30
+    end_date: today
