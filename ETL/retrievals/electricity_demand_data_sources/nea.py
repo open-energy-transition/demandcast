@@ -68,7 +68,7 @@ def get_available_requests() -> list[int]:
         A list of available requests.
     """
     # Return the available requests, which are the month numbers from 1
-    # to 12 in the Bikram Sambat calendar year 2073. Month 4 (Shrawan)
+    # to 12 in the Bikram Sambat calendar year 2074. Month 4 (Shrawan)
     # is excluded due to missing data.
     return [1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12]
 
