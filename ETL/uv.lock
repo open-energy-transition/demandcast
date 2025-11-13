@@ -533,6 +533,7 @@ dependencies = [
     { name = "google-cloud-storage" },
     { name = "logging" },
     { name = "matplotlib" },
+    { name = "nepali-datetime" },
     { name = "numpy" },
     { name = "openpyxl" },
     { name = "pandas" },
@@ -573,6 +574,7 @@ requires-dist = [
     { name = "google-cloud-storage", specifier = ">=3.1.0" },
     { name = "logging", specifier = ">=0.4.9.6" },
     { name = "matplotlib", specifier = ">=3.10.0" },
+    { name = "nepali-datetime", specifier = ">=1.0.8.4" },
     { name = "numpy", specifier = ">=2.2.2" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pandas", specifier = ">=2.2.3" },
@@ -1082,6 +1084,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/50/f0/a7786212b5a4cb9ba05ae84a2bbd11d1d0279523aea0424b6d981d652a14/multivolumefile-0.2.3.tar.gz", hash = "sha256:a0648d0aafbc96e59198d5c17e9acad7eb531abea51035d08ce8060dcad709d6", size = 77984, upload-time = "2021-04-29T12:18:39.882Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/22/31/ec5f46fd4c83185b806aa9c736e228cb780f13990a9cf4da0beb70025fcc/multivolumefile-0.2.3-py3-none-any.whl", hash = "sha256:237f4353b60af1703087cf7725755a1f6fcaeeea48421e1896940cd1c920d678", size = 17037, upload-time = "2021-04-29T12:18:38.886Z" },
+]
+
+[[package]]
+name = "nepali-datetime"
+version = "1.0.8.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c9/49/ee387ca2e04fae93470baf5ae7468a05c76f662208ff9c01a30552cc77f6/nepali_datetime-1.0.8.4.tar.gz", hash = "sha256:933af0ae4545ee32bc2cdaeff40aa90c067f0f7c91908350371303c3dd976a6f", size = 20322, upload-time = "2025-05-10T20:39:05.187Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/39/a9/e655df60bee3fa82c18be0ca007335690ac5058015e7a344fc8c20f20344/nepali_datetime-1.0.8.4-py3-none-any.whl", hash = "sha256:13e052447167f8836618b23cc43bb5f3b259380603defdbfe8efe125f06b8462", size = 18636, upload-time = "2025-05-10T20:39:03.955Z" },
 ]
 
 [[package]]

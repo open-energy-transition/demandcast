@@ -1,0 +1,5 @@
+entities:
+  - country_name: Nepal
+    country_code: NPL
+    start_date: 2017-04-14
+    end_date: 2018-04-13
