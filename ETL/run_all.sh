@@ -23,6 +23,7 @@ hydroquebec \
 ieso \
 kansaitd \
 nbpower \
+nea \
 neso \
 ngcp \
 oluwole_et_al
