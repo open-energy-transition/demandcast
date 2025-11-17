@@ -16,6 +16,7 @@ dependencies = [
     "logging>=0.4.9.6",
     "matplotlib>=3.10.0",
     "nepali-datetime>=1.0.8.4",
+    "netcdf4>=1.7.3",
     "numpy>=2.2.2",
     "openpyxl>=3.1.5",
     "pandas>=2.2.3",
