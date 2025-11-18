@@ -130,6 +130,135 @@ def _get_gdp_ppp_per_capita_from_gridded_data(
     return gdp_ppp / population
 
 
+def _extract_historical_gdp_ppp_per_capita(
+    code: str,
+    iso_alpha_3_code: str,
+    global_historical_gdp_ppp_per_capita: pandas.DataFrame,
+    requested_historical_years: list[int],
+    used_historical_years: list[int],
+    available_historical_years_of_gridded_data: list[int],
+) -> pandas.Series:
+    """
+    Extract the historical GDP PPP per capita for a country.
+
+    This function extracts the historical GDP PPP per capita for a
+    given country from the global historical GDP PPP per capita data.
+    If the country is not found in the global data, it calculates the
+    GDP PPP per capita by aggregating gridded data.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision of interest.
+    iso_alpha_3_code : str
+        The ISO Alpha-3 code of the country itself or the country to
+        which the subdivision belongs.
+    global_historical_gdp_ppp_per_capita : pandas.DataFrame
+        The global historical GDP PPP per capita data.
+    years_and_scenarios : dict[str, list[int] | dict[str, list[int]]]
+        The years and scenarios dictionary for the country.
+    available_historical_years_of_gridded_data : list[int]
+        The available historical years for gridded data.
+
+    Returns
+    -------
+    pandas.Series
+        The historical GDP PPP per capita for the country.
+    """
+    # Check if the ISO Alpha-3 code is in the historical
+    # GDP PPP per capita data.
+    if iso_alpha_3_code in global_historical_gdp_ppp_per_capita.index:
+        # Get the historical GDP PPP per capita for the
+        # country of interest.
+        historical_gdp_ppp_per_capita = (
+            global_historical_gdp_ppp_per_capita.loc[iso_alpha_3_code]
+        ).dropna()
+    else:
+        # Interpolate the historical GDP PPP per capita from
+        # gridded data.
+        historical_gdp_ppp_per_capita = (
+            _get_gdp_ppp_per_capita_from_gridded_data(
+                code,
+                used_historical_years,
+                available_historical_years_of_gridded_data,
+            )
+        )
+
+    # Map the requested historical years to the used (available)
+    # historical years. This is used when the requested years are not
+    # all available in the historical data.
+    return (
+        historical_gdp_ppp_per_capita.reindex(used_historical_years)
+    ).set_axis(
+        requested_historical_years,
+    )
+
+
+def _extract_future_gdp_ppp_per_capita(
+    code: str,
+    iso_alpha_3_code: str,
+    global_future_gdp_ppp_per_capita: pandas.DataFrame,
+    future_years: list[int],
+    available_future_years_of_gridded_data: list[int],
+    available_historical_years_of_gridded_data: list[int],
+    scenario: str,
+) -> pandas.Series:
+    """
+    Extract the future GDP PPP per capita for a country.
+
+    This function extracts the future GDP PPP per capita for a given
+    country and scenario from the global future GDP PPP per capita data.
+    If the country is not found in the global data, it calculates the
+    GDP PPP per capita by aggregating gridded data.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision of interest.
+    iso_alpha_3_code : str
+        The ISO Alpha-3 code of the country itself or the country to
+        which the subdivision belongs.
+    global_future_gdp_ppp_per_capita : pandas.DataFrame
+        The global future GDP PPP per capita data.
+    years_and_scenarios : dict[str, list[int] | dict[str, list[int]]]
+        The years and scenarios dictionary for the country.
+    available_future_years_of_gridded_data : list[int]
+        The available future years for gridded data.
+    available_historical_years_of_gridded_data : list[int]
+        The available historical years for gridded data.
+    scenario : str
+        The scenario for which the GDP PPP per capita is to be
+        extracted.
+
+    Returns
+    -------
+    pandas.Series
+        The future GDP PPP per capita for the country.
+    """
+    # Check if the ISO Alpha-3 code is in the future
+    # GDP PPP per capita data.
+    if iso_alpha_3_code in global_future_gdp_ppp_per_capita.index:
+        # Get the future GDP PPP per capita for the country and scenario
+        # of interest.
+        future_gdp_ppp_per_capita = iiasa.extract_and_interpolate(
+            global_future_gdp_ppp_per_capita,
+            iso_alpha_3_code,
+            scenario,
+        )
+    else:
+        # Extract the future GDP PPP per capita by aggregating gridded
+        # data.
+        future_gdp_ppp_per_capita = _get_gdp_ppp_per_capita_from_gridded_data(
+            code,
+            future_years,
+            available_future_years_of_gridded_data,
+            available_historical_years_of_gridded_data[-1],
+            scenario,
+        )
+
+    return future_gdp_ppp_per_capita
+
+
 def run_data_retrieval(
     code: str | None,
     file: str | None,
@@ -200,84 +329,29 @@ def run_data_retrieval(
         # Get the time zone of the country or subdivision.
         time_zone = utils.entities.get_time_zone(code)
 
-        # Check if the ISO Alpha-3 code is in the historical GDP PPP
-        # per capita data.
-        if iso_alpha_3_code in global_historical_gdp_ppp_per_capita.index:
-            # Extract the historical GDP PPP per capita for the country.
-            historical_gdp_ppp_per_capita = (
-                global_historical_gdp_ppp_per_capita.loc[iso_alpha_3_code]
-            ).dropna()
-
-            # Get the years of available historical data.
-            available_historical_years = (
-                historical_gdp_ppp_per_capita.index.tolist()
-            )
-        else:
-            # Define the available years for the GDP PPP per capita data
-            # when interpolating from gridded data.
-            available_historical_years = list(
-                range(
-                    available_historical_years_of_gridded_data[0],
-                    available_historical_years_of_gridded_data[-1] + 1,
-                )
-            )
-
-        # Get the years of available future data.
-        available_future_years = list(
-            range(max(available_historical_years) + 1, 2101)
-        )
-
-        # Get the list of year and scenario combinations.
-        year_scenario_list = (
-            utils.scenarios.get_year_and_scenario_combinations(
-                year,
-                start_year,
-                end_year,
-                available_historical_years,
-                available_future_years,
-                scenario,
-                available_scenarios,
-            )
-        )
-
-        # Get the selcted historical years.
-        selected_historical_years = list(
-            set(
-                [
-                    year
-                    for year, scenario in year_scenario_list
-                    if scenario is None
-                ]
-            )
-        )
-
-        # Get the selected future years.
-        selected_future_years = list(
-            set(
-                [
-                    year
-                    for year, scenario in year_scenario_list
-                    if scenario is not None
-                ]
-            )
-        )
-
-        # Get the selected scenarios.
-        selected_scenarios = list(
-            set(
-                [
-                    scenario
-                    for __, scenario in year_scenario_list
-                    if scenario is not None
-                ]
-            )
+        # Get the years and scenarios dictionary for the country or
+        # subdivision of interest.
+        (
+            requested_historical_years,
+            used_historical_years,
+            future_years,
+            scenarios,
+        ) = utils.scenarios.get_years_and_scenarios(
+            iso_alpha_3_code,
+            year,
+            start_year,
+            end_year,
+            scenario,
+            available_scenarios,
+            global_historical_gdp_ppp_per_capita,
+            available_historical_years_of_gridded_data,
         )
 
         # Define the file path of the GDP PPP per capita data without
         # the file extension.
         file_path_without_ext = os.path.join(result_directory, code)
 
-        if selected_historical_years:
+        if requested_historical_years:
             if not os.path.exists(
                 file_path_without_ext + ".parquet"
             ) or not os.path.exists(file_path_without_ext + ".csv"):
@@ -285,28 +359,25 @@ def run_data_retrieval(
                     f"Processing historical GDP PPP per capita data for {code}."
                 )
 
-                # Check if the ISO Alpha-3 code is not in the historical
-                # GDP PPP per capita data.
-                if (
-                    iso_alpha_3_code
-                    not in global_historical_gdp_ppp_per_capita.index
-                ):
-                    # Interpolate the historical GDP PPP per capita from
-                    # gridded data.
-                    historical_gdp_ppp_per_capita = (
-                        _get_gdp_ppp_per_capita_from_gridded_data(
-                            code,
-                            selected_historical_years,
-                            available_historical_years_of_gridded_data,
-                        )
+                # Extract the historical GDP PPP per capita data for the
+                # country or subdivision of interest.
+                historical_gdp_ppp_per_capita = (
+                    _extract_historical_gdp_ppp_per_capita(
+                        code,
+                        iso_alpha_3_code,
+                        global_historical_gdp_ppp_per_capita,
+                        requested_historical_years,
+                        used_historical_years,
+                        available_historical_years_of_gridded_data,
                     )
+                )
 
-                # Extract the selected historical GDP PPP per capita
-                # data.
+                # Extract the historical GDP PPP per capita for the
+                # selected years.
                 selected_historical_gdp_ppp_per_capita = (
                     historical_gdp_ppp_per_capita.loc[
                         historical_gdp_ppp_per_capita.index.isin(
-                            selected_historical_years
+                            requested_historical_years
                         )
                     ]
                 )
@@ -347,8 +418,8 @@ def run_data_retrieval(
                     "exists. Skipping extraction."
                 )
 
-        if selected_future_years:
-            for scenario in selected_scenarios:
+        if future_years:
+            for scenario in scenarios:
                 if not os.path.exists(
                     f"{file_path_without_ext}_{scenario}.parquet"
                 ) or not os.path.exists(
@@ -359,41 +430,25 @@ def run_data_retrieval(
                         f"{code} and scenario {scenario}."
                     )
 
-                    # Check if the ISO Alpha-3 code is in the future
-                    # GDP PPP per capita data.
-                    if (
-                        iso_alpha_3_code
-                        in global_future_gdp_ppp_per_capita.index
-                    ):
-                        # Get the future GDP PPP per capita for the
-                        # country and scenario of interest.
-                        future_gdp_ppp_per_capita = (
-                            iiasa.extract_and_interpolate(
-                                global_future_gdp_ppp_per_capita,
-                                iso_alpha_3_code,
-                                scenario,
-                            )
+                    # Extract the future GDP PPP per capita data for
+                    # the country or subdivision of interest.
+                    future_gdp_ppp_per_capita = (
+                        _extract_future_gdp_ppp_per_capita(
+                            code,
+                            iso_alpha_3_code,
+                            global_future_gdp_ppp_per_capita,
+                            future_years,
+                            available_future_years_of_gridded_data,
+                            available_historical_years_of_gridded_data,
+                            scenario,
                         )
-                    else:
-                        # Extract the future GDP PPP per capita by
-                        # aggregating gridded data.
-                        future_gdp_ppp_per_capita = (
-                            _get_gdp_ppp_per_capita_from_gridded_data(
-                                code,
-                                selected_future_years,
-                                available_future_years_of_gridded_data,
-                                available_historical_years_of_gridded_data[-1],
-                                scenario,
-                            )
-                        )
+                    )
 
-                    # Select the future GDP PPP per capita for the
+                    # Extract the future GDP PPP per capita for the
                     # selected years.
                     selected_future_gdp_ppp_per_capita = (
                         future_gdp_ppp_per_capita.loc[
-                            future_gdp_ppp_per_capita.index.isin(
-                                selected_future_years
-                            )
+                            future_gdp_ppp_per_capita.index.isin(future_years)
                         ]
                     )
 
