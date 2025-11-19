@@ -261,6 +261,7 @@ JAM,Jamaica,True,True,True,True,True,True,True
 JEY,Jersey,False,False,False,False,False,False,False
 JOR,Jordan,True,True,True,True,True,True,True
 JPN,Japan,True,True,True,True,True,True,True
+JPN_Kansai,Subdivision of Japan,False,True,True,False,True,True,True
 JPN_Kantō,Subdivision of Japan,False,True,True,False,True,True,True
 KAZ,Kazakhstan,True,True,True,True,True,True,True
 KEN,Kenya,True,True,True,True,True,True,True
@@ -275,7 +276,7 @@ LBN,Lebanon,True,True,True,True,True,True,True
 LBR,Liberia,True,True,True,True,True,True,True
 LBY,Libya,True,True,True,True,True,True,True
 LCA,Saint Lucia,True,True,True,True,True,False,True
-LIE,Liechtenstein,True,False,False,False,False,False,False
+LIE,Liechtenstein,True,False,True,False,False,False,False
 LKA,Sri Lanka,True,True,True,True,True,True,True
 LSO,Lesotho,True,True,True,True,True,True,True
 LTU,Lithuania,True,True,True,True,True,True,True
