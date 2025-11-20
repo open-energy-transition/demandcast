@@ -424,10 +424,10 @@ def get_years_and_scenarios(
     historical years, future years, and scenarios based on the input
     parameters and the available data. There may be differences between
     the requested historical years and the used historical years if, for
-    example, the requested years for a country are between 2020 and 2024,
-    but the available historical data for that country is only up to
-    2023. In this case, the used historical years will be 2020 to 2023,
-    and 2023 will be used for 2024.
+    example, the requested years for a country are between 2020 and
+    2024, but the available historical data for that country is only up
+    to 2023. In this case, the used historical years will be 2020 to
+    2023, and 2023 will be used for 2024.
 
     Parameters
     ----------
