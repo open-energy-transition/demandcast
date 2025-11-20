@@ -424,7 +424,7 @@ def run_data_retrieval(
             global_data = utils.geospatial.harmonize_coords(global_data)
 
             # Loop over the countries and subdivisions of interest.
-            for code in codes:
+            for code in tqdm(codes, desc="Countries and subdivisions"):
                 # Define the file path for the weather data of
                 # the country or subdivision.
                 entity_file_path = os.path.join(
