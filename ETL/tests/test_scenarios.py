@@ -8,6 +8,7 @@ Description:
     utility package.
 """
 
+import pandas
 import pytest
 import utils.scenarios
 
@@ -458,3 +459,106 @@ def test_get_year_model_and_scenario_combinations_errors():
             "S3",
             scenarios_for_model,
         )
+
+
+def test_get_years_and_scenarios():
+    """
+    Test the get_years_and_scenarios function.
+
+    This test checks the correct historical years, used historical
+    years, future years, and scenarios are returned based on
+    different combinations of year, start_year, end_year, and
+    scenario inputs, along with historical data availability.
+    """
+    # Define a simple DataFrame to simulate historical data.
+    data = pandas.DataFrame(
+        {
+            2020: [1],
+            2021: [2],
+            2022: [3],
+            2023: [4],
+            2024: [5],
+        },
+        index=["AAA"],
+    ).T
+    data.index.name = "Year"
+    data = data.transpose()
+
+    # Get years and scenarios.
+    result = utils.scenarios.get_years_and_scenarios(
+        iso_alpha_3_code="AAA",
+        year=None,
+        start_year=2021,
+        end_year=2022,
+        scenario=None,
+        available_scenarios=["rcp45", "rcp85"],
+        global_historical_data=data,
+        available_historical_years_of_gridded_data=[2020, 2023],
+    )
+
+    assert result[0] == [2021, 2022]  # requested historical years
+    assert result[1] == [2021, 2022]  # used historical years
+    assert result[2] == []  # future years
+    assert result[3] == []  # scenarios
+
+    # Define another DataFrame to simulate historical data with missing
+    # years.
+    data = pandas.DataFrame(
+        {
+            2020: [1],
+            2021: [2],
+            2022: [3],
+            2023: [4],
+        },
+        index=["AAA"],
+    ).T
+    data.index.name = "Year"
+    data = data.transpose()
+
+    # Get years and scenarios with missing historical years.
+    result = utils.scenarios.get_years_and_scenarios(
+        iso_alpha_3_code="AAA",
+        year=None,
+        start_year=2022,
+        end_year=2024,
+        scenario=None,
+        available_scenarios=["rcp45", "rcp85"],
+        global_historical_data=data,
+        available_historical_years_of_gridded_data=[2020, 2023],
+    )
+
+    assert result[0] == [2022, 2023, 2024]  # requested historical years
+    assert result[1] == [2022, 2023, 2023]  # used historical years
+    assert result[2] == []  # future years
+    assert result[3] == []  # scenarios
+
+    # Define a DataFrame to simulate the use of gridded data.
+    data = pandas.DataFrame(
+        {
+            2020: [1],
+            2021: [2],
+            2022: [3],
+            2023: [4],
+            2024: [5],
+        },
+        index=["AAA"],
+    ).T
+    data.index.name = "Year"
+    data = data.transpose()
+
+    # Get years and scenarios using gridded data.
+    result = utils.scenarios.get_years_and_scenarios(
+        iso_alpha_3_code="BBB",
+        year=None,
+        start_year=2021,
+        end_year=2024,
+        scenario=None,
+        available_scenarios=["rcp45", "rcp85"],
+        global_historical_data=data,
+        available_historical_years_of_gridded_data=[2020, 2023],
+    )
+
+    assert result[0] == [2021, 2022, 2023, 2024]  # requested historical years
+    assert result[1] == [2021, 2022, 2023, 2023]  # used historical years
+    assert result[2] == []  # future years
+    assert result[3] == []  # scenarios

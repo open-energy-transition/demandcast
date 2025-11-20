@@ -36,6 +36,10 @@ def test_get_name_from_code():
     name = utils.entities.get_name_from_code("USA-CA")
     assert name == "California"
 
+    # Test the function with a code for a not fully recognized country.
+    name = utils.entities.get_name_from_code("XKX")
+    assert name == "Kosovo"
+
     with (
         patch(
             "pycountry_convert.country_alpha3_to_country_alpha2"

@@ -33,7 +33,7 @@ def dummy_geodf():
     return geodataframe
 
 
-def test_remove_islands(dummy_geodf):
+def test_remove_islands_and_clip_to_180(dummy_geodf):
     """
     Test the _remove_islands function with various country codes.
 
@@ -42,9 +42,23 @@ def test_remove_islands(dummy_geodf):
     dummy_geodf : geopandas.GeoDataFrame
         A dummy GeoDataFrame to test the function.
     """
-    countries = ["CHL", "ESP", "FRA", "NLD", "NOR", "NZL", "PRT", "XXX"]
+    countries = [
+        "CHL",
+        "ESP",
+        "FJI",
+        "FRA",
+        "NLD",
+        "NOR",
+        "NZL",
+        "PRT",
+        "RUS",
+        "RUS_CHU",
+        "USA",
+    ]
     for code in countries:
-        result = utils.shapes._remove_islands(dummy_geodf.copy(), code)
+        result = utils.shapes._remove_islands_and_clip_to_180(
+            dummy_geodf.copy(), code
+        )
         assert isinstance(result, geopandas.GeoDataFrame)
 
     # Create a dummy GeoDataFrame with a simple polygon representing
@@ -60,7 +74,9 @@ def test_remove_islands(dummy_geodf):
 
         # Test the _remove_islands function with a country code that has
         # islands.
-        result = utils.shapes._remove_islands(dummy_geodf.copy(), "CHL")
+        result = utils.shapes._remove_islands_and_clip_to_180(
+            dummy_geodf.copy(), "CHL"
+        )
 
         # Check if the bounds of the result are within the expected
         # bounds.
