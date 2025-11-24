@@ -24,6 +24,17 @@ import requests.exceptions
 from entsoe import EntsoePandasClient
 from entsoe.exceptions import NoMatchingDataError
 
+# Define information for entities not fully recognized in pycountry,
+# pycountry_convert, or pytz.
+extra_entities = {
+    "XKX": {
+        "name": "Kosovo",
+        "iso_alpha_2": "XK",
+        "time_zone": "Europe/Belgrade",
+        "continent_code": "EU",
+    },
+}
+
 
 def _read_aspx_params(
     response: requests.Response, post_data_params: dict[str, str | int]
@@ -398,9 +409,12 @@ def fetch_entsoe_demand(
         number of retries.
     """
     # Get the ISO Alpha-2 code of the country.
-    iso_alpha_2_code = pycountry_convert.country_alpha3_to_country_alpha2(
-        iso_alpha_3_code
-    )
+    if iso_alpha_3_code in extra_entities:
+        iso_alpha_2_code = extra_entities[iso_alpha_3_code]["iso_alpha_2"]
+    else:
+        iso_alpha_2_code = pycountry_convert.country_alpha3_to_country_alpha2(
+            iso_alpha_3_code
+        )
 
     # Define the ENTSO-E API client.
     client = EntsoePandasClient(api_key=api_key)

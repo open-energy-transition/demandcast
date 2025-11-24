@@ -1,10 +1,12 @@
 #!/bin/bash
 
-# Define all the data sources.
-data_sources="aemo_nem \
+# Define all the data sources for which the retrieval process is automated.
+automated_data_sources="adme \
+aemo_nem \
 aemo_wem \
 aeso \
 bchydro \
+caiso \
 cammesa \
 ccei \
 cen \
@@ -16,16 +18,14 @@ eia \
 ema \
 emi \
 entsoe \
-epias \
-eskom \
+grupoice \
 hydroquebec \
 ieso \
-krogd \
+kansaitd \
 nbpower \
+nea \
 neso \
 ngcp \
-niti \
-ntdc \
 oluwole_et_al
 ons \
 pgcb \
@@ -38,7 +38,21 @@ wu_et_al \
 xm"
 
 # Iterate over each data source and retrieve the electricity time series data.
-for source in $data_sources; do
+for source in $automated_data_sources; do
+    printf "Retrieving data for source: %s\n" "$source"
+    uv run retrieve.py electricity_demand -d $source
+done
+
+# Define all the data sources for which the retrieval process is maually handled.
+manual_data_sources="epias \
+eskom \
+krogd \
+niti \
+ntdc"
+
+# Iterate over each data source and harmonize the electricity time series data.
+for source in $manual_data_sources; do
+    printf "Harmonizing data for source: %s\n" "$source"
     uv run retrieve.py electricity_demand -d $source
 done
 

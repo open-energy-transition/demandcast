@@ -85,25 +85,22 @@ def get_url(file_number: int) -> str:
     # Check if the input parameters are valid.
     _check_input_parameters(file_number)
 
+    # Define the base URL.
+    url = "https://www.aeso.ca/assets/Uploads/"
+
     # Define the URL of the electricity demand data.
     if file_number == 1:
-        url = (
-            "https://www.aeso.ca/assets/Uploads/"
-            "Hourly-load-by-area-and-region-2011-to-2017-.xlsx"
-        )
+        url += "Hourly-load-by-area-and-region-2011-to-2017-.xlsx"
     elif file_number == 2:
-        url = (
-            "https://www.aeso.ca/assets/Uploads/"
-            "Hourly-load-by-area-and-region-2017-2020.xlsx"
-        )
+        url += "Hourly-load-by-area-and-region-2017-2020.xlsx"
     elif file_number == 3:
-        url = (
-            "https://www.aeso.ca/assets/Uploads/data-requests/"
+        url += (
+            "data-requests/"
             "Hourly-load-by-area-and-region-May-2020-to-Oct-2023.xlsx"
         )
     elif file_number == 4:
-        url = (
-            "https://www.aeso.ca/assets/Uploads/data-requests/"
+        url += (
+            "data-requests/"
             "Hourly-load-by-area-and-region-Nov-2023-to-Dec-2024.xlsx"
         )
 
@@ -229,7 +226,8 @@ def download_and_extract_data_for_request(file_number: int) -> pandas.Series:
     # Fetch the electricity demand data from the URL.
     dataset = utils.fetcher.fetch_data(
         url,
-        "excel",
+        "html",
+        read_as="excel_table",
         excel_kwargs={
             "sheet_name": sheet_name,
             "skiprows": rows_to_skip,

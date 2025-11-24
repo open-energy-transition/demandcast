@@ -143,6 +143,11 @@ def _calculate_gdp_ppp_per_capita(
     ] + years_of_interest
     gdp_ppp_per_capita = gdp_ppp_per_capita[columns_order]
 
+    # Update CPI data. This is needed to ensure that the inflation
+    # adjustment is done with the most recent data. This should not
+    # affect the results since we are only using CPI data up to 2021.
+    cpi.update()
+
     # Convert GDP PPP per capita, which is in constant 2017
     # international $, to constant 2021 international $, which is the
     # unit used by the World Bank and the IMF.
