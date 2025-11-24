@@ -535,7 +535,8 @@ def _aggregate_gridded_data(
 
     # Get the shape of the country or subdivision.
     shape = utils.shapes.get_entity_shape(
-        code, make_plot=False, remove_remote_islands=False
+        code,
+        make_plot=False,
     )
 
     # Calculate the fraction of the grid cells that belong to the
