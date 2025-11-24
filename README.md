@@ -100,7 +100,7 @@ The map below shows the countries and subdivisions for which retrieval modules o
 
 You can find the code that we used to retrieve the data in their respective files inside the [ETL/retrievals](https://github.com/open-energy-transition/demandcast/tree/main/ETL/retrievals) folder.
 
-You can find the electricity demand data that we retrieved at different points in time in this [Google Cloud Storage bucket](https://console.cloud.google.com/storage/browser/electricity_demand_data) (freely accessible with a Google account).
+You can find the electricity demand data that we retrieved at different points in time in this [Google Cloud Storage bucket](https://console.cloud.google.com/storage/browser/demandcast_data) (freely accessible with a Google account).
 
 ## Getting started
 
