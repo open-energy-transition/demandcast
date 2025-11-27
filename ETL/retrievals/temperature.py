@@ -500,9 +500,9 @@ def _build_temperature_database(
     ).tz_convert(entity_time_zone)
 
     # Get the montly average temperature.
-    monthly_average_temperature = temperature_time_series_top_1.resample(
-        "ME"
-    ).mean()
+    monthly_average_temperature = (
+        temperature_time_series_top_1.tz_localize(None).resample("ME").mean()
+    )
     monthly_average_temperature.index = monthly_average_temperature.index.month
 
     # Get the rank of the monthly average temperature.
