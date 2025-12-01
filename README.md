@@ -26,7 +26,7 @@
 
 ## News
 
-Our [paper](https://arxiv.org/abs/2510.08000) got accepted at the NeurIPS 2025 Workshop: Tackling Climate Change with Machine Learning 🎉
+Our [paper](https://arxiv.org/abs/2510.08000) got accepted at the [NeurIPS 2025 Workshop](https://www.climatechange.ai/papers/neurips2025/42): Tackling Climate Change with Machine Learning 🎉.
 
 ## About
 
