@@ -361,7 +361,7 @@ def _extract(
     # Extract the data for the country and scenario of interest.
     iiasa_data_of_country = iiasa_data[
         (iiasa_data.index == iso_alpha_3_code)
-        & (iiasa_data["Scenario"] == scenario)
+        & (iiasa_data["Scenario"].str.upper() == scenario)
     ]
 
     # Check that there is only one row.
