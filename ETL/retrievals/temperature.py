@@ -17,6 +17,7 @@ import os
 
 import numpy
 import pandas
+import pytz
 import utils.directories
 import utils.entities
 import utils.geospatial
@@ -343,11 +344,25 @@ def _extract_temperature_in_local_year(
         .tz_convert("UTC")
         .tz_localize(None)
     )
-    end_date = (
-        pandas.Timestamp(str(year) + "-12-31 23:59:59", tz=entity_time_zone)
-        .tz_convert("UTC")
-        .tz_localize(None)
-    )
+    try:
+        end_date = (
+            pandas.Timestamp(
+                str(year) + "-12-31 23:59:59", tz=entity_time_zone
+            )
+            .tz_convert("UTC")
+            .tz_localize(None)
+        )
+    except pytz.exceptions.AmbiguousTimeError:
+        # This handles the case of Bangladesh in 2009 when the end date
+        # falls in the ambiguous hour due to the end of daylight saving
+        # time. In this case, we set the end date to 22:59:59.
+        end_date = (
+            pandas.Timestamp(
+                str(year) + "-12-31 22:59:59", tz=entity_time_zone
+            )
+            .tz_convert("UTC")
+            .tz_localize(None)
+        )
 
     # Extract the temperature data for the given year in local time.
     return temperature_data.sel(time=slice(start_date, end_date))
@@ -532,7 +547,10 @@ def _build_temperature_database(
 
     # Get the annual average temperature.
     annual_average_temperature = pandas.Series(
-        temperature_time_series_top_1.resample("YE").mean().to_numpy()[0],
+        temperature_time_series_top_1.tz_localize(None)
+        .resample("YE")
+        .mean()
+        .to_numpy()[0],
         index=temperature_time_series_top_1.index,
     )
 
