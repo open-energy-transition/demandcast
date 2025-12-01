@@ -482,11 +482,14 @@ def extrapolate(
     # Calculate the future values by applying the annual growth rates to
     # the last historical value.
     for year in future_years:
-        # Use the closest growth rate that is less than or equal to
-        # the year.
-        annual_growth_rate_of_year = iiasa_data_of_country[
-            iiasa_data_of_country.index < year
-        ].iloc[-1]
+        if year <= iiasa_data_of_country.index.min():
+            # Use the growth rate of the first available year.
+            annual_growth_rate_of_year = iiasa_data_of_country.iloc[0]
+        else:
+            # Use the closest growth rate that is less than to the year.
+            annual_growth_rate_of_year = iiasa_data_of_country[
+                iiasa_data_of_country.index < year
+            ].iloc[-1]
 
         # Calculate the value for the year.
         extrapolated_data[year] = previous_value * (
