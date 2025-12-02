@@ -44,6 +44,35 @@ The project is in active development and we are always looking for suggestions a
 - Improve validation by considering simultaneity of peaks between actual and forecast electricity demand.
 - Package the project for easier installation and usage.
 
+## Documentation
+
+The [documentation](https://open-energy-transition.github.io/demandcast/) is currently hosted on GitHub pages connected to this repository. It is built with [mkdocs](https://github.com/squidfunk/mkdocs-material).
+
+To run it locally:
+
+```bash
+cd webpage
+uv run mkdocs serve
+```
+
+Other online resources include:
+
+- [Paper](https://arxiv.org/abs/2510.08000) accepted at the [NeurIPS 2025 Workshop](https://www.climatechange.ai/papers/neurips2025/42): Tackling Climate Change with Machine Learning.
+- [Poster](https://s3.us-east-1.amazonaws.com/climate-change-ai/papers/neurips2025/42/poster.pdf) presented at the NeurIPS 2025 Workshop.
+- [Video presentation](https://recorder-v3.slideslive.com/?share=107690&s=ed044008-3b06-4462-a839-b82b888eeb46) recorded for the NeurIPS 2025 Workshop.
+
+## Contributing
+
+We welcome contributions in the form of:
+
+- Country-specific ETL modules
+- New or improved forecasting models
+- Documentation and testing enhancements
+
+Please follow the repository’s structure and submit your changes via pull request.
+
+We also would like to hear your feedback and suggestions. You can share your thoughts by completing this short [survey](https://forms.gle/nMYvCAfzbrUDjqRQ8).
+
 ## Repository structure
 
 ```
@@ -150,17 +179,6 @@ To run pre-commit hooks, you can use:
 uvx pre-commit
 ```
 
-## Documentation
-
-The [documentation](https://open-energy-transition.github.io/demandcast/) is currently hosted on GitHub pages connected to this repository. It is built with [mkdocs](https://github.com/squidfunk/mkdocs-material).
-
-To run it locally:
-
-```bash
-cd webpage
-uv run mkdocs serve
-```
-
 ## Maintainers
 
 The project is maintained by the [Open Energy Transition](https://openenergytransition.org/) team. The team members currently involved in this project are:
@@ -168,16 +186,6 @@ The project is maintained by the [Open Energy Transition](https://openenergytran
 - [Kevin Steijn](https://github.com/ElectricMountains) (kevin.steijn at openenergytransition dot org)
 - [Vamsi Priya Goli](https://github.com/Vamsipriya22) (goli.vamsi at openenergytransition dot org)
 - [Enrico Antonini](https://github.com/eantonini) (enrico.antonini at openenergytransition dot org)
-
-## Contributing
-
-We welcome contributions in the form of:
-
-- Country-specific ETL modules
-- New or improved forecasting models
-- Documentation and testing enhancements
-
-Please follow the repository’s structure and submit your changes via pull request.
 
 ## License
 
