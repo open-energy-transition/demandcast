@@ -453,29 +453,28 @@ def coarsen(
     # Rename the bins to "x" and "y".
     coarsened_xarray = coarsened_xarray.rename({"x_bins": "x", "y_bins": "y"})
 
-    # If the bounds cover the full longitude range, the first and last
-    # x coordinates are the centers of the edge bins (half the size of
-    # the other bins). In this case, change the first and last x
-    # coordinates to -180 and 180, respectively, and sum the values at
-    # the edges.
-    if (
-        coarsened_xarray.x[0] == -180 + target_resolution / 4
-        and coarsened_xarray.x[-1] == 180 - target_resolution / 4
-    ):
-        # Change the first and last x coordinates to -180 and 180.
+    # If the bounds are at the edges of the longitude range, adjust the
+    # first and last x coordinates to be exactly -180 and 180,
+    # respectively.
+    if coarsened_xarray.x[0] == -180 + target_resolution / 4:
+        # Change the first x coordinates to -180.
         coarsened_xarray = coarsened_xarray.assign_coords(
             x=coarsened_xarray.x.where(
                 coarsened_xarray.x != coarsened_xarray.x[0], -180
             )
         )
+    if coarsened_xarray.x[-1] == 180 - target_resolution / 4:
+        # Change the last x coordinates to 180.
         coarsened_xarray = coarsened_xarray.assign_coords(
             x=coarsened_xarray.x.where(
                 coarsened_xarray.x != coarsened_xarray.x[-1], 180
             )
         )
 
-        # Sum the values at the edges if the x coordinate goes from
-        # -180 to 180.
+    # If the x coordinate goes from -180 to 180, sum the values at
+    # the edges. This is because the grid cells at -180 and 180
+    # represent the same longitude line.
+    if coarsened_xarray.x[0] == -180 and coarsened_xarray.x[-1] == 180:
         coarsened_xarray.loc[dict(x=-180)] += coarsened_xarray.loc[dict(x=180)]
         coarsened_xarray.loc[dict(x=180)] = coarsened_xarray.loc[dict(x=-180)]
 
@@ -536,7 +535,8 @@ def _aggregate_gridded_data(
 
     # Get the shape of the country or subdivision.
     shape = utils.shapes.get_entity_shape(
-        code, make_plot=False, remove_remote_islands=False
+        code,
+        make_plot=False,
     )
 
     # Calculate the fraction of the grid cells that belong to the

@@ -161,7 +161,7 @@ def run_data_retrieval(
             global_historical_electricity_demand_per_capita.loc[
                 iso_alpha_3_code
             ]
-        )
+        ).dropna()
 
         # Get the years of available historical data.
         available_historical_years = (

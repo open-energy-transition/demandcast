@@ -23,15 +23,17 @@ import utils.entities
 import utils.figures
 
 
-def _remove_islands(
+def _remove_islands_and_clip_to_180(
     entity_shape: geopandas.GeoDataFrame, code: str
 ) -> geopandas.GeoDataFrame:
     """
-    Remove small remote islands from the shape of some countries.
+    Remove small remote islands and clip to 180/-180 longitude.
 
     This function modifies the shape of certain countries to exclude
     small remote islands that are not relevant for the analysis and
     would otherwise lead to the download of large weather datasets.
+    It also clips the shape to the 180/-180 longitude to avoid issues
+    with data retrieval.
 
     Parameters
     ----------
@@ -59,6 +61,10 @@ def _remove_islands(
             new_bounds = geopandas.GeoSeries(
                 Polygon([(-10, 35), (5, 35), (5, 45), (-10, 45)])
             )
+        case "FJI":  # Fiji
+            new_bounds = geopandas.GeoSeries(
+                Polygon([(172, -22), (180, -22), (180, -10), (172, -10)])
+            )
         case "FRA":  # France
             new_bounds = geopandas.GeoSeries(
                 Polygon([(-5, 40), (10, 40), (10, 55), (-5, 55)])
@@ -78,6 +84,18 @@ def _remove_islands(
         case "PRT":  # Portugal
             new_bounds = geopandas.GeoSeries(
                 Polygon([(-10, 35), (0, 35), (0, 45), (-10, 45)])
+            )
+        case "RUS":  # Russia
+            new_bounds = geopandas.GeoSeries(
+                Polygon([(0, 0), (180, 0), (180, 90), (0, 90)])
+            )
+        case "RUS_CHU":  # Russia - Chukotka Autonomous Okrug
+            new_bounds = geopandas.GeoSeries(
+                Polygon([(150, 60), (180, 60), (180, 75), (150, 75)])
+            )
+        case "USA":  # United States
+            new_bounds = geopandas.GeoSeries(
+                Polygon([(-180, 10), (-50, 10), (-50, 90), (-180, 90)])
             )
 
     if new_bounds is not None:
@@ -182,7 +200,7 @@ def get_standard_shape(
 
     # Remove small remote islands from the shape of some countries.
     if remove_remote_islands:
-        entity_shape = _remove_islands(entity_shape, code)
+        entity_shape = _remove_islands_and_clip_to_180(entity_shape, code)
 
     return entity_shape
 
