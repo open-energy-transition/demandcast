@@ -26,13 +26,83 @@ import os
 
 import pandas
 import pycountry
-import retrievals.socio_economic_data_sources.ember as ember
+import retrievals.annual_electricity_demand_per_capita
+import retrievals.gdp_ppp_per_capita
 import retrievals.socio_economic_data_sources.iiasa as iiasa
-import retrievals.socio_economic_data_sources.imf as imf
 import retrievals.socio_economic_data_sources.world_bank as world_bank
 import utils.directories
 import utils.shapes
 import yaml
+
+
+def _add_first_and_last_years(
+    variable: str,
+    data_source: pandas.DataFrame,
+    data_availability: pandas.DataFrame,
+) -> pandas.DataFrame:
+    """
+    Add the first and last available years for historical data.
+
+    Parameters
+    ----------
+    variable : str
+        The name of the variable.
+    data_source : pandas.DataFrame
+        The historical data source.
+    data_availability : pandas.DataFrame
+        The DataFrame to store the data availability.
+
+    Returns
+    -------
+    data_availability : pandas.DataFrame
+        The updated data availability DataFrame.
+
+    Raises
+    ------
+    ValueError
+        If the variable is not recognized.
+    """
+    first_years: list[int | None] = []
+    last_years: list[int | None] = []
+
+    if variable == "historical_population":
+        codes_of_interest = data_availability.index.to_list()
+    elif variable in [
+        "historical_electricity_demand_per_capita",
+        "historical_gdp_ppp_per_capita",
+    ]:
+        codes_of_interest = data_availability[
+            "parent_iso_alpha_3_code"
+        ].to_list()
+    else:
+        raise ValueError(f"Variable not recognized: {variable}")
+
+    for code in codes_of_interest:
+        if "_" in code:
+            # Data for subdivisions is not available from the source.
+            first_years.append(None)
+            last_years.append(None)
+        elif not data_availability[variable].loc[code]:
+            # Data for the entity is not available from the source.
+            first_years.append(None)
+            last_years.append(None)
+        else:
+            # Extract the available years for the entity.
+            entity_data = data_source.loc[code]
+            available_years = entity_data.dropna().index.tolist()
+
+            # Add the first and last available years.
+            if available_years:
+                first_years.append(available_years[0])
+                last_years.append(available_years[-1])
+            else:
+                first_years.append(None)
+                last_years.append(None)
+
+    data_availability[f"{variable}_first_year"] = first_years
+    data_availability[f"{variable}_last_year"] = last_years
+
+    return data_availability
 
 
 def run_check() -> None:
@@ -77,84 +147,98 @@ def run_check() -> None:
             raise ValueError(f"Code {code} with shape not in official list.")
 
     # Initialize a DataFrame to store the available data.
-    data = pandas.DataFrame(index=entity_codes_with_shape)
-    data.index.name = "entity_code"
+    data_availability = pandas.DataFrame(index=entity_codes_with_shape)
+    data_availability.index.name = "entity_code"
 
     # Add a column with the entity names.
-    data["entity_name"] = [
+    data_availability["entity_name"] = [
         f"Subdivision of {pycountry.countries.get(alpha_3=code.split('_')[0]).name}"
         if "_" in code
         else pycountry.countries.get(alpha_3=code).name
-        for code in data.index
+        for code in data_availability.index
     ]
 
     # Add a column with the ISO Alpha-3 codes.
-    data["parent_iso_alpha_3_code"] = iso_alpha_3_codes_with_shapes
+    data_availability["parent_iso_alpha_3_code"] = (
+        iso_alpha_3_codes_with_shapes
+    )
 
     # Download the historical population data.
     world_bank_historical_population = world_bank.download("population")
 
     # Add a column to indicate the availability of historical population
     # data.
-    data["historical_population"] = data["parent_iso_alpha_3_code"].isin(
-        world_bank_historical_population.index
-    ) & (~data.index.str.contains("_"))
-
-    # Download the historical electricity demand per capita from Ember.
-    ember_electricity_demand_per_capita = (
-        ember.download_electricity_demand_per_capita()
+    data_availability["historical_population"] = data_availability[
+        "parent_iso_alpha_3_code"
+    ].isin(world_bank_historical_population.index) & (
+        ~data_availability.index.str.contains("_")
     )
 
-    # Download the historical electricity demand per capita from the
-    # World Bank.
-    world_bank_electricity_demand_per_capita = world_bank.download(
-        "electricity_demand_per_capita"
+    # Add columns with the first and last available years for historical
+    # population data.
+    data_availability = _add_first_and_last_years(
+        "historical_population",
+        world_bank_historical_population,
+        data_availability,
+    )
+
+    # Download the historical electricity demand per capita.
+    electricity_demand_per_capita = (
+        retrievals.annual_electricity_demand_per_capita.get_historical_data()
     )
 
     # Add a column to indicate the availability of historical
     # electricity demand per capita data.
-    data["historical_electricity_demand_per_capita"] = data[
-        "parent_iso_alpha_3_code"
-    ].isin(ember_electricity_demand_per_capita.index) | data[
-        "parent_iso_alpha_3_code"
-    ].isin(world_bank_electricity_demand_per_capita.index)
-
-    # Download the historical GDP PPP per capita from the World Bank.
-    world_bank_gdp_ppp_per_capita = world_bank.download("gdp_ppp_per_capita")
-
-    # Download the historical GDP PPP per capita from the IMF.
-    imf_gdp_ppp_per_capita = imf.download_gdp_ppp_per_capita()
-
-    # For the IMF data, change the code for Kosovo and Palestine.
-    imf_gdp_ppp_per_capita = imf_gdp_ppp_per_capita.rename(
-        index={"KOS": "XKX", "WBG": "PSE"}
+    data_availability["historical_electricity_demand_per_capita"] = (
+        data_availability["parent_iso_alpha_3_code"].isin(
+            electricity_demand_per_capita.index
+        )
     )
+
+    # Add columns with the first and last available years for historical
+    # electricity demand per capita data.
+    data_availability = _add_first_and_last_years(
+        "historical_electricity_demand_per_capita",
+        electricity_demand_per_capita,
+        data_availability,
+    )
+
+    # Download the historical GDP PPP per capita.
+    gdp_ppp_per_capita = retrievals.gdp_ppp_per_capita.get_historical_data()
 
     # Add a column to indicate the availability of historical GDP PPP
     # per capita data.
-    data["historical_gdp_ppp_per_capita"] = data[
+    data_availability["historical_gdp_ppp_per_capita"] = data_availability[
         "parent_iso_alpha_3_code"
-    ].isin(world_bank_gdp_ppp_per_capita.index) | data[
-        "parent_iso_alpha_3_code"
-    ].isin(imf_gdp_ppp_per_capita.index)
+    ].isin(gdp_ppp_per_capita.index)
+
+    # Add columns with the first and last available years for historical
+    # GDP PPP per capita data.
+    data_availability = _add_first_and_last_years(
+        "historical_gdp_ppp_per_capita",
+        gdp_ppp_per_capita,
+        data_availability,
+    )
 
     # Read future population from the IIASA SSP database.
     iiasa_future_population = iiasa.read("population")
 
     # Add a column to indicate the availability of future population
     # data.
-    data["future_population"] = data["parent_iso_alpha_3_code"].isin(
-        iiasa_future_population.index
-    ) & (~data.index.str.contains("_"))
+    data_availability["future_population"] = data_availability[
+        "parent_iso_alpha_3_code"
+    ].isin(iiasa_future_population.index) & (
+        ~data_availability.index.str.contains("_")
+    )
 
     # Read future GDP PPP per capita from the IIASA SSP database.
     iiasa_future_gdp_ppp_per_capita = iiasa.read("gdp_ppp_per_capita")
 
     # Add a column to indicate the availability of future GDP PPP per
     # capita data.
-    data["future_gdp_ppp_per_capita"] = data["parent_iso_alpha_3_code"].isin(
-        iiasa_future_gdp_ppp_per_capita.index
-    )
+    data_availability["future_gdp_ppp_per_capita"] = data_availability[
+        "parent_iso_alpha_3_code"
+    ].isin(iiasa_future_gdp_ppp_per_capita.index)
 
     # Define the retreivals directory.
     retrievals_directory = utils.directories.read_folders_structure()[
@@ -180,17 +264,19 @@ def run_check() -> None:
 
     # Add a column to indicate the availability of future electricity
     # demand per capita data.
-    data["future_electricity_demand_per_capita"] = data[
-        "parent_iso_alpha_3_code"
-    ].isin(iiasa_future_electricity_demand_per_capita_codes)
+    data_availability["future_electricity_demand_per_capita"] = (
+        data_availability["parent_iso_alpha_3_code"].isin(
+            iiasa_future_electricity_demand_per_capita_codes
+        )
+    )
 
     # Initialize a column to indicate if the area of the country is
     # smaller than 500 km2.
-    data["area_greater_than_500_km2"] = False
+    data_availability["area_greater_than_500_km2"] = False
 
     # Loop over all countries and subdivisions to check if their area is
     # greater than 500 km2.
-    for entity_code in data.index:
+    for entity_code in data_availability.index:
         # Get the shape of the country.
         shape = utils.shapes.get_entity_shape(entity_code, make_plot=False)
 
@@ -201,13 +287,17 @@ def run_check() -> None:
         )
 
         if area >= 500:
-            data.loc[entity_code, "area_greater_than_500_km2"] = True
+            data_availability.loc[entity_code, "area_greater_than_500_km2"] = (
+                True
+            )
 
     # Drop the column with the parent ISO Alpha-3 codes.
-    data = data.drop(columns=["parent_iso_alpha_3_code"])
+    data_availability = data_availability.drop(
+        columns=["parent_iso_alpha_3_code"]
+    )
 
     # Save the data to a CSV file.
-    data.to_csv(
+    data_availability.to_csv(
         os.path.join(
             os.path.dirname(__file__), "data_availability_summary.csv"
         )
