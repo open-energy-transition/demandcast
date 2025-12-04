@@ -1,0 +1,59 @@
+# XGBoost Model Configuration
+
+preprocessing:
+  # Data sources to include
+  include_annual_demand: true
+  include_gdp: true
+
+  # Feature columns to use
+  features:
+    - local_hour
+    - is_weekend
+    - local_month
+    - year_temp_top1
+    - year_temp_top3
+    - monthly_temp_avg_top1
+    - monthly_temp_avg_rank_top1
+    - year_temp_avg_top1
+    - year_temp_percentile_5
+    - year_temp_percentile_95
+
+  target: load_mw_percentage
+
+  # Categorical features (for XGBoost)
+  categorical_features:
+    - local_hour
+    - is_weekend
+    - local_month
+    - monthly_temp_avg_rank_top1
+
+training:
+  # Essential XGBoost hyperparameters
+  random_state: 42
+  enable_categorical: true
+  eval_metric: "mape"
+
+cross_validation:
+  # CV settings
+  cv_type: "leave_one_group_out"
+  n_jobs: 1
+  scoring:
+    - neg_mean_absolute_percentage_error
+
+evaluation:
+  # Metrics to compute
+  metrics:
+    - mape
+
+  # Splits to evaluate
+  splits:
+    - train
+    - val
+    - test
+
+output:
+  # Output settings
+  timestamp_format: "%Y-%m-%d-%H%M"
+  save_formats:
+    - parquet
+    - csv
