@@ -445,8 +445,8 @@ def get_years_and_scenarios(
         The specific scenario for which the data is to be downloaded.
     available_scenarios : list[str]
         The list of available scenarios for the data retrieval.
-    global_historical_gdp_ppp_per_capita : pandas.DataFrame
-        The global historical GDP PPP per capita data.
+    global_historical_data : pandas.DataFrame
+        The global historical data.
     available_historical_years_of_gridded_data : list[int]
         The list of available historical years for the gridded data.
 

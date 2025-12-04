@@ -139,7 +139,7 @@ def _download_future_gridded_population(
         with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
             archive.extractall(path=downloaded_data_directory)
 
-        # Rename the extracted folders because of a typo.
+        # Fix the folder name if necessary.
         if scenario == "SSP1":
             os.rename(
                 os.path.join(downloaded_data_directory, "SPP1"),
