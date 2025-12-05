@@ -18,12 +18,6 @@
     </a>
 </p>
 
-<p align="center">
-    <a href="https://open-energy-transition.github.io/demandcast/">
-        <b>Documentation</b>
-    </a>
-</p>
-
 ## Table of Contents
 - [About](#about)
   - [Features](#features)
