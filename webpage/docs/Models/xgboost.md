@@ -42,39 +42,275 @@ The grid cells used for these features have a resolution of (0.25° x 0.25°) an
   - `year_temp_percentile_5`: 5th percentile of yearly temperatures
   - `year_temp_percentile_95`: 95th percentile of yearly temperatures
 
+## Command-Line Interface
+
+The XGBoost model provides a comprehensive CLI for training, evaluation, and inference. All scripts are located in the `models/xgboost` folder.
+
+### Key Concepts
+
+#### What is Load Percentage?
+**`load_mw_percentage`** is the target variable we're predicting. It represents the normalized hourly electricity consumption, which we calculate as follows.
+Take each hour's electricity demand (in MW) and divides it by the total yearly electricity demand for that region.
+Resulting in a fraction representing the percentage of the year's electricity that was consumed in this hour.
+For example, 0.00015 means this hour consumed 0.015% of the year's total electricity
+
+This normalization allows the model to learn patterns across regions of different sizes—a small country and a large country both have values in a comparable range.
+
+#### Why Temporal Splitting?
+Unlike typical machine learning where you randomly split data, **temporal splitting** is required due to the nature of time-series forecasting.
+Random splitting would "leak" future information into training, making results unrealistically good.
+
+In our case we split the dataset using the following logic:
+
+- **Test set**: Last available year for each region
+- **Validation set**: Second-to-last year for each region
+- **Training set**: All remaining years
+
+This ensures the model is evaluated on future time periods it hasn't seen during training, which is critical for time-series forecasting.
+
+#### What is Cross-Validation?
+**Leave-One-Group-Out (LOGO) cross-validation** tests model generalization across regions.
+
+This tells us how well the model predicts regions it has not seen while training. A vital validation step that informs us how well the model can forecast data for new regions or countries without historical data.
+
+#### Categorical vs Continuous Features
+- **Continuous features**: Numbers with meaningful distance (temperature: 20°C is halfway between 10°C and 30°C)
+- **Categorical features**: Numbers used as labels (month: February isn't "twice" January, it's just a different category)
+
+XGBoost handles these differently internally. In our config, `hour`, `month`, `weekend`, and `month_temp_rank` are marked categorical because their numeric values are just labels, not measurements.
+
+### Installation
+
+```bash
+cd models/xgboost
+uv sync  
+```
+
+### Quick Start
+
+**Note**: Replace `YYYY-MM-DD-HHMM` with actual timestamps from your files. Each command outputs the exact path to use in the next step.
+
+##### 1. Preprocess raw data
+```bash
+uv run preprocess.py --data-dir ./data
+```
+Expected output: "Preprocessing complete! Output: ./data/processed/YYYY-MM-DD-HHMM_processed_dataset.parquet"
+
+Typical runtime: 5-30 minutes depending on data size
+
+##### 2. Train model
+```bash
+uv run train.py --data ./data/processed/YYYY-MM-DD-HHMM_processed_dataset.parquet
+```
+Expected output: "Train MAPE: 0.12, Val MAPE: 0.14, Test MAPE: 0.15"
+
+Typical runtime: 2-10 minutes depending on data size
+
+##### 3. Evaluate model (optional - training already evaluates)
+```bash
+uv run evaluate.py --model ./models/trained/YYYY-MM-DD-HHMM_xgboost_model.bin \
+                   --data ./data/processed/YYYY-MM-DD-HHMM_processed_dataset.parquet
+```
+Useful for re-evaluating a saved model on different data splits
+
+##### 4. Cross-validate (optional - more rigorous evaluation)
+```bash
+uv run cross_validate.py --data ./data/processed/YYYY-MM-DD-HHMM_processed_dataset.parquet
+```
+Expected output: "Mean test MAPE: 0.16" (typically slightly higher than single test)
+
+Typical runtime: 10-60 minutes (trains N models where N = number of regions)
+
+##### 5. Make predictions
+```bash
+uv run predict.py --model ./models/trained/YYYY-MM-DD-HHMM_xgboost_model.bin \
+                  --input ./data/processed/YYYY-MM-DD-HHMM_processed_dataset.parquet
+```
+Use this for new data or generating forecasts for all regions
+
+### CLI Commands
+
+***
+#### preprocess.py
+
+This script transforms raw data files into a single, clean dataset ready for model training.
+
+**Usage:**
+```bash
+uv run preprocess.py [--data-dir PATH] [--output PATH] [--config PATH]
+```
+
+**Options:**
+
+- `--data-dir`: Input directory containing raw data folders (default: `./data`)
+- `--output`: Output file path (default: `./data/processed/{timestamp}_processed_dataset.parquet`)
+- `--config`: Path to config file (default: `./config/default_config.yaml`)
+
+***
+#### train.py
+
+Trains a gradient boosting model to predict hourly electricity demand based on weather, economic, and temporal features.
+
+**Usage:**
+```bash
+uv run train.py [--data PATH] [--output-dir PATH] [--config PATH] [--experiment-name TEXT]
+```
+
+**Options:**
+
+- `--data`: Path to preprocessed data file (default: latest in `./data/processed/`)
+- `--output-dir`: Output directory for trained model (default: `./models/trained`)
+- `--config`: Path to config file (default: `./config/default_config.yaml`)
+- `--experiment-name`: Optional experiment name for tracking
+
+***
+#### evaluate.py
+
+Re-evaluates a trained model on the data splits.
+Useful when you want to check a model's performance without retraining, or when comparing multiple saved models.
+
+**Usage:**
+```bash
+uv run evaluate.py [--model PATH] [--data PATH] [--output-dir PATH] [--splits TEXT] [--config PATH]
+```
+
+**Options:**
+
+- `--model`: Path to trained model file (default: latest in `./models/trained/`)
+- `--data`: Path to preprocessed data file (required)
+- `--output-dir`: Output directory for metrics (default: `./results/evaluation`)
+- `--splits`: Comma-separated list of splits to evaluate (default: `train,val,test`)
+- `--config`: Path to config file (default: `./config/default_config.yaml`)
+
+***
+#### cross_validate.py
+
+Runs Leave-One-Group-Out cross-validation.
+Tests how well the model generalizes to completely new regions (countries/areas it has never seen). More rigorous than simple train/val/test split.
+
+**Usage:**
+```bash
+uv run cross_validate.py [--data PATH] [--config PATH] [--output-dir PATH]
+```
+
+**Options:**
+
+- `--data`: Path to preprocessed data file (required)
+- `--config`: Path to config file (default: `./config/default_config.yaml`)
+- `--output-dir`: Output directory for CV results (default: `./results/cv`)
+
+***
+#### predict.py
+
+Uses a trained model to generate electricity demand predictions for new data.
+The output file contains both the input features and the predictions.
+
+**Usage:**
+```bash
+uv run predict.py --model PATH --input PATH [--output PATH]
+```
+
+**Options:**
+
+- `--model`: Path to trained model file (required)
+- `--input`: Path to input features file (parquet or CSV) (required)
+- `--output`: Output file path (default: `./predictions/{timestamp}_predictions.parquet`)
+
+***
+
+### Configuration
+
+The CLI uses a YAML configuration file at `config/default_config.yaml`. This file controls preprocessing, training, and evaluation behavior. You can customize the model by editing this file or creating your own config with `--config your_config.yaml`.
+
+#### Configuration Parameters
+
+The configuration is organized into five sections:
+
+**1. Preprocessing Section**
+
+```yaml
+preprocessing:
+  include_annual_demand: true     # Include yearly electricity totals in the dataset
+  include_gdp: true               # Include GDP data (economic indicator)
+
+  features:                       # List of 10 input features the model uses
+    - local_hour                  # Hour of day (0-23)
+    - is_weekend                  # Weekend indicator (0 or 1)
+    - local_month                 # Month of year (1-12)
+    - year_temp_top1              # Annual avg temp in most populous grid cell
+    - year_temp_top3              # Annual avg temp in top 3 grid cells
+    - monthly_temp_avg_top1       # Monthly avg temp in most populous grid cell
+    - monthly_temp_avg_rank_top1  # Temperature rank of the month (1-12)
+    - year_temp_avg_top1          # Yearly avg temp in most populous grid cell
+    - year_temp_percentile_5      # 5th percentile of yearly temperatures
+    - year_temp_percentile_95     # 95th percentile of yearly temperatures
+
+  target: load_mw_percentage      # What we're predicting (normalized hourly demand)
+
+  categorical_features:           # Features treated as categories
+    - local_hour                  
+    - is_weekend                  
+    - local_month
+    - monthly_temp_avg_rank_top1 
+```
+
+**2. Training Section**
+
+```yaml
+training:
+  random_state: 42                # Random seed for reproducibility
+  enable_categorical: true        # Use XGBoost's native categorical feature handling
+  eval_metric: "mape"             # Metric to optimize during training
+```
+
+**3. Cross-Validation Section**
+
+```yaml
+cross_validation:
+  cv_type: "leave_one_group_out"          # Hold out entire regions for testing
+  n_jobs: 1                               # Number of parallel processes (1 = sequential)
+  scoring:
+    - neg_mean_absolute_percentage_error  # sklearn scoring metric
+```
+
+**4. Evaluation Section**
+
+```yaml
+evaluation:
+  metrics:
+    - mape                      # Calculate Mean Absolute Percentage Error
+  splits:
+    - train                     # Evaluate on training data
+    - val                       # Evaluate on validation data
+    - test                      # Evaluate on test data
+```
+
+**5. Output Section**
+
+```yaml
+output:
+  timestamp_format: "%Y-%m-%d-%H%M"  # Format for timestamped filenames
+  save_formats:
+    - parquet                        # Save metrics as Parquet (efficient)
+    - csv                            # Save metrics as CSV (human-readable)
+```
+
+### Helper Modules
+
+The CLI is built on reusable helper modules located in `utils-xgb/`:
+
+- **`data_loader.py`**: Functions to load electricity, temperature, and GDP data
+- **`feature_engineering.py`**: Merge datasets, clean data, calculate features
+- **`model_utils.py`**: Model training, evaluation, and cross-validation utilities
+- **`utils.py`**: Config loading, I/O operations
+
 ## Jupyter Notebooks
 
-You can find all the relevant files in the `models/xgboost` folder.
+Research notebooks are available for experimentation and alternative modeling approaches.
 
 ### XGBoost.ipynb
 
-The main training notebook that implements the XGBoost model for electricity demand forecasting.
-
-#### Data Ingestion
-
-- Loads annual electricity demand data from parquet files
-- Processes temperature data from multiple regions
-- Loads electricity demand data
-
-#### Data Processing
-
-- Combines electricity demand, temperature, and GDP data
-- Removes duplicates and NaN values
-- Calculates load percentage for each hour relative to yearly load
-- Renames columns for consistency
-
-#### Data Splitting
-
-- Splits data into training, validation, and test sets
-- Test set: Last available year for each region
-- Validation set: Second-to-last year for each region
-- Training set: All remaining years
-
-#### Model Training
-
-- Trains XGBoost models on the processed dataset
-- Includes visualizations and cross-validation
-- Saves trained models for inference
+The original research notebook that explores the XGBoost model for electricity demand forecasting. Contains exploratory analysis and initial model development.
 
 ### model_per_continent.ipynb
 
