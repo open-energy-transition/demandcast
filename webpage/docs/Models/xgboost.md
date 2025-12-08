@@ -83,7 +83,7 @@ XGBoost handles these differently internally. In our config, `hour`, `month`, `w
 
 ```bash
 cd models/xgboost
-uv sync  
+uv sync
 ```
 
 ### Quick Start
@@ -248,10 +248,10 @@ preprocessing:
   target: load_mw_percentage      # What we're predicting (normalized hourly demand)
 
   categorical_features:           # Features treated as categories
-    - local_hour                  
-    - is_weekend                  
+    - local_hour
+    - is_weekend
     - local_month
-    - monthly_temp_avg_rank_top1 
+    - monthly_temp_avg_rank_top1
 ```
 
 **2. Training Section**
