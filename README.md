@@ -142,7 +142,9 @@ You can find the electricity demand data that we retrieved at different points i
 
 ```https://storage.googleapis.com/demandcast_data/{variable}/{country_or_subdivision_code}.parquet```
 
-## Getting started
+## Basic getting started guide
+
+An extended getting started guide is available in the [documentation](https://open-energy-transition.github.io/demandcast/getting_started/).
 
 ### 1. Clone the repository
 
