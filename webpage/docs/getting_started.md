@@ -60,7 +60,7 @@ If you want to retrieve data for a particular country or subdivision from a spec
 
 ```bash
 cd ETL
-uv run retrieve.py electricity_demand --data_source entose --code DEU
+uv run retrieve.py electricity_demand --data_source entsoe --code DEU
 ```
 
 ### 2.2 Retrieve Annual Electricity Demand per Capita
