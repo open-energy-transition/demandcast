@@ -169,7 +169,9 @@ uv run retrieve.py temperature --code AUS --year 2045 --climate_model CESM2 --sc
 
 ---
 
-After retrieving the necessary data, you can proceed with preprocessing and training the models. Each model has its own preprocessing and training scripts located in the respective model folder inside the `models/` directory.
+After retrieving the necessary data, you can proceed with preprocessing and training the models. Each model has its own preprocessing and training scripts located in the respective model folder inside the `models/` directory. Currently, XGBoost is the only available model.
+
+Our approach involves using socioeconomic and weather parameters passed to a model to predict the hourly electricity demand. The preprocessing step involves merging and cleaning the retrieved annual electricity demand per capita, GDP PPP per capita, temperature, and electricity demand data. In the processing and training, the socioeconomic and weather data are needed only for the years and countries/subdivisions for which electricity demand data is available.
 
 ### 3.1 Preprocessing
 
@@ -191,7 +193,11 @@ uv run train.py --data ../../data/processed/{datetime}.parquet
 
 ## 4. Forecasting
 
-Once the model is trained, you can use it to make forecasts. The forecasting script is located in the respective model folder inside the `models/` directory.
+Once the model is trained, you can use it to make forecasts. The forecasting script is located in the respective model folder inside the `models/` directory. Currently, XGBoost is the only available model.
+
+The forecasting script requires the trained model file and the input data file as arguments. The input data includes the socioeconomic and weather parameters for the period you want to forecast. This means that you need to provide the annual electricity demand per capita, GDP PPP per capita, and temperature data for the forecast period. Because electricity demand is predicted in a normalized form, the input data must also include population, which is used to get the total electricity demand from the per capita values, which is in turn used to denormalize the predictions.
+
+The following command runs the forecasting script to make predictions:
 
 ```bash
 cd models/model_name
