@@ -45,6 +45,12 @@ Replace `<your_key>` with your actual API keys. You can obtain these keys by reg
 
 ## 2. Retrieving Data
 
+---
+
+**Note**: You can skip this section if you prefer to use the pre-downloaded data available in this [Google Cloud Storage bucket](https://console.cloud.google.com/storage/browser/demandcast_data) (freely accessible with a Google account). Alternatively, the direct links to the data have the following format: `https://storage.googleapis.com/demandcast_data/{variable}/{country_or_subdivision_code}.parquet`
+
+---
+
 The following commands will execute the `ETL/retrieve.py` script to retrieve different types of data. The type of data to be retrieved is specified as a command-line argument. The retrieved data will be saved in the `data/<variable>/` directory in CSV and Parquet formats. Additional arguments can be provided as needed. Please refer to the documentation of the ETL retrieval modules for more details.
 
 ### 2.1 Retrieve Electricity Demand
@@ -153,4 +159,41 @@ Similarly, for projected data, you can specify the year, model, and scenario. Fo
 ```bash
 cd ETL
 uv run retrieve.py temperature --code AUS --year 2045 --climate_model CESM2 --scenario SSP4-6.0
+```
+
+## 3. Prepocessing and Training Models
+
+---
+
+**Note**: You can skip this section if you want to use pre-trained models available in this [Google Cloud Storage bucket](https://console.cloud.google.com/storage/browser/demandcast_data) (freely accessible with a Google account).
+
+---
+
+After retrieving the necessary data, you can proceed with preprocessing and training the models. Each model has its own preprocessing and training scripts located in the respective model folder inside the `models/` directory.
+
+### 3.1 Preprocessing
+
+The following command runs the preprocessing script to prepare the data for model training:
+
+```bash
+cd models/model_name
+uv run preprocess.py --data-dir ../../data/ --output ../../data/processed/{datetime}.parquet
+```
+
+### 3.2 Training
+
+The following command runs the training script to train the model:
+
+```bash
+cd models/model_name
+uv run train.py --data ../../data/processed/{datetime}.parquet
+```
+
+## 4. Forecasting
+
+Once the model is trained, you can use it to make forecasts. The forecasting script is located in the respective model folder inside the `models/` directory.
+
+```bash
+cd models/model_name
+uv run predict.py --model ../trained/{datetime}_model.bin --input ../../data/processed/{datetime}.parquet
 ```
