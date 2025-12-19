@@ -13,18 +13,18 @@ from tqdm import tqdm
 
 def load_annual_demand(folder_path: str) -> pandas.DataFrame:
     """
-    Load and resample annual electricity demand parquet files.
+    Load annual electricity demand per capita parquet files.
 
     Parameters
     ----------
     folder_path : str
-        Folder containing annual electricity demand parquet files.
+        Folder containing annual electricity demand per capita parquet files.
 
     Returns
     -------
     pandas.DataFrame
         Concatenated dataframe with columns:
-            Time (UTC), region_code, Annual electricity demand (TWh).
+            Time (UTC), region_code, Annual electricity demand per capita (kWh).
     """
     files = [
         file_name
@@ -36,11 +36,22 @@ def load_annual_demand(folder_path: str) -> pandas.DataFrame:
 
     for file_name in tqdm(files, desc="Loading annual demand data"):
         df_current = pandas.read_parquet(os.path.join(folder_path, file_name))
-        df_current = df_current.resample(
-            "1h", label="right", closed="right"
-        ).mean()
-        df_current["region_code"] = file_name.split(".")[0]
+        
+        # Extract the column with the correct name from ETL
+        if "Annual electricity demand per capita (kWh)" in df_current.columns:
+            df_current = df_current[["Annual electricity demand per capita (kWh)"]]
+        else:
+            # Fallback to first column if exact name not found
+            df_current = df_current.iloc[:, [0]]
+            df_current.columns = ["Annual electricity demand per capita (kWh)"]
+        
+        # Extract region code from filename (handle both CODE and CODE_SCENARIO patterns)
+        base_name = file_name.split(".")[0]
+        region_code = base_name.split("_")[0] + "_" + base_name.split("_")[1] if len(base_name.split("_")) >= 2 else base_name
+        
         df_current = df_current.reset_index()
+        df_current = df_current.rename(columns={"index": "Time (UTC)"})
+        df_current["region_code"] = region_code
         df_annual_demand = pandas.concat(
             [df_annual_demand, df_current], ignore_index=True
         )
@@ -79,6 +90,7 @@ def load_demand(folder_path: str) -> pandas.DataFrame:
         ).mean()
         df_current["region_code"] = str.join("_", file_name.split("_")[:-1])
         df_current = df_current.reset_index()
+        df_current = df_current.rename(columns={"index": "Time (UTC)"})
         df_demand = pandas.concat([df_demand, df_current], ignore_index=True)
 
     return df_demand
@@ -86,40 +98,44 @@ def load_demand(folder_path: str) -> pandas.DataFrame:
 
 def load_gdp(folder_path: str) -> pandas.DataFrame:
     """
-    Load GDP NetCDF files and aggregate per region/year.
+    Load GDP PPP per capita parquet files.
 
     Parameters
     ----------
     folder_path : str
-        Path to folder containing GDP NetCDF files.
+        Path to folder containing GDP PPP per capita parquet files.
 
     Returns
     -------
     pandas.DataFrame
-        Dataframe with columns: year, GDP, region_code, country_code.
+        Dataframe with columns: Time (UTC), GDP PPP per capita (2021 international $), region_code.
     """
     files = [
         file_name
         for file_name in os.listdir(folder_path)
-        if file_name.endswith(".nc")
+        if file_name.endswith(".parquet")
     ]
 
     df_gdp_data = pandas.DataFrame()
 
     for file_name in tqdm(files, desc="Loading GDP data"):
-        region_code = file_name.split("_0.25_deg_")[0]
-        year = int(file_name.split("_0.25_deg_")[-1].replace(".nc", ""))
-
-        gdp_data = xarray.open_dataset(os.path.join(folder_path, file_name))
-        gdp_value = float(gdp_data.gdp.to_numpy().sum())
-
-        df_current = pandas.DataFrame(
-            {"year": [year], "GDP": [gdp_value], "region_code": [region_code]}
-        )
-
-        country_code = region_code.split("_")[0]
-        df_current["country_code"] = country_code
-
+        df_current = pandas.read_parquet(os.path.join(folder_path, file_name))
+        
+        # Extract the column with the correct name from ETL
+        if "GDP PPP per capita (2021 international $)" in df_current.columns:
+            df_current = df_current[["GDP PPP per capita (2021 international $)"]]
+        else:
+            # Fallback to first column if exact name not found
+            df_current = df_current.iloc[:, [0]]
+            df_current.columns = ["GDP PPP per capita (2021 international $)"]
+        
+        # Extract region code from filename (handle both CODE and CODE_SCENARIO patterns)
+        base_name = file_name.split(".")[0]
+        region_code = base_name.split("_")[0] + "_" + base_name.split("_")[1] if len(base_name.split("_")) >= 2 else base_name
+        
+        df_current = df_current.reset_index()
+        df_current = df_current.rename(columns={"index": "Time (UTC)"})
+        df_current["region_code"] = region_code
         df_gdp_data = pandas.concat(
             [df_gdp_data, df_current], ignore_index=True
         )
@@ -129,7 +145,7 @@ def load_gdp(folder_path: str) -> pandas.DataFrame:
 
 def load_temperature(folder_path: str) -> pandas.DataFrame:
     """
-    Load temperature parquet files.
+    Load temperature parquet files (yearly format).
 
     Parameters
     ----------
@@ -151,8 +167,20 @@ def load_temperature(folder_path: str) -> pandas.DataFrame:
 
     for file_name in tqdm(files, desc="Loading temperature data"):
         df_current = pandas.read_parquet(os.path.join(folder_path, file_name))
-        df_current["region_code"] = file_name.split("_temp")[0]
+        
+        # Extract region code from filename (handle yearly format: CODE_YEAR or CODE_YEAR_SCENARIO)
+        base_name = file_name.split(".")[0]
+        parts = base_name.split("_")
+        
+        # Handle both CODE_YEAR.parquet and CODE_YEAR_SCENARIO.parquet patterns
+        if len(parts) >= 2:
+            region_code = parts[0] + "_" + parts[1] if len(parts) >= 3 and parts[2].isdigit() else parts[0]
+        else:
+            region_code = parts[0]
+        
+        df_current["region_code"] = region_code
         df_current = df_current.reset_index()
+        df_current = df_current.rename(columns={"index": "Time (UTC)"})
         df_all_temperature = pandas.concat(
             [df_all_temperature, df_current], ignore_index=True
         )

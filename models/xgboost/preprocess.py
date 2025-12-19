@@ -123,7 +123,7 @@ def main():
     annual_demand_df = None
     if preprocessing_config.get("include_annual_demand", True):
         annual_demand_folder = os.path.join(
-            args.data_dir, "annual_electricity_demand"
+            args.data_dir, "annual_electricity_demand_per_capita"
         )
         if os.path.exists(annual_demand_folder):
             annual_demand_df = load_annual_demand(annual_demand_folder)
@@ -134,7 +134,7 @@ def main():
     # Load GDP data (optional)
     gdp_df = None
     if preprocessing_config.get("include_gdp", True):
-        gdp_folder = os.path.join(args.data_dir, "gdp")
+        gdp_folder = os.path.join(args.data_dir, "gdp_ppp_per_capita")
         if os.path.exists(gdp_folder):
             gdp_df = load_gdp(gdp_folder)
             print(f"Loaded GDP data: {len(gdp_df):,} rows")
