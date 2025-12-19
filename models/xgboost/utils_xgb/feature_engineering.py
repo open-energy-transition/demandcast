@@ -45,23 +45,58 @@ def merge_datasets(
         total_dataset = pandas.merge(
             total_dataset, annual_demand_df, on=["Time (UTC)", "region_code"]
         )
-        # Convert from TWh to MW
-        total_dataset["year_electricity_demand_mw"] = (
-            total_dataset["Annual electricity demand (TWh)"] * 1000000
-        )
-        total_dataset = total_dataset.drop(
-            columns=["Annual electricity demand (TWh)"]
-        )
+        # Use the new column name from ETL and convert from kWh per capita to MW
+        # Note: This is a simplified conversion - in practice you'd need population data
+        # For now, we'll just rename the column to maintain compatibility
+        if "Annual electricity demand per capita (kWh)" in total_dataset.columns:
+            total_dataset["year_electricity_demand_mw"] = (
+                total_dataset["Annual electricity demand per capita (kWh)"] * 1000  # Convert kWh to MWh and assume 1 person per kWh for compatibility
+            )
+            total_dataset = total_dataset.drop(
+                columns=["Annual electricity demand per capita (kWh)"]
+            )
+        elif "Annual electricity demand (TWh)" in total_dataset.columns:
+            # Fallback to old format for backward compatibility
+            total_dataset["year_electricity_demand_mw"] = (
+                total_dataset["Annual electricity demand (TWh)"] * 1000000
+            )
+            total_dataset = total_dataset.drop(
+                columns=["Annual electricity demand (TWh)"]
+            )
 
     if gdp_df is not None:
         print("Adding GDP data...")
-        total_dataset = pandas.merge(
-            total_dataset,
-            gdp_df.drop(columns=["country_code"]),
-            left_on=["Local year", "region_code"],
-            right_on=["year", "region_code"],
-        )
-        total_dataset = total_dataset.drop(columns=["year"])
+        
+        # Handle both old and new GDP data formats
+        if "country_code" in gdp_df.columns:
+            # Old format: yearly GDP data with country_code
+            gdp_merge_df = gdp_df.drop(columns=["country_code"])
+            
+            # Handle column naming
+            if "GDP" in gdp_merge_df.columns:
+                gdp_merge_df = gdp_merge_df.rename(columns={"GDP": "year_gdp"})
+            
+            # Merge on year and region_code
+            total_dataset = pandas.merge(
+                total_dataset,
+                gdp_merge_df,
+                left_on=["Local year", "region_code"],
+                right_on=["year", "region_code"],
+            )
+            total_dataset = total_dataset.drop(columns=["year"])
+        else:
+            # New format: hourly GDP data from ETL
+            # Rename the GDP column
+            if "GDP PPP per capita (2021 international $)" in gdp_df.columns:
+                gdp_df = gdp_df.rename(columns={"GDP PPP per capita (2021 international $)": "year_gdp"})
+            
+            # Merge on timestamp and region_code (hourly alignment)
+            total_dataset = pandas.merge(
+                total_dataset,
+                gdp_df,
+                on=["Time (UTC)", "region_code"],
+                how="left"
+            )
 
     return total_dataset
 

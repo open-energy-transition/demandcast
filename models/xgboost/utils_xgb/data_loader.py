@@ -88,7 +88,10 @@ def load_demand(folder_path: str) -> pandas.DataFrame:
         df_current = df_current.resample(
             "1h", label="right", closed="right"
         ).mean()
-        df_current["region_code"] = str.join("_", file_name.split("_")[:-1])
+        # Extract region code from filename (handle both CODE.parquet and CODE_SCENARIO.parquet patterns)
+        base_name = file_name.split(".")[0]
+        region_code = base_name  # Use the full base name as region code
+        df_current["region_code"] = region_code
         df_current = df_current.reset_index()
         df_current = df_current.rename(columns={"index": "Time (UTC)"})
         df_demand = pandas.concat([df_demand, df_current], ignore_index=True)
