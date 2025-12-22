@@ -203,3 +203,11 @@ The following command runs the forecasting script to make predictions:
 cd models/model_name
 uv run predict.py --model ../trained/{datetime}_model.bin --input ../../data/processed/{datetime}.parquet
 ```
+
+## 5. Example
+
+Here we provide an example of what the typical data pipeline looks like when using DemandCast.
+
+The figure below illustrates the retreved electricity demand data for Spain (ESP) for 2023 and 2024, along with the annual electricity demand per capita, GDP PPP per capita, and temperature data in the same years. The data for 2023 is a subset of the whole data used for training the model, which includes data from multiple countries/subdivisions and years. The historical electricity demand data for 2024 is used to evaluate the model's performance, while the annual electricity demand per capita, GDP PPP per capita, and temperature data for 2024 are used as input features to forecast the electricity demand for the same year.
+
+![Example data pipeline for Spain](figures/testing_example.png)
