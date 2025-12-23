@@ -46,7 +46,7 @@ The project is in active development and we are always looking for suggestions a
 
 ## Documentation
 
-The [documentation](https://open-energy-transition.github.io/demandcast/) is currently hosted on GitHub pages connected to this repository. It is built with [mkdocs](https://github.com/squidfunk/mkdocs-material).
+The documentation is currently hosted on GitHub pages connected to this repository. It is built with [mkdocs](https://github.com/squidfunk/mkdocs-material).
 
 To run it locally:
 
@@ -120,7 +120,9 @@ You can find the electricity demand data that we retrieved at different points i
 
 ```https://storage.googleapis.com/demandcast_data/{variable}/{country_or_subdivision_code}.parquet```
 
-## Getting started
+## Basic getting started guide
+
+An extended getting started guide is available in the [documentation](https://open-energy-transition.github.io/demandcast/getting_started/).
 
 ### 1. Clone the repository
 

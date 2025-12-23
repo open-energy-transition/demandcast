@@ -64,6 +64,11 @@ def download_gdp_ppp_per_capita() -> pandas.DataFrame:
         imf_gdp_ppp_per_capita.index.str.len() == 3
     ]
 
+    # Change the code for Kosovo and Palestine.
+    imf_gdp_ppp_per_capita = imf_gdp_ppp_per_capita.rename(
+        index={"KOS": "XKX", "WBG": "PSE"}
+    )
+
     logging.info(
         "GDP PPP per capita data from the IMF has been downloaded "
         "successfully."
