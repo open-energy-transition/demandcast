@@ -1,4 +1,4 @@
-# Extended Getting Started Guide
+# Getting Started (Extended)
 
 This guide provides a comprehensive introduction to setting up and using DemandCast. It covers installation, configuration, basic usage, and answers to frequently asked questions.
 
@@ -19,7 +19,7 @@ This project uses [`uv`](https://github.com/astral-sh/uv) as a package manager t
 
 `uv` can be used within the provided Dockerfile or installed standalone (see [installing uv](https://docs.astral.sh/uv/getting-started/installation/)).
 
-The `ETL` folder and each subfolder in the `models` directory—each representing a separate model—contain their own `pyproject.toml` files that define the dependencies for that module.
+The `ETL` folder and each subfolder in the `models` directory contain their own `pyproject.toml` files that define the dependencies for that module.
 
 To set up the environment, run:
 ```bash
