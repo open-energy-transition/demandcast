@@ -2,6 +2,9 @@
 data/
 logs/
 models/*/figures/
+models/*/models/
+models/*/predictions/
+results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
