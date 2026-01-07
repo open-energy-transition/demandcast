@@ -31,6 +31,7 @@ dependencies = [
     "pyyaml>=6.0.3",
     "rasterio>=1.4.3",
     "rioxarray>=0.19.0",
+    "scikit-learn>=1.8.0",
     "scipy>=1.16.3",
     "sdmx1>=2.22.0",
     "shapely>=2.0.7",
@@ -38,6 +39,7 @@ dependencies = [
     "timezonefinder>=6.5.9",
     "tqdm>=4.67.1",
     "xarray>=2025.1.2",
+    "xgboost-cpu>=3.1.2",
     "xlrd>=2.0.1",
 ]
 
