@@ -1,27 +1,20 @@
+# -*- coding: utf-8 -*-
 """
-Preprocessing script for DemandCast XGBoost.
+License: AGPL-3.0.
 
-Loads raw data, merges datasets, data cleaning,
-computes the features, and then saves processed dataset.
+Description:
+
+    This script assembles and preprocesses the retrieved data for
+    training and evaluating the machine learning models.
 """
 
 import argparse
 import os
 import sys
 
-from utils_xgb.data_loader import (
-    load_annual_demand,
-    load_demand,
-    load_gdp,
-    load_temperature,
-)
-from utils_xgb.feature_engineering import (
-    calculate_load_percentage,
-    clean_dataset,
-    merge_datasets,
-    rename_columns,
-)
-from utils_xgb.utils import ensure_dir, get_timestamped_filename, load_config
+import utils_xgb.data_loader
+import utils_xgb.feature_engineering
+import utils_xgb.utils
 
 
 def parse_arguments():
@@ -69,7 +62,7 @@ def main():
     print("\nLoading configuration...")
     try:
         if os.path.exists(args.config):
-            config = load_config(args.config)
+            config = utils_xgb.utils.load_config(args.config)
             print(f"Loaded config from: {args.config}")
         else:
             print("Config file not found, using defaults")
@@ -84,10 +77,12 @@ def main():
 
     # Set default output path if not specified
     if args.output is None:
-        ensure_dir("./data/processed")
+        utils_xgb.utils.ensure_dir("./data/processed")
         args.output = os.path.join(
             "./data/processed",
-            get_timestamped_filename("processed_dataset", "parquet"),
+            utils_xgb.utils.get_timestamped_filename(
+                "processed_dataset", "parquet"
+            ),
         )
 
     # Validate data directory
@@ -105,7 +100,7 @@ def main():
         print(f"\nError: Temperature data folder not found: {temp_folder}")
         sys.exit(1)
 
-    temp_df = load_temperature(temp_folder)
+    temp_df = utils_xgb.data_loader.load_temperature(temp_folder)
     print(f"Loaded temperature data: {len(temp_df):,} rows")
 
     # Load demand data (required)
@@ -116,7 +111,7 @@ def main():
         )
         sys.exit(1)
 
-    demand_df = load_demand(demand_folder)
+    demand_df = utils_xgb.data_loader.load_demand(demand_folder)
     print(f"Loaded demand data: {len(demand_df):,} rows")
 
     # Load annual demand data (optional)
@@ -126,7 +121,9 @@ def main():
             args.data_dir, "annual_electricity_demand_per_capita"
         )
         if os.path.exists(annual_demand_folder):
-            annual_demand_df = load_annual_demand(annual_demand_folder)
+            annual_demand_df = utils_xgb.data_loader.load_annual_demand(
+                annual_demand_folder
+            )
             print(f"Loaded annual demand data: {len(annual_demand_df):,} rows")
         else:
             print("Warning: Annual demand folder not found, skipping")
@@ -136,7 +133,7 @@ def main():
     if preprocessing_config.get("include_gdp", True):
         gdp_folder = os.path.join(args.data_dir, "gdp_ppp_per_capita")
         if os.path.exists(gdp_folder):
-            gdp_df = load_gdp(gdp_folder)
+            gdp_df = utils_xgb.data_loader.load_gdp(gdp_folder)
             print(f"Loaded GDP data: {len(gdp_df):,} rows")
         else:
             print("Warning: GDP folder not found, skipping")
@@ -146,29 +143,33 @@ def main():
     print("Feature Engineering")
     print("=" * 60)
 
-    merged_df = merge_datasets(temp_df, demand_df, annual_demand_df, gdp_df)
+    merged_df = utils_xgb.feature_engineering.merge_datasets(
+        temp_df, demand_df, annual_demand_df, gdp_df
+    )
     print(f"Merged dataset: {len(merged_df):,} rows")
 
     # Rename columns
     print("\nRenaming columns...")
-    merged_df = rename_columns(merged_df)
+    merged_df = utils_xgb.feature_engineering.rename_columns(merged_df)
     print("Column names standardized")
 
     # Calculate load percentage
     print("\nCalculating load percentage...")
-    merged_df = calculate_load_percentage(merged_df)
+    merged_df = utils_xgb.feature_engineering.calculate_load_percentage(
+        merged_df
+    )
     print("Load percentage calculated")
 
     # Clean dataset
     print()
-    merged_df = clean_dataset(merged_df)
+    merged_df = utils_xgb.feature_engineering.clean_dataset(merged_df)
 
     # Save processed dataset
     print("\n" + "=" * 60)
     print("Saving Results")
     print("=" * 60)
 
-    ensure_dir(os.path.dirname(args.output))
+    utils_xgb.utils.ensure_dir(os.path.dirname(args.output))
     merged_df.to_parquet(args.output, engine="pyarrow")
 
     print("\n✓ Preprocessing complete!")
