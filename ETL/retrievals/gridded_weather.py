@@ -30,7 +30,7 @@ from tqdm import tqdm
 
 def _get_request(
     variable: str,
-    year: int,
+    years: list[int],
     model: str | None,
     scenario: str | None,
     bounds: list[float] | None = None,
@@ -42,8 +42,8 @@ def _get_request(
     ----------
     variable : str
         The weather variable of interest.
-    year : int
-        The year of the data retrieval.
+    years : list[int]
+        The years of the data retrieval.
     model : str | None
         The climate model of interest.
     scenario : str | None
@@ -64,7 +64,7 @@ def _get_request(
     """
     # Initialize the request with the common parameters.
     request: dict[str, str | list[str] | list[float]] = {
-        "year": [str(year)],
+        "year": [str(year) for year in years],
         "month": [f"{mm:02d}" for mm in range(1, 13)],
         "day": [f"{dd:02d}" for dd in range(1, 32)],
     }
@@ -104,7 +104,7 @@ def _get_request(
 
 def _download_data(
     file_path: str,
-    year: int,
+    years: list[int],
     variable: str,
     dataset: str,
     model: str | None,
@@ -119,8 +119,8 @@ def _download_data(
     file_path_without_ext : str
         The full file path without the file extension where the
         downloaded data will be saved.
-    year : int
-        The year of the data retrieval.
+    years : list[int]
+        The years of the data retrieval.
     variable : str
         The weather variable of interest.
     dataset : str
@@ -142,8 +142,12 @@ def _download_data(
         multiple .nc files.
     """
     logging.info(
-        f"Downloading gridded {variable} data for the year "
-        f"{year}"
+        f"Downloading gridded {variable} data for the "
+        + (
+            f"years {years[0]} to {years[-1]}"
+            if len(years) > 1
+            else f"year {years[0]}"
+        )
         + (
             f", model {model}, and scenario {scenario}."
             if model and scenario
@@ -176,7 +180,7 @@ def _download_data(
         raise ValueError(f"Dataset {dataset} is not supported.")
 
     # Define the request.
-    request = _get_request(variable, year, model, scenario, bounds)
+    request = _get_request(variable, years, model, scenario, bounds)
     client.retrieve(dataset, request, file_path)
 
     # Unzip the file if it is a projections dataset.
@@ -211,7 +215,12 @@ def _download_data(
         os.remove(file_path)
 
         logging.info(
-            f"Gridded {variable} data for the year {year}"
+            f"Gridded {variable} data for the "
+            + (
+                f"years {years[0]} to {years[-1]}"
+                if len(years) > 1
+                else f"year {years[0]}"
+            )
             + (
                 f", model {model}, and scenario {scenario} has "
                 "been successfully downloaded."
@@ -357,8 +366,8 @@ def run_data_retrieval(
         )
     )
 
-    # If there are many codes download the global data and then
-    # extract the data for each country and subdivision.
+    # If there are many codes, download the global data and then extract
+    # the data for each country and subdivision.
     if len(codes) > 5:
         # Create a directory to store the downloaded global data.
         downloaded_data_directory = os.path.join(result_directory, "downloads")
@@ -408,7 +417,7 @@ def run_data_retrieval(
                 # Download the global weather data from CDS.
                 _download_data(
                     global_file_path_without_ext,
-                    year,
+                    [year],
                     cds_variable_name,
                     "projections" if model and scenario else "reanalysis",
                     model,
@@ -416,7 +425,7 @@ def run_data_retrieval(
                 )
 
             # Load the global weather data.
-            global_data = xarray.open_dataarray(
+            global_data = xarray.open_dataset(
                 global_file_path_without_ext + ".nc"
             )
 
@@ -520,7 +529,7 @@ def run_data_retrieval(
                     # Download the weather data from CDS.
                     _download_data(
                         entity_file_path_without_ext,
-                        year,
+                        [year],
                         cds_variable_name,
                         "projections" if model and scenario else "reanalysis",
                         model,

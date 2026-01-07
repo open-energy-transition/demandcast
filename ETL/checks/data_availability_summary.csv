@@ -1,557 +1,557 @@
-entity_code,entity_name,historical_population,historical_electricity_demand_per_capita,historical_gdp_ppp_per_capita,future_population,future_gdp_ppp_per_capita,future_electricity_demand_per_capita,area_greater_than_500_km2
-ABW,Aruba,True,True,True,True,True,True,False
-AFG,Afghanistan,True,True,True,True,True,True,True
-AGO,Angola,True,True,True,True,True,True,True
-AIA,Anguilla,False,False,False,False,False,False,False
-ALA,Åland Islands,False,False,False,False,False,False,True
-ALB,Albania,True,True,True,True,True,True,True
-AND,Andorra,True,False,True,False,False,False,False
-ARE,United Arab Emirates,True,True,True,True,True,True,True
-ARG,Argentina,True,True,True,True,True,True,True
-ARM,Armenia,True,True,True,True,True,True,True
-ASM,American Samoa,True,True,False,False,False,False,False
-ATA,Antarctica,False,False,False,False,False,False,True
-ATF,French Southern Territories,False,False,False,False,False,False,True
-ATG,Antigua and Barbuda,True,True,True,True,True,False,False
-AUS,Australia,True,True,True,True,True,True,True
-AUS_ACT,Subdivision of Australia,False,True,True,False,True,True,True
-AUS_NSW,Subdivision of Australia,False,True,True,False,True,True,True
-AUS_NT,Subdivision of Australia,False,True,True,False,True,True,True
-AUS_QLD,Subdivision of Australia,False,True,True,False,True,True,True
-AUS_SA,Subdivision of Australia,False,True,True,False,True,True,True
-AUS_TAS,Subdivision of Australia,False,True,True,False,True,True,True
-AUS_VIC,Subdivision of Australia,False,True,True,False,True,True,True
-AUS_WA,Subdivision of Australia,False,True,True,False,True,True,True
-AUS_X02~,Subdivision of Australia,False,True,True,False,True,True,False
-AUT,Austria,True,True,True,True,True,True,True
-AZE,Azerbaijan,True,True,True,True,True,True,True
-BDI,Burundi,True,True,True,True,True,True,True
-BEL,Belgium,True,True,True,True,True,True,True
-BEN,Benin,True,True,True,True,True,True,True
-BFA,Burkina Faso,True,True,True,True,True,True,True
-BGD,Bangladesh,True,True,True,True,True,True,True
-BGR,Bulgaria,True,True,True,True,True,True,True
-BHR,Bahrain,True,True,True,True,True,True,True
-BHS,Bahamas,True,True,True,True,True,True,True
-BIH,Bosnia and Herzegovina,True,True,True,True,True,True,True
-BLM,Saint Barthélemy,False,False,False,False,False,False,False
-BLR,Belarus,True,True,True,True,True,True,True
-BLZ,Belize,True,True,True,True,True,True,True
-BMU,Bermuda,True,True,True,False,False,False,False
-BOL,"Bolivia, Plurinational State of",True,True,True,True,True,True,True
-BRA,Brazil,True,True,True,True,True,True,True
-BRA_AC,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_AL,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_AM,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_AP,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_BA,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_CE,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_DF,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_ES,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_GO,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_MA,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_MG,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_MS,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_MT,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_N,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_NE,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_PA,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_PB,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_PE,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_PI,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_PR,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_RJ,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_RN,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_RO,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_RR,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_RS,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_S,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_SC,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_SE,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_SP,Subdivision of Brazil,False,True,True,False,True,True,True
-BRA_TO,Subdivision of Brazil,False,True,True,False,True,True,True
-BRB,Barbados,True,True,True,True,True,True,False
-BRN,Brunei Darussalam,True,True,True,True,True,True,True
-BTN,Bhutan,True,True,True,True,True,True,True
-BWA,Botswana,True,True,True,True,True,True,True
-CAF,Central African Republic,True,True,True,True,True,True,True
-CAN,Canada,True,True,True,True,True,True,True
-CAN_AB,Subdivision of Canada,False,True,True,False,True,True,True
-CAN_BC,Subdivision of Canada,False,True,True,False,True,True,True
-CAN_MB,Subdivision of Canada,False,True,True,False,True,True,True
-CAN_NB,Subdivision of Canada,False,True,True,False,True,True,True
-CAN_NL,Subdivision of Canada,False,True,True,False,True,True,True
-CAN_NS,Subdivision of Canada,False,True,True,False,True,True,True
-CAN_NT,Subdivision of Canada,False,True,True,False,True,True,True
-CAN_NU,Subdivision of Canada,False,True,True,False,True,True,True
-CAN_ON,Subdivision of Canada,False,True,True,False,True,True,True
-CAN_PE,Subdivision of Canada,False,True,True,False,True,True,True
-CAN_QC,Subdivision of Canada,False,True,True,False,True,True,True
-CAN_SK,Subdivision of Canada,False,True,True,False,True,True,True
-CAN_YT,Subdivision of Canada,False,True,True,False,True,True,True
-CHE,Switzerland,True,True,True,True,True,True,True
-CHL,Chile,True,True,True,True,True,True,True
-CHN,China,True,True,True,True,True,True,True
-CHN_AH,Subdivision of China,False,True,True,False,True,True,True
-CHN_BJ,Subdivision of China,False,True,True,False,True,True,True
-CHN_CQ,Subdivision of China,False,True,True,False,True,True,True
-CHN_FJ,Subdivision of China,False,True,True,False,True,True,True
-CHN_GD,Subdivision of China,False,True,True,False,True,True,True
-CHN_GS,Subdivision of China,False,True,True,False,True,True,True
-CHN_GX,Subdivision of China,False,True,True,False,True,True,True
-CHN_GZ,Subdivision of China,False,True,True,False,True,True,True
-CHN_HA,Subdivision of China,False,True,True,False,True,True,True
-CHN_HB,Subdivision of China,False,True,True,False,True,True,True
-CHN_HE,Subdivision of China,False,True,True,False,True,True,True
-CHN_HI,Subdivision of China,False,True,True,False,True,True,True
-CHN_HL,Subdivision of China,False,True,True,False,True,True,True
-CHN_HN,Subdivision of China,False,True,True,False,True,True,True
-CHN_JL,Subdivision of China,False,True,True,False,True,True,True
-CHN_JS,Subdivision of China,False,True,True,False,True,True,True
-CHN_JX,Subdivision of China,False,True,True,False,True,True,True
-CHN_LN,Subdivision of China,False,True,True,False,True,True,True
-CHN_NM,Subdivision of China,False,True,True,False,True,True,True
-CHN_NX,Subdivision of China,False,True,True,False,True,True,True
-CHN_QH,Subdivision of China,False,True,True,False,True,True,True
-CHN_SC,Subdivision of China,False,True,True,False,True,True,True
-CHN_SD,Subdivision of China,False,True,True,False,True,True,True
-CHN_SH,Subdivision of China,False,True,True,False,True,True,True
-CHN_SN,Subdivision of China,False,True,True,False,True,True,True
-CHN_SX,Subdivision of China,False,True,True,False,True,True,True
-CHN_TJ,Subdivision of China,False,True,True,False,True,True,True
-CHN_XJ,Subdivision of China,False,True,True,False,True,True,True
-CHN_XZ,Subdivision of China,False,True,True,False,True,True,True
-CHN_YN,Subdivision of China,False,True,True,False,True,True,True
-CHN_ZJ,Subdivision of China,False,True,True,False,True,True,True
-CIV,Côte d'Ivoire,True,True,True,True,True,True,True
-CMR,Cameroon,True,True,True,True,True,True,True
-COD,"Congo, The Democratic Republic of the",True,True,True,True,True,True,True
-COG,Congo,True,True,True,True,True,True,True
-COK,Cook Islands,False,True,False,False,False,False,False
-COL,Colombia,True,True,True,True,True,True,True
-COM,Comoros,True,True,True,True,True,True,True
-CPV,Cabo Verde,True,True,True,True,True,True,True
-CRI,Costa Rica,True,True,True,True,True,True,True
-CUB,Cuba,True,True,False,True,False,True,True
-CUW,Curaçao,True,True,True,True,False,False,False
-CYM,Cayman Islands,True,True,True,False,False,False,False
-CYP,Cyprus,True,True,True,True,True,True,True
-CZE,Czechia,True,True,True,True,True,True,True
-DEU,Germany,True,True,True,True,True,True,True
-DJI,Djibouti,True,True,True,True,True,True,True
-DMA,Dominica,True,True,True,False,False,False,True
-DNK,Denmark,True,True,True,True,True,True,True
-DOM,Dominican Republic,True,True,True,True,True,True,True
-DZA,Algeria,True,True,True,True,True,True,True
-ECU,Ecuador,True,True,True,True,True,True,True
-EGY,Egypt,True,True,True,True,True,True,True
-ERI,Eritrea,True,True,False,True,True,True,True
-ESH,Western Sahara,False,True,False,True,False,True,True
-ESP,Spain,True,True,True,True,True,True,True
-EST,Estonia,True,True,True,True,True,True,True
-ETH,Ethiopia,True,True,True,True,True,True,True
-FIN,Finland,True,True,True,True,True,True,True
-FJI,Fiji,True,True,True,True,True,True,True
-FLK,Falkland Islands (Malvinas),False,True,False,False,False,False,True
-FRA,France,True,True,True,True,True,True,True
-FRO,Faroe Islands,True,True,True,False,False,False,True
-FSM,"Micronesia, Federated States of",True,False,True,True,True,True,True
-GAB,Gabon,True,True,True,True,True,True,True
-GBR,United Kingdom,True,True,True,True,True,True,True
-GBR_GB,Subdivision of United Kingdom,False,True,True,False,True,True,True
-GEO,Georgia,True,True,True,True,True,True,True
-GGY,Guernsey,False,False,False,False,False,False,False
-GHA,Ghana,True,True,True,True,True,True,True
-GIN,Guinea,True,True,True,True,True,True,True
-GMB,Gambia,True,True,True,True,True,True,True
-GNB,Guinea-Bissau,True,True,True,True,True,True,True
-GNQ,Equatorial Guinea,True,True,True,True,True,True,True
-GRC,Greece,True,True,True,True,True,True,True
-GRD,Grenada,True,True,True,True,True,True,False
-GRL,Greenland,True,True,True,False,False,False,True
-GTM,Guatemala,True,True,True,True,True,True,True
-GUM,Guam,True,True,False,True,False,True,False
-GUY,Guyana,True,True,True,True,False,True,True
-HKG,Hong Kong,True,True,True,True,True,True,True
-HMD,Heard Island and McDonald Islands,False,False,False,False,False,False,False
-HND,Honduras,True,True,True,True,True,True,True
-HRV,Croatia,True,True,True,True,True,True,True
-HTI,Haiti,True,True,True,True,True,True,True
-HUN,Hungary,True,True,True,True,True,True,True
-IDN,Indonesia,True,True,True,True,True,True,True
-IDN_AC,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_BA,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_BB,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_BE,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_BT,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_GO,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_JA,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_JB,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_JI,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_JK,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_JT,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_KB,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_KI,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_KR,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_KS,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_KT,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_LA,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_MA,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_MU,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_NB,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_NT,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_PA,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_PB,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_RI,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_SA,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_SB,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_SG,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_SN,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_SR,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_SS,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_ST,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_SU,Subdivision of Indonesia,False,True,True,False,True,True,True
-IDN_YO,Subdivision of Indonesia,False,True,True,False,True,True,True
-IMN,Isle of Man,True,False,False,False,False,False,True
-IND,India,True,True,True,True,True,True,True
-IND_AN,Subdivision of India,False,True,True,False,True,True,True
-IND_AP,Subdivision of India,False,True,True,False,True,True,True
-IND_AR,Subdivision of India,False,True,True,False,True,True,True
-IND_AS,Subdivision of India,False,True,True,False,True,True,True
-IND_BR,Subdivision of India,False,True,True,False,True,True,True
-IND_CH,Subdivision of India,False,True,True,False,True,True,False
-IND_CT,Subdivision of India,False,True,True,False,True,True,True
-IND_DH,Subdivision of India,False,True,True,False,True,True,False
-IND_DL,Subdivision of India,False,True,True,False,True,True,True
-IND_GA,Subdivision of India,False,True,True,False,True,True,True
-IND_GJ,Subdivision of India,False,True,True,False,True,True,True
-IND_HP,Subdivision of India,False,True,True,False,True,True,True
-IND_HR,Subdivision of India,False,True,True,False,True,True,True
-IND_JH,Subdivision of India,False,True,True,False,True,True,True
-IND_JK,Subdivision of India,False,True,True,False,True,True,True
-IND_KA,Subdivision of India,False,True,True,False,True,True,True
-IND_KL,Subdivision of India,False,True,True,False,True,True,True
-IND_LA,Subdivision of India,False,True,True,False,True,True,True
-IND_LD,Subdivision of India,False,True,True,False,True,True,False
-IND_MH,Subdivision of India,False,True,True,False,True,True,True
-IND_ML,Subdivision of India,False,True,True,False,True,True,True
-IND_MN,Subdivision of India,False,True,True,False,True,True,True
-IND_MP,Subdivision of India,False,True,True,False,True,True,True
-IND_MZ,Subdivision of India,False,True,True,False,True,True,True
-IND_NL,Subdivision of India,False,True,True,False,True,True,True
-IND_OR,Subdivision of India,False,True,True,False,True,True,True
-IND_PB,Subdivision of India,False,True,True,False,True,True,True
-IND_PY,Subdivision of India,False,True,True,False,True,True,False
-IND_RJ,Subdivision of India,False,True,True,False,True,True,True
-IND_SK,Subdivision of India,False,True,True,False,True,True,True
-IND_TG,Subdivision of India,False,True,True,False,True,True,True
-IND_TN,Subdivision of India,False,True,True,False,True,True,True
-IND_TR,Subdivision of India,False,True,True,False,True,True,True
-IND_UP,Subdivision of India,False,True,True,False,True,True,True
-IND_UT,Subdivision of India,False,True,True,False,True,True,True
-IND_WB,Subdivision of India,False,True,True,False,True,True,True
-IOT,British Indian Ocean Territory,False,False,False,False,False,False,False
-IRL,Ireland,True,True,True,True,True,True,True
-IRN,"Iran, Islamic Republic of",True,True,True,True,True,True,True
-IRQ,Iraq,True,True,True,True,True,True,True
-ISL,Iceland,True,True,True,True,True,True,True
-ISR,Israel,True,True,True,True,True,True,True
-ITA,Italy,True,True,True,True,True,True,True
-JAM,Jamaica,True,True,True,True,True,True,True
-JEY,Jersey,False,False,False,False,False,False,False
-JOR,Jordan,True,True,True,True,True,True,True
-JPN,Japan,True,True,True,True,True,True,True
-JPN_Kansai,Subdivision of Japan,False,True,True,False,True,True,True
-JPN_Kantō,Subdivision of Japan,False,True,True,False,True,True,True
-KAZ,Kazakhstan,True,True,True,True,True,True,True
-KEN,Kenya,True,True,True,True,True,True,True
-KGZ,Kyrgyzstan,True,True,True,True,True,True,True
-KHM,Cambodia,True,True,True,True,True,True,True
-KIR,Kiribati,True,True,True,True,True,False,True
-KNA,Saint Kitts and Nevis,True,True,True,False,False,False,False
-KOR,"Korea, Republic of",True,True,True,True,True,True,True
-KWT,Kuwait,True,True,True,True,True,True,True
-LAO,Lao People's Democratic Republic,True,True,True,True,True,True,True
-LBN,Lebanon,True,True,True,True,True,True,True
-LBR,Liberia,True,True,True,True,True,True,True
-LBY,Libya,True,True,True,True,True,True,True
-LCA,Saint Lucia,True,True,True,True,True,False,True
-LIE,Liechtenstein,True,False,True,False,False,False,False
-LKA,Sri Lanka,True,True,True,True,True,True,True
-LSO,Lesotho,True,True,True,True,True,True,True
-LTU,Lithuania,True,True,True,True,True,True,True
-LUX,Luxembourg,True,True,True,True,True,True,True
-LVA,Latvia,True,True,True,True,True,True,True
-MAC,Macao,True,True,True,True,True,True,False
-MAF,Saint Martin (French part),True,False,False,False,False,False,False
-MAR,Morocco,True,True,True,True,True,True,True
-MCO,Monaco,True,False,False,False,False,False,False
-MDA,"Moldova, Republic of",True,True,True,True,True,True,True
-MDG,Madagascar,True,True,True,True,True,True,True
-MDV,Maldives,True,True,True,True,True,True,False
-MEX,Mexico,True,True,True,True,True,True,True
-MEX_BCA,Subdivision of Mexico,False,True,True,False,True,True,True
-MEX_BCS,Subdivision of Mexico,False,True,True,False,True,True,True
-MEX_CEN,Subdivision of Mexico,False,True,True,False,True,True,True
-MEX_NES,Subdivision of Mexico,False,True,True,False,True,True,True
-MEX_NOR,Subdivision of Mexico,False,True,True,False,True,True,True
-MEX_NTE,Subdivision of Mexico,False,True,True,False,True,True,True
-MEX_OCC,Subdivision of Mexico,False,True,True,False,True,True,True
-MEX_ORI,Subdivision of Mexico,False,True,True,False,True,True,True
-MEX_PEN,Subdivision of Mexico,False,True,True,False,True,True,True
-MHL,Marshall Islands,True,False,True,False,False,False,False
-MKD,North Macedonia,True,True,True,True,True,True,True
-MLI,Mali,True,True,True,True,True,True,True
-MLT,Malta,True,True,True,True,True,True,False
-MMR,Myanmar,True,True,True,True,True,True,True
-MNE,Montenegro,True,True,True,True,True,True,True
-MNG,Mongolia,True,True,True,True,True,True,True
-MNP,Northern Mariana Islands,True,False,False,False,False,False,False
-MOZ,Mozambique,True,True,True,True,True,True,True
-MRT,Mauritania,True,True,True,True,True,True,True
-MSR,Montserrat,False,True,False,False,False,False,False
-MUS,Mauritius,True,True,True,True,True,True,True
-MWI,Malawi,True,True,True,True,True,True,True
-MYS,Malaysia,True,True,True,True,True,True,True
-NAM,Namibia,True,True,True,True,True,True,True
-NCL,New Caledonia,True,True,False,True,False,True,True
-NER,Niger,True,True,True,True,True,True,True
-NFK,Norfolk Island,False,False,False,False,False,False,False
-NGA,Nigeria,True,True,True,True,True,True,True
-NIC,Nicaragua,True,True,True,True,True,True,True
-NIU,Niue,False,True,False,False,False,False,False
-NLD,Netherlands,True,True,True,True,True,True,True
-NOR,Norway,True,True,True,True,True,True,True
-NPL,Nepal,True,True,True,True,True,True,True
-NRU,Nauru,True,True,True,False,False,False,False
-NZL,New Zealand,True,True,True,True,True,True,True
-OMN,Oman,True,True,True,True,True,True,True
-PAK,Pakistan,True,True,True,True,True,True,True
-PAN,Panama,True,True,True,True,True,True,True
-PCN,Pitcairn,False,False,False,False,False,False,False
-PER,Peru,True,True,True,True,True,True,True
-PHL,Philippines,True,True,True,True,True,True,True
-PLW,Palau,True,False,True,False,False,False,False
-PNG,Papua New Guinea,True,True,True,True,True,True,True
-POL,Poland,True,True,True,True,True,True,True
-PRI,Puerto Rico,True,True,True,True,True,True,True
-PRK,"Korea, Democratic People's Republic of",True,True,False,True,False,True,True
-PRT,Portugal,True,True,True,True,True,True,True
-PRY,Paraguay,True,True,True,True,True,True,True
-PSE,"Palestine, State of",True,True,True,True,True,True,True
-PYF,French Polynesia,True,True,False,True,False,True,True
-QAT,Qatar,True,True,True,True,True,True,True
-ROU,Romania,True,True,True,True,True,True,True
-RUS,Russian Federation,True,True,True,True,True,True,True
-RUS_AD,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_AL,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_ALT,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_AMU,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_ARK,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_AST,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_BA,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_BEL,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_BRY,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_BU,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_CE,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_CHE,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_CHU,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_CU,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_DA,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_IN,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_IRK,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_IVA,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KAM,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KB,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KC,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KDA,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KEM,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KGD,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KGN,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KHA,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KHM,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KIR,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KK,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KL,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KLU,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KO,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KOS,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KR,Subdivision of Russian Federation,False,True,True,False,True,True,False
-RUS_KRS,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_KYA,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_LEN,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_LIP,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_MAG,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_ME,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_MO,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_MOS,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_MOW,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_MUR,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_NEN,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_NGR,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_NIZ,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_NVS,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_OMS,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_ORE,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_ORL,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_PER,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_PNZ,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_PRI,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_PSK,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_ROS,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_RYA,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_SA,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_SAK,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_SAM,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_SAR,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_SE,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_SMO,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_SPE,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_STA,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_SVE,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_TA,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_TAM,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_TOM,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_TUL,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_TVE,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_TY,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_TYU,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_UD,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_ULY,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_VGG,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_VLA,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_VLG,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_VOR,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_YAN,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_YAR,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_YEV,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RUS_ZAB,Subdivision of Russian Federation,False,True,True,False,True,True,True
-RWA,Rwanda,True,True,True,True,True,True,True
-SAU,Saudi Arabia,True,True,True,True,True,True,True
-SDN,Sudan,True,True,True,True,True,True,True
-SEN,Senegal,True,True,True,True,True,True,True
-SGP,Singapore,True,True,True,True,True,True,False
-SGS,South Georgia and the South Sandwich Islands,False,False,False,False,False,False,True
-SHN,"Saint Helena, Ascension and Tristan da Cunha",False,True,False,False,False,False,False
-SLB,Solomon Islands,True,True,True,True,True,True,True
-SLE,Sierra Leone,True,True,True,True,True,True,True
-SLV,El Salvador,True,True,True,True,True,True,True
-SMR,San Marino,True,False,True,False,False,False,False
-SOM,Somalia,True,True,True,True,True,True,True
-SPM,Saint Pierre and Miquelon,False,True,False,False,False,False,False
-SRB,Serbia,True,True,True,True,True,True,True
-SSD,South Sudan,True,True,True,True,True,True,True
-STP,Sao Tome and Principe,True,True,True,True,True,False,True
-SUR,Suriname,True,True,True,True,True,True,True
-SVK,Slovakia,True,True,True,True,True,True,True
-SVN,Slovenia,True,True,True,True,True,True,True
-SWE,Sweden,True,True,True,True,True,True,True
-SWZ,Eswatini,True,True,True,True,True,True,True
-SXM,Sint Maarten (Dutch part),True,False,True,False,False,False,False
-SYC,Seychelles,True,True,True,True,True,False,False
-SYR,Syrian Arab Republic,True,True,True,True,True,True,True
-TCA,Turks and Caicos Islands,True,True,True,False,False,False,False
-TCD,Chad,True,True,True,True,True,True,True
-TGO,Togo,True,True,True,True,True,True,True
-THA,Thailand,True,True,True,True,True,True,True
-TJK,Tajikistan,True,True,True,True,True,True,True
-TKM,Turkmenistan,True,True,True,True,True,True,True
-TLS,Timor-Leste,True,True,True,True,True,True,True
-TON,Tonga,True,True,True,True,True,False,False
-TTO,Trinidad and Tobago,True,True,True,True,True,True,True
-TUN,Tunisia,True,True,True,True,True,True,True
-TUR,Türkiye,True,True,True,True,True,True,True
-TUV,Tuvalu,True,False,True,False,False,False,False
-TWN,"Taiwan, Province of China",False,True,True,True,True,True,True
-TZA,"Tanzania, United Republic of",True,True,True,True,True,True,True
-UGA,Uganda,True,True,True,True,True,True,True
-UKR,Ukraine,True,True,True,True,True,True,True
-UKR_40,Subdivision of Ukraine,False,True,True,False,True,True,True
-UKR_43,Subdivision of Ukraine,False,True,True,False,True,True,True
-URY,Uruguay,True,True,True,True,True,True,True
-USA,United States,True,True,True,True,True,True,True
-USA_AK,Subdivision of United States,False,True,True,False,True,True,True
-USA_AL,Subdivision of United States,False,True,True,False,True,True,True
-USA_AR,Subdivision of United States,False,True,True,False,True,True,True
-USA_AZ,Subdivision of United States,False,True,True,False,True,True,True
-USA_CA,Subdivision of United States,False,True,True,False,True,True,True
-USA_CAL,Subdivision of United States,False,True,True,False,True,True,True
-USA_CAR,Subdivision of United States,False,True,True,False,True,True,True
-USA_CENT,Subdivision of United States,False,True,True,False,True,True,True
-USA_CO,Subdivision of United States,False,True,True,False,True,True,True
-USA_CT,Subdivision of United States,False,True,True,False,True,True,True
-USA_DC,Subdivision of United States,False,True,True,False,True,True,False
-USA_DE,Subdivision of United States,False,True,True,False,True,True,True
-USA_FL,Subdivision of United States,False,True,True,False,True,True,True
-USA_FLA,Subdivision of United States,False,True,True,False,True,True,True
-USA_GA,Subdivision of United States,False,True,True,False,True,True,True
-USA_HI,Subdivision of United States,False,True,True,False,True,True,True
-USA_IA,Subdivision of United States,False,True,True,False,True,True,True
-USA_ID,Subdivision of United States,False,True,True,False,True,True,True
-USA_IL,Subdivision of United States,False,True,True,False,True,True,True
-USA_IN,Subdivision of United States,False,True,True,False,True,True,True
-USA_KS,Subdivision of United States,False,True,True,False,True,True,True
-USA_KY,Subdivision of United States,False,True,True,False,True,True,True
-USA_LA,Subdivision of United States,False,True,True,False,True,True,True
-USA_MA,Subdivision of United States,False,True,True,False,True,True,True
-USA_MD,Subdivision of United States,False,True,True,False,True,True,True
-USA_ME,Subdivision of United States,False,True,True,False,True,True,True
-USA_MI,Subdivision of United States,False,True,True,False,True,True,True
-USA_MIDA,Subdivision of United States,False,True,True,False,True,True,True
-USA_MIDW,Subdivision of United States,False,True,True,False,True,True,True
-USA_MN,Subdivision of United States,False,True,True,False,True,True,True
-USA_MO,Subdivision of United States,False,True,True,False,True,True,True
-USA_MS,Subdivision of United States,False,True,True,False,True,True,True
-USA_MT,Subdivision of United States,False,True,True,False,True,True,True
-USA_NC,Subdivision of United States,False,True,True,False,True,True,True
-USA_ND,Subdivision of United States,False,True,True,False,True,True,True
-USA_NE,Subdivision of United States,False,True,True,False,True,True,True
-USA_NH,Subdivision of United States,False,True,True,False,True,True,True
-USA_NJ,Subdivision of United States,False,True,True,False,True,True,True
-USA_NM,Subdivision of United States,False,True,True,False,True,True,True
-USA_NV,Subdivision of United States,False,True,True,False,True,True,True
-USA_NW,Subdivision of United States,False,True,True,False,True,True,True
-USA_NY,Subdivision of United States,False,True,True,False,True,True,True
-USA_OH,Subdivision of United States,False,True,True,False,True,True,True
-USA_OK,Subdivision of United States,False,True,True,False,True,True,True
-USA_OR,Subdivision of United States,False,True,True,False,True,True,True
-USA_PA,Subdivision of United States,False,True,True,False,True,True,True
-USA_RI,Subdivision of United States,False,True,True,False,True,True,True
-USA_SC,Subdivision of United States,False,True,True,False,True,True,True
-USA_SD,Subdivision of United States,False,True,True,False,True,True,True
-USA_SE,Subdivision of United States,False,True,True,False,True,True,True
-USA_SW,Subdivision of United States,False,True,True,False,True,True,True
-USA_TEN,Subdivision of United States,False,True,True,False,True,True,True
-USA_TEX,Subdivision of United States,False,True,True,False,True,True,True
-USA_TN,Subdivision of United States,False,True,True,False,True,True,True
-USA_TX,Subdivision of United States,False,True,True,False,True,True,True
-USA_UT,Subdivision of United States,False,True,True,False,True,True,True
-USA_VA,Subdivision of United States,False,True,True,False,True,True,True
-USA_VT,Subdivision of United States,False,True,True,False,True,True,True
-USA_WA,Subdivision of United States,False,True,True,False,True,True,True
-USA_WI,Subdivision of United States,False,True,True,False,True,True,True
-USA_WV,Subdivision of United States,False,True,True,False,True,True,True
-USA_WY,Subdivision of United States,False,True,True,False,True,True,True
-UZB,Uzbekistan,True,True,True,True,True,True,True
-VAT,Holy See (Vatican City State),False,False,False,False,False,False,False
-VCT,Saint Vincent and the Grenadines,True,True,True,True,True,False,False
-VEN,"Venezuela, Bolivarian Republic of",True,True,True,True,True,True,True
-VGB,"Virgin Islands, British",True,True,False,False,False,False,False
-VIR,"Virgin Islands, U.S.",True,True,True,True,False,True,False
-VNM,Viet Nam,True,True,True,True,True,True,True
-VUT,Vanuatu,True,True,True,True,True,True,True
-WLF,Wallis and Futuna,False,False,False,False,False,False,False
-WSM,Samoa,True,True,True,True,True,True,True
-YEM,Yemen,True,True,True,True,True,True,True
-ZAF,South Africa,True,True,True,True,True,True,True
-ZAF_EC,Subdivision of South Africa,False,True,True,False,True,True,True
-ZAF_FS,Subdivision of South Africa,False,True,True,False,True,True,True
-ZAF_GT,Subdivision of South Africa,False,True,True,False,True,True,True
-ZAF_LP,Subdivision of South Africa,False,True,True,False,True,True,True
-ZAF_MP,Subdivision of South Africa,False,True,True,False,True,True,True
-ZAF_NC,Subdivision of South Africa,False,True,True,False,True,True,True
-ZAF_NL,Subdivision of South Africa,False,True,True,False,True,True,True
-ZAF_NW,Subdivision of South Africa,False,True,True,False,True,True,True
-ZAF_WC,Subdivision of South Africa,False,True,True,False,True,True,True
-ZMB,Zambia,True,True,True,True,True,True,True
-ZWE,Zimbabwe,True,True,True,True,True,True,True
+entity_code,entity_name,historical_population,historical_population_first_year,historical_population_last_year,historical_electricity_demand_per_capita,historical_electricity_demand_per_capita_first_year,historical_electricity_demand_per_capita_last_year,historical_gdp_ppp_per_capita,historical_gdp_ppp_per_capita_first_year,historical_gdp_ppp_per_capita_last_year,future_population,future_gdp_ppp_per_capita,future_electricity_demand_per_capita,area_greater_than_500_km2
+ABW,Aruba,True,1960.0,2024.0,True,2000.0,2022.0,True,1986.0,2024.0,True,True,True,False
+AFG,Afghanistan,True,1960.0,2024.0,True,2000.0,2023.0,True,2000.0,2024.0,True,True,True,True
+AGO,Angola,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+AIA,Anguilla,False,,,False,,,False,,,False,False,False,False
+ALA,Åland Islands,False,,,False,,,False,,,False,False,False,True
+ALB,Albania,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+AND,Andorra,True,1960.0,2024.0,False,,,True,1990.0,2024.0,False,False,False,False
+ARE,United Arab Emirates,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+ARG,Argentina,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+ARM,Armenia,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+ASM,American Samoa,True,1960.0,2024.0,True,2000.0,2023.0,False,,,False,False,False,False
+ATA,Antarctica,False,,,False,,,False,,,False,False,False,True
+ATF,French Southern Territories,False,,,False,,,False,,,False,False,False,True
+ATG,Antigua and Barbuda,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,False,False
+AUS,Australia,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+AUS_ACT,Subdivision of Australia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+AUS_NSW,Subdivision of Australia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+AUS_NT,Subdivision of Australia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+AUS_QLD,Subdivision of Australia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+AUS_SA,Subdivision of Australia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+AUS_TAS,Subdivision of Australia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+AUS_VIC,Subdivision of Australia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+AUS_WA,Subdivision of Australia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+AUS_X02~,Subdivision of Australia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,False
+AUT,Austria,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+AZE,Azerbaijan,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+BDI,Burundi,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,True,True
+BEL,Belgium,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+BEN,Benin,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+BFA,Burkina Faso,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+BGD,Bangladesh,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+BGR,Bulgaria,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+BHR,Bahrain,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+BHS,Bahamas,True,1960.0,2024.0,True,2000.0,2022.0,True,1980.0,2024.0,True,True,True,True
+BIH,Bosnia and Herzegovina,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+BLM,Saint Barthélemy,False,,,False,,,False,,,False,False,False,False
+BLR,Belarus,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+BLZ,Belize,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,True,True
+BMU,Bermuda,True,1960.0,2024.0,True,2000.0,2023.0,True,1990.0,2024.0,False,False,False,False
+BOL,"Bolivia, Plurinational State of",True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+BRA,Brazil,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+BRA_AC,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_AL,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_AM,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_AP,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_BA,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_CE,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_DF,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_ES,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_GO,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_MA,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_MG,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_MS,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_MT,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_N,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_NE,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_PA,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_PB,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_PE,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_PI,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_PR,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_RJ,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_RN,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_RO,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_RR,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_RS,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_S,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_SC,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_SE,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_SP,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRA_TO,Subdivision of Brazil,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+BRB,Barbados,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,True,False
+BRN,Brunei Darussalam,True,1960.0,2024.0,True,1990.0,2023.0,True,1985.0,2024.0,True,True,True,True
+BTN,Bhutan,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,True,True
+BWA,Botswana,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+CAF,Central African Republic,True,1960.0,2024.0,True,2000.0,2022.0,True,1980.0,2024.0,True,True,True,True
+CAN,Canada,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+CAN_AB,Subdivision of Canada,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CAN_BC,Subdivision of Canada,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CAN_MB,Subdivision of Canada,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CAN_NB,Subdivision of Canada,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CAN_NL,Subdivision of Canada,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CAN_NS,Subdivision of Canada,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CAN_NT,Subdivision of Canada,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CAN_NU,Subdivision of Canada,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CAN_ON,Subdivision of Canada,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CAN_PE,Subdivision of Canada,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CAN_QC,Subdivision of Canada,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CAN_SK,Subdivision of Canada,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CAN_YT,Subdivision of Canada,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHE,Switzerland,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+CHL,Chile,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+CHN,China,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+CHN_AH,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_BJ,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_CQ,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_FJ,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_GD,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_GS,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_GX,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_GZ,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_HA,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_HB,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_HE,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_HI,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_HL,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_HN,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_JL,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_JS,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_JX,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_LN,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_NM,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_NX,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_QH,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_SC,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_SD,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_SH,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_SN,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_SX,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_TJ,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_XJ,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_XZ,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_YN,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CHN_ZJ,Subdivision of China,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+CIV,Côte d'Ivoire,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+CMR,Cameroon,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+COD,"Congo, The Democratic Republic of the",True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+COG,Congo,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+COK,Cook Islands,False,,,True,2000.0,2022.0,False,,,False,False,False,False
+COL,Colombia,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+COM,Comoros,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,True,True
+CPV,Cabo Verde,True,1960.0,2024.0,True,2000.0,2022.0,True,1980.0,2024.0,True,True,True,True
+CRI,Costa Rica,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+CUB,Cuba,True,1960.0,2024.0,True,1990.0,2023.0,False,,,True,False,True,True
+CUW,Curaçao,True,1960.0,2024.0,True,1990.0,2022.0,True,2000.0,2023.0,True,False,False,False
+CYM,Cayman Islands,True,1960.0,2024.0,True,2000.0,2023.0,True,2006.0,2023.0,False,False,False,False
+CYP,Cyprus,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+CZE,Czechia,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+DEU,Germany,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+DJI,Djibouti,True,1960.0,2024.0,True,2000.0,2023.0,True,1990.0,2024.0,True,True,True,True
+DMA,Dominica,True,1960.0,2024.0,True,2000.0,2023.0,True,1981.0,2024.0,False,False,False,True
+DNK,Denmark,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+DOM,Dominican Republic,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+DZA,Algeria,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+ECU,Ecuador,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+EGY,Egypt,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+ERI,Eritrea,True,1960.0,2024.0,True,1992.0,2023.0,False,,,True,True,True,True
+ESH,Western Sahara,False,,,True,2000.0,2009.0,False,,,True,False,True,True
+ESP,Spain,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+EST,Estonia,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+ETH,Ethiopia,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+FIN,Finland,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+FJI,Fiji,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,True,True
+FLK,Falkland Islands (Malvinas),False,,,True,2000.0,2022.0,False,,,False,False,False,True
+FRA,France,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+FRO,Faroe Islands,True,1960.0,2024.0,True,2000.0,2022.0,True,2008.0,2023.0,False,False,False,True
+FSM,"Micronesia, Federated States of",True,1960.0,2024.0,False,,,True,1990.0,2024.0,True,True,True,True
+GAB,Gabon,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+GBR,United Kingdom,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+GBR_GB,Subdivision of United Kingdom,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+GEO,Georgia,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+GGY,Guernsey,False,,,False,,,False,,,False,False,False,False
+GHA,Ghana,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+GIN,Guinea,True,1960.0,2024.0,True,2000.0,2023.0,True,1990.0,2024.0,True,True,True,True
+GMB,Gambia,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,True,True
+GNB,Guinea-Bissau,True,1960.0,2024.0,True,2000.0,2022.0,True,1980.0,2024.0,True,True,True,True
+GNQ,Equatorial Guinea,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+GRC,Greece,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+GRD,Grenada,True,1960.0,2024.0,True,2000.0,2022.0,True,1980.0,2024.0,True,True,True,False
+GRL,Greenland,True,1960.0,2024.0,True,2000.0,2022.0,True,1990.0,2023.0,False,False,False,True
+GTM,Guatemala,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+GUM,Guam,True,1960.0,2024.0,True,2000.0,2022.0,False,,,True,False,True,False
+GUY,Guyana,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,False,True,True
+HKG,Hong Kong,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+HMD,Heard Island and McDonald Islands,False,,,False,,,False,,,False,False,False,False
+HND,Honduras,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+HRV,Croatia,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+HTI,Haiti,True,1960.0,2024.0,True,1990.0,2022.0,True,1980.0,2024.0,True,True,True,True
+HUN,Hungary,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+IDN,Indonesia,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+IDN_AC,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_BA,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_BB,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_BE,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_BT,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_GO,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_JA,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_JB,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_JI,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_JK,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_JT,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_KB,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_KI,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_KR,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_KS,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_KT,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_LA,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_MA,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_MU,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_NB,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_NT,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_PA,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_PB,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_RI,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_SA,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_SB,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_SG,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_SN,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_SR,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_SS,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_ST,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_SU,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IDN_YO,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IMN,Isle of Man,True,1960.0,2024.0,False,,,False,,,False,False,False,True
+IND,India,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+IND_AN,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_AP,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_AR,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_AS,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_BR,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_CH,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,False
+IND_CT,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_DH,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,False
+IND_DL,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_GA,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_GJ,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_HP,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_HR,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_JH,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_JK,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_KA,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_KL,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_LA,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_LD,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,False
+IND_MH,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_ML,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_MN,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_MP,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_MZ,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_NL,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_OR,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_PB,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_PY,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,False
+IND_RJ,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_SK,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_TG,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_TN,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_TR,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_UP,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_UT,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IND_WB,Subdivision of India,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+IOT,British Indian Ocean Territory,False,,,False,,,False,,,False,False,False,False
+IRL,Ireland,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+IRN,"Iran, Islamic Republic of",True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+IRQ,Iraq,True,1960.0,2024.0,True,1990.0,2023.0,True,1990.0,2024.0,True,True,True,True
+ISL,Iceland,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+ISR,Israel,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+ITA,Italy,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+JAM,Jamaica,True,1960.0,2024.0,True,1990.0,2022.0,True,1980.0,2024.0,True,True,True,True
+JEY,Jersey,False,,,False,,,False,,,False,False,False,False
+JOR,Jordan,True,1960.0,2024.0,True,1990.0,2022.0,True,1980.0,2024.0,True,True,True,True
+JPN,Japan,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+JPN_Kansai,Subdivision of Japan,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+JPN_Kantō,Subdivision of Japan,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+KAZ,Kazakhstan,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+KEN,Kenya,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+KGZ,Kyrgyzstan,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+KHM,Cambodia,True,1960.0,2024.0,True,1995.0,2024.0,True,1987.0,2024.0,True,True,True,True
+KIR,Kiribati,True,1960.0,2024.0,True,2000.0,2022.0,True,1980.0,2024.0,True,True,False,True
+KNA,Saint Kitts and Nevis,True,1960.0,2024.0,True,2000.0,2022.0,True,1980.0,2024.0,False,False,False,False
+KOR,"Korea, Republic of",True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+KWT,Kuwait,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+LAO,Lao People's Democratic Republic,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,True,True
+LBN,Lebanon,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+LBR,Liberia,True,1960.0,2024.0,True,2000.0,2023.0,True,1990.0,2024.0,True,True,True,True
+LBY,Libya,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+LCA,Saint Lucia,True,1960.0,2024.0,True,2000.0,2022.0,True,1980.0,2024.0,True,True,False,True
+LIE,Liechtenstein,True,1960.0,2024.0,False,,,True,2000.0,2024.0,False,False,False,False
+LKA,Sri Lanka,True,1960.0,2024.0,True,1990.0,2022.0,True,1980.0,2024.0,True,True,True,True
+LSO,Lesotho,True,1960.0,2024.0,True,2000.0,2022.0,True,1980.0,2024.0,True,True,True,True
+LTU,Lithuania,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+LUX,Luxembourg,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+LVA,Latvia,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+MAC,Macao,True,1960.0,2024.0,True,2000.0,2022.0,True,1990.0,2024.0,True,True,True,False
+MAF,Saint Martin (French part),True,1960.0,2024.0,False,,,False,,,False,False,False,False
+MAR,Morocco,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+MCO,Monaco,True,1960.0,2024.0,False,,,False,,,False,False,False,False
+MDA,"Moldova, Republic of",True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+MDG,Madagascar,True,1960.0,2024.0,True,1990.0,2022.0,True,1980.0,2024.0,True,True,True,True
+MDV,Maldives,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,True,False
+MEX,Mexico,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+MEX_BCA,Subdivision of Mexico,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+MEX_BCS,Subdivision of Mexico,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+MEX_CEN,Subdivision of Mexico,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+MEX_NES,Subdivision of Mexico,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+MEX_NOR,Subdivision of Mexico,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+MEX_NTE,Subdivision of Mexico,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+MEX_OCC,Subdivision of Mexico,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+MEX_ORI,Subdivision of Mexico,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+MEX_PEN,Subdivision of Mexico,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+MHL,Marshall Islands,True,1960.0,2024.0,False,,,True,1990.0,2024.0,False,False,False,False
+MKD,North Macedonia,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+MLI,Mali,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,True,True
+MLT,Malta,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,False
+MMR,Myanmar,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+MNE,Montenegro,True,1960.0,2024.0,True,2005.0,2024.0,True,1997.0,2024.0,True,True,True,True
+MNG,Mongolia,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+MNP,Northern Mariana Islands,True,1960.0,2024.0,False,,,False,,,False,False,False,False
+MOZ,Mozambique,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+MRT,Mauritania,True,1960.0,2024.0,True,2000.0,2022.0,True,1990.0,2024.0,True,True,True,True
+MSR,Montserrat,False,,,True,2000.0,2022.0,False,,,False,False,False,False
+MUS,Mauritius,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+MWI,Malawi,True,1960.0,2024.0,True,2000.0,2022.0,True,1980.0,2024.0,True,True,True,True
+MYS,Malaysia,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+NAM,Namibia,True,1960.0,2024.0,True,1990.0,2023.0,True,1990.0,2024.0,True,True,True,True
+NCL,New Caledonia,True,1960.0,2024.0,True,2000.0,2022.0,False,,,True,False,True,True
+NER,Niger,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+NFK,Norfolk Island,False,,,False,,,False,,,False,False,False,False
+NGA,Nigeria,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+NIC,Nicaragua,True,1960.0,2024.0,True,1990.0,2023.0,True,1990.0,2024.0,True,True,True,True
+NIU,Niue,False,,,True,2000.0,2022.0,False,,,False,False,False,False
+NLD,Netherlands,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+NOR,Norway,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+NPL,Nepal,True,1960.0,2024.0,True,1990.0,2022.0,True,1980.0,2024.0,True,True,True,True
+NRU,Nauru,True,1960.0,2024.0,True,2000.0,2023.0,True,1990.0,2024.0,False,False,False,False
+NZL,New Zealand,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+OMN,Oman,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+PAK,Pakistan,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+PAN,Panama,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+PCN,Pitcairn,False,,,False,,,False,,,False,False,False,False
+PER,Peru,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+PHL,Philippines,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+PLW,Palau,True,1960.0,2024.0,False,,,True,1990.0,2024.0,False,False,False,False
+PNG,Papua New Guinea,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,True,True
+POL,Poland,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+PRI,Puerto Rico,True,1960.0,2024.0,True,2000.0,2024.0,True,1980.0,2024.0,True,True,True,True
+PRK,"Korea, Democratic People's Republic of",True,1960.0,2024.0,True,1990.0,2022.0,False,,,True,False,True,True
+PRT,Portugal,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+PRY,Paraguay,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+PSE,"Palestine, State of",True,1990.0,2024.0,True,2000.0,2022.0,True,1994.0,2024.0,True,True,True,True
+PYF,French Polynesia,True,1960.0,2024.0,True,2000.0,2022.0,False,,,True,False,True,True
+QAT,Qatar,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+ROU,Romania,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+RUS,Russian Federation,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+RUS_AD,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_AL,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_ALT,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_AMU,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_ARK,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_AST,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_BA,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_BEL,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_BRY,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_BU,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_CE,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_CHE,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_CHU,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_CU,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_DA,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_IN,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_IRK,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_IVA,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KAM,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KB,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KC,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KDA,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KEM,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KGD,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KGN,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KHA,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KHM,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KIR,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KK,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KL,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KLU,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KO,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KOS,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KR,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,False
+RUS_KRS,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_KYA,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_LEN,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_LIP,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_MAG,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_ME,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_MO,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_MOS,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_MOW,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_MUR,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_NEN,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_NGR,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_NIZ,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_NVS,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_OMS,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_ORE,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_ORL,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_PER,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_PNZ,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_PRI,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_PSK,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_ROS,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_RYA,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_SA,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_SAK,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_SAM,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_SAR,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_SE,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_SMO,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_SPE,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_STA,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_SVE,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_TA,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_TAM,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_TOM,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_TUL,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_TVE,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_TY,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_TYU,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_UD,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_ULY,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_VGG,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_VLA,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_VLG,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_VOR,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_YAN,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_YAR,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_YEV,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RUS_ZAB,Subdivision of Russian Federation,False,,,True,1990.0,2024.0,True,1990.0,2024.0,False,True,True,True
+RWA,Rwanda,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+SAU,Saudi Arabia,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+SDN,Sudan,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+SEN,Senegal,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+SGP,Singapore,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,False
+SGS,South Georgia and the South Sandwich Islands,False,,,False,,,False,,,False,False,False,True
+SHN,"Saint Helena, Ascension and Tristan da Cunha",False,,,True,2000.0,2022.0,False,,,False,False,False,False
+SLB,Solomon Islands,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,True,True
+SLE,Sierra Leone,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,True,True
+SLV,El Salvador,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+SMR,San Marino,True,1960.0,2024.0,False,,,True,1997.0,2024.0,False,False,False,False
+SOM,Somalia,True,1960.0,2024.0,True,2000.0,2023.0,True,1991.0,2024.0,True,True,True,True
+SPM,Saint Pierre and Miquelon,False,,,True,2000.0,2022.0,False,,,False,False,False,False
+SRB,Serbia,True,1960.0,2024.0,True,1990.0,2024.0,True,1995.0,2024.0,True,True,True,True
+SSD,South Sudan,True,1960.0,2024.0,True,2012.0,2023.0,True,2011.0,2024.0,True,True,True,True
+STP,Sao Tome and Principe,True,1960.0,2024.0,True,2000.0,2022.0,True,1980.0,2024.0,True,True,False,True
+SUR,Suriname,True,1960.0,2024.0,True,2000.0,2023.0,True,1990.0,2024.0,True,True,True,True
+SVK,Slovakia,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+SVN,Slovenia,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+SWE,Sweden,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+SWZ,Eswatini,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+SXM,Sint Maarten (Dutch part),True,1960.0,2024.0,False,,,True,2009.0,2024.0,False,False,False,False
+SYC,Seychelles,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,False,False
+SYR,Syrian Arab Republic,True,1960.0,2024.0,True,1990.0,2022.0,True,1990.0,2023.0,True,True,True,True
+TCA,Turks and Caicos Islands,True,1960.0,2024.0,True,2000.0,2023.0,True,2007.0,2024.0,False,False,False,False
+TCD,Chad,True,1960.0,2024.0,True,1990.0,2022.0,True,1980.0,2024.0,True,True,True,True
+TGO,Togo,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+THA,Thailand,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+TJK,Tajikistan,True,1960.0,2024.0,True,1990.0,2024.0,True,1990.0,2024.0,True,True,True,True
+TKM,Turkmenistan,True,1960.0,2024.0,True,1990.0,2023.0,True,1990.0,2024.0,True,True,True,True
+TLS,Timor-Leste,True,1960.0,2024.0,True,2003.0,2023.0,True,1990.0,2024.0,True,True,True,True
+TON,Tonga,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,False,False
+TTO,Trinidad and Tobago,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+TUN,Tunisia,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+TUR,Türkiye,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+TUV,Tuvalu,True,1960.0,2024.0,False,,,True,1990.0,2024.0,False,False,False,False
+TWN,"Taiwan, Province of China",False,,,True,2000.0,2024.0,True,1980.0,2024.0,True,True,True,True
+TZA,"Tanzania, United Republic of",True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+UGA,Uganda,True,1960.0,2024.0,True,1990.0,2022.0,True,1980.0,2024.0,True,True,True,True
+UKR,Ukraine,True,1960.0,2024.0,True,1990.0,2023.0,True,1990.0,2024.0,True,True,True,True
+UKR_40,Subdivision of Ukraine,False,,,True,1990.0,2023.0,True,1990.0,2024.0,False,True,True,True
+UKR_43,Subdivision of Ukraine,False,,,True,1990.0,2023.0,True,1990.0,2024.0,False,True,True,True
+URY,Uruguay,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+USA,United States,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+USA_AK,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_AL,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_AR,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_AZ,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_CA,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_CAL,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_CAR,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_CENT,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_CO,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_CT,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_DC,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,False
+USA_DE,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_FL,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_FLA,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_GA,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_HI,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_IA,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_ID,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_IL,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_IN,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_KS,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_KY,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_LA,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_MA,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_MD,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_ME,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_MI,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_MIDA,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_MIDW,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_MN,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_MO,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_MS,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_MT,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_NC,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_ND,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_NE,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_NH,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_NJ,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_NM,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_NV,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_NW,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_NY,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_OH,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_OK,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_OR,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_PA,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_RI,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_SC,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_SD,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_SE,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_SW,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_TEN,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_TEX,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_TN,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_TX,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_UT,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_VA,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_VT,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_WA,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_WI,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_WV,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+USA_WY,Subdivision of United States,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+UZB,Uzbekistan,True,1960.0,2024.0,True,1990.0,2023.0,True,1990.0,2024.0,True,True,True,True
+VAT,Holy See (Vatican City State),False,,,False,,,False,,,False,False,False,False
+VCT,Saint Vincent and the Grenadines,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,False,False
+VEN,"Venezuela, Bolivarian Republic of",True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+VGB,"Virgin Islands, British",True,1960.0,2024.0,True,2000.0,2023.0,False,,,False,False,False,False
+VIR,"Virgin Islands, U.S.",True,1960.0,2024.0,True,2000.0,2023.0,True,2002.0,2022.0,True,False,True,False
+VNM,Viet Nam,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+VUT,Vanuatu,True,1960.0,2024.0,True,2000.0,2023.0,True,1980.0,2024.0,True,True,True,True
+WLF,Wallis and Futuna,False,,,False,,,False,,,False,False,False,False
+WSM,Samoa,True,1960.0,2024.0,True,2000.0,2023.0,True,1990.0,2024.0,True,True,True,True
+YEM,Yemen,True,1960.0,2024.0,True,1990.0,2023.0,True,1990.0,2024.0,True,True,True,True
+ZAF,South Africa,True,1960.0,2024.0,True,1990.0,2024.0,True,1980.0,2024.0,True,True,True,True
+ZAF_EC,Subdivision of South Africa,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+ZAF_FS,Subdivision of South Africa,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+ZAF_GT,Subdivision of South Africa,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+ZAF_LP,Subdivision of South Africa,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+ZAF_MP,Subdivision of South Africa,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+ZAF_NC,Subdivision of South Africa,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+ZAF_NL,Subdivision of South Africa,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+ZAF_NW,Subdivision of South Africa,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+ZAF_WC,Subdivision of South Africa,False,,,True,1990.0,2024.0,True,1980.0,2024.0,False,True,True,True
+ZMB,Zambia,True,1960.0,2024.0,True,1990.0,2023.0,True,1980.0,2024.0,True,True,True,True
+ZWE,Zimbabwe,True,1960.0,2024.0,True,1990.0,2023.0,True,1990.0,2024.0,True,True,True,True
