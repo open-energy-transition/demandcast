@@ -18,7 +18,7 @@ import pycountry
 import pycountry_convert
 from shapely import Polygon
 
-import utils.directories
+import utils.config
 import utils.entities
 import utils.figures
 
@@ -221,9 +221,7 @@ def _read_non_standard_shape_codes() -> dict[str, list[str]]:
         respective codes.
     """
     # Get the path to the shapes directory.
-    shapes_directory = utils.directories.read_folders_structure()[
-        "shapes_folder"
-    ]
+    shapes_directory = utils.config.read_folders_structure()["shapes_folder"]
 
     # Create a dictionary to store the non-standard shapes and their
     # respective codes.
@@ -275,9 +273,7 @@ def _get_non_standard_shape(
         GeoDataFrame containing the shape of the subdivision.
     """
     # Get the path to the shapes directory.
-    shapes_directory = utils.directories.read_folders_structure()[
-        "shapes_folder"
-    ]
+    shapes_directory = utils.config.read_folders_structure()["shapes_folder"]
 
     # Define the path to the shapefile based on the data source.
     shapefile_path = os.path.join(

@@ -20,7 +20,7 @@ import yaml
 from countryinfo import CountryInfo
 from timezonefinder import TimezoneFinder
 
-import utils.directories
+import utils.config
 import utils.shapes
 
 # Define information for entities not fully recognized in pycountry,
@@ -119,10 +119,18 @@ def read_data_sources() -> list[str]:
     data_sources : list[str]
         The list of available data sources.
     """
-    # Get the paths to the yaml files of the data sources.
-    file_paths = utils.directories.list_yaml_files(
+    # Get the path to folder containing the yaml files of the data
+    # sources.
+    data_sources_directory = utils.config.read_folders_structure()[
         "electricity_demand_data_sources_folder"
-    )
+    ]
+
+    # Get the path of all yaml files in the specified folder.
+    file_paths = [
+        os.path.join(data_sources_directory, file)
+        for file in os.listdir(data_sources_directory)
+        if file.endswith(".yaml")
+    ]
 
     # Read the data sources from the file names.
     data_sources = [
@@ -179,7 +187,7 @@ def _read_entities_info(
 
         # Get the path to the yaml file of the data source.
         file_path = os.path.join(
-            utils.directories.read_folders_structure()[
+            utils.config.read_folders_structure()[
                 "electricity_demand_data_sources_folder"
             ],
             f"{data_source.lower()}.yaml",
@@ -364,7 +372,7 @@ def _get_all_codes_with_all_data() -> list[str]:
     # Read the CSV file containing the available data information.
     data = pandas.read_csv(
         os.path.join(
-            utils.directories.read_folders_structure()["checks_folder"],
+            utils.config.read_folders_structure()["checks_folder"],
             "data_availability_summary.csv",
         ),
         index_col=0,

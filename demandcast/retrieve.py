@@ -4,19 +4,15 @@ License: AGPL-3.0.
 
 Description:
 
-    This script downloads various types of data for specified countries
+    This script retrieves various types of data for specified countries
     and subdivisions. The data types include electricity demand,
     annual electricity demand per capita, population, gridded
     population, GDP PPP per capita, gridded GDP PPP, gridded weather
-    data, and temperature data. The script allows users to specify the
-    data source, time range, and other parameters through command line
-    arguments.
+    data, and temperature data.
 """
 
-import argparse
-import logging
 import os
-from datetime import datetime
+from typing import Optional
 
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.electricity_demand
@@ -26,291 +22,197 @@ import retrievals.gridded_population
 import retrievals.gridded_weather
 import retrievals.population
 import retrievals.temperature
-import utils.directories
+import utils.config
 import utils.entities
+from pydantic import BaseModel, ValidationError
 
 
-def read_command_line_arguments() -> argparse.Namespace:
+def read_and_check_configuration() -> BaseModel:
     """
-    Create a parser for the command line arguments and read them.
+    Read and check the configuration for data retrieval.
 
     Returns
     -------
-    argparse.Namespace
-        The command line arguments.
+    ConfigModel : BaseModel
+        A Pydantic model containing the validated configuration.
+
+    Raises
+    ------
+    ValueError
+        If the configuration is invalid.
     """
-    # Create a parser for the command line arguments.
-    parser = argparse.ArgumentParser(
-        description=(
-            "Download the specified data for the specified countries and "
-            "subdivisions."
-        )
+
+    # Define the configuration model.
+    class ConfigModel(BaseModel):
+        variable: str
+        data_source: Optional[str] = None
+        code: Optional[str] = None
+        file: Optional[str] = None
+        year: Optional[int] = None
+        start_year: Optional[int] = None
+        end_year: Optional[int] = None
+        scenario: Optional[str] = None
+        weather_variable: Optional[str] = None
+        climate_model: Optional[str] = None
+
+    # Read the configuration.
+    raw_config = utils.config.read_configuration(
+        os.path.basename(__file__),
+        "Retrieve the specified data for the specified countries and "
+        "subdivisions.",
     )
 
-    # Add the command line arguments.
-    parser.add_argument(
-        "variable",
-        type=str,
-        choices=[
-            "electricity_demand",
-            "annual_electricity_demand_per_capita",
-            "population",
-            "gridded_population",
-            "gdp_ppp_per_capita",
-            "gridded_gdp_ppp",
-            "gridded_weather",
-            "temperature",
-        ],
-        help="The type of data to be downloaded.",
-    )
-    parser.add_argument(
-        "-c",
-        "--code",
-        type=str,
-        help=(
-            'The ISO Alpha-3 code (example: "FRA") or a combination of ISO '
-            'Alpha-3 code and subdivision code (example: "USA_CAL")'
-        ),
-        required=False,
-    )
-    parser.add_argument(
-        "-f",
-        "--file",
-        type=str,
-        help=(
-            "The path to the yaml file containing the list of codes of the "
-            "countries and subdivisions of interest."
-        ),
-        required=False,
-    )
-    parser.add_argument(
-        "-y",
-        "--year",
-        type=int,
-        help="Year to be downloaded",
-        required=False,
-    )
-    parser.add_argument(
-        "-sy",
-        "--start-year",
-        type=int,
-        help="Start year for a range of years to download",
-        required=False,
-    )
-    parser.add_argument(
-        "-ey",
-        "--end-year",
-        type=int,
-        help="End year for a range of years to download (inclusive)",
-        required=False,
-    )
-    parser.add_argument(
-        "-d",
-        "--data_source",
-        type=str,
-        choices=utils.entities.read_data_sources(),
-        help=(
-            "The acronym of the data source as defined in the retrieval "
-            'modules (example: "entsoe")'
-        ),
-        required=False,
-    )
-    parser.add_argument(
-        "-wv",
-        "--weather_variable",
-        type=str,
-        help="Variable of the weather data to be downloaded",
-        required=False,
-    )
-    parser.add_argument(
-        "-cm",
-        "--climate_model",
-        type=str,
-        help="The climate model to be used for the retrieval of the data.",
-        required=False,
-    )
-    parser.add_argument(
-        "-s",
-        "--scenario",
-        type=str,
-        help=(
-            "The scenario to be used for the retrieval of the data. If not "
-            "specified, all scenarios will be used."
-        ),
-        required=False,
-    )
-    parser.add_argument(
-        "-ug",
-        "--upload_to_gcs",
-        type=str,
-        help=(
-            "The bucket name of the Google Cloud Storage (GCS) to upload the "
-            "data"
-        ),
-        required=False,
-    )
-    parser.add_argument(
-        "-uz",
-        "--upload_to_zenodo",
-        help="Whether to upload the data to Zenodo.",
-        action="store_true",
-        required=False,
-    )
-    parser.add_argument(
-        "-pz",
-        "--publish_to_zenodo",
-        help="Whether to publish the data to Zenodo.",
-        action="store_true",
-        required=False,
-    )
-    parser.add_argument(
-        "-mo",
-        "--made_by_oet",
-        help=(
-            "Whether the data was retrieved or created by Open Energy "
-            "Transition."
-        ),
-        action="store_true",
-        required=False,
-    )
-
-    # Read the arguments from the command line.
-    return parser.parse_args()
+    try:
+        # Validate the configuration.
+        return ConfigModel(**raw_config)
+    except ValidationError as e:
+        raise ValueError(f"Configuration validation error: {e}") from e
 
 
 if __name__ == "__main__":
-    # Read the command line arguments.
-    args = read_command_line_arguments()
+    # Read and check the configuration.
+    config = read_and_check_configuration()
 
     # Set up the logging configuration.
-    log_file_name = (
-        (
-            f"electricity_demand_from_{args.data_source}_"
-            if args.variable == "electricity_demand"
-            else f"{args.variable}_"
+    utils.config.set_up_logging(
+        "retrieval_of_"
+        + (
+            f"electricity_demand_from_{config.data_source}_"
+            if config.variable == "electricity_demand"
+            else f"{config.variable}_"
         )
-        + datetime.now().strftime("%Y%m%d_%H%M")
-        + ".log"
-    )
-    log_files_directory = utils.directories.read_folders_structure()[
-        "log_files_folder"
-    ]
-    os.makedirs(log_files_directory, exist_ok=True)
-    logging.basicConfig(
-        filename=os.path.join(log_files_directory, log_file_name),
-        level=logging.INFO,
-        filemode="w",
-        format="%(asctime)s - %(levelname)s - %(message)s",
     )
 
-    if args.variable == "electricity_demand":
-        if not args.data_source:
+    if config.variable == "electricity_demand":
+        if not config.data_source:
             raise ValueError(
                 "The data source must be specified for the retrieval of "
                 "electricity demand data."
             )
 
-        if args.upload_to_zenodo:
-            if not args.made_by_oet:
-                # Check if a metadata file other than the default one
-                # for OET-created content has been provided.
-                metadata_file_path = os.path.join(
-                    utils.directories.read_folders_structure()["root_folder"],
-                    "zenodo_metadata.yaml",
-                )
-                if not os.path.exists(metadata_file_path):
-                    raise FileNotFoundError(
-                        "If the data is not retrieved or created by Open "
-                        "Energy Transition (made_by_oet = False), a file "
-                        "containing the metadata for the Zenodo upload must "
-                        "be provided. The file must be named "
-                        "'zenodo_metadata.yaml' and be located in the "
-                        "ETL/utils/ folder. Check the file "
-                        "'oet_zenodo_metadata.yaml' for an example of the "
-                        "expected format."
-                    )
+        if config.data_source not in utils.entities.read_data_sources():
+            raise ValueError(
+                f"The specified data source '{config.data_source}' is not "
+                "recognized. Valid data sources are: "
+                f"{utils.entities.read_data_sources()}."
+            )
+
+        # if config["upload_to_zenodo"]:
+        #     if not config["made_by_oet"]:
+        #         # Check if a metadata file other than the default one
+        #         # for OET-created content has been provided.
+        #         metadata_file_path = os.path.join(
+        #             utils.config.read_folders_structure()
+        # ["root_folder"],
+        #             "zenodo_metadata.yaml",
+        #         )
+        #         if not os.path.exists(metadata_file_path):
+        #             raise FileNotFoundError(
+        #                 "If the data is not retrieved or created by
+        # Open "
+        #                 "Energy Transition (made_by_oet = False), a
+        # file "
+        #                 "containing the metadata for the Zenodo upload
+        #  must "
+        #                 "be provided. The file must be named "
+        #                 "'zenodo_metadata.yaml' and be located in the
+        # "
+        #                 "ETL/utils/ folder. Check the file "
+        #                 "'oet_zenodo_metadata.yaml' for an example of
+        # the "
+        #                 "expected format."
+        #             )
 
         # Run the data retrieval for electricity demand.
         retrievals.electricity_demand.run_data_retrieval(
-            args.data_source,
-            args.code,
-            args.file,
-            args.upload_to_gcs,
-            args.upload_to_zenodo,
-            args.publish_to_zenodo,
-            args.made_by_oet,
+            config.data_source,
+            config.code,
+            config.file,
         )
-    elif args.variable == "annual_electricity_demand_per_capita":
+    elif config.variable == "annual_electricity_demand_per_capita":
         # Run the data retrieval for annual electricity demand per
         # capita.
         retrievals.annual_electricity_demand_per_capita.run_data_retrieval(
-            args.code,
-            args.file,
-            args.year,
-            args.start_year,
-            args.end_year,
-            args.scenario,
+            config.code,
+            config.file,
+            config.year,
+            config.start_year,
+            config.end_year,
+            config.scenario,
         )
-    elif args.variable == "population":
+    elif config.variable == "population":
         # Run the data retrieval for the population.
         retrievals.population.run_data_retrieval(
-            args.code,
-            args.file,
-            args.year,
-            args.start_year,
-            args.end_year,
-            args.scenario,
+            config.code,
+            config.file,
+            config.year,
+            config.start_year,
+            config.end_year,
+            config.scenario,
         )
-    elif args.variable == "gridded_population":
+    elif config.variable == "gridded_population":
         # Run the data retrieval for the gridded population.
         retrievals.gridded_population.run_data_retrieval(
-            args.code,
-            args.file,
-            args.year,
-            args.start_year,
-            args.end_year,
-            args.scenario,
+            config.code,
+            config.file,
+            config.year,
+            config.start_year,
+            config.end_year,
+            config.scenario,
         )
-    elif args.variable == "gdp_ppp_per_capita":
+    elif config.variable == "gdp_ppp_per_capita":
         # Run the data retrieval for the GDP PPP per capita.
         retrievals.gdp_ppp_per_capita.run_data_retrieval(
-            args.code,
-            args.file,
-            args.year,
-            args.start_year,
-            args.end_year,
-            args.scenario,
+            config.code,
+            config.file,
+            config.year,
+            config.start_year,
+            config.end_year,
+            config.scenario,
         )
-    elif args.variable == "gridded_gdp_ppp":
+    elif config.variable == "gridded_gdp_ppp":
         # Run the data retrieval for the gridded GDP PPP.
         retrievals.gridded_gdp_ppp.run_data_retrieval(
-            args.code,
-            args.file,
-            args.year,
-            args.start_year,
-            args.end_year,
-            args.scenario,
+            config.code,
+            config.file,
+            config.year,
+            config.start_year,
+            config.end_year,
+            config.scenario,
         )
-    elif args.variable == "gridded_weather":
+    elif config.variable == "gridded_weather":
+        if not config.weather_variable:
+            raise ValueError(
+                "The weather variable must be specified for the "
+                "retrieval of gridded weather data."
+            )
+
+        if config.weather_variable not in ["temperature"]:
+            raise ValueError(
+                f"The specified weather variable "
+                f"'{config.weather_variable}' is not recognized. "
+                "Valid weather variables are: ['temperature']."
+            )
+
         # Run the data retrieval for weather.
         retrievals.gridded_weather.run_data_retrieval(
-            args.code,
-            args.file,
-            args.year,
-            args.start_year,
-            args.end_year,
-            args.weather_variable,
-            args.climate_model,
-            args.scenario,
+            config.code,
+            config.file,
+            config.year,
+            config.start_year,
+            config.end_year,
+            config.weather_variable,
+            config.climate_model,
+            config.scenario,
         )
-    elif args.variable == "temperature":
+    elif config.variable == "temperature":
         # Run the data retrieval for temperature.
         retrievals.temperature.run_data_retrieval(
-            args.code,
-            args.file,
-            args.year,
-            args.start_year,
-            args.end_year,
-            args.climate_model,
-            args.scenario,
+            config.code,
+            config.file,
+            config.year,
+            config.start_year,
+            config.end_year,
+            config.climate_model,
+            config.scenario,
         )

@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 from google.cloud import storage
 from google.cloud.exceptions import GoogleCloudError
 
-import utils.directories
+import utils.config
 
 
 def upload_to_gcs(
@@ -107,7 +107,7 @@ def upload_to_zenodo(
         response from Zenodo is not successful.
     """
     # Get the root directory of the project.
-    root_directory = utils.directories.read_folders_structure()["root_folder"]
+    root_directory = utils.config.read_folders_structure()["root_folder"]
 
     # Load the environment variables.
     load_dotenv(dotenv_path=os.path.join(root_directory, ".env"))

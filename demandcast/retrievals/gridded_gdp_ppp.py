@@ -19,7 +19,7 @@ from io import BytesIO
 
 import py7zr
 import requests
-import utils.directories
+import utils.config
 import utils.entities
 import utils.figures
 import utils.geospatial
@@ -142,7 +142,7 @@ def run_data_retrieval(
         The scenario of the GDP PPP data to be retrieved.
     """
     # Get the directory to store the GDP data.
-    result_directory = utils.directories.read_folders_structure()[
+    result_directory = utils.config.read_folders_structure()[
         "gridded_gdp_ppp_folder"
     ]
     os.makedirs(result_directory, exist_ok=True)

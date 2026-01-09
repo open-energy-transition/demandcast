@@ -15,7 +15,7 @@ import logging
 import os
 
 import pandas
-import utils.directories
+import utils.config
 import utils.entities
 import utils.geospatial
 import utils.scenarios
@@ -153,7 +153,7 @@ def run_data_retrieval(
         retrieved.
     """
     # Get the directory to store the population data.
-    result_directory = utils.directories.read_folders_structure()[
+    result_directory = utils.config.read_folders_structure()[
         "population_folder"
     ]
     os.makedirs(result_directory, exist_ok=True)

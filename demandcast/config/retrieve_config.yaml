@@ -1,0 +1,53 @@
+# Configuration read by the retrieve.py script.
+
+# REQUIRED.
+# The type of data to be retrieved. Supported types are:
+# - electricity_demand,
+# - annual_electricity_demand_per_capita,
+# - population,
+# - gridded_population,
+# - gdp_ppp_per_capita,
+# - gridded_gdp_ppp,
+# - gridded_weather,
+# - temperature.
+variable: electricity_demand
+
+# OPTIONAL.
+# The ISO Alpha-3 code (example: "FRA") or a combination of ISO
+# Alpha-3 code and subdivision code (example: "USA_CAL").
+code:
+
+# OPTIONAL.
+# The path to the yaml file containing the list of codes of the
+# countries and subdivisions of interest.
+file:
+
+# OPTIONAL.
+# The year of the data to be retrieved.
+year:
+
+# OPTIONAL.
+# Start year for a range of years of data to be retrieved.
+start_year:
+
+# OPTIONAL.
+# End year for a range of years of data to be retrieved.
+end_year:
+
+# OPTIONAL.
+# Scenario of the data to be retrieved.
+scenario:
+
+# OPTIONAL.
+# Variable of the weather data to be retrieved (only "temperature" is
+# currently supported).
+weather_variable: temperature
+
+# OPTIONAL.
+# The climate model for the weather data to be retrieved.
+climate_model:
+
+# REQUIRED for electricity_demand variable.
+# The acronym of the data source as defined in the retrieval
+# modules (example: "entsoe").
+electricity_data_source:

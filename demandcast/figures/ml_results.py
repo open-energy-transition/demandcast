@@ -16,7 +16,7 @@ import os
 import matplotlib.pyplot
 import numpy
 import pandas
-import utils.directories
+import utils.config
 
 
 def _read_mape(
@@ -514,7 +514,7 @@ def plot(
         together.
     """
     # Get the root directory of the project.
-    root_directory = utils.directories.read_folders_structure()["root_folder"]
+    root_directory = utils.config.read_folders_structure()["root_folder"]
 
     # Define the directory containing the CSV files.
     results_directory = os.path.join(

@@ -30,7 +30,7 @@ import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
 import retrievals.socio_economic_data_sources.iiasa as iiasa
 import retrievals.socio_economic_data_sources.world_bank as world_bank
-import utils.directories
+import utils.config
 import utils.shapes
 import yaml
 
@@ -241,7 +241,7 @@ def run_check() -> None:
     ].isin(iiasa_future_gdp_ppp_per_capita.index)
 
     # Define the retreivals directory.
-    retrievals_directory = utils.directories.read_folders_structure()[
+    retrievals_directory = utils.config.read_folders_structure()[
         "retrievals_folder"
     ]
 

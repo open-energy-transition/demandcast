@@ -9,25 +9,33 @@ Description:
 """
 
 import argparse
+import datetime
+import logging
 import os
-import sys
 
 import utils_xgb.data_loader
 import utils_xgb.feature_engineering
 import utils_xgb.utils
 
 
-def parse_arguments():
-    """Parse command line arguments.
+def read_command_line_arguments():
+    """
+    Create a parser for the command line arguments and read them.
 
     Returns
     -------
-        argparse.Namespace: Parsed command line arguments.
+    argparse.Namespace
+        The command line arguments.
     """
+    # Create a parser for the command line arguments.
     parser = argparse.ArgumentParser(
-        description="Preprocess raw data for DemandCast XGBoost"
+        description=(
+            "Assemble and preprocess retrieved data for model training and "
+            "evaluation."
+        )
     )
 
+    # Add the command line arguments.
     parser.add_argument(
         "--data-dir",
         type=str,
@@ -50,138 +58,84 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def main():
-    """Preprocess raw data and save the processed dataset."""
-    args = parse_arguments()
+def run_data_assemply(config_path: str, data_dir: str, output_path: str):
+    """
+    Preprocess raw data and save the processed dataset.
 
-    print("=" * 60)
-    print("DemandCast - XGBoost- Data Preprocessing")
-    print("=" * 60)
-
-    # Load configuration
-    print("\nLoading configuration...")
-    try:
-        if os.path.exists(args.config):
-            config = utils_xgb.utils.load_config(args.config)
-            print(f"Loaded config from: {args.config}")
-        else:
-            print("Config file not found, using defaults")
-            from utils_xgb.utils import get_default_config
-
-            config = get_default_config()
-    except Exception as e:
-        print(f"Error loading config: {e}")
-        sys.exit(1)
-
-    preprocessing_config = config.get("preprocessing", {})
-
+    Parameters
+    ----------
+    config_path : str
+        Path to the configuration file.
+    data_dir : str
+        Directory containing raw data folders.
+    output_path : str
+        Path to save the processed dataset.
+    """
     # Set default output path if not specified
-    if args.output is None:
+    if output_path is None:
         utils_xgb.utils.ensure_dir("./data/processed")
-        args.output = os.path.join(
+        output_path = os.path.join(
             "./data/processed",
             utils_xgb.utils.get_timestamped_filename(
                 "processed_dataset", "parquet"
             ),
         )
 
-    # Validate data directory
-    if not os.path.exists(args.data_dir):
-        print(f"\nError: Data directory not found: {args.data_dir}")
-        sys.exit(1)
-
-    # Load temperature data (required)
-    print("\n" + "=" * 60)
-    print("Loading Data")
-    print("=" * 60)
-
-    temp_folder = os.path.join(args.data_dir, "temperature")
-    if not os.path.exists(temp_folder):
-        print(f"\nError: Temperature data folder not found: {temp_folder}")
-        sys.exit(1)
-
+    temp_folder = os.path.join(data_dir, "temperature")
     temp_df = utils_xgb.data_loader.load_temperature(temp_folder)
-    print(f"Loaded temperature data: {len(temp_df):,} rows")
 
     # Load demand data (required)
-    demand_folder = os.path.join(args.data_dir, "electricity_demand")
-    if not os.path.exists(demand_folder):
-        print(
-            f"\nError: Electricity demand data folder not found: {demand_folder}"
-        )
-        sys.exit(1)
-
+    demand_folder = os.path.join(data_dir, "electricity_demand")
     demand_df = utils_xgb.data_loader.load_demand(demand_folder)
-    print(f"Loaded demand data: {len(demand_df):,} rows")
 
     # Load annual demand data (optional)
-    annual_demand_df = None
-    if preprocessing_config.get("include_annual_demand", True):
-        annual_demand_folder = os.path.join(
-            args.data_dir, "annual_electricity_demand_per_capita"
-        )
-        if os.path.exists(annual_demand_folder):
-            annual_demand_df = utils_xgb.data_loader.load_annual_demand(
-                annual_demand_folder
-            )
-            print(f"Loaded annual demand data: {len(annual_demand_df):,} rows")
-        else:
-            print("Warning: Annual demand folder not found, skipping")
+    annual_demand_folder = os.path.join(
+        data_dir, "annual_electricity_demand_per_capita"
+    )
+    annual_demand_df = utils_xgb.data_loader.load_annual_demand(
+        annual_demand_folder
+    )
 
-    # Load GDP data (optional)
-    gdp_df = None
-    if preprocessing_config.get("include_gdp", True):
-        gdp_folder = os.path.join(args.data_dir, "gdp_ppp_per_capita")
-        if os.path.exists(gdp_folder):
-            gdp_df = utils_xgb.data_loader.load_gdp(gdp_folder)
-            print(f"Loaded GDP data: {len(gdp_df):,} rows")
-        else:
-            print("Warning: GDP folder not found, skipping")
-
-    # Merge datasets
-    print("\n" + "=" * 60)
-    print("Feature Engineering")
-    print("=" * 60)
+    gdp_folder = os.path.join(data_dir, "gdp_ppp_per_capita")
+    gdp_df = utils_xgb.data_loader.load_gdp(gdp_folder)
 
     merged_df = utils_xgb.feature_engineering.merge_datasets(
         temp_df, demand_df, annual_demand_df, gdp_df
     )
-    print(f"Merged dataset: {len(merged_df):,} rows")
-
-    # Rename columns
-    print("\nRenaming columns...")
     merged_df = utils_xgb.feature_engineering.rename_columns(merged_df)
-    print("Column names standardized")
 
-    # Calculate load percentage
-    print("\nCalculating load percentage...")
     merged_df = utils_xgb.feature_engineering.calculate_load_percentage(
         merged_df
     )
-    print("Load percentage calculated")
-
-    # Clean dataset
-    print()
     merged_df = utils_xgb.feature_engineering.clean_dataset(merged_df)
 
-    # Save processed dataset
-    print("\n" + "=" * 60)
-    print("Saving Results")
-    print("=" * 60)
-
-    utils_xgb.utils.ensure_dir(os.path.dirname(args.output))
-    merged_df.to_parquet(args.output, engine="pyarrow")
-
-    print("\n✓ Preprocessing complete!")
-    print(f"Output: {args.output}")
-    print(f"Rows: {len(merged_df):,}")
-    print(f"Columns: {len(merged_df.columns)}")
-    print(f"Regions: {merged_df['region_code'].nunique()}")
-    print(
-        f"Years: {merged_df['local_year'].min()}-{merged_df['local_year'].max()}"
-    )
-    print()
+    utils_xgb.utils.ensure_dir(os.path.dirname(output_path))
+    merged_df.to_parquet(output_path, engine="pyarrow")
 
 
 if __name__ == "__main__":
-    main()
+    # Read the command line arguments.
+    args = read_command_line_arguments()
+
+    # Set up the logging configuration.
+    log_file_name = (
+        "assemble_data_"
+        + datetime.datetime.now().strftime("%Y%m%d_%H%M")
+        + ".log"
+    )
+    log_files_directory = "logs"  # utils.config.read_folders_structure()[
+    # "log_files_folder"
+    # ]
+    os.makedirs(log_files_directory, exist_ok=True)
+    logging.basicConfig(
+        filename=os.path.join(log_files_directory, log_file_name),
+        level=logging.INFO,
+        filemode="w",
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
+
+    run_data_assemply(
+        config_path=args.config,
+        data_dir=args.data_dir,
+        output_path=args.output,
+    )

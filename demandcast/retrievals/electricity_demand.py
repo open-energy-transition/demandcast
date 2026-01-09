@@ -17,7 +17,7 @@ import logging
 import os
 
 import pandas
-import utils.directories
+import utils.config
 import utils.entities
 import utils.time_series
 import utils.uploader
@@ -135,10 +135,6 @@ def _save_data(
     electricity_demand_time_series: pandas.Series,
     code: str,
     data_source: str,
-    upload_to_gcs: str | None,
-    upload_to_zenodo: bool,
-    publish_to_zenodo: bool,
-    made_by_oet: bool,
 ) -> None:
     """
     Save the electricity demand time series.
@@ -170,7 +166,7 @@ def _save_data(
     date_of_retrieval = pandas.Timestamp.today().strftime("%Y-%m-%d")
 
     # Get the directory to store the electricity demand time series.
-    result_directory = utils.directories.read_folders_structure()[
+    result_directory = utils.config.read_folders_structure()[
         "electricity_demand_folder"
     ]
     result_directory = os.path.join(result_directory, date_of_retrieval)
@@ -188,45 +184,43 @@ def _save_data(
     )
     electricity_demand_time_series.to_csv(file_path + ".csv")
 
-    if upload_to_gcs:
-        # Upload the parquet file of the electricity demand time series
-        # to GCS.
-        utils.uploader.upload_to_gcs(
-            file_path + ".parquet",
-            upload_to_gcs,
-            "upload_" + date_of_retrieval + "/" + identifier + ".parquet",
-        )
 
-    # Import the retrieval module for the data source.
-    retrieval_module = importlib.import_module(
-        f"retrievals.electricity_demand_data_sources.{data_source}"
-    )
+# if upload_to_gcs:
+#     # Upload the parquet file of the electricity demand time series
+#     # to GCS.
+#     utils.uploader.upload_to_gcs(
+#         file_path + ".parquet",
+#         upload_to_gcs,
+#         "upload_" + date_of_retrieval + "/" + identifier + ".parquet",
+#     )
 
-    if upload_to_zenodo and retrieval_module.redistribute():
-        # Upload the parquet file of the electricity demand time series
-        # to Zenodo.
-        utils.uploader.upload_to_zenodo(
-            file_path + ".parquet",
-            data_type="actual",
-            made_by_oet=made_by_oet,
-            publish=publish_to_zenodo,
-            testing=True,
-        )
-    elif upload_to_zenodo and not retrieval_module.redistribute():
-        logging.warning(
-            f"The data source {data_source} does not support redistribution "
-            "to Zenodo. The data will not be uploaded to Zenodo."
-        )
+# # Import the retrieval module for the data source.
+# retrieval_module = importlib.import_module(
+#     f"retrievals.electricity_demand_data_sources.{data_source}"
+# )
+
+# if upload_to_zenodo and retrieval_module.redistribute():
+#     # Upload the parquet file of the electricity demand time series
+#     # to Zenodo.
+#     utils.uploader.upload_to_zenodo(
+#         file_path + ".parquet",
+#         data_type="actual",
+#         made_by_oet=made_by_oet,
+#         publish=publish_to_zenodo,
+#         testing=True,
+#     )
+# elif upload_to_zenodo and not retrieval_module.redistribute():
+#     logging.warning(
+#         f"The data source {data_source} does not support
+# redistribution "
+#         "to Zenodo. The data will not be uploaded to Zenodo."
+#     )
 
 
 def run_data_retrieval(
     data_source: str,
     code: str | None,
     file: str | None,
-    upload_to_gcs: str | None,
-    upload_to_zenodo: bool,
-    publish_to_zenodo: bool,
-    made_by_oet: bool,
 ) -> None:
     """
     Run the electricity demand data retrieval.
@@ -282,10 +276,6 @@ def run_data_retrieval(
             electricity_demand_time_series,
             code,
             data_source,
-            upload_to_gcs,
-            upload_to_zenodo,
-            publish_to_zenodo,
-            made_by_oet,
         )
 
     logging.info(

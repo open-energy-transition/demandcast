@@ -16,7 +16,7 @@ import pandas
 import xarray
 from shapely import box
 
-import utils.directories
+import utils.config
 import utils.figures
 import utils.shapes
 
@@ -506,9 +506,7 @@ def _aggregate_gridded_data(
     """
     # Define the path to the gridded data.
     gridded_data_path = os.path.join(
-        utils.directories.read_folders_structure()[
-            f"gridded_{variable}_folder"
-        ],
+        utils.config.read_folders_structure()[f"gridded_{variable}_folder"],
         f"{code}_0.25_deg_{year}"
         + (f"_{scenario}" if scenario else "")
         + ".nc",

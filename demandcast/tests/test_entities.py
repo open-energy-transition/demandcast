@@ -133,7 +133,7 @@ def test_get_all_codes_with_all_data():
     with (
         patch("pandas.read_csv") as mock_read_csv,
         patch("os.path.join") as mock_path_join,
-        patch("utils.directories.read_folders_structure") as mock_read_folders,
+        patch("utils.config.read_folders_structure") as mock_read_folders,
     ):
         # Mock folder structure
         mock_read_folders.return_value = {"checks_folder": "/checks"}

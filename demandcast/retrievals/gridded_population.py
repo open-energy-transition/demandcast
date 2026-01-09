@@ -22,7 +22,7 @@ import os
 import zipfile
 
 import requests
-import utils.directories
+import utils.config
 import utils.entities
 import utils.figures
 import utils.geospatial
@@ -277,7 +277,7 @@ def run_data_retrieval(
         The scenario of the population data to be retrieved.
     """
     # Get the directory to store the population data.
-    result_directory = utils.directories.read_folders_structure()[
+    result_directory = utils.config.read_folders_structure()[
         "gridded_population_folder"
     ]
     os.makedirs(result_directory, exist_ok=True)

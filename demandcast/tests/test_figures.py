@@ -12,7 +12,7 @@ import tempfile
 from pathlib import Path
 
 import geopandas
-import utils.directories
+import utils.config
 import utils.figures
 from shapely import Point
 
@@ -28,15 +28,15 @@ def test_simple_plot(monkeypatch):
     ----------
     monkeypatch : pytest.MonkeyPatch
         A pytest fixture that allows us to modify the behavior of the
-        utils.directories.read_folders_structure function to return a
+        utils.config.read_folders_structure function to return a
         temporary directory.
     """
     # Create a temporary directory for figure output.
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Patch the utils.directories.read_folders_structure to return
+        # Patch the utils.config.read_folders_structure to return
         # the temp path.
         monkeypatch.setattr(
-            utils.directories,
+            utils.config,
             "read_folders_structure",
             lambda: {"figures_folder": tmpdir},
         )

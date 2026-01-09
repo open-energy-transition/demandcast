@@ -16,7 +16,7 @@ import logging
 import os
 
 import pandas
-import utils.directories
+import utils.config
 import utils.entities
 import utils.fetcher
 from dotenv import load_dotenv
@@ -152,7 +152,7 @@ def get_url(
     _check_input_parameters(code, start_date=start_date, end_date=end_date)
 
     # Get the root directory of the project.
-    root_directory = utils.directories.read_folders_structure()["root_folder"]
+    root_directory = utils.config.read_folders_structure()["root_folder"]
 
     # Load the environment variables.
     load_dotenv(dotenv_path=os.path.join(root_directory, ".env"))

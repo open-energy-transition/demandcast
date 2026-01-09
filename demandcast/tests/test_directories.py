@@ -11,7 +11,7 @@ Description:
 import os
 from unittest.mock import patch
 
-import utils.directories
+import utils.config
 
 
 def test_load_paths():
@@ -22,7 +22,7 @@ def test_load_paths():
     correctly and if the absolute paths are constructed as expected.
     """
     # Read the folders structure from the sample yaml file.
-    structure = utils.directories.read_folders_structure()
+    structure = utils.config.read_folders_structure()
 
     # Get the root path of the ETL folder.
     absolute_path = os.path.abspath(
@@ -95,12 +95,12 @@ def test_list_yaml_files():
     ]
 
     with (
-        patch("utils.directories.read_folders_structure"),
+        patch("utils.config.read_folders_structure"),
         patch("os.listdir"),
     ):
         # Mock the return value of read_folders_structure to return a
         # dictionary with the folder name and target path.
-        utils.directories.read_folders_structure.return_value = {
+        utils.config.read_folders_structure.return_value = {
             folder_name: target_path
         }
 
@@ -109,7 +109,7 @@ def test_list_yaml_files():
         os.listdir.return_value = ["file1.yaml", "file2.yaml", "ignore.txt"]
 
         # Call the function to test.
-        result = utils.directories.list_yaml_files(folder_name)
+        result = utils.config.list_yaml_files(folder_name)
 
         # Check if the result matches the expected output.
         assert result == expected, f"Expected {expected}, got {result}"

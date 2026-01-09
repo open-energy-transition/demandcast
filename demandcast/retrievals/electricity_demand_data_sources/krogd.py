@@ -16,7 +16,7 @@ import logging
 import os
 
 import pandas
-import utils.directories
+import utils.config
 
 
 def redistribute() -> bool:
@@ -82,7 +82,7 @@ def download_and_extract_data() -> pandas.Series:
         If the data file is not found in the specified folder.
     """
     # Get the data folder.
-    data_directory = utils.directories.read_folders_structure()[
+    data_directory = utils.config.read_folders_structure()[
         "manually_downloaded_electricity_demand_folder"
     ]
 

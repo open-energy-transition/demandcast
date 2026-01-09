@@ -17,7 +17,7 @@ import os
 
 import cpi
 import pandas
-import utils.directories
+import utils.config
 import utils.entities
 import utils.geospatial
 import utils.scenarios
@@ -295,7 +295,7 @@ def run_data_retrieval(
         The scenario of the GDP PPP per capita data to be retrieved.
     """
     # Get the directory to store the GDP PPP per capita data.
-    result_directory = utils.directories.read_folders_structure()[
+    result_directory = utils.config.read_folders_structure()[
         "gdp_ppp_per_capita_folder"
     ]
     os.makedirs(result_directory, exist_ok=True)

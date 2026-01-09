@@ -18,7 +18,7 @@ import zipfile
 
 import cdsapi
 import pandas
-import utils.directories
+import utils.config
 import utils.entities
 import utils.geospatial
 import utils.scenarios
@@ -156,7 +156,7 @@ def _download_data(
     )
 
     # Get the root directory of the project.
-    root_directory = utils.directories.read_folders_structure()["root_folder"]
+    root_directory = utils.config.read_folders_structure()["root_folder"]
 
     # Load the environment variables.
     load_dotenv(dotenv_path=os.path.join(root_directory, ".env"))
@@ -273,7 +273,7 @@ def run_data_retrieval(
         If the variable is not supported.
     """
     # Get the directory to store the population density data.
-    result_directory = utils.directories.read_folders_structure()[
+    result_directory = utils.config.read_folders_structure()[
         "gridded_weather_folder"
     ]
     os.makedirs(result_directory, exist_ok=True)

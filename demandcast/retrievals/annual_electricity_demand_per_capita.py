@@ -16,7 +16,7 @@ import logging
 import os
 
 import pandas
-import utils.directories
+import utils.config
 import utils.entities
 import utils.scenarios
 import utils.time_series
@@ -98,7 +98,7 @@ def run_data_retrieval(
     """
     # Get the directory to store the annual electricity demand per
     # capita data.
-    result_directory = utils.directories.read_folders_structure()[
+    result_directory = utils.config.read_folders_structure()[
         "annual_electricity_demand_per_capita_folder"
     ]
     os.makedirs(result_directory, exist_ok=True)

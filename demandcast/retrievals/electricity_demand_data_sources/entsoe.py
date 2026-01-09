@@ -18,7 +18,7 @@ import logging
 import os
 
 import pandas
-import utils.directories
+import utils.config
 import utils.entities
 import utils.fetcher
 from dotenv import load_dotenv
@@ -165,7 +165,7 @@ def get_url(
     domain = "10YBE----------2"  # Belgium
 
     # Get the root directory of the project.
-    root_directory = utils.directories.read_folders_structure()["root_folder"]
+    root_directory = utils.config.read_folders_structure()["root_folder"]
 
     # Load the environment variables.
     load_dotenv(dotenv_path=os.path.join(root_directory, ".env"))
@@ -230,7 +230,7 @@ def download_and_extract_data_for_request(
     )
 
     # Get the root directory of the project.
-    root_directory = utils.directories.read_folders_structure()["root_folder"]
+    root_directory = utils.config.read_folders_structure()["root_folder"]
 
     # Load the environment variables.
     load_dotenv(dotenv_path=os.path.join(root_directory, ".env"))

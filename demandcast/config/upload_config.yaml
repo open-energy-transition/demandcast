@@ -1,0 +1,20 @@
+# Configuration read by the upload.py script.
+
+# REQUIRED.
+# The taget platform for uploading the data. Supported platforms are
+# "gcs" (Google Cloud Storage) and "zenodo".
+target_platform:
+
+# REQUIRED for gcs target_platform.
+# The bucket name of the Google Cloud Storage (GCS) to upload the
+# data.
+gcs_bucket_name:
+
+# REQUIRED for zenodo target_platform.
+# Boolean indicating whether to publish the data to Zenodo.
+publish_to_zenodo: false
+
+# REQUIRED for zenodo target_platform.
+# Boolean indicating whether the data was retrieved or created by
+# Open Energy Transition.
+made_by_oet: false

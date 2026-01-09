@@ -1,3 +1,6 @@
+# Configuration file for directories used in DemandCast
+
+config_folder: config
 log_files_folder: logs
 settings_folder: settings
 figures_folder: figures
