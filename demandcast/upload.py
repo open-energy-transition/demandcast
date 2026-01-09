@@ -81,6 +81,25 @@ if __name__ == "__main__":
                     f"upload_{date_of_upload}/{file_name}",
                 )
             elif config.target_platform == "zenodo":
+                if not config["made_by_oet"]:
+                    # Check if a metadata file other than the default
+                    # one for OET-created content has been provided.
+                    metadata_file_path = os.path.join(
+                        utils.config.read_folders_structure()["config_folder"],
+                        "zenodo_metadata.yaml",
+                    )
+                    if not os.path.exists(metadata_file_path):
+                        raise FileNotFoundError(
+                            "If the data is not retrieved or created by Open "
+                            "Energy Transition (made_by_oet = False), a file "
+                            "containing the metadata for the Zenodo upload "
+                            "must be provided. The file must be named "
+                            "'zenodo_metadata.yaml' and be located in the "
+                            "config folder. Check the file "
+                            "'oet_zenodo_metadata.yaml' for an example of the "
+                            "expected format."
+                        )
+
                 # Get the data source from the file name.
                 for data_source in utils.entities.read_data_sources():
                     if data_source in file_name:
