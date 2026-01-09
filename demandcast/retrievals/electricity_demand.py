@@ -20,7 +20,6 @@ import pandas
 import utils.config
 import utils.entities
 import utils.time_series
-import utils.uploader
 from tqdm import tqdm
 
 
@@ -152,15 +151,6 @@ def _save_data(
         The code of the country or subdivision.
     data_source : str
         The data source.
-    upload_to_gcs : str | None
-        The bucket name of the Google Cloud Storage (GCS) to upload the
-        data.
-    upload_to_zenodo : bool
-        Whether to upload the data to Zenodo.
-    publish_to_zenodo : bool
-        Whether to publish the data to Zenodo.
-    made_by_oet : bool
-        Whether the data was made by Open Energy Transition.
     """
     # Get the date of retrieval.
     date_of_retrieval = pandas.Timestamp.today().strftime("%Y-%m-%d")
@@ -183,38 +173,6 @@ def _save_data(
         file_path + ".parquet"
     )
     electricity_demand_time_series.to_csv(file_path + ".csv")
-
-
-# if upload_to_gcs:
-#     # Upload the parquet file of the electricity demand time series
-#     # to GCS.
-#     utils.uploader.upload_to_gcs(
-#         file_path + ".parquet",
-#         upload_to_gcs,
-#         "upload_" + date_of_retrieval + "/" + identifier + ".parquet",
-#     )
-
-# # Import the retrieval module for the data source.
-# retrieval_module = importlib.import_module(
-#     f"retrievals.electricity_demand_data_sources.{data_source}"
-# )
-
-# if upload_to_zenodo and retrieval_module.redistribute():
-#     # Upload the parquet file of the electricity demand time series
-#     # to Zenodo.
-#     utils.uploader.upload_to_zenodo(
-#         file_path + ".parquet",
-#         data_type="actual",
-#         made_by_oet=made_by_oet,
-#         publish=publish_to_zenodo,
-#         testing=True,
-#     )
-# elif upload_to_zenodo and not retrieval_module.redistribute():
-#     logging.warning(
-#         f"The data source {data_source} does not support
-# redistribution "
-#         "to Zenodo. The data will not be uploaded to Zenodo."
-#     )
 
 
 def run_data_retrieval(
@@ -240,15 +198,6 @@ def run_data_retrieval(
     file : str | None
         The path to the yaml file containing the list of codes of the
         countries and subdivisions of interest.
-    upload_to_gcs : str | None
-        The bucket name of the Google Cloud Storage (GCS) to upload the
-        data.
-    upload_to_zenodo : bool
-        Whether to upload the data to Zenodo.
-    publish_to_zenodo : bool
-        Whether to publish the data to Zenodo.
-    made_by_oet : bool
-        Whether the data was made by Open Energy Transition.
     """
     # Get the list of codes of the countries and subdivisions of
     # interest.

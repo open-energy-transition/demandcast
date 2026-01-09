@@ -3,7 +3,11 @@
 # REQUIRED.
 # The taget platform for uploading the data. Supported platforms are
 # "gcs" (Google Cloud Storage) and "zenodo".
-target_platform:
+target_platform: gcs
+
+# REQUIRED.
+# Directory containing the data files to be uploaded.
+data_directory: ./data/electricity_demand/2025-11-11
 
 # REQUIRED for gcs target_platform.
 # The bucket name of the Google Cloud Storage (GCS) to upload the
