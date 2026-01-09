@@ -97,32 +97,6 @@ if __name__ == "__main__":
                 f"{utils.entities.read_data_sources()}."
             )
 
-        # if config["upload_to_zenodo"]:
-        #     if not config["made_by_oet"]:
-        #         # Check if a metadata file other than the default one
-        #         # for OET-created content has been provided.
-        #         metadata_file_path = os.path.join(
-        #             utils.config.read_folders_structure()
-        # ["root_folder"],
-        #             "zenodo_metadata.yaml",
-        #         )
-        #         if not os.path.exists(metadata_file_path):
-        #             raise FileNotFoundError(
-        #                 "If the data is not retrieved or created by
-        # Open "
-        #                 "Energy Transition (made_by_oet = False), a
-        # file "
-        #                 "containing the metadata for the Zenodo upload
-        #  must "
-        #                 "be provided. The file must be named "
-        #                 "'zenodo_metadata.yaml' and be located in the
-        # "
-        #                 "ETL/utils/ folder. Check the file "
-        #                 "'oet_zenodo_metadata.yaml' for an example of
-        # the "
-        #                 "expected format."
-        #             )
-
         # Run the data retrieval for electricity demand.
         retrievals.electricity_demand.run_data_retrieval(
             config.data_source,
@@ -191,7 +165,7 @@ if __name__ == "__main__":
             raise ValueError(
                 f"The specified weather variable "
                 f"'{config.weather_variable}' is not recognized. "
-                "Valid weather variables are: ['temperature']."
+                "Only 'temperature' is currently supported."
             )
 
         # Run the data retrieval for weather.
