@@ -13,7 +13,7 @@ import glob
 import logging
 import os
 from functools import reduce
-from typing import Optional
+from typing import Callable, Optional
 
 import pandas
 import retrievals.annual_electricity_demand_per_capita
@@ -286,6 +286,129 @@ def load_electricity_demand(
     return electricity_demand
 
 
+def _load_generic_scenario_data(
+    folder_key: str,
+    numeric_columns: list[str],
+    scenario_getter: Callable[[], list[str]] | None = None,
+    selected_scenario: str | None = None,
+    selected_model: str | None = None,
+    model_scenario_getter: Callable[[], dict[str, list[str]]] | None = None,
+    file_path: str | None = None,
+    use_glob: bool = False,
+) -> pandas.DataFrame:
+    """
+    Load generic scenario-based data with common loading pattern.
+
+    Parameters
+    ----------
+    folder_key : str
+        Key to retrieve folder path from config structure.
+    numeric_columns : list[str]
+        List of column names to convert to numeric.
+    scenario_getter : Callable[[], list[str]] | None
+        Function that returns list of available scenarios. If None,
+        no scenario validation is performed.
+    selected_scenario : str | None
+        Scenario to load. None for historical data.
+    selected_model : str | None
+        Model to load (e.g., climate model). None for historical data.
+    model_scenario_getter : Callable[[], dict[str, list[str]]] | None
+        Function that returns dict mapping models to their available
+        scenarios. Required when selected_model is used.
+    file_path : str | None
+        Optional file path including entity codes to load. If None,
+        load all available codes.
+    use_glob : bool
+        Whether to use glob pattern matching for file discovery.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Concatenated dataframe with data from all entity codes.
+    """
+    # Get the folder containing the data.
+    data_folder = utils.config.read_folders_structure()[folder_key]
+
+    # Check and filter entity codes.
+    entity_codes = utils.entities.check_and_get_codes_with(
+        "all_data", file_path=file_path
+    )
+
+    # Validate model and scenario.
+    if model_scenario_getter and selected_model is not None:
+        available_scenarios_for_model = model_scenario_getter()
+        _validate(
+            "model", selected_model, list(available_scenarios_for_model.keys())
+        )
+        _validate(
+            "scenario",
+            selected_scenario,
+            available_scenarios_for_model[selected_model]
+            if selected_model
+            else [""],
+        )
+    elif scenario_getter:
+        available_scenarios = scenario_getter()
+        _validate("scenario", selected_scenario, available_scenarios)
+
+    # Initialize an empty dataframe to hold all data.
+    result_data = pandas.DataFrame()
+
+    for entity_code in entity_codes:
+        if use_glob:
+            # When more than one file has to be considered, construct a
+            # glob pattern.
+            file_pattern = (
+                f"{entity_code}_*"
+                + (f"_{selected_model}" if selected_model else "")
+                + (f"_{selected_scenario}" if selected_scenario else "")
+                + ".parquet"
+            )
+
+            # Find matching files.
+            matching_files = [
+                f for f in glob.glob(os.path.join(data_folder, file_pattern))
+            ]
+
+            if not matching_files:
+                logging.warning(
+                    f"No files found for entity code {entity_code} "
+                    f"with model {selected_model} and scenario "
+                    f"{selected_scenario}. Skipping."
+                )
+                continue
+
+            # Use only basenames for processing.
+            relevant_files = [os.path.basename(f) for f in matching_files]
+        else:
+            # Construct the relevant file name.
+            relevant_files = [
+                (
+                    f"{entity_code}"
+                    + (f"_{selected_scenario}" if selected_scenario else "")
+                    + ".parquet"
+                )
+            ]
+
+        # Read and process the file.
+        entity_data = _read_and_process_entity_files(
+            data_folder,
+            relevant_files,
+            entity_code,
+            numeric_columns=numeric_columns,
+        )
+
+        if entity_data is None:
+            continue
+
+        # Append to the main dataframe.
+        result_data = pandas.concat(
+            [result_data, entity_data], ignore_index=True
+        )
+
+    return result_data
+
+
 def load_annual_electricity_demand_per_capita(
     selected_scenario: str | None = None,
     file_path: str | None = None,
@@ -307,53 +430,13 @@ def load_annual_electricity_demand_per_capita(
         Concatenated dataframe with columns: Time (UTC),
         Annual electricity demand per capita (kWh), entity code.
     """
-    # Get the folder containing the annual electricity demand per capita
-    # data.
-    annual_electricity_demand_per_capita_folder = (
-        utils.config.read_folders_structure()[
-            "annual_electricity_demand_per_capita_folder"
-        ]
+    return _load_generic_scenario_data(
+        folder_key="annual_electricity_demand_per_capita_folder",
+        numeric_columns=["Annual electricity demand per capita (kWh)"],
+        scenario_getter=retrievals.annual_electricity_demand_per_capita.get_available_scenarios,
+        selected_scenario=selected_scenario,
+        file_path=file_path,
     )
-
-    # Check and filter entity codes.
-    entity_codes = utils.entities.check_and_get_codes_with(
-        "all_data", file_path=file_path
-    )
-
-    # Validate scenario.
-    available_scenarios = retrievals.annual_electricity_demand_per_capita.get_available_scenarios()
-    _validate("scenario", selected_scenario, available_scenarios)
-
-    # Initialize an empty dataframe to hold all annual electricity
-    # demand per capita data.
-    annual_electricity_demand_per_capita = pandas.DataFrame()
-
-    for entity_code in entity_codes:
-        # Construct the relevant file name.
-        relevant_file = (
-            f"{entity_code}"
-            + (f"_{selected_scenario}" if selected_scenario else "")
-            + ".parquet"
-        )
-
-        # Read and process the file.
-        entity_data = _read_and_process_entity_files(
-            annual_electricity_demand_per_capita_folder,
-            relevant_file,
-            entity_code,
-            numeric_columns=["Annual electricity demand per capita (kWh)"],
-        )
-
-        if entity_data is None:
-            continue
-
-        # Append to the main dataframe.
-        annual_electricity_demand_per_capita = pandas.concat(
-            [annual_electricity_demand_per_capita, entity_data],
-            ignore_index=True,
-        )
-
-    return annual_electricity_demand_per_capita
 
 
 def load_gdp_ppp_per_capita(
@@ -376,50 +459,13 @@ def load_gdp_ppp_per_capita(
         Dataframe with columns: Time (UTC), GDP PPP per capita
         (2021 international $), entity code.
     """
-    # Get the folder containing the GDP PPP per capita data.
-    gdp_ppp_per_capita_folder = utils.config.read_folders_structure()[
-        "gdp_ppp_per_capita_folder"
-    ]
-
-    # Check and filter entity codes.
-    entity_codes = utils.entities.check_and_get_codes_with(
-        "all_data", file_path=file_path
+    return _load_generic_scenario_data(
+        folder_key="gdp_ppp_per_capita_folder",
+        numeric_columns=["GDP PPP per capita (2021 international $)"],
+        scenario_getter=retrievals.gdp_ppp_per_capita.get_available_scenarios,
+        selected_scenario=selected_scenario,
+        file_path=file_path,
     )
-
-    # Validate scenario.
-    available_scenarios = (
-        retrievals.gdp_ppp_per_capita.get_available_scenarios()
-    )
-    _validate("scenario", selected_scenario, available_scenarios)
-
-    # Initialize an empty dataframe to hold all GDP PPP per capita data.
-    gdp_ppp_per_capita = pandas.DataFrame()
-
-    for entity_code in entity_codes:
-        # Construct the relevant file name.
-        relevant_file = (
-            f"{entity_code}"
-            + (f"_{selected_scenario}" if selected_scenario else "")
-            + ".parquet"
-        )
-
-        # Read and process the file.
-        entity_data = _read_and_process_entity_files(
-            gdp_ppp_per_capita_folder,
-            relevant_file,
-            entity_code,
-            numeric_columns=["GDP PPP per capita (2021 international $)"],
-        )
-
-        if entity_data is None:
-            continue
-
-        # Append to the main dataframe.
-        gdp_ppp_per_capita = pandas.concat(
-            [gdp_ppp_per_capita, entity_data], ignore_index=True
-        )
-
-    return gdp_ppp_per_capita
 
 
 def load_population(
@@ -442,48 +488,13 @@ def load_population(
         Concatenated dataframe with columns: Time (UTC),
         Population, entity code.
     """
-    # Get the folder containing the population data.
-    population_folder = utils.config.read_folders_structure()[
-        "population_folder"
-    ]
-
-    # Check and filter entity codes.
-    entity_codes = utils.entities.check_and_get_codes_with(
-        "all_data", file_path=file_path
+    return _load_generic_scenario_data(
+        folder_key="population_folder",
+        numeric_columns=["Population"],
+        scenario_getter=retrievals.population.get_available_scenarios,
+        selected_scenario=selected_scenario,
+        file_path=file_path,
     )
-
-    # Validate scenario.
-    available_scenarios = retrievals.population.get_available_scenarios()
-    _validate("scenario", selected_scenario, available_scenarios)
-
-    # Initialize an empty dataframe to hold all population data.
-    population = pandas.DataFrame()
-
-    for entity_code in entity_codes:
-        # Construct the relevant file name.
-        relevant_file = (
-            f"{entity_code}"
-            + (f"_{selected_scenario}" if selected_scenario else "")
-            + ".parquet"
-        )
-
-        # Read and process the file.
-        entity_data = _read_and_process_entity_files(
-            population_folder,
-            relevant_file,
-            entity_code,
-            numeric_columns=["Population"],
-        )
-
-        if entity_data is None:
-            continue
-
-        # Append to the main dataframe.
-        population = pandas.concat(
-            [population, entity_data], ignore_index=True
-        )
-
-    return population
 
 
 def load_temperature(
@@ -510,83 +521,23 @@ def load_temperature(
         Concatenated dataframe with temperature features and entity
         code.
     """
-    # Get the folder containing the temperature data.
-    temperature_folder = utils.config.read_folders_structure()[
-        "temperature_folder"
-    ]
-
-    # Check and filter entity codes.
-    entity_codes = utils.entities.check_and_get_codes_with(
-        "all_data", file_path=file_path
+    return _load_generic_scenario_data(
+        folder_key="temperature_folder",
+        numeric_columns=[
+            "Temperature - Top 1 (K)",
+            "Temperature - Top 3 (K)",
+            "Monthly average temperature - Top 1 (K)",
+            "Monthly average temperature rank - Top 1",
+            "Annual average temperature - Top 1 (K)",
+            "5 percentile temperature - Top 1 (K)",
+            "95 percentile temperature - Top 1 (K)",
+        ],
+        selected_scenario=selected_scenario,
+        selected_model=selected_model,
+        model_scenario_getter=retrievals.temperature.get_available_scenarios_for_model,
+        file_path=file_path,
+        use_glob=True,
     )
-
-    # Get the available scenarios and models.
-    available_scenarios_for_model = (
-        retrievals.temperature.get_available_scenarios_for_model()
-    )
-
-    # Validate model and scenario.
-    _validate(
-        "model", selected_model, list(available_scenarios_for_model.keys())
-    )
-    _validate(
-        "scenario",
-        selected_scenario,
-        available_scenarios_for_model[selected_model]
-        if selected_model
-        else [""],
-    )
-
-    # Initialize an empty dataframe to hold all temperature data.
-    temperature = pandas.DataFrame()
-
-    for entity_code in entity_codes:
-        # Construct the relevant file names.
-        relevant_files = (
-            f"{entity_code}_*"
-            + (f"_{selected_model}" if selected_model else "")
-            + (f"_{selected_scenario}" if selected_scenario else "")
-            + ".parquet"
-        )
-
-        # Use glob to find matching files.
-        matching_files = [
-            f
-            for f in glob.glob(
-                os.path.join(temperature_folder, relevant_files)
-            )
-        ]
-
-        if not matching_files:
-            logging.warning(
-                f"No temperature files found for entity code {entity_code} "
-                f"with model {selected_model} and scenario "
-                f"{selected_scenario}. Skipping."
-            )
-            continue
-
-        # Read and process the files.
-        entity_data = _read_and_process_entity_files(
-            temperature_folder,
-            [os.path.basename(f) for f in matching_files],
-            entity_code,
-            numeric_columns=[
-                "Temperature - Top 1 (K)",
-                "Temperature - Top 3 (K)",
-                "Monthly average temperature - Top 1 (K)",
-                "Monthly average temperature rank - Top 1",
-                "Annual average temperature - Top 1 (K)",
-                "5 percentile temperature - Top 1 (K)",
-                "95 percentile temperature - Top 1 (K)",
-            ],
-        )
-
-        # Append to the main dataframe.
-        temperature = pandas.concat(
-            [temperature, entity_data], ignore_index=True
-        )
-
-    return temperature
 
 
 def _merge_datasets(
