@@ -5,7 +5,8 @@ License: AGPL-3.0.
 Description:
 
     This script assembles and preprocesses the retrieved data for
-    training the machine learning models or for inference."""
+    training the machine learning models or for inference.
+"""
 
 import datetime
 import glob
@@ -637,9 +638,7 @@ def run_data_assemply(
     """
     # Check that the target use is valid.
     if target_use not in ["training", "inference"]:
-        raise ValueError(
-            "target_use must be either 'training' or 'inference'"
-        )
+        raise ValueError("target_use must be either 'training' or 'inference'")
 
     # Load the datasets. The electricity demand data is only needed for
     # training.
