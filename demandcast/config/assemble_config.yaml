@@ -1,0 +1,19 @@
+# Configuration read by the assemble.py script.
+
+# REQUIRED.
+# The target use for which the data is being assembled. It can be
+# 'training' or 'evaluation'.
+target_use: training
+
+# OPTIONAL.
+# Selected scenario for the retrieved data to load.
+selected_scenario:
+
+# OPTIONAL.
+# Selected climate model for the retrieved weather data to load.
+selected_model:
+
+# OPTIONAL.
+# The path to the yaml file containing the list of codes of the
+# countries and subdivisions of interest.
+file:

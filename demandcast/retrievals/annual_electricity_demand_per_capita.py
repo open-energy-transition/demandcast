@@ -27,6 +27,45 @@ import retrievals.socio_economic_data_sources.iiasa as iiasa
 import retrievals.socio_economic_data_sources.world_bank as world_bank
 
 
+def get_available_scenarios() -> list[str]:
+    """
+    Get the available future scenarios.
+
+    Returns
+    -------
+    list[str]
+        The available IAMC scenarios.
+    """
+    return [
+        "SSP1-Baseline",
+        "SSP1-19",
+        "SSP1-26",
+        "SSP1-34",
+        "SSP1-45",
+        "SSP2-Baseline",
+        "SSP2-19",
+        "SSP2-26",
+        "SSP2-34",
+        "SSP2-45",
+        "SSP2-60",
+        "SSP3-Baseline",
+        "SSP3-34",
+        "SSP3-45",
+        "SSP3-60",
+        "SSP4-Baseline",
+        "SSP4-26",
+        "SSP4-34",
+        "SSP4-45",
+        "SSP4-60",
+        "SSP5-Baseline",
+        "SSP5-19",
+        "SSP5-26",
+        "SSP5-34",
+        "SSP5-45",
+        "SSP5-60",
+    ]
+
+
 def get_historical_data() -> pandas.DataFrame:
     """
     Get historical electricity demand per capita data.
@@ -117,35 +156,8 @@ def run_data_retrieval(
         "all_data", code=code, file_path=file
     )
 
-    # Define the available scenarios.
-    available_scenarios = [
-        "SSP1-Baseline",
-        "SSP1-19",
-        "SSP1-26",
-        "SSP1-34",
-        "SSP1-45",
-        "SSP2-Baseline",
-        "SSP2-19",
-        "SSP2-26",
-        "SSP2-34",
-        "SSP2-45",
-        "SSP2-60",
-        "SSP3-Baseline",
-        "SSP3-34",
-        "SSP3-45",
-        "SSP3-60",
-        "SSP4-Baseline",
-        "SSP4-26",
-        "SSP4-34",
-        "SSP4-45",
-        "SSP4-60",
-        "SSP5-Baseline",
-        "SSP5-19",
-        "SSP5-26",
-        "SSP5-34",
-        "SSP5-45",
-        "SSP5-60",
-    ]
+    # Get the available scenarios.
+    available_scenarios = get_available_scenarios()
 
     # Loop over the countries and subdivisions.
     for code in tqdm(codes, desc="Countries and subdivisions"):

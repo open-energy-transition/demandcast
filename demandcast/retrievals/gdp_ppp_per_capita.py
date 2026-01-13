@@ -29,6 +29,18 @@ import retrievals.socio_economic_data_sources.imf as imf
 import retrievals.socio_economic_data_sources.world_bank as world_bank
 
 
+def get_available_scenarios() -> list[str]:
+    """
+    Get the available future scenarios.
+
+    Returns
+    -------
+    list[str]
+        The available scenarios.
+    """
+    return ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
+
+
 def get_historical_data() -> pandas.DataFrame:
     """
     Get the historical GDP PPP per capita data.
@@ -318,7 +330,7 @@ def run_data_retrieval(
     available_future_years_of_gridded_data = list(range(2025, 2101, 5))
 
     # Define the available scenarios for the GDP PPP per capita data.
-    available_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
+    available_scenarios = get_available_scenarios()
 
     # Loop over the countries and subdivisions.
     for code in tqdm(codes, desc="Countries and subdivisions"):

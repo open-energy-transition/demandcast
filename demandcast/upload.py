@@ -20,9 +20,9 @@ import utils.uploader
 from pydantic import BaseModel, ValidationError
 
 
-def read_and_check_configuration() -> BaseModel:
+def _read_and_check_configuration() -> BaseModel:
     """
-    Read and check the configuration for data retrieval.
+    Read and check the configuration for data upload.
 
     Returns
     -------
@@ -59,10 +59,10 @@ def read_and_check_configuration() -> BaseModel:
 
 if __name__ == "__main__":
     # Read and check the configuration.
-    config = read_and_check_configuration()
+    config = _read_and_check_configuration()
 
     # Set up the logging configuration.
-    utils.config.set_up_logging("upload_of_processed_electricity_demand_data_")
+    utils.config.set_up_logging("upload_of_processed_electricity_demand_data")
 
     # Get the date of upload.
     date_of_upload = pandas.Timestamp.today().strftime("%Y-%m-%d")

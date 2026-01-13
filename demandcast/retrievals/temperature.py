@@ -30,6 +30,58 @@ import retrievals.gridded_population
 import retrievals.gridded_weather
 
 
+def get_available_scenarios_for_model() -> dict[str, list[str]]:
+    """
+    Get the available future scenarios for each climate model.
+
+    Returns
+    -------
+    dict[str, list[str]]
+        A dictionary mapping each climate model to its available
+        scenarios.
+    """
+    return {
+        "CAMS-CSM1-0": [
+            "SSP1-1.9",
+            "SSP1-2.6",
+            "SSP2-4.5",
+            "SSP3-7.0",
+            "SSP5-8.5",
+        ],  # China
+        "CESM2": ["SSP1-2.6", "SSP2-4.5", "SSP3-7.0", "SSP5-8.5"],  # USA
+        "CNRM-ESM2-1": [
+            "SSP1-1.9",
+            "SSP1-2.6",
+            "SSP4-3.4",
+            "SSP2-4.5",
+            "SSP4-6.0",
+            "SSP3-7.0",
+            "SSP5-8.5",
+        ],  # France
+        "EC-Earth3-Veg-LR": [
+            "SSP1-1.9",
+            "SSP1-2.6",
+            "SSP2-4.5",
+            "SSP3-7.0",
+            "SSP5-8.5",
+        ],  # Europe
+        "HadGEM3-GC31-LL": ["SSP1-2.6", "SSP2-4.5", "SSP5-8.5"],  # UK
+        "MIROC-ES2L": [
+            "SSP1-1.9",
+            "SSP1-2.6",
+            "SSP2-4.5",
+            "SSP3-7.0",
+            "SSP5-8.5",
+        ],  # Japan
+        "MPI-ESM1-2-LR": [
+            "SSP1-2.6",
+            "SSP2-4.5",
+            "SSP3-7.0",
+            "SSP5-8.5",
+        ],  # Germany
+    }
+
+
 def _load_gridded_temperature_data(
     code: str,
     year: int,
@@ -667,47 +719,8 @@ def run_data_retrieval(
     # Define the available years for the future weather data.
     available_future_years = list(range(pandas.Timestamp.now().year, 2101))
 
-    # Define the available scenarios for the weather data.
-    available_scenarios_for_model = {
-        "CAMS-CSM1-0": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # China
-        "CESM2": ["SSP1-2.6", "SSP2-4.5", "SSP3-7.0", "SSP5-8.5"],  # USA
-        "CNRM-ESM2-1": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP4-3.4",
-            "SSP2-4.5",
-            "SSP4-6.0",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # France
-        "EC-Earth3-Veg-LR": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # Europe
-        "HadGEM3-GC31-LL": ["SSP1-2.6", "SSP2-4.5", "SSP5-8.5"],  # UK
-        "MIROC-ES2L": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # Japan
-        "MPI-ESM1-2-LR": [
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # Germany
-    }
+    # Get the available scenarios for the weather data.
+    available_scenarios_for_model = get_available_scenarios_for_model()
 
     # Get the list of year, model, and scenario combinations.
     year_model_scenario_list = (

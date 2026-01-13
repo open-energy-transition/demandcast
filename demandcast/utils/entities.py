@@ -210,7 +210,7 @@ def _read_entities_info(
     return content["entities"]
 
 
-def _get_electricity_demand_data_sources_containing_code(
+def get_electricity_demand_data_sources_containing_code(
     code: str,
 ) -> list[str]:
     """
@@ -679,7 +679,7 @@ def _get_defined_time_zone_for_code(code: str) -> datetime.tzinfo:
         if conflicting time zones are found for the subdivision.
     """
     # Get the data sources containing the provided code.
-    data_sources = _get_electricity_demand_data_sources_containing_code(code)
+    data_sources = get_electricity_demand_data_sources_containing_code(code)
 
     if len(data_sources) == 0:
         raise ValueError(f"Code {code} is not available in any data source.")

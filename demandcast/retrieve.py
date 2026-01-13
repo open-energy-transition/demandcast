@@ -27,7 +27,7 @@ import utils.entities
 from pydantic import BaseModel, ValidationError
 
 
-def read_and_check_configuration() -> BaseModel:
+def _read_and_check_configuration() -> BaseModel:
     """
     Read and check the configuration for data retrieval.
 
@@ -71,15 +71,15 @@ def read_and_check_configuration() -> BaseModel:
 
 if __name__ == "__main__":
     # Read and check the configuration.
-    config = read_and_check_configuration()
+    config = _read_and_check_configuration()
 
     # Set up the logging configuration.
     utils.config.set_up_logging(
-        "retrieval_of_"
+        f"retrieval_of_{config.variable}"
         + (
-            f"electricity_demand_from_{config.data_source}_"
-            if config.variable == "electricity_demand"
-            else f"{config.variable}_"
+            f"_from_{config.data_source}"
+            if config.variable == "electricity_demand" and config.data_source
+            else ""
         )
     )
 

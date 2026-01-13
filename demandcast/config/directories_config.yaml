@@ -39,3 +39,6 @@ gridded_weather_folder:
 temperature_folder:
   - *data_folder
   - temperature
+processed_data_folder:
+  - *data_folder
+  - processed

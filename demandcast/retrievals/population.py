@@ -26,6 +26,18 @@ import retrievals.socio_economic_data_sources.iiasa as iiasa
 import retrievals.socio_economic_data_sources.world_bank as world_bank
 
 
+def get_available_scenarios() -> list[str]:
+    """
+    Get the available future scenarios.
+
+    Returns
+    -------
+    list[str]
+        The available scenarios for the population data.
+    """
+    return ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
+
+
 def _extract_historical_population(
     code: str,
     global_historical_population: pandas.DataFrame,
@@ -175,7 +187,7 @@ def run_data_retrieval(
     available_future_years_of_gridded_data = list(range(2025, 2101, 5))
 
     # Define the available scenarios for the population data.
-    available_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
+    available_scenarios = get_available_scenarios()
 
     # Loop over the countries and subdivisions.
     for code in tqdm(codes, desc="Countries and subdivisions"):
