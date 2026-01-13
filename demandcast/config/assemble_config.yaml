@@ -2,7 +2,7 @@
 
 # REQUIRED.
 # The target use for which the data is being assembled. It can be
-# 'training' or 'evaluation'.
+# 'training' or 'inference'.
 target_use: training
 
 # OPTIONAL.

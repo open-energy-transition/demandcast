@@ -5,8 +5,7 @@ License: AGPL-3.0.
 Description:
 
     This script assembles and preprocesses the retrieved data for
-    training and evaluating the machine learning models.
-"""
+    training the machine learning models or for inference."""
 
 import datetime
 import glob
@@ -51,7 +50,7 @@ def _read_and_check_configuration() -> BaseModel:
     raw_config = utils.config.read_configuration(
         os.path.basename(__file__),
         "Assemble and preprocess the retrieved data for "
-        "training and evaluating the machine learning models.",
+        "training the machine learning models or for inference.",
     )
 
     try:
@@ -623,7 +622,7 @@ def run_data_assemply(
     ----------
     target_use : str
         Target use for which the data is being assembled. It can be
-        'training' or 'evaluation'.
+        'training' or 'inference'.
     scenario : str, optional
         Selected scenario for data retrieval, by default "".
     climate_model : str, optional
@@ -634,12 +633,12 @@ def run_data_assemply(
     Raises
     ------
     ValueError
-        If target_use is not 'training' or 'evaluation'.
+        If target_use is not 'training' or 'inference'.
     """
     # Check that the target use is valid.
-    if target_use not in ["training", "evaluation"]:
+    if target_use not in ["training", "inference"]:
         raise ValueError(
-            "target_use must be either 'training' or 'evaluation'"
+            "target_use must be either 'training' or 'inference'"
         )
 
     # Load the datasets. The electricity demand data is only needed for
