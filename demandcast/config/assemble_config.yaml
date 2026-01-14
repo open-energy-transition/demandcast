@@ -2,7 +2,7 @@
 
 # REQUIRED.
 # The target use for which the data is being assembled. It can be
-# 'training' or 'inference'.
+# 'training' or 'forecasting'.
 target_use: training
 
 # OPTIONAL.
@@ -17,3 +17,11 @@ selected_model:
 # The path to the yaml file containing the list of codes of the
 # countries and subdivisions of interest.
 file:
+
+# OPTIONAL.
+# Start year for a range of years of data to be assembled.
+start_year:
+
+# OPTIONAL.
+# End year for a range of years of data to be assembled.
+end_year:

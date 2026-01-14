@@ -5,7 +5,7 @@ License: AGPL-3.0.
 Description:
 
     This script assembles and preprocesses the retrieved data for
-    training the machine learning models or for inference.
+    training the machine learning models or forecasting.
 """
 
 import datetime
@@ -46,12 +46,14 @@ def _read_and_check_configuration() -> BaseModel:
         scenario: Optional[str] = None
         climate_model: Optional[str] = None
         file: Optional[str] = None
+        start_year: Optional[int] = None
+        end_year: Optional[int] = None
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(
         os.path.basename(__file__),
         "Assemble and preprocess the retrieved data for "
-        "training the machine learning models or for inference.",
+        "training the machine learning models or forecasting.",
     )
 
     try:
@@ -615,6 +617,8 @@ def run_data_assemply(
     scenario: str | None = None,
     climate_model: str | None = None,
     file: str | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
 ) -> None:
     """
     Preprocess raw data and save the processed dataset.
@@ -623,7 +627,7 @@ def run_data_assemply(
     ----------
     target_use : str
         Target use for which the data is being assembled. It can be
-        'training' or 'inference'.
+        'training' or 'forecasting'.
     scenario : str, optional
         Selected scenario for data retrieval, by default "".
     climate_model : str, optional
@@ -634,11 +638,14 @@ def run_data_assemply(
     Raises
     ------
     ValueError
-        If target_use is not 'training' or 'inference'.
+        If target_use is not 'training' or 'forecasting'. If only one of
+        start_year or end_year is provided.
     """
     # Check that the target use is valid.
-    if target_use not in ["training", "inference"]:
-        raise ValueError("target_use must be either 'training' or 'inference'")
+    if target_use not in ["training", "forecasting"]:
+        raise ValueError(
+            "target_use must be either 'training' or 'forecasting'"
+        )
 
     # Load the datasets. The electricity demand data is only needed for
     # training.
@@ -681,6 +688,18 @@ def run_data_assemply(
         # Calculate load fraction for training data.
         merged_data = _calculate_load_fraction(merged_data)
 
+    if start_year and end_year:
+        # Filter data for the specified year range.
+        merged_data = merged_data[
+            (merged_data["Local year"] >= start_year)
+            & (merged_data["Local year"] <= end_year)
+        ]
+    elif (start_year and not end_year) or (end_year and not start_year):
+        raise ValueError(
+            "Both start_year and end_year must be provided to filter "
+            "by year range."
+        )
+
     # Get the processed data folder path.
     processed_data_folder = utils.config.read_folders_structure()[
         "processed_data_folder"
@@ -693,11 +712,12 @@ def run_data_assemply(
         f"assembled_data_for_{target_use}_"
         + (f"scenario_{scenario}_" if scenario else "")
         + (f"model_{climate_model}_" if climate_model else "")
-        + f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.parquet",
+        + f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
     )
 
-    # Save the merged dataset to a parquet file.
-    merged_data.to_parquet(output_path, engine="pyarrow")
+    # Save the merged dataset to CSV and Parquet formats.
+    merged_data.to_csv(output_path + ".csv", index=False)
+    merged_data.to_parquet(output_path + ".parquet", index=False)
 
 
 if __name__ == "__main__":
@@ -713,4 +733,6 @@ if __name__ == "__main__":
         config.scenario,
         config.climate_model,
         config.file,
+        config.start_year,
+        config.end_year,
     )
