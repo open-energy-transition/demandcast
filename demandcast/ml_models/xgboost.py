@@ -67,7 +67,9 @@ def save(xgb_model: XGBRegressor, model_name: str) -> None:
         Name to identify the model when saving.
     """
     # Get the folder where to save the model.
-    model_folder = utils.config.read_folders_structure()["models_folder"]
+    model_folder = utils.config.read_folders_structure()[
+        "trained_ml_models_folder"
+    ]
     os.makedirs(model_folder, exist_ok=True)
 
     # Define the output path for the model.

@@ -41,5 +41,10 @@ temperature_folder:
 processed_data_folder:
   - *data_folder
   - processed
-models_folder: models
-results_folder: mapes
+ml_models_folder: &ml_models_folder ml_models
+trained_ml_models_folder:
+  - *ml_models_folder
+  - trained_models
+ml_results_folder:
+  - *ml_models_folder
+  - mapes

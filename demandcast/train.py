@@ -42,7 +42,7 @@ def _read_and_check_configuration() -> BaseModel:
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(
-        os.path.basename(__file__),
+        "train",
         "Train the machine learning model using the specified preprocessed "
         "data and algorithm.",
     )
@@ -175,11 +175,14 @@ def _prepare_features_and_target(
         # Extract features.
         features = dataset[feature_columns].copy().reset_index(drop=True)
 
-        # Convert categorical features to category dtype.
         if categorical_features:
             for feature in categorical_features:
                 if feature in features.columns:
-                    features[feature] = features[feature].astype("category")
+                    # Convert values of categorical features to integer
+                    # type and then to category dtype.
+                    features[feature] = (
+                        features[feature].astype(int).astype("category")
+                    )
 
         # Extract target and groups.
         target = dataset[target_column].copy().reset_index(drop=True)
@@ -320,12 +323,16 @@ def run_model_training(
         data_path = None
         datetime = "00000000_000000"
         for path in data_paths:
+            # Extract datetime from the file name.
+            datetime_of_file = path[
+                len("assembled_data_for_training_") : -len(".parquet")
+            ]
             if (
-                path.startswith("processed_data_for_training")
+                path.startswith("assembled_data_for_training")
                 and path.endswith(".parquet")
-                and path[-20:-8] > datetime
+                and datetime_of_file > datetime
             ):
-                datetime = path[-20:-8]
+                datetime = path
                 data_path = os.path.join(processed_data_folder, path)
         if data_path is None:
             raise FileNotFoundError(
@@ -394,7 +401,7 @@ if __name__ == "__main__":
     config = _read_and_check_configuration()
 
     # Set up the logging configuration.
-    utils.config.set_up_logging("assembly_of_retrieved_data")
+    utils.config.set_up_logging("model_training")
 
     # Run the data assembly process.
     run_model_training(

@@ -51,7 +51,7 @@ def _read_and_check_configuration() -> BaseModel:
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(
-        os.path.basename(__file__),
+        "assemble",
         "Assemble and preprocess the retrieved data for "
         "training the machine learning models or forecasting.",
     )
