@@ -2,7 +2,6 @@
 
 config_folder: config
 log_files_folder: logs
-settings_folder: settings
 figures_folder: figures
 shapes_folder: shapes
 checks_folder: checks
@@ -42,3 +41,5 @@ temperature_folder:
 processed_data_folder:
   - *data_folder
   - processed
+models_folder: models
+results_folder: mapes
