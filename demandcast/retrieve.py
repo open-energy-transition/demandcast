@@ -45,7 +45,7 @@ def _read_and_check_configuration() -> BaseModel:
     # Define the configuration model.
     class ConfigModel(BaseModel):
         variable: str
-        data_source: Optional[str] = None
+        electricity_data_source: Optional[str] = None
         code: Optional[str] = None
         file: Optional[str] = None
         year: Optional[int] = None
@@ -54,7 +54,6 @@ def _read_and_check_configuration() -> BaseModel:
         scenario: Optional[str] = None
         weather_variable: Optional[str] = None
         climate_model: Optional[str] = None
-        electricity_data_source: Optional[str] = None
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(
