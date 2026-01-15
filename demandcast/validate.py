@@ -38,12 +38,8 @@ def _read_and_check_configuration() -> BaseModel:
 
     # Define the configuration model.
     class ConfigModel(BaseModel):
-        algorithm: str
-        features: list[str]
-        target: str
-        reserve_testing_set: bool
-        use_validation_set: bool
-        categorical_features: Optional[list[str]] = None
+        used_validation_set: bool
+        model_path: Optional[str] = None
         data_path: Optional[str] = None
 
     # Read the configuration.
@@ -93,10 +89,12 @@ def _calculate_mape_by_entity(
     list_mapes_values = []
 
     # Calculate MAPE for each entity.
-    for entity_code, entity_group in pandas.DataFrame(entity_codes).groupby("Entity code"):
+    for entity_code, entity_group in pandas.DataFrame(entity_codes).groupby(
+        "Entity code"
+    ):
         current_mape = mean_absolute_percentage_error(
             actual.iloc[entity_group.index],
-            predictions.iloc[entity_group.index]
+            predictions.iloc[entity_group.index],
         )
         list_entity_codes.append(entity_code)
         list_mapes_values.append(current_mape)
@@ -198,35 +196,35 @@ def _save_mapes(
 
 
 def run_model_validation(
-    algorithm: str,
     used_validation_set: bool,
+    model_path: str | None,
+    data_path: str | None,
+    algorithm: str,
     features: list[str],
     target: str,
     categorical_features: list[str] | None,
-    model_path: str | None,
-    data_path: str | None,
 ) -> None:
     """
     Run the model validation process.
 
     Parameters
     ----------
-    algorithm : str
-        The machine learning algorithm to use for validation.
     used_validation_set : bool
         Whether a validation set was used during training.
+    model_path : str | None
+        The path to the trained model file. If None, the latest file
+        in the default directory will be used.
+    data_path : str | None
+        The path to the assembled data file. If None, the latest file
+        in the default directory will be used.
+    algorithm : str
+        The machine learning algorithm to use for validation.
     features : list[str]
         List of feature column names.
     target : str
         Target column name.
     categorical_features : list[str] | None
         List of categorical feature names to convert to category dtype.
-    model_path : str | None
-        The path to the trained model file. If None, the latest file
-        in the default directory will be used.
-    data_path : str | None
-        The path to the preprocessed data file. If None, the latest file
-        in the default directory will be used.
 
     Raises
     ------
@@ -235,12 +233,12 @@ def run_model_validation(
     """
     logging.info("Starting model validation process.")
 
-    # Read the preprocessed data.
-    processed_dataset = utils.ml.read_preprocessed_data(data_path)
+    # Read the assembled data.
+    assembled_dataset = utils.ml.read_assembled_data(data_path)
 
     # Split the dataset temporally.
     split_dataset = utils.ml.split_temporal(
-        processed_dataset, True, used_validation_set
+        assembled_dataset, True, used_validation_set
     )
 
     # Prepare features and target for each dataset.
@@ -280,13 +278,16 @@ if __name__ == "__main__":
     # Read and check the configuration.
     config = _read_and_check_configuration()
 
+    # Read and check features and target configuration.
+    ml_config = utils.ml.read_and_check_ml_configuration()
+
     # Run the model validation process.
     run_model_validation(
-        config.algorithm,
-        config.features,
-        config.target,
-        config.reserve_testing_set,
-        config.use_validation_set,
-        config.categorical_features,
+        config.used_validation_set,
+        config.model_path,
         config.data_path,
+        ml_config.algorithm,
+        ml_config.features,
+        ml_config.target,
+        ml_config.categorical_features,
     )

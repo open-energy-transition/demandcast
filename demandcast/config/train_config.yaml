@@ -1,44 +1,12 @@
 # Configuration read by the train.py script.
 
 # REQUIRED.
-# The machine learning algorithm to be used for training.
-algorithm: XGBoost
-
-# REQUIRED.
 # Whether to reserve a set of data for later testing.
 reserve_testing_set: true
 
 # REQUIRED.
 # Whether to use a validation set during training.
 use_validation_set: false
-
-# REQUIRED.
-# The features used for training the model.
-features:
-  - "Local hour of the day"
-  - "Local weekend indicator"
-  - "Local month of the year"
-  - "Temperature - Top 1 (K)"
-  - "Temperature - Top 3 (K)"
-  - "Monthly average temperature - Top 1 (K)"
-  - "Monthly average temperature rank - Top 1"
-  - "Annual average temperature - Top 1 (K)"
-  - "5 percentile temperature - Top 1 (K)"
-  - "95 percentile temperature - Top 1 (K)"
-  - "GDP PPP per capita (2021 international $)"
-  - "Annual electricity demand per capita (kWh)"
-
-# REQUIRED.
-# The target variable for the model.
-target: Load (fraction of annual total)
-
-# OPTIONAL.
-# The categorical features used for training the model.
-categorical_features:
-  - "Local hour of the day"
-  - "Local weekend indicator"
-  - "Local month of the year"
-  - "Monthly average temperature rank - Top 1"
 
 # OPTIONAL.
 # The path to the assembled data to be used for training.

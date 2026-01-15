@@ -38,13 +38,13 @@ gridded_weather_folder:
 temperature_folder:
   - *data_folder
   - temperature
-processed_data_folder:
+assembled_data_folder:
   - *data_folder
-  - processed
+  - assembled
 ml_models_folder: &ml_models_folder ml_models
 trained_ml_models_folder:
   - *ml_models_folder
-  - trained_models
+  - trained
 ml_results_folder:
   - *ml_models_folder
   - mapes

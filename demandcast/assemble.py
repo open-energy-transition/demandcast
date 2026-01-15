@@ -686,7 +686,7 @@ def run_data_assemply(
     end_year: int | None = None,
 ) -> None:
     """
-    Preprocess raw data and save the processed dataset.
+    Preprocess raw data and save the assembled dataset.
 
     Parameters
     ----------
@@ -767,15 +767,15 @@ def run_data_assemply(
             "by year range."
         )
 
-    # Get the processed data folder path.
-    processed_data_folder = utils.config.read_folders_structure()[
-        "processed_data_folder"
+    # Get the assembled data folder path.
+    assembled_data_folder = utils.config.read_folders_structure()[
+        "assembled_data_folder"
     ]
-    os.makedirs(processed_data_folder, exist_ok=True)
+    os.makedirs(assembled_data_folder, exist_ok=True)
 
     # Construct the output file path.
     output_path = os.path.join(
-        processed_data_folder,
+        assembled_data_folder,
         f"assembled_data_for_{target_use}_"
         + (f"scenario_{scenario}_" if scenario else "")
         + (f"model_{climate_model}_" if climate_model else "")
@@ -787,7 +787,7 @@ def run_data_assemply(
     merged_data.to_parquet(output_path + ".parquet", index=False)
 
     logging.info(
-        f"Processed data saved to {output_path}.csv and {output_path}.parquet"
+        f"Assembled data saved to {output_path}.csv and {output_path}.parquet"
     )
 
 

@@ -4,8 +4,8 @@ License: AGPL-3.0.
 
 Description:
 
-    This script uploads processed electricity demand data to a
-    specified destination, such as Google Cloud Storage or Zenodo.
+    This script uploads electricity demand data to a specified
+    destination, such as Google Cloud Storage or Zenodo.
 """
 
 import importlib
@@ -46,8 +46,7 @@ def _read_and_check_configuration() -> BaseModel:
     # Read the configuration.
     raw_config = utils.config.read_configuration(
         os.path.basename(__file__),
-        "Upload the processed electricity demand data to the "
-        "specified destination.",
+        "Upload the electricity demand data to the specified destination.",
     )
 
     try:
@@ -65,7 +64,7 @@ def _read_and_check_configuration() -> BaseModel:
 
 if __name__ == "__main__":
     # Set up the logging configuration.
-    utils.config.set_up_logging("upload_of_processed_electricity_demand_data")
+    utils.config.set_up_logging("upload_of_electricity_demand_data")
 
     # Read and check the configuration.
     config = _read_and_check_configuration()

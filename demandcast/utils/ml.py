@@ -10,41 +10,88 @@ Description:
 
 import logging
 import os
+from typing import Optional
 
 import pandas
+from pydantic import BaseModel, ValidationError
 
 import utils.config
 
 
-def read_preprocessed_data(data_path: str | None) -> pandas.DataFrame:
+def read_and_check_ml_configuration() -> BaseModel:
     """
-    Read the preprocessed data.
+    Read and check the features and target.
+
+    Returns
+    -------
+    config : BaseModel
+        A Pydantic model containing the ml configuration.
+
+    Raises
+    ------
+    ValueError
+        If the configuration is invalid.
+    """
+
+    # Define the configuration model.
+    class ConfigModel(BaseModel):
+        algorithm: str
+        features: list[str]
+        target: str
+        categorical_features: Optional[list[str]] = None
+
+    # Define the path to the features and target configuration file.
+    config_path = os.path.join(
+        utils.config.read_folders_structure()["config_folder"],
+        "ml_config.yaml",
+    )
+
+    # Read the configuration.
+    with open(config_path, "r") as file:
+        raw_config = utils.config.yaml.safe_load(file)
+
+    try:
+        # Validate the configuration.
+        config = ConfigModel(**raw_config)
+
+        logging.info("ML configuration validated successfully:")
+        for field, value in config.model_dump().items():
+            logging.info(f" - {field}: {value}")
+
+        return config
+    except ValidationError as e:
+        raise ValueError(f"Configuration validation error: {e}") from e
+
+
+def read_assembled_data(data_path: str | None) -> pandas.DataFrame:
+    """
+    Read the assembled data.
 
     Parameters
     ----------
     data_path : str | None
-        The path to the preprocessed data file. If None, the latest file
+        The path to the assembled data file. If None, the latest file
         in the default directory will be used.
 
     Returns
     -------
     pandas.DataFrame
-        The preprocessed dataset.
+        The assembled dataset.
 
     Raises
     ------
     FileNotFoundError
-        If no processed data files are found.
+        If no assembled data files are found.
     """
-    # Get the folder containing processed data files.
-    processed_data_folder = utils.config.read_folders_structure()[
-        "processed_data_folder"
+    # Get the folder containing assembled data files.
+    assembled_data_folder = utils.config.read_folders_structure()[
+        "assembled_data_folder"
     ]
 
-    # If no data path is provided, find the latest processed data file.
+    # If no data path is provided, find the latest assembled data file.
     if data_path is None:
-        # List all files in the processed data folder.
-        data_paths = os.listdir(processed_data_folder)
+        # List all files in the assembled data folder.
+        data_paths = os.listdir(assembled_data_folder)
 
         # Initialize a variable to hold the latest datetime and data
         # path.
@@ -61,13 +108,13 @@ def read_preprocessed_data(data_path: str | None) -> pandas.DataFrame:
                 and datetime_of_file > datetime
             ):
                 datetime = datetime_of_file
-                data_path = os.path.join(processed_data_folder, path)
+                data_path = os.path.join(assembled_data_folder, path)
         if data_path is None:
             raise FileNotFoundError(
-                f"No processed data files found in '{processed_data_folder}'."
+                f"No assembled data files found in '{assembled_data_folder}'."
             )
 
-    logging.info(f"Using processed data file: {data_path}")
+    logging.info(f"Using assembled data file: {data_path}")
 
     return pandas.read_parquet(data_path)
 
@@ -131,7 +178,7 @@ def get_trained_model_path(model_path: str | None, algorithm_name: str) -> str:
 
 
 def split_temporal(
-    processed_data: pandas.DataFrame,
+    assembled_data: pandas.DataFrame,
     reserve_testing_set: bool,
     use_validation_set: bool,
     entyty_column: str = "Entity code",
@@ -142,8 +189,8 @@ def split_temporal(
 
     Parameters
     ----------
-    processed_data : pandas.DataFrame
-        The preprocessed dataset to be split.
+    assembled_data : pandas.DataFrame
+        The assembled dataset to be split.
     reserve_testing_set : bool
         Whether to reserve a testing set.
     use_validation_set : bool
@@ -175,7 +222,7 @@ def split_temporal(
     # the original dataset.
     indexes_not_for_training = []
 
-    for __, entity in processed_data.groupby(entyty_column):
+    for __, entity in assembled_data.groupby(entyty_column):
         # Determine the maximum year in the group.
         latest_year = entity[year_column].max()
 
@@ -203,7 +250,7 @@ def split_temporal(
 
     # Remove testing and validation data from the original dataset to
     # create the training dataset.
-    split_dataset["training"] = processed_data.drop(
+    split_dataset["training"] = assembled_data.drop(
         index=indexes_not_for_training
     )
 
@@ -215,7 +262,7 @@ def split_temporal(
     for key in split_dataset.keys():
         logging.info(
             f" - {key.capitalize()} set: {len(split_dataset[key])} records "
-            f"({(len(split_dataset[key]) / len(processed_data)) * 100:.2f}%)"
+            f"({(len(split_dataset[key]) / len(assembled_data)) * 100:.2f}%)"
         )
 
     return split_dataset

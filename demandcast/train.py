@@ -4,7 +4,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This script trains a machine learning model using preprocessed data.
+    This script trains a machine learning model using a preprocessed
+    dataset, with configuration options for algorithm selection,
+    feature selection, and data splitting.
 """
 
 import logging
@@ -34,12 +36,8 @@ def _read_and_check_configuration() -> BaseModel:
 
     # Define the configuration model.
     class ConfigModel(BaseModel):
-        algorithm: str
         reserve_testing_set: bool
         use_validation_set: bool
-        features: list[str]
-        target: str
-        categorical_features: Optional[list[str]] = None
         data_path: Optional[str] = None
 
     # Read the configuration.
@@ -63,19 +61,26 @@ def _read_and_check_configuration() -> BaseModel:
 
 
 def run_model_training(
-    algorithm: str,
     reserve_testing_set: bool,
     use_validation_set: bool,
+    data_path: str | None,
+    algorithm: str,
     features: list[str],
     target: str,
     categorical_features: list[str] | None,
-    data_path: str | None,
 ) -> None:
     """
     Run the model training process.
 
     Parameters
     ----------
+    reserve_testing_set : bool
+        Whether to reserve a testing set from the data.
+    use_validation_set : bool
+        Whether to use a validation set during training.
+    data_path : str | None
+        The path to the assembled data file. If None, the latest file
+        in the default directory will be used.
     algorithm : str
         The machine learning algorithm to use for training.
     features : list[str]
@@ -84,9 +89,6 @@ def run_model_training(
         Target column name.
     categorical_features : list[str] | None
         List of categorical feature names to convert to category dtype.
-    data_path : str | None
-        The path to the preprocessed data file. If None, the latest file
-        in the default directory will be used.
 
     Raises
     ------
@@ -95,12 +97,12 @@ def run_model_training(
     """
     logging.info("Starting model training process.")
 
-    # Read the preprocessed data.
-    processed_dataset = utils.ml.read_preprocessed_data(data_path)
+    # Read the assembled data.
+    assembled_dataset = utils.ml.read_assembled_data(data_path)
 
     # Split the dataset temporally.
     split_dataset = utils.ml.split_temporal(
-        processed_dataset, reserve_testing_set, use_validation_set
+        assembled_dataset, reserve_testing_set, use_validation_set
     )
 
     # Prepare features and target for each dataset.
@@ -133,13 +135,16 @@ if __name__ == "__main__":
     # Read and check the configuration.
     config = _read_and_check_configuration()
 
+    # Read and check features and target configuration.
+    ml_config = utils.ml.read_and_check_ml_configuration()
+
     # Run the model training process.
     run_model_training(
-        config.algorithm,
         config.reserve_testing_set,
         config.use_validation_set,
-        config.features,
-        config.target,
-        config.categorical_features,
         config.data_path,
+        ml_config.algorithm,
+        ml_config.features,
+        ml_config.target,
+        ml_config.categorical_features,
     )
