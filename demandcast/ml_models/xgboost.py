@@ -56,6 +56,28 @@ def _read_configuration() -> BaseModel:
         raise ValueError(f"Configuration validation error: {e}") from e
 
 
+def load(model_path: str) -> XGBRegressor:
+    """
+    Load a trained XGBoost model.
+
+    Parameters
+    ----------
+    model_path : str
+        Path to the trained model file.
+
+    Returns
+    -------
+    XGBRegressor
+        Loaded XGBoost model.
+    """
+    xgb_model = XGBRegressor()
+    xgb_model.load_model(model_path)
+
+    logging.info(f"Trained model loaded from {model_path}")
+
+    return xgb_model
+
+
 def save(xgb_model: XGBRegressor, model_name: str) -> None:
     """
     Save the trained XGBoost model.
@@ -136,3 +158,42 @@ def train(
     logging.info("XGBoost model training completed.")
 
     return xgb_model
+
+
+def predict(
+    xgb_model: XGBRegressor,
+    prepared_dataset: dict[str, dict[str, pandas.DataFrame | pandas.Series]],
+) -> dict[str, pandas.Series]:
+    """
+    Make predictions using the trained XGBoost model.
+
+    Parameters
+    ----------
+    xgb_model : XGBRegressor
+        The trained XGBoost model.
+    prepared_dataset :
+        dict[str, dict[str, pandas.DataFrame | pandas.Series]]
+        A dictionary containing the prepared datasets for training,
+        validation, and testing.
+
+    Returns
+    -------
+    predictions : dict[str, pandas.Series]
+        A dictionary containing predictions for each dataset split.
+    """
+    logging.info("Making predictions with the trained XGBoost model.")
+
+    # Initialize predictions dictionary.
+    predictions: dict[str, pandas.Series] = {}
+
+    for split_name, data in prepared_dataset.items():
+        # Make predictions for the current split.
+        preds = xgb_model.predict(data["features"])
+
+        predictions[split_name] = pandas.Series(preds)
+
+        logging.info(
+            f"Predictions made for {split_name} set: {len(preds)} records."
+        )
+
+    return predictions

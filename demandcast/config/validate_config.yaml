@@ -5,12 +5,8 @@
 algorithm: XGBoost
 
 # REQUIRED.
-# Whether to reserve a set of data for later testing.
-reserve_testing_set: true
-
-# REQUIRED.
-# Whether to use a validation set during training.
-use_validation_set: false
+# Whether a validation set was used during training.
+used_validation_set: false
 
 # REQUIRED.
 # The features used for training the model.
@@ -41,5 +37,9 @@ categorical_features:
   - "Monthly average temperature rank - Top 1"
 
 # OPTIONAL.
-# The path to the assembled data to be used for training.
+# The machine learning algorithm to be used for validation.
+model_path:
+
+# OPTIONAL.
+# The path to the assembled data to be used for validation.
 data_path:
