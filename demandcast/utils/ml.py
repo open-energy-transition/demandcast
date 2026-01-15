@@ -205,7 +205,11 @@ def split_temporal(
     # create the training dataset.
     split_dataset["training"] = processed_data.drop(
         index=indexes_not_for_training
-    ).reset_index(drop=True)
+    )
+
+    # Reset indexes for all datasets.
+    for key in split_dataset.keys():
+        split_dataset[key] = split_dataset[key].reset_index(drop=True)
 
     logging.info("Dataset split complete:")
     for key in split_dataset.keys():
@@ -220,7 +224,7 @@ def split_temporal(
 def prepare_features_and_target(
     split_dataset: dict[str, pandas.DataFrame],
     feature_columns: list[str],
-    target_column: str = "Load (fraction of annual total)",
+    target_column: str,
     categorical_features: list[str] | None = None,
 ) -> dict[str, dict[str, pandas.DataFrame | pandas.Series]]:
     """
@@ -242,14 +246,14 @@ def prepare_features_and_target(
     -------
     dict[str, dict[str, pandas.DataFrame | pandas.Series]]
         A dictionary with keys as split names and values as dictionaries
-        containing 'features', 'target', and 'entities'.
+        containing 'features', 'target', and 'entity_codes'.
     """
     # Initialize the prepared data dictionary.
     prepared_data: dict[str, dict[str, pandas.DataFrame | pandas.Series]] = {}
 
     for split_name, dataset in split_dataset.items():
         # Extract features.
-        features = dataset[feature_columns].copy().reset_index(drop=True)
+        features = dataset[feature_columns].copy()
 
         if categorical_features:
             for feature in categorical_features:
@@ -259,16 +263,17 @@ def prepare_features_and_target(
                     features[feature] = (
                         features[feature].astype(int).astype("category")
                     )
-
-        # Extract target and groups.
-        target = dataset[target_column].copy().reset_index(drop=True)
-        groups = dataset["Entity code"].copy().reset_index(drop=True)
+                else:
+                    logging.warning(
+                        f"Categorical feature '{feature}' not found in "
+                        f"the dataset columns."
+                    )
 
         # Store in the prepared data dictionary.
         prepared_data[split_name] = {
             "features": features,
-            "target": target,
-            "entities": groups,
+            "target": dataset[target_column].copy(),
+            "entity_codes": dataset["Entity code"].copy(),
         }
 
     return prepared_data

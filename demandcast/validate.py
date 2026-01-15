@@ -14,7 +14,6 @@ import os
 from typing import Optional
 
 import ml_models.xgboost
-import numpy
 import pandas
 import utils.config
 import utils.ml
@@ -68,9 +67,9 @@ def _read_and_check_configuration() -> BaseModel:
 
 
 def _calculate_mape_by_entity(
-    predictions: numpy.ndarray,
+    predictions: pandas.Series,
     actual: pandas.Series,
-    entities: pandas.Series,
+    entity_codes: pandas.Series,
 ) -> pandas.Series:
     """
     Calculate MAPE per entity.
@@ -81,7 +80,7 @@ def _calculate_mape_by_entity(
         Model predictions.
     actual : pandas.Series
         Actual target values.
-    entities : pandas.Series
+    entity_codes : pandas.Series
         Series indicating the code of each entity.
 
     Returns
@@ -94,11 +93,12 @@ def _calculate_mape_by_entity(
     list_mapes_values = []
 
     # Calculate MAPE for each entity.
-    for code, entity in pandas.DataFrame(entities).groupby("Entity code"):
+    for entity_code, entity_group in pandas.DataFrame(entity_codes).groupby("Entity code"):
         current_mape = mean_absolute_percentage_error(
-            actual.iloc[entity.index], predictions[entity.index]
+            actual.iloc[entity_group.index],
+            predictions.iloc[entity_group.index]
         )
-        list_entity_codes.append(code)
+        list_entity_codes.append(entity_code)
         list_mapes_values.append(current_mape)
 
     # Create a Series for MAPE values indexed by entity codes.
@@ -113,7 +113,7 @@ def _calculate_mape_by_entity(
 
 def _calculate_mapes(
     prepared_dataset: dict[str, dict[str, pandas.DataFrame | pandas.Series]],
-    predictions: dict[str, numpy.ndarray],
+    predictions: dict[str, pandas.Series],
 ) -> pandas.DataFrame:
     """
     Calculate MAPE for training, validation, and testing datasets.
@@ -124,7 +124,7 @@ def _calculate_mapes(
         dict[str, dict[str, pandas.DataFrame | pandas.Series]]
         A dictionary containing the prepared datasets for training,
         validation, and testing.
-    predictions : dict[str, numpy.ndarray]
+    predictions : dict[str, pandas.Series]
         A dictionary containing predictions for each dataset split.
 
     Returns
@@ -141,7 +141,7 @@ def _calculate_mapes(
         mapes_of_split = _calculate_mape_by_entity(
             predictions[split],
             prepared_dataset[split]["target"],
-            prepared_dataset[split]["entities"],
+            prepared_dataset[split]["entity_codes"],
         )
 
         # Store the MAPE values in the results DataFrame.
