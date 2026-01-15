@@ -31,7 +31,7 @@ def _read_and_check_configuration() -> BaseModel:
 
     Returns
     -------
-    ConfigModel : BaseModel
+    config : BaseModel
         A Pydantic model containing the validated configuration.
 
     Raises
@@ -58,7 +58,13 @@ def _read_and_check_configuration() -> BaseModel:
 
     try:
         # Validate the configuration.
-        return ConfigModel(**raw_config)
+        config = ConfigModel(**raw_config)
+
+        logging.info("Configuration validated successfully:")
+        for field, value in config.model_dump().items():
+            logging.info(f" - {field}: {value}")
+
+        return config
     except ValidationError as e:
         raise ValueError(f"Configuration validation error: {e}") from e
 
@@ -138,7 +144,7 @@ def _read_and_process_entity_files(
 
     Returns
     -------
-    pandas.DataFrame | None
+    entity_data : pandas.DataFrame | None
         Dataframe with entity code column, or None if file not found.
     """
     # Ensure filenames is a list.
@@ -195,7 +201,7 @@ def _read_and_process_entity_files(
     return entity_data
 
 
-def load_electricity_demand(
+def _load_electricity_demand(
     file_path: str | None = None,
 ) -> pandas.DataFrame:
     """
@@ -208,10 +214,12 @@ def load_electricity_demand(
 
     Returns
     -------
-    pandas.DataFrame
+    electricity_demand : pandas.DataFrame
         Concatenated dataframe with columns: Time (UTC), Load (MW),
         Entity code.
     """
+    logging.info("Loading electricity demand data.")
+
     # Get the folder containing the electricity demand data.
     electricity_demand_folder = utils.config.read_folders_structure()[
         "electricity_demand_folder"
@@ -285,6 +293,8 @@ def load_electricity_demand(
             [electricity_demand, entity_data], ignore_index=True
         )
 
+    logging.info("Electricity demand data loaded successfully.")
+
     return electricity_demand
 
 
@@ -325,7 +335,7 @@ def _load_generic_scenario_data(
 
     Returns
     -------
-    pandas.DataFrame
+    result_data : pandas.DataFrame
         Concatenated dataframe with data from all entity codes.
     """
     # Get the folder containing the data.
@@ -411,7 +421,7 @@ def _load_generic_scenario_data(
     return result_data
 
 
-def load_annual_electricity_demand_per_capita(
+def _load_annual_electricity_demand_per_capita(
     selected_scenario: str | None = None,
     file_path: str | None = None,
 ) -> pandas.DataFrame:
@@ -428,11 +438,13 @@ def load_annual_electricity_demand_per_capita(
 
     Returns
     -------
-    pandas.DataFrame
+    annual_electricity_demand_per_capita : pandas.DataFrame
         Concatenated dataframe with columns: Time (UTC),
         Annual electricity demand per capita (kWh), entity code.
     """
-    return _load_generic_scenario_data(
+    logging.info("Loading annual electricity demand per capita data.")
+
+    annual_electricity_demand_per_capita = _load_generic_scenario_data(
         folder_key="annual_electricity_demand_per_capita_folder",
         numeric_columns=["Annual electricity demand per capita (kWh)"],
         scenario_getter=retrievals.annual_electricity_demand_per_capita.get_available_scenarios,
@@ -440,8 +452,14 @@ def load_annual_electricity_demand_per_capita(
         file_path=file_path,
     )
 
+    logging.info(
+        "Annual electricity demand per capita data loaded successfully."
+    )
 
-def load_gdp_ppp_per_capita(
+    return annual_electricity_demand_per_capita
+
+
+def _load_gdp_ppp_per_capita(
     selected_scenario: str | None = None, file_path: str | None = None
 ) -> pandas.DataFrame:
     """
@@ -457,11 +475,13 @@ def load_gdp_ppp_per_capita(
 
     Returns
     -------
-    pandas.DataFrame
+    gdp_ppp_per_capita : pandas.DataFrame
         Dataframe with columns: Time (UTC), GDP PPP per capita
         (2021 international $), entity code.
     """
-    return _load_generic_scenario_data(
+    logging.info("Loading GDP PPP per capita data.")
+
+    gdp_ppp_per_capita = _load_generic_scenario_data(
         folder_key="gdp_ppp_per_capita_folder",
         numeric_columns=["GDP PPP per capita (2021 international $)"],
         scenario_getter=retrievals.gdp_ppp_per_capita.get_available_scenarios,
@@ -469,8 +489,12 @@ def load_gdp_ppp_per_capita(
         file_path=file_path,
     )
 
+    logging.info("GDP PPP per capita data loaded successfully.")
 
-def load_population(
+    return gdp_ppp_per_capita
+
+
+def _load_population(
     selected_scenario: str | None = None, file_path: str | None = None
 ) -> pandas.DataFrame:
     """
@@ -486,11 +510,13 @@ def load_population(
 
     Returns
     -------
-    pandas.DataFrame
+    population : pandas.DataFrame
         Concatenated dataframe with columns: Time (UTC),
         Population, entity code.
     """
-    return _load_generic_scenario_data(
+    logging.info("Loading population data.")
+
+    population = _load_generic_scenario_data(
         folder_key="population_folder",
         numeric_columns=["Population"],
         scenario_getter=retrievals.population.get_available_scenarios,
@@ -498,8 +524,12 @@ def load_population(
         file_path=file_path,
     )
 
+    logging.info("Population data loaded successfully.")
 
-def load_temperature(
+    return population
+
+
+def _load_temperature(
     selected_scenario: str | None = None,
     selected_model: str | None = None,
     file_path: str | None = None,
@@ -519,11 +549,13 @@ def load_temperature(
 
     Returns
     -------
-    pandas.DataFrame
+    temperature : pandas.DataFrame
         Concatenated dataframe with temperature features and entity
         code.
     """
-    return _load_generic_scenario_data(
+    logging.info("Loading temperature data.")
+
+    temperature = _load_generic_scenario_data(
         folder_key="temperature_folder",
         numeric_columns=[
             "Temperature - Top 1 (K)",
@@ -540,6 +572,10 @@ def load_temperature(
         file_path=file_path,
         use_glob=True,
     )
+
+    logging.info("Temperature data loaded successfully.")
+
+    return temperature
 
 
 def _merge_datasets(
@@ -647,20 +683,22 @@ def run_data_assemply(
             "target_use must be either 'training' or 'forecasting'"
         )
 
+    logging.info(f"Starting data assembly for {target_use}.")
+
     # Load the datasets. The electricity demand data is only needed for
     # training.
     if target_use == "training":
-        electricity_demand = load_electricity_demand(file_path=file)
+        electricity_demand = _load_electricity_demand(file_path=file)
     annual_electricity_demand_per_capita = (
-        load_annual_electricity_demand_per_capita(
+        _load_annual_electricity_demand_per_capita(
             selected_scenario=scenario, file_path=file
         )
     )
-    gdp_ppp_per_capita = load_gdp_ppp_per_capita(
+    gdp_ppp_per_capita = _load_gdp_ppp_per_capita(
         selected_scenario=scenario, file_path=file
     )
-    population = load_population(selected_scenario=scenario, file_path=file)
-    temperature = load_temperature(
+    population = _load_population(selected_scenario=scenario, file_path=file)
+    temperature = _load_temperature(
         selected_scenario=scenario,
         selected_model=climate_model,
         file_path=file,
@@ -719,13 +757,17 @@ def run_data_assemply(
     merged_data.to_csv(output_path + ".csv", index=False)
     merged_data.to_parquet(output_path + ".parquet", index=False)
 
+    logging.info(
+        f"Processed data saved to {output_path}.csv and {output_path}.parquet"
+    )
+
 
 if __name__ == "__main__":
-    # Read and check the configuration.
-    config = _read_and_check_configuration()
-
     # Set up the logging configuration.
     utils.config.set_up_logging("assembly_of_retrieved_data")
+
+    # Read and check the configuration.
+    config = _read_and_check_configuration()
 
     # Run the data assembly process.
     run_data_assemply(

@@ -15,6 +15,7 @@ import pandas
 import utils.config
 from pydantic import BaseModel, ValidationError
 from sklearn.metrics import mean_absolute_percentage_error
+from xgboost import XGBRegressor
 
 
 def _read_and_check_configuration() -> BaseModel:
@@ -23,7 +24,7 @@ def _read_and_check_configuration() -> BaseModel:
 
     Returns
     -------
-    ConfigModel : BaseModel
+    config : BaseModel
         A Pydantic model containing the validated configuration.
 
     Raises
@@ -38,6 +39,7 @@ def _read_and_check_configuration() -> BaseModel:
         features: list[str]
         target: str
         categorical_features: Optional[list[str]] = None
+        use_validation: Optional[bool] = False
         data_path: Optional[str] = None
 
     # Read the configuration.
@@ -49,9 +51,71 @@ def _read_and_check_configuration() -> BaseModel:
 
     try:
         # Validate the configuration.
-        return ConfigModel(**raw_config)
+        config = ConfigModel(**raw_config)
+
+        logging.info("Configuration validated successfully:")
+        for field, value in config.model_dump().items():
+            logging.info(f" - {field}: {value}")
+
+        return config
     except ValidationError as e:
         raise ValueError(f"Configuration validation error: {e}") from e
+
+
+def _read_preprocessed_data(data_path: str | None) -> pandas.DataFrame:
+    """
+    Read the preprocessed data.
+
+    Parameters
+    ----------
+    data_path : str | None
+        The path to the preprocessed data file. If None, the latest file
+        in the default directory will be used.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The preprocessed dataset.
+
+    Raises
+    ------
+    FileNotFoundError
+        If no processed data files are found.
+    """
+    # Get the folder containing processed data files.
+    processed_data_folder = utils.config.read_folders_structure()[
+        "processed_data_folder"
+    ]
+
+    # If no data path is provided, find the latest processed data file.
+    if data_path is None:
+        # List all files in the processed data folder.
+        data_paths = os.listdir(processed_data_folder)
+
+        # Initialize a variable to hold the latest datetime and data
+        # path.
+        data_path = None
+        datetime = "00000000_000000"
+        for path in data_paths:
+            # Extract datetime from the file name.
+            datetime_of_file = path[
+                len("assembled_data_for_training_") : -len(".parquet")
+            ]
+            if (
+                path.startswith("assembled_data_for_training")
+                and path.endswith(".parquet")
+                and datetime_of_file > datetime
+            ):
+                datetime = path
+                data_path = os.path.join(processed_data_folder, path)
+        if data_path is None:
+            raise FileNotFoundError(
+                f"No processed data files found in '{processed_data_folder}'."
+            )
+
+    logging.info(f"Using processed data file: {data_path}")
+
+    return pandas.read_parquet(data_path)
 
 
 def _split_temporal(
@@ -125,18 +189,12 @@ def _split_temporal(
         index=indexes_not_for_training
     ).reset_index(drop=True)
 
-    logging.info(
-        "Dataset split complete: \n"
-        + "".join(
-            [
-                (
-                    f" - {key.capitalize()} set: {len(split_dataset[key])} records "
-                    f"({(len(split_dataset[key]) / len(processed_data)) * 100:.2f}%)"
-                )
-                for key in split_dataset.keys()
-            ]
+    logging.info("Dataset split complete:")
+    for key in split_dataset.keys():
+        logging.info(
+            f" - {key.capitalize()} set: {len(split_dataset[key])} records "
+            f"({(len(split_dataset[key]) / len(processed_data)) * 100:.2f}%)"
         )
-    )
 
     return split_dataset
 
@@ -237,17 +295,66 @@ def _calculate_mape_by_entity(
         data=list_mapes_values,
         index=list_entity_codes,
         name="MAPE",
-    )
+    ).rename_axis("Entity code")
 
     return mapes
 
 
-def _save_metrics(
+def _calculate_mapes(
+    model: XGBRegressor,
+    prepared_dataset: dict[str, dict[str, pandas.DataFrame | pandas.Series]],
+) -> pandas.DataFrame:
+    """
+    Calculate MAPE for training, validation, and testing datasets.
+
+    Parameters
+    ----------
+    model : XGBRegressor
+        The trained XGBoost model.
+    prepared_dataset :
+        dict[str, dict[str, pandas.DataFrame | pandas.Series]]
+        A dictionary containing the prepared datasets for training,
+        validation, and testing.
+
+    Returns
+    -------
+    mapes : pandas.DataFrame
+        DataFrame containing MAPE values for each entity across the
+        datasets.
+    """
+    # Initialize a DataFrame to hold MAPE results.
+    mapes = pandas.DataFrame()
+
+    for split in prepared_dataset.keys():
+        # Make predictions with the trained model.
+        predictions = model.predict(prepared_dataset[split]["features"])
+
+        # Calculate MAPE per entity for the current split.
+        mapes_of_split = _calculate_mape_by_entity(
+            predictions,
+            prepared_dataset[split]["target"],
+            prepared_dataset[split]["entities"],
+        )
+
+        # Store the MAPE values in the results DataFrame.
+        mapes[f"{split.capitalize()} MAPE"] = mapes_of_split
+
+        logging.info(
+            f"{split.capitalize()} set: "
+            f"Average MAPE = {mapes_of_split.mean():.4f}, "
+            f"Median MAPE = {mapes_of_split.median():.4f}, "
+            f"Std MAPE = {mapes_of_split.std():.4f}"
+        )
+
+    return mapes
+
+
+def _save_mapes(
     mapes: pandas.DataFrame,
     model_name_folder: str,
 ) -> None:
     """
-    Save metrics to CSV and parquet files.
+    Save MAPEs to CSV and parquet files.
 
     Parameters
     ----------
@@ -257,7 +364,7 @@ def _save_metrics(
         The folder name for the model results.
     """
     # Get the results folder path.
-    results_folder = utils.config.read_folders_structure()["results_folder"]
+    results_folder = utils.config.read_folders_structure()["ml_results_folder"]
 
     # Construct the model results folder path.
     model_results_folder = os.path.join(
@@ -276,12 +383,18 @@ def _save_metrics(
     mapes.to_csv(results_file_name + ".csv", index=True)
     mapes.to_parquet(results_file_name + ".parquet", index=True)
 
+    logging.info(
+        f"MAPEs saved to {results_file_name}.csv and "
+        f"{results_file_name}.parquet"
+    )
+
 
 def run_model_training(
     algorithm: str,
     feature_columns: list[str],
     target_column: str,
     categorical_features: list[str] | None = None,
+    use_validation: bool = False,
     data_path: str | None = None,
 ) -> None:
     """
@@ -303,47 +416,18 @@ def run_model_training(
 
     Raises
     ------
-    FileNotFoundError
-        If no processed data files are found.
     ValueError
         If an unsupported algorithm is specified.
     """
-    # Get the folder containing processed data files.
-    processed_data_folder = utils.config.read_folders_structure()[
-        "processed_data_folder"
-    ]
+    logging.info("Starting model training process.")
 
-    # If no data path is provided, find the latest processed data file.
-    if data_path is None:
-        # List all files in the processed data folder.
-        data_paths = os.listdir(processed_data_folder)
-
-        # Initialize a variable to hold the latest datetime and data
-        # path.
-        data_path = None
-        datetime = "00000000_000000"
-        for path in data_paths:
-            # Extract datetime from the file name.
-            datetime_of_file = path[
-                len("assembled_data_for_training_") : -len(".parquet")
-            ]
-            if (
-                path.startswith("assembled_data_for_training")
-                and path.endswith(".parquet")
-                and datetime_of_file > datetime
-            ):
-                datetime = path
-                data_path = os.path.join(processed_data_folder, path)
-        if data_path is None:
-            raise FileNotFoundError(
-                f"No processed data files found in '{processed_data_folder}'."
-            )
-
-    # Load the processed dataset.
-    processed_dataset = pandas.read_parquet(data_path)
+    # Read the preprocessed data.
+    processed_dataset = _read_preprocessed_data(data_path)
 
     # Split the dataset temporally.
-    split_dataset = _split_temporal(processed_dataset)
+    split_dataset = _split_temporal(
+        processed_dataset, use_validation=use_validation
+    )
 
     # Prepare features and target for each dataset.
     prepared_dataset = _prepare_features_and_target(
@@ -365,43 +449,22 @@ def run_model_training(
         # Save the trained model.
         ml_models.xgboost.save(model, model_name)
 
-        # Initialize a DataFrame to hold MAPE results.
-        mapes = pandas.DataFrame()
+        # Calculate MAPEs.
+        mapes = _calculate_mapes(model, prepared_dataset)
 
-        for split in prepared_dataset.keys():
-            # Make predictions with the trained model.
-            predictions = model.predict(prepared_dataset[split]["features"])
-
-            # Calculate MAPE per entity for the current split.
-            mapes_of_split = _calculate_mape_by_entity(
-                predictions,
-                prepared_dataset[split]["target"],
-                prepared_dataset[split]["entities"],
-            )
-
-            # Store the MAPE values in the results DataFrame.
-            mapes[f"MAPE_{split}"] = mapes_of_split
-
-            logging.info(
-                f"{split.capitalize()} set: "
-                f"Average MAPE = {mapes_of_split.mean():.4f}, "
-                f"Median MAPE = {mapes_of_split.median():.4f}, "
-                f"Std MAPE = {mapes_of_split.std():.4f}"
-            )
-
-        # Save the MAPE metrics.
-        _save_metrics(mapes, model_name)
+        # Save the MAPEs.
+        _save_mapes(mapes, model_name)
 
     else:
         raise ValueError(f"Unsupported algorithm: {algorithm}")
 
 
 if __name__ == "__main__":
-    # Read and check the configuration.
-    config = _read_and_check_configuration()
-
     # Set up the logging configuration.
     utils.config.set_up_logging("model_training")
+
+    # Read and check the configuration.
+    config = _read_and_check_configuration()
 
     # Run the data assembly process.
     run_model_training(
@@ -409,5 +472,6 @@ if __name__ == "__main__":
         config.features,
         config.target,
         config.categorical_features,
+        config.use_validation,
         config.data_path,
     )

@@ -7,6 +7,7 @@ Description:
     This module contains funtions to train and save an XGBoost model.
 """
 
+import logging
 import os
 from typing import Optional
 
@@ -81,6 +82,8 @@ def save(xgb_model: XGBRegressor, model_name: str) -> None:
     # Save the trained model.
     xgb_model.save_model(output_path)
 
+    logging.info(f"Trained model saved to {output_path}")
+
 
 def train(
     prepared_dataset: dict[str, dict[str, pandas.DataFrame | pandas.Series]],
@@ -100,6 +103,8 @@ def train(
     XGBRegressor
         Trained model.
     """
+    logging.info("Starting XGBoost model training.")
+
     # Read the algorithm configuration.
     config = _read_configuration()
 
@@ -127,5 +132,7 @@ def train(
         eval_set=eval_set,
         verbose=False,
     )
+
+    logging.info("XGBoost model training completed.")
 
     return xgb_model

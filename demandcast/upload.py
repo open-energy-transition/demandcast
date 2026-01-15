@@ -26,7 +26,7 @@ def _read_and_check_configuration() -> BaseModel:
 
     Returns
     -------
-    ConfigModel : BaseModel
+    config : BaseModel
         A Pydantic model containing the validated configuration.
 
     Raises
@@ -52,17 +52,23 @@ def _read_and_check_configuration() -> BaseModel:
 
     try:
         # Validate the configuration.
-        return ConfigModel(**raw_config)
+        config = ConfigModel(**raw_config)
+
+        logging.info("Configuration validated successfully:")
+        for field, value in config.model_dump().items():
+            logging.info(f" - {field}: {value}")
+
+        return config
     except ValidationError as e:
         raise ValueError(f"Configuration validation error: {e}") from e
 
 
 if __name__ == "__main__":
-    # Read and check the configuration.
-    config = _read_and_check_configuration()
-
     # Set up the logging configuration.
     utils.config.set_up_logging("upload_of_processed_electricity_demand_data")
+
+    # Read and check the configuration.
+    config = _read_and_check_configuration()
 
     # Get the date of upload.
     date_of_upload = pandas.Timestamp.today().strftime("%Y-%m-%d")

@@ -11,7 +11,7 @@ Description:
     data, and temperature data.
 """
 
-import os
+import logging
 from typing import Optional
 
 import retrievals.annual_electricity_demand_per_capita
@@ -33,7 +33,7 @@ def _read_and_check_configuration() -> BaseModel:
 
     Returns
     -------
-    ConfigModel : BaseModel
+    BaseModel
         A Pydantic model containing the validated configuration.
 
     Raises
@@ -54,10 +54,11 @@ def _read_and_check_configuration() -> BaseModel:
         scenario: Optional[str] = None
         weather_variable: Optional[str] = None
         climate_model: Optional[str] = None
+        electricity_data_source: Optional[str] = None
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(
-        os.path.basename(__file__),
+        "retrieve",
         "Retrieve the specified data for the specified countries and "
         "subdivisions.",
     )
@@ -77,29 +78,37 @@ if __name__ == "__main__":
     utils.config.set_up_logging(
         f"retrieval_of_{config.variable}"
         + (
-            f"_from_{config.data_source}"
-            if config.variable == "electricity_demand" and config.data_source
+            f"_from_{config.electricity_data_source}"
+            if config.variable == "electricity_demand"
+            and config.electricity_data_source
             else ""
         )
     )
 
+    logging.info("Configuration validated successfully:")
+    for field, value in config.model_dump().items():
+        logging.info(f" - {field}: {value}")
+
     if config.variable == "electricity_demand":
-        if not config.data_source:
+        if not config.electricity_data_source:
             raise ValueError(
                 "The data source must be specified for the retrieval of "
                 "electricity demand data."
             )
 
-        if config.data_source not in utils.entities.read_data_sources():
+        if (
+            config.electricity_data_source
+            not in utils.entities.read_data_sources()
+        ):
             raise ValueError(
-                f"The specified data source '{config.data_source}' is not "
+                f"The specified data source '{config.electricity_data_source}' is not "
                 "recognized. Valid data sources are: "
                 f"{utils.entities.read_data_sources()}."
             )
 
         # Run the data retrieval for electricity demand.
         retrievals.electricity_demand.run_data_retrieval(
-            config.data_source,
+            config.electricity_data_source,
             config.code,
             config.file,
         )
