@@ -12,6 +12,11 @@
 # - temperature.
 variable: electricity_demand
 
+# OPTIONAL - REQUIRED for electricity_demand variable.
+# The acronym of the data source as defined in the retrieval
+# modules (example: "entsoe").
+electricity_data_source:
+
 # OPTIONAL.
 # The ISO Alpha-3 code (example: "FRA") or a combination of ISO
 # Alpha-3 code and subdivision code (example: "USA_CAL").
@@ -46,8 +51,3 @@ weather_variable: temperature
 # OPTIONAL.
 # The climate model for the weather data to be retrieved.
 climate_model:
-
-# REQUIRED for electricity_demand variable.
-# The acronym of the data source as defined in the retrieval
-# modules (example: "entsoe").
-electricity_data_source:

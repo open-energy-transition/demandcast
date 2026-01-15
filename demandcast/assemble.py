@@ -124,7 +124,6 @@ def _read_and_process_entity_files(
     filenames: str | list[str],
     entity_code: str,
     numeric_columns: list[str],
-    resample_to_hourly: bool = False,
 ) -> pandas.DataFrame | None:
     """
     Read a parquet file and add entity code column.
@@ -139,8 +138,6 @@ def _read_and_process_entity_files(
         Entity code to add to the dataframe.
     numeric_columns : list[str]
         List of columns to convert to numeric.
-    resample_to_hourly : bool
-        Whether to resample the data to hourly frequency.
 
     Returns
     -------
@@ -185,14 +182,16 @@ def _read_and_process_entity_files(
     # Drop NaN values that may have resulted from coercion.
     entity_data = entity_data.dropna()
 
-    if resample_to_hourly:
-        # Resample to hourly frequency by taking the mean.
-        entity_data = entity_data.resample(
-            "1h", label="right", closed="right"
-        ).mean()
+    # Resample to hourly frequency by taking the mean. It is needed to
+    # do it on all variables to ensure consistent timestamps. For
+    # instance, some entities may have timestamps at the half hour due
+    # to the timezone conversion.
+    entity_data = entity_data.resample(
+        "1h", label="right", closed="right"
+    ).mean()
 
-        # Drop any rows with NaN values after resampling.
-        entity_data = entity_data.dropna()
+    # Drop any rows with NaN values after resampling.
+    entity_data = entity_data.dropna()
 
     # Add entity code column and reset index.
     entity_data["Entity code"] = entity_code
@@ -282,7 +281,6 @@ def _load_electricity_demand(
             relevant_file,
             entity_code,
             numeric_columns=["Load (MW)"],
-            resample_to_hourly=True,
         )
 
         if entity_data is None:
@@ -294,6 +292,10 @@ def _load_electricity_demand(
         )
 
     logging.info("Electricity demand data loaded successfully.")
+    logging.info(
+        "Loaded electricity demand data for "
+        f"{len(electricity_demand['Entity code'].unique())} entities."
+    )
 
     return electricity_demand
 
@@ -455,6 +457,11 @@ def _load_annual_electricity_demand_per_capita(
     logging.info(
         "Annual electricity demand per capita data loaded successfully."
     )
+    logging.info(
+        "Loaded annual electricity demand per capita data for "
+        f"{len(annual_electricity_demand_per_capita['Entity code'].unique())} "
+        "entities."
+    )
 
     return annual_electricity_demand_per_capita
 
@@ -490,6 +497,10 @@ def _load_gdp_ppp_per_capita(
     )
 
     logging.info("GDP PPP per capita data loaded successfully.")
+    logging.info(
+        "Loaded GDP PPP per capita data for "
+        f"{len(gdp_ppp_per_capita['Entity code'].unique())} entities."
+    )
 
     return gdp_ppp_per_capita
 
@@ -525,6 +536,10 @@ def _load_population(
     )
 
     logging.info("Population data loaded successfully.")
+    logging.info(
+        "Loaded population data for "
+        f"{len(population['Entity code'].unique())} entities."
+    )
 
     return population
 
@@ -574,6 +589,10 @@ def _load_temperature(
     )
 
     logging.info("Temperature data loaded successfully.")
+    logging.info(
+        "Loaded temperature data for "
+        f"{len(temperature['Entity code'].unique())} entities."
+    )
 
     return temperature
 
@@ -593,13 +612,23 @@ def _merge_datasets(
 
     Returns
     -------
-    pandas.DataFrame
+    merged_dataset : pandas.DataFrame
         Merged dataset.
     """
-    return reduce(
+    # Merge all datasets using reduce.
+    merged_dataset = reduce(
         lambda left, right: pandas.merge(left, right, on=on),
         datasets,
     )
+
+    logging.info(f"Merged {len(datasets)} datasets successfully.")
+    logging.info(
+        f"Merged dataset contains {len(merged_dataset)} rows, "
+        f"{len(merged_dataset.columns)} columns, and "
+        f"{len(merged_dataset['Entity code'].unique())} entities."
+    )
+
+    return merged_dataset
 
 
 def _calculate_load_fraction(
@@ -718,8 +747,8 @@ def run_data_assemply(
 
     # Merge datasets on common columns.
     merged_data = _merge_datasets(
-        datasets=datasets_to_merge,
-        on=["Time (UTC)", "Entity code"],
+        datasets_to_merge,
+        ["Time (UTC)", "Entity code"],
     )
 
     if target_use == "training":
