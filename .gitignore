@@ -1,6 +1,8 @@
 # Folders used for local data storage
 data/
 logs/
+ml_models/mapes/
+ml_models/trained_models/
 models/*/figures/
 models/*/models/
 models/*/predictions/
