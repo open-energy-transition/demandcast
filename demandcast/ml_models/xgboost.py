@@ -107,6 +107,30 @@ def save(xgb_model: XGBRegressor, model_name: str) -> None:
     logging.info(f"Trained model saved to {output_path}")
 
 
+def get_initialized_model() -> XGBRegressor:
+    """
+    Get an initialized XGBoost model based on the configuration.
+
+    Returns
+    -------
+    XGBRegressor
+        Initialized XGBoost model.
+    """
+    # Read the algorithm configuration.
+    config = _read_configuration()
+
+    # Initialize model with config parameters.
+    xgb_model = XGBRegressor(
+        random_state=config.random_state,
+        enable_categorical=config.enable_categorical,
+        eval_metric=config.evaluation_metric,
+    )
+
+    logging.info("XGBoost model initialized with configuration.")
+
+    return xgb_model
+
+
 def train(
     prepared_dataset: dict[str, dict[str, pandas.DataFrame | pandas.Series]],
 ) -> XGBRegressor:
@@ -127,15 +151,8 @@ def train(
     """
     logging.info("Starting XGBoost model training.")
 
-    # Read the algorithm configuration.
-    config = _read_configuration()
-
-    # Initialize model with config parameters.
-    xgb_model = XGBRegressor(
-        random_state=config.random_state,
-        enable_categorical=config.enable_categorical,
-        eval_metric=config.evaluation_metric,
-    )
+    # Get an initialized model.
+    xgb_model = get_initialized_model()
 
     # Prepare evaluation set if the validation dataset is provided.
     eval_set = None

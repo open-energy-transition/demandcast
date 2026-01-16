@@ -145,12 +145,10 @@ def _calculate_mapes(
         # Store the MAPE values in the results DataFrame.
         mapes[f"{split.capitalize()} MAPE"] = mapes_of_split
 
-        logging.info(
-            f"{split.capitalize()} set: "
-            f"Average MAPE = {mapes_of_split.mean():.4f}, "
-            f"Median MAPE = {mapes_of_split.median():.4f}, "
-            f"Std MAPE = {mapes_of_split.std():.4f}"
-        )
+        logging.info(f"{split.capitalize()} set:")
+        logging.info(f" - Average MAPE = {mapes_of_split.mean():.4f}")
+        logging.info(f" - Median MAPE = {mapes_of_split.median():.4f}")
+        logging.info(f" - Std MAPE = {mapes_of_split.std():.4f}")
 
     return mapes
 
