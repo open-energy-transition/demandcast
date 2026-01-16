@@ -97,17 +97,11 @@ def run_model_training(
     """
     logging.info("Starting model training process.")
 
-    # Read the assembled data.
-    assembled_dataset = utils.ml.read_assembled_data(data_path)
-
-    # Split the dataset temporally.
-    split_dataset = utils.ml.split_temporal(
-        assembled_dataset, reserve_testing_set, use_validation_set
-    )
-
-    # Prepare features and target for each dataset.
-    prepared_dataset = utils.ml.prepare_features_and_target(
-        split_dataset,
+    # Read and prepare the dataset.
+    prepared_dataset = utils.ml.prepare_dataset(
+        data_path,
+        reserve_testing_set,
+        use_validation_set,
         features,
         target,
         categorical_features,

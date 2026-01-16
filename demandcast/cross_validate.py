@@ -212,16 +212,11 @@ def run_model_cross_validation(
     """
     logging.info("Starting cross-validation process.")
 
-    # Read the assembled data.
-    assembled_dataset = utils.ml.read_assembled_data(data_path)
-
-    # Split the dataset temporally. This step in this context is just to
-    # obtain the correct format; no actual splitting is done here.
-    split_dataset = utils.ml.split_temporal(assembled_dataset, False, False)
-
-    # Prepare features and target.
-    prepared_dataset = utils.ml.prepare_features_and_target(
-        split_dataset,
+    # Read and prepare the dataset.
+    prepared_dataset = utils.ml.prepare_dataset(
+        data_path,
+        False,
+        False,
         features,
         target,
         categorical_features,
