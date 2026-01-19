@@ -40,6 +40,7 @@ def read_and_check_ml_configuration() -> BaseModel:
         features: list[str]
         target: str
         splitter: str
+        time: str
         categorical_features: Optional[list[str]] = None
         scaling_variables: Optional[list[str]] = None
 
@@ -274,6 +275,7 @@ def _split_in_groups(
     group_column: str,
     feature_columns: list[str],
     target_column: str,
+    time_column: str,
     categorical_feature_columns: list[str] | None = None,
     scaling_variable_columns: list[str] | None = None,
     target: bool = True,
@@ -291,6 +293,8 @@ def _split_in_groups(
         List of feature column names.
     target_column : str
         Target column name.
+    time_column : str
+        The column name representing the time variable.
     categorical_feature_columns : list[str] | None, optional
         List of categorical feature column names to convert to category
         dtype.
@@ -312,7 +316,7 @@ def _split_in_groups(
     """
     # Construct the list of columns to check for existence in the
     # dataset.
-    columns_to_check = feature_columns + [group_column]
+    columns_to_check = feature_columns + [group_column] + [time_column]
     if target:
         columns_to_check += [target_column]
     if categorical_feature_columns:
@@ -351,7 +355,11 @@ def _split_in_groups(
     split_dataset = {
         "features": features,
         "group": dataset[group_column].copy(),
+        "time": dataset[time_column].copy(),
     }
+
+    if additional_columns:
+        split_dataset["others"] = dataset[list(additional_columns)].copy()
 
     if target:
         # Extract target.
@@ -429,6 +437,7 @@ def prepare_dataset(
                 ml_config.group,
                 ml_config.features,
                 ml_config.target,
+                ml_config.time,
                 ml_config.categorical_features,
                 ml_config.scaling_variables,
                 target,
@@ -443,6 +452,7 @@ def prepare_dataset(
             ml_config.group,
             ml_config.features,
             ml_config.target,
+            ml_config.time,
             ml_config.categorical_features,
             ml_config.scaling_variables,
             target,

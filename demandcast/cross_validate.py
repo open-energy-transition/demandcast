@@ -157,7 +157,7 @@ def _save_mapes(
         The folder name for the model results.
     """
     # Get the results folder path.
-    results_folder = utils.config.read_folders_structure()["ml_results_folder"]
+    results_folder = utils.config.read_folders_structure()["ml_mapes_folder"]
 
     # Construct the model results folder path.
     model_results_folder = os.path.join(
@@ -219,7 +219,10 @@ def run_model_cross_validation(
     )
 
     # Define the subfolder name for saving results.
-    subfolder = f"cross_validation_{algorithm.lower()}_{pandas.Timestamp.now().strftime('%Y%m%d-%H%M%S')}"
+    subfolder = (
+        f"cross_validation_{algorithm.lower()}_"
+        f"{pandas.Timestamp.now().strftime('%Y%m%d-%H%M%S')}"
+    )
 
     # Save the MAPE values to CSV and parquet files.
     _save_mapes(

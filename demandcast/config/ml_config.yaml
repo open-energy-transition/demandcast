@@ -32,6 +32,10 @@ target: "Load (fraction of annual total)"
 # Variable used to split data into training, validation, and testing sets.
 splitter: "Local year"
 
+# REQUIRED.
+# The time variable in the dataset.
+time: "Time (UTC)"
+
 # OPTIONAL.
 # The categorical features used for training the model.
 categorical_features:

@@ -41,8 +41,8 @@ def _read_configuration() -> BaseModel:
 
     # Read the configuration.
     config_path = os.path.join(
-        os.path.abspath(os.path.dirname(__file__)),
-        "xgboost.yaml",
+        utils.config.read_folders_structure()["config_folder"],
+        "xgboost_config.yaml",
     )
 
     # Read the raw configuration.

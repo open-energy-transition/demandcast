@@ -2,7 +2,8 @@
 data/
 logs/
 ml_models/mapes/
-ml_models/trained_models/
+ml_models/trained/
+ml_models/forecasts/
 models/*/figures/
 models/*/models/
 models/*/predictions/

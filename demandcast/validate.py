@@ -155,7 +155,7 @@ def _calculate_mapes(
 
 def _save_mapes(
     mapes: pandas.DataFrame,
-    model_name_folder: str,
+    model_name: str,
 ) -> None:
     """
     Save MAPEs to CSV and parquet files.
@@ -165,15 +165,15 @@ def _save_mapes(
     mapes : pandas.DataFrame
         DataFrame containing MAPE values.
     model_name_folder : str
-        The folder name for the model results.
+        The name of the model to use in the folder name.
     """
     # Get the results folder path.
-    results_folder = utils.config.read_folders_structure()["ml_results_folder"]
+    results_folder = utils.config.read_folders_structure()["ml_mapes_folder"]
 
     # Construct the model results folder path.
     model_results_folder = os.path.join(
         results_folder,
-        model_name_folder,
+        f"validation_{model_name}",
     )
     os.makedirs(model_results_folder, exist_ok=True)
 
