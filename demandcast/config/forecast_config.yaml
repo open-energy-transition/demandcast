@@ -1,0 +1,9 @@
+# Configuration read by the forecast.py script.
+
+# OPTIONAL.
+# The machine learning algorithm to be used for forecasting.
+model_path:
+
+# OPTIONAL.
+# The path to the assembled data to be used for forecasting.
+data_path:

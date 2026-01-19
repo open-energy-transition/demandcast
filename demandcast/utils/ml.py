@@ -36,9 +36,12 @@ def read_and_check_ml_configuration() -> BaseModel:
     # Define the configuration model.
     class ConfigModel(BaseModel):
         algorithm: str
+        group: str
         features: list[str]
         target: str
+        splitter: str
         categorical_features: Optional[list[str]] = None
+        scaling_variables: Optional[list[str]] = None
 
     # Define the path to the features and target configuration file.
     config_path = os.path.join(
@@ -181,8 +184,8 @@ def _split_temporally(
     dataset: pandas.DataFrame,
     testing_set: bool,
     validation_set: bool,
-    entity_code_column: str = "Entity code",
-    year_column: str = "Local year",
+    group_column: str,
+    splitter_column: str,
 ) -> dict[str, pandas.DataFrame]:
     """
     Split the dataset into training, validation, and test sets.
@@ -195,11 +198,10 @@ def _split_temporally(
         Whether to have a testing set.
     validation_set : bool
         Whether to have a validation set.
-    entyty_column : str, optional
-        The column name representing the entity codes (default is
-        "Entity code").
-    year_column : str, optional
-        The column name representing the year (default is "Local year").
+    group_column : str
+        The column name representing the entity codes.
+    splitter_column : str
+        The column name used to split the data temporally.
 
     Returns
     -------
@@ -223,9 +225,9 @@ def _split_temporally(
     # the original dataset.
     indexes_not_for_training = []
 
-    for __, entity in dataset.groupby(entity_code_column):
+    for __, entity in dataset.groupby(group_column):
         # Determine the latest year for the current entity.
-        latest_year = entity[year_column].max()
+        latest_year = entity[splitter_column].max()
 
         if testing_set or validation_set:
             for split_name in split_dataset.keys():
@@ -237,7 +239,7 @@ def _split_temporally(
 
                 # Extract the data for the relevant year.
                 data_of_entity = entity[
-                    entity[year_column] == year_to_extract
+                    entity[splitter_column] == year_to_extract
                 ].copy()
 
                 # Append the indexes of the data to be removed later.
@@ -267,74 +269,115 @@ def _split_temporally(
     return split_dataset
 
 
-def _split_in_features_target_and_entity_codes(
+def _split_in_groups(
     dataset: pandas.DataFrame,
+    group_column: str,
     feature_columns: list[str],
     target_column: str,
     categorical_feature_columns: list[str] | None = None,
-    entity_code_column: str = "Entity code",
+    scaling_variable_columns: list[str] | None = None,
+    target: bool = True,
 ) -> dict[str, dict[str, pandas.DataFrame | pandas.Series]]:
     """
-    Extract features, target, and entity codes from the dataset.
+    Split the dataset into features, target, group, and scaling factor.
 
     Parameters
     ----------
     dataset : pandas.DataFrame
         The dataset to prepare.
+    group_column : str
+        The column name representing the entity codes.
     feature_columns : list[str]
         List of feature column names.
     target_column : str
-        Target column name (default: "Load (fraction of annual total)").
+        Target column name.
     categorical_feature_columns : list[str] | None, optional
         List of categorical feature column names to convert to category
         dtype.
-    entity_code_column : str, optional
-        The column name representing the entity codes (default is
-        "Entity code").
+    scaling_variable_columns : list[str] | None, optional
+        List of scaling variable column names.
+    target : bool, optional
+        Whether to include the target variable in the prepared dataset.
 
     Returns
     -------
-    dict[str, pandas.DataFrame | pandas.Series]
-        A dictionary containing the features DataFrame, target Series,
-        and entity codes Series.
+    split_dataset : dict[str, pandas.DataFrame | pandas.Series]
+        A dictionary containing the features, target, entity codes,
+        and scaling factors (if any).
+
+    Raises
+    ------
+    ValueError
+        If required columns are missing from the dataset.
     """
+    # Construct the list of columns to check for existence in the
+    # dataset.
+    columns_to_check = feature_columns + [group_column]
+    if target:
+        columns_to_check += [target_column]
+    if categorical_feature_columns:
+        columns_to_check += categorical_feature_columns
+    if scaling_variable_columns:
+        columns_to_check += scaling_variable_columns
+
+    # Check if all required columns are present in the dataset.
+    missing_columns = set(columns_to_check) - set(dataset.columns)
+    if missing_columns:
+        raise ValueError(
+            "The following required columns are missing from the "
+            f"dataset: {missing_columns}"
+        )
+
+    # Check if additional columns are present in the dataset.
+    additional_columns = set(dataset.columns) - set(columns_to_check)
+    if additional_columns:
+        logging.warning(
+            "The following additional columns are present in the "
+            f"dataset but not used: {additional_columns}"
+        )
+
     # Extract features.
     features = dataset[feature_columns].copy()
 
     if categorical_feature_columns:
+        # Convert values of categorical features to integer type and
+        # then to category dtype.
         for feature in categorical_feature_columns:
-            if feature in features.columns:
-                # Convert values of categorical features to integer
-                # type and then to category dtype.
-                features[feature] = (
-                    features[feature].astype(int).astype("category")
-                )
-            else:
-                logging.warning(
-                    f"Categorical feature '{feature}' not found in "
-                    f"the dataset columns."
-                )
+            features[feature] = (
+                features[feature].astype(int).astype("category")
+            )
 
-    # Return the prepared features, target, and entity codes.
-    return {
+    # Split the dataset into features and group.
+    split_dataset = {
         "features": features,
-        "target": dataset[target_column].copy(),
-        "entity_codes": dataset[entity_code_column].copy(),
+        "group": dataset[group_column].copy(),
     }
+
+    if target:
+        # Extract target.
+        split_dataset["target"] = dataset[target_column].copy()
+
+    if scaling_variable_columns:
+        # Calculate the scaling factor.
+        scaling_factor = 1.0
+        for scaling_variable in scaling_variable_columns:
+            scaling_factor *= dataset[scaling_variable]
+
+        # Add the scaling factor to the split dataset.
+        split_dataset["scaling_factor"] = scaling_factor
+
+    return split_dataset
 
 
 def prepare_dataset(
     data_path: str | None,
     testing_set: bool,
     validation_set: bool,
-    feature_columns: list[str],
-    target_column: str,
-    categorical_feature_columns: list[str] | None = None,
-    entity_code_column: str = "Entity code",
+    target: bool = True,
 ) -> dict[
     str,
-    pandas.DataFrame
-    | pandas.Series
+    pandas.Series
+    | pandas.DataFrame
     | dict[str, pandas.DataFrame | pandas.Series],
 ]:
     """
@@ -349,16 +392,8 @@ def prepare_dataset(
         Whether to have a testing set.
     validation_set : bool
         Whether to have a validation set.
-    feature_columns : list[str]
-        List of feature column names.
-    target_column : str
-        Target column name.
-    categorical_feature_columns : list[str] | None, optional
-        List of categorical feature column names to convert to category
-        dtype.
-    entity_code_column : str, optional
-        The column name representing the entity codes (default is
-        "Entity code").
+    target : bool, optional
+        Whether to include the target variable in the prepared dataset.
 
     Returns
     -------
@@ -366,12 +401,21 @@ def prepare_dataset(
         dict[str, pandas.DataFrame | pandas.Series]]
         A dictionary containing the prepared dataset(s).
     """
+    # Read and check machine learning configuration.
+    ml_config = read_and_check_ml_configuration()
+
     # Read the assembled data.
     dataset = _read_assembled_data(data_path)
 
     if testing_set or validation_set:
         # Split the dataset temporally.
-        split_dataset = _split_temporally(dataset, testing_set, validation_set)
+        split_dataset = _split_temporally(
+            dataset,
+            testing_set,
+            validation_set,
+            ml_config.group,
+            ml_config.splitter,
+        )
 
         # Initialize a dictionary to hold prepared datasets.
         prepared_dataset: dict[
@@ -380,24 +424,26 @@ def prepare_dataset(
 
         # Prepare features and target for each dataset.
         for split_name, dataset in split_dataset.items():
-            prepared_dataset[split_name] = (
-                _split_in_features_target_and_entity_codes(
-                    dataset,
-                    feature_columns,
-                    target_column,
-                    categorical_feature_columns,
-                    entity_code_column,
-                )
+            prepared_dataset[split_name] = _split_in_groups(
+                dataset,
+                ml_config.group,
+                ml_config.features,
+                ml_config.target,
+                ml_config.categorical_features,
+                ml_config.scaling_variables,
+                target,
             )
 
         return prepared_dataset
 
     else:
         # Prepare and return the dataset without splitting.
-        return _split_in_features_target_and_entity_codes(
+        return _split_in_groups(
             dataset,
-            feature_columns,
-            target_column,
-            categorical_feature_columns,
-            entity_code_column,
+            ml_config.group,
+            ml_config.features,
+            ml_config.target,
+            ml_config.categorical_features,
+            ml_config.scaling_variables,
+            target,
         )

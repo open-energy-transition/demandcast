@@ -179,8 +179,13 @@ def train(
 
 def predict(
     xgb_model: XGBRegressor,
-    prepared_dataset: dict[str, dict[str, pandas.DataFrame | pandas.Series]],
-) -> dict[str, pandas.Series]:
+    prepared_dataset: dict[
+        str,
+        pandas.Series
+        | pandas.DataFrame
+        | dict[str, pandas.DataFrame | pandas.Series],
+    ],
+) -> pandas.Series | dict[str, pandas.Series]:
     """
     Make predictions using the trained XGBoost model.
 
@@ -200,17 +205,25 @@ def predict(
     """
     logging.info("Making predictions with the trained XGBoost model.")
 
-    # Initialize predictions dictionary.
-    predictions: dict[str, pandas.Series] = {}
+    if "features" in prepared_dataset:
+        # The prepared_dataset is a single dataset, not split into
+        # training/validation/testing.
+        # Make predictions and return them.
+        return pandas.Series(xgb_model.predict(prepared_dataset["features"]))
 
-    for split_name, data in prepared_dataset.items():
-        # Make predictions for the current split.
-        preds = xgb_model.predict(data["features"])
+    else:
+        # Initialize predictions dictionary to store training,
+        # validation, and testing predictions.
+        predictions: dict[str, pandas.Series] = {}
 
-        predictions[split_name] = pandas.Series(preds)
+        for split_name, data in prepared_dataset.items():
+            # Make predictions for the current split.
+            preds = xgb_model.predict(data["features"])
 
-        logging.info(
-            f"Predictions made for {split_name} set: {len(preds)} records."
-        )
+            predictions[split_name] = pandas.Series(preds)
 
-    return predictions
+            logging.info(
+                f"Predictions made for {split_name} set: {len(preds)} records."
+            )
+
+        return predictions

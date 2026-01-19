@@ -139,7 +139,7 @@ def _calculate_mapes(
         mapes_of_split = _calculate_mape_by_entity(
             predictions[split],
             prepared_dataset[split]["target"],
-            prepared_dataset[split]["entity_codes"],
+            prepared_dataset[split]["group"],
         )
 
         # Store the MAPE values in the results DataFrame.
@@ -198,9 +198,6 @@ def run_model_validation(
     model_path: str | None,
     data_path: str | None,
     algorithm: str,
-    features: list[str],
-    target: str,
-    categorical_features: list[str] | None,
 ) -> None:
     """
     Run the model validation process.
@@ -217,17 +214,12 @@ def run_model_validation(
         in the default directory will be used.
     algorithm : str
         The machine learning algorithm to use for validation.
-    features : list[str]
-        List of feature column names.
-    target : str
-        Target column name.
-    categorical_features : list[str] | None
-        List of categorical feature names to convert to category dtype.
 
     Raises
     ------
     ValueError
-        If an unsupported algorithm is specified.
+        If an unsupported algorithm is specified or if there is a
+        mismatch between model features and dataset features.
     """
     logging.info("Starting model validation process.")
 
@@ -236,9 +228,6 @@ def run_model_validation(
         data_path,
         True,
         used_validation_set,
-        features,
-        target,
-        categorical_features,
     )
 
     if algorithm.lower() == "xgboost":
@@ -250,17 +239,29 @@ def run_model_validation(
         # Load the trained model.
         model = ml_models.xgboost.load(trained_model_path)
 
+        # Check that the model was trained with the same features of the
+        # prepared dataset.
+        data_features = prepared_dataset["training"][
+            "features"
+        ].columns.tolist()
+        model_features = model.feature_names_in_.tolist()
+        if data_features != model_features:
+            raise ValueError(
+                "The features used in the prepared dataset do not match "
+                "those used during model training."
+            )
+
         # Make predictions.
         predictions = ml_models.xgboost.predict(model, prepared_dataset)
 
-        # Calculate MAPEs.
-        mapes = _calculate_mapes(prepared_dataset, predictions)
-
-        # Save the MAPEs.
-        _save_mapes(mapes, os.path.basename(trained_model_path).split(".")[0])
-
     else:
         raise ValueError(f"Unsupported algorithm: {algorithm}")
+
+    # Calculate MAPEs.
+    mapes = _calculate_mapes(prepared_dataset, predictions)
+
+    # Save the MAPEs.
+    _save_mapes(mapes, os.path.basename(trained_model_path).split(".")[0])
 
 
 if __name__ == "__main__":
@@ -270,7 +271,7 @@ if __name__ == "__main__":
     # Read and check the configuration.
     config = _read_and_check_configuration()
 
-    # Read and check features and target configuration.
+    # Read and check machine learning configuration.
     ml_config = utils.ml.read_and_check_ml_configuration()
 
     # Run the model validation process.
@@ -279,7 +280,4 @@ if __name__ == "__main__":
         config.model_path,
         config.data_path,
         ml_config.algorithm,
-        ml_config.features,
-        ml_config.target,
-        ml_config.categorical_features,
     )

@@ -104,7 +104,7 @@ def _cross_validate(
         xgb_model,
         prepared_dataset["features"],
         prepared_dataset["target"],
-        groups=prepared_dataset["entity_codes"],
+        groups=prepared_dataset["group"],
         cv=LeaveOneGroupOut(),
         scoring=scoring_metric,
         return_train_score=True,
@@ -122,7 +122,7 @@ def _cross_validate(
     list_entity_codes = []
     for test_indices in cv_results["indices"]["test"]:
         list_entity_codes.append(
-            prepared_dataset["entity_codes"].iloc[test_indices[0]]
+            prepared_dataset["group"].iloc[test_indices[0]]
         )
     mapes["Entity Code"] = list_entity_codes
 
@@ -187,9 +187,6 @@ def run_model_cross_validation(
     n_jobs: int,
     data_path: str | None,
     algorithm: str,
-    features: list[str],
-    target: str,
-    categorical_features: list[str] | None,
 ) -> None:
     """
     Run cross-validation of the machine learning model and save results.
@@ -203,12 +200,6 @@ def run_model_cross_validation(
         in the default directory will be used.
     algorithm : str
         The machine learning algorithm to use for training.
-    features : list[str]
-        List of feature column names.
-    target : str
-        Target column name.
-    categorical_features : list[str] | None
-        List of categorical feature names to convert to category dtype.
     """
     logging.info("Starting cross-validation process.")
 
@@ -217,9 +208,6 @@ def run_model_cross_validation(
         data_path,
         False,
         False,
-        features,
-        target,
-        categorical_features,
     )
 
     # Run Leave-One-Group-Out cross-validation.
@@ -247,7 +235,7 @@ if __name__ == "__main__":
     # Read and check the configuration.
     config = _read_and_check_configuration()
 
-    # Read and check features and target configuration.
+    # Read and check machine learning configuration.
     ml_config = utils.ml.read_and_check_ml_configuration()
 
     # Run the model validation process.
@@ -256,7 +244,4 @@ if __name__ == "__main__":
         config.n_jobs,
         config.data_path,
         ml_config.algorithm,
-        ml_config.features,
-        ml_config.target,
-        ml_config.categorical_features,
     )

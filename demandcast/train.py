@@ -65,9 +65,6 @@ def run_model_training(
     use_validation_set: bool,
     data_path: str | None,
     algorithm: str,
-    features: list[str],
-    target: str,
-    categorical_features: list[str] | None,
 ) -> None:
     """
     Run the model training process.
@@ -83,12 +80,6 @@ def run_model_training(
         in the default directory will be used.
     algorithm : str
         The machine learning algorithm to use for training.
-    features : list[str]
-        List of feature column names.
-    target : str
-        Target column name.
-    categorical_features : list[str] | None
-        List of categorical feature names to convert to category dtype.
 
     Raises
     ------
@@ -102,9 +93,6 @@ def run_model_training(
         data_path,
         reserve_testing_set,
         use_validation_set,
-        features,
-        target,
-        categorical_features,
     )
 
     if algorithm.lower() == "xgboost":
@@ -129,7 +117,7 @@ if __name__ == "__main__":
     # Read and check the configuration.
     config = _read_and_check_configuration()
 
-    # Read and check features and target configuration.
+    # Read and check machine learning configuration.
     ml_config = utils.ml.read_and_check_ml_configuration()
 
     # Run the model training process.
@@ -138,7 +126,4 @@ if __name__ == "__main__":
         config.use_validation_set,
         config.data_path,
         ml_config.algorithm,
-        ml_config.features,
-        ml_config.target,
-        ml_config.categorical_features,
     )

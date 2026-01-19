@@ -5,6 +5,10 @@
 algorithm: XGBoost
 
 # REQUIRED.
+# The name of variable used to group data.
+group: "Entity code"
+
+# REQUIRED.
 # The features used for training the model.
 features:
   - "Local hour of the day"
@@ -22,7 +26,11 @@ features:
 
 # REQUIRED.
 # The target variable for the model.
-target: Load (fraction of annual total)
+target: "Load (fraction of annual total)"
+
+# REQUIRED.
+# Variable used to split data into training, validation, and testing sets.
+splitter: "Local year"
 
 # OPTIONAL.
 # The categorical features used for training the model.
@@ -31,3 +39,9 @@ categorical_features:
   - "Local weekend indicator"
   - "Local month of the year"
   - "Monthly average temperature rank - Top 1"
+
+# OPTIONAL.
+# Variables to scale the predictions.
+scaling_variables:
+  - "Annual electricity demand per capita (kWh)"
+  - "Population"
