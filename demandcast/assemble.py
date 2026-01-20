@@ -528,8 +528,9 @@ def _load_electricity_demand(
 
     Parameters
     ----------
-    selected_codes : list[str] | None
-        List of entity codes to load. If None, load all available codes.
+    file_path : str | None
+        Optional file path including entity codes to load. If None,
+        load all available codes.
 
     Returns
     -------
