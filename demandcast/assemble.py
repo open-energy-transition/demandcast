@@ -224,8 +224,6 @@ def _get_files_to_load(
     entity_codes: list[str],
     selected_scenario: str | None,
     selected_model: str | None,
-    use_glob: bool,
-    data_source: dict[str, str] | None,
 ) -> dict[str, list[str]]:
     """
     Get the list of files to load for a specific entity code.
@@ -240,17 +238,7 @@ def _get_files_to_load(
         Scenario to load. None for historical data.
     selected_model : str | None
         Model to load (e.g., climate model). None for historical data.
-    scenario_getter : Callable[[], dict[str, list[str]]] | None
-        Function that returns dict mapping models to their available
-        scenarios. Required when selected_model is used.
-    model_scenario_getter : Callable[[], dict[str, list[str]]] | None
-        Function that returns dict mapping models to their available
-        scenarios. Required when selected_model is used.
-    use_glob : bool
-        Whether to use glob pattern matching for file discovery.
     data_source : dict[str, str] | None
-        Dictionary mapping entity codes to their data source. Required
-        when loading electricity demand data.
 
     Returns
     -------
@@ -274,29 +262,44 @@ def _get_files_to_load(
             ]
         )
 
+        # For electricity demand, get the data source with the longest
+        # date range for each entity code.
+        data_source = _get_data_sources_with_longest_date_range(entity_codes)
+
     # Initialize an empty dictionary to hold the files to load.
     files_to_load = {}
 
     for entity_code in entity_codes:
-        if use_glob:
-            # When more than one file has to be considered, construct a
-            # glob pattern.
-            file_pattern = (
-                f"{entity_code}_"
-                + ("[0-9]" * 4)
-                + (f"_{selected_model}" if selected_model else "")
-                + (f"_{selected_scenario}" if selected_scenario else "")
-                + ".parquet"
-            )
+        # Define the file pattern based on the variable and parameters.
+        file_pattern = f"{entity_code}"
 
-            # Find matching files.
+        if variable == "electricity demand":
+            # For electricity demand, include the data source in the
+            # file name.
+            file_pattern += f"_{data_source[entity_code]}"
+        elif variable == "temperature":
+            # For temperature, add a glob pattern representing the year
+            # number because multiple files per entity code exist.
+            file_pattern += "_" + ("[0-9]" * 4)
+
+        # Append model and scenario if provided.
+        if selected_model:
+            file_pattern += f"_{selected_model}"
+        if selected_scenario:
+            file_pattern += f"_{selected_scenario}"
+
+        # Append the file extension.
+        file_pattern += ".parquet"
+
+        if variable == "temperature":
+            # Add all matching files for temperature.
             files_to_load[entity_code] = [
                 f for f in glob.glob(os.path.join(data_folder, file_pattern))
             ]
 
             if not files_to_load[entity_code]:
                 logging.warning(
-                    f"No files found for entity code {entity_code}"
+                    f"No temperature files found for entity code {entity_code}"
                     + (
                         f" with model {selected_model}"
                         if selected_model
@@ -310,26 +313,9 @@ def _get_files_to_load(
                     + "."
                 )
         else:
-            # Construct the relevant file name.
+            # Add a single file for other variables.
             files_to_load[entity_code] = [
-                os.path.join(
-                    data_folder,
-                    (
-                        f"{entity_code}"
-                        + (
-                            f"_{data_source[entity_code]}"
-                            if data_source
-                            else ""
-                        )
-                        + (f"_{selected_model}" if selected_model else "")
-                        + (
-                            f"_{selected_scenario}"
-                            if selected_scenario
-                            else ""
-                        )
-                        + ".parquet"
-                    ),
-                )
+                os.path.join(data_folder, file_pattern)
             ]
 
     return files_to_load
@@ -458,20 +444,6 @@ def _load_data(
         data_feature, file_path=file_path
     )
 
-    # For electricity demand, get the data source with the longest date
-    # range for each entity code.
-    if variable == "electricity demand":
-        data_source = _get_data_sources_with_longest_date_range(entity_codes)
-    else:
-        data_source = None
-
-    # For temperature, use glob pattern matching because multiple files
-    # per entity code exist (multiple years).
-    if variable == "temperature":
-        use_glob = True
-    else:
-        use_glob = False
-
     # Validate scenario and model combination.
     _validate_scenario_model_combination(
         selected_model,
@@ -486,8 +458,6 @@ def _load_data(
         entity_codes,
         selected_scenario,
         selected_model,
-        use_glob=use_glob,
-        data_source=data_source,
     )
 
     # Initialize an empty dataframe to hold all data.
@@ -497,7 +467,7 @@ def _load_data(
         entity_codes,
         desc=f"Loading {variable} data",
     ):
-        # Read and process the file.
+        # Load data for the current entity code.
         entity_data = _load_data_for_entity(
             entity_code,
             files_to_load[entity_code],
