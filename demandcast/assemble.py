@@ -282,7 +282,8 @@ def _get_files_to_load(
             # When more than one file has to be considered, construct a
             # glob pattern.
             file_pattern = (
-                f"{entity_code}_*"
+                f"{entity_code}_"
+                + ("[0-9]" * 4)
                 + (f"_{selected_model}" if selected_model else "")
                 + (f"_{selected_scenario}" if selected_scenario else "")
                 + ".parquet"
@@ -632,9 +633,9 @@ def _load_population(
 
     Returns
     -------
-    population : pandas.DataFrame
-        Concatenated dataframe with columns: Time (UTC),
-        Population, entity code.
+    pandas.DataFrame
+        Concatenated dataframe with columns: Time (UTC), Population,
+        entity code.
     """
     return _load_data(
         variable="population",
@@ -669,7 +670,7 @@ def _load_temperature(
 
     Returns
     -------
-    temperature : pandas.DataFrame
+    pandas.DataFrame
         Concatenated dataframe with temperature features and entity
         code.
     """
