@@ -682,6 +682,8 @@ def _merge_datasets(
     merged_dataset : pandas.DataFrame
         Merged dataset.
     """
+    logging.info(f"Merging {len(datasets)} datasets.")
+
     # Merge all datasets using reduce.
     merged_dataset = reduce(
         lambda left, right: pandas.merge(left, right, on=on),
@@ -694,6 +696,14 @@ def _merge_datasets(
         f"{len(merged_dataset.columns)} columns, and "
         f"{len(merged_dataset['Entity code'].unique())} entities."
     )
+    logging.info("Excluded entities during merging:")
+    for i, dataset in enumerate(datasets):
+        merged_entities = merged_dataset["Entity code"].unique()
+        original_entities = dataset["Entity code"].unique()
+        excluded_entities = set(original_entities) - set(merged_entities)
+        logging.info(
+            f" - Dataset {i + 1}: {excluded_entities if excluded_entities else 'None'}"
+        )
 
     return merged_dataset
 
@@ -725,7 +735,7 @@ def _calculate_load_fraction(
         amount_of_hours_tracked = len(group["Load (MW)"])
 
         # Get the year from the group name.
-        year = name[1]
+        year = int(name[1])
 
         # Calculate the total number of hours in the year.
         amount_of_hours_in_year = (
@@ -764,8 +774,15 @@ def run_data_assemply(
         Selected scenario for data retrieval, by default "".
     climate_model : str, optional
         Selected climate model for data retrieval, by default "".
-    file_path : str, optional
-        Path to the data files, by default "".
+    file : str | None, optional
+        Optional file path including entity codes to load. If None,
+        load all available codes.
+    start_year : int | None, optional
+        Start year for filtering the assembled data. If None, no
+        filtering is applied.
+    end_year : int | None, optional
+        End year for filtering the assembled data. If None, no
+        filtering is applied.
 
     Raises
     ------
