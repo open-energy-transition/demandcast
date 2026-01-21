@@ -483,7 +483,7 @@ def save_results(
         If the case is invalid.
     """
     # Check that the case is valid.
-    if case not in ["validation", "cross_validationforecasts"]:
+    if case not in ["validation", "cross_validation", "forecasts"]:
         raise ValueError(f"Invalid case: {case}")
 
     # Determine the content type for logging.
