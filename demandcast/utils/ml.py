@@ -125,9 +125,9 @@ def get_trained_model_path(model_path: str | None, algorithm_name: str) -> str:
     return model_path
 
 
-def _read_assembled_data(data_path: str | None) -> pandas.DataFrame:
+def get_assemble_data_path(data_path: str | None) -> str:
     """
-    Read the assembled data.
+    Get the path to the assembled data file.
 
     Parameters
     ----------
@@ -137,8 +137,8 @@ def _read_assembled_data(data_path: str | None) -> pandas.DataFrame:
 
     Returns
     -------
-    pandas.DataFrame
-        The assembled dataset.
+    data_path : str
+        The path to the assembled data file.
 
     Raises
     ------
@@ -178,7 +178,7 @@ def _read_assembled_data(data_path: str | None) -> pandas.DataFrame:
 
     logging.info(f"Using assembled data file: {data_path}")
 
-    return pandas.read_parquet(data_path)
+    return data_path
 
 
 def _split_temporally(
@@ -378,7 +378,7 @@ def _split_in_groups(
 
 
 def prepare_dataset(
-    data_path: str | None,
+    data_path: str,
     testing_set: bool,
     validation_set: bool,
     target: bool = True,
@@ -393,9 +393,8 @@ def prepare_dataset(
 
     Parameters
     ----------
-    data_path : str | None
-        The path to the assembled data file. If None, the latest file
-        in the default directory will be used.
+    data_path : str
+        The path to the assembled data file.
     testing_set : bool
         Whether to have a testing set.
     validation_set : bool
@@ -413,7 +412,7 @@ def prepare_dataset(
     ml_config = read_and_check_ml_configuration()
 
     # Read the assembled data.
-    dataset = _read_assembled_data(data_path)
+    dataset = pandas.read_parquet(data_path)
 
     if testing_set or validation_set:
         # Split the dataset temporally.
@@ -463,6 +462,7 @@ def save_results(
     case: str,
     output_dataset: pandas.DataFrame,
     trained_model_name: str,
+    assembled_data_file_name: str,
     file_name_prefix: str,
 ) -> None:
     """
@@ -483,10 +483,13 @@ def save_results(
         If the case is invalid.
     """
     # Check that the case is valid.
-    if case not in ["mapes", "forecasts"]:
+    if case not in ["validation", "cross_validationforecasts"]:
         raise ValueError(f"Invalid case: {case}")
 
-    logging.info(f"Saving model {case}.")
+    # Determine the content type for logging.
+    output_dataset_content = "MAPEs" if "validation" in case else "forecasts"
+
+    logging.info(f"Saving model {output_dataset_content}.")
 
     # Get the folder where to save the model results.
     results_folder = utils.config.read_folders_structure()[f"ml_{case}_folder"]
@@ -494,7 +497,8 @@ def save_results(
     # Construct the model results folder path.
     model_results_folder = os.path.join(
         results_folder,
-        f"{case}_with_{trained_model_name}",
+        f"with_{trained_model_name}",
+        f"using_{assembled_data_file_name}",
     )
     os.makedirs(model_results_folder, exist_ok=True)
 

@@ -45,9 +45,15 @@ ml_models_folder: &ml_models_folder ml_models
 trained_ml_models_folder:
   - *ml_models_folder
   - trained
-ml_mapes_folder:
+ml_validation_folder:
   - *ml_models_folder
-  - mapes
+  - results
+  - validation
+ml_cross_validation_folder:
+  - *ml_models_folder
+  - results
+  - cross_validation
 ml_forecasts_folder:
   - *ml_models_folder
+  - results
   - forecasts

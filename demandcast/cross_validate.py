@@ -142,46 +142,6 @@ def _cross_validate(
     return mapes
 
 
-def _save_mapes(
-    mapes: pandas.DataFrame,
-    subfolder: str,
-) -> None:
-    """
-    Save MAPEs to CSV and parquet files.
-
-    Parameters
-    ----------
-    mapes : pandas.DataFrame
-        DataFrame containing MAPE values.
-    model_name_folder : str
-        The folder name for the model results.
-    """
-    # Get the results folder path.
-    results_folder = utils.config.read_folders_structure()["ml_mapes_folder"]
-
-    # Construct the model results folder path.
-    model_results_folder = os.path.join(
-        results_folder,
-        subfolder,
-    )
-    os.makedirs(model_results_folder, exist_ok=True)
-
-    # Construct the results file name.
-    results_file_name = os.path.join(
-        model_results_folder,
-        f"all_{pandas.Timestamp.now().strftime('%Y%m%d-%H%M%S')}",
-    )
-
-    # Save the MAPE values to CSV and Parquet files.
-    mapes.to_csv(results_file_name + ".csv", index=True)
-    mapes.to_parquet(results_file_name + ".parquet", index=True)
-
-    logging.info(
-        f"MAPEs saved to {results_file_name}.csv and "
-        f"{results_file_name}.parquet"
-    )
-
-
 def run_model_cross_validation(
     scoring_metric: str,
     n_jobs: int,
@@ -203,6 +163,9 @@ def run_model_cross_validation(
     """
     logging.info("Starting cross-validation process.")
 
+    # Get the assembled data path.
+    data_path = utils.ml.get_assemble_data_path(data_path)
+
     # Read and prepare the dataset.
     prepared_dataset = utils.ml.prepare_dataset(
         data_path,
@@ -218,16 +181,13 @@ def run_model_cross_validation(
         algorithm,
     )
 
-    # Define the subfolder name for saving results.
-    subfolder = (
-        f"cross_validation_{algorithm.lower()}_"
-        f"{pandas.Timestamp.now().strftime('%Y%m%d-%H%M%S')}"
-    )
-
-    # Save the MAPE values to CSV and parquet files.
-    _save_mapes(
+    # Save the cross-validation results.
+    utils.ml.save_results(
+        "cross_validation",
         mapes,
-        subfolder,
+        algorithm.lower(),
+        os.path.basename(data_path).split(".")[0],
+        "all",
     )
 
 

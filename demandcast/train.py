@@ -88,6 +88,9 @@ def run_model_training(
     """
     logging.info("Starting model training process.")
 
+    # Get the assembled data path.
+    data_path = utils.ml.get_assemble_data_path(data_path)
+
     # Read and prepare the dataset.
     prepared_dataset = utils.ml.prepare_dataset(
         data_path,
@@ -95,14 +98,12 @@ def run_model_training(
         use_validation_set,
     )
 
+    # Define a model name based on timestamp.
+    model_name = f"{algorithm.lower()}_model_{pandas.Timestamp.now().strftime('%Y%m%d-%H%M%S')}"
+
     if algorithm.lower() == "xgboost":
         # Train the model.
         model = ml_models.xgboost.train(prepared_dataset)
-
-        # Define a model name based on timestamp.
-        model_name = (
-            f"xgboost_model_{pandas.Timestamp.now().strftime('%Y%m%d-%H%M%S')}"
-        )
 
         # Save the trained model.
         ml_models.xgboost.save(model, model_name)

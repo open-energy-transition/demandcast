@@ -130,6 +130,9 @@ def run_forecasting(
     """
     logging.info("Starting model validation process.")
 
+    # Get the assembled data path.
+    data_path = utils.ml.get_assemble_data_path(data_path)
+
     # Read and prepare the dataset.
     prepared_dataset: dict[str, pandas.Series | pandas.DataFrame] = (
         utils.ml.prepare_dataset(
@@ -178,6 +181,7 @@ def run_forecasting(
         "forecasts",
         output_dataset,
         os.path.basename(trained_model_path).split(".")[0],
+        os.path.basename(data_path).split(".")[0],
         "all",
     )
 
