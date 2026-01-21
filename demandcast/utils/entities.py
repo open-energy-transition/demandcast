@@ -485,7 +485,13 @@ def check_and_get_codes_with(
         # Check if the codes are available.
         for code in codes:
             if code not in all_codes:
-                logging.error(f"Code {code} is not available.")
+                if data_source is not None:
+                    logging.error(
+                        f"Code {code} is not available in data source "
+                        f"{data_source}."
+                    )
+                else:
+                    logging.error(f"Code {code} does not have {feature}.")
                 remaining_codes.remove(code)
 
         # Check if there are any codes left.
