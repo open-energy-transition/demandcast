@@ -60,6 +60,49 @@ def _read_and_check_configuration() -> BaseModel:
         raise ValueError(f"Configuration validation error: {e}") from e
 
 
+def _construct_output_dataset(
+    prepared_dataset: dict[str, pandas.Series | pandas.DataFrame],
+    predictions: pandas.Series,
+) -> pandas.DataFrame:
+    """
+    Construct the output dataset containing forecasts.
+
+    Parameters
+    ----------
+    prepared_dataset : dict[str, pandas.Series | pandas.DataFrame]
+        The prepared dataset containing features and other relevant
+        data.
+    predictions : pandas.Series
+        The predicted values from the model.
+
+    Returns
+    -------
+    output_dataset : pandas.DataFrame
+        The output dataset with forecasts.
+    """
+    # Scale the prodictions to MW using the annual electricity demand
+    # per capita (kWh) and population.
+    predictions = predictions * prepared_dataset["scaling_factor"] / 1000
+
+    # Construct the output dataset.
+    output_dataset = prepared_dataset["time"].copy()
+    output_dataset = pandas.concat(
+        [output_dataset, prepared_dataset["group"]], axis=1
+    )
+    output_dataset = pandas.concat(
+        [output_dataset, prepared_dataset["features"]], axis=1
+    )
+    if "others" in prepared_dataset:
+        output_dataset = pandas.concat(
+            [output_dataset, prepared_dataset["others"]], axis=1
+        )
+    output_dataset = pandas.concat(
+        [output_dataset, predictions.rename("Forecast load (MW)")], axis=1
+    )
+
+    return output_dataset
+
+
 def run_forecasting(
     model_path: str | None,
     data_path: str | None,
@@ -124,46 +167,18 @@ def run_forecasting(
     else:
         raise ValueError(f"Unsupported algorithm: {algorithm}")
 
-    # Scale the prodictions to MW using the annual electricity demand
-    # per capita (kWh) and population.
-    predictions = predictions * prepared_dataset["scaling_factor"] / 1000
-
     # Construct the output dataset.
-    output_dataset = prepared_dataset["time"].copy()
-    output_dataset = pandas.concat(
-        [output_dataset, prepared_dataset["group"]], axis=1
-    )
-    output_dataset = pandas.concat(
-        [output_dataset, prepared_dataset["features"]], axis=1
-    )
-    if "others" in prepared_dataset:
-        output_dataset = pandas.concat(
-            [output_dataset, prepared_dataset["others"]], axis=1
-        )
-    output_dataset = pandas.concat(
-        [output_dataset, predictions.rename("Forecast load (MW)")], axis=1
+    output_dataset = _construct_output_dataset(
+        prepared_dataset,
+        predictions,
     )
 
-    # Get the folder where to save the forecasts.
-    forecasts_folder = utils.config.read_folders_structure()[
-        "ml_forecasts_folder"
-    ]
-
-    # Construct the forecasts file path.
-    forecasts_file_path = os.path.join(
-        forecasts_folder,
-        f"forecasts_{algorithm.lower()}_"
-        f"{pandas.Timestamp.now().strftime('%Y%m%d-%H%M%S')}",
-    )
-    os.makedirs(forecasts_folder, exist_ok=True)
-
-    # Save the results to CSV and Parquet files.
-    output_dataset.to_csv(forecasts_file_path + ".csv", index=False)
-    output_dataset.to_parquet(forecasts_file_path + ".parquet", index=False)
-
-    logging.info(
-        f"Forecasts saved successfully to: {forecasts_file_path}.csv and "
-        f"{forecasts_file_path}.parquet"
+    # Save the output dataset.
+    utils.ml.save_results(
+        "forecasts",
+        output_dataset,
+        os.path.basename(trained_model_path).split(".")[0],
+        "all",
     )
 
 

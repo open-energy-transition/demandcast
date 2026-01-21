@@ -153,46 +153,6 @@ def _calculate_mapes(
     return mapes
 
 
-def _save_mapes(
-    mapes: pandas.DataFrame,
-    model_name: str,
-) -> None:
-    """
-    Save MAPEs to CSV and parquet files.
-
-    Parameters
-    ----------
-    mapes : pandas.DataFrame
-        DataFrame containing MAPE values.
-    model_name_folder : str
-        The name of the model to use in the folder name.
-    """
-    # Get the results folder path.
-    results_folder = utils.config.read_folders_structure()["ml_mapes_folder"]
-
-    # Construct the model results folder path.
-    model_results_folder = os.path.join(
-        results_folder,
-        f"validation_{model_name}",
-    )
-    os.makedirs(model_results_folder, exist_ok=True)
-
-    # Construct the results file name.
-    results_file_name = os.path.join(
-        model_results_folder,
-        f"all_{pandas.Timestamp.now().strftime('%Y%m%d-%H%M%S')}",
-    )
-
-    # Save the MAPE values to CSV and Parquet files.
-    mapes.to_csv(results_file_name + ".csv", index=True)
-    mapes.to_parquet(results_file_name + ".parquet", index=True)
-
-    logging.info(
-        f"MAPEs saved to {results_file_name}.csv and "
-        f"{results_file_name}.parquet"
-    )
-
-
 def run_model_validation(
     used_validation_set: bool,
     model_path: str | None,
@@ -261,7 +221,12 @@ def run_model_validation(
     mapes = _calculate_mapes(prepared_dataset, predictions)
 
     # Save the MAPEs.
-    _save_mapes(mapes, os.path.basename(trained_model_path).split(".")[0])
+    utils.ml.save_results(
+        "mapes",
+        mapes,
+        os.path.basename(trained_model_path).split(".")[0],
+        "all",
+    )
 
 
 if __name__ == "__main__":

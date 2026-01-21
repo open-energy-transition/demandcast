@@ -457,3 +457,59 @@ def prepare_dataset(
             ml_config.scaling_variables,
             target,
         )
+
+
+def save_results(
+    case: str,
+    output_dataset: pandas.DataFrame,
+    trained_model_name: str,
+    file_name_prefix: str,
+) -> None:
+    """
+    Save the model results to CSV and Parquet files.
+
+    Parameters
+    ----------
+    output_dataset : pandas.DataFrame
+        The dataset containing the model results to save.
+    trained_model_name : str
+        The name of the trained model used for obtaining the results.
+    case : str
+        The case of the results.
+
+    Raises
+    ------
+    ValueError
+        If the case is invalid.
+    """
+    # Check that the case is valid.
+    if case not in ["mapes", "forecasts"]:
+        raise ValueError(f"Invalid case: {case}")
+
+    logging.info(f"Saving model {case}.")
+
+    # Get the folder where to save the model results.
+    results_folder = utils.config.read_folders_structure()[f"ml_{case}_folder"]
+
+    # Construct the model results folder path.
+    model_results_folder = os.path.join(
+        results_folder,
+        f"{case}_with_{trained_model_name}",
+    )
+    os.makedirs(model_results_folder, exist_ok=True)
+
+    # Construct the results file name.
+    results_file_name = os.path.join(
+        model_results_folder,
+        f"{file_name_prefix}_"
+        f"{pandas.Timestamp.now().strftime('%Y%m%d-%H%M%S')}",
+    )
+
+    # Save the results to CSV and Parquet files.
+    output_dataset.to_csv(results_file_name + ".csv", index=False)
+    output_dataset.to_parquet(results_file_name + ".parquet", index=False)
+
+    logging.info(
+        f"Model {case} saved to {results_file_name}.csv and "
+        f"{results_file_name}.parquet"
+    )
