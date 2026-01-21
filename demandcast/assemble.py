@@ -386,6 +386,11 @@ def _load_data_for_entity(
     # Drop any rows with NaN values after resampling.
     entity_data = entity_data.dropna()
 
+    # Keep only rows with positive values in the specified numeric
+    # columns.
+    for column in numeric_columns:
+        entity_data = entity_data[entity_data[column] > 0]
+
     # Add entity code column and reset index.
     entity_data["Entity code"] = entity_code
     entity_data = entity_data.reset_index()

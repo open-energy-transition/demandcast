@@ -109,9 +109,7 @@ def run_forecasting(
         # Check that the model was trained with the same features of the
         # prepared dataset.
         data_features = prepared_dataset["features"].columns.tolist()
-        print(prepared_dataset["features"].columns)
         model_features = model.feature_names_in_.tolist()
-        print(model.feature_names_in_)
         if data_features != model_features:
             raise ValueError(
                 "The features used in the prepared dataset do not match "
