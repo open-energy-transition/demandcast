@@ -759,7 +759,10 @@ def run_data_retrieval(
                 result_directory,
                 f"{code}_{year}"
                 + (
-                    f"_{model}_{scenario.replace('-', '_').replace('.', '_')}"
+                    (
+                        f"_{model.replace('-', '_')}"
+                        f"_{scenario.replace('-', '_').replace('.', '_')}"
+                    )
                     if model and scenario
                     else ""
                 ),

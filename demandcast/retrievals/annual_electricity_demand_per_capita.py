@@ -293,9 +293,10 @@ def run_data_retrieval(
         if selected_future_years:
             for scenario in selected_scenarios:
                 if not os.path.exists(
-                    f"{file_path_without_ext}_{scenario}.parquet"
+                    f"{file_path_without_ext}_"
+                    f"{scenario.replace('-', '_')}.parquet"
                 ) or not os.path.exists(
-                    f"{file_path_without_ext}_{scenario}.csv"
+                    f"{file_path_without_ext}_{scenario.replace('-', '_')}.csv"
                 ):
                     logging.info(
                         f"Extracting future annual electricity demand per "

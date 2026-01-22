@@ -44,11 +44,14 @@ def _read_and_check_configuration() -> BaseModel:
     # Define the configuration model.
     class ConfigModel(BaseModel):
         target_use: str
-        scenario: Optional[str] = None
-        climate_model: Optional[str] = None
         file: Optional[str] = None
         start_year: Optional[int] = None
         end_year: Optional[int] = None
+        scenario_for_annual_electricity_demand_per_capita: Optional[str] = None
+        scenario_for_gdp_ppp_per_capita: Optional[str] = None
+        scenario_for_population: Optional[str] = None
+        scenario_for_temperature: Optional[str] = None
+        climate_model_for_temperature: Optional[str] = None
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(
@@ -284,9 +287,9 @@ def _get_files_to_load(
 
         # Append model and scenario if provided.
         if selected_model:
-            file_pattern += f"_{selected_model}"
+            file_pattern += f"_{selected_model.upper().replace('-', '_').replace('.', '_')}"
         if selected_scenario:
-            file_pattern += f"_{selected_scenario}"
+            file_pattern += f"_{selected_scenario.upper().replace('-', '_').replace('.', '_')}"
 
         # Append the file extension.
         file_pattern += ".parquet"
@@ -761,11 +764,14 @@ def _calculate_load_fraction(
 
 def run_data_assemply(
     target_use: str,
-    scenario: str | None = None,
-    climate_model: str | None = None,
     file: str | None = None,
     start_year: int | None = None,
     end_year: int | None = None,
+    scenario_for_annual_electricity_demand_per_capita: str | None = None,
+    scenario_for_gdp_ppp_per_capita: str | None = None,
+    scenario_for_population: str | None = None,
+    scenario_for_temperature: str | None = None,
+    climate_model_for_temperature: str | None = None,
 ) -> None:
     """
     Preprocess raw data and save the assembled dataset.
@@ -775,10 +781,6 @@ def run_data_assemply(
     target_use : str
         Target use for which the data is being assembled. It can be
         'training' or 'forecasting'.
-    scenario : str, optional
-        Selected scenario for data retrieval, by default "".
-    climate_model : str, optional
-        Selected climate model for data retrieval, by default "".
     file : str | None, optional
         Optional file path including entity codes to load. If None,
         load all available codes.
@@ -788,37 +790,57 @@ def run_data_assemply(
     end_year : int | None, optional
         End year for filtering the assembled data. If None, no
         filtering is applied.
+    scenario_for_annual_electricity_demand_per_capita : str | None,
+        optional
+        Scenario to load for annual electricity demand per capita. None
+        for historical data.
+    scenario_for_gdp_ppp_per_capita : str | None, optional
+        Scenario to load for GDP PPP per capita. None for historical
+        data.
+    scenario_for_population : str | None, optional
+        Scenario to load for population. None for historical data.
+    scenario_for_temperature : str | None, optional
+        Scenario to load for temperature. None for historical data.
+    climate_model_for_temperature : str | None, optional
+        Climate model to load for temperature. None for historical data.
 
     Raises
     ------
     ValueError
-        If target_use is not 'training' or 'forecasting'. If only one of
-        start_year or end_year is provided.
+        If target_use is not 'training' or 'forecasting' or if only one
+        of start_year or end_year is provided.
     """
-    # Check that the target use is valid.
+    # Check that the inputs are valid.
     if target_use not in ["training", "forecasting"]:
         raise ValueError(
             "target_use must be either 'training' or 'forecasting'"
+        )
+    if (start_year and not end_year) or (end_year and not start_year):
+        raise ValueError(
+            "Both start_year and end_year must be provided to filter "
+            "by year range."
         )
 
     logging.info(f"Starting data assembly for {target_use}.")
 
     # Load individual datasets.
-    annual_electricity_demand_per_capita = (
-        _load_annual_electricity_demand_per_capita(
-            target_use, selected_scenario=scenario, file_path=file
-        )
+    annual_electricity_demand_per_capita = _load_annual_electricity_demand_per_capita(
+        target_use,
+        selected_scenario=scenario_for_annual_electricity_demand_per_capita,
+        file_path=file,
     )
     gdp_ppp_per_capita = _load_gdp_ppp_per_capita(
-        target_use, selected_scenario=scenario, file_path=file
+        target_use,
+        selected_scenario=scenario_for_gdp_ppp_per_capita,
+        file_path=file,
     )
     population = _load_population(
-        target_use, selected_scenario=scenario, file_path=file
+        target_use, selected_scenario=scenario_for_population, file_path=file
     )
     temperature = _load_temperature(
         target_use,
-        selected_scenario=scenario,
-        selected_model=climate_model,
+        selected_scenario=scenario_for_temperature,
+        selected_model=climate_model_for_temperature,
         file_path=file,
     )
 
@@ -845,16 +867,11 @@ def run_data_assemply(
         merged_data = _calculate_load_fraction(merged_data)
 
     if start_year and end_year:
-        # Filter data for the specified year range.
-        merged_data = merged_data[
+        # Filter merged data for the specified year range.
+        merged_data = merged_data.loc[
             (merged_data["Local year"] >= start_year)
             & (merged_data["Local year"] <= end_year)
         ]
-    elif (start_year and not end_year) or (end_year and not start_year):
-        raise ValueError(
-            "Both start_year and end_year must be provided to filter "
-            "by year range."
-        )
 
     # Get the assembled data folder path.
     assembled_data_folder = utils.config.read_folders_structure()[
@@ -866,9 +883,7 @@ def run_data_assemply(
     output_path = os.path.join(
         assembled_data_folder,
         f"assembled_data_for_{target_use}_"
-        + (f"scenario_{scenario}_" if scenario else "")
-        + (f"model_{climate_model}_" if climate_model else "")
-        + f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
     )
 
     # Save the merged dataset to CSV and Parquet formats.
@@ -890,9 +905,12 @@ if __name__ == "__main__":
     # Run the data assembly process.
     run_data_assemply(
         config.target_use,
-        config.scenario,
-        config.climate_model,
         config.file,
         config.start_year,
         config.end_year,
+        config.scenario_for_annual_electricity_demand_per_capita,
+        config.scenario_for_gdp_ppp_per_capita,
+        config.scenario_for_population,
+        config.scenario_for_temperature,
+        config.climate_model_for_temperature,
     )
