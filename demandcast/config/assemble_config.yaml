@@ -6,14 +6,6 @@
 target_use: training
 
 # OPTIONAL.
-# Selected scenario for the retrieved data to load.
-selected_scenario:
-
-# OPTIONAL.
-# Selected climate model for the retrieved weather data to load.
-selected_model:
-
-# OPTIONAL.
 # The path to the yaml file containing the list of codes of the
 # countries and subdivisions of interest.
 file:
@@ -25,3 +17,23 @@ start_year:
 # OPTIONAL.
 # End year for a range of years of data to be assembled.
 end_year:
+
+# OPTIONAL.
+# Selected scenario for annual electricity demand per capita.
+scenario_for_annual_electricity_demand_per_capita:
+
+# OPTIONAL.
+# Selected scenario for GDP PPP per capita.
+scenario_for_gdp_ppp_per_capita:
+
+# OPTIONAL.
+# Selected scenario for population.
+scenario_for_population:
+
+# OPTIONAL.
+# Selected scenario for temperature.
+scenario_for_temperature:
+
+# OPTIONAL.
+# Selected climate model for temperature.
+climate_model_for_temperature:

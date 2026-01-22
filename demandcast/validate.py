@@ -150,6 +150,13 @@ def _calculate_mapes(
         logging.info(f" - Median MAPE = {mapes_of_split.median():.4f}")
         logging.info(f" - Std MAPE = {mapes_of_split.std():.4f}")
 
+    # Reset the index and reorder columns.
+    mapes = mapes.reset_index()
+    column_order = ["Entity code"] + [
+        f"{split.capitalize()} MAPE" for split in prepared_dataset.keys()
+    ]
+    mapes = mapes[column_order]
+
     return mapes
 
 

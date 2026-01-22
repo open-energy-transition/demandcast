@@ -15,6 +15,7 @@ import os
 from functools import reduce
 from typing import Callable, Optional
 
+import dask.dataframe
 import pandas
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
@@ -328,7 +329,7 @@ def _load_data_for_entity(
     entity_code: str,
     file_paths: list[str],
     numeric_columns: list[str],
-) -> pandas.DataFrame | None:
+) -> dask.dataframe.DataFrame | None:
     """
     Load and process data for a specific entity code.
 
@@ -343,13 +344,12 @@ def _load_data_for_entity(
 
     Returns
     -------
-    entity_data : pandas.DataFrame | None
+    entity_data : dask.dataframe.DataFrame | None
         Dataframe with processed data for the entity code, or None if
         no data was loaded.
     """
-    # Initialize a temporary dataframe to hold data for the current
-    # entity code.
-    entity_data = pandas.DataFrame()
+    # Initialize a list to hold the data for the entity.
+    entity_data = []
 
     for file_path in file_paths:
         if not os.path.exists(file_path):
@@ -363,10 +363,13 @@ def _load_data_for_entity(
         current_data = pandas.read_parquet(file_path)
 
         # Append to the entity dataframe.
-        entity_data = pandas.concat([entity_data, current_data])
+        entity_data.append(current_data)
 
-    # If no data was loaded, return None.
-    if entity_data.empty:
+    if entity_data:
+        # Concatenate all data for the entity.
+        entity_data = pandas.concat(entity_data)
+    else:
+        # If no data was loaded, return None.
         return None
 
     # Ensure specified columns are numeric.
@@ -394,11 +397,11 @@ def _load_data_for_entity(
     for column in numeric_columns:
         entity_data = entity_data[entity_data[column] > 0]
 
-    # Add entity code column and reset index.
+    # Add a column for the entity code.
     entity_data["Entity code"] = entity_code
     entity_data = entity_data.reset_index()
 
-    return entity_data
+    return dask.dataframe.from_pandas(entity_data)
 
 
 def _load_data(
@@ -410,7 +413,7 @@ def _load_data(
     scenario_getter: Callable[[], list[str]] | None = None,
     model_scenario_getter: Callable[[], dict[str, list[str]]] | None = None,
     file_path: str | None = None,
-) -> pandas.DataFrame:
+) -> dask.dataframe.DataFrame:
     """
     Load generic scenario-based data with common loading pattern.
 
@@ -436,7 +439,7 @@ def _load_data(
 
     Returns
     -------
-    result_data : pandas.DataFrame
+    result_data : dask.dataframe.DataFrame
         Concatenated dataframe with data from all entity codes.
     """
     logging.info(f"Loading {variable} data.")
@@ -468,8 +471,8 @@ def _load_data(
         selected_model,
     )
 
-    # Initialize an empty dataframe to hold all data.
-    result_data = pandas.DataFrame()
+    # Initialize a list to hold the loaded data.
+    result_data = []
 
     for entity_code in tqdm(
         entity_codes,
@@ -485,14 +488,15 @@ def _load_data(
         if entity_data is None:
             continue
 
-        # Append to the main dataframe.
-        result_data = pandas.concat(
-            [result_data, entity_data], ignore_index=True
-        )
+        # Append to the result list.
+        result_data.append(entity_data)
+
+    # Concatenate all entity dataframes.
+    result_data = dask.dataframe.concat(result_data)
 
     logging.info(
         f"Loaded {variable} data for "
-        f"{len(result_data['Entity code'].unique())} entities."
+        f"{len(result_data['Entity code'].unique())} entities successfully."
     )
 
     return result_data
@@ -500,7 +504,7 @@ def _load_data(
 
 def _load_electricity_demand(
     file_path: str | None = None,
-) -> pandas.DataFrame:
+) -> dask.dataframe.DataFrame:
     """
     Load and resample hourly electricity demand.
 
@@ -512,7 +516,7 @@ def _load_electricity_demand(
 
     Returns
     -------
-    pandas.DataFrame
+    dask.dataframe.DataFrame
         Concatenated dataframe with columns: Time (UTC), Load (MW),
         Entity code.
     """
@@ -528,7 +532,7 @@ def _load_annual_electricity_demand_per_capita(
     target_use: str,
     selected_scenario: str | None = None,
     file_path: str | None = None,
-) -> pandas.DataFrame:
+) -> dask.dataframe.DataFrame:
     """
     Load annual electricity demand per capita.
 
@@ -544,7 +548,7 @@ def _load_annual_electricity_demand_per_capita(
 
     Returns
     -------
-    pandas.DataFrame
+    dask.dataframe.DataFrame
         Concatenated dataframe with columns: Time (UTC),
         Annual electricity demand per capita (kWh), entity code.
     """
@@ -562,7 +566,7 @@ def _load_gdp_ppp_per_capita(
     target_use: str,
     selected_scenario: str | None = None,
     file_path: str | None = None,
-) -> pandas.DataFrame:
+) -> dask.dataframe.DataFrame:
     """
     Load GDP PPP per capita.
 
@@ -578,7 +582,7 @@ def _load_gdp_ppp_per_capita(
 
     Returns
     -------
-    pandas.DataFrame
+    dask.dataframe.DataFrame
         Dataframe with columns: Time (UTC), GDP PPP per capita
         (2021 international $), entity code.
     """
@@ -596,7 +600,7 @@ def _load_population(
     target_use: str,
     selected_scenario: str | None = None,
     file_path: str | None = None,
-) -> pandas.DataFrame:
+) -> dask.dataframe.DataFrame:
     """
     Load population.
 
@@ -612,7 +616,7 @@ def _load_population(
 
     Returns
     -------
-    pandas.DataFrame
+    dask.dataframe.DataFrame
         Concatenated dataframe with columns: Time (UTC), Population,
         entity code.
     """
@@ -631,7 +635,7 @@ def _load_temperature(
     selected_scenario: str | None = None,
     selected_model: str | None = None,
     file_path: str | None = None,
-) -> pandas.DataFrame:
+) -> dask.dataframe.DataFrame:
     """
     Load temperature.
 
@@ -649,7 +653,7 @@ def _load_temperature(
 
     Returns
     -------
-    pandas.DataFrame
+    dask.dataframe.DataFrame
         Concatenated dataframe with temperature features and entity
         code.
     """
@@ -673,28 +677,28 @@ def _load_temperature(
 
 
 def _merge_datasets(
-    datasets: list[pandas.DataFrame], on: list[str]
-) -> pandas.DataFrame:
+    datasets: list[dask.dataframe.DataFrame], on: list[str]
+) -> dask.dataframe.DataFrame:
     """
     Merge multiple datasets on specified columns.
 
     Parameters
     ----------
-    datasets : list[pandas.DataFrame]
+    datasets : list[dask.dataframe.DataFrame]
         List of dataframes to merge.
-    on : list[str]
-        List of columns to merge on.
 
     Returns
     -------
-    merged_dataset : pandas.DataFrame
+    merged_dataset : dask.dataframe.DataFrame
         Merged dataset.
     """
     logging.info(f"Merging {len(datasets)} datasets.")
 
-    # Merge all datasets using reduce.
+    # Merge all datasets on the specified columns.
     merged_dataset = reduce(
-        lambda left, right: pandas.merge(left, right, on=on),
+        lambda left, right: dask.dataframe.merge(
+            left, right, on=on, how="inner"
+        ),
         datasets,
     )
 
@@ -717,21 +721,23 @@ def _merge_datasets(
 
 
 def _calculate_load_fraction(
-    merged_dataset: pandas.DataFrame,
-) -> pandas.DataFrame:
+    merged_dataset: dask.dataframe.DataFrame,
+) -> dask.dataframe.DataFrame:
     """
     Calculate the fraction of load at each timestamp.
 
     Parameters
     ----------
-    merged_dataset : pandas.DataFrame
+    merged_dataset : dask.dataframe.DataFrame
         Input dataframe with load, entity code, and local year columns.
 
     Returns
     -------
-    merged_dataset : pandas.DataFrame
+    merged_dataset : dask.dataframe.DataFrame
         Dataframe with load fraction column added.
     """
+    logging.info("Calculating load fraction for each timestamp.")
+
     # Add a new column for the load fraction.
     merged_dataset["Load (fraction of annual total)"] = 0.0
 
@@ -758,6 +764,8 @@ def _calculate_load_fraction(
         merged_dataset.loc[group.index, "Load (fraction of annual total)"] = (
             load_fraction * (amount_of_hours_tracked / amount_of_hours_in_year)
         )
+
+    logging.info("Load fraction calculated successfully.")
 
     return merged_dataset
 
@@ -887,8 +895,8 @@ def run_data_assemply(
     )
 
     # Save the merged dataset to CSV and Parquet formats.
-    merged_data.to_csv(output_path + ".csv", index=False)
-    merged_data.to_parquet(output_path + ".parquet", index=False)
+    merged_data.to_csv(output_path + ".csv", index=False, single_file=True)
+    merged_data.compute().to_parquet(output_path + ".parquet", index=False)
 
     logging.info(
         f"Assembled data saved to {output_path}.csv and {output_path}.parquet"
