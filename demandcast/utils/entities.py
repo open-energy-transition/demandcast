@@ -86,22 +86,53 @@ def get_name_from_code(code: str) -> str:
                 iso_alpha_2_code
             )
     else:
-        # Reconstruct the subdivision code.
-        if "_" in code:
-            subdivision_code = iso_alpha_2_code + "-" + code.split("_")[1]
-        else:
-            subdivision_code = iso_alpha_2_code + "-" + code.split("-")[1]
+        # Try to get the data source that contains the provided code.
+        data_sources = get_electricity_demand_data_sources_containing_code(
+            code
+        )
 
-        # Get the subdivision information from the code.
-        subdivision = pycountry.subdivisions.get(code=subdivision_code)
+        if len(data_sources) > 0:
+            # If multiple data sources contain the code, use the first
+            # one.
+            data_source = data_sources[0]
 
-        # Handle if subdivision is a list or a single object.
-        if isinstance(subdivision, list):
-            raise ValueError(
-                "pycountry.subdivisions should not return a list."
-            )
+            # Get the information of the countries and subdivisions in
+            # the data source.
+            entities = _read_entities_info(data_source=data_source)
+
+            # Find the subdivision name from the data source file.
+            for entity in entities:
+                if entity["country_code"] + "_" + entity[
+                    "subdivision_code"
+                ] == code.replace("-", "_"):
+                    name = entity["subdivision_name"]
+                    break
+
         else:
-            name = subdivision.name
+            # If no data source contains the code, use pycountry to
+            # get the subdivision name.
+            # Reconstruct the subdivision code.
+            if "_" in code:
+                subdivision_code = iso_alpha_2_code + "-" + code.split("_")[1]
+            else:
+                subdivision_code = iso_alpha_2_code + "-" + code.split("-")[1]
+
+            # Get the subdivision information from the code.
+            subdivision = pycountry.subdivisions.get(code=subdivision_code)
+
+            # Handle if subdivision is a list or a single object.
+            if isinstance(subdivision, list):
+                raise ValueError(
+                    "pycountry.subdivisions should not return a list."
+                )
+            elif subdivision is None:
+                raise ValueError(
+                    f"Subdivision with code {subdivision_code} not found in "
+                    "pycountry or any of the yaml files of the electricity "
+                    "demand data sources."
+                )
+            else:
+                name = subdivision.name
 
     return name
 
