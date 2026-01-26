@@ -66,7 +66,7 @@ def download(variable: str) -> pandas.DataFrame:
         url = "https://api.worldbank.org/v2/en/indicator/NY.GDP.PCAP.PP.KD?downloadformat=csv"  # noqa: W505
     else:
         raise ValueError(
-            "The variable must be either "
+            "The variable must be 'population', "
             "'electricity_demand_per_capita' or 'gdp_ppp_per_capita'."
         )
 

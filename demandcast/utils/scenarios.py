@@ -8,6 +8,8 @@ Description:
     different future scenarios.
 """
 
+import logging
+
 import pandas
 
 
@@ -98,14 +100,14 @@ def _get_years(
         if start_year > end_year:
             raise ValueError("start_year must be less than end_year.")
         if start_year not in available_years:
-            raise ValueError(
-                "start_year must be one of the available years: "
-                f"{available_years}."
+            logging.warning(
+                "start_year is less than the earliest available year, "
+                f"which is {available_years[0]}."
             )
         if end_year not in available_years:
-            raise ValueError(
-                "end_year must be one of the available years: "
-                f"{available_years}."
+            logging.warning(
+                "end_year is greater than the latest available year, "
+                f"which is {available_years[-1]}."
             )
         # Use the range of years from start_year to end_year.
         years = [y for y in available_years if start_year <= y <= end_year]
