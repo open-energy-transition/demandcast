@@ -35,4 +35,4 @@ jobs:
 
       - name: "Run pytest with coverage report"
         run: uv run pytest --cov=utils --cov-report=term-missing --cov-fail-under=95
-        working-directory: ${{ matrix.working-directory }}
+        working-directory: ./demandcast
