@@ -498,10 +498,17 @@ def check_and_get_codes_with(
     if code is not None:
         # Check if the code is available.
         if code not in all_codes:
-            raise ValueError(
-                f"Code {code} is not available. Please choose one of the "
-                f"following: {', '.join(all_codes)}"
-            )
+            if data_source is not None:
+                raise ValueError(
+                    f"Code {code} is not available in data source "
+                    f"{data_source}. Please choose one of the following: "
+                    f"{', '.join(all_codes)}"
+                )
+            else:
+                raise ValueError(
+                    f"Code {code} does not have {feature}. Please choose "
+                    f"one of the following: {', '.join(all_codes)}"
+                )
         else:
             codes = [code]
 
