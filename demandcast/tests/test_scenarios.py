@@ -67,11 +67,10 @@ def test_get_years_errors():
     with pytest.raises(ValueError):
         utils.scenarios._get_years(None, None, 2019, available_years)
 
-    # start_year or end_year out of available years range.
-    with pytest.raises(ValueError):
-        utils.scenarios._get_years(None, 2017, 2019, available_years)
-    with pytest.raises(ValueError):
-        utils.scenarios._get_years(None, 2018, 2022, available_years)
+    # start_year or end_year out of available years range. This only
+    # raises a warning in the logger.
+    utils.scenarios._get_years(None, 2017, 2019, available_years)
+    utils.scenarios._get_years(None, 2018, 2022, available_years)
 
 
 def test_get_year_and_scenario_combinations():
@@ -214,27 +213,26 @@ def test_get_year_and_scenario_combinations_errors():
             available_scenarios,
         )
 
-    # start_year or end_year out of available years range.
-    with pytest.raises(ValueError):
-        utils.scenarios.get_year_and_scenario_combinations(
-            None,
-            2023,
-            2025,
-            available_historical_years,
-            available_future_years,
-            None,
-            available_scenarios,
-        )
-    with pytest.raises(ValueError):
-        utils.scenarios.get_year_and_scenario_combinations(
-            None,
-            2024,
-            2027,
-            available_historical_years,
-            available_future_years,
-            None,
-            available_scenarios,
-        )
+    # start_year or end_year out of available years range. This only
+    # raises a warning in the logger.
+    utils.scenarios.get_year_and_scenario_combinations(
+        None,
+        2023,
+        2025,
+        available_historical_years,
+        available_future_years,
+        None,
+        available_scenarios,
+    )
+    utils.scenarios.get_year_and_scenario_combinations(
+        None,
+        2024,
+        2027,
+        available_historical_years,
+        available_future_years,
+        None,
+        available_scenarios,
+    )
 
     # Scenario not in available scenarios.
     with pytest.raises(ValueError):
@@ -412,29 +410,28 @@ def test_get_year_model_and_scenario_combinations_errors():
             scenarios_for_model,
         )
 
-    # start_year or end_year out of available years range.
-    with pytest.raises(ValueError):
-        utils.scenarios.get_year_model_and_scenario_combinations(
-            None,
-            2023,
-            2025,
-            available_historical_years,
-            available_future_years,
-            None,
-            None,
-            scenarios_for_model,
-        )
-    with pytest.raises(ValueError):
-        utils.scenarios.get_year_model_and_scenario_combinations(
-            None,
-            2024,
-            2028,
-            available_historical_years,
-            available_future_years,
-            None,
-            None,
-            scenarios_for_model,
-        )
+    # start_year or end_year out of available years range. This only
+    # raises a warning in the logger.
+    utils.scenarios.get_year_model_and_scenario_combinations(
+        None,
+        2023,
+        2025,
+        available_historical_years,
+        available_future_years,
+        None,
+        None,
+        scenarios_for_model,
+    )
+    utils.scenarios.get_year_model_and_scenario_combinations(
+        None,
+        2024,
+        2028,
+        available_historical_years,
+        available_future_years,
+        None,
+        None,
+        scenarios_for_model,
+    )
 
     # Model or scenario not in available models/scenarios.
     with pytest.raises(ValueError):
@@ -480,9 +477,7 @@ def test_get_years_and_scenarios():
             2024: [5],
         },
         index=["AAA"],
-    ).T
-    data.index.name = "Year"
-    data = data.transpose()
+    )
 
     # Get years and scenarios.
     result = utils.scenarios.get_years_and_scenarios(
@@ -511,9 +506,7 @@ def test_get_years_and_scenarios():
             2023: [4],
         },
         index=["AAA"],
-    ).T
-    data.index.name = "Year"
-    data = data.transpose()
+    )
 
     # Get years and scenarios with missing historical years.
     result = utils.scenarios.get_years_and_scenarios(
@@ -542,9 +535,7 @@ def test_get_years_and_scenarios():
             2024: [5],
         },
         index=["AAA"],
-    ).T
-    data.index.name = "Year"
-    data = data.transpose()
+    )
 
     # Get years and scenarios using gridded data.
     result = utils.scenarios.get_years_and_scenarios(
@@ -560,5 +551,29 @@ def test_get_years_and_scenarios():
 
     assert result[0] == [2021, 2022, 2023, 2024]  # requested historical years
     assert result[1] == [2021, 2022, 2023, 2023]  # used historical years
+    assert result[2] == []  # future years
+    assert result[3] == []  # scenarios
+
+    # Define a simple DataFrame to simulate historical data up to the
+    # current year - 1.
+    data = pandas.DataFrame()
+    for year in range(2021, pandas.Timestamp.now().year):
+        data[year] = [year - 2000]
+    data.index = ["AAA"]
+
+    # Get years and scenarios.
+    result = utils.scenarios.get_years_and_scenarios(
+        iso_alpha_3_code="AAA",
+        year=None,
+        start_year=2021,
+        end_year=2022,
+        scenario=None,
+        available_scenarios=["rcp45", "rcp85"],
+        global_historical_data=data,
+        available_historical_years_of_gridded_data=[2020, 2023],
+    )
+
+    assert result[0] == [2021, 2022]  # requested historical years
+    assert result[1] == [2021, 2022]  # used historical years
     assert result[2] == []  # future years
     assert result[3] == []  # scenarios
