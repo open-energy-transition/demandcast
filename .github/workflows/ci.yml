@@ -34,5 +34,5 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: "Run pytest with coverage report"
-        run: uv run pytest --cov=demandcast/utils --cov-report=term-missing --cov-fail-under=95
+        run: uv run pytest --cov=utils --cov-report=term-missing --cov-fail-under=95
         working-directory: ${{ matrix.working-directory }}
