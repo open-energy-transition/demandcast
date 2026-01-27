@@ -230,9 +230,20 @@ def test_fetch_entsoe_demand():
         mock_client.return_value.query_load.return_value = pandas.DataFrame(
             {"Actual Load": mock_series}
         )
+
+        # Test fetching demand data for a valid country code.
         result = utils.fetcher.fetch_entsoe_demand(
             "dummy",
             "FRA",
+            pandas.Timestamp("2023-01-01"),
+            pandas.Timestamp("2023-01-02"),
+        )
+        assert isinstance(result, pandas.Series)
+
+        # Test with a country code that is added manually.
+        result = utils.fetcher.fetch_entsoe_demand(
+            "dummy",
+            "XKX",
             pandas.Timestamp("2023-01-01"),
             pandas.Timestamp("2023-01-02"),
         )
