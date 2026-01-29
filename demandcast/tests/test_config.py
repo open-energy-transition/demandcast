@@ -4,8 +4,7 @@ License: AGPL-3.0.
 
 Description:
 
-    This file contains unit tests for the directories module in the ETL
-    utility package.
+    This file contains unit tests for the config module.
 """
 
 import logging

@@ -129,7 +129,7 @@ def set_up_logging(process: str) -> None:
     """
     # Define the log file name.
     log_file_name = (
-        process + "_" + datetime.now().strftime("%Y%m%d_%H%M") + ".log"
+        process + "_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".log"
     )
 
     # Get the log files directory and create it if it does not exist.

@@ -4,8 +4,7 @@ License: AGPL-3.0.
 
 Description:
 
-    This file contains unit tests for the ml module in the ETL
-    utility package.
+    This file contains unit tests for the ml module.
 """
 
 from unittest.mock import Mock, mock_open, patch

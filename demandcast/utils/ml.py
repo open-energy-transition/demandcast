@@ -506,7 +506,7 @@ def save_results(
     results_file_name = os.path.join(
         model_results_folder,
         f"{file_name_prefix}_"
-        f"{pandas.Timestamp.now().strftime('%Y%m%d-%H%M%S')}",
+        f"{pandas.Timestamp.now().strftime('%Y%m%d_%H%M%S')}",
     )
 
     # Save the results to CSV and Parquet files.

@@ -4,9 +4,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This file contains unit tests to verify that the modules in the ETL
-    utility package for retrieving electricity demand have all essential
-    functions implemented.
+    This file contains unit tests to verify that the modules for
+    retrieving electricity demand have all essential functions
+    implemented.
 """
 
 import importlib

@@ -14,7 +14,7 @@ The `<type_of_plot>` argument specifies the type of plot you want to generate. A
 
 ## Maching learning model results
 
-The folder `ETL/mapes` contains CSV files with the Mean Absolute Percentage Error (MAPE) results of different versions of the machine learning models used for electricity demand forecasting. The MAPE is the difference between the predicted and actual electricity demand, expressed as a percentage of the actual demand. Each file corresponds to a specific model and entity group.
+The folders `ml_models/validation/` and `ml_models/cross_validation/` contain CSV files with the Mean Absolute Percentage Error (MAPE) results of different versions of the machine learning models used for electricity demand forecasting. The MAPE is the difference between the predicted and actual electricity demand, expressed as a percentage of the actual demand. Each file corresponds to a specific model and entity group.
 
 To plot the results, run:
 

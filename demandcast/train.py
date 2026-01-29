@@ -99,7 +99,10 @@ def run_model_training(
     )
 
     # Define a model name based on timestamp.
-    model_name = f"{algorithm.lower()}_model_{pandas.Timestamp.now().strftime('%Y%m%d-%H%M%S')}"
+    model_name = (
+        f"{algorithm.lower()}_model_"
+        f"{pandas.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
+    )
 
     if algorithm.lower() == "xgboost":
         # Train the model.

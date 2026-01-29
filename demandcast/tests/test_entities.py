@@ -4,8 +4,7 @@ License: AGPL-3.0.
 
 Description:
 
-    This file contains unit tests for the entities module in the ETL
-    utility package.
+    This file contains unit tests for the entities module.
 """
 
 import datetime
