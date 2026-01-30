@@ -748,25 +748,29 @@ def _calculate_load_fraction(
     groups = merged_dataset.groupby(["Entity code", "Local year"])
 
     # Compute the total annual load for each entity and year.
-    annual_load = groups.agg({"Load (MW)": 'sum'})["Load (MW)"]
+    annual_load = groups.agg({"Load (MW)": "sum"})["Load (MW)"]
 
     # Compute the amount of hours tracked in the dataset.
-    amount_of_hours_tracked = groups.agg({"Load (MW)": 'count'})["Load (MW)"]
+    amount_of_hours_tracked = groups.agg({"Load (MW)": "count"})["Load (MW)"]
 
     # Extract the year for each group.
-    years = groups.agg({"Local year": 'first'})["Local year"]
+    years = groups.agg({"Local year": "first"})["Local year"]
 
     # Define a boolean mask for leap years.
-    is_leap_year = (years%4 == 0) & ((years%100 != 0) | (years%400 == 0))
+    is_leap_year = (years % 4 == 0) & ((years % 100 != 0) | (years % 400 == 0))
 
     # Calculate the amount of hours in each year.
-    amount_of_hours_in_year = is_leap_year.map({True: 8784, False: 8760}, meta="int64")
+    amount_of_hours_in_year = is_leap_year.map(
+        {True: 8784, False: 8760}, meta="int64"
+    )
 
     # Calculate the factor to scale the load.
-    scaling_factor = (amount_of_hours_tracked
-                      / (amount_of_hours_in_year * annual_load)
-                      ).rename("Scaling factor").to_frame()
-    
+    scaling_factor = (
+        (amount_of_hours_tracked / (amount_of_hours_in_year * annual_load))
+        .rename("Scaling factor")
+        .to_frame()
+    )
+
     # Merge the scaling factor back into the merged dataset.
     merged_dataset = merged_dataset.merge(
         scaling_factor,
