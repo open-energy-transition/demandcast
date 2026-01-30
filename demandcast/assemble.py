@@ -726,6 +726,12 @@ def _calculate_load_fraction(
     """
     Calculate the fraction of load at each timestamp.
 
+    The load fraction is calculated as the load at each timestamp
+    divided by the total annual load for the corresponding entity and
+    year, adjusted for the amount of hours tracked in the dataset. The
+    function assumes that time is in hourly frequency. Changes should be
+    made if a different frequency is used.
+
     Parameters
     ----------
     merged_dataset : dask.dataframe.DataFrame
@@ -738,32 +744,43 @@ def _calculate_load_fraction(
     """
     logging.info("Calculating load fraction for each timestamp.")
 
-    # Add a new column for the load fraction.
-    merged_dataset["Load (fraction of annual total)"] = 0.0
+    # Define the groupby object for entity code and local year.
+    groups = merged_dataset.groupby(["Entity code", "Local year"])
 
-    for name, group in merged_dataset.groupby(["Entity code", "Local year"]):
-        # Calculate the total load for the year.
-        yearly_load = group["Load (MW)"].sum()
+    # Compute the total annual load for each entity and year.
+    annual_load = groups.agg({"Load (MW)": 'sum'})["Load (MW)"]
 
-        # Calculate the number of hours tracked in the year.
-        amount_of_hours_tracked = len(group["Load (MW)"])
+    # Compute the amount of hours tracked in the dataset.
+    amount_of_hours_tracked = groups.agg({"Load (MW)": 'count'})["Load (MW)"]
 
-        # Get the year from the group name.
-        year = int(name[1])
+    # Extract the year for each group.
+    years = groups.agg({"Local year": 'first'})["Local year"]
 
-        # Calculate the total number of hours in the year.
-        amount_of_hours_in_year = (
-            len(pandas.date_range(start=f"{year}-01-01", end=f"{year}-12-31"))
-            * 24
-        )
+    # Define a boolean mask for leap years.
+    is_leap_year = (years%4 == 0) & ((years%100 != 0) | (years%400 == 0))
 
-        # Calculate the load fraction.
-        load_fraction = group["Load (MW)"] / yearly_load
+    # Calculate the amount of hours in each year.
+    amount_of_hours_in_year = is_leap_year.map({True: 8784, False: 8760}, meta="int64")
 
-        # Adjust percentages to account for missing hours.
-        merged_dataset.loc[group.index, "Load (fraction of annual total)"] = (
-            load_fraction * (amount_of_hours_tracked / amount_of_hours_in_year)
-        )
+    # Calculate the factor to scale the load.
+    scaling_factor = (amount_of_hours_tracked
+                      / (amount_of_hours_in_year * annual_load)
+                      ).rename("Scaling factor").to_frame()
+    
+    # Merge the scaling factor back into the merged dataset.
+    merged_dataset = merged_dataset.merge(
+        scaling_factor,
+        on=["Entity code", "Local year"],
+        how="left",
+    )
+
+    # Calculate the load fraction.
+    merged_dataset["Load (fraction of annual total)"] = (
+        merged_dataset["Load (MW)"] * merged_dataset["Scaling factor"]
+    )
+
+    # Drop the scaling factor column.
+    merged_dataset = merged_dataset.drop(columns=["Scaling factor"])
 
     logging.info("Load fraction calculated successfully.")
 
@@ -865,20 +882,20 @@ def run_data_assemply(
         datasets_to_merge.append(_load_electricity_demand(file_path=file))
 
     # Merge datasets on common columns.
-    merged_data = _merge_datasets(
+    merged_dataset = _merge_datasets(
         datasets_to_merge,
         ["Time (UTC)", "Entity code"],
     )
 
     if target_use == "training":
         # Calculate load fraction for training data.
-        merged_data = _calculate_load_fraction(merged_data)
+        merged_dataset = _calculate_load_fraction(merged_dataset)
 
     if start_year and end_year:
         # Filter merged data for the specified year range.
-        merged_data = merged_data.loc[
-            (merged_data["Local year"] >= start_year)
-            & (merged_data["Local year"] <= end_year)
+        merged_dataset = merged_dataset.loc[
+            (merged_dataset["Local year"] >= start_year)
+            & (merged_dataset["Local year"] <= end_year)
         ]
 
     # Get the assembled data folder path.
@@ -895,8 +912,8 @@ def run_data_assemply(
     )
 
     # Save the merged dataset to CSV and Parquet formats.
-    merged_data.to_csv(output_path + ".csv", index=False, single_file=True)
-    merged_data.compute().to_parquet(output_path + ".parquet", index=False)
+    merged_dataset.to_csv(output_path + ".csv", index=False, single_file=True)
+    merged_dataset.compute().to_parquet(output_path + ".parquet", index=False)
 
     logging.info(
         f"Assembled data saved to {output_path}.csv and {output_path}.parquet"

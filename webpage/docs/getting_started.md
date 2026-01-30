@@ -51,141 +51,114 @@ Replace `<your_key>` with your actual API keys. You can obtain these keys by reg
 
 ---
 
-The following commands will execute the `demandcast/retrieve.py` script to retrieve different types of data. All parameters are configured through the `demandcast/config/retrieve_config.yaml` file. You can specify a custom config file using the `--config` argument. Please refer to the documentation of the retrieval modules for more details on configuration variables.
+In this example, we will retrieve data for four European countries (France, Germany, Italy, and Spain), train a model on data from 2020-2023, and then use it to forecast electricity demand for Spain in 2024. The following steps will guide you through the data retrieval process.
 
-### 2.1 Retrieve Electricity Demand
+### 2.1 Create a Country List File
 
-The following command retrieves electricity demand from all available data sources:
+First, create a YAML file listing all countries. Create a file named `demandcast/config/example_countries.yaml`:
+
+```yaml
+entities:
+  - country_name: France
+    country_code: FRA
+  - country_name: Germany
+    country_code: DEU
+  - country_name: Italy
+    country_code: ITA
+  - country_name: Spain
+    country_code: ESP
+```
+
+### 2.2 Retrieve Electricity Demand
+
+Retrieve historical electricity demand data for all four countries. Edit `demandcast/config/retrieve_config.yaml`:
+
+```yaml
+variable: electricity_demand
+electricity_data_source: entsoe
+file: config/example_countries.yaml
+```
+
+Then run:
 
 ```bash
 cd demandcast
 uv run retrieve.py
 ```
 
-To retrieve data for a specific country or data source, edit the `demandcast/config/retrieve_config.yaml` file:
+### 2.3 Retrieve Annual Electricity Demand per Capita
 
-```yaml
-variable: electricity_demand
-data_source: entsoe              # Specify data source
-code: DEU                        # Specify country code
-```
-
-Then run:
-
-```bash
-cd demandcast
-uv run retrieve.py --config config/retrieve_config.yaml
-```
-
-### 2.2 Retrieve Annual Electricity Demand per Capita
-
-To retrieve annual electricity demand per capita, configure the `demandcast/config/retrieve_config.yaml` file:
+Retrieve annual electricity demand per capita for all four countries from 2020 to 2024. Edit `demandcast/config/retrieve_config.yaml`:
 
 ```yaml
 variable: annual_electricity_demand_per_capita
-code: FRA                        # Specific country
-year: 2020                       # Specific year
-# Or use ranges:
-# start_year: 2015
-# end_year: 2020
-```
-
-For projected data, specify the scenario:
-
-```yaml
-variable: annual_electricity_demand_per_capita
-code: GBR
-year: 2030
-scenario: SSP2-Baseline
+file: config/example_countries.yaml
+start_year: 2020
+end_year: 2024
 ```
 
 Then run:
 
 ```bash
 cd demandcast
-uv run retrieve.py --config config/retrieve_config.yaml
+uv run retrieve.py
 ```
 
-### 2.3 Retrieve GDP PPP per Capita
+### 2.4 Retrieve GDP PPP per Capita
 
-To retrieve GDP PPP per capita, configure the `demandcast/config/retrieve_config.yaml` file:
+Retrieve GDP PPP per capita for all four countries from 2020 to 2024. Edit `demandcast/config/retrieve_config.yaml`:
 
 ```yaml
 variable: gdp_ppp_per_capita
-code: JPN
-year: 2019
-```
-
-For projected data:
-
-```yaml
-variable: gdp_ppp_per_capita
-code: CAN
-year: 2040
-scenario: SSP1
+file: config/example_countries.yaml
+start_year: 2020
+end_year: 2024
 ```
 
 Then run:
 
 ```bash
 cd demandcast
-uv run retrieve.py --config config/retrieve_config.yaml
+uv run retrieve.py
 ```
 
-### 2.4 Retrieve Population
+### 2.5 Retrieve Population
 
-To retrieve population data, configure the `demandcast/config/retrieve_config.yaml` file:
+Retrieve population data for all four countries from 2020 to 2024. Edit `demandcast/config/retrieve_config.yaml`:
 
 ```yaml
 variable: population
-code: IND
-year: 2015
-```
-
-For projected data:
-
-```yaml
-variable: population
-code: BRA
-year: 2050
-scenario: SSP3
+file: config/example_countries.yaml
+start_year: 2020
+end_year: 2024
 ```
 
 Then run:
 
 ```bash
 cd demandcast
-uv run retrieve.py --config config/retrieve_config.yaml
+uv run retrieve.py
 ```
 
-### 2.5 Retrieve Temperature
+### 2.6 Retrieve Temperature
 
-To retrieve temperature data, configure the `demandcast/config/retrieve_config.yaml` file:
+Retrieve temperature data for all four countries from 2020 to 2024. Edit `demandcast/config/retrieve_config.yaml`:
 
 ```yaml
 variable: temperature
-code: NER
-year: 2010
-```
-
-For projected data:
-
-```yaml
-variable: temperature
-code: AUS
-year: 2045
-climate_model: CESM2
-scenario: SSP4-6.0
+file: config/example_countries.yaml
+start_year: 2020
+end_year: 2024
 ```
 
 Then run:
 
 ```bash
 cd demandcast
-uv run retrieve.py --config config/retrieve_config.yaml
+uv run retrieve.py
 ```
 
-## 3. Preprocessing and Training Models
+## 3. Assembling Training Data
 
 ---
 
@@ -193,51 +166,102 @@ uv run retrieve.py --config config/retrieve_config.yaml
 
 ---
 
-After retrieving the necessary data, you can proceed with preprocessing and training the models. The preprocessing and training scripts are located in the `demandcast/` directory. Currently, XGBoost is the only available model.
+After retrieving the necessary data, assemble it into a unified dataset for model training. This step merges electricity demand, temperature, GDP PPP per capita, annual electricity demand per capita, and population data for all four countries from 2020 to 2023.
 
-Our approach involves using socioeconomic and weather parameters passed to a model to predict the hourly electricity demand. The preprocessing step involves merging and cleaning the retrieved annual electricity demand per capita, GDP PPP per capita, temperature, and electricity demand data. In the processing and training, the socioeconomic and weather data are needed only for the years and countries/subdivisions for which electricity demand data is available.
+Edit `demandcast/config/assemble_config.yaml`:
 
-### 3.1 Preprocessing
+```yaml
+target_use: training
+file: config/example_countries.yaml
+start_year: 2020
+end_year: 2023
+```
 
-The following command runs the preprocessing script to prepare the data for model training:
+Then run:
 
 ```bash
 cd demandcast
 uv run assemble.py
 ```
 
-Configuration parameters can be set in `demandcast/config/assemble_config.yaml`.
+This will create a file in `data/assembled/` with the training data.
 
-### 3.2 Training
+## 4. Training the Model
 
-The following command runs the training script to train the model:
+Our approach involves using socioeconomic and weather parameters to predict hourly electricity demand. The model learns patterns from all four countries (France, Germany, Italy, and Spain) for the years 2020-2023, which will later be used to forecast Spain's demand for 2024.
+
+Edit `demandcast/config/train_config.yaml` to specify the assembled data file path:
+
+```yaml
+reserve_testing_set: true
+use_validation_set: false
+data_path: data/assembled/assembled_data_for_training_YYYYMMDD_HHMMSS.parquet  # Use the actual filename
+```
+
+Then run:
 
 ```bash
 cd demandcast
 uv run train.py
 ```
 
-Configuration parameters for training can be set in `demandcast/config/train_config.yaml` and `demandcast/config/ml_config.yaml`.
+The trained model will be saved in `ml_models/trained/` with a timestamp in the filename.
 
-## 4. Forecasting
+## 5. Assembling Forecasting Data
 
-Once the model is trained, you can use it to make forecasts. The forecasting script is located in the `demandcast/` directory. Currently, XGBoost is the only available model.
+To forecast electricity demand for Spain in 2024, we need to assemble the input features (temperature, GDP PPP per capita, annual electricity demand per capita, and population) for Spain for that year. Create a file named `demandcast/config/spain_only.yaml`:
 
-The forecasting script requires the trained model file and the input data file as arguments. The input data includes the socioeconomic and weather parameters for the period you want to forecast. This means that you need to provide the annual electricity demand per capita, GDP PPP per capita, and temperature data for the forecast period. Because electricity demand is predicted in a normalized form, the input data must also include population, which is used to get the total electricity demand from the per capita values, which is in turn used to denormalize the predictions.
+```yaml
+entities:
+  - country_name: Spain
+    country_code: ESP
+```
 
-The following command runs the forecasting script to make predictions:
+Edit `demandcast/config/assemble_config.yaml`:
+
+```yaml
+target_use: forecasting
+file: config/spain_only.yaml
+start_year: 2024
+end_year: 2024
+```
+
+Then run:
+
+```bash
+cd demandcast
+uv run assemble.py
+```
+
+This will create a file in `data/assembled/` with the forecasting data for Spain.
+
+## 6. Forecasting
+
+Now use the trained model to forecast electricity demand for Spain. The forecasting script requires both the trained model and the assembled forecasting data. Because electricity demand is predicted in normalized form, the input data must include population to denormalize the predictions back to absolute values (MW).
+
+Edit `demandcast/config/forecast_config.yaml`:
+
+```yaml
+model_path: ml_models/trained/XGBoost_model_YYYYMMDD_HHMMSS.json  # Use the actual filename
+data_path: data/assembled/assembled_data_for_forecasting_YYYYMMDD_HHMMSS.parquet  # Use the actual filename
+```
+
+Then run:
 
 ```bash
 cd demandcast
 uv run forecast.py
 ```
 
-Configuration parameters for forecasting can be set in `demandcast/config/forecast_config.yaml`.
+The forecasts will be saved in `ml_models/forecasts/` and will contain hourly electricity demand predictions for Spain for 2024.
 
-## 5. Example
+## 7. Example Results
 
-Here we provide an example of what the typical data pipeline looks like when using DemandCast.
+The figure below illustrates the complete workflow for Spain. The top panel shows the retrieved historical electricity demand data for 2023 and 2024. The bottom panels show the input features used for forecasting: annual electricity demand per capita, GDP PPP per capita, and temperature data for the same years.
 
-The figure below illustrates the retreved electricity demand data for Spain (ESP) for 2023 and 2024, along with the annual electricity demand per capita, GDP PPP per capita, and temperature data in the same years. The data for 2023 is a subset of the whole data used for training the model, which includes data from multiple countries/subdivisions and years. The historical electricity demand data for 2024 is used to evaluate the model's performance, while the annual electricity demand per capita, GDP PPP per capita, and temperature data for 2024 are used as input features to forecast the electricity demand for the same year.
+In this example workflow:
+- The model was trained on data from all four countries (France, Germany, Italy, and Spain) for 2020-2023,
+- The model uses the 2024 input features (temperature, GDP PPP per capita, annual electricity demand per capita, and population) to forecast Spain's hourly electricity demand for 2024,
+- This demonstrates how DemandCast can forecast future electricity demand for countries using a model trained on historical data from multiple regions.
 
 ![Example data pipeline for Spain](figures/testing_example.png)
