@@ -1,0 +1,229 @@
+# -*- coding: utf-8 -*-
+"""
+License: AGPL-3.0.
+
+Description:
+
+    This module contains funtions to train and save an XGBoost model.
+"""
+
+import logging
+import os
+from typing import Optional
+
+import pandas
+import utils.config
+import yaml
+from pydantic import BaseModel, ValidationError
+from xgboost import XGBRegressor
+
+
+def _read_configuration() -> BaseModel:
+    """
+    Read the configuration for XGBoost model training.
+
+    Returns
+    -------
+    BaseModel
+        Configuration model.
+
+    Raises
+    ------
+    ValueError
+        If the configuration validation fails.
+    """
+
+    # Define the configuration model.
+    class ConfigModel(BaseModel):
+        random_state: int = 42
+        enable_categorical: Optional[bool] = True
+        evaluation_metric: Optional[str] = "mape"
+
+    # Read the configuration.
+    config_path = os.path.join(
+        utils.config.read_folders_structure()["config_folder"],
+        "xgboost_config.yaml",
+    )
+
+    # Read the raw configuration.
+    with open(config_path, "r") as f:
+        raw_config = yaml.safe_load(f)
+
+    try:
+        # Validate the configuration.
+        return ConfigModel(**raw_config)
+    except ValidationError as e:
+        raise ValueError(f"Configuration validation error: {e}") from e
+
+
+def load(model_path: str) -> XGBRegressor:
+    """
+    Load a trained XGBoost model.
+
+    Parameters
+    ----------
+    model_path : str
+        Path to the trained model file.
+
+    Returns
+    -------
+    XGBRegressor
+        Loaded XGBoost model.
+    """
+    xgb_model = XGBRegressor()
+    xgb_model.load_model(model_path)
+
+    logging.info(f"Trained model loaded from {model_path}")
+
+    return xgb_model
+
+
+def save(xgb_model: XGBRegressor, model_name: str) -> None:
+    """
+    Save the trained XGBoost model.
+
+    Parameters
+    ----------
+    xgb_model : XGBRegressor
+        Trained XGBoost model.
+    model_name : str
+        Name to identify the model when saving.
+    """
+    # Get the folder where to save the model.
+    model_folder = utils.config.read_folders_structure()[
+        "trained_ml_models_folder"
+    ]
+    os.makedirs(model_folder, exist_ok=True)
+
+    # Define the output path for the model.
+    output_path = os.path.join(
+        model_folder,
+        f"{model_name}.json",
+    )
+
+    # Save the trained model.
+    xgb_model.save_model(output_path)
+
+    logging.info(f"Trained model saved to {output_path}")
+
+
+def get_initialized_model() -> XGBRegressor:
+    """
+    Get an initialized XGBoost model based on the configuration.
+
+    Returns
+    -------
+    XGBRegressor
+        Initialized XGBoost model.
+    """
+    # Read the algorithm configuration.
+    config = _read_configuration()
+
+    # Initialize model with config parameters.
+    xgb_model = XGBRegressor(
+        random_state=config.random_state,
+        enable_categorical=config.enable_categorical,
+        eval_metric=config.evaluation_metric,
+    )
+
+    logging.info("XGBoost model initialized with configuration.")
+
+    return xgb_model
+
+
+def train(
+    prepared_dataset: dict[str, dict[str, pandas.DataFrame | pandas.Series]],
+) -> XGBRegressor:
+    """
+    Train XGBoost model.
+
+    Parameters
+    ----------
+    prepared_dataset :
+        dict[str, dict[str, pandas.DataFrame | pandas.Series]]
+        A dictionary containing the prepared datasets for training,
+        validation, and testing.
+
+    Returns
+    -------
+    XGBRegressor
+        Trained model.
+    """
+    logging.info("Starting XGBoost model training.")
+
+    # Get an initialized model.
+    xgb_model = get_initialized_model()
+
+    # Prepare evaluation set if the validation dataset is provided.
+    eval_set = None
+    if "validation" in prepared_dataset:
+        eval_set = [
+            (
+                prepared_dataset["validation"]["features"],
+                prepared_dataset["validation"]["target"],
+            )
+        ]
+
+    # Train the model.
+    xgb_model.fit(
+        prepared_dataset["training"]["features"],
+        prepared_dataset["training"]["target"],
+        eval_set=eval_set,
+        verbose=False,
+    )
+
+    logging.info("XGBoost model training completed.")
+
+    return xgb_model
+
+
+def predict(
+    xgb_model: XGBRegressor,
+    prepared_dataset: dict[
+        str,
+        pandas.Series
+        | pandas.DataFrame
+        | dict[str, pandas.DataFrame | pandas.Series],
+    ],
+) -> pandas.Series | dict[str, pandas.Series]:
+    """
+    Make predictions using the trained XGBoost model.
+
+    Parameters
+    ----------
+    xgb_model : XGBRegressor
+        The trained XGBoost model.
+    prepared_dataset :
+        dict[str, dict[str, pandas.DataFrame | pandas.Series]]
+        A dictionary containing the prepared datasets for training,
+        validation, and testing.
+
+    Returns
+    -------
+    predictions : dict[str, pandas.Series]
+        A dictionary containing predictions for each dataset split.
+    """
+    logging.info("Making predictions with the trained XGBoost model.")
+
+    if "features" in prepared_dataset:
+        # The prepared_dataset is a single dataset, not split into
+        # training/validation/testing.
+        # Make predictions and return them.
+        return pandas.Series(xgb_model.predict(prepared_dataset["features"]))
+
+    else:
+        # Initialize predictions dictionary to store training,
+        # validation, and testing predictions.
+        predictions: dict[str, pandas.Series] = {}
+
+        for split_name, data in prepared_dataset.items():
+            # Make predictions for the current split.
+            preds = xgb_model.predict(data["features"])
+
+            predictions[split_name] = pandas.Series(preds)
+
+            logging.info(
+                f"Predictions made for {split_name} set: {len(preds)} records."
+            )
+
+        return predictions

@@ -1,0 +1,13 @@
+# Configuration for the XGBoost model.
+
+# REQUIRED.
+# Random seed for reproducibility.
+random_state: 42
+
+# REQUIRED.
+# Enable categorical feature support in XGBoost.
+enable_categorical: true
+
+# REQUIRED.
+# Evaluation metric for model training and validation.
+evaluation_metric: "mape"

@@ -43,9 +43,10 @@ DemandCast is a Python-based project focused on collecting, processing, and fore
 
 ### Features
 
-- Retrieval of open hourly and sub-hourly electricity demand data from public sources ([ETL](https://github.com/open-energy-transition/demandcast/tree/main/ETL)).
-- Retrieval of weather and socio-economic data ([ETL](https://github.com/open-energy-transition/demandcast/tree/main/ETL)).
-- Forecasting using machine learning models ([models](https://github.com/open-energy-transition/demandcast/tree/main/models/)).
+- Retrieval of hourly and sub-hourly electricity demand data from public sources.
+- Retrieval of weather and socio-economic data.
+- Training and validation of machine learning models.
+- Forecasting using trained machine learning models.
 - Modular design for adding new countries or data sources.
 - Support for reproducible, containerized development.
 
@@ -84,7 +85,7 @@ Other online resources include:
 
 We welcome contributions in the form of:
 
-- Country-specific ETL modules
+- Country-specific data retrieval modules
 - New or improved forecasting models
 - Documentation and testing enhancements
 
@@ -96,18 +97,41 @@ We also would like to hear your feedback and suggestions. You can share your tho
 
 ```
 demandcast/
-├── .github/                # Github specifics such as actions
-├── ETL/                    # Scripts for extracting, transforming, and loading data
-├── models/                 # Machine learning models for demand forecasting
-├── webpage/                # Documentation website files (MkDocs)
-├── .gitattributes          # Git attributes for handling line endings
-├── .gitignore              # File lists that git ignores
-├── .pre-commit-config.yaml # Pre-commit configuration
-├── CONTRIBUTING.md         # Guide to contributing
-├── LICENSE                 # License file
-├── README.md               # Project overview and instructions
-├── ruff.toml               # Ruff configuration
-└── security.md             # Security policy
+├── .github/                        # Github specifics such as actions
+├── demandcast/
+│   ├── checks/                     # Modules to perform data availability and quality checks
+│   ├── config/                     # Configuration files for all scripts
+│   ├── figures/                    # Modules to plot figures and resulting figures
+│   ├── ml_models/                  # Machine learning models for forecasting electricity demand
+│   ├── retrievals/                 # Modules to retrieve data from various sources
+│   ├── shapes/                     # Scripts to generate shapes for non-standard subdivisions and resulting shapefiles
+│   ├── tests/                      # Unit tests for the utilities and retrieval scripts
+│   ├── utils/                      # Shared utilities for data fetching, processing, and uploading
+│   ├── .dockerignore               # Files and directories to ignore in Docker build context
+│   ├── .env                        # API keys (not included in repo)
+│   ├── .python-version             # Python version for the environment
+│   ├── Dockerfile                  # Dockerfile to create an image for the project
+│   ├── assemble.py                 # Script to assemble/preprocess data
+│   ├── check.py                    # Script to run data checks
+│   ├── cross_validate.py           # Script to cross-validate models
+│   ├── forecast.py                 # Script to generate forecasts
+│   ├── plot.py                     # Script to generate plots for the data
+│   ├── pyproject.toml              # Project configuration and dependencies
+│   ├── retrieve.py                 # Main script to download and process data
+│   ├── run_all.sh                  # Shell script to run all processes sequentially
+│   ├── train.py                    # Script to train models
+│   ├── upload.py                   # Script to upload data
+│   ├── uv.lock                     # Locked dependencies for the project
+│   └── validate.py                 # Script to validate data
+├── webpage/                        # Documentation website files (MkDocs)
+├── .gitattributes                  # Git attributes for handling line endings
+├── .gitignore                      # File lists that git ignores
+├── .pre-commit-config.yaml         # Pre-commit configuration
+├── CONTRIBUTING.md                 # Guide to contributing
+├── LICENSE                         # License file
+├── README.md                       # Project overview and instructions
+├── ruff.toml                       # Ruff configuration
+└── security.md                     # Security policy
 ```
 
 ## DemandCast structure
@@ -120,7 +144,7 @@ The table below provides an overview of the data sources currently used in Deman
 
 |Data type|Historical data source|Forecast data source|
 |---|---|---|
-|Hourly and sub-hourly<br>electricity demand|Various public sources listed in the<br>[Awesome Electricity Demand repository](https://github.com/open-energy-transition/Awesome-Electricity-Demand)|**DemandCast**
+|Hourly and sub-hourly<br>electricity demand|Various public sources listed in the<br>[Awesome Electricity Demand repository](https://github.com/open-energy-transition/Awesome-Electricity-Demand)| -- |
 |Temperature|[ERA5](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels)|[CMIP6](https://cds.climate.copernicus.eu/datasets/projections-cmip6)|
 |Gridded population|[SEDAC GPW v4](https://data.ghg.center/sedac-popdensity-yeargrid5yr-v4.11/browseui/#sedac-popdensity-yeargrid5yr-v4.11/)|[Wang X. et al. (2022)](https://doi.org/10.6084/m9.figshare.19608594)|
 |National population|[World Bank](https://data.worldbank.org/indicator/SP.POP.TOTL)|[IIASA SSP Database](https://data.ece.iiasa.ac.at/ssp)|
@@ -136,7 +160,7 @@ The map below shows the countries and subdivisions for which retrieval modules o
   <img alt="Countries and subdivisions for which retrieval modules of electricity demand data are available" src="webpage/docs/figures/available_entities.png">
 </picture>
 
-You can find the code that we used to retrieve the data in their respective files inside the [ETL/retrievals](https://github.com/open-energy-transition/demandcast/tree/main/ETL/retrievals) folder.
+You can find the code that we used to retrieve the data in their respective files inside the [demandcast/retrievals](https://github.com/open-energy-transition/demandcast/tree/main/demandcast/retrievals) folder.
 
 You can find the electricity demand data that we retrieved at different points in time in this [Google Cloud Storage bucket](https://console.cloud.google.com/storage/browser/demandcast_data) (freely accessible with a Google account). Alternatively, the direct links to the data have the following format:
 
@@ -159,29 +183,31 @@ This project uses [`uv`](https://github.com/astral-sh/uv) as a package manager t
 
 `uv` can be used within the provided Dockerfile or installed standalone (see [installing uv](https://docs.astral.sh/uv/getting-started/installation/)).
 
-The `ETL` folder and each subfolder in the `models` directory—each representing a separate model—contain their own `pyproject.toml` files that define the dependencies for that module.
+The `demandcast` folder contains a `pyproject.toml` file that defines all the dependencies for the project.
 
 To set up the environment, run:
 ```bash
-cd path/to/folder
+cd demandcast
 uv sync
 ```
 
-Alternatively, you may use a package manager of your choice (e.g., `conda`) to install the dependencies listed in the respective `pyproject.toml`. If you choose this approach, please adjust the commands below to align with the conventions of your selected package manager.
+Alternatively, you may use a package manager of your choice (e.g., `conda`) to install the dependencies listed in the `pyproject.toml`. If you choose this approach, please adjust the commands below to align with the conventions of your selected package manager.
 
 ### 3. Run scripts
 
 Scripts can be run directly using:
 
 ```bash
-cd path/to/folder
+cd demandcast
 uv run script.py
 ```
+
+Scripts accept configuration files to customize their behavior. Configuration files are located in `demandcast/config/`. The default name of the configuration file is `{script_name}_config.yaml`.
 
 Jupyter notebooks ([details](https://docs.astral.sh/uv/guides/integration/jupyter/#using-jupyter-within-a-project)) can be launched with:
 
 ```bash
-cd path/to/folder
+cd demandcast
 uv run --with jupyter jupyter lab --allow-root
 ```
 
@@ -190,7 +216,7 @@ uv run --with jupyter jupyter lab --allow-root
 ### Run tests and check test coverage
 
 ```bash
-cd path/to/folder
+cd demandcast
 uv run pytest --cov=utils --cov-report=term-missing
 ```
 
@@ -207,9 +233,8 @@ uvx pre-commit
 
 The project is maintained by the [Open Energy Transition](https://openenergytransition.org/) team. The team members currently involved in this project are:
 
-- [Kevin Steijn](https://github.com/ElectricMountains) (kevin.steijn at openenergytransition dot org)
-- [Vamsi Priya Goli](https://github.com/Vamsipriya22) (goli.vamsi at openenergytransition dot org)
 - [Enrico Antonini](https://github.com/eantonini) (enrico.antonini at openenergytransition dot org)
+- [Vamsi Priya Goli](https://github.com/Vamsipriya22) (goli.vamsi at openenergytransition dot org)
 
 ## License
 

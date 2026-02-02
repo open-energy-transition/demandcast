@@ -1,6 +1,9 @@
 # Folders used for local data storage
-data/
-logs/
+demandcast/data/
+demandcast/logs/
+demandcast/ml_models/mapes/
+demandcast/ml_models/trained/
+demandcast/ml_models/forecasts/
 models/*/figures/
 models/*/models/
 models/*/predictions/

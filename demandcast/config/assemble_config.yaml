@@ -1,0 +1,39 @@
+# Configuration read by the assemble.py script.
+
+# REQUIRED.
+# The target use for which the data is being assembled. It can be
+# 'training' or 'forecasting'.
+target_use: training
+
+# OPTIONAL.
+# The path to the yaml file containing the list of codes of the
+# countries and subdivisions of interest.
+file:
+
+# OPTIONAL.
+# Start year for a range of years of data to be assembled.
+start_year:
+
+# OPTIONAL.
+# End year for a range of years of data to be assembled.
+end_year:
+
+# OPTIONAL.
+# Selected scenario for annual electricity demand per capita.
+scenario_for_annual_electricity_demand_per_capita:
+
+# OPTIONAL.
+# Selected scenario for GDP PPP per capita.
+scenario_for_gdp_ppp_per_capita:
+
+# OPTIONAL.
+# Selected scenario for population.
+scenario_for_population:
+
+# OPTIONAL.
+# Selected scenario for temperature.
+scenario_for_temperature:
+
+# OPTIONAL.
+# Selected climate model for temperature.
+climate_model_for_temperature:

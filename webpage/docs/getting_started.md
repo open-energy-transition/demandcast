@@ -19,19 +19,19 @@ This project uses [`uv`](https://github.com/astral-sh/uv) as a package manager t
 
 `uv` can be used within the provided Dockerfile or installed standalone (see [installing uv](https://docs.astral.sh/uv/getting-started/installation/)).
 
-The `ETL` folder and each subfolder in the `models` directory contain their own `pyproject.toml` files that define the dependencies for that module.
+The `demandcast` folder contains a `pyproject.toml` file that defines all the dependencies for the project.
 
 To set up the environment, run:
 ```bash
-cd ETL # or cd models/model_name
+cd demandcast
 uv sync
 ```
 
-Alternatively, you may use a package manager of your choice (e.g., `conda`) to install the dependencies listed in the respective `pyproject.toml`. If you choose this approach, please adjust the commands below to align with the conventions of your selected package manager.
+Alternatively, you may use a package manager of your choice (e.g., `conda`) to install the dependencies listed in the `pyproject.toml`. If you choose this approach, please adjust the commands below to align with the conventions of your selected package manager.
 
 ### 1.3 Configure environment variables
 
-Some modules require API keys to access data from external services. These keys should be stored in a `.env` file in the `ETL/` directory. The `.env` file should not be included in the repository and should contain the following environment variables:
+Some modules require API keys to access data from external services. These keys should be stored in a `.env` file in the `demandcast/` directory. The `.env` file should not be included in the repository and should contain the following environment variables:
 
 ```plaintext
 CDS_API_KEY=<your_key>             # For data retrieval from Copernicus CDS
@@ -51,117 +51,114 @@ Replace `<your_key>` with your actual API keys. You can obtain these keys by reg
 
 ---
 
-The following commands will execute the `ETL/retrieve.py` script to retrieve different types of data. The type of data to be retrieved is specified as a command-line argument. The retrieved data will be saved in the `data/<variable>/` directory in CSV and Parquet formats. Additional arguments can be provided as needed. Please refer to the documentation of the ETL retrieval modules for more details.
+In this example, we will retrieve data for four European countries (France, Germany, Italy, and Spain), train a model on data from 2020-2023, and then use it to forecast electricity demand for Spain in 2024. The following steps will guide you through the data retrieval process.
 
-### 2.1 Retrieve Electricity Demand
+### 2.1 Create a Country List File
 
-The following command retrieves electricity demand from all available data sources:
+First, create a YAML file listing all countries. Create a file named `demandcast/config/example_countries.yaml`:
 
-```bash
-cd ETL
-uv run retrieve.py electricity_demand
+```yaml
+entities:
+  - country_name: France
+    country_code: FRA
+  - country_name: Germany
+    country_code: DEU
+  - country_name: Italy
+    country_code: ITA
+  - country_name: Spain
+    country_code: ESP
 ```
 
-If you want to retrieve data for a particular country or subdivision from a specific data source, you can supply the entity code and data source as additional arguments. For example, to retrieve electricity demand for Germany (DEU) from the ENTSO-E:
+### 2.2 Retrieve Electricity Demand
 
-```bash
-cd ETL
-uv run retrieve.py electricity_demand --data_source entsoe --code DEU
+Retrieve historical electricity demand data for all four countries. Edit `demandcast/config/retrieve_config.yaml`:
+
+```yaml
+variable: electricity_demand
+electricity_data_source: entsoe
+file: config/example_countries.yaml
 ```
 
-### 2.2 Retrieve Annual Electricity Demand per Capita
-
-The following command retrieves annual electricity demand per capita for all available entities and for both historical and projected data:
+Then run:
 
 ```bash
-cd ETL
-uv run retrieve.py annual_electricity_demand_per_capita
+cd demandcast
+uv run retrieve.py
 ```
 
-If you want to retrieve data for a particular country or subdivision and year, you can supply the entity code and year as additional arguments. For example, to retrieve annual electricity demand per capita for France (FRA) in 2020:
+### 2.3 Retrieve Annual Electricity Demand per Capita
+
+Retrieve annual electricity demand per capita for all four countries from 2020 to 2024. Edit `demandcast/config/retrieve_config.yaml`:
+
+```yaml
+variable: annual_electricity_demand_per_capita
+file: config/example_countries.yaml
+start_year: 2020
+end_year: 2024
+```
+
+Then run:
 
 ```bash
-cd ETL
-uv run retrieve.py annual_electricity_demand_per_capita --code FRA --year 2020
+cd demandcast
+uv run retrieve.py
 ```
 
-Similarly, for projected data, you can specify the year and scenario. For example, to retrieve projected annual electricity demand per capita for the United Kingdom (GBR) in 2030 under the 'SSP2-Baseline' scenario:
+### 2.4 Retrieve GDP PPP per Capita
+
+Retrieve GDP PPP per capita for all four countries from 2020 to 2024. Edit `demandcast/config/retrieve_config.yaml`:
+
+```yaml
+variable: gdp_ppp_per_capita
+file: config/example_countries.yaml
+start_year: 2020
+end_year: 2024
+```
+
+Then run:
 
 ```bash
-cd ETL
-uv run retrieve.py annual_electricity_demand_per_capita --code GBR --year 2030 --scenario SSP2-Baseline
+cd demandcast
+uv run retrieve.py
 ```
 
-### 2.3 Retrieve GDP PPP per Capita
+### 2.5 Retrieve Population
 
-The following command retrieves GDP PPP per capita for all available entities and for both historical and projected data:
+Retrieve population data for all four countries from 2020 to 2024. Edit `demandcast/config/retrieve_config.yaml`:
+
+```yaml
+variable: population
+file: config/example_countries.yaml
+start_year: 2020
+end_year: 2024
+```
+
+Then run:
 
 ```bash
-cd ETL
-uv run retrieve.py gdp_ppp_per_capita
+cd demandcast
+uv run retrieve.py
 ```
 
-If you want to retrieve data for a particular country or subdivision and year, you can supply the entity code and year as additional arguments. For example, to retrieve GDP PPP per capita for Japan (JPN) in 2019:
+### 2.6 Retrieve Temperature
+
+Retrieve temperature data for all four countries from 2020 to 2024. Edit `demandcast/config/retrieve_config.yaml`:
+
+```yaml
+variable: temperature
+file: config/example_countries.yaml
+start_year: 2020
+end_year: 2024
+```
+
+Then run:
 
 ```bash
-cd ETL
-uv run retrieve.py gdp_ppp_per_capita --code JPN --year 2019
+cd demandcast
+uv run retrieve.py
 ```
 
-Similarly, for projected data, you can specify the year and scenario. For example, to retrieve projected GDP PPP per capita for Canada (CAN) in 2040 under the 'SSP1' scenario:
-
-```bash
-cd ETL
-uv run retrieve.py gdp_ppp_per_capita --code CAN --year 2040 --scenario SSP1
-```
-
-### 2.4 Retrieve Population
-
-The following command retrieves population data for all available entities and for both historical and projected data:
-
-```bash
-cd ETL
-uv run retrieve.py population
-```
-
-If you want to retrieve data for a particular country or subdivision and year, you can supply the entity code and year as additional arguments. For example, to retrieve population data for India (IND) in 2015:
-
-```bash
-cd ETL
-uv run retrieve.py population --code IND --year 2015
-```
-
-Similarly, for projected data, you can specify the year and scenario. For example, to retrieve projected population data for Brazil (BRA) in 2050 under the 'SSP3' scenario:
-
-```bash
-cd ETL
-uv run retrieve.py population --code BRA --year 2050 --scenario SSP3
-```
-
-### 2.5 Retrieve Temperature
-
-The following command retrieves temperature data for all available entities and for both historical and projected data:
-
-```bash
-cd ETL
-uv run retrieve.py temperature
-```
-
-If you want to retrieve data for a particular country or subdivision and year, you can supply the entity code and year as additional arguments. For example, to retrieve temperature data for Niger (NER) in 2010:
-
-```bash
-cd ETL
-uv run retrieve.py temperature --code NER --year 2010
-```
-
-Similarly, for projected data, you can specify the year, model, and scenario. For example, to retrieve projected temperature data for Australia (AUS) in 2045 using the 'CESM2' model under 'SSP4-6.0' scenario:
-
-```bash
-cd ETL
-uv run retrieve.py temperature --code AUS --year 2045 --climate_model CESM2 --scenario SSP4-6.0
-```
-
-## 3. Prepocessing and Training Models
+## 3. Assembling Training Data
 
 ---
 
@@ -169,45 +166,102 @@ uv run retrieve.py temperature --code AUS --year 2045 --climate_model CESM2 --sc
 
 ---
 
-After retrieving the necessary data, you can proceed with preprocessing and training the models. Each model has its own preprocessing and training scripts located in the respective model folder inside the `models/` directory. Currently, XGBoost is the only available model.
+After retrieving the necessary data, assemble it into a unified dataset for model training. This step merges electricity demand, temperature, GDP PPP per capita, annual electricity demand per capita, and population data for all four countries from 2020 to 2023.
 
-Our approach involves using socioeconomic and weather parameters passed to a model to predict the hourly electricity demand. The preprocessing step involves merging and cleaning the retrieved annual electricity demand per capita, GDP PPP per capita, temperature, and electricity demand data. In the processing and training, the socioeconomic and weather data are needed only for the years and countries/subdivisions for which electricity demand data is available.
+Edit `demandcast/config/assemble_config.yaml`:
 
-### 3.1 Preprocessing
-
-The following command runs the preprocessing script to prepare the data for model training:
-
-```bash
-cd models/model_name
-uv run preprocess.py --data-dir ../../data/ --output ../../data/processed/{datetime}.parquet
+```yaml
+target_use: training
+file: config/example_countries.yaml
+start_year: 2020
+end_year: 2023
 ```
 
-### 3.2 Training
-
-The following command runs the training script to train the model:
+Then run:
 
 ```bash
-cd models/model_name
-uv run train.py --data ../../data/processed/{datetime}.parquet
+cd demandcast
+uv run assemble.py
 ```
 
-## 4. Forecasting
+This will create a file in `data/assembled/` with the training data.
 
-Once the model is trained, you can use it to make forecasts. The forecasting script is located in the respective model folder inside the `models/` directory. Currently, XGBoost is the only available model.
+## 4. Training the Model
 
-The forecasting script requires the trained model file and the input data file as arguments. The input data includes the socioeconomic and weather parameters for the period you want to forecast. This means that you need to provide the annual electricity demand per capita, GDP PPP per capita, and temperature data for the forecast period. Because electricity demand is predicted in a normalized form, the input data must also include population, which is used to get the total electricity demand from the per capita values, which is in turn used to denormalize the predictions.
+Our approach involves using socioeconomic and weather parameters to predict hourly electricity demand. The model learns patterns from all four countries (France, Germany, Italy, and Spain) for the years 2020-2023, which will later be used to forecast Spain's demand for 2024.
 
-The following command runs the forecasting script to make predictions:
+Edit `demandcast/config/train_config.yaml` to specify the assembled data file path:
+
+```yaml
+reserve_testing_set: true
+use_validation_set: false
+data_path: data/assembled/assembled_data_for_training_YYYYMMDD_HHMMSS.parquet  # Use the actual filename
+```
+
+Then run:
 
 ```bash
-cd models/model_name
-uv run predict.py --model ../trained/{datetime}_model.bin --input ../../data/processed/{datetime}.parquet
+cd demandcast
+uv run train.py
 ```
 
-## 5. Example
+The trained model will be saved in `ml_models/trained/` with a timestamp in the filename.
 
-Here we provide an example of what the typical data pipeline looks like when using DemandCast.
+## 5. Assembling Forecasting Data
 
-The figure below illustrates the retreved electricity demand data for Spain (ESP) for 2023 and 2024, along with the annual electricity demand per capita, GDP PPP per capita, and temperature data in the same years. The data for 2023 is a subset of the whole data used for training the model, which includes data from multiple countries/subdivisions and years. The historical electricity demand data for 2024 is used to evaluate the model's performance, while the annual electricity demand per capita, GDP PPP per capita, and temperature data for 2024 are used as input features to forecast the electricity demand for the same year.
+To forecast electricity demand for Spain in 2024, we need to assemble the input features (temperature, GDP PPP per capita, annual electricity demand per capita, and population) for Spain for that year. Create a file named `demandcast/config/spain_only.yaml`:
+
+```yaml
+entities:
+  - country_name: Spain
+    country_code: ESP
+```
+
+Edit `demandcast/config/assemble_config.yaml`:
+
+```yaml
+target_use: forecasting
+file: config/spain_only.yaml
+start_year: 2024
+end_year: 2024
+```
+
+Then run:
+
+```bash
+cd demandcast
+uv run assemble.py
+```
+
+This will create a file in `data/assembled/` with the forecasting data for Spain.
+
+## 6. Forecasting
+
+Now use the trained model to forecast electricity demand for Spain. The forecasting script requires both the trained model and the assembled forecasting data. Because electricity demand is predicted in normalized form, the input data must include population to denormalize the predictions back to absolute values (MW).
+
+Edit `demandcast/config/forecast_config.yaml`:
+
+```yaml
+model_path: ml_models/trained/XGBoost_model_YYYYMMDD_HHMMSS.json  # Use the actual filename
+data_path: data/assembled/assembled_data_for_forecasting_YYYYMMDD_HHMMSS.parquet  # Use the actual filename
+```
+
+Then run:
+
+```bash
+cd demandcast
+uv run forecast.py
+```
+
+The forecasts will be saved in `ml_models/forecasts/` and will contain hourly electricity demand predictions for Spain for 2024.
+
+## 7. Example Results
+
+The figure below illustrates the complete workflow for Spain. The top panel shows the retrieved historical electricity demand data for 2023 and 2024. The bottom panels show the input features used for forecasting: annual electricity demand per capita, GDP PPP per capita, and temperature data for the same years.
+
+In this example workflow:
+- The model was trained on data from all four countries (France, Germany, Italy, and Spain) for 2020-2023,
+- The model uses the 2024 input features (temperature, GDP PPP per capita, annual electricity demand per capita, and population) to forecast Spain's hourly electricity demand for 2024,
+- This demonstrates how DemandCast can forecast future electricity demand for countries using a model trained on historical data from multiple regions.
 
 ![Example data pipeline for Spain](figures/testing_example.png)
