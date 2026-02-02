@@ -14,37 +14,37 @@
 ```
 demandcast/
 ├── .github/
-│   └── workflows/           # CI/CD pipelines
-├── demandcast/             # Main code directory
-│   ├── checks/             # Data availability and quality checks
-│   ├── config/             # Configuration files for all scripts
-│   ├── figures/            # Plotting modules and generated figures
-│   ├── ml_models/          # Machine learning models for forecasting
-│   ├── retrievals/         # Data retrieval modules
-│   │   ├── electricity_demand_data_sources/  # Country-specific retrieval scripts
+│   └── workflows/                            # CI/CD pipelines
+├── demandcast/                               # Main code directory
+│   ├── checks/                               # Data availability and quality checks
+│   ├── config/                               # Configuration files for all scripts
+│   ├── figures/                              # Plotting modules and generated figures
+│   ├── ml_models/                            # Machine learning models for forecasting
+│   ├── retrievals/                           # Data retrieval modules
+│   │   ├── electricity_demand_data_sources/  # Electricity demand retrieval scripts
 │   │   └── socio_economic_data_sources/      # Socio-economic data retrieval
-│   ├── shapes/             # Scripts for non-standard subdivision shapes
-│   ├── tests/              # Unit tests
-│   ├── utils/              # Shared utilities
-│   ├── assemble.py         # Data assembly script
-│   ├── check.py            # Data checking script
-│   ├── cross_validate.py   # Cross-validation script
-│   ├── Dockerfile          # Docker configuration
-│   ├── forecast.py         # Forecasting script
-│   ├── plot.py             # Plotting script
-│   ├── pyproject.toml      # Project dependencies
-│   ├── retrieve.py         # Main data retrieval script
-│   ├── train.py            # Model training script
-│   ├── upload.py           # Data upload script
-│   ├── uv.lock             # Locked dependencies
-│   └── validate.py         # Model validation script
-├── webpage/                # MkDocs documentation site
-│   ├── docs/               # Documentation markdown files
-│   ├── mkdocs.yml          # MkDocs configuration
-│   └── pyproject.toml      # Documentation dependencies
-├── ruff.toml               # Ruff linter/formatter config
-├── .pre-commit-config.yaml # Pre-commit hooks config
-└── README.md               # Project documentation
+│   ├── shapes/                               # Scripts for non-standard subdivision shapes
+│   ├── tests/                                # Unit tests
+│   ├── utils/                                # Shared utilities
+│   ├── assemble.py                           # Data assembly script
+│   ├── check.py                              # Data checking script
+│   ├── cross_validate.py                     # Cross-validation script
+│   ├── Dockerfile                            # Docker configuration
+│   ├── forecast.py                           # Forecasting script
+│   ├── plot.py                               # Plotting script
+│   ├── pyproject.toml                        # Project dependencies
+│   ├── retrieve.py                           # Main data retrieval script
+│   ├── train.py                              # Model training script
+│   ├── upload.py                             # Data upload script
+│   ├── uv.lock                               # Locked dependencies
+│   └── validate.py                           # Model validation script
+├── webpage/                                  # MkDocs documentation site
+│   ├── docs/                                 # Documentation markdown files
+│   ├── mkdocs.yml                            # MkDocs configuration
+│   └── pyproject.toml                        # Documentation dependencies
+├── ruff.toml                                 # Ruff linter/formatter config
+├── .pre-commit-config.yaml                   # Pre-commit hooks config
+└── README.md                                 # Project documentation
 ```
 
 ## Build and Development Workflow
