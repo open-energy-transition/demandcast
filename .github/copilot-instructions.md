@@ -85,7 +85,7 @@ uv sync  # ALWAYS run before tests if .venv doesn't exist
 uv run pytest --cov=utils --cov-report=term-missing
 ```
 - Test suite takes ~37 seconds
-- Requires 95% code coverage for utils (enforced in CI)
+- Requires 95% code coverage for `utils/` module only (enforced in CI)
 - Some tests may fail in restricted network environments (expected)
 - Tests are in `demandcast/tests/` directory
 
@@ -150,40 +150,36 @@ uv run mkdocs serve
   - `ghcr.io/open-energy-transition/demandcast`
 - Uses Python 3.12 base and includes Google Cloud CLI
 
-### Pre-commit Hooks
+## Project Details
 
-Defined in `.pre-commit-config.yaml`:
-1. Basic file hygiene (trailing whitespace, EOF newlines, merge conflicts)
-2. Ruff linter/formatter (auto-fix enabled)
-3. Prettier for YAML/JSON
-4. Mypy type checker (ignores missing imports)
-5. nbstripout for Jupyter notebooks
+### Scripts and Directory Structure
 
-## Key Development Facts
+**Main Scripts and Configuration** (`demandcast/`):
+- `retrieve.py` + `retrieve_config.yaml`: Collect electricity demand, weather, and socio-economic data
+- `assemble.py` + `assemble_config.yaml`: Combine data for training or forecasting
+- `train.py` + `train_config.yaml`, `ml_config.yaml`, `xgboost_config.yaml`: Train ML models
+- `validate.py` + `validate_config.yaml`: Validate model performance
+- `cross_validate.py` + `cross_validate_config.yaml`: Leave-one-group-out cross-validation
+- `forecast.py` + `forecast_config.yaml`: Generate forecasts
+- `plot.py` + `plot_config.yaml`: Generate visualizations
+- `check.py`: Data quality checks
+- `upload.py` + `upload_config.yaml`: Upload data to cloud storage
 
-### Project Layout Details
-
-**Main Module** (`demandcast/`):
-- **Data Retrieval**: `retrieve.py` (CLI for data retrieval with config file)
-- **Data Sources**: `retrievals/electricity_demand_data_sources/` (40+ country-specific scripts)
-- **ML Pipeline**: `assemble.py`, `train.py`, `validate.py`, `cross_validate.py`, `forecast.py`
-- **Configuration**: `config/` (YAML files for all scripts)
-- **Utilities**: `utils/` (config, entities, fetcher, geospatial, ml, time_series, uploader, etc.)
-- **Tests**: `tests/` (95%+ coverage for utils)
-- **Models**: `ml_models/` (currently XGBoost only)
+**Key Directories** (`demandcast/`):
+- `retrievals/`: Data source modules (40+ country-specific scripts in `electricity_demand_data_sources/`)
+- `ml_models/`: Machine learning implementations (currently XGBoost only)
+- `utils/`: Shared utilities (config, entities, fetcher, geospatial, ml, time_series, uploader)
+- `tests/`: Unit tests (95%+ coverage requirement for utils)
+- `config/`: YAML configuration files for all scripts
 
 **Documentation** (`webpage/`):
 - Built with MkDocs Material theme
 - Main docs: `docs/index.md`, `docs/getting_started.md`, `docs/retrieval.md`, `docs/ML.md`, `docs/plot.md`, `docs/Dockerfile.md`
 - Separate environment from main module
 
-**Common Patterns**:
-- All scripts accept `--config` argument for custom configuration
-- Default configs are in `demandcast/config/`
-- Python 3.12 is the target version
-- `uv` for dependency management
-- Lock file (`uv.lock`) is committed to version control
-- All parameters configured via YAML files, not command-line arguments
+**Configuration Pattern**:
+- All scripts accept only `--config` argument pointing to YAML files in `demandcast/config/`
+- Dependency management via `uv` with committed lock file (`uv.lock`)
 
 ### Dependencies
 
@@ -211,8 +207,6 @@ Defined in `.pre-commit-config.yaml`:
 
 5. **Docker builds**: Dockerfile is in `demandcast/Dockerfile`. It installs Google Cloud CLI and uses `uv sync --frozen` for reproducible builds.
 
-6. **Configuration**: All scripts use YAML configuration files in `demandcast/config/`. Scripts accept only `--config` argument (no other command-line arguments).
-
 ## Validation Steps
 
 Before submitting changes:
@@ -237,24 +231,10 @@ Before submitting changes:
 
 ## Important Notes
 
-- **Configuration-driven**: All script parameters are set via YAML files in `demandcast/config/`
 - **Coverage is enforced**: Utils must maintain 95% test coverage
 - **Docstrings are required**: NumPy style docstrings enforced by ruff
 - **Line length**: 79 characters for code, 72 for docstrings/comments
 - **Type hints**: Encouraged but mypy is lenient (ignores missing imports)
-- **No command-line arguments**: Scripts accept only `--config` argument; all other parameters go in config files
-
-## Key Scripts and Their Configs
-
-- `retrieve.py` → `retrieve_config.yaml`: Data retrieval (electricity demand, weather, socio-economic)
-- `assemble.py` → `assemble_config.yaml`: Combine data for training or forecasting
-- `train.py` → `train_config.yaml`, `ml_config.yaml`, `xgboost_config.yaml`: Train ML models
-- `validate.py` → `validate_config.yaml`: Validate model performance
-- `cross_validate.py` → `cross_validate_config.yaml`: Leave-one-group-out cross-validation
-- `forecast.py` → `forecast_config.yaml`: Generate forecasts
-- `plot.py` → `plot_config.yaml`: Generate visualizations
-- `check.py` → Configuration for data quality checks
-- `upload.py` → `upload_config.yaml`: Upload data to cloud storage
 
 ## Trust These Instructions
 
