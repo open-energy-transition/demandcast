@@ -8,44 +8,58 @@ Description:
     availability.
 """
 
-import argparse
+import logging
 
 import checks.data_availability
+import utils.config
+from pydantic import BaseModel, ValidationError
 
 
-def read_command_line_arguments() -> argparse.Namespace:
+def _read_and_check_configuration() -> BaseModel:
     """
-    Create a parser for the command line arguments and read them.
+    Read and check the configuration for checks.
 
     Returns
     -------
-    argparse.Namespace
-        The command line arguments.
+    BaseModel
+        A Pydantic model containing the validated configuration.
+
+    Raises
+    ------
+    ValueError
+        If the configuration is invalid.
     """
-    # Create a parser for the command line arguments.
-    parser = argparse.ArgumentParser(
-        description=(
-            "Perform checks on the data data quality and availability."
-        )
-    )
 
-    # Add the command line arguments.
-    parser.add_argument(
+    # Define the configuration model.
+    class ConfigModel(BaseModel):
+        check: str
+
+    # Read the configuration.
+    raw_config = utils.config.read_configuration(
         "check",
-        type=str,
-        choices=[
-            "data_availability",
-        ],
-        help=("The check to perform."),
+        "Perform checks on the data data quality and availability.",
     )
 
-    return parser.parse_args()
+    try:
+        # Validate the configuration.
+        config = ConfigModel(**raw_config)
+
+        logging.info("Configuration validated successfully:")
+        for field, value in config.model_dump().items():
+            logging.info(f" - {field}: {value}")
+
+        return config
+    except ValidationError as e:
+        raise ValueError(f"Configuration validation error: {e}") from e
 
 
 if __name__ == "__main__":
-    # Read the command line arguments.
-    args = read_command_line_arguments()
+    # Set up the logging configuration.
+    utils.config.set_up_logging("checks")
 
-    # Plot the specified figure.
-    if args.check == "data_availability":
+    # Read and check the configuration.
+    config = _read_and_check_configuration()
+
+    # Run the specified check.
+    if config.check == "data_availability":
         checks.data_availability.run_check()

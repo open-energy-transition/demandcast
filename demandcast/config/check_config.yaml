@@ -1,0 +1,6 @@
+# Configuration read by the check.py script.
+
+# REQUIRED.
+# The check to perform. Supported checks are:
+# - data_availability.
+check: data_availability

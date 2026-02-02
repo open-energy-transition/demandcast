@@ -1,0 +1,20 @@
+# Configuration read by the plot.py script.
+
+# REQUIRED.
+# The figure to plot. Supported figures are:
+# - data_availability,
+# - map_of_available_entities,
+# - ml_results.
+figure: data_availability
+
+# OPTIONAL - REQUIRED for ml_results figure.
+# The version of the ML model whose results are to be plotted.
+version:
+
+# OPTIONAL.
+# The version of the ML model whose results are to be considered in the comparison.
+compare_with_version:
+
+# OPTIONAL.
+# Whether to plot the results by group (income level and continent).
+by_group:
