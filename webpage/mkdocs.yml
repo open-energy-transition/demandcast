@@ -41,9 +41,12 @@ repo_url: https://github.com/open-energy-transition/demandcast
 
 nav:
   - index.md
-  - ETL.md
-  - Models:
-      - Models/index.md
-      - Models/xgboost.md
-  - Figures.md
-  - Deployment/index.md
+  - getting_started.md
+  - retrieval.md
+  - ML.md
+  - plot.md
+  - Dockerfile.md
+
+markdown_extensions:
+  - toc:
+      toc_depth: 3 # Up to h3 will be included in the table of contents

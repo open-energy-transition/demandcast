@@ -1,0 +1,13 @@
+# Configuration read by the validate.py script.
+
+# REQUIRED.
+# Whether a validation set was used during training.
+used_validation_set: false
+
+# OPTIONAL.
+# The machine learning algorithm to be used for validation.
+model_path:
+
+# OPTIONAL.
+# The path to the assembled data to be used for validation.
+data_path:

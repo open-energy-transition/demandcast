@@ -15,12 +15,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: etl
-            context: ./ETL
-            dockerfile: ./ETL/Dockerfile
-          - name: xgboost
-            context: ./models/xgboost
-            dockerfile: ./models/xgboost/Dockerfile
+          - name: demandcast
+            context: ./demandcast
+            dockerfile: ./demandcast/Dockerfile
 
     runs-on: ubuntu-latest
     permissions:

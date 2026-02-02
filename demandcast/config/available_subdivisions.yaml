@@ -1,0 +1,1281 @@
+entities:
+  - country_code: AUS
+    country_name: Australia
+    subdivision_code: ACT
+    subdivision_name: Australian Capital Territory
+  - country_code: AUS
+    country_name: Australia
+    subdivision_code: NSW
+    subdivision_name: New South Wales
+  - country_code: AUS
+    country_name: Australia
+    subdivision_code: NT
+    subdivision_name: Northern Territory
+  - country_code: AUS
+    country_name: Australia
+    subdivision_code: QLD
+    subdivision_name: Queensland
+  - country_code: AUS
+    country_name: Australia
+    subdivision_code: SA
+    subdivision_name: South Australia
+  - country_code: AUS
+    country_name: Australia
+    subdivision_code: TAS
+    subdivision_name: Tasmania
+  - country_code: AUS
+    country_name: Australia
+    subdivision_code: VIC
+    subdivision_name: Victoria
+  - country_code: AUS
+    country_name: Australia
+    subdivision_code: WA
+    subdivision_name: Western Australia
+  - country_code: AUS
+    country_name: Australia
+    subdivision_code: X02~
+    subdivision_name: Subdivision of Australia
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: AC
+    subdivision_name: Acre
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: AL
+    subdivision_name: Alagoas
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: AM
+    subdivision_name: Amazonas
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: AP
+    subdivision_name: Amapá
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: BA
+    subdivision_name: Bahia
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: CE
+    subdivision_name: Ceará
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: DF
+    subdivision_name: Distrito Federal
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: ES
+    subdivision_name: Espírito Santo
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: GO
+    subdivision_name: Goiás
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: MA
+    subdivision_name: Maranhão
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: MG
+    subdivision_name: Minas Gerais
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: MS
+    subdivision_name: Mato Grosso do Sul
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: MT
+    subdivision_name: Mato Grosso
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: N
+    subdivision_name: North
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: NE
+    subdivision_name: North-East
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: PA
+    subdivision_name: Pará
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: PB
+    subdivision_name: Paraíba
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: PE
+    subdivision_name: Pernambuco
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: PI
+    subdivision_name: Piauí
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: PR
+    subdivision_name: Paraná
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: RJ
+    subdivision_name: Rio de Janeiro
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: RN
+    subdivision_name: Rio Grande do Norte
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: RO
+    subdivision_name: Rondônia
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: RR
+    subdivision_name: Roraima
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: RS
+    subdivision_name: Rio Grande do Sul
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: S
+    subdivision_name: South
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: SC
+    subdivision_name: Santa Catarina
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: SE
+    subdivision_name: South-East
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: SP
+    subdivision_name: São Paulo
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: TO
+    subdivision_name: Tocantins
+  - country_code: CAN
+    country_name: Canada
+    subdivision_code: AB
+    subdivision_name: Alberta
+  - country_code: CAN
+    country_name: Canada
+    subdivision_code: BC
+    subdivision_name: British Columbia
+  - country_code: CAN
+    country_name: Canada
+    subdivision_code: MB
+    subdivision_name: Manitoba
+  - country_code: CAN
+    country_name: Canada
+    subdivision_code: NB
+    subdivision_name: New Brunswick
+  - country_code: CAN
+    country_name: Canada
+    subdivision_code: NL
+    subdivision_name: Newfoundland and Labrador
+  - country_code: CAN
+    country_name: Canada
+    subdivision_code: NS
+    subdivision_name: Nova Scotia
+  - country_code: CAN
+    country_name: Canada
+    subdivision_code: NT
+    subdivision_name: Northwest Territories
+  - country_code: CAN
+    country_name: Canada
+    subdivision_code: NU
+    subdivision_name: Nunavut
+  - country_code: CAN
+    country_name: Canada
+    subdivision_code: "ON"
+    subdivision_name: Ontario
+  - country_code: CAN
+    country_name: Canada
+    subdivision_code: PE
+    subdivision_name: Prince Edward Island
+  - country_code: CAN
+    country_name: Canada
+    subdivision_code: QC
+    subdivision_name: Quebec
+  - country_code: CAN
+    country_name: Canada
+    subdivision_code: SK
+    subdivision_name: Saskatchewan
+  - country_code: CAN
+    country_name: Canada
+    subdivision_code: YT
+    subdivision_name: Yukon
+  - country_code: CHN
+    country_name: China
+    subdivision_code: AH
+    subdivision_name: Anhui Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: BJ
+    subdivision_name: Beijing Shi
+  - country_code: CHN
+    country_name: China
+    subdivision_code: CQ
+    subdivision_name: Chongqing Shi
+  - country_code: CHN
+    country_name: China
+    subdivision_code: FJ
+    subdivision_name: Fujian Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: GD
+    subdivision_name: Guangdong Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: GS
+    subdivision_name: Gansu Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: GX
+    subdivision_name: Guangxi Zhuangzu Zizhiqu
+  - country_code: CHN
+    country_name: China
+    subdivision_code: GZ
+    subdivision_name: Guizhou Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: HA
+    subdivision_name: Henan Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: HB
+    subdivision_name: Hubei Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: HE
+    subdivision_name: Hebei Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: HI
+    subdivision_name: Hainan Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: HL
+    subdivision_name: Heilongjiang Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: HN
+    subdivision_name: Hunan Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: JL
+    subdivision_name: Jilin Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: JS
+    subdivision_name: Jiangsu Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: JX
+    subdivision_name: Jiangxi Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: LN
+    subdivision_name: Liaoning Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: NM
+    subdivision_name: Nei Mongol Zizhiqu
+  - country_code: CHN
+    country_name: China
+    subdivision_code: NX
+    subdivision_name: Ningxia Huizu Zizhiqu
+  - country_code: CHN
+    country_name: China
+    subdivision_code: QH
+    subdivision_name: Qinghai Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: SC
+    subdivision_name: Sichuan Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: SD
+    subdivision_name: Shandong Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: SH
+    subdivision_name: Shanghai Shi
+  - country_code: CHN
+    country_name: China
+    subdivision_code: SN
+    subdivision_name: Shaanxi Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: SX
+    subdivision_name: Shanxi Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: TJ
+    subdivision_name: Tianjin Shi
+  - country_code: CHN
+    country_name: China
+    subdivision_code: XJ
+    subdivision_name: Xinjiang Uygur Zizhiqu
+  - country_code: CHN
+    country_name: China
+    subdivision_code: XZ
+    subdivision_name: Xizang Zizhiqu
+  - country_code: CHN
+    country_name: China
+    subdivision_code: YN
+    subdivision_name: Yunnan Sheng
+  - country_code: CHN
+    country_name: China
+    subdivision_code: ZJ
+    subdivision_name: Zhejiang Sheng
+  - country_code: GBR
+    country_name: United Kingdom
+    subdivision_code: GB
+    subdivision_name: Great Britain
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: AC
+    subdivision_name: Aceh
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: BA
+    subdivision_name: Bali
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: BB
+    subdivision_name: Kepulauan Bangka Belitung
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: BE
+    subdivision_name: Bengkulu
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: BT
+    subdivision_name: Banten
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: GO
+    subdivision_name: Gorontalo
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: JA
+    subdivision_name: Jambi
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: JB
+    subdivision_name: Jawa Barat
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: JI
+    subdivision_name: Jawa Timur
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: JK
+    subdivision_name: Jakarta Raya
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: JT
+    subdivision_name: Jawa Tengah
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: KB
+    subdivision_name: Kalimantan Barat
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: KI
+    subdivision_name: Kalimantan Timur
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: KR
+    subdivision_name: Kepulauan Riau
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: KS
+    subdivision_name: Kalimantan Selatan
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: KT
+    subdivision_name: Kalimantan Tengah
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: LA
+    subdivision_name: Lampung
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: MA
+    subdivision_name: Maluku
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: MU
+    subdivision_name: Maluku Utara
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: NB
+    subdivision_name: Nusa Tenggara Barat
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: NT
+    subdivision_name: Nusa Tenggara Timur
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: PA
+    subdivision_name: Papua
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: PB
+    subdivision_name: Papua Barat
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: RI
+    subdivision_name: Riau
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: SA
+    subdivision_name: Sulawesi Utara
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: SB
+    subdivision_name: Sumatera Barat
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: SG
+    subdivision_name: Sulawesi Tenggara
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: SN
+    subdivision_name: Sulawesi Selatan
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: SR
+    subdivision_name: Sulawesi Barat
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: SS
+    subdivision_name: Sumatera Selatan
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: ST
+    subdivision_name: Sulawesi Tengah
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: SU
+    subdivision_name: Sumatera Utara
+  - country_code: IDN
+    country_name: Indonesia
+    subdivision_code: YO
+    subdivision_name: Yogyakarta
+  - country_code: IND
+    country_name: India
+    subdivision_code: AN
+    subdivision_name: Andaman and Nicobar Islands
+  - country_code: IND
+    country_name: India
+    subdivision_code: AP
+    subdivision_name: Andhra Pradesh
+  - country_code: IND
+    country_name: India
+    subdivision_code: AR
+    subdivision_name: Arunāchal Pradesh
+  - country_code: IND
+    country_name: India
+    subdivision_code: AS
+    subdivision_name: Assam
+  - country_code: IND
+    country_name: India
+    subdivision_code: BR
+    subdivision_name: Bihār
+  - country_code: IND
+    country_name: India
+    subdivision_code: CH
+    subdivision_name: Chandīgarh
+  - country_code: IND
+    country_name: India
+    subdivision_code: CT
+    subdivision_name: Subdivision of India
+  - country_code: IND
+    country_name: India
+    subdivision_code: DH
+    subdivision_name: Dādra and Nagar Haveli and Damān and Diu
+  - country_code: IND
+    country_name: India
+    subdivision_code: DL
+    subdivision_name: Delhi
+  - country_code: IND
+    country_name: India
+    subdivision_code: GA
+    subdivision_name: Goa
+  - country_code: IND
+    country_name: India
+    subdivision_code: GJ
+    subdivision_name: Gujarāt
+  - country_code: IND
+    country_name: India
+    subdivision_code: HP
+    subdivision_name: Himāchal Pradesh
+  - country_code: IND
+    country_name: India
+    subdivision_code: HR
+    subdivision_name: Haryāna
+  - country_code: IND
+    country_name: India
+    subdivision_code: JH
+    subdivision_name: Jhārkhand
+  - country_code: IND
+    country_name: India
+    subdivision_code: JK
+    subdivision_name: Jammu and Kashmīr
+  - country_code: IND
+    country_name: India
+    subdivision_code: KA
+    subdivision_name: Karnātaka
+  - country_code: IND
+    country_name: India
+    subdivision_code: KL
+    subdivision_name: Kerala
+  - country_code: IND
+    country_name: India
+    subdivision_code: LA
+    subdivision_name: Ladākh
+  - country_code: IND
+    country_name: India
+    subdivision_code: LD
+    subdivision_name: Lakshadweep
+  - country_code: IND
+    country_name: India
+    subdivision_code: MH
+    subdivision_name: Mahārāshtra
+  - country_code: IND
+    country_name: India
+    subdivision_code: ML
+    subdivision_name: Meghālaya
+  - country_code: IND
+    country_name: India
+    subdivision_code: MN
+    subdivision_name: Manipur
+  - country_code: IND
+    country_name: India
+    subdivision_code: MP
+    subdivision_name: Madhya Pradesh
+  - country_code: IND
+    country_name: India
+    subdivision_code: MZ
+    subdivision_name: Mizoram
+  - country_code: IND
+    country_name: India
+    subdivision_code: NL
+    subdivision_name: Nāgāland
+  - country_code: IND
+    country_name: India
+    subdivision_code: OR
+    subdivision_name: Subdivision of India
+  - country_code: IND
+    country_name: India
+    subdivision_code: PB
+    subdivision_name: Punjab
+  - country_code: IND
+    country_name: India
+    subdivision_code: PY
+    subdivision_name: Puducherry
+  - country_code: IND
+    country_name: India
+    subdivision_code: RJ
+    subdivision_name: Rājasthān
+  - country_code: IND
+    country_name: India
+    subdivision_code: SK
+    subdivision_name: Sikkim
+  - country_code: IND
+    country_name: India
+    subdivision_code: TG
+    subdivision_name: Subdivision of India
+  - country_code: IND
+    country_name: India
+    subdivision_code: TN
+    subdivision_name: Tamil Nādu
+  - country_code: IND
+    country_name: India
+    subdivision_code: TR
+    subdivision_name: Tripura
+  - country_code: IND
+    country_name: India
+    subdivision_code: UP
+    subdivision_name: Uttar Pradesh
+  - country_code: IND
+    country_name: India
+    subdivision_code: UT
+    subdivision_name: Subdivision of India
+  - country_code: IND
+    country_name: India
+    subdivision_code: WB
+    subdivision_name: West Bengal
+  - country_code: JPN
+    country_name: Japan
+    subdivision_code: Kansai
+    subdivision_name: Kansai
+  - country_code: JPN
+    country_name: Japan
+    subdivision_code: Kantō
+    subdivision_name: Kantō
+  - country_code: MEX
+    country_name: Mexico
+    subdivision_code: BCA
+    subdivision_name: Baja California
+  - country_code: MEX
+    country_name: Mexico
+    subdivision_code: BCS
+    subdivision_name: Baja California Sur
+  - country_code: MEX
+    country_name: Mexico
+    subdivision_code: CEN
+    subdivision_name: Central
+  - country_code: MEX
+    country_name: Mexico
+    subdivision_code: NES
+    subdivision_name: Noreste
+  - country_code: MEX
+    country_name: Mexico
+    subdivision_code: NOR
+    subdivision_name: Noroeste
+  - country_code: MEX
+    country_name: Mexico
+    subdivision_code: NTE
+    subdivision_name: Norte
+  - country_code: MEX
+    country_name: Mexico
+    subdivision_code: OCC
+    subdivision_name: Occidental
+  - country_code: MEX
+    country_name: Mexico
+    subdivision_code: ORI
+    subdivision_name: Oriental
+  - country_code: MEX
+    country_name: Mexico
+    subdivision_code: PEN
+    subdivision_name: Peninsular
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: AD
+    subdivision_name: Adygeja, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: AL
+    subdivision_name: Altaj, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: ALT
+    subdivision_name: Altajskij kraj
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: AMU
+    subdivision_name: Amurskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: ARK
+    subdivision_name: Arhangel'skaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: AST
+    subdivision_name: Astrahanskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: BA
+    subdivision_name: Bashkortostan, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: BEL
+    subdivision_name: Belgorodskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: BRY
+    subdivision_name: Brjanskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: BU
+    subdivision_name: Burjatija, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: CE
+    subdivision_name: Chechenskaya Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: CHE
+    subdivision_name: Chelyabinskaya oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: CHU
+    subdivision_name: Chukotskiy avtonomnyy okrug
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: CU
+    subdivision_name: Chuvashskaya Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: DA
+    subdivision_name: Dagestan, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: IN
+    subdivision_name: Ingushetiya, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: IRK
+    subdivision_name: Irkutskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: IVA
+    subdivision_name: Ivanovskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KAM
+    subdivision_name: Kamchatskiy kray
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KB
+    subdivision_name: Kabardino-Balkarskaja Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KC
+    subdivision_name: Karachayevo-Cherkesskaya Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KDA
+    subdivision_name: Krasnodarskij kraj
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KEM
+    subdivision_name: Kemerovskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KGD
+    subdivision_name: Kaliningradskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KGN
+    subdivision_name: Kurganskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KHA
+    subdivision_name: Habarovskij kraj
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KHM
+    subdivision_name: Hanty-Mansijskij avtonomnyj okrug
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KIR
+    subdivision_name: Kirovskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KK
+    subdivision_name: Hakasija, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KL
+    subdivision_name: Kalmykija, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KLU
+    subdivision_name: Kaluzhskaya oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KO
+    subdivision_name: Komi, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KOS
+    subdivision_name: Kostromskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KR
+    subdivision_name: Karelija, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KRS
+    subdivision_name: Kurskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: KYA
+    subdivision_name: Krasnojarskij kraj
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: LEN
+    subdivision_name: Leningradskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: LIP
+    subdivision_name: Lipeckaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: MAG
+    subdivision_name: Magadanskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: ME
+    subdivision_name: Marij Èl, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: MO
+    subdivision_name: Mordovija, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: MOS
+    subdivision_name: Moskovskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: MOW
+    subdivision_name: Moskva
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: MUR
+    subdivision_name: Murmanskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: NEN
+    subdivision_name: Neneckij avtonomnyj okrug
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: NGR
+    subdivision_name: Novgorodskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: NIZ
+    subdivision_name: Nizhegorodskaya oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: NVS
+    subdivision_name: Novosibirskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: OMS
+    subdivision_name: Omskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: ORE
+    subdivision_name: Orenburgskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: ORL
+    subdivision_name: Orlovskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: PER
+    subdivision_name: Permskij kraj
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: PNZ
+    subdivision_name: Penzenskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: PRI
+    subdivision_name: Primorskij kraj
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: PSK
+    subdivision_name: Pskovskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: ROS
+    subdivision_name: Rostovskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: RYA
+    subdivision_name: Rjazanskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: SA
+    subdivision_name: Saha, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: SAK
+    subdivision_name: Sahalinskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: SAM
+    subdivision_name: Samarskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: SAR
+    subdivision_name: Saratovskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: SE
+    subdivision_name: Severnaja Osetija, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: SMO
+    subdivision_name: Smolenskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: SPE
+    subdivision_name: Sankt-Peterburg
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: STA
+    subdivision_name: Stavropol'skij kraj
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: SVE
+    subdivision_name: Sverdlovskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: TA
+    subdivision_name: Tatarstan, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: TAM
+    subdivision_name: Tambovskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: TOM
+    subdivision_name: Tomskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: TUL
+    subdivision_name: Tul'skaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: TVE
+    subdivision_name: Tverskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: TY
+    subdivision_name: Tyva, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: TYU
+    subdivision_name: Tjumenskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: UD
+    subdivision_name: Udmurtskaja Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: ULY
+    subdivision_name: Ul'janovskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: VGG
+    subdivision_name: Volgogradskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: VLA
+    subdivision_name: Vladimirskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: VLG
+    subdivision_name: Vologodskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: VOR
+    subdivision_name: Voronezhskaya oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: YAN
+    subdivision_name: Jamalo-Neneckij avtonomnyj okrug
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: YAR
+    subdivision_name: Jaroslavskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: YEV
+    subdivision_name: Evrejskaja avtonomnaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: ZAB
+    subdivision_name: Zabajkal'skij kraj
+  - country_code: UKR
+    country_name: Ukraine
+    subdivision_code: "40"
+    subdivision_name: Sevastopol
+  - country_code: UKR
+    country_name: Ukraine
+    subdivision_code: "43"
+    subdivision_name: Avtonomna Respublika Krym
+  - country_code: USA
+    country_name: United States
+    subdivision_code: AK
+    subdivision_name: Alaska
+  - country_code: USA
+    country_name: United States
+    subdivision_code: AL
+    subdivision_name: Alabama
+  - country_code: USA
+    country_name: United States
+    subdivision_code: AR
+    subdivision_name: Arkansas
+  - country_code: USA
+    country_name: United States
+    subdivision_code: AZ
+    subdivision_name: Arizona
+  - country_code: USA
+    country_name: United States
+    subdivision_code: CA
+    subdivision_name: California
+  - country_code: USA
+    country_name: United States
+    subdivision_code: CAL
+    subdivision_name: California
+  - country_code: USA
+    country_name: United States
+    subdivision_code: CAR
+    subdivision_name: Carolinas
+  - country_code: USA
+    country_name: United States
+    subdivision_code: CENT
+    subdivision_name: Central
+  - country_code: USA
+    country_name: United States
+    subdivision_code: CO
+    subdivision_name: Colorado
+  - country_code: USA
+    country_name: United States
+    subdivision_code: CT
+    subdivision_name: Connecticut
+  - country_code: USA
+    country_name: United States
+    subdivision_code: DC
+    subdivision_name: District of Columbia
+  - country_code: USA
+    country_name: United States
+    subdivision_code: DE
+    subdivision_name: Delaware
+  - country_code: USA
+    country_name: United States
+    subdivision_code: FL
+    subdivision_name: Florida
+  - country_code: USA
+    country_name: United States
+    subdivision_code: FLA
+    subdivision_name: Florida
+  - country_code: USA
+    country_name: United States
+    subdivision_code: GA
+    subdivision_name: Georgia
+  - country_code: USA
+    country_name: United States
+    subdivision_code: HI
+    subdivision_name: Hawaii
+  - country_code: USA
+    country_name: United States
+    subdivision_code: IA
+    subdivision_name: Iowa
+  - country_code: USA
+    country_name: United States
+    subdivision_code: ID
+    subdivision_name: Idaho
+  - country_code: USA
+    country_name: United States
+    subdivision_code: IL
+    subdivision_name: Illinois
+  - country_code: USA
+    country_name: United States
+    subdivision_code: IN
+    subdivision_name: Indiana
+  - country_code: USA
+    country_name: United States
+    subdivision_code: KS
+    subdivision_name: Kansas
+  - country_code: USA
+    country_name: United States
+    subdivision_code: KY
+    subdivision_name: Kentucky
+  - country_code: USA
+    country_name: United States
+    subdivision_code: LA
+    subdivision_name: Louisiana
+  - country_code: USA
+    country_name: United States
+    subdivision_code: MA
+    subdivision_name: Massachusetts
+  - country_code: USA
+    country_name: United States
+    subdivision_code: MD
+    subdivision_name: Maryland
+  - country_code: USA
+    country_name: United States
+    subdivision_code: ME
+    subdivision_name: Maine
+  - country_code: USA
+    country_name: United States
+    subdivision_code: MI
+    subdivision_name: Michigan
+  - country_code: USA
+    country_name: United States
+    subdivision_code: MIDA
+    subdivision_name: Mid-Atlantic
+  - country_code: USA
+    country_name: United States
+    subdivision_code: MIDW
+    subdivision_name: Midwest
+  - country_code: USA
+    country_name: United States
+    subdivision_code: MN
+    subdivision_name: Minnesota
+  - country_code: USA
+    country_name: United States
+    subdivision_code: MO
+    subdivision_name: Missouri
+  - country_code: USA
+    country_name: United States
+    subdivision_code: MS
+    subdivision_name: Mississippi
+  - country_code: USA
+    country_name: United States
+    subdivision_code: MT
+    subdivision_name: Montana
+  - country_code: USA
+    country_name: United States
+    subdivision_code: NC
+    subdivision_name: North Carolina
+  - country_code: USA
+    country_name: United States
+    subdivision_code: ND
+    subdivision_name: North Dakota
+  - country_code: USA
+    country_name: United States
+    subdivision_code: NE
+    subdivision_name: New England
+  - country_code: USA
+    country_name: United States
+    subdivision_code: NH
+    subdivision_name: New Hampshire
+  - country_code: USA
+    country_name: United States
+    subdivision_code: NJ
+    subdivision_name: New Jersey
+  - country_code: USA
+    country_name: United States
+    subdivision_code: NM
+    subdivision_name: New Mexico
+  - country_code: USA
+    country_name: United States
+    subdivision_code: NV
+    subdivision_name: Nevada
+  - country_code: USA
+    country_name: United States
+    subdivision_code: NW
+    subdivision_name: Northwest
+  - country_code: USA
+    country_name: United States
+    subdivision_code: NY
+    subdivision_name: New York
+  - country_code: USA
+    country_name: United States
+    subdivision_code: OH
+    subdivision_name: Ohio
+  - country_code: USA
+    country_name: United States
+    subdivision_code: OK
+    subdivision_name: Oklahoma
+  - country_code: USA
+    country_name: United States
+    subdivision_code: OR
+    subdivision_name: Oregon
+  - country_code: USA
+    country_name: United States
+    subdivision_code: PA
+    subdivision_name: Pennsylvania
+  - country_code: USA
+    country_name: United States
+    subdivision_code: RI
+    subdivision_name: Rhode Island
+  - country_code: USA
+    country_name: United States
+    subdivision_code: SC
+    subdivision_name: South Carolina
+  - country_code: USA
+    country_name: United States
+    subdivision_code: SD
+    subdivision_name: South Dakota
+  - country_code: USA
+    country_name: United States
+    subdivision_code: SE
+    subdivision_name: Southeast
+  - country_code: USA
+    country_name: United States
+    subdivision_code: SW
+    subdivision_name: Southwest
+  - country_code: USA
+    country_name: United States
+    subdivision_code: TEN
+    subdivision_name: Tennessee
+  - country_code: USA
+    country_name: United States
+    subdivision_code: TEX
+    subdivision_name: Texas
+  - country_code: USA
+    country_name: United States
+    subdivision_code: TN
+    subdivision_name: Tennessee
+  - country_code: USA
+    country_name: United States
+    subdivision_code: TX
+    subdivision_name: Texas
+  - country_code: USA
+    country_name: United States
+    subdivision_code: UT
+    subdivision_name: Utah
+  - country_code: USA
+    country_name: United States
+    subdivision_code: VA
+    subdivision_name: Virginia
+  - country_code: USA
+    country_name: United States
+    subdivision_code: VT
+    subdivision_name: Vermont
+  - country_code: USA
+    country_name: United States
+    subdivision_code: WA
+    subdivision_name: Washington
+  - country_code: USA
+    country_name: United States
+    subdivision_code: WI
+    subdivision_name: Wisconsin
+  - country_code: USA
+    country_name: United States
+    subdivision_code: WV
+    subdivision_name: West Virginia
+  - country_code: USA
+    country_name: United States
+    subdivision_code: WY
+    subdivision_name: Wyoming
+  - country_code: ZAF
+    country_name: South Africa
+    subdivision_code: EC
+    subdivision_name: Eastern Cape
+  - country_code: ZAF
+    country_name: South Africa
+    subdivision_code: FS
+    subdivision_name: Free State
+  - country_code: ZAF
+    country_name: South Africa
+    subdivision_code: GT
+    subdivision_name: Subdivision of South Africa
+  - country_code: ZAF
+    country_name: South Africa
+    subdivision_code: LP
+    subdivision_name: Limpopo
+  - country_code: ZAF
+    country_name: South Africa
+    subdivision_code: MP
+    subdivision_name: Mpumalanga
+  - country_code: ZAF
+    country_name: South Africa
+    subdivision_code: NC
+    subdivision_name: Northern Cape
+  - country_code: ZAF
+    country_name: South Africa
+    subdivision_code: NL
+    subdivision_name: Subdivision of South Africa
+  - country_code: ZAF
+    country_name: South Africa
+    subdivision_code: NW
+    subdivision_name: North-West
+  - country_code: ZAF
+    country_name: South Africa
+    subdivision_code: WC
+    subdivision_name: Western Cape
