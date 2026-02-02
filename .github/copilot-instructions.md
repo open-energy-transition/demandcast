@@ -6,75 +6,88 @@
 
 - **Primary Language**: Python 3.12+
 - **Package Manager**: `uv` (Astral package manager)
-- **Repository Size**: ~6,300 Python files, modular architecture
+- **Repository Structure**: Single unified module in `demandcast/`
 - **License**: AGPL-3.0
 
 ## Repository Structure
 
 ```
 demandcast/
-├── ETL/                     # Extract, Transform, Load data pipelines
-│   ├── pyproject.toml       # ETL module dependencies
-│   ├── retrieve.py          # Main ETL script
-│   ├── retrievals/          # Data source retrieval scripts
-│   ├── utils/               # ETL utility functions
-│   └── tests/               # ETL test suite
-├── models/                  # Machine learning models
-│   └── xgboost/             # XGBoost model implementation
-│       ├── pyproject.toml   # Model dependencies
-│       ├── inference.py     # Model inference script
-│       └── serve.py         # Model serving API
-├── webpage/                 # MkDocs documentation site
-│   ├── docs/                # Documentation markdown files
-│   ├── mkdocs.yml           # MkDocs configuration
-│   └── pyproject.toml       # Docs dependencies
 ├── .github/
 │   └── workflows/           # CI/CD pipelines
-├── ruff.toml                # Ruff linter/formatter config
-├── .pre-commit-config.yaml  # Pre-commit hooks config
-└── README.md                # Project documentation
+├── demandcast/             # Main code directory
+│   ├── checks/             # Data availability and quality checks
+│   ├── config/             # Configuration files for all scripts
+│   ├── figures/            # Plotting modules and generated figures
+│   ├── ml_models/          # Machine learning models for forecasting
+│   ├── retrievals/         # Data retrieval modules
+│   │   ├── electricity_demand_data_sources/  # Country-specific retrieval scripts
+│   │   └── socio_economic_data_sources/      # Socio-economic data retrieval
+│   ├── shapes/             # Scripts for non-standard subdivision shapes
+│   ├── tests/              # Unit tests
+│   ├── utils/              # Shared utilities
+│   ├── assemble.py         # Data assembly script
+│   ├── check.py            # Data checking script
+│   ├── cross_validate.py   # Cross-validation script
+│   ├── Dockerfile          # Docker configuration
+│   ├── forecast.py         # Forecasting script
+│   ├── plot.py             # Plotting script
+│   ├── pyproject.toml      # Project dependencies
+│   ├── retrieve.py         # Main data retrieval script
+│   ├── train.py            # Model training script
+│   ├── upload.py           # Data upload script
+│   ├── uv.lock             # Locked dependencies
+│   └── validate.py         # Model validation script
+├── webpage/                # MkDocs documentation site
+│   ├── docs/               # Documentation markdown files
+│   ├── mkdocs.yml          # MkDocs configuration
+│   └── pyproject.toml      # Documentation dependencies
+├── ruff.toml               # Ruff linter/formatter config
+├── .pre-commit-config.yaml # Pre-commit hooks config
+└── README.md               # Project documentation
 ```
 
 ## Build and Development Workflow
 
 ### Environment Setup
 
-**CRITICAL**: Each subfolder (ETL, models/xgboost, webpage) has its own `pyproject.toml` and requires separate environment setup.
+The project uses a single unified environment in the `demandcast/` directory.
 
 1. **Install `uv` package manager** (if not already installed):
    ```bash
    pip install uv
    ```
 
-2. **Setup environment for a specific module**:
+2. **Setup environment**:
    ```bash
-   cd <module-path>  # e.g., cd ETL or cd models/xgboost
+   cd demandcast
    uv sync
    ```
    - This creates a `.venv` directory with all dependencies
-   - Takes 30-60 seconds for ETL module (many dependencies)
-   - Takes 10-20 seconds for webpage module (fewer dependencies)
+   - Takes 30-60 seconds (includes geospatial, ML, and API libraries)
 
-3. **Run scripts in the module environment**:
+3. **Run scripts**:
    ```bash
-   cd <module-path>
-   uv run <script.py>
+   cd demandcast
+   uv run <script.py> [--config path/to/config.yaml]
    ```
+   - All scripts accept optional `--config` argument
+   - Default configs are in `demandcast/config/`
+
+**Note**: The `webpage/` directory has its own separate environment for building documentation.
 
 ### Testing
 
-**ETL Module Tests**:
+**Test Suite**:
 ```bash
-cd ETL
+cd demandcast
 uv sync  # ALWAYS run before tests if .venv doesn't exist
 uv run pytest --cov=utils --cov-report=term-missing
 ```
 - Test suite takes ~37 seconds
-- Requires 95% code coverage (enforced in CI)
+- Requires 95% code coverage for utils (enforced in CI)
 - Some tests may fail in restricted network environments (expected)
-- Tests are in `ETL/tests/` directory
-
-**Note**: There are currently no test suites for the `models/xgboost` or `webpage` modules.
+- Tests are in `demandcast/tests/` directory
 
 ### Linting and Code Quality
 
@@ -123,8 +136,8 @@ uv run mkdocs serve
 - **Triggers**: On push to main, on all PRs
 - **Jobs**:
   1. **pre-commit** (10 min timeout): Runs all pre-commit hooks
-  2. **pytest-ETL** (10 min timeout): Runs ETL tests with 95% coverage requirement
-- **Matrix testing**: Currently only tests ETL module
+  2. **pytest** (10 min timeout): Runs tests with 95% coverage requirement for utils
+- **Environment**: Single demandcast module
 
 **Documentation Deployment** (`.github/workflows/docs.yml`):
 - **Trigger**: Push to main branch
@@ -134,9 +147,8 @@ uv run mkdocs serve
 **Docker Build** (`.github/workflows/docker-publish.yml`):
 - **Trigger**: Push to main, version tags, PRs
 - **Images built**:
-  - `ghcr.io/open-energy-transition/demandcast-etl`
-  - `ghcr.io/open-energy-transition/demandcast-xgboost`
-- Both use Python 3.12 base and include Google Cloud CLI
+  - `ghcr.io/open-energy-transition/demandcast`
+- Uses Python 3.12 base and includes Google Cloud CLI
 
 ### Pre-commit Hooks
 
@@ -151,38 +163,37 @@ Defined in `.pre-commit-config.yaml`:
 
 ### Project Layout Details
 
-**ETL Module** (`ETL/`):
-- Main entry point: `retrieve.py` (CLI for data retrieval)
-- Data sources: `retrievals/electricity_demand_data_sources/` (40+ country-specific scripts)
-- Utilities: `utils/` (directories, entities, fetcher, geospatial, shapes, time_series, uploader)
-- Key utilities have 95%+ test coverage
-- Run all retrievals: `./run_all.sh` (batch script for all data sources)
+**Main Module** (`demandcast/`):
+- **Data Retrieval**: `retrieve.py` (CLI for data retrieval with config file)
+- **Data Sources**: `retrievals/electricity_demand_data_sources/` (40+ country-specific scripts)
+- **ML Pipeline**: `assemble.py`, `train.py`, `validate.py`, `cross_validate.py`, `forecast.py`
+- **Configuration**: `config/` (YAML files for all scripts)
+- **Utilities**: `utils/` (config, entities, fetcher, geospatial, ml, time_series, uploader, etc.)
+- **Tests**: `tests/` (95%+ coverage for utils)
+- **Models**: `ml_models/` (currently XGBoost only)
 
-**Models** (`models/`):
-- Currently contains only XGBoost model
-- Includes Jupyter notebooks for development
-- `inference.py`: Model inference script
-- `serve.py`: FastAPI-based model serving
+**Documentation** (`webpage/`):
+- Built with MkDocs Material theme
+- Main docs: `docs/index.md`, `docs/getting_started.md`, `docs/retrieval.md`, `docs/ML.md`, `docs/plot.md`, `docs/Dockerfile.md`
+- Separate environment from main module
 
 **Common Patterns**:
-- Each module manages its own virtual environment
-- Python 3.12 is the target version (see `.python-version` files)
-- All modules use `uv` for dependency management
-- Lock files (`uv.lock`) are committed to version control
+- All scripts accept `--config` argument for custom configuration
+- Default configs are in `demandcast/config/`
+- Python 3.12 is the target version
+- `uv` for dependency management
+- Lock file (`uv.lock`) is committed to version control
+- All parameters configured via YAML files, not command-line arguments
 
 ### Dependencies
 
-**ETL Module** (heavy dependencies):
-- Geospatial: geopandas, cartopy, rasterio, shapely, pyproj
-- Data processing: pandas, numpy, xarray, pyarrow
-- APIs: entsoe-py, cdsapi, google-cloud-storage
-- ~94 total packages installed
-
-**XGBoost Model** (lighter dependencies):
-- ML: xgboost-cpu, scikit-learn
-- Data: pandas, xarray, dask
-- Serving: fastapi
-- ~20 total packages
+**Main Module** (`demandcast/`):
+- **Geospatial**: geopandas, cartopy, rasterio, shapely, pyproj
+- **Data processing**: pandas, polars, numpy, xarray, pyarrow
+- **APIs**: entsoe-py, cdsapi, google-cloud-storage
+- **ML**: xgboost-cpu, scikit-learn, dask
+- **Testing**: pytest, pytest-cov
+- Total: ~100+ packages
 
 **Webpage** (minimal dependencies):
 - mkdocs-material (includes all needed plugins)
@@ -194,13 +205,13 @@ Defined in `.pre-commit-config.yaml`:
 
 2. **Pre-commit network issues**: Initial pre-commit setup requires downloading hook repositories. If this fails, you can use `uvx ruff` directly for linting.
 
-3. **Module isolation**: ALWAYS `cd` into the correct module directory (ETL, models/xgboost, or webpage) before running `uv sync` or `uv run` commands. The `.venv` is module-specific.
+3. **Coverage requirements**: Pytest must achieve 95% coverage for utils (`--cov-fail-under=95`). Check coverage report output if changes drop below this threshold.
 
-4. **Coverage requirements**: The ETL pytest must achieve 95% coverage (`--cov-fail-under=95`). Check coverage report output if changes drop below this threshold.
+4. **Ruff line length**: Code must adhere to 79-character line length (PEP 8). Ruff auto-format handles this.
 
-5. **Ruff line length**: Code must adhere to 79-character line length (PEP 8). Ruff auto-format handles this.
+5. **Docker builds**: Dockerfile is in `demandcast/Dockerfile`. It installs Google Cloud CLI and uses `uv sync --frozen` for reproducible builds.
 
-6. **Docker builds**: Dockerfiles are in each module (ETL/Dockerfile, models/xgboost/Dockerfile). They install Google Cloud CLI and use `uv sync --frozen` for reproducible builds.
+6. **Configuration**: All scripts use YAML configuration files in `demandcast/config/`. Scripts accept only `--config` argument (no other command-line arguments).
 
 ## Validation Steps
 
@@ -208,35 +219,42 @@ Before submitting changes:
 
 1. **Lint your code**:
    ```bash
-   uvx ruff check --fix .
-   uvx ruff format .
+   uvx pre-commit run --all-files
    ```
 
-2. **Run tests** (for ETL changes):
+2. **Run tests** (for code changes):
    ```bash
-   cd ETL
+   cd demandcast
    uv run pytest --cov=utils --cov-report=term-missing --cov-fail-under=95
    ```
 
 3. **Check documentation builds** (for doc changes):
    ```bash
    cd webpage
+   uv sync  # First time only
    uv run mkdocs build
-   ```
-
-4. **Verify pre-commit passes** (optional but recommended):
-   ```bash
-   uvx pre-commit run --all-files
    ```
 
 ## Important Notes
 
-- **Always use `uv run`** instead of activating virtual environments directly
-- **Module-specific commands**: Navigate to the correct module directory first
-- **Coverage is enforced**: ETL utils must maintain 95% test coverage
+- **Configuration-driven**: All script parameters are set via YAML files in `demandcast/config/`
+- **Coverage is enforced**: Utils must maintain 95% test coverage
 - **Docstrings are required**: NumPy style docstrings enforced by ruff
 - **Line length**: 79 characters for code, 72 for docstrings/comments
 - **Type hints**: Encouraged but mypy is lenient (ignores missing imports)
+- **No command-line arguments**: Scripts accept only `--config` argument; all other parameters go in config files
+
+## Key Scripts and Their Configs
+
+- `retrieve.py` → `retrieve_config.yaml`: Data retrieval (electricity demand, weather, socio-economic)
+- `assemble.py` → `assemble_config.yaml`: Combine data for training or forecasting
+- `train.py` → `train_config.yaml`, `ml_config.yaml`, `xgboost_config.yaml`: Train ML models
+- `validate.py` → `validate_config.yaml`: Validate model performance
+- `cross_validate.py` → `cross_validate_config.yaml`: Leave-one-group-out cross-validation
+- `forecast.py` → `forecast_config.yaml`: Generate forecasts
+- `plot.py` → `plot_config.yaml`: Generate visualizations
+- `check.py` → Configuration for data quality checks
+- `upload.py` → `upload_config.yaml`: Upload data to cloud storage
 
 ## Trust These Instructions
 
