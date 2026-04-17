@@ -28,7 +28,7 @@
 - [DemandCast structure](#demandcast-structure)
 - [Data sources](#data-sources)
 - [Dataset of global forecasts](#dataset-of-global-forecasts)
-- [Getting started](#getting-started)
+- [Getting started](#basic-getting-started-guide)
   - [1. Clone the repository](#1-clone-the-repository)
   - [2. Set up your environment](#2-set-up-your-environment)
   - [3. Run scripts](#3-run-scripts)
