@@ -171,7 +171,7 @@ You can find the electricity demand data that we retrieved at different points i
 
 Forecasted hourly electricity demand for 184 countries from 2000 to 2024 is available in this [Zenodo repository](https://doi.org/10.5281/zenodo.18374351).
 
-Forecasts for future years, including different climate models and scenarios, will be included in a future release. However, DemandCast is already capable of generating these projections for users who wish to produce them independently.
+Forecasts for future years, including different climate models and scenarios, will be included in a future release. However, DemandCast is already capable of generating these forecasts for users who wish to produce them independently.
 
 ## Basic getting started guide
 
