@@ -13,38 +13,47 @@
 
 ```
 demandcast/
-├── .github/
+├── .github/                                  # Github specifics such as actions
 │   └── workflows/                            # CI/CD pipelines
 ├── demandcast/                               # Main code directory
-│   ├── checks/                               # Data availability and quality checks
+│   ├── checks/                               # Modules to perform data availability and quality checks
 │   ├── config/                               # Configuration files for all scripts
-│   ├── figures/                              # Plotting modules and generated figures
-│   ├── ml_models/                            # Machine learning models for forecasting
+│   ├── figures/                              # Modules to plot figures and resulting figures
+│   ├── ml_models/                            # Machine learning models for forecasting electricity demand
 │   ├── retrievals/                           # Data retrieval modules
-│   │   ├── electricity_demand_data_sources/  # Electricity demand retrieval scripts
-│   │   └── socio_economic_data_sources/      # Socio-economic data retrieval
-│   ├── shapes/                               # Scripts for non-standard subdivision shapes
-│   ├── tests/                                # Unit tests
-│   ├── utils/                                # Shared utilities
-│   ├── assemble.py                           # Data assembly script
-│   ├── check.py                              # Data checking script
-│   ├── cross_validate.py                     # Cross-validation script
-│   ├── Dockerfile                            # Docker configuration
-│   ├── forecast.py                           # Forecasting script
-│   ├── plot.py                               # Plotting script
-│   ├── pyproject.toml                        # Project dependencies
-│   ├── retrieve.py                           # Main data retrieval script
-│   ├── train.py                              # Model training script
-│   ├── upload.py                             # Data upload script
+│   │   ├── electricity_demand_data_sources/  # Electricity demand retrieval modules
+│   │   └── socio_economic_data_sources/      # Socio-economic data retrieval modules
+│   ├── shapes/                               # Scripts to generate shapes for non-standard subdivisions and resulting shapefiles
+│   ├── tests/                                # Unit tests for the utilities and retrieval scripts
+│   ├── utils/                                # Shared utilities for data fetching, processing, and uploading
+│   ├── .dockerignore                         # Files and directories to ignore in Docker build context
+│   ├── .env                                  # API keys (not included in repo)
+│   ├── .python-version                       # Python version for the environment
+│   ├── assemble.py                           # Script to assemble/preprocess data
+│   ├── check.py                              # Script to run data checks
+│   ├── cross_validate.py                     # Script to cross-validate models
+│   ├── Dockerfile                            # Dockerfile to create an image for the project
+│   ├── forecast.py                           # Script to generate forecasts
+│   ├── plot.py                               # Script to generate plots for the data
+│   ├── pyproject.toml                        # Project configuration and dependencies
+│   ├── retrieve.py                           # Main script to download and process data
+│   ├── run_all.sh                            # Shell script to run all processes sequentially
+│   ├── train.py                              # Script to train models
+│   ├── upload.py                             # Script to upload data
 │   ├── uv.lock                               # Locked dependencies
-│   └── validate.py                           # Model validation script
+│   └── validate.py                           # Script to validate data
 ├── webpage/                                  # MkDocs documentation site
 │   ├── docs/                                 # Documentation markdown files
 │   ├── mkdocs.yml                            # MkDocs configuration
 │   └── pyproject.toml                        # Documentation dependencies
-├── ruff.toml                                 # Ruff linter/formatter config
-├── .pre-commit-config.yaml                   # Pre-commit hooks config
-└── README.md                                 # Project documentation
+├── .gitattributes                            # Git attributes for handling line endings
+├── .gitignore                                # File lists that git ignores
+├── .pre-commit-config.yaml                   # Pre-commit configuration
+├── CONTRIBUTING.md                           # Guide to contributing
+├── LICENSE                                   # License file
+├── README.md                                 # Project overview and instructions
+├── ruff.toml                                 # Ruff configuration
+└── security.md                               # Security policy
 ```
 
 ## Build and Development Workflow
