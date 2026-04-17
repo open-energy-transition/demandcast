@@ -27,6 +27,7 @@
 - [Repository structure](#repository-structure)
 - [DemandCast structure](#demandcast-structure)
 - [Data sources](#data-sources)
+- [Dataset of global forecasts](#dataset-of-global-forecasts)
 - [Getting started](#getting-started)
   - [1. Clone the repository](#1-clone-the-repository)
   - [2. Set up your environment](#2-set-up-your-environment)
@@ -140,9 +141,9 @@ demandcast/
 
 ## Data sources
 
-The table below provides an overview of the data sources currently used in DemandCast for hourly and sub-hourly electricity demand, weather, and socio-economic data for both historical and forecasted periods.
+The table below provides an overview of the data sources currently used in DemandCast for hourly and sub-hourly electricity demand, weather, and socio-economic data for both historical and future periods.
 
-|Data type|Historical data source|Forecast data source|
+|Data type|Data sources for the historical period|Data sources for the future period|
 |---|---|---|
 |Hourly and sub-hourly<br>electricity demand|Various public sources listed in the<br>[Awesome Electricity Demand repository](https://github.com/open-energy-transition/Awesome-Electricity-Demand)| -- |
 |Temperature|[ERA5](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels)|[CMIP6](https://cds.climate.copernicus.eu/datasets/projections-cmip6)|
@@ -165,6 +166,12 @@ You can find the code that we used to retrieve the data in their respective file
 You can find the electricity demand data that we retrieved at different points in time in this [Google Cloud Storage bucket](https://console.cloud.google.com/storage/browser/demandcast_data) (freely accessible with a Google account). Alternatively, the direct links to the data have the following format:
 
 ```https://storage.googleapis.com/demandcast_data/{variable}/{country_or_subdivision_code}.parquet```
+
+## Dataset of global forecasts
+
+Forecasted hourly electricity demand for 184 countries from 2000 to 2024 is available in this [Zenodo repository](https://doi.org/10.5281/zenodo.18374351).
+
+Forecasts for future years, including different climate models and scenarios, will be included in a future release. However, DemandCast is already capable of generating these projections for users who wish to produce them independently.
 
 ## Basic getting started guide
 
