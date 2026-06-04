@@ -9,7 +9,7 @@ Description:
     Electricity Authority is published. The data is available from
     April 2017 to April 2018. The data is retrieved in one-month
     intervals. Even thought the year specified in the dataset is 2073
-    in the Bikram Sambat calendar, the lenght of the months seems to
+    in the Bikram Sambat calendar, the length of the months seems to
     suggest that the data corresponds to the year 2074 BS (April 2017
     to April 2018). Checking the demand profiles on weekdays and
     weekends does not show any consistent pattern that would help to
@@ -24,6 +24,12 @@ import logging
 import nepali_datetime
 import pandas
 import utils.fetcher
+
+# Bikram Sambat year for dataset (April 2017–April 2018).
+DATASET_BS_YEAR = 2074
+
+# In this dataset, hour 0 (midnight) is represented as 24.
+MIDNIGHT_HOUR = 24
 
 
 def redistribute() -> bool:
@@ -68,8 +74,9 @@ def get_available_requests() -> list[int]:
         A list of available requests.
     """
     # Return the available requests, which are the month numbers from 1
-    # to 12 in the Bikram Sambat calendar year 2074. Month 4 (Shrawan)
-    # is excluded due to missing data.
+    # to 12 in the Bikram Sambat calendar year defined by
+    # DATASET_BS_YEAR.
+    # Month 4 (Shrawan) is excluded due to missing data.
     return [1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12]
 
 
@@ -140,7 +147,7 @@ def download_and_extract_data_for_request(bs_month: int) -> pandas.DataFrame:
 
     logging.info(
         f"Retrieving electricity demand data for the Bikram Sambat month "
-        f"{bs_month} of the year 2074."
+        f"{bs_month} of the year {DATASET_BS_YEAR}."
     )
 
     # Get the URL for the given month.
@@ -162,7 +169,7 @@ def download_and_extract_data_for_request(bs_month: int) -> pandas.DataFrame:
         )
 
     if "Day" not in dataset.columns:
-        # Reset the coloumn names with the first row.
+        # Reset the column names with the first row.
         dataset.columns = dataset.iloc[0]
         dataset = dataset.drop(dataset.index[0]).reset_index(drop=True)
 
@@ -177,16 +184,22 @@ def download_and_extract_data_for_request(bs_month: int) -> pandas.DataFrame:
         value_name="Demand",
     ).reset_index()
 
+    # Helper function to parse "Time" string.
+    def parse_time_string(time_str: str) -> tuple[int, int]:
+        hour_str, minute_str = time_str.split(":")
+        hour = int(hour_str)
+        minute = int(minute_str)
+        if hour == 0:
+            hour = MIDNIGHT_HOUR
+        return hour, minute
+
     # Create a Nepali date and time list.
     nepali_date_and_time = [
         (
-            2074,
+            DATASET_BS_YEAR,
             bs_month,
             int(row["Day"]),
-            int(row["Time"].split(":")[0])
-            if int(row["Time"].split(":")[0]) != 0
-            else 24,
-            int(row["Time"].split(":")[1]),
+            *parse_time_string(row["Time"]),
         )
         for _, row in dataset.iterrows()
     ]
