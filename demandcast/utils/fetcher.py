@@ -91,15 +91,16 @@ def fetch_data(
     read_with: str = "requests.get",
     encoding_type: str | None = None,
     read_as: str = "csv_table",
-    csv_kwargs: dict[str, str | int] = {},
+    csv_kwargs: dict[str, str | int] | None = None,
     excel_kwargs: dict[
         str, str | int | list[str] | list[str | int] | dict[str, str] | None
-    ] = {},
+    ]
+    | None = None,
     verify_ssl: bool = True,
-    request_params: dict[str, str] = {},
-    post_data_params: dict[str, str | int] = {},
-    header_params: dict[str, str] = {},
-    json_keys: list[str] = [],
+    request_params: dict[str, str] | None = None,
+    post_data_params: dict[str, str | int] | None = None,
+    header_params: dict[str, str] | None = None,
+    json_keys: list[str] | None = None,
     query_aspx_webpage: bool = False,
     get_cookies: bool = False,
 ) -> pandas.DataFrame | pandas.ExcelFile | str | requests.Response:
@@ -161,6 +162,19 @@ def fetch_data(
     Exception
         If the request fails after the specified number of retries.
     """
+    if csv_kwargs is None:
+        csv_kwargs = {}
+    if excel_kwargs is None:
+        excel_kwargs = {}
+    if request_params is None:
+        request_params = {}
+    if post_data_params is None:
+        post_data_params = {}
+    if header_params is None:
+        header_params = {}
+    if json_keys is None:
+        json_keys = []
+
     # Try to fetch the data from the URL. These multiple try and except
     # blocks are used to handle different types of errors that may occur
     # at different stages of the request.
@@ -179,7 +193,7 @@ def fetch_data(
                     elif content_type == "html":
                         if read_with == "urllib.request":
                             # Read the HTML content from the URL using
-                            # the urlib.request module.
+                            # the urllib.request module.
                             request = urllib.request.Request(url)
                             for key, value in header_params.items():
                                 request.add_header(key, value)
@@ -324,7 +338,7 @@ def fetch_data(
                 except requests.exceptions.SSLError as e:
                     logging.error(
                         f"SSL error: {e}.\nPlease verify the SSL certificate."
-                        f"Retrying ({attempt + 1}/{retries})..."
+                        f"\nRetrying ({attempt + 1}/{retries})..."
                     )
                     time.sleep(retry_delay)
 
@@ -388,7 +402,7 @@ def fetch_entsoe_demand(
         The start date and time of the data retrieval.
     end_date_and_time : pandas.Timestamp
         The end date and time of the data retrieval.
-    max_attempts : int, optional
+    retries : int, optional
         The maximum number of retry attempts.
     retry_delay : int, optional
         The delay between retry attempts in seconds.
@@ -426,7 +440,7 @@ def fetch_entsoe_demand(
 
             except ConnectionError:
                 logging.error(
-                    f"Connection error. Retrying ({attempt}/{retries})..."
+                    f"Connection error. Retrying ({attempt + 1}/{retries})..."
                 )
                 time.sleep(retry_delay)
 
