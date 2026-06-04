@@ -345,25 +345,21 @@ def fetch_data(
             except (
                 requests.exceptions.HTTPError,
                 urllib.error.HTTPError,
-            ) as e:
+            ):
                 logging.error(
-                    f"HTTP error: {e}.\n"
-                    f"The URL {url} is not valid or the server is not "
-                    f"responding. Retrying ({attempt + 1}/{retries})..."
+                    "HTTP error while fetching remote data. "
+                    f"Retrying ({attempt + 1}/{retries})..."
                 )
                 time.sleep(retry_delay)
 
-    except (requests.exceptions.RequestException, urllib.error.URLError) as e:
+    except (requests.exceptions.RequestException, urllib.error.URLError):
         logging.error(
-            f"Request error: {e}.\n"
-            f"The URL {url} is not valid or the server is "
-            "not responding."
+            "Request error while fetching remote data. "
+            "The remote endpoint may be unavailable."
         )
-        raise Exception(f"Request error: {e}")
+        raise Exception("Request error while fetching remote data.")
 
-    raise Exception(
-        f"Failed to fetch data from {url} after {retries} retries."
-    )
+    raise Exception(f"Failed to fetch remote data after {retries} retries.")
 
 
 def fetch_entsoe_demand(
