@@ -15,15 +15,17 @@ The machine learning process in DemandCast follows a structured pipeline that tr
 
 **Target Variable: Load (fraction of annual total)**
 
-The target variable represents normalized hourly electricity consumption, calculated by dividing each hour's electricity demand (in MW) by the total yearly electricity demand for that region. This produces a fraction representing the percentage of the year's electricity consumed in that hour. For example, 0.00015 means this hour consumed 0.015% of the year's total electricity. This normalization allows the model to learn patterns across regions of different sizes—a small country and a large country both have values in a comparable range.
+The target variable represents normalized hourly electricity consumption. Take each hour's electricity demand (in MW) and divide it by the total yearly electricity demand for that region. This produces a fraction of the year's electricity consumed in that hour. For example, 0.00015 means this hour consumed 0.015% of the year's total electricity. This normalization allows the model to learn patterns across regions of different sizes—a small country and a large country both have values in a comparable range.
 
 **Temporal Splitting**
 
 Unlike typical machine learning where data is randomly split, temporal splitting is required for time-series forecasting. Random splitting would "leak" future information into training, making results unrealistically good. The dataset is split using the following logic:
 
-- **Training set**: All years except the last two for each region
-- **Validation set**: Second-to-last year for each region (optional)
-- **Test set**: Last available year for each region
+- **Test set**: For each region, the most recent calendar year for which that region has data
+- **Validation set**: For each region, the second-most-recent calendar year for which that region has data (optional)
+- **Training set**: For each region, all remaining earlier years with data
+
+Regions with fewer than three years of data contribute only to the splits that are possible given their available years.
 
 This ensures the model is evaluated on future time periods it hasn't seen during training, which is critical for time-series forecasting.
 
@@ -75,7 +77,7 @@ DemandCast currently implements XGBoost (eXtreme Gradient Boosting) as its prima
 
 ### Motivation
 
-The core motivation for using XGBoost to generate hourly electricity demand forecasts stems from its success in previous literature and its practical advantages. XGBoost is fast to train and perform inference, handles both categorical and continuous features natively, and provides built-in regularization to prevent overfitting. These characteristics make it an excellent baseline model that can be expanded upon in future work.
+The core motivation for using XGBoost to generate hourly electricity demand forecasts is based on previous work in the literature that applies gradient boosting models to load forecasting (e.g. [Mattsson et al., 2021](https://doi.org/10.1016/j.esr.2020.100606)). Our approach uses socioeconomic and weather parameters as inputs to predict hourly electricity demand, in line with these studies that combine meteorological and economic indicators for improved forecast accuracy. XGBoost is fast to train and perform inference, handles both categorical and continuous features natively, and provides built-in regularization to prevent overfitting. These characteristics make it an excellent baseline model that can be expanded upon in future work.
 
 ### XGBoost Configuration
 
