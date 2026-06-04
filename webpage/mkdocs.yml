@@ -4,7 +4,7 @@ theme:
   icon:
     logo: octicons/zap-24
     repo: octicons/git-branch-24
-  favicon: lightning_logo.svg  # Ensure lightning_logo.svg is actually in the docs/ directory
+  favicon: lightning_logo.svg # Ensure lightning_logo.svg is actually in the docs/ directory
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
