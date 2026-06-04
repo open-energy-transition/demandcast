@@ -147,6 +147,38 @@ def test_fetch_data_html_requests_get_with_cookies():
         assert isinstance(dataset, pandas.DataFrame)
 
 
+def test_fetch_data_default_header_params_not_reused():
+    """
+    Test that default header parameters are not reused across calls.
+
+    This test validates that a first call with cookies enabled does not
+    leak a Cookie header into a later call that relies on defaults.
+    """
+    with patch("requests.get"), patch("requests.Session"):
+        requests.get.return_value.text = "col1,col2\n1,2"
+        requests.Session.return_value.cookies.get_dict.return_value = {
+            "sessionid": "12345"
+        }
+
+        utils.fetcher.fetch_data(
+            "http://example.com",
+            "html",
+            read_with="requests.get",
+            get_cookies=True,
+        )
+        utils.fetcher.fetch_data(
+            "http://example.com",
+            "html",
+            read_with="requests.get",
+            get_cookies=False,
+        )
+
+        first_headers = requests.get.call_args_list[0].kwargs["headers"]
+        second_headers = requests.get.call_args_list[1].kwargs["headers"]
+        assert first_headers == {"Cookie": "sessionid=12345"}
+        assert second_headers == {}
+
+
 def test_fetch_data_html_requests_post_json():
     """
     Test fetching HTML data using requests.post with JSON response.
@@ -284,6 +316,26 @@ def test_fetch_entsoe_demand_errors():
             pandas.Timestamp("2023-01-02"),
         )
         assert isinstance(result, pandas.Series) and result.empty
+
+
+def test_fetch_entsoe_demand_retry_log_attempt_is_one_indexed(caplog):
+    """Test ENTSO-E retry logging uses one-indexed attempt counters."""
+    with patch("utils.fetcher.EntsoePandasClient") as mock_client:
+        mock_client.return_value.query_load.side_effect = ConnectionError(
+            "Connection failed"
+        )
+        with caplog.at_level("ERROR"), pytest.raises(ConnectionError):
+            utils.fetcher.fetch_entsoe_demand(
+                "dummy",
+                "FRA",
+                pandas.Timestamp("2023-01-01"),
+                pandas.Timestamp("2023-01-02"),
+                retries=2,
+                retry_delay=0,
+            )
+
+    assert "Retrying (1/2)" in caplog.text
+    assert "Retrying (0/2)" not in caplog.text
 
 
 def test_fetch_data_requests_get_errors():
