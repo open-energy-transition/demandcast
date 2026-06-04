@@ -25,7 +25,6 @@ import nepali_datetime
 import pandas
 import utils.fetcher
 
-
 # Bikram Sambat year for dataset (April 2017–April 2018).
 DATASET_BS_YEAR = 2074
 
