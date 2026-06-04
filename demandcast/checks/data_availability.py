@@ -247,16 +247,17 @@ def run_check() -> None:
 
     # Read codes available for future electricity demand per capita
     # projections from the IIASA SSP database.
-    iiasa_future_electricity_demand_per_capita_mapping = yaml.safe_load(
-        open(
-            os.path.join(
-                retrievals_directory,
-                "socio_economic_data_sources",
-                "iam_regions_mapping.yaml",
-            ),
-            "r",
+    with open(
+        os.path.join(
+            retrievals_directory,
+            "socio_economic_data_sources",
+            "iam_regions_mapping.yaml",
+        ),
+        "r",
+    ) as iiasa_mapping_file:
+        iiasa_future_electricity_demand_per_capita_mapping = yaml.safe_load(
+            iiasa_mapping_file
         )
-    )
     iiasa_future_electricity_demand_per_capita_codes = [
         code
         for code, __ in iiasa_future_electricity_demand_per_capita_mapping.items()
