@@ -359,9 +359,7 @@ def fetch_data(
         )
         raise Exception("Request error while fetching remote data.")
 
-    raise Exception(
-        f"Failed to fetch remote data after {retries} retries."
-    )
+    raise Exception(f"Failed to fetch remote data after {retries} retries.")
 
 
 def fetch_entsoe_demand(
