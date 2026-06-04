@@ -77,7 +77,7 @@ DemandCast currently implements XGBoost (eXtreme Gradient Boosting) as its prima
 
 ### Motivation
 
-The core motivation for using XGBoost to generate hourly electricity demand forecasts is based on previous work in the literature that applies gradient boosting models to short-term load forecasting (e.g. [Energy Strategy Reviews, 2020](https://doi.org/10.1016/j.esr.2020.100606)). Our approach uses socioeconomic and weather parameters as inputs to predict hourly electricity demand, in line with these studies that combine meteorological and economic indicators for improved forecast accuracy. XGBoost is fast to train and perform inference, handles both categorical and continuous features natively, and provides built-in regularization to prevent overfitting. These characteristics make it an excellent baseline model that can be expanded upon in future work.
+The core motivation for using XGBoost to generate hourly electricity demand forecasts is based on previous work in the literature that applies gradient boosting models to short-term load forecasting (e.g. [Mattsson et al., 2021](https://doi.org/10.1016/j.esr.2020.100606)). Our approach uses socioeconomic and weather parameters as inputs to predict hourly electricity demand, in line with these studies that combine meteorological and economic indicators for improved forecast accuracy. XGBoost is fast to train and perform inference, handles both categorical and continuous features natively, and provides built-in regularization to prevent overfitting. These characteristics make it an excellent baseline model that can be expanded upon in future work.
 
 ### XGBoost Configuration
 
