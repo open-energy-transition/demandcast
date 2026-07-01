@@ -67,7 +67,11 @@ def read_and_check_ml_configuration() -> BaseModel:
         raise ValueError(f"Configuration validation error: {e}") from e
 
 
-def get_trained_model_path(model_path: str | None, algorithm_name: str) -> str:
+def get_trained_model_path(
+    model_path: str | None,
+    algorithm_name: str,
+    extension: str = ".json",
+) -> str:
     """
     Get the path to the trained model file.
 
@@ -78,6 +82,9 @@ def get_trained_model_path(model_path: str | None, algorithm_name: str) -> str:
         in the default directory will be used.
     algorithm_name : str
         The name of the machine learning algorithm.
+    extension : str, optional
+        File extension of the saved model, e.g. ``".json"`` for
+        XGBoost or ``".pt"`` for LSTM. Defaults to ``".json"``.
 
     Returns
     -------
@@ -106,11 +113,11 @@ def get_trained_model_path(model_path: str | None, algorithm_name: str) -> str:
         for path in model_paths:
             # Extract datetime from the file name.
             datetime_of_file = path[
-                -len(datetime) - len(".json") : -len(".json")
+                -len(datetime) - len(extension) : -len(extension)
             ]
             if (
                 path.startswith(f"{algorithm_name}_model")
-                and path.endswith(".json")
+                and path.endswith(extension)
                 and datetime_of_file > datetime
             ):
                 datetime = datetime_of_file

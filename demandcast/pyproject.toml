@@ -40,9 +40,18 @@ dependencies = [
     "timezonefinder>=6.5.9",
     "tqdm>=4.67.1",
     "xarray>=2025.1.2",
+    "torch>=2.0.0",
     "xgboost-cpu>=3.1.2",
     "xlrd>=2.0.1",
 ]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
 
 [dependency-groups]
 dev = [

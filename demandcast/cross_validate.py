@@ -13,6 +13,7 @@ import logging
 import os
 from typing import Optional
 
+import ml_models.lstm
 import ml_models.xgboost
 import pandas
 import utils.config
@@ -95,13 +96,15 @@ def _cross_validate(
     """
     # Get an initialized model.
     if algorithm.lower() == "xgboost":
-        xgb_model = ml_models.xgboost.get_initialized_model()
+        model = ml_models.xgboost.get_initialized_model()
+    elif algorithm.lower() == "lstm":
+        model = ml_models.lstm.get_initialized_model()
     else:
         raise ValueError(f"Unsupported algorithm: {algorithm}")
 
     # Perform Leave-One-Group-Out cross-validation
     cv_results = cross_validate(
-        xgb_model,
+        model,
         prepared_dataset["features"],
         prepared_dataset["target"],
         groups=prepared_dataset["group"],
