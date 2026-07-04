@@ -145,6 +145,37 @@ The `predict()` function supports two calling modes that mirror the XGBoost inte
 - **Categorical features treated as numeric**: The LSTM receives all features as `float32` tensors. Categorical features (hour of day, month, weekend flag, temperature rank) are passed as integer-encoded numbers, the same encoding used by XGBoost. The LSTM does not apply embedding layers to these features.
 - **Optional algorithm**: LSTM is not the default algorithm. The default is XGBoost, selected by setting `algorithm: XGBoost` in `ml_config.yaml`. To switch to LSTM, set `algorithm: LSTM`.
 
+### Benchmark Results
+
+To compare the two algorithms under identical conditions, both were trained and validated on a benchmark dataset covering three countries (Denmark, Austria, Portugal) with electricity demand, temperature, population, and GDP data for 2021-2023. The most recent year of each entity was reserved as the testing set (`reserve_testing_set: true`), consistent with the temporal splitting described above.
+
+**Per-entity testing set MAPE:**
+
+| Entity | XGBoost | LSTM |
+|---|---|---|
+| DNK | 0.0931 | 0.1555 |
+| AUT | 0.1085 | 0.1754 |
+| PRT | 0.0869 | 0.1634 |
+
+**Overall testing set MAPE:**
+
+| Metric | XGBoost | LSTM |
+|---|---|---|
+| Mean | 0.0962 | 0.1648 |
+| Median | 0.0931 | 0.1634 |
+
+On this benchmark, XGBoost outperforms LSTM by a wide margin on every entity. This should not be read as general evidence that sequence models are unsuited to load forecasting — the result is best explained by the small size of this particular benchmark. With only three entities and a few years of hourly data each, there are too few independent sequences for the LSTM to learn its recurrent weights across a `n_timesteps=24` lookback window without underfitting. The training-set MAPE supports this reading: it is close to the testing-set MAPE for LSTM (~0.166–0.167 training vs ~0.155–0.175 testing), rather than substantially lower as would be expected if the model were overfitting. XGBoost, by contrast, benefits from engineered temporal features (hour-of-day, month, weekend flag) that hand it context an LSTM must otherwise learn implicitly from data volume it does not yet have here.
+
+**XGBoost remains the recommended default algorithm** for DemandCast, and this benchmark supports that recommendation for datasets of comparable size. LSTM should be treated as an optional alternative, best suited to future benchmarks with more entities and longer historical spans, where enough sequential data exists for the recurrent architecture to learn temporal dependencies without underfitting. Users experimenting with the LSTM algorithm on small datasets should expect it to underperform XGBoost until dataset scale increases substantially.
+
+**Benchmark configuration:**
+
+- Entities: DNK, AUT, PRT
+- Years: 2021-2023
+- Test set: most recent year per entity (`reserve_testing_set: true`)
+- LSTM: default hyperparameters (`n_timesteps=24`, `n_units=32`, `n_layers=1`, `epochs=5`)
+- XGBoost: default hyperparameters (see [XGBoost Configuration](#xgboost-configuration))
+
 ## Training and Validation
 
 The machine learning pipeline in DemandCast is managed through several Python scripts located in the `demandcast/` directory. Each script utilizes a configuration file to specify parameters such as data paths, model settings, and evaluation metrics. All scripts accept only the path to a configuration file:
