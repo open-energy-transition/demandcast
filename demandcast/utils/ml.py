@@ -51,7 +51,7 @@ def read_and_check_ml_configuration() -> BaseModel:
     )
 
     # Read the configuration.
-    with open(config_path, "r") as file:
+    with open(config_path, "r", encoding="utf-8") as file:
         raw_config = utils.config.yaml.safe_load(file)
 
     try:

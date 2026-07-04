@@ -43,7 +43,9 @@ def read_folders_structure() -> dict[str, str]:
     )
 
     # Read the folders structure from the file.
-    with open(folders_structure_file_path, "r") as file:
+    with open(
+        folders_structure_file_path, "r", encoding="utf-8"
+    ) as file:
         folders_structure = yaml.safe_load(file)
 
     # Add the root folder to the folders structure.
@@ -112,7 +114,7 @@ def read_configuration(
         )
 
     # Read the configuration file.
-    with open(config_file_path, "r") as file:
+    with open(config_file_path, "r", encoding="utf-8") as file:
         config = yaml.safe_load(file)
 
     return config

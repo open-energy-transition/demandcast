@@ -234,7 +234,7 @@ def _read_entities_info(
         )
 
     # Read the content from the file.
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         content = yaml.safe_load(file)
 
     # Return the information of the countries and subdivisions.
