@@ -189,9 +189,7 @@ def test_get_trained_model_path_pt_extension():
             "xgboost_model_20240103_120000.json",
         ]
 
-        result = utils.ml.get_trained_model_path(
-            None, "lstm", extension=".pt"
-        )
+        result = utils.ml.get_trained_model_path(None, "lstm", extension=".pt")
 
         assert result == os.path.join(
             "/models", "lstm_model_20240102_120000.pt"

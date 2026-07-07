@@ -33,10 +33,9 @@ torch = pytest.importorskip(
 
 import ml_models.lstm as lstm_module  # noqa: E402
 
-
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 # Small hyperparameters so every test trains in under a second on CPU.
 _FAST_CONFIG = MagicMock(
@@ -59,7 +58,15 @@ def _make_split(
     entities: list[str],
     n_per: int,
 ) -> dict:
-    """Build one split whose structure matches _split_in_groups output."""
+    """
+    Build one split whose structure matches _split_in_groups output.
+
+    Returns
+    -------
+    dict
+        Dict with "features", "target", "group", "time", and
+        "scaling_factor" keys.
+    """
     total = len(entities) * n_per
     features = pd.DataFrame(
         rng.standard_normal((total, len(_FEATURE_NAMES))),
@@ -68,9 +75,7 @@ def _make_split(
     target = pd.Series(
         rng.uniform(1e-4, 3e-4, total), name="Load (fraction of annual total)"
     )
-    group = pd.Series(
-        np.repeat(entities, n_per), name="Entity code"
-    )
+    group = pd.Series(np.repeat(entities, n_per), name="Entity code")
     time = pd.Series(
         pd.date_range("2020-01-01", periods=total, freq="h"),
         name="Time (UTC)",
@@ -86,7 +91,15 @@ def _make_split(
 
 
 def _make_prepared_dataset() -> dict:
-    """Return a multi-split prepared_dataset with 3 entities."""
+    """
+    Return a multi-split prepared_dataset with 3 entities.
+
+    Returns
+    -------
+    dict
+        Dict with "training", "validation", and "testing" keys, each
+        a split dict as returned by _make_split.
+    """
     rng = np.random.default_rng(0)
     return {
         "training": _make_split(rng, _ENTITIES, 60),
@@ -95,9 +108,9 @@ def _make_prepared_dataset() -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # _read_configuration
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_read_configuration_returns_correct_values():
@@ -168,9 +181,9 @@ def test_read_configuration_raises_on_bad_type():
             lstm_module._read_configuration()
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # get_initialized_model
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_get_initialized_model_returns_lstm_regressor():
@@ -197,9 +210,9 @@ def test_get_initialized_model_uses_config_values():
     assert model.random_state == _FAST_CONFIG.random_state
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # train
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_train_returns_lstm_regressor():
@@ -240,14 +253,21 @@ def test_train_only_uses_training_split():
     assert isinstance(model, lstm_module.LSTMRegressor)
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # predict — multi-split mode
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 @pytest.fixture(scope="module")
 def trained_model_and_dataset():
-    """Return a (model, dataset) pair shared across predict tests."""
+    """
+    Return a (model, dataset) pair shared across predict tests.
+
+    Returns
+    -------
+    tuple[LSTMRegressor, dict]
+        Fitted LSTM model and the prepared_dataset used to train it.
+    """
     dataset = _make_prepared_dataset()
     with patch(
         "ml_models.lstm._read_configuration", return_value=_FAST_CONFIG
@@ -277,7 +297,7 @@ def test_predict_multi_split_all_series(trained_model_and_dataset):
 
 
 def test_predict_multi_split_correct_lengths(trained_model_and_dataset):
-    """Prediction length matches the number of feature rows per split."""
+    """Prediction length matches feature row count per split."""
     model, dataset = trained_model_and_dataset
     result = lstm_module.predict(model, dataset)
 
@@ -289,9 +309,9 @@ def test_predict_multi_split_correct_lengths(trained_model_and_dataset):
         )
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # predict — single-dataset mode
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_predict_single_dataset_returns_series(trained_model_and_dataset):
@@ -314,9 +334,9 @@ def test_predict_single_dataset_correct_length(trained_model_and_dataset):
     assert len(result) == len(single["features"])
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # save / load round-trip
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_save_creates_pt_file(trained_model_and_dataset):
@@ -379,9 +399,9 @@ def test_load_raises_if_file_missing():
         lstm_module.load("/nonexistent/path/model.pt")
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # feature_names_in_ compatibility (validate.py / forecast.py checks)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_feature_names_in_tolist_returns_python_list(
@@ -390,9 +410,10 @@ def test_feature_names_in_tolist_returns_python_list(
     """
     feature_names_in_.tolist() returns a plain Python list of strings.
 
-    validate.py and forecast.py call ``model.feature_names_in_.tolist()``
-    and compare it to ``df.columns.tolist()``. Both sides must be plain
-    Python lists of strings for the equality check to work.
+    validate.py and forecast.py call
+    ``model.feature_names_in_.tolist()`` and compare it to
+    ``df.columns.tolist()``. Both sides must be plain Python lists
+    of strings for the equality check to work.
     """
     model, _ = trained_model_and_dataset
     result = model.feature_names_in_.tolist()
@@ -408,9 +429,10 @@ def test_feature_names_check_passes_against_matching_dataset(
     The validate.py / forecast.py feature-name guard passes for LSTM.
 
     Simulates the exact check both scripts perform: compare
-    ``df.columns.tolist()`` against ``model.feature_names_in_.tolist()``.
-    A failure here means the dispatch branches would incorrectly raise
-    ValueError even when the data matches the training features.
+    ``df.columns.tolist()`` against
+    ``model.feature_names_in_.tolist()``. A failure here means the
+    dispatch branches would incorrectly raise ValueError even when
+    the data matches the training features.
     """
     model, dataset = trained_model_and_dataset
     # validate.py uses the training split; forecast.py uses the bare
@@ -427,9 +449,9 @@ def test_feature_names_check_passes_against_matching_dataset(
     )
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Entity-boundary integrity
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_predict_respects_entity_boundaries():

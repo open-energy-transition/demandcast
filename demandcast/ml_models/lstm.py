@@ -32,22 +32,21 @@ if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
         if os.path.isdir(_torch_lib):
             _dll_dir_tokens.append(os.add_dll_directory(_torch_lib))
             break
-import numpy as np
-import torch
-import torch.nn as nn
-import pandas
+import numpy as np  # noqa: E402
+import torch  # noqa: E402
+import torch.nn as nn  # noqa: E402
+import pandas  # noqa: E402
+
 # isort: on
-import yaml
-from pydantic import BaseModel, ValidationError
-from sklearn.base import BaseEstimator, RegressorMixin
-from sklearn.utils.validation import check_is_fitted
+import utils.config  # noqa: E402
+import yaml  # noqa: E402
+from pydantic import BaseModel, ValidationError  # noqa: E402
+from sklearn.base import BaseEstimator, RegressorMixin  # noqa: E402
+from sklearn.utils.validation import check_is_fitted  # noqa: E402
 
-import utils.config
-
-
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Private PyTorch network
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 class _LSTMNet(nn.Module):
@@ -90,9 +89,9 @@ class _LSTMNet(nn.Module):
         return self.fc(out[:, -1, :]).squeeze(-1)
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # sklearn-compatible wrapper
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 class LSTMRegressor(BaseEstimator, RegressorMixin):
@@ -182,9 +181,7 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
         n_samples, n_features = X.shape
 
         if groups is None:
-            pad = np.zeros(
-                (self.n_timesteps - 1, n_features), dtype=X.dtype
-            )
+            pad = np.zeros((self.n_timesteps - 1, n_features), dtype=X.dtype)
             X_padded = np.concatenate([pad, X], axis=0)
             idx = (
                 np.arange(n_samples)[:, None]
@@ -206,9 +203,7 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
         for i in range(n_samples):
             window_start = max(run_start[i], i - self.n_timesteps + 1)
             n_valid = i - window_start + 1
-            X_seq[i, self.n_timesteps - n_valid :] = X[
-                window_start : i + 1
-            ]
+            X_seq[i, self.n_timesteps - n_valid :] = X[window_start : i + 1]
         return X_seq
 
     # ------------------------------------------------------------------
@@ -324,9 +319,9 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
     # get_params() and set_params() are inherited from BaseEstimator.
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Module-level API  (mirrors ml_models/xgboost.py)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def _read_configuration() -> BaseModel:
@@ -365,9 +360,7 @@ def _read_configuration() -> BaseModel:
     try:
         return ConfigModel(**raw_config)
     except ValidationError as e:
-        raise ValueError(
-            f"Configuration validation error: {e}"
-        ) from e
+        raise ValueError(f"Configuration validation error: {e}") from e
 
 
 def load(model_path: str) -> LSTMRegressor:
@@ -390,9 +383,7 @@ def load(model_path: str) -> LSTMRegressor:
         If ``model_path`` does not exist.
     """
     if not os.path.exists(model_path):
-        raise FileNotFoundError(
-            f"Model checkpoint not found: {model_path}"
-        )
+        raise FileNotFoundError(f"Model checkpoint not found: {model_path}")
 
     checkpoint = torch.load(model_path, weights_only=False)
 
@@ -443,9 +434,7 @@ def save(lstm_model: LSTMRegressor, model_name: str) -> None:
         "state_dict": lstm_model.net_.state_dict(),
     }
     if hasattr(lstm_model, "feature_names_in_"):
-        checkpoint["feature_names_in_"] = (
-            lstm_model.feature_names_in_.tolist()
-        )
+        checkpoint["feature_names_in_"] = lstm_model.feature_names_in_.tolist()
 
     torch.save(checkpoint, output_path)
 
@@ -480,9 +469,7 @@ def get_initialized_model() -> LSTMRegressor:
 
 
 def train(
-    prepared_dataset: dict[
-        str, dict[str, pandas.DataFrame | pandas.Series]
-    ],
+    prepared_dataset: dict[str, dict[str, pandas.DataFrame | pandas.Series]],
 ) -> LSTMRegressor:
     """
     Train an LSTM model on the prepared dataset.
@@ -575,7 +562,6 @@ def predict(
         )
         predictions[split_name] = pandas.Series(preds)
         logging.info(
-            f"Predictions made for {split_name} set: "
-            f"{len(preds)} records."
+            f"Predictions made for {split_name} set: {len(preds)} records."
         )
     return predictions
