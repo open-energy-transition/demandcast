@@ -1,7 +1,14 @@
 ﻿# benchmark_retrieve.ps1 — fail-fast retrieval for DNK/AUT/PRT 2021-2023
+#
+# Runs the electricity/annual-elec/population/gdp/temperature
+# retrieval steps followed by assemble, in order, aborting on the
+# first non-zero exit code. Reproduce by running this script from
+# any location; it locates the `demandcast/` package root relative
+# to its own file path so no hardcoded machine-specific path is
+# needed.
 # Monitor: Get-Content -Wait logs\benchmark_orchestration.log
 
-Set-Location "C:\Users\Dell\Desktop\DemandCast\demandcast\demandcast"
+Set-Location $PSScriptRoot
 
 New-Item -ItemType Directory -Force -Path "logs" | Out-Null
 $MasterLog = "logs\benchmark_orchestration.log"

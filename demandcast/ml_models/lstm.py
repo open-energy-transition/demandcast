@@ -18,20 +18,13 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 
 # isort: off
-# Windows: CPython GC calls RemoveDllDirectory when the token from
-# add_dll_directory is collected; storing the token prevents removal.
 # torch must be imported before pandas — pandas side-effects corrupt
 # the Windows DLL loader state for torch's c10.dll initialisation.
-_dll_dir_tokens: list = []
-if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
-    for _sp in sys.path:
-        _torch_lib = os.path.join(_sp, "torch", "lib")
-        if os.path.isdir(_torch_lib):
-            _dll_dir_tokens.append(os.add_dll_directory(_torch_lib))
-            break
+import utils.torch_windows  # noqa: E402
+
+_dll_dir_tokens = utils.torch_windows.enable_torch_dll_directory()
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 import torch.nn as nn  # noqa: E402
@@ -200,6 +193,9 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
         X_seq = np.zeros(
             (n_samples, self.n_timesteps, n_features), dtype=X.dtype
         )
+        # Builds one row at a time: fine for the current 3-country
+        # benchmark, but may be worth vectorizing for full-scale
+        # datasets with 40+ countries.
         for i in range(n_samples):
             window_start = max(run_start[i], i - self.n_timesteps + 1)
             n_valid = i - window_start + 1
@@ -385,7 +381,7 @@ def load(model_path: str) -> LSTMRegressor:
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model checkpoint not found: {model_path}")
 
-    checkpoint = torch.load(model_path, weights_only=False)
+    checkpoint = torch.load(model_path, weights_only=True)
 
     lstm_model = LSTMRegressor(**checkpoint["params"])
     lstm_model.n_features_in_ = checkpoint["n_features_in_"]

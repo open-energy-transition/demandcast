@@ -15,15 +15,10 @@ Description:
 from __future__ import annotations
 
 import importlib.util
-import os
 import sys
 
+import utils.torch_windows
+
 if sys.platform == "win32" and importlib.util.find_spec("torch") is not None:
-    _dll_dir_tokens: list = []
-    if hasattr(os, "add_dll_directory"):
-        for _sp in sys.path:
-            _torch_lib = os.path.join(_sp, "torch", "lib")
-            if os.path.isdir(_torch_lib):
-                _dll_dir_tokens.append(os.add_dll_directory(_torch_lib))
-                break
+    _dll_dir_tokens = utils.torch_windows.enable_torch_dll_directory()
     import torch  # noqa: F401

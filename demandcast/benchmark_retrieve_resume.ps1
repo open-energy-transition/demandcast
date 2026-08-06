@@ -1,8 +1,12 @@
 # benchmark_retrieve_resume.ps1 — resume from step 5/6 only
-# Steps 1-4 already completed; this runs temperature (ERA5) + assemble.
+#
+# Steps 1-4 already completed; this runs temperature (ERA5) +
+# assemble only. Reproduce by running this script from any location;
+# it locates the `demandcast/` package root relative to its own file
+# path so no hardcoded machine-specific path is needed.
 # Monitor: Get-Content -Wait logs\benchmark_orchestration.log
 
-Set-Location "C:\Users\Dell\Desktop\DemandCast\demandcast\demandcast"
+Set-Location $PSScriptRoot
 
 New-Item -ItemType Directory -Force -Path "logs" | Out-Null
 $MasterLog = "logs\benchmark_orchestration.log"
