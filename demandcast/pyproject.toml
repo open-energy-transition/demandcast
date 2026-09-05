@@ -44,6 +44,19 @@ dependencies = [
     "xlrd>=2.0.1",
 ]
 
+[project.optional-dependencies]
+lstm = [
+    "torch>=2.0.0",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
 [dependency-groups]
 dev = [
     "pytest>=9.0.3",
