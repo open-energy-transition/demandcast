@@ -110,6 +110,9 @@ if __name__ == "__main__":
             config.electricity_data_source,
             config.code,
             config.file,
+            config.year,
+            config.start_year,
+            config.end_year,
         )
     elif config.variable == "annual_electricity_demand_per_capita":
         # Run the data retrieval for annual electricity demand per

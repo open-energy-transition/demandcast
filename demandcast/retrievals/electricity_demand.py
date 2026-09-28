@@ -130,6 +130,68 @@ def _retrieve_data(data_source: str, code: str) -> pandas.Series:
     return electricity_demand_time_series
 
 
+def _filter_years(
+    electricity_demand_time_series: pandas.Series,
+    code: str,
+    year: int | None,
+    start_year: int | None,
+    end_year: int | None,
+) -> pandas.Series:
+    """
+    Keep only the requested years of the electricity demand time series.
+
+    The years are the local years of the country or subdivision, so
+    that, for example, the last hours of a year in UTC that fall in the
+    next year in local time are removed.
+
+    Parameters
+    ----------
+    electricity_demand_time_series : pandas.Series
+        The electricity demand time series in MW, with the time in UTC
+        as index.
+    code : str
+        The code of the country or subdivision.
+    year : int | None
+        The single year to keep. It takes precedence over start_year
+        and end_year.
+    start_year : int | None
+        The first year to keep. If None, there is no lower bound.
+    end_year : int | None
+        The last year to keep. If None, there is no upper bound.
+
+    Returns
+    -------
+    pandas.Series
+        The electricity demand time series for the requested years.
+    """
+    if year is not None:
+        start_year, end_year = year, year
+
+    if start_year is None and end_year is None:
+        return electricity_demand_time_series
+
+    # Get the local year of each time step.
+    local_years = (
+        electricity_demand_time_series.index.tz_localize("UTC")
+        .tz_convert(utils.entities.get_time_zone(code))
+        .year
+    )
+
+    # Keep the time steps within the requested years.
+    mask = pandas.Series(True, index=electricity_demand_time_series.index)
+    if start_year is not None:
+        mask &= local_years >= start_year
+    if end_year is not None:
+        mask &= local_years <= end_year
+
+    logging.info(
+        f"Keeping the electricity demand of {code} for the local years "
+        f"{start_year or 'first'} to {end_year or 'last'}."
+    )
+
+    return electricity_demand_time_series[mask.to_numpy()]
+
+
 def _save_data(
     electricity_demand_time_series: pandas.Series,
     code: str,
@@ -179,6 +241,9 @@ def run_data_retrieval(
     data_source: str,
     code: str | None,
     file: str | None,
+    year: int | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
 ) -> None:
     """
     Run the electricity demand data retrieval.
@@ -198,6 +263,15 @@ def run_data_retrieval(
     file : str | None
         The path to the yaml file containing the list of codes of the
         countries and subdivisions of interest.
+    year : int | None, optional
+        The single (local) year to keep. It takes precedence over
+        start_year and end_year.
+    start_year : int | None, optional
+        The first (local) year to keep. If None, the data is kept from
+        the start of the data source.
+    end_year : int | None, optional
+        The last (local) year to keep. If None, the data is kept up to
+        the end of the data source.
     """
     # Get the list of codes of the countries and subdivisions of
     # interest.
@@ -218,6 +292,11 @@ def run_data_retrieval(
 
         # Retrieve the electricity demand time series.
         electricity_demand_time_series = _retrieve_data(data_source, code)
+
+        # Keep only the requested years.
+        electricity_demand_time_series = _filter_years(
+            electricity_demand_time_series, code, year, start_year, end_year
+        )
 
         # Save the electricity demand time series to a file and upload
         # it to GCS.

@@ -62,6 +62,56 @@ def _read_and_check_configuration() -> BaseModel:
         raise ValueError(f"Configuration validation error: {e}") from e
 
 
+def _normalize_predictions(
+    raw_predictions: pandas.Series,
+    entity_codes: pandas.Series,
+    local_years: pandas.Series,
+) -> pandas.Series:
+    """
+    Normalize the predictions for each entity and local year.
+
+    The predicted fractions of each entity are rescaled so that they sum
+    to the share of the hours of the local year that are in the dataset,
+    which is 1.0 for a complete year. This is the same definition as the
+    load fraction used as target during training (see assemble.py), and
+    it avoids assigning the energy of a whole year to a partial year.
+
+    Parameters
+    ----------
+    raw_predictions : pandas.Series
+        The predicted load fractions from the model.
+    entity_codes : pandas.Series
+        The entity code of each prediction.
+    local_years : pandas.Series
+        The local year of each prediction.
+
+    Returns
+    -------
+    pandas.Series
+        The normalized load fractions, with the same index as the raw
+        predictions.
+    """
+    logging.info(
+        "Normalizing the predictions so that the hourly fractions of each "
+        "entity sum to 1.0 over each local year."
+    )
+
+    # Group the predictions by entity and local year.
+    keys = [
+        np.asarray(entity_codes),
+        np.asarray(local_years).astype(int),
+    ]
+    groups = raw_predictions.groupby(keys)
+
+    # Get the share of the hours of each local year in the dataset.
+    years = keys[1]
+    is_leap_year = (years % 4 == 0) & ((years % 100 != 0) | (years % 400 == 0))
+    hours_in_year = np.where(is_leap_year, 8784, 8760)
+    share_of_hours = groups.transform("count") / hours_in_year
+
+    return raw_predictions / groups.transform("sum") * share_of_hours
+
+
 def _construct_output_dataset(
     prepared_dataset: dict[str, pandas.Series | pandas.DataFrame],
     raw_predictions: pandas.Series,
@@ -85,9 +135,12 @@ def _construct_output_dataset(
     output_dataset : pandas.DataFrame
         The output dataset with forecasts.
     """
-    # Scale the prodictions to MW using the annual electricity demand
-    # per capita (kWh) and population.
-    forecasted_demand = raw_predictions * prepared_dataset["scaling_factor"] / 1000
+    # Scale the normalized predictions to MW using the annual electricity
+    # demand per capita (kWh) and population, so that the hourly load of
+    # each entity adds up to its annual demand.
+    forecasted_demand = (
+        normalized_predictions * prepared_dataset["scaling_factor"] / 1000
+    )
 
     # Construct the output dataset.
     output_dataset = prepared_dataset["time"].copy()
@@ -178,12 +231,14 @@ def run_forecasting(
         # Make predictions.
         raw_predictions = ml_models.xgboost.predict(model, prepared_dataset)
 
-        #Fractional normalization 
-        #Force the hourly fractions to sum to exactly 1.0 for each specific year 
-        #This prevents the model from predicting more than 100% of annual demand
-        local_years = prepared_dataset['others']['Local year'].values 
-        logging.info('Fractional normalization taking place. This to make sure the hourly fractions to sum exactly 1.0 for each local year')
-        normalized_predictions = raw_predictions.groupby(local_years).transform(lambda x: x / x.sum())
+        # Normalize the predictions so that the hourly fractions of each
+        # entity sum to 1.0 over each local year. This prevents the model
+        # from predicting more or less than 100% of the annual demand.
+        normalized_predictions = _normalize_predictions(
+            raw_predictions,
+            prepared_dataset["group"],
+            prepared_dataset["others"]["Local year"],
+        )
         logging.info("Forecasting completed successfully.")
 
     else:

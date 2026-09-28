@@ -15,6 +15,7 @@ from functools import reduce
 from typing import Callable, Optional
 
 import dask.dataframe
+import holidays
 import pandas
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
@@ -729,6 +730,139 @@ def _merge_datasets(
     return merged_dataset
 
 
+# Define the major holidays of each country, when most economic activity
+# stops for several days. They are given by the names of the holidays
+# in the holidays package, and by periods of dates (month, day) that
+# include days that are not official holidays. All other public
+# holidays of a country are other holidays.
+MAJOR_HOLIDAYS = {
+    "PHL": {
+        # Holy Week.
+        "names": ["Maundy Thursday", "Good Friday", "Black Saturday"],
+        # Christmas and New Year, from 24 December to 1 January.
+        "periods": [((12, 24), (12, 31)), ((1, 1), (1, 1))],
+    },
+}
+
+
+def _get_holiday_indicators(partition: pandas.DataFrame) -> pandas.DataFrame:
+    """
+    Get the local major and other holiday indicators of a partition.
+
+    Parameters
+    ----------
+    partition : pandas.DataFrame
+        Partition with the "Time (UTC)" and "Entity code" columns.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The "Local major holiday indicator" and "Local other holiday
+        indicator" columns. The first is 1 if the local date of the time
+        step is a major holiday of the country of the entity (see
+        MAJOR_HOLIDAYS). The second is 1 if it is any other public
+        holiday, including special non-working days. Both are 0
+        otherwise.
+    """
+    indicators = pandas.DataFrame(
+        0,
+        index=partition.index,
+        columns=["Local major holiday indicator", "Local other holiday indicator"],
+        dtype="int64",
+    )
+
+    for code, entity_data in partition.groupby("Entity code"):
+        # Get the local dates of the entity.
+        local_dates = (
+            pandas.to_datetime(entity_data["Time (UTC)"])
+            .dt.tz_localize("UTC")
+            .dt.tz_convert(utils.entities.get_time_zone(code))
+            .dt.date
+        )
+
+        # Get the public holidays of the country of the entity. The
+        # holidays of the country are used for its subdivisions.
+        country_code = code.split("_")[0]
+        years = sorted({date.year for date in local_dates})
+        try:
+            country_holidays = holidays.country_holidays(
+                country_code, years=years
+            )
+        except NotImplementedError:
+            logging.warning(
+                f"No public holidays are available for {country_code}. "
+                "The holiday indicators are set to 0."
+            )
+            continue
+
+        # Get the major holidays of the country, by name and by period.
+        major = MAJOR_HOLIDAYS.get(country_code, {"names": [], "periods": []})
+        major_dates = {
+            date
+            for date, name in country_holidays.items()
+            if any(major_name in name for major_name in major["names"])
+        }
+        for year in years:
+            for (start_month, start_day), (end_month, end_day) in major[
+                "periods"
+            ]:
+                major_dates.update(
+                    pandas.date_range(
+                        f"{year}-{start_month:02d}-{start_day:02d}",
+                        f"{year}-{end_month:02d}-{end_day:02d}",
+                    ).date
+                )
+
+        # Other holidays are the public holidays that are not major.
+        other_dates = set(country_holidays.keys()) - major_dates
+
+        indicators.loc[entity_data.index, "Local major holiday indicator"] = (
+            local_dates.isin(major_dates).astype("int64").to_numpy()
+        )
+        indicators.loc[entity_data.index, "Local other holiday indicator"] = (
+            local_dates.isin(other_dates).astype("int64").to_numpy()
+        )
+
+    return indicators
+
+
+def _add_holiday_indicators(
+    merged_dataset: dask.dataframe.DataFrame,
+) -> dask.dataframe.DataFrame:
+    """
+    Add the local major and other holiday indicators.
+
+    Public holidays, including special non-working days, are taken from
+    the holidays package for the country of each entity, and are
+    matched with the local date of each time step. Major holidays are
+    defined for each country in MAJOR_HOLIDAYS.
+
+    Parameters
+    ----------
+    merged_dataset : dask.dataframe.DataFrame
+        Dataset with the "Time (UTC)" and "Entity code" columns.
+
+    Returns
+    -------
+    merged_dataset : dask.dataframe.DataFrame
+        Dataset with the "Local major holiday indicator" and "Local
+        other holiday indicator" columns added.
+    """
+    logging.info("Adding the local major and other holiday indicators.")
+
+    indicators = merged_dataset.map_partitions(
+        _get_holiday_indicators,
+        meta={
+            "Local major holiday indicator": "int64",
+            "Local other holiday indicator": "int64",
+        },
+    )
+    for column in indicators.columns:
+        merged_dataset[column] = indicators[column]
+
+    return merged_dataset
+
+
 def _calculate_load_fraction(
     merged_dataset: dask.dataframe.DataFrame,
 ) -> dask.dataframe.DataFrame:
@@ -899,6 +1033,9 @@ def run_data_assemply(
         datasets_to_merge,
         ["Time (UTC)", "Entity code"],
     )
+
+    # Add the local major and other holiday indicators.
+    merged_dataset = _add_holiday_indicators(merged_dataset)
 
     if target_use == "training":
         # Calculate load fraction for training data.
