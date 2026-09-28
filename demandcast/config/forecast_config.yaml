@@ -2,5 +2,5 @@
 
 # OPTIONAL.
 # The machine learning algorithm to be used for forecasting.
-model_path: "D:/Modelling/demandcast/demandcast/ml_models/trained/xgboost_model_20260604_150322.json"
-data_path: D:/Modelling/demandcast/demandcast/data/assembled/20260604/assembled_data_for_forecasting_MMR_20260604_144943.parquet
+model_path: 
+data_path: "D:/Modelling/demandcast/demandcast/data/assembled/20260925/assembled_data_for_forecasting_20260925_131127.parquet"

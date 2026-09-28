@@ -8,42 +8,32 @@ target_use: forecasting
 # OPTIONAL.
 # The path to the yaml file containing the list of codes of the
 # countries and subdivisions of interest.
-file: "D:/Modelling/demandcast/demandcast/config/target_countries_config.yaml"
+file: "D:/Modelling/demandcast/demandcast/config/target_subnationals_config.yaml"
 
 # OPTIONAL.
 # Start year for a range of years of data to be assembled.
-start_year: 2020      
+start_year: 2025      
 
 # OPTIONAL.
 # End year for a range of years of data to be assembled.
-end_year: 2025
+end_year: 2030
  
+# OPTIONAL.
+# Selected scenario for annual electricity demand per capita.
+scenario_for_annual_electricity_demand_per_capita: SSP2-45
 
-# # Uncomment this for running forecast
-# # OPTIONAL.
-# # Start year for a range of years of data to be assembled.
-# start_year: 2025
+# OPTIONAL.
+# Selected scenario for GDP PPP per capita.
+scenario_for_gdp_ppp_per_capita: SSP2
 
-# # OPTIONAL.
-# # End year for a range of years of data to be assembled.
-# end_year: 2040 
+# OPTIONAL.
+# Selected scenario for population.
+scenario_for_population: SSP2
 
-# # OPTIONAL.
-# # Selected scenario for annual electricity demand per capita.
-# scenario_for_annual_electricity_demand_per_capita: SSP2-45
+# OPTIONAL.
+# Selected scenario for temperature.
+scenario_for_temperature: SSP2-4.5
 
-# # OPTIONAL.
-# # Selected scenario for GDP PPP per capita.
-# scenario_for_gdp_ppp_per_capita: SSP2
-
-# # OPTIONAL.
-# # Selected scenario for population.
-# scenario_for_population: SSP2
-
-# # OPTIONAL.
-# # Selected scenario for temperature.
-# scenario_for_temperature: SSP2-4.5
-
-# # OPTIONAL.
-# # Selected climate model for temperature.
-# climate_model_for_temperature: CNRM-ESM2-1
+# OPTIONAL.
+# Selected climate model for temperature.
+climate_model_for_temperature: CNRM-ESM2-1

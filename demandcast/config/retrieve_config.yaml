@@ -11,17 +11,18 @@
 
 # - gdp_ppp_per_capita,
 # - temperature.
-variable: annual_electricity_demand_per_capita
+variable: electricity_demand
+
 
 # OPTIONAL - REQUIRED for electricity_demand variable.
 # The acronym of the data source as defined in the retrieval
 # modules (example: "entsoe").
-electricity_data_source: 
+electricity_data_source: "ngcp"
 
 # OPTIONAL.
 # The ISO Alpha-3 code (example: "FRA") or a combination of ISO
 # Alpha-3 code and subdivision code (example: "USA_CAL").
-code:
+code: 
 
 # OPTIONAL.
 # The path to the yaml file containing the list of codes of the
@@ -34,17 +35,17 @@ year:
 
 # OPTIONAL.
 # Start year for a range of years of data to be retrieved.
-start_year: 2020
+start_year: 2000
 
 # OPTIONAL.
 # End year for a range of years of data to be retrieved.
-end_year: 2025
+end_year: 2024
 
 # OPTIONAL.
 # Scenario of the data to be retrieved.
 # Specify for future years, or else it will download all the available scenarios
 # it is painful to run everything
-scenario: 
+scenario: #SSP2-4.5
 #Scenario SPP1-2.6 is the sustainability pathway, but less aggressive than SSP1-1.9. Setting this as default scenario
 #Scenario SSP1-26 for annual_electricity_demand_per_capita
 #Scenario SSP1 for population, gdp/ppp per capita
