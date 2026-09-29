@@ -39,6 +39,7 @@ import os
 from datetime import datetime
 from io import BytesIO
 
+import holidays
 import matplotlib.pyplot as plt
 import pandas
 import requests
@@ -75,6 +76,29 @@ UTILISATION = "hh_utilisation_ratio"
 # from the profiles, because dividing by a mean close to zero turns
 # noise into very large normalised values.
 MIN_MEAN_UTILISATION = 0.015
+
+# Define the maximum share of zero utilisation ratios of a site. Zeros
+# are normal (e.g., during outages or before a site starts importing),
+# but sites that are almost always zero have profiles dominated by short
+# bursts of import, which are likely metering errors.
+MAX_ZERO_SHARE = 0.8
+
+# Define the maximum median utilisation ratio of a site. A site whose
+# import is above its maximum import capacity most of the time likely
+# has an incorrect or outdated capacity.
+MAX_MEDIAN_UTILISATION = 1
+
+# Define the groups of bank holidays of England (where UKPN operates),
+# by keywords in the holiday names. Other bank holidays (e.g., May Day
+# and the Spring and Late Summer bank holidays) are grouped together.
+HOLIDAY_GROUPS = {
+    "Christmas and New Year": ("Christmas", "Boxing", "New Year"),
+    "Easter": ("Good Friday", "Easter"),
+}
+OTHER_HOLIDAYS = "Other bank holidays"
+
+# Define the months of each season.
+SEASONS = {"Winter": (12, 1, 2), "Summer": (6, 7, 8)}
 
 
 def _get_api_key() -> str:
@@ -163,8 +187,9 @@ def flag_included_sites(data: pandas.DataFrame) -> pandas.DataFrame:
     """
     Flag the sites to include in the profiles.
 
-    Utilisation ratios above 1 (the import exceeding the maximum import
-    capacity) are kept as they are.
+    Zero utilisation ratios, and utilisation ratios above 1 (the import
+    exceeding the maximum import capacity), are otherwise kept as they
+    are.
 
     Parameters
     ----------
@@ -175,23 +200,40 @@ def flag_included_sites(data: pandas.DataFrame) -> pandas.DataFrame:
     -------
     pandas.DataFrame
         The data with an "included" column that is False for the sites
-        whose mean utilisation is below MIN_MEAN_UTILISATION.
+        whose mean utilisation is below MIN_MEAN_UTILISATION, whose share
+        of zero utilisation is above MAX_ZERO_SHARE, or whose median
+        utilisation is above MAX_MEDIAN_UTILISATION.
     """
     data = data.copy()
+    site_utilisation = data.groupby("anonymised_data_centre_name")[UTILISATION]
 
-    # Flag the sites with a mean utilisation below the minimum.
-    site_mean = data.groupby("anonymised_data_centre_name")[
-        UTILISATION
-    ].transform("mean")
-    data["included"] = site_mean >= MIN_MEAN_UTILISATION
+    exclusion_criteria = {
+        f"a mean utilisation below {MIN_MEAN_UTILISATION}": (
+            site_utilisation.transform("mean") < MIN_MEAN_UTILISATION
+        ),
+        f"a share of zero utilisation above {MAX_ZERO_SHARE}": (
+            (data[UTILISATION] == 0)
+            .groupby(data["anonymised_data_centre_name"])
+            .transform("mean")
+            > MAX_ZERO_SHARE
+        ),
+        f"a median utilisation above {MAX_MEDIAN_UTILISATION}": (
+            site_utilisation.transform("median") > MAX_MEDIAN_UTILISATION
+        ),
+    }
 
-    excluded_sites = data.loc[
-        ~data["included"], "anonymised_data_centre_name"
-    ].unique()
-    logging.info(
-        f"Excluded {len(excluded_sites)} sites with a mean utilisation "
-        f"below {MIN_MEAN_UTILISATION}: {', '.join(sorted(excluded_sites))}."
-    )
+    # Flag the sites that meet any of the criteria, and log the sites
+    # excluded by each criterion (a site can meet several criteria).
+    data["included"] = True
+    for criterion, excluded in exclusion_criteria.items():
+        data["included"] &= ~excluded
+        excluded_sites = data.loc[
+            excluded, "anonymised_data_centre_name"
+        ].unique()
+        logging.info(
+            f"Excluded {len(excluded_sites)} sites with {criterion}: "
+            f"{', '.join(sorted(excluded_sites))}."
+        )
 
     return data
 
@@ -277,6 +319,54 @@ def _normalise_by_site_mean(data: pandas.DataFrame) -> pandas.Series:
     return data[UTILISATION] / site_mean
 
 
+def _get_day_type(local_time: pandas.Series) -> pandas.Series:
+    """Get the day type (weekday or weekend) of each local timestamp."""
+    return (local_time.dt.dayofweek >= 5).map(
+        {False: "Weekday", True: "Weekend"}
+    )
+
+
+def _average_site_profiles(
+    data: pandas.DataFrame, columns: list[str]
+) -> pandas.DataFrame:
+    """
+    Average the profiles by data centre type and the given columns.
+
+    Each site is averaged first, then the sites are averaged, so that
+    sites with longer records do not dominate.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        The half-hourly utilisation ratio of each data centre site, with
+        a "normalised" column and the given columns.
+    columns : list[str]
+        The columns to group by, in addition to the data centre type.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The mean utilisation, the mean normalised utilisation, and the
+        number of sites by type and the given columns.
+    """
+    site_profiles = (
+        data.groupby(["dc_type", "anonymised_data_centre_name", *columns])[
+            [UTILISATION, "normalised"]
+        ]
+        .mean()
+        .reset_index()
+    )
+    return (
+        site_profiles.groupby(["dc_type", *columns])
+        .agg(
+            mean_utilisation=(UTILISATION, "mean"),
+            mean_normalised=("normalised", "mean"),
+            sites=("anonymised_data_centre_name", "nunique"),
+        )
+        .reset_index()
+    )
+
+
 def get_diurnal_profiles(data: pandas.DataFrame) -> pandas.DataFrame:
     """
     Get the average diurnal profile by data centre type.
@@ -296,30 +386,107 @@ def get_diurnal_profiles(data: pandas.DataFrame) -> pandas.DataFrame:
     """
     data = data.assign(
         normalised=_normalise_by_site_mean(data),
-        day_type=(data["Local time"].dt.dayofweek >= 5).map(
-            {False: "Weekday", True: "Weekend"}
-        ),
+        day_type=_get_day_type(data["Local time"]),
         half_hour=data["Local time"].dt.strftime("%H:%M"),
     )
+    return _average_site_profiles(data, ["day_type", "half_hour"])
 
-    # Average each site first, then average the sites, so that sites
-    # with longer records do not dominate.
-    site_profiles = (
-        data.groupby(
-            ["dc_type", "anonymised_data_centre_name", "day_type", "half_hour"]
-        )[[UTILISATION, "normalised"]]
-        .mean()
-        .reset_index()
+
+def get_holiday_profiles(data: pandas.DataFrame) -> pandas.DataFrame:
+    """
+    Get the average diurnal profile on bank holidays by data centre type.
+
+    Bank holidays of England are grouped into HOLIDAY_GROUPS and
+    OTHER_HOLIDAYS, and compared with the weekdays and weekends that
+    are not bank holidays.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        The half-hourly utilisation ratio of each data centre site.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The mean utilisation and the mean normalised utilisation (1 =
+        site average) by type, day type (weekday, weekend, or holiday
+        group), and local half-hour of the day, with each site weighted
+        equally.
+    """
+    local_time = data["Local time"]
+    dates = local_time.dt.date
+
+    # Get the bank holidays of England over the period of the data.
+    bank_holidays = holidays.country_holidays(
+        "GB",
+        subdiv="ENG",
+        years=range(local_time.dt.year.min(), local_time.dt.year.max() + 1),
     )
-    return (
-        site_profiles.groupby(["dc_type", "day_type", "half_hour"])
-        .agg(
-            mean_utilisation=(UTILISATION, "mean"),
-            mean_normalised=("normalised", "mean"),
-            sites=("anonymised_data_centre_name", "nunique"),
-        )
-        .reset_index()
+
+    def get_holiday_group(name: str) -> str:
+        for group, keywords in HOLIDAY_GROUPS.items():
+            if any(keyword in name for keyword in keywords):
+                return group
+        return OTHER_HOLIDAYS
+
+    holiday_groups = dates.map(
+        {date: get_holiday_group(name) for date, name in bank_holidays.items()}
     )
+
+    data = data.assign(
+        normalised=_normalise_by_site_mean(data),
+        day_type=holiday_groups.fillna(_get_day_type(local_time)),
+        half_hour=local_time.dt.strftime("%H:%M"),
+    )
+
+    # Log the number of days of each holiday group, since the holiday
+    # profiles are based on a few days only.
+    holiday_days = (
+        dates[holiday_groups.notna()]
+        .groupby(holiday_groups[holiday_groups.notna()])
+        .nunique()
+    )
+    logging.info(
+        "Number of bank holidays in the data: "
+        + ", ".join(f"{group}: {days}" for group, days in holiday_days.items())
+        + "."
+    )
+
+    return _average_site_profiles(data, ["day_type", "half_hour"])
+
+
+def get_seasonal_profiles(data: pandas.DataFrame) -> pandas.DataFrame:
+    """
+    Get the average diurnal profile in each season by data centre type.
+
+    The utilisation is normalised by the mean of each site over its whole
+    record before selecting the seasons, so that the levels of the
+    seasons can be compared.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        The half-hourly utilisation ratio of each data centre site.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The mean utilisation and the mean normalised utilisation (1 =
+        site average) by type, season (see SEASONS), day type (weekday
+        or weekend), and local half-hour of the day, with each site
+        weighted equally.
+    """
+    month_to_season = {
+        month: season for season, months in SEASONS.items() for month in months
+    }
+    data = data.assign(
+        normalised=_normalise_by_site_mean(data),
+        season=data["Local time"].dt.month.map(month_to_season),
+        day_type=_get_day_type(data["Local time"]),
+        half_hour=data["Local time"].dt.strftime("%H:%M"),
+    )
+    data = data[data["season"].notna()]
+    return _average_site_profiles(data, ["season", "day_type", "half_hour"])
 
 
 def get_monthly_profiles(data: pandas.DataFrame) -> pandas.DataFrame:
@@ -342,22 +509,7 @@ def get_monthly_profiles(data: pandas.DataFrame) -> pandas.DataFrame:
         normalised=_normalise_by_site_mean(data),
         month=data["Local time"].dt.month,
     )
-    site_profiles = (
-        data.groupby(["dc_type", "anonymised_data_centre_name", "month"])[
-            [UTILISATION, "normalised"]
-        ]
-        .mean()
-        .reset_index()
-    )
-    return (
-        site_profiles.groupby(["dc_type", "month"])
-        .agg(
-            mean_utilisation=(UTILISATION, "mean"),
-            mean_normalised=("normalised", "mean"),
-            sites=("anonymised_data_centre_name", "nunique"),
-        )
-        .reset_index()
-    )
+    return _average_site_profiles(data, ["month"])
 
 
 def plot_profiles(
@@ -431,6 +583,86 @@ def plot_profiles(
     plt.close(fig)
 
 
+def plot_holiday_and_seasonal_profiles(
+    holiday_profiles: pandas.DataFrame,
+    seasonal_profiles: pandas.DataFrame,
+    output_directory: str,
+) -> None:
+    """
+    Plot the diurnal profiles on bank holidays and in each season.
+
+    Parameters
+    ----------
+    holiday_profiles : pandas.DataFrame
+        The output of get_holiday_profiles.
+    seasonal_profiles : pandas.DataFrame
+        The output of get_seasonal_profiles.
+    output_directory : str
+        The folder where the figures are saved.
+    """
+    dc_types = sorted(holiday_profiles["dc_type"].unique())
+
+    # Diurnal shape on bank holidays, compared with weekdays and weekends.
+    day_types = ["Weekday", "Weekend", *HOLIDAY_GROUPS, OTHER_HOLIDAYS]
+    fig, axes = plt.subplots(1, len(dc_types), figsize=(14, 5), sharey=True)
+    for ax, dc_type in zip(axes, dc_types):
+        type_profiles = holiday_profiles[holiday_profiles["dc_type"] == dc_type]
+        for day_type in day_types:
+            profile = type_profiles[type_profiles["day_type"] == day_type]
+            if profile.empty:
+                continue
+            ax.plot(
+                profile["half_hour"],
+                profile["mean_normalised"],
+                label=day_type,
+                linestyle="-" if day_type in ["Weekday", "Weekend"] else "--",
+            )
+        ax.set_title(f"{dc_type} ({type_profiles['sites'].max()} sites)")
+        ax.set_xlabel("Local time (Europe/London)")
+        ax.set_xticks(range(0, 48, 6))
+        ax.grid(True, linestyle="--", alpha=0.6)
+    axes[0].set_ylabel("Utilisation / site mean")
+    axes[0].legend()
+    fig.suptitle(
+        "UK data centres: average diurnal profile on bank holidays",
+        fontweight="bold",
+    )
+    fig.tight_layout()
+    fig.savefig(os.path.join(output_directory, "holiday_profiles.png"), dpi=150)
+    plt.close(fig)
+
+    # Diurnal shape in each season, for weekdays and weekends.
+    colors = dict(zip(SEASONS, ["tab:blue", "tab:red"]))
+    fig, axes = plt.subplots(1, len(dc_types), figsize=(14, 5), sharey=True)
+    for ax, dc_type in zip(axes, dc_types):
+        type_profiles = seasonal_profiles[seasonal_profiles["dc_type"] == dc_type]
+        for (season, day_type), profile in type_profiles.groupby(
+            ["season", "day_type"]
+        ):
+            ax.plot(
+                profile["half_hour"],
+                profile["mean_normalised"],
+                label=f"{season} {day_type.lower()}",
+                color=colors[season],
+                linestyle="-" if day_type == "Weekday" else "--",
+            )
+        ax.set_title(f"{dc_type} ({type_profiles['sites'].max()} sites)")
+        ax.set_xlabel("Local time (Europe/London)")
+        ax.set_xticks(range(0, 48, 6))
+        ax.grid(True, linestyle="--", alpha=0.6)
+    axes[0].set_ylabel("Utilisation / site mean")
+    axes[0].legend()
+    fig.suptitle(
+        "UK data centres: average diurnal profile in summer "
+        f"(months {', '.join(map(str, SEASONS['Summer']))}) and winter "
+        f"(months {', '.join(map(str, SEASONS['Winter']))})",
+        fontweight="bold",
+    )
+    fig.tight_layout()
+    fig.savefig(os.path.join(output_directory, "seasonal_profiles.png"), dpi=150)
+    plt.close(fig)
+
+
 def run_data_retrieval() -> None:
     """
     Download the data centre profiles, and save them with summaries.
@@ -442,10 +674,12 @@ def run_data_retrieval() -> None:
       downloaded;
     - site_summary.csv: statistics of each site, and whether the site
       is included in the profiles;
-    - diurnal_profiles.csv and monthly_profiles.csv: average shapes by
-      data centre type, from the sites with a mean utilisation of at
-      least MIN_MEAN_UTILISATION;
-    - diurnal_profiles.png, monthly_profiles.png, site_statistics.png.
+    - diurnal_profiles.csv, monthly_profiles.csv, holiday_profiles.csv,
+      and seasonal_profiles.csv: average shapes by data centre type,
+      from the sites with a mean utilisation of at least
+      MIN_MEAN_UTILISATION;
+    - diurnal_profiles.png, monthly_profiles.png, holiday_profiles.png,
+      seasonal_profiles.png, site_statistics.png.
     """
     os.makedirs(RESULT_DIRECTORY, exist_ok=True)
 
@@ -470,6 +704,8 @@ def run_data_retrieval() -> None:
     included_data = data[data["included"]]
     diurnal_profiles = get_diurnal_profiles(included_data)
     monthly_profiles = get_monthly_profiles(included_data)
+    holiday_profiles = get_holiday_profiles(included_data)
+    seasonal_profiles = get_seasonal_profiles(included_data)
 
     site_summary.to_csv(
         os.path.join(RESULT_DIRECTORY, "site_summary.csv"), index=False
@@ -480,10 +716,19 @@ def run_data_retrieval() -> None:
     monthly_profiles.to_csv(
         os.path.join(RESULT_DIRECTORY, "monthly_profiles.csv"), index=False
     )
+    holiday_profiles.to_csv(
+        os.path.join(RESULT_DIRECTORY, "holiday_profiles.csv"), index=False
+    )
+    seasonal_profiles.to_csv(
+        os.path.join(RESULT_DIRECTORY, "seasonal_profiles.csv"), index=False
+    )
 
     included_summary = site_summary[site_summary["Included"]]
     plot_profiles(
         diurnal_profiles, monthly_profiles, included_summary, RESULT_DIRECTORY
+    )
+    plot_holiday_and_seasonal_profiles(
+        holiday_profiles, seasonal_profiles, RESULT_DIRECTORY
     )
 
     logging.info(f"Summaries and figures saved in {RESULT_DIRECTORY}.")
