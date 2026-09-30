@@ -50,7 +50,7 @@ TIME_ZONE = "Asia/Manila"
 
 # Define the weight of the UKPN shape of each data centre type. Most
 # data centres in the Philippines are co-located (colocation) sites.
-DC_TYPE_WEIGHTS = {"Co-located": 1.0, "Enterprise": 1.0}
+DC_TYPE_WEIGHTS = {"Co-located": 1.0, "Enterprise": 0.0}
 
 # Define whether the public holidays of the Philippines use the weekend
 # shape. In the UKPN data, bank holidays are close to weekends.
