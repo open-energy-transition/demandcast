@@ -1,0 +1,10 @@
+variable: gdp_ppp_per_capita
+electricity_data_source:
+code:
+file: config/benchmark_codes.yaml
+year:
+start_year:
+end_year:
+scenario:
+weather_variable:
+climate_model:

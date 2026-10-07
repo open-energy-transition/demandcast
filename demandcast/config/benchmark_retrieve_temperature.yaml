@@ -1,0 +1,10 @@
+variable: temperature
+electricity_data_source:
+code:
+file: config/benchmark_codes.yaml
+year:
+start_year: 2021
+end_year: 2023
+scenario:
+weather_variable:
+climate_model:

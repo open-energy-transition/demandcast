@@ -1,0 +1,9 @@
+target_use: training
+file: config/benchmark_codes.yaml
+start_year: 2021
+end_year: 2023
+scenario_for_annual_electricity_demand_per_capita:
+scenario_for_gdp_ppp_per_capita:
+scenario_for_population:
+scenario_for_temperature:
+climate_model_for_temperature:

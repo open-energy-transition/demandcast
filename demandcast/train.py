@@ -12,6 +12,7 @@ Description:
 import logging
 from typing import Optional
 
+import ml_models.lstm
 import ml_models.xgboost
 import pandas
 import utils.config
@@ -110,6 +111,12 @@ def run_model_training(
 
         # Save the trained model.
         ml_models.xgboost.save(model, model_name)
+    elif algorithm.lower() == "lstm":
+        # Train the model.
+        model = ml_models.lstm.train(prepared_dataset)
+
+        # Save the trained model.
+        ml_models.lstm.save(model, model_name)
     else:
         raise ValueError(f"Unsupported algorithm: {algorithm}")
 

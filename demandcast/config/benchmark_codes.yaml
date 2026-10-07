@@ -1,0 +1,7 @@
+entities:
+  - country_name: Denmark
+    country_code: DNK
+  - country_name: Austria
+    country_code: AUT
+  - country_name: Portugal
+    country_code: PRT

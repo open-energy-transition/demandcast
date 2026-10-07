@@ -13,11 +13,14 @@ import logging
 import os
 from typing import Optional
 
+import ml_models.lstm
 import ml_models.xgboost
 import pandas
 import utils.config
 import utils.ml
 from pydantic import BaseModel, ValidationError
+from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.metrics import get_scorer
 from sklearn.model_selection import LeaveOneGroupOut, cross_validate
 
 
@@ -62,6 +65,217 @@ def _read_and_check_configuration() -> BaseModel:
         raise ValueError(f"Configuration validation error: {e}") from e
 
 
+def _log_mape_summary(mapes: pandas.DataFrame) -> None:
+    """
+    Log average, median, and standard deviation of MAPE values.
+
+    Parameters
+    ----------
+    mapes : pandas.DataFrame
+        DataFrame with "Training MAPE" and "Testing MAPE" columns.
+    """
+    logging.info("Training set:")
+    logging.info(f" - Average MAPE: {mapes['Training MAPE'].mean():.4f}")
+    logging.info(f" - Median MAPE: {mapes['Training MAPE'].median():.4f}")
+    logging.info(f" - Std MAPE: {mapes['Training MAPE'].std():.4f}")
+    logging.info("Testing set:")
+    logging.info(f" - Average MAPE: {mapes['Testing MAPE'].mean():.4f}")
+    logging.info(f" - Median MAPE: {mapes['Testing MAPE'].median():.4f}")
+    logging.info(f" - Std MAPE: {mapes['Testing MAPE'].std():.4f}")
+
+
+def _cross_validate_xgboost(
+    prepared_dataset: dict[str, pandas.DataFrame],
+    scoring_metric: str,
+    n_jobs: int,
+) -> pandas.DataFrame:
+    """
+    Run Leave-One-Group-Out cross-validation for XGBoost.
+
+    Uses sklearn's ``cross_validate()`` directly. This is safe for
+    XGBoost because its ``fit()``/``predict()`` calls do not depend
+    on entity ``groups`` — unlike the LSTM, whose sequence
+    construction must respect entity boundaries and therefore cannot
+    go through ``cross_validate()`` (see ``_cross_validate_lstm``).
+
+    Parameters
+    ----------
+    prepared_dataset : dict[str, pandas.DataFrame]
+        A dictionary containing prepared features, target, and entity
+        codes.
+    scoring_metric : str
+        The scoring metric to use for evaluation.
+    n_jobs : int
+        The number of parallel jobs to run.
+
+    Returns
+    -------
+    mapes : pandas.DataFrame
+        DataFrame containing MAPE values for each entity.
+    """
+    model = ml_models.xgboost.get_initialized_model()
+
+    # Perform Leave-One-Group-Out cross-validation
+    cv_results = cross_validate(
+        model,
+        prepared_dataset["features"],
+        prepared_dataset["target"],
+        groups=prepared_dataset["group"],
+        cv=LeaveOneGroupOut(),
+        scoring=scoring_metric,
+        return_train_score=True,
+        return_indices=True,
+        return_estimator=True,
+        n_jobs=n_jobs,
+    )
+
+    logging.info("Cross-validation completed successfully.")
+
+    # Initialize a DataFrame to store mapes.
+    mapes = pandas.DataFrame()
+
+    # Extract entity codes.
+    list_entity_codes = []
+    for test_indices in cv_results["indices"]["test"]:
+        list_entity_codes.append(
+            prepared_dataset["group"].iloc[test_indices[0]]
+        )
+    mapes["Entity Code"] = list_entity_codes
+
+    # Add train and test scores to the results DataFrame.
+    mapes["Training MAPE"] = -cv_results["train_score"]
+    mapes["Testing MAPE"] = -cv_results["test_score"]
+
+    _log_mape_summary(mapes)
+
+    return mapes
+
+
+class _GroupAwareLSTM(BaseEstimator, RegressorMixin):
+    """
+    Adapt a fitted LSTM model for sklearn scorers.
+
+    A scorer obtained from ``sklearn.metrics.get_scorer()`` calls
+    ``estimator.predict(X)`` with no way to pass entity ``groups``
+    alongside ``X``. This wrapper closes over the group labels for a
+    specific fold/split so that predictions still respect entity
+    boundaries, while routing every prediction through
+    ``ml_models.lstm.predict()``. Inherits from ``BaseEstimator`` and
+    ``RegressorMixin`` only so sklearn's scorer machinery recognises
+    it as a fitted regressor.
+    """
+
+    def __init__(
+        self,
+        lstm_model: ml_models.lstm.LSTMRegressor,
+        group: pandas.Series,
+    ) -> None:
+        self.lstm_model = lstm_model
+        self.group = group
+
+    def predict(self, features: pandas.DataFrame) -> pandas.Series:
+        """
+        Predict target values for ``features``.
+
+        Parameters
+        ----------
+        features : pandas.DataFrame
+            Feature rows to predict on. Must align row-for-row with
+            the ``group`` labels this wrapper was built with.
+
+        Returns
+        -------
+        pandas.Series
+            Predicted values, one per row of ``features``.
+        """
+        return ml_models.lstm.predict(
+            self.lstm_model,
+            {"features": features, "group": self.group},
+        )
+
+
+def _cross_validate_lstm(
+    prepared_dataset: dict[str, pandas.DataFrame],
+    scoring_metric: str,
+) -> pandas.DataFrame:
+    """
+    Run manual Leave-One-Group-Out cross-validation for the LSTM.
+
+    sklearn's ``cross_validate()`` never forwards ``groups`` into
+    ``estimator.fit()``, so using it for the LSTM would silently let
+    it build sequences across country boundaries during
+    cross-validation (``groups`` would be ``None`` inside ``fit()``).
+    This function instead builds LOGO folds by hand with
+    ``LeaveOneGroupOut().split()`` and calls ``ml_models.lstm.train()``
+    and ``ml_models.lstm.predict()`` directly for each fold, so
+    group boundaries are always respected.
+
+    Parameters
+    ----------
+    prepared_dataset : dict[str, pandas.DataFrame]
+        A dictionary containing prepared features, target, and entity
+        codes.
+    scoring_metric : str
+        The scoring metric to use for evaluation.
+
+    Returns
+    -------
+    mapes : pandas.DataFrame
+        DataFrame containing MAPE values for each entity.
+    """
+    scorer = get_scorer(scoring_metric)
+
+    features = prepared_dataset["features"]
+    target = prepared_dataset["target"]
+    group = prepared_dataset["group"]
+
+    list_entity_codes = []
+    train_scores = []
+    test_scores = []
+
+    for train_index, test_index in LeaveOneGroupOut().split(
+        features, target, group
+    ):
+        fold_dataset = {
+            "training": {
+                "features": features.iloc[train_index],
+                "target": target.iloc[train_index],
+                "group": group.iloc[train_index],
+            }
+        }
+        lstm_model = ml_models.lstm.train(fold_dataset)
+
+        train_scores.append(
+            scorer(
+                _GroupAwareLSTM(lstm_model, group.iloc[train_index]),
+                features.iloc[train_index],
+                target.iloc[train_index],
+            )
+        )
+        test_scores.append(
+            scorer(
+                _GroupAwareLSTM(lstm_model, group.iloc[test_index]),
+                features.iloc[test_index],
+                target.iloc[test_index],
+            )
+        )
+        list_entity_codes.append(group.iloc[test_index[0]])
+
+    logging.info("Cross-validation completed successfully.")
+
+    # Initialize a DataFrame to store mapes.
+    mapes = pandas.DataFrame()
+    mapes["Entity Code"] = list_entity_codes
+
+    # Add train and test scores to the results DataFrame.
+    mapes["Training MAPE"] = -pandas.Series(train_scores)
+    mapes["Testing MAPE"] = -pandas.Series(test_scores)
+
+    _log_mape_summary(mapes)
+
+    return mapes
+
+
 def _cross_validate(
     prepared_dataset: dict[str, pandas.DataFrame],
     scoring_metric: str,
@@ -93,53 +307,14 @@ def _cross_validate(
     ValueError
         If an unsupported algorithm is specified.
     """
-    # Get an initialized model.
     if algorithm.lower() == "xgboost":
-        xgb_model = ml_models.xgboost.get_initialized_model()
+        return _cross_validate_xgboost(
+            prepared_dataset, scoring_metric, n_jobs
+        )
+    elif algorithm.lower() == "lstm":
+        return _cross_validate_lstm(prepared_dataset, scoring_metric)
     else:
         raise ValueError(f"Unsupported algorithm: {algorithm}")
-
-    # Perform Leave-One-Group-Out cross-validation
-    cv_results = cross_validate(
-        xgb_model,
-        prepared_dataset["features"],
-        prepared_dataset["target"],
-        groups=prepared_dataset["group"],
-        cv=LeaveOneGroupOut(),
-        scoring=scoring_metric,
-        return_train_score=True,
-        return_indices=True,
-        return_estimator=True,
-        n_jobs=n_jobs,
-    )
-
-    logging.info("Cross-validation completed successfully.")
-
-    # Initialize a DataFrame to store mapes.
-    mapes = pandas.DataFrame()
-
-    # Extract entity codes.
-    list_entity_codes = []
-    for test_indices in cv_results["indices"]["test"]:
-        list_entity_codes.append(
-            prepared_dataset["group"].iloc[test_indices[0]]
-        )
-    mapes["Entity Code"] = list_entity_codes
-
-    # Add train and test scores to the results DataFrame.
-    mapes["Training MAPE"] = -cv_results["train_score"]
-    mapes["Testing MAPE"] = -cv_results["test_score"]
-
-    logging.info("Training set:")
-    logging.info(f" - Average MAPE: {mapes['Training MAPE'].mean():.4f}")
-    logging.info(f" - Median MAPE: {mapes['Training MAPE'].median():.4f}")
-    logging.info(f" - Std MAPE: {mapes['Training MAPE'].std():.4f}")
-    logging.info("Testing set:")
-    logging.info(f" - Average MAPE: {mapes['Testing MAPE'].mean():.4f}")
-    logging.info(f" - Median MAPE: {mapes['Testing MAPE'].median():.4f}")
-    logging.info(f" - Std MAPE: {mapes['Testing MAPE'].std():.4f}")
-
-    return mapes
 
 
 def run_model_cross_validation(

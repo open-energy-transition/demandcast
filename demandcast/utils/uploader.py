@@ -182,7 +182,7 @@ def upload_to_zenodo(
         )
 
     # Load the metadata from the YAML file.
-    with open(author_metadata_path, "r") as file:
+    with open(author_metadata_path, "r", encoding="utf-8") as file:
         author_metadata = yaml.safe_load(file)
 
     # Extract creators and contributors from the metadata.

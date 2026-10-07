@@ -7,6 +7,7 @@ Description:
     This file contains unit tests for the ml module.
 """
 
+import os
 from unittest.mock import Mock, mock_open, patch
 
 import pandas
@@ -166,6 +167,59 @@ def test_get_trained_model_path_no_files_found():
 
         with pytest.raises(FileNotFoundError):
             utils.ml.get_trained_model_path(None, "xgboost")
+
+
+def test_get_trained_model_path_pt_extension():
+    """
+    Test get_trained_model_path with ``.pt`` extension for LSTM.
+
+    Verifies the extension parameter selects ``.pt`` files and picks
+    the latest by datetime stamp.
+    """
+    with (
+        patch("utils.config.read_folders_structure") as mock_read_folders,
+        patch("os.listdir") as mock_listdir,
+    ):
+        mock_read_folders.return_value = {
+            "trained_ml_models_folder": "/models"
+        }
+        mock_listdir.return_value = [
+            "lstm_model_20240101_120000.pt",
+            "lstm_model_20240102_120000.pt",
+            "xgboost_model_20240103_120000.json",
+        ]
+
+        result = utils.ml.get_trained_model_path(None, "lstm", extension=".pt")
+
+        assert result == os.path.join(
+            "/models", "lstm_model_20240102_120000.pt"
+        )
+
+
+def test_get_trained_model_path_xgboost_unchanged_with_pt_present():
+    """
+    XGBoost path search ignores ``.pt`` files even when they exist.
+
+    Ensures the extension parameter keeps the two algorithm namespaces
+    fully separated.
+    """
+    with (
+        patch("utils.config.read_folders_structure") as mock_read_folders,
+        patch("os.listdir") as mock_listdir,
+    ):
+        mock_read_folders.return_value = {
+            "trained_ml_models_folder": "/models"
+        }
+        mock_listdir.return_value = [
+            "xgboost_model_20240101_120000.json",
+            "lstm_model_20240103_120000.pt",
+        ]
+
+        result = utils.ml.get_trained_model_path(None, "xgboost")
+
+        assert result == os.path.join(
+            "/models", "xgboost_model_20240101_120000.json"
+        )
 
 
 def test_get_assemble_data_path_with_provided_path():

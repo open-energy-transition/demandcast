@@ -13,6 +13,7 @@ import logging
 import os
 from typing import Optional
 
+import ml_models.lstm
 import ml_models.xgboost
 import pandas
 import utils.config
@@ -223,6 +224,30 @@ def run_model_validation(
 
         # Make predictions.
         predictions = ml_models.xgboost.predict(model, prepared_dataset)
+
+    elif algorithm.lower() == "lstm":
+        # Get the trained model path.
+        trained_model_path = utils.ml.get_trained_model_path(
+            model_path, algorithm.lower(), extension=".pt"
+        )
+
+        # Load the trained model.
+        model = ml_models.lstm.load(trained_model_path)
+
+        # Check that the model was trained with the same features of the
+        # prepared dataset.
+        data_features = prepared_dataset["training"][
+            "features"
+        ].columns.tolist()
+        model_features = model.feature_names_in_.tolist()
+        if data_features != model_features:
+            raise ValueError(
+                "The features used in the prepared dataset do not match "
+                "those used during model training."
+            )
+
+        # Make predictions.
+        predictions = ml_models.lstm.predict(model, prepared_dataset)
 
     else:
         raise ValueError(f"Unsupported algorithm: {algorithm}")
