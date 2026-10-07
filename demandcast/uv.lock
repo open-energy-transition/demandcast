@@ -1468,11 +1468,11 @@ wheels = [
 
 [[package]]
 name = "nepali-datetime"
-version = "1.0.8.4"
+version = "1.0.8.5"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c9/49/ee387ca2e04fae93470baf5ae7468a05c76f662208ff9c01a30552cc77f6/nepali_datetime-1.0.8.4.tar.gz", hash = "sha256:933af0ae4545ee32bc2cdaeff40aa90c067f0f7c91908350371303c3dd976a6f", size = 20322, upload-time = "2025-05-10T20:39:05.187Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/73/25/dac3e744b0a6af03e05a25ab868a032d51993d0e91be70ea38b814b4c047/nepali_datetime-1.0.8.5.tar.gz", hash = "sha256:745093e929cfe164e1062058221e9a9eac25d89083b1b43b3bb2aa8e854f2884", size = 20357, upload-time = "2026-05-07T13:26:18.475Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/39/a9/e655df60bee3fa82c18be0ca007335690ac5058015e7a344fc8c20f20344/nepali_datetime-1.0.8.4-py3-none-any.whl", hash = "sha256:13e052447167f8836618b23cc43bb5f3b259380603defdbfe8efe125f06b8462", size = 18636, upload-time = "2025-05-10T20:39:03.955Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/41/6ef290b5ab1671a0d421d105ee59d3d02b5c96004ba77f2ccb0b99a55e8f/nepali_datetime-1.0.8.5-py3-none-any.whl", hash = "sha256:adec683e06333482d31543d0d2bdf195cef12505615eaf747bcae0b82e5f6ad2", size = 18638, upload-time = "2026-05-07T13:26:17.237Z" },
 ]
 
 [[package]]
@@ -2311,11 +2311,11 @@ wheels = [
 
 [[package]]
 name = "pytz"
-version = "2025.2"
+version = "2026.4"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f8/bf/abbd3cdfb8fbc7fb3d4d38d320f2441b1e7cbe29be4f23797b4a2b5d8aac/pytz-2025.2.tar.gz", hash = "sha256:360b9e3dbb49a209c21ad61809c7fb453643e048b38924c765813546746e81c3", size = 320884, upload-time = "2025-03-25T02:25:00.538Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b0/ed/fa23d28713004418bbf2407127f80f385bfb0bf4e677bef02c25c27b00ee/pytz-2026.4.tar.gz", hash = "sha256:464303645bafafd72418898368b2429458f709cf1eb6a15372fbcc396b64da63", size = 318444, upload-time = "2026-09-24T03:58:40.443Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/81/c4/34e93fe5f5429d7570ec1fa436f1986fb1f00c3e0f43a589fe2bbcd22c3f/pytz-2025.2-py2.py3-none-any.whl", hash = "sha256:5ddf76296dd8c44c26eb8f4b6f35488f3ccbf6fbbd7adee0b7262d43f0ec2f00", size = 509225, upload-time = "2025-03-25T02:24:58.468Z" },
+    { url = "https://files.pythonhosted.org/packages/d5/11/e3df59614bebe0ca50c905442603eda64ae7ac19811d4e4f74aa2d51ca85/pytz-2026.4-py2.py3-none-any.whl", hash = "sha256:9d514388fbc89ca0833203464272ac485b8828568ab73532f5020f17e892a0ff", size = 506747, upload-time = "2026-09-24T03:58:38.629Z" },
 ]
 
 [[package]]
