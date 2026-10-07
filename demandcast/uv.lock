@@ -514,10 +514,11 @@ wheels = [
 
 [[package]]
 name = "countryinfo"
-version = "0.1.2"
+version = "1.0.1"
 source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/31/a3/2613df4f0707c4ba6fc93a1fcb8659fc23551aeab0314f6ceed56c31a86c/countryinfo-1.0.1.tar.gz", hash = "sha256:300b378f6371a2a7ee804ecdc0ad6ebe29e3647b8ca341d83cfebd9ce6934261", size = 245426, upload-time = "2026-03-07T09:01:13.019Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/55/16/9fa55d43ae8ee969b75b3977d45f6640bb6c0e52d9912af11593e112a3cc/countryinfo-0.1.2-py3-none-any.whl", hash = "sha256:fd518b3fd8899f6520518320ac17b67bf410c7db5044c61cb191f802bb85c34d", size = 602240, upload-time = "2020-06-01T15:00:09.025Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/e5/9aec9a663aaeeacce15511dbae33b5abca31152779f2cb1c5be89fd2eb59/countryinfo-1.0.1-py3-none-any.whl", hash = "sha256:b02f6f534f0a3b9cdc73fba7e08f247e39826acfa54bf080f8e4eba812066350", size = 380450, upload-time = "2026-03-07T09:01:11.555Z" },
 ]
 
 [[package]]
