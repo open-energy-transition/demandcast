@@ -9,12 +9,12 @@ Description:
 """
 
 import datetime
+import functools
 import logging
 import os
 
 import pandas
 import pycountry
-import pycountry_convert
 import pytz
 import yaml
 from countryinfo import CountryInfo, CountryNotFoundError
@@ -23,8 +23,8 @@ from timezonefinder import TimezoneFinder
 import utils.config
 import utils.shapes
 
-# Define information for entities not fully recognized in pycountry,
-# pycountry_convert, or pytz.
+# Define information for entities not fully recognized in pycountry or
+# pytz.
 extra_entities = {
     "XKX": {
         "name": "Kosovo",
@@ -39,6 +39,56 @@ extra_entities = {
 capital_time_zones = {
     "BRA": "America/Sao_Paulo",
 }
+
+
+def get_iso_alpha_2_code(iso_alpha_3_code: str) -> str:
+    """
+    Get the ISO Alpha-2 code of a country from its ISO Alpha-3 code.
+
+    Parameters
+    ----------
+    iso_alpha_3_code : str
+        The ISO Alpha-3 code of the country.
+
+    Returns
+    -------
+    iso_alpha_2_code : str
+        The ISO Alpha-2 code of the country.
+
+    Raises
+    ------
+    KeyError
+        If the country is not found in pycountry or in the predefined
+        entities.
+    """
+    if iso_alpha_3_code in extra_entities:
+        return extra_entities[iso_alpha_3_code]["iso_alpha_2"]
+
+    country = pycountry.countries.get(alpha_3=iso_alpha_3_code)
+    if country is None:
+        raise KeyError(
+            f"Country code {iso_alpha_3_code} is not available in pycountry."
+        )
+
+    return country.alpha_2
+
+
+@functools.cache
+def _read_continent_codes() -> dict[str, str]:
+    """
+    Read the continent codes of the countries.
+
+    Returns
+    -------
+    continent_codes : dict[str, str]
+        The continent code of each country, by ISO Alpha-3 code.
+    """
+    file_path = os.path.join(
+        utils.config.read_folders_structure()["config_folder"],
+        "continents.yaml",
+    )
+    with open(file_path, encoding="utf-8") as file:
+        return yaml.safe_load(file)["continents"]
 
 
 def get_name_from_code(code: str) -> str:
@@ -74,12 +124,7 @@ def get_name_from_code(code: str) -> str:
 
     # Get the ISO Alpha-2 code of the country itself or the country to
     # which the subdivision belongs.
-    if iso_alpha_3_code in extra_entities:
-        iso_alpha_2_code = extra_entities[iso_alpha_3_code]["iso_alpha_2"]
-    else:
-        iso_alpha_2_code = pycountry_convert.country_alpha3_to_country_alpha2(
-            iso_alpha_3_code
-        )
+    iso_alpha_2_code = get_iso_alpha_2_code(iso_alpha_3_code)
 
     # Get the name of the country or subdivision of interest based on
     # its code.
@@ -88,9 +133,7 @@ def get_name_from_code(code: str) -> str:
         if iso_alpha_3_code in extra_entities:
             name = extra_entities[iso_alpha_3_code]["name"]
         else:
-            name = pycountry_convert.country_alpha2_to_country_name(
-                iso_alpha_2_code
-            )
+            name = pycountry.countries.lookup(iso_alpha_3_code).name
     else:
         # Try to get the data source that contains the provided code.
         data_sources = get_electricity_demand_data_sources_containing_code(
@@ -582,9 +625,7 @@ def _get_time_zone_of_country(iso_alpha_3_code: str) -> datetime.tzinfo:
     """
     try:
         # Get the ISO Alpha-2 code of the country.
-        iso_alpha_2_code = pycountry_convert.country_alpha3_to_country_alpha2(
-            iso_alpha_3_code
-        )
+        iso_alpha_2_code = get_iso_alpha_2_code(iso_alpha_3_code)
 
         # Get the list of time zones for the country.
         time_zones = pytz.country_timezones[iso_alpha_2_code]
@@ -1062,55 +1103,37 @@ def get_continent_code(code: str) -> str:
     Get the continent of a country or subdivision.
 
     This function retrieves the continent code of a country or
-    subdivision based on its code. It uses the pycountry_convert library
-    to get the continent code from the ISO Alpha-3 code of the country
-    itself or the country to which the subdivision belongs.
+    subdivision from the ISO Alpha-3 code of the country, using
+    config/continents.yaml and the predefined entities.
 
     Parameters
     ----------
     code : str
-        The ISO Alpha-3 code of the country or the combination of the
-        ISO Alpha-3 and the subdivision code.
+        The code of the country or subdivision.
 
     Returns
     -------
-    str
+    continent_code : str
         The continent code of the country or subdivision.
 
     Raises
     ------
     ValueError
-        If the provided code is not available in either pycountry or
-        pycountry_convert.
+        If no continent code is available for the country.
     """
-    # Check if the code specifies a subdivision.
-    if "_" in code:
-        # Extract the ISO Alpha-3 code of the country.
-        iso_alpha_3_code = code.split("_")[0]
+    # Get the ISO Alpha-3 code of the country or of the country to
+    # which the subdivision belongs.
+    iso_alpha_3_code = code.split("_")[0]
+
+    continent_codes = _read_continent_codes()
+    if iso_alpha_3_code in continent_codes:
+        continent_code = continent_codes[iso_alpha_3_code]
+    elif iso_alpha_3_code in extra_entities:
+        continent_code = extra_entities[iso_alpha_3_code]["continent_code"]
     else:
-        # If the code does not specify a subdivision, use the ISO
-        # Alpha-3 code directly.
-        iso_alpha_3_code = code
-
-    # Get the continent code from the ISO Alpha-3 code.
-    try:
-        # Get the ISO Alpha-2 code of the country.
-        iso_alpha_2_code = pycountry_convert.country_alpha3_to_country_alpha2(
-            iso_alpha_3_code
+        raise ValueError(
+            f"No continent code is available for country code "
+            f"{iso_alpha_3_code}."
         )
-
-        # Get the continent code of the country.
-        continent_code = pycountry_convert.country_alpha2_to_continent_code(
-            iso_alpha_2_code
-        )
-    except KeyError:
-        if iso_alpha_3_code in extra_entities:
-            continent_code = extra_entities[iso_alpha_3_code]["continent_code"]
-        else:
-            raise ValueError(
-                f"Country code {iso_alpha_3_code} is not available in "
-                "pycountry_convert and no predefined continent code is set "
-                "for it."
-            )
 
     return continent_code
