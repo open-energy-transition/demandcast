@@ -74,20 +74,20 @@ def get_available_requests() -> list[tuple[int, int | None]]:
     )
 
     # Define the date that separates the two types of requests.
-    Mar_2024 = pd.Timestamp("2024-03-01")
+    march_2024 = pd.Timestamp("2024-03-01")
 
     # Requests before March 2024.
     requests_before: list[tuple[int, int | None]] = [
-        (year, None) for year in range(start_date.year, Mar_2024.year)
+        (year, None) for year in range(start_date.year, march_2024.year)
     ]
 
     # Requests after March 2024
     requests_after: list[tuple[int, int | None]] = [
         (year, month)
-        for year in range(Mar_2024.year, end_date.year + 1)
+        for year in range(march_2024.year, end_date.year + 1)
         for month in range(1, 13)
         if (year < end_date.year or month <= end_date.month)
-        and (year > Mar_2024.year or month >= Mar_2024.month)
+        and (year > march_2024.year or month >= march_2024.month)
     ]
 
     # Return the list of available requests.

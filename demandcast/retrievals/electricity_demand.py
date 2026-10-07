@@ -212,17 +212,19 @@ def run_data_retrieval(
     )
 
     # Loop over the codes.
-    for code in tqdm(codes, desc="Countries and subdivisions"):
-        logging.info(f"Retrieving electricity data for {code}.")
+    for entity_code in tqdm(codes, desc="Countries and subdivisions"):
+        logging.info(f"Retrieving electricity data for {entity_code}.")
 
         # Retrieve the electricity demand time series.
-        electricity_demand_time_series = _retrieve_data(data_source, code)
+        electricity_demand_time_series = _retrieve_data(
+            data_source, entity_code
+        )
 
         # Save the electricity demand time series to a file and upload
         # it to GCS.
         _save_data(
             electricity_demand_time_series,
-            code,
+            entity_code,
             data_source,
         )
 

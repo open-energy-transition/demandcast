@@ -671,7 +671,9 @@ def test_date_ranges():
     # Check if the date ranges are read correctly.
     assert date_ranges["FRA"] == (
         datetime.date(2014, 12, 15),
-        (datetime.datetime.today() - datetime.timedelta(days=5)).date(),
+        (
+            datetime.datetime.now().astimezone() - datetime.timedelta(days=5)
+        ).date(),
     )
 
 

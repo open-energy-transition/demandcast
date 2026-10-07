@@ -68,8 +68,8 @@ def _read_mape(
         )
 
     if by_group:
-        for case in groups:
-            for group in groups[case]:
+        for case_groups in groups.values():
+            for group in case_groups:
                 # Read the MAPE values for the current group.
                 mape[f"{version}_{group}"] = pd.read_csv(
                     os.path.join(results_directory, version, f"{group}.csv"),
@@ -416,7 +416,7 @@ def _plot_by_group(
         "SA": "South America",
     }
 
-    for case in groups:
+    for case, case_groups in groups.items():
         # Initialize the the plot where to show the MAPE values by
         # group.
         if case == "continent":
@@ -439,7 +439,7 @@ def _plot_by_group(
             )
         axs = axs.flatten()
 
-        for i, group in enumerate(groups[case]):
+        for i, group in enumerate(case_groups):
             # Select the entities belonging to the current group that
             # have a MAPE value.
             mape_to_plot = mape[[f"{version}_all", f"{version}_{group}"]][

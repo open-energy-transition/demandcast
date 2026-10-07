@@ -71,7 +71,7 @@ def _download_historical_gridded_population_density(
         )
 
         # Download the population density data.
-        response = requests.get(url)
+        response = requests.get(url, timeout=60)
 
         # Check if the request was successful.
         response.raise_for_status()
@@ -91,7 +91,7 @@ def _download_historical_gridded_population_density(
         )
 
 
-def _download_future_gridded_population(
+def _download_future_gridded_population(  # noqa: C901
     downloaded_data_directory: str, scenario: str
 ) -> None:
     """
@@ -141,7 +141,7 @@ def _download_future_gridded_population(
                 url = "https://figshare.com/ndownloader/files/34829391"
 
         # Fetch the data from the URL.
-        response = requests.get(url)
+        response = requests.get(url, timeout=60)
 
         # Check if the request was successful.
         response.raise_for_status()
@@ -324,46 +324,58 @@ def run_data_retrieval(
     )
 
     # Loop over the years and scenarios.
-    for year, scenario in tqdm(year_scenario_list, desc="Years and scenarios"):
+    for selected_year, selected_scenario in tqdm(
+        year_scenario_list, desc="Years and scenarios"
+    ):
         logging.info(
-            f"Processing gridded population data for the year {year}"
-            + (f" and scenario {scenario}." if scenario else ".")
+            f"Processing gridded population data for the year {selected_year}"
+            + (
+                f" and scenario {selected_scenario}."
+                if selected_scenario
+                else "."
+            )
         )
 
-        if year <= 2020:
+        if selected_year <= 2020:
             # Download historical population density data.
             _download_historical_gridded_population_density(
-                downloaded_data_directory, year
+                downloaded_data_directory, selected_year
             )
-        elif year >= 2025 and scenario is not None:
+        elif selected_year >= 2025 and selected_scenario is not None:
             # Download future population data.
             _download_future_gridded_population(
-                downloaded_data_directory, scenario
+                downloaded_data_directory, selected_scenario
             )
 
         # Define the year and scenario string for the file name.
-        year_scenario = f"{year}_{scenario}" if scenario else str(year)
+        year_scenario = (
+            f"{selected_year}_{selected_scenario}"
+            if selected_scenario
+            else str(selected_year)
+        )
 
         # Read the population dataset for the specified year and
         # scenario.
         global_population_dataset = _read_population_dataset(
-            downloaded_data_directory, year, scenario
+            downloaded_data_directory, selected_year, selected_scenario
         )
 
         # Loop over the countries and subdivisions of interest.
-        for code in codes:
+        for entity_code in codes:
             # Define the file path of the population for the country or
             # subdivision.
             file_path = os.path.join(
-                result_directory, f"{code}_0.25_deg_{year_scenario}.nc"
+                result_directory, f"{entity_code}_0.25_deg_{year_scenario}.nc"
             )
 
             if not os.path.exists(file_path):
-                logging.info(f"Extracting gridded population data for {code}.")
+                logging.info(
+                    f"Extracting gridded population data for {entity_code}."
+                )
 
                 # Get the shape of the country or subdivision.
                 entity_shape = utils.shapes.get_entity_shape(
-                    code, make_plot=False
+                    entity_code, make_plot=False
                 )
 
                 # Get the lateral bounds of the country or subdivision
@@ -379,7 +391,7 @@ def run_data_retrieval(
                     y=slice(entity_bounds[1], entity_bounds[3]),
                 )
 
-                if year in available_historical_years:
+                if selected_year in available_historical_years:
                     # Convert the population density to population
                     # count.
                     population = utils.geospatial.from_density_to_count(
@@ -402,16 +414,18 @@ def run_data_retrieval(
                     # Make a plot of the population data.
                     utils.figures.simple_plot(
                         population,
-                        f"population_{code}_{year_scenario}",
+                        f"population_{entity_code}_{year_scenario}",
                     )
 
                 logging.info(
-                    f"Gridde population data for {code} has been successfully "
+                    f"Gridde population data for {entity_code} has been "
+                    "successfully "
                     "extracted and saved."
                 )
 
             else:
                 logging.info(
-                    f"Gridde population data for {code} already exists. "
+                    f"Gridde population data for {entity_code} already "
+                    "exists. "
                     "Skipping extraction."
                 )

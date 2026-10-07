@@ -268,22 +268,22 @@ def get_year_and_scenario_combinations(
 
     # Create a list of year and scenario combinations.
     year_scenario_list: list[tuple[int, str | None]] = []
-    for year in years:
+    for selected_year in years:
         if (
-            year in available_historical_years
-            and year in available_future_years
+            selected_year in available_historical_years
+            and selected_year in available_future_years
         ):
             # If the year is both historical and future, include both
             # options.
-            year_scenario_list.append((year, None))
+            year_scenario_list.append((selected_year, None))
             year_scenario_list.extend(
-                (year, scenario) for scenario in scenarios
+                (selected_year, scenario) for scenario in scenarios
             )
-        elif year in available_historical_years:
-            year_scenario_list.append((year, None))
-        elif year in available_future_years:
+        elif selected_year in available_historical_years:
+            year_scenario_list.append((selected_year, None))
+        elif selected_year in available_future_years:
             year_scenario_list.extend(
-                (year, scenario) for scenario in scenarios
+                (selected_year, scenario) for scenario in scenarios
             )
 
     return year_scenario_list
@@ -312,17 +312,17 @@ def get_year_model_and_scenario_combinations(
     end_year : int | None
         The end year of the range of years for which the data is to be
         downloaded.
-    last_year_of_historical_data : int
-        The last year for which historical data is available.
-    available_years : list[int]
-        The list of available years for the data retrieval.
+    available_historical_years : list[int]
+        The list of available historical years for the data retrieval.
+    available_future_years : list[int]
+        The list of available future years for the data retrieval.
     model : str | None
-        The specific cliamte model for which the data is to be
+        The specific climate model for which the data is to be
         downloaded.
     scenario : str | None
         The specific scenario for which the data is to be downloaded.
-    available_scenarios : list[str]
-        The list of available scenarios for the data retrieval.
+    available_scenarios_for_model : dict[str, list[str]]
+        The available scenarios for each climate model.
 
     Returns
     -------
@@ -345,31 +345,31 @@ def get_year_model_and_scenario_combinations(
 
     # Create a list of year, model, and scenario combinations.
     year_model_scenario_list: list[tuple[int, str | None, str | None]] = []
-    for year in years:
+    for selected_year in years:
         if (
-            year in available_historical_years
-            and year in available_future_years
+            selected_year in available_historical_years
+            and selected_year in available_future_years
         ):
             # If the year is both historical and future, include both
             # options.
-            year_model_scenario_list.append((year, None, None))
+            year_model_scenario_list.append((selected_year, None, None))
             for (
                 model_key,
                 scenario_keys,
             ) in scenarios_for_model.items():
                 year_model_scenario_list.extend(
-                    (year, model_key, scenario_key)
+                    (selected_year, model_key, scenario_key)
                     for scenario_key in scenario_keys
                 )
-        elif year in available_historical_years:
-            year_model_scenario_list.append((year, None, None))
-        elif year in available_future_years:
+        elif selected_year in available_historical_years:
+            year_model_scenario_list.append((selected_year, None, None))
+        elif selected_year in available_future_years:
             for (
                 model_key,
                 scenario_keys,
             ) in scenarios_for_model.items():
                 year_model_scenario_list.extend(
-                    (year, model_key, scenario_key)
+                    (selected_year, model_key, scenario_key)
                     for scenario_key in scenario_keys
                 )
 

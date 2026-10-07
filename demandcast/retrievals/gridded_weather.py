@@ -115,7 +115,7 @@ def _download_data(
 
     Parameters
     ----------
-    file_path_without_ext : str
+    file_path : str
         The full file path without the file extension where the
         downloaded data will be saved.
     years : list[int]
@@ -371,22 +371,25 @@ def run_data_retrieval(
         os.makedirs(downloaded_data_directory, exist_ok=True)
 
         # Loop over the year, model, and scenario combinations.
-        for year, model, scenario in tqdm(
+        for selected_year, selected_model, selected_scenario in tqdm(
             year_model_scenario_list, desc="Years, models, and scenarios"
         ):
             logging.info(
-                f"Processing gridded {variable} data for the year {year}"
+                f"Processing gridded {variable} data for the year "
+                f"{selected_year}"
                 + (
-                    f", model {model}, and scenario {scenario}."
-                    if model and scenario
+                    f", model {selected_model}, and scenario "
+                    f"{selected_scenario}."
+                    if selected_model and selected_scenario
                     else "."
                 )
             )
 
             # Define the case name for the file.
-            case_name = f"{variable}_{year}" + (
-                f"_{model}_{scenario.replace('-', '_').replace('.', '_')}"
-                if model and scenario
+            case_name = f"{variable}_{selected_year}" + (
+                f"_{selected_model}_"
+                f"{selected_scenario.replace('-', '_').replace('.', '_')}"
+                if selected_model and selected_scenario
                 else ""
             )
 
@@ -402,23 +405,27 @@ def run_data_retrieval(
             # reanalysis data.
             if not os.path.exists(global_file_path_without_ext + ".nc") or (
                 os.path.exists(global_file_path_without_ext + ".nc")
-                and year == pd.Timestamp.now().year
-                and model is None
-                and scenario is None
+                and selected_year == pd.Timestamp.now().year
+                and selected_model is None
+                and selected_scenario is None
             ):
                 # Get the CDS variable name.
                 cds_variable_name = cds_variable_mapping[variable][
-                    "projections" if model and scenario else "reanalysis"
+                    "projections"
+                    if selected_model and selected_scenario
+                    else "reanalysis"
                 ]
 
                 # Download the global weather data from CDS.
                 _download_data(
                     global_file_path_without_ext,
-                    [year],
+                    [selected_year],
                     cds_variable_name,
-                    "projections" if model and scenario else "reanalysis",
-                    model,
-                    scenario,
+                    "projections"
+                    if selected_model and selected_scenario
+                    else "reanalysis",
+                    selected_model,
+                    selected_scenario,
                 )
 
             # Load the global weather data.
@@ -430,12 +437,12 @@ def run_data_retrieval(
             global_data = utils.geospatial.harmonize_coords(global_data)
 
             # Loop over the countries and subdivisions of interest.
-            for code in tqdm(codes, desc="Countries and subdivisions"):
+            for entity_code in tqdm(codes, desc="Countries and subdivisions"):
                 # Define the file path for the weather data of
                 # the country or subdivision.
                 entity_file_path = os.path.join(
                     result_directory,
-                    f"{code}_{case_name}.nc",
+                    f"{entity_code}_{case_name}.nc",
                 )
 
                 # Check if the file of weather data for the
@@ -446,18 +453,19 @@ def run_data_retrieval(
                 # reanalysis data.
                 if not os.path.exists(entity_file_path) or (
                     os.path.exists(entity_file_path)
-                    and year == pd.Timestamp.now().year
-                    and model is None
-                    and scenario is None
+                    and selected_year == pd.Timestamp.now().year
+                    and selected_model is None
+                    and selected_scenario is None
                 ):
                     logging.info(
-                        f"Extracting gridded {variable} data for {code} and "
-                        f"year {year}."
+                        f"Extracting gridded {variable} data for "
+                        f"{entity_code} and "
+                        f"year {selected_year}."
                     )
 
                     # Get the shape of the country or subdivision.
                     entity_shape = utils.shapes.get_entity_shape(
-                        code, make_plot=False
+                        entity_code, make_plot=False
                     )
 
                     # Get the lateral bounds for the shape.
@@ -475,28 +483,35 @@ def run_data_retrieval(
                     entity_data.to_netcdf(entity_file_path)
 
                     logging.info(
-                        f"Gridded {variable} data for {code} and "
-                        f"year {year} has been successfully extracted and "
+                        f"Gridded {variable} data for {entity_code} and "
+                        f"year {selected_year} has been successfully "
+                        "extracted and "
                         "saved."
                     )
                 else:
                     logging.info(
-                        f"Gridded {variable} data for {code} and "
-                        f"year {year} already exists. Skipping extraction."
+                        f"Gridded {variable} data for {entity_code} and "
+                        f"year {selected_year} already exists. Skipping "
+                        "extraction."
                     )
 
             logging.info(
-                f"Processing of gridded {variable} data for year {year} has "
+                f"Processing of gridded {variable} data for year "
+                f"{selected_year} has "
                 "been completed."
             )
 
     else:
         # Loop over the countries and subdivisions of interest.
-        for code in tqdm(codes, desc="Countries and subdivisions"):
-            logging.info(f"Retrieving gridded {variable} data for {code}.")
+        for entity_code in tqdm(codes, desc="Countries and subdivisions"):
+            logging.info(
+                f"Retrieving gridded {variable} data for {entity_code}."
+            )
 
             # Get the shape of the country or subdivision.
-            entity_shape = utils.shapes.get_entity_shape(code, make_plot=False)
+            entity_shape = utils.shapes.get_entity_shape(
+                entity_code, make_plot=False
+            )
 
             # Get the lateral bounds of the country or subdivision.
             entity_bounds = utils.shapes.get_entity_bounds(
@@ -504,14 +519,19 @@ def run_data_retrieval(
             )  # West, South, East, North
 
             # Loop over the year, model, and scenario combinations.
-            for year, model, scenario in year_model_scenario_list:
+            for (
+                selected_year,
+                selected_model,
+                selected_scenario,
+            ) in year_model_scenario_list:
                 # Define the full file paths of the ERA5 data.
                 entity_file_path_without_ext = os.path.join(
                     result_directory,
-                    f"{code}_{variable}_{year}"
+                    f"{entity_code}_{variable}_{selected_year}"
                     + (
-                        f"_{model}_{scenario.replace('-', '_').replace('.', '_')}"
-                        if model and scenario
+                        f"_{selected_model}_"
+                        + selected_scenario.replace("-", "_").replace(".", "_")
+                        if selected_model and selected_scenario
                         else ""
                     ),
                 )
@@ -520,21 +540,26 @@ def run_data_retrieval(
                 if not os.path.exists(entity_file_path_without_ext + ".nc"):
                     # Get the CDS variable name.
                     cds_variable_name = cds_variable_mapping[variable][
-                        "projections" if model and scenario else "reanalysis"
+                        "projections"
+                        if selected_model and selected_scenario
+                        else "reanalysis"
                     ]
 
                     # Download the weather data from CDS.
                     _download_data(
                         entity_file_path_without_ext,
-                        [year],
+                        [selected_year],
                         cds_variable_name,
-                        "projections" if model and scenario else "reanalysis",
-                        model,
-                        scenario,
+                        "projections"
+                        if selected_model and selected_scenario
+                        else "reanalysis",
+                        selected_model,
+                        selected_scenario,
                         bounds=entity_bounds,
                     )
 
             logging.info(
-                f"Gridded {variable} data for {code} has been successfully "
+                f"Gridded {variable} data for {entity_code} has been "
+                "successfully "
                 "retrieved and saved."
             )

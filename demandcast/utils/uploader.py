@@ -72,7 +72,7 @@ class ZenodoError(RuntimeError):
     """Error returned by the Zenodo API."""
 
 
-def upload_to_zenodo(
+def upload_to_zenodo(  # noqa: C901
     file_path: str,
     data_type: str,
     made_by_oet: bool,
@@ -147,7 +147,7 @@ def upload_to_zenodo(
             '<a href="https://github.com/open-energy-transition/Awesome-Electric-Demand">'
             "https://github.com/open-energy-transition/Awesome-Electric-Demand</a>.</p>"
         )
-        license = "other-pd"
+        license_id = "other-pd"
     elif data_type == "synthetic":
         # Define the deposition title, description and license for the
         # synthetic dataset.
@@ -163,7 +163,7 @@ def upload_to_zenodo(
             '<a href="https://github.com/open-energy-transition/demandcast">'
             "https://github.com/open-energy-transition/demandcast</a>.</p>"
         )
-        license = "CC-BY-4.0"
+        license_id = "CC-BY-4.0"
     else:
         raise ValueError(
             "Invalid data_type. Expected 'actual' or 'synthetic'."
@@ -201,7 +201,7 @@ def upload_to_zenodo(
             "creators": creators,
             "contributors": contributors,
             "access_right": "open",
-            "license": license,
+            "license": license_id,
             "keywords": [
                 "electricity demand",
                 "synthetic data",
@@ -236,6 +236,7 @@ def upload_to_zenodo(
     response = requests.get(
         f"https://{sandbox_url}zenodo.org/api/deposit/depositions",
         params={"access_token": access_token},
+        timeout=60,
     )
 
     # Check if the response is successful.
@@ -270,6 +271,7 @@ def upload_to_zenodo(
                 f"{deposition_id}/actions/newversion"
             ),
             params={"access_token": access_token},
+            timeout=60,
         )
 
         # Check if the response is successful.
@@ -290,6 +292,7 @@ def upload_to_zenodo(
             ),
             params={"access_token": access_token},
             data=json.dumps(data),
+            timeout=60,
         )
 
         # Check if the response is successful.
@@ -303,6 +306,7 @@ def upload_to_zenodo(
             f"https://{sandbox_url}zenodo.org/api/deposit/"
             f"depositions/{deposition_id}/files",
             params={"access_token": access_token},
+            timeout=60,
         )
 
         # Check if the response is successful.
@@ -316,6 +320,7 @@ def upload_to_zenodo(
                 f"https://{sandbox_url}zenodo.org/api/deposit/depositions/"
                 f"{deposition_id}/files/{file_id}",
                 params={"access_token": access_token},
+                timeout=60,
             )
 
             # Check if the response is successful.
@@ -333,6 +338,7 @@ def upload_to_zenodo(
             ),
             params={"access_token": access_token},
             data=json.dumps(data),
+            timeout=60,
         )
 
         # Check if the response is successful.
@@ -346,6 +352,7 @@ def upload_to_zenodo(
             f"https://{sandbox_url}zenodo.org/api/deposit/depositions",
             params={"access_token": access_token},
             data=json.dumps(data),
+            timeout=60,
         )
 
         # Check if the response is successful.
@@ -365,6 +372,8 @@ def upload_to_zenodo(
             data={"name": os.path.basename(file_path)},
             files={"file": file_to_upload},
             params={"access_token": access_token},
+            # Zenodo answers once it has processed the whole file.
+            timeout=600,
         )
 
         if response.status_code != 201:
@@ -387,6 +396,7 @@ def upload_to_zenodo(
                 f"{deposition_id}/actions/publish"
             ),
             params={"access_token": access_token},
+            timeout=60,
         )
 
         # Check if the response is successful.

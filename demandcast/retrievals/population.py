@@ -87,8 +87,8 @@ def _extract_future_population(
         The code of the country or subdivision of interest.
     global_future_population : pandas.DataFrame
         The global future population data.
-    years_and_scenarios : dict[str, list[int] | dict[str, list[int]]]
-        The years and scenarios dictionary for the country.
+    future_years : list[int]
+        The future years of interest.
     available_future_years_of_gridded_data : list[int]
         The available future years for gridded data.
     available_historical_years_of_gridded_data : list[int]
@@ -188,9 +188,9 @@ def run_data_retrieval(
     available_scenarios = get_available_scenarios()
 
     # Loop over the countries and subdivisions.
-    for code in tqdm(codes, desc="Countries and subdivisions"):
+    for entity_code in tqdm(codes, desc="Countries and subdivisions"):
         # Get the time zone of the country or subdivision.
-        time_zone = utils.entities.get_time_zone(code)
+        time_zone = utils.entities.get_time_zone(entity_code)
 
         # Get the years and scenarios dictionary for the country or
         # subdivision of interest.
@@ -200,7 +200,7 @@ def run_data_retrieval(
             future_years,
             scenarios,
         ) = utils.scenarios.get_years_and_scenarios(
-            code,
+            entity_code,
             year,
             start_year,
             end_year,
@@ -212,20 +212,20 @@ def run_data_retrieval(
 
         # Define the file path of the population data of the
         # subdivision.
-        file_path_without_ext = os.path.join(result_directory, code)
+        file_path_without_ext = os.path.join(result_directory, entity_code)
 
         if requested_historical_years:
             if not os.path.exists(
                 file_path_without_ext + ".parquet"
             ) or not os.path.exists(file_path_without_ext + ".csv"):
                 logging.info(
-                    f"Extracting historical population data for {code}."
+                    f"Extracting historical population data for {entity_code}."
                 )
 
                 # Extract the historical population data for the
                 # country or subdivision of interest.
                 historical_population = _extract_historical_population(
-                    code,
+                    entity_code,
                     global_historical_population,
                     requested_historical_years,
                     used_historical_years,
@@ -265,37 +265,37 @@ def run_data_retrieval(
                 )
 
                 logging.info(
-                    f"Historical population data for {code} has been "
+                    f"Historical population data for {entity_code} has been "
                     "extracted and saved successfully."
                 )
 
             else:
                 logging.info(
-                    f"Historical population data for {code} already "
+                    f"Historical population data for {entity_code} already "
                     "exists. Skipping extraction."
                 )
 
         if future_years:
-            for scenario in scenarios:
+            for selected_scenario in scenarios:
                 if not os.path.exists(
-                    f"{file_path_without_ext}_{scenario}.parquet"
+                    f"{file_path_without_ext}_{selected_scenario}.parquet"
                 ) or not os.path.exists(
-                    f"{file_path_without_ext}_{scenario}.csv"
+                    f"{file_path_without_ext}_{selected_scenario}.csv"
                 ):
                     logging.info(
                         f"Extracting future population data for "
-                        f"{code} and scenario {scenario}."
+                        f"{entity_code} and scenario {selected_scenario}."
                     )
 
                     # Extract the future population data for the country
                     # or subdivision of interest.
                     future_population = _extract_future_population(
-                        code,
+                        entity_code,
                         global_future_population,
                         future_years,
                         available_future_years_of_gridded_data,
                         available_historical_years_of_gridded_data,
-                        scenario,
+                        selected_scenario,
                     )
 
                     # Extract the future population for the selected
@@ -322,21 +322,21 @@ def run_data_retrieval(
                     # Save the future population data to CSV and Parquet
                     # files.
                     selected_future_population.to_frame().to_parquet(
-                        f"{file_path_without_ext}_{scenario}.parquet",
+                        f"{file_path_without_ext}_{selected_scenario}.parquet",
                     )
                     selected_future_population.to_csv(
-                        f"{file_path_without_ext}_{scenario}.csv",
+                        f"{file_path_without_ext}_{selected_scenario}.csv",
                     )
 
                     logging.info(
-                        f"Future population data for {code} and "
-                        f"scenario {scenario} has been extracted "
+                        f"Future population data for {entity_code} and "
+                        f"scenario {selected_scenario} has been extracted "
                         "and saved successfully."
                     )
 
                 else:
                     logging.info(
-                        f"Future population data for {code} and "
-                        f"scenario {scenario} already exists. "
+                        f"Future population data for {entity_code} and "
+                        f"scenario {selected_scenario} already exists. "
                         "Skipping extraction."
                     )

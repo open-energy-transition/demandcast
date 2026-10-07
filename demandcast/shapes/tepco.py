@@ -33,7 +33,7 @@ url = (
 )
 
 # Download the zip file.
-response = requests.get(url)
+response = requests.get(url, timeout=60)
 
 # Define the folder where to extract the shapefile.
 temporary_dir = os.path.join(os.path.dirname(__file__), "tepco_temp")

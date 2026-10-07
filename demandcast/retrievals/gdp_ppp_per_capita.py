@@ -164,8 +164,11 @@ def _extract_historical_gdp_ppp_per_capita(
         which the subdivision belongs.
     global_historical_gdp_ppp_per_capita : pandas.DataFrame
         The global historical GDP PPP per capita data.
-    years_and_scenarios : dict[str, list[int] | dict[str, list[int]]]
-        The years and scenarios dictionary for the country.
+    requested_historical_years : list[int]
+        The historical years requested for the retrieval.
+    used_historical_years : list[int]
+        The available historical years whose data is used for the
+        requested years.
     available_historical_years_of_gridded_data : list[int]
         The available historical years for gridded data.
 
@@ -229,8 +232,8 @@ def _extract_future_gdp_ppp_per_capita(
         which the subdivision belongs.
     global_future_gdp_ppp_per_capita : pandas.DataFrame
         The global future GDP PPP per capita data.
-    years_and_scenarios : dict[str, list[int] | dict[str, list[int]]]
-        The years and scenarios dictionary for the country.
+    future_years : list[int]
+        The future years of interest.
     available_future_years_of_gridded_data : list[int]
         The available future years for gridded data.
     available_historical_years_of_gridded_data : list[int]
@@ -330,13 +333,13 @@ def run_data_retrieval(
     available_scenarios = get_available_scenarios()
 
     # Loop over the countries and subdivisions.
-    for code in tqdm(codes, desc="Countries and subdivisions"):
+    for entity_code in tqdm(codes, desc="Countries and subdivisions"):
         # Get the ISO Alpha-3 code of the country itself or the country
         # to which the subdivision belongs.
-        iso_alpha_3_code = code.split("_")[0]
+        iso_alpha_3_code = entity_code.split("_")[0]
 
         # Get the time zone of the country or subdivision.
-        time_zone = utils.entities.get_time_zone(code)
+        time_zone = utils.entities.get_time_zone(entity_code)
 
         # Get the years and scenarios dictionary for the country or
         # subdivision of interest.
@@ -358,21 +361,22 @@ def run_data_retrieval(
 
         # Define the file path of the GDP PPP per capita data without
         # the file extension.
-        file_path_without_ext = os.path.join(result_directory, code)
+        file_path_without_ext = os.path.join(result_directory, entity_code)
 
         if requested_historical_years:
             if not os.path.exists(
                 file_path_without_ext + ".parquet"
             ) or not os.path.exists(file_path_without_ext + ".csv"):
                 logging.info(
-                    f"Processing historical GDP PPP per capita data for {code}."
+                    "Processing historical GDP PPP per capita data for "
+                    f"{entity_code}."
                 )
 
                 # Extract the historical GDP PPP per capita data for the
                 # country or subdivision of interest.
                 historical_gdp_ppp_per_capita = (
                     _extract_historical_gdp_ppp_per_capita(
-                        code,
+                        entity_code,
                         iso_alpha_3_code,
                         global_historical_gdp_ppp_per_capita,
                         requested_historical_years,
@@ -418,38 +422,40 @@ def run_data_retrieval(
                 )
 
                 logging.info(
-                    f"Historical GDP PPP per capita data for {code} has been "
+                    f"Historical GDP PPP per capita data for {entity_code} "
+                    "has been "
                     "extracted and saved successfully."
                 )
             else:
                 logging.info(
-                    f"Historical GDP PPP per capita data for {code} already "
+                    f"Historical GDP PPP per capita data for {entity_code} "
+                    "already "
                     "exists. Skipping extraction."
                 )
 
         if future_years:
-            for scenario in scenarios:
+            for selected_scenario in scenarios:
                 if not os.path.exists(
-                    f"{file_path_without_ext}_{scenario}.parquet"
+                    f"{file_path_without_ext}_{selected_scenario}.parquet"
                 ) or not os.path.exists(
-                    f"{file_path_without_ext}_{scenario}.csv"
+                    f"{file_path_without_ext}_{selected_scenario}.csv"
                 ):
                     logging.info(
                         f"Processing future GDP PPP per capita data for "
-                        f"{code} and scenario {scenario}."
+                        f"{entity_code} and scenario {selected_scenario}."
                     )
 
                     # Extract the future GDP PPP per capita data for
                     # the country or subdivision of interest.
                     future_gdp_ppp_per_capita = (
                         _extract_future_gdp_ppp_per_capita(
-                            code,
+                            entity_code,
                             iso_alpha_3_code,
                             global_future_gdp_ppp_per_capita,
                             future_years,
                             available_future_years_of_gridded_data,
                             available_historical_years_of_gridded_data,
-                            scenario,
+                            selected_scenario,
                         )
                     )
 
@@ -481,20 +487,22 @@ def run_data_retrieval(
                     # Save the future GDP PPP per capita data to CSV and
                     # Parquet files.
                     selected_future_gdp_ppp_per_capita.to_frame().to_parquet(
-                        f"{file_path_without_ext}_{scenario}.parquet",
+                        f"{file_path_without_ext}_{selected_scenario}.parquet",
                     )
                     selected_future_gdp_ppp_per_capita.to_csv(
-                        f"{file_path_without_ext}_{scenario}.csv",
+                        f"{file_path_without_ext}_{selected_scenario}.csv",
                     )
                     logging.info(
-                        f"Future GDP PPP per capita data for {code} and "
-                        f"scenario {scenario} has been extracted "
+                        f"Future GDP PPP per capita data for {entity_code} "
+                        "and "
+                        f"scenario {selected_scenario} has been extracted "
                         "and saved successfully."
                     )
 
                 else:
                     logging.info(
-                        f"Future GDP PPP per capita data for {code} and "
-                        f"scenario {scenario} already exists. "
+                        f"Future GDP PPP per capita data for {entity_code} "
+                        "and "
+                        f"scenario {selected_scenario} already exists. "
                         "Skipping extraction."
                     )

@@ -96,7 +96,7 @@ def get_url(start_date: pd.Timestamp) -> str:
 
     Parameters
     ----------
-    starting_date : pandas.Timestamp
+    start_date : pandas.Timestamp
         The starting date for the data retrieval period.
 
     Returns
@@ -248,7 +248,7 @@ def download_and_extract_data_for_request(
     date_time = pd.to_datetime(
         [
             f"{date} {hour}:{minute}"
-            for date, hour, minute in zip(dates, hours, minutes)
+            for date, hour, minute in zip(dates, hours, minutes, strict=True)
         ]
     ).tz_localize("Asia/Nicosia", nonexistent="NaT", ambiguous="NaT")
 

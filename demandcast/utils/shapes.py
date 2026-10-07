@@ -21,7 +21,7 @@ import utils.entities
 import utils.figures
 
 
-def _remove_islands_and_clip_to_180(
+def _remove_islands_and_clip_to_180(  # noqa: C901
     entity_shape: geopandas.GeoDataFrame, code: str
 ) -> geopandas.GeoDataFrame:
     """

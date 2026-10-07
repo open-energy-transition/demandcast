@@ -37,7 +37,7 @@ def redistribute() -> bool:
     return False
 
 
-def _check_input_parameters(year: int | None, before_Apr_2002: bool) -> None:
+def _check_input_parameters(year: int | None, before_apr_2002: bool) -> None:
     """
     Check if the input parameters are valid.
 
@@ -45,7 +45,7 @@ def _check_input_parameters(year: int | None, before_Apr_2002: bool) -> None:
     ----------
     year : int
         The year of the data to retrieve.
-    before_Apr_2002 : bool
+    before_apr_2002 : bool
         Whether the url is for the time period before April 2002.
 
     Raises
@@ -54,7 +54,7 @@ def _check_input_parameters(year: int | None, before_Apr_2002: bool) -> None:
         If the input parameters are not valid.
     """
     # Check if the request is supported.
-    if (year, before_Apr_2002) not in get_available_requests():
+    if (year, before_apr_2002) not in get_available_requests():
         raise ValueError("The request is not available.")
 
 
@@ -78,23 +78,23 @@ def get_available_requests() -> list[tuple[int | None, bool]]:
     )
 
     # Define the date that separates the two periods of data.
-    date_after_Apr_2002 = pd.Timestamp("2002-04-01")
+    date_after_apr_2002 = pd.Timestamp("2002-04-01")
 
     # Return the available requests, which are a combination of a year
     # number and a boolean indicating whether the data is before April
     # 2002.
-    # available_requests = [(year = None, before_Apr_2002 = True)
-    #                       (year = 2002, before_Apr_2002 = False),
-    #                       (year = 2003, before_Apr_2002 = False),
+    # available_requests = [(year = None, before_apr_2002 = True)
+    #                       (year = 2002, before_apr_2002 = False),
+    #                       (year = 2003, before_apr_2002 = False),
     #                       ...
-    #                       (year = last year, before_Apr_2002 = False)]
+    #                       (year = last year, before_apr_2002 = False)]
     return [(None, True)] + [
         (year, False)
-        for year in range(date_after_Apr_2002.year, end_date.year + 1)
+        for year in range(date_after_apr_2002.year, end_date.year + 1)
     ]
 
 
-def get_url(year: int | None, before_Apr_2002: bool) -> str:
+def get_url(year: int | None, before_apr_2002: bool) -> str:
     """
     Get the URL of the electricity demand data on the IESO website.
 
@@ -102,7 +102,7 @@ def get_url(year: int | None, before_Apr_2002: bool) -> str:
     ----------
     year : int
         The year of the electricity demand data.
-    before_Apr_2002 : bool
+    before_apr_2002 : bool
         Whether the url is for the time period before April 2002.
 
     Returns
@@ -111,10 +111,10 @@ def get_url(year: int | None, before_Apr_2002: bool) -> str:
         The URL of the electricity demand data.
     """
     # Check if the input parameters are valid.
-    _check_input_parameters(year=year, before_Apr_2002=before_Apr_2002)
+    _check_input_parameters(year=year, before_apr_2002=before_apr_2002)
 
     # Define the URL of the electricity demand data.
-    if before_Apr_2002:
+    if before_apr_2002:
         url = (
             "https://www.ieso.ca/-/media/Files/IESO/Power-Data/data-directory/"
             "HourlyDemands_1994-2002.csv"
@@ -129,7 +129,7 @@ def get_url(year: int | None, before_Apr_2002: bool) -> str:
 
 
 def download_and_extract_data_for_request(
-    year: int | None, before_Apr_2002: bool
+    year: int | None, before_apr_2002: bool
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
@@ -141,7 +141,7 @@ def download_and_extract_data_for_request(
     ----------
     year : int
         The year of the electricity demand data.
-    before_Apr_2002 : bool
+    before_apr_2002 : bool
         Whether the url is for the time period before April 2002.
 
     Returns
@@ -155,12 +155,12 @@ def download_and_extract_data_for_request(
         If the extracted data is not a pandas DataFrame.
     """
     # Check if the input parameters are valid.
-    _check_input_parameters(year=year, before_Apr_2002=before_Apr_2002)
+    _check_input_parameters(year=year, before_apr_2002=before_apr_2002)
 
     # Get the URL of the electricity demand data.
-    url = get_url(year=year, before_Apr_2002=before_Apr_2002)
+    url = get_url(year=year, before_apr_2002=before_apr_2002)
 
-    if before_Apr_2002:
+    if before_apr_2002:
         logging.info(
             "Retrieving electricity demand data for the years 1994 to 2002."
         )
@@ -217,7 +217,9 @@ def download_and_extract_data_for_request(
     index = pd.to_datetime(
         [
             date + " " + str(time - 1) + ":00"
-            for date, time in zip(dataset["Date"], dataset["Hour"])
+            for date, time in zip(
+                dataset["Date"], dataset["Hour"], strict=True
+            )
         ]
     ).tz_localize("America/Toronto", ambiguous="NaT", nonexistent="NaT")
 

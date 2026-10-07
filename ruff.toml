@@ -27,16 +27,14 @@ ignore = [
     "RET504",
     # Exception messages written where the exception is raised.
     "TRY003",
-    # Temporary: existing findings, fixed in a follow-up pull request.
-    "A001", "B905", "C901", "DOC102", "DTZ002", "DTZ005", "DTZ007", "N803",
-    "N806", "PLC0206", "PLR1704", "RUF001", "RUF002", "RUF003", "S113",
-    "S310",
 ]
 explicit-preview-rules = true
 preview = true
 pydocstyle.convention = "numpy"
 pycodestyle.max-doc-length = 72
 pep8-naming.extend-ignore-names = ["X", "X_*"]
+# Turkish and Japanese characters in the column names of data sources.
+allowed-confusables = ["ı", "〔", "〕"]
 
 [lint.per-file-ignores]
 "demandcast/tests/**" = [

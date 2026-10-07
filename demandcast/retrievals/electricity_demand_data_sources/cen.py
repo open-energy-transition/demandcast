@@ -102,7 +102,7 @@ def get_available_requests() -> list[tuple[pd.Timestamp, pd.Timestamp]]:
 
     # Return the available requests, which are the beginning and end of
     # each one-year period.
-    return list(zip(start_dates_and_times, end_dates_and_times))
+    return list(zip(start_dates_and_times, end_dates_and_times, strict=True))
 
 
 def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
@@ -204,7 +204,7 @@ def download_and_extract_data_for_request(
     # there is a 25th hour.
     dataset["date and time"] = [
         date + f" {(min(time, 24) - 1):02d}:00"
-        for date, time in zip(dataset["fecha"], dataset["hora"])
+        for date, time in zip(dataset["fecha"], dataset["hora"], strict=True)
     ]
 
     # Sort the dataset by date and time.

@@ -57,7 +57,7 @@ def get_url(code: str) -> str:
 
     Parameters
     ----------
-    subdivision_code : str
+    code : str
         The code of the Province or Territory of interest.
 
     Returns
@@ -114,7 +114,7 @@ def download_and_extract_data(code: str) -> pd.Series:
 
     Parameters
     ----------
-    subdivision_code : str
+    code : str
         The code of the subdivision of interest.
 
     Returns

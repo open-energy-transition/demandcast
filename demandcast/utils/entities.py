@@ -90,7 +90,7 @@ def _read_continent_codes() -> dict[str, str]:
         return yaml.safe_load(file)["continents"]
 
 
-def get_name_from_code(code: str) -> str:
+def get_name_from_code(code: str) -> str:  # noqa: C901
     """
     Get the name of a country or subdivision from its code.
 
@@ -490,7 +490,7 @@ def _get_all_codes_with_all_data() -> list[str]:
     return all_codes
 
 
-def check_and_get_codes_with(
+def check_and_get_codes_with(  # noqa: C901
     feature: str,
     code: str | None = None,
     data_source: str | None = None,
@@ -572,16 +572,18 @@ def check_and_get_codes_with(
         remaining_codes = codes.copy()
 
         # Check if the codes are available.
-        for code in codes:
-            if code not in all_codes:
+        for entity_code in codes:
+            if entity_code not in all_codes:
                 if data_source is not None:
                     logging.error(
-                        f"Code {code} is not available in data source "
+                        f"Code {entity_code} is not available in data source "
                         f"{data_source}."
                     )
                 else:
-                    logging.error(f"Code {code} does not have {feature}.")
-                remaining_codes.remove(code)
+                    logging.error(
+                        f"Code {entity_code} does not have {feature}."
+                    )
+                remaining_codes.remove(entity_code)
 
         # Check if there are any codes left.
         if len(remaining_codes) == 0:
@@ -976,7 +978,8 @@ def read_date_ranges_of_electricity_demand_in_data_source(
             # If the end date is "today", set it to a few days before
             # today to avoid issues with the latest data.
             end_date = (
-                datetime.datetime.today() - datetime.timedelta(days=5)
+                datetime.datetime.now().astimezone()
+                - datetime.timedelta(days=5)
             ).date()
         else:
             end_date = entity["end_date"]

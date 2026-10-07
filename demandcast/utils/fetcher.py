@@ -70,7 +70,7 @@ def _read_aspx_params(
     return post_data_params
 
 
-def fetch_data(
+def fetch_data(  # noqa: C901
     url: str,
     content_type: str,
     timeout: int = 10,
@@ -146,7 +146,8 @@ def fetch_data(
     Raises
     ------
     ValueError
-        If the content type is not supported.
+        If the content type, the library or the URL scheme is not
+        supported.
     ConnectionError
         If the request fails or the data cannot be fetched within the
         specified number of retries.
@@ -181,16 +182,24 @@ def fetch_data(
 
                     if content_type == "html":
                         if read_with == "urllib.request":
+                            # Only open web URLs, not local files.
+                            if not url.startswith(("http://", "https://")):
+                                raise ValueError(
+                                    f"The URL {url} must use HTTP or HTTPS."
+                                )
+
                             # Read the HTML content from the URL using
                             # the urllib.request module.
-                            request = urllib.request.Request(url)
+                            request = urllib.request.Request(url)  # noqa: S310
                             for key, value in header_params.items():
                                 request.add_header(key, value)
 
                             # Send the request and return the response
                             # as a string.
                             return (
-                                urllib.request.urlopen(request)
+                                urllib.request.urlopen(  # noqa: S310
+                                    request, timeout=timeout
+                                )
                                 .read()
                                 .decode("utf-8")
                             )

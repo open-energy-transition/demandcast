@@ -32,8 +32,6 @@ def _map_from_region_to_country(
     ----------
     iiasa_data : pandas.DataFrame
         The IIASA data.
-    n_regions : int
-        The number of IAM regions available.
 
     Returns
     -------
