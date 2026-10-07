@@ -11,7 +11,7 @@ Description:
 import os
 
 import geopandas
-import matplotlib.pyplot
+import matplotlib.pyplot as plt
 import xarray
 
 import utils.config
@@ -38,11 +38,11 @@ def simple_plot(
     os.makedirs(figure_directory, exist_ok=True)
 
     # Plot the data.
-    fig, ax = matplotlib.pyplot.subplots()
+    fig, ax = plt.subplots()
     data_to_plot.plot(ax=ax)
     fig.savefig(
         os.path.join(figure_directory, figure_name + ".png"),
         dpi=300,
         bbox_inches="tight",
     )
-    matplotlib.pyplot.close(fig)
+    plt.close(fig)

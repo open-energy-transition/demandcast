@@ -15,7 +15,7 @@ from collections.abc import Callable
 from functools import reduce
 
 import dask.dataframe
-import pandas
+import pandas as pd
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
 import retrievals.population
@@ -355,21 +355,21 @@ def _load_data_for_entity(
             continue
 
         # Read the current parquet file.
-        current_data = pandas.read_parquet(file_path)
+        current_data = pd.read_parquet(file_path)
 
         # Append to the entity dataframe.
         entity_data.append(current_data)
 
     if entity_data:
         # Concatenate all data for the entity.
-        entity_data = pandas.concat(entity_data)
+        entity_data = pd.concat(entity_data)
     else:
         # If no data was loaded, return None.
         return None
 
     # Ensure specified columns are numeric.
     for column in numeric_columns:
-        entity_data[column] = pandas.to_numeric(
+        entity_data[column] = pd.to_numeric(
             entity_data[column], errors="coerce"
         )
 

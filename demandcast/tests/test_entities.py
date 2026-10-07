@@ -9,7 +9,7 @@ Description:
 import datetime
 from unittest.mock import patch
 
-import pandas
+import pandas as pd
 import pytest
 import pytz
 import utils.entities
@@ -160,7 +160,7 @@ def test_get_all_codes_with_all_data():
 
         # Mock the return value of pandas.read_csv to return a sample
         # DataFrame.
-        mock_read_csv.return_value = pandas.DataFrame(
+        mock_read_csv.return_value = pd.DataFrame(
             {
                 "historical_population": [True, True, True, False],
                 "historical_electricity_demand_per_capita": [

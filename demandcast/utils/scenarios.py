@@ -9,7 +9,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 
 
 def _normalize_scenarios(scenarios: list[str]) -> list[str]:
@@ -387,7 +387,7 @@ def _extend_historical_years(available_years: list[int]) -> list[int]:
         The extended list of available years.
     """
     # Get the current year and the last historical year.
-    current_year = pandas.Timestamp.now().year
+    current_year = pd.Timestamp.now().year
     last_historical_year = available_years[-1]
 
     # If the last historical year is already last year or later,

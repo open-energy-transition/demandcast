@@ -16,7 +16,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -83,7 +83,7 @@ def get_available_requests() -> list[tuple[bool, int, int | None, int | None]]:
 
     # Define the date that marks the beginning of the post-reform
     # period.
-    post_reform_start_date = pandas.Timestamp("2023-10-01")
+    post_reform_start_date = pd.Timestamp("2023-10-01")
 
     # Define the list of available requests for the pre-reform period,
     # which are the years from 2006 to 2023.
@@ -92,7 +92,7 @@ def get_available_requests() -> list[tuple[bool, int, int | None, int | None]]:
     # Define the list of available requests for the post-reform period,
     # which are the year, month, and day from October 1, 2023, to today.
     post_reform_values = (
-        pandas.date_range(
+        pd.date_range(
             start=post_reform_start_date,
             end=end_date,
             freq="D",
@@ -156,7 +156,7 @@ def get_url(
 
 def download_and_extract_data_for_request(
     pre_reform: bool, year: int, month: int | None, day: int | None
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     """
     Download and extract electricity demand data.
 
@@ -200,16 +200,16 @@ def download_and_extract_data_for_request(
         dataset = utils.fetcher.fetch_data(url, "csv")
 
         # Make sure the dataset is a pandas DataFrame.
-        if not isinstance(dataset, pandas.DataFrame):
+        if not isinstance(dataset, pd.DataFrame):
             raise ValueError(
                 f"The extracted data is a {type(dataset)} object, "
                 "expected a pandas DataFrame."
             )
 
         # Extract the electricity demand data from the dataset.
-        electricity_demand_time_series = pandas.Series(
+        electricity_demand_time_series = pd.Series(
             dataset["Operational Demand (MW)"].values,
-            index=pandas.to_datetime(dataset["Trading Interval"]),
+            index=pd.to_datetime(dataset["Trading Interval"]),
         )
 
         # Add the timezone information to the index.
@@ -224,7 +224,7 @@ def download_and_extract_data_for_request(
         # Add 30 minutes to the index because the demand data seems
         # to be reported at the beginning of the trading interval.
         electricity_demand_time_series.index = (
-            electricity_demand_time_series.index + pandas.Timedelta(minutes=30)
+            electricity_demand_time_series.index + pd.Timedelta(minutes=30)
         )
 
     else:
@@ -246,16 +246,16 @@ def download_and_extract_data_for_request(
         )
 
         # Make sure the dataset is a pandas DataFrame.
-        if not isinstance(dataset, pandas.DataFrame):
+        if not isinstance(dataset, pd.DataFrame):
             raise ValueError(
                 f"The extracted data is a {type(dataset)} object, "
                 "expected a pandas DataFrame."
             )
 
         # Extract the electricity demand data from the dataset.
-        electricity_demand_time_series = pandas.Series(
+        electricity_demand_time_series = pd.Series(
             dataset["operationalDemand"].values,
-            index=pandas.to_datetime(dataset["asAtTimeStamp"], utc=True),
+            index=pd.to_datetime(dataset["asAtTimeStamp"], utc=True),
         )
 
     return electricity_demand_time_series

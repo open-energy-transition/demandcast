@@ -11,8 +11,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import geopandas
-import numpy
-import pandas
+import numpy as np
+import pandas as pd
 import pytest
 import utils.config
 import utils.geospatial
@@ -43,12 +43,12 @@ def test_harmonize_coords():
     # Test the remapping of longitudes from [0, 360] to [-180, 180].
     ds = xarray.Dataset(coords={"x": [0, 90, 270], "y": [50, 60]})
     result = utils.geospatial.harmonize_coords(ds)
-    assert numpy.all(result["x"].to_numpy() >= -180)
-    assert numpy.all(result["x"].to_numpy() <= 180)
+    assert np.all(result["x"].to_numpy() >= -180)
+    assert np.all(result["x"].to_numpy() <= 180)
 
     # Test the dropping of duplicate coordinates.
     ds = xarray.Dataset(coords={"x": [0, 0, 10], "y": [50, 60]})
-    n_duplicates = len(ds["x"]) - len(numpy.unique(ds["x"]))
+    n_duplicates = len(ds["x"]) - len(np.unique(ds["x"]))
     result = utils.geospatial.harmonize_coords(ds)
     assert len(result["x"]) == len(ds["x"]) - n_duplicates
 
@@ -64,10 +64,10 @@ def test_harmonize_coords():
     # Test the sorting of coordinates.
     ds = xarray.Dataset(coords={"x": [60, 50], "y": [60, 50]})
     result = utils.geospatial.harmonize_coords(ds)
-    sorted_x = numpy.sort(ds["x"])
-    assert numpy.allclose(result["x"], sorted_x)
-    sorted_y = numpy.sort(ds["y"])
-    assert numpy.allclose(result["y"], sorted_y)
+    sorted_x = np.sort(ds["x"])
+    assert np.allclose(result["x"], sorted_x)
+    sorted_y = np.sort(ds["y"])
+    assert np.allclose(result["y"], sorted_y)
 
 
 def test_clean_raster():
@@ -80,7 +80,7 @@ def test_clean_raster():
     """
     # Create a mock DataArray with 'band' dimension and extra variables.
     data = xarray.DataArray(
-        numpy.random.rand(1, 5, 5),
+        np.random.rand(1, 5, 5),
         dims=["band", "y", "x"],
         coords={"band": [1], "spatial_ref": 0},
         name="original_var",
@@ -126,9 +126,9 @@ def test_get_fraction_of_grid_cells_in_shape(monkeypatch):
         )
 
         # Create a simple xarray.DataArray with made-up data.
-        lat = numpy.array([0.0, 0.5, 1.0, 1.5, 2.0])
-        lon = numpy.array([0.0, 0.5, 1.0, 1.5, 2.0])
-        values = numpy.arange(25).reshape((5, 5))
+        lat = np.array([0.0, 0.5, 1.0, 1.5, 2.0])
+        lon = np.array([0.0, 0.5, 1.0, 1.5, 2.0])
+        values = np.arange(25).reshape((5, 5))
         xarray_data = xarray.DataArray(
             data=values,
             coords={"y": lat, "x": lon},
@@ -151,15 +151,15 @@ def test_get_fraction_of_grid_cells_in_shape(monkeypatch):
         assert "x" in fraction.coords
         assert "y" in fraction.coords
         assert fraction.ndim == 2
-        assert numpy.allclose(xarray_data.x.to_numpy(), fraction.x.to_numpy())
-        assert numpy.allclose(xarray_data.y.to_numpy(), fraction.y.to_numpy())
-        assert numpy.all(fraction.to_numpy() >= 0.0)
-        assert numpy.all(fraction.to_numpy() <= 1.0)
-        assert numpy.any(fraction.to_numpy() > 0.0)
-        assert numpy.allclose(
+        assert np.allclose(xarray_data.x.to_numpy(), fraction.x.to_numpy())
+        assert np.allclose(xarray_data.y.to_numpy(), fraction.y.to_numpy())
+        assert np.all(fraction.to_numpy() >= 0.0)
+        assert np.all(fraction.to_numpy() <= 1.0)
+        assert np.any(fraction.to_numpy() > 0.0)
+        assert np.allclose(
             fraction.sel(x=1.0, y=1.0).to_numpy(), 1.0, atol=1e-2
         )
-        assert numpy.allclose(
+        assert np.allclose(
             fraction.sel(x=0.5, y=0.5).to_numpy(), 0.25, atol=1e-2
         )
 
@@ -180,9 +180,9 @@ def test_from_density_to_count():
     kilometer) to a count grid based on the area of each grid cell.
     """
     # Create a simple 3x2 density grid in counts per sq km.
-    lat = numpy.array([10, 10.5, 11])
-    lon = numpy.array([20, 20.5])
-    density_values = numpy.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    lat = np.array([10, 10.5, 11])
+    lon = np.array([20, 20.5])
+    density_values = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
     density_grid = xarray.DataArray(
         data=density_values,
         coords={"y": lat, "x": lon},
@@ -195,7 +195,7 @@ def test_from_density_to_count():
     R = 6371.0
 
     # Calculate boundary latitudes.
-    boundary_lat = numpy.concatenate(
+    boundary_lat = np.concatenate(
         [
             [lat[0] - 0.5 * resolution],
             0.5 * (lat[1:] + lat[:-1]),
@@ -209,16 +209,16 @@ def test_from_density_to_count():
 
     # Compute expected area for each grid cell.
     area = (
-        (numpy.pi / 180)
+        (np.pi / 180)
         * R**2
         * resolution
         * (
-            numpy.sin(numpy.deg2rad(upper_lat))
-            - numpy.sin(numpy.deg2rad(lower_lat))
+            np.sin(np.deg2rad(upper_lat))
+            - np.sin(np.deg2rad(lower_lat))
         )
     )
     # Repeat area for each longitude (2 columns).
-    expected_area = numpy.tile(area, (2, 1)).T  # Shape (3,2)
+    expected_area = np.tile(area, (2, 1)).T  # Shape (3,2)
 
     # Calculate expected counts.
     expected_counts = density_values * expected_area
@@ -228,13 +228,13 @@ def test_from_density_to_count():
 
     # Assert shape and values are correct.
     assert output.shape == density_grid.shape
-    numpy.testing.assert_allclose(
+    np.testing.assert_allclose(
         output.to_numpy(), expected_counts, rtol=1e-6
     )
 
     # Assert output coordinates match input.
-    assert numpy.all(output.x.to_numpy() == density_grid.x.to_numpy())
-    assert numpy.all(output.y.to_numpy() == density_grid.y.to_numpy())
+    assert np.all(output.x.to_numpy() == density_grid.x.to_numpy())
+    assert np.all(output.y.to_numpy() == density_grid.y.to_numpy())
 
 
 def test_get_largest_values_in_shape():
@@ -249,9 +249,9 @@ def test_get_largest_values_in_shape():
     shape = geopandas.GeoDataFrame(geometry=[box(0, 0, 1, 1)], crs="EPSG:4326")
 
     # Create a small xarray.DataArray with made-up data.
-    lat = numpy.array([0.0, 0.25, 0.5, 0.75, 1.0])
-    lon = numpy.array([0.0, 0.25, 0.5, 0.75, 1.0])
-    values = numpy.arange(25).reshape((5, 5))
+    lat = np.array([0.0, 0.25, 0.5, 0.75, 1.0])
+    lon = np.array([0.0, 0.25, 0.5, 0.75, 1.0])
+    values = np.arange(25).reshape((5, 5))
     data = xarray.DataArray(
         data=values,
         coords={"y": lat, "x": lon},
@@ -268,7 +268,7 @@ def test_get_largest_values_in_shape():
     # Check the result.
     assert isinstance(result, xarray.DataArray)
     assert result.dims == ("z",)
-    assert numpy.all(result.to_numpy() == numpy.array([22, 23, 24]))
+    assert np.all(result.to_numpy() == np.array([22, 23, 24]))
 
 
 def test_coarsen_function():
@@ -280,9 +280,9 @@ def test_coarsen_function():
     specified bounding box and target resolution.
     """
     # Create fine-resolution sample data (0.1° x 0.1°).
-    lon = numpy.arange(-1.0, 1.1, 0.1)
-    lat = numpy.arange(-1.0, 1.1, 0.1)
-    data = numpy.ones((len(lat), len(lon)))
+    lon = np.arange(-1.0, 1.1, 0.1)
+    lat = np.arange(-1.0, 1.1, 0.1)
+    data = np.ones((len(lat), len(lon)))
     da = xarray.DataArray(
         data, coords={"y": lat, "x": lon}, dims=["y", "x"], name="test_var"
     )
@@ -301,13 +301,13 @@ def test_coarsen_function():
     assert result.ndim == 2
     assert result.shape[0] < da.shape[0]
     assert result.shape[1] < da.shape[1]
-    assert numpy.allclose(numpy.diff(result["x"]), 0.25)
-    assert numpy.allclose(numpy.diff(result["y"]), 0.25)
+    assert np.allclose(np.diff(result["x"]), 0.25)
+    assert np.allclose(np.diff(result["y"]), 0.25)
 
     # Create a sample data with longitude coordinates beyond valid
     # range.
-    lon = numpy.arange(-181.0, 181.0, 0.1)
-    data = numpy.ones((len(lat), len(lon)))
+    lon = np.arange(-181.0, 181.0, 0.1)
+    data = np.ones((len(lat), len(lon)))
     da = xarray.DataArray(
         data, coords={"y": lat, "x": lon}, dims=["y", "x"], name="test_var"
     )
@@ -363,7 +363,7 @@ def test_aggregate_gridded_data():
         mock_shape.return_value = "fake_shape"
 
         # Mock the fraction calculation to be a numpy array.
-        mock_fraction.return_value = numpy.array([[0.5, 0.5], [0.2, 0.8]])
+        mock_fraction.return_value = np.array([[0.5, 0.5], [0.2, 0.8]])
 
         # Call the function to test.
         result = utils.geospatial._aggregate_gridded_data(
@@ -434,9 +434,9 @@ def test_get_total_value_from_gridded_data():
         )
 
     # Assert that the returned Series has the correct index and values.
-    assert isinstance(result, pandas.Series)
+    assert isinstance(result, pd.Series)
     assert list(result.index) == [2035, 2036, 2037, 2038, 2039, 2040]
-    assert numpy.allclose(result.to_numpy(), numpy.linspace(10000, 12000, 6))
+    assert np.allclose(result.to_numpy(), np.linspace(10000, 12000, 6))
 
     # Repeat the test with the GDP PPP variable and other selected
     # years.

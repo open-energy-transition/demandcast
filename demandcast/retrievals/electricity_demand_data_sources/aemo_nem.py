@@ -15,7 +15,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -93,7 +93,7 @@ def get_available_requests(code: str) -> list[tuple[int, int]]:
 
     # Get the list of available requests (year, month).
     values_list = (
-        pandas.date_range(start=start_date, end=end_date, freq="ME")
+        pd.date_range(start=start_date, end=end_date, freq="ME")
         .strftime("%Y-%m")
         .str.split("-")
         .tolist()
@@ -139,7 +139,7 @@ def get_url(year: int, month: int, code: str) -> str:
 
 def download_and_extract_data_for_request(
     year: int, month: int, code: str
-) -> pandas.Series:
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -185,16 +185,16 @@ def download_and_extract_data_for_request(
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
 
     # Extract the electricity demand data from the dataset.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["TOTALDEMAND"].values,
-        index=pandas.to_datetime(dataset["SETTLEMENTDATE"]),
+        index=pd.to_datetime(dataset["SETTLEMENTDATE"]),
     )
 
     # Add the time zone information to the index.

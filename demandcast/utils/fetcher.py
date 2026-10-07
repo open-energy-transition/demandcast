@@ -16,7 +16,7 @@ import urllib.error
 import urllib.request
 from io import BytesIO, StringIO
 
-import pandas
+import pandas as pd
 import requests
 import requests.exceptions
 from entsoe import EntsoePandasClient
@@ -91,7 +91,7 @@ def fetch_data(
     json_keys: list[str] | None = None,
     query_aspx_webpage: bool = False,
     get_cookies: bool = False,
-) -> pandas.DataFrame | pandas.ExcelFile | str | requests.Response:
+) -> pd.DataFrame | pd.ExcelFile | str | requests.Response:
     """
     Fetch the data from the specified URL.
 
@@ -172,11 +172,11 @@ def fetch_data(
                 try:
                     if content_type == "csv":
                         # Read the CSV file from the URL.
-                        return pandas.read_csv(url, **csv_kwargs)
+                        return pd.read_csv(url, **csv_kwargs)
 
                     if content_type == "excel":
                         # Read the Excel file from the URL.
-                        return pandas.read_excel(url, **excel_kwargs)
+                        return pd.read_excel(url, **excel_kwargs)
 
                     if content_type == "html":
                         if read_with == "urllib.request":
@@ -273,19 +273,19 @@ def fetch_data(
                             if read_as == "csv_table":
                                 # Return the content read as a CSV
                                 # table.
-                                return pandas.read_csv(
+                                return pd.read_csv(
                                     StringIO(response.text), **csv_kwargs
                                 )
                             if read_as == "excel_table":
                                 # Return the content read as an Excel
                                 # table.
-                                return pandas.read_excel(
+                                return pd.read_excel(
                                     BytesIO(response.content), **excel_kwargs
                                 )
                             if read_as == "excel_file":
                                 # Return the content read as an Excel
                                 # file.
-                                return pandas.ExcelFile(
+                                return pd.ExcelFile(
                                     BytesIO(response.content)
                                 )
                             if read_as == "text":
@@ -301,7 +301,7 @@ def fetch_data(
                                     content = content[json_key]
 
                                 # Return the content as a DataFrame.
-                                return pandas.DataFrame(content)
+                                return pd.DataFrame(content)
                             if read_as == "plain":
                                 # Return just the response.
                                 return response
@@ -363,11 +363,11 @@ def fetch_data(
 def fetch_entsoe_demand(
     api_key: str,
     iso_alpha_3_code: str,
-    start_date_and_time: pandas.Timestamp,
-    end_date_and_time: pandas.Timestamp,
+    start_date_and_time: pd.Timestamp,
+    end_date_and_time: pd.Timestamp,
     retries: int = 3,
     retry_delay: int = 5,
-) -> pandas.Series:
+) -> pd.Series:
     """
     Fetch the electricity demand time series from the ENTSO-E API.
 
@@ -434,4 +434,4 @@ def fetch_entsoe_demand(
             f"{start_date_and_time.date()} and {end_date_and_time.date()}."
         )
 
-        return pandas.Series()
+        return pd.Series()

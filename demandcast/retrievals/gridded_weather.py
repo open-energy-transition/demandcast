@@ -16,7 +16,7 @@ import os
 import zipfile
 
 import cdsapi
-import pandas
+import pandas as pd
 import utils.config
 import utils.entities
 import utils.geospatial
@@ -287,11 +287,11 @@ def run_data_retrieval(
     # Historical data is available from 1940 but it is not necessary to
     # go that far back for our purposes.
     available_historical_years = list(
-        range(1990, pandas.Timestamp.now().year + 1)
+        range(1990, pd.Timestamp.now().year + 1)
     )
 
     # Define the available years for the future weather data.
-    available_future_years = list(range(pandas.Timestamp.now().year, 2101))
+    available_future_years = list(range(pd.Timestamp.now().year, 2101))
 
     # Define the available scenarios for the weather data.
     available_scenarios_for_model = {
@@ -404,7 +404,7 @@ def run_data_retrieval(
             # reanalysis data.
             if not os.path.exists(global_file_path_without_ext + ".nc") or (
                 os.path.exists(global_file_path_without_ext + ".nc")
-                and year == pandas.Timestamp.now().year
+                and year == pd.Timestamp.now().year
                 and model is None
                 and scenario is None
             ):
@@ -448,7 +448,7 @@ def run_data_retrieval(
                 # reanalysis data.
                 if not os.path.exists(entity_file_path) or (
                     os.path.exists(entity_file_path)
-                    and year == pandas.Timestamp.now().year
+                    and year == pd.Timestamp.now().year
                     and model is None
                     and scenario is None
                 ):

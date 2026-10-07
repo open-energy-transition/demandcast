@@ -13,7 +13,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -71,7 +71,7 @@ def get_available_requests() -> list[tuple[int, int]]:
     # Get the list of available requests, which are the years and
     # months.
     values_list = (
-        pandas.date_range(start=start_date, end=end_date, freq="ME")
+        pd.date_range(start=start_date, end=end_date, freq="ME")
         .strftime("%Y-%m")
         .str.split("-")
         .tolist()
@@ -97,7 +97,7 @@ def get_url() -> str:
 
 def download_and_extract_data_for_request(
     year: int, month: int
-) -> pandas.Series:
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -146,7 +146,7 @@ def download_and_extract_data_for_request(
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
@@ -156,9 +156,9 @@ def download_and_extract_data_for_request(
     # It is unclear whether the time values represent the start or
     # end of the hour. Most likely, they represent the start of the
     # hour but this is not confirmed.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["NB_LOAD"].values,
-        index=pandas.to_datetime(
+        index=pd.to_datetime(
             dataset["HOUR"].values, format="%Y-%m-%d %H:%M"
         ),
     )

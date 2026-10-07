@@ -17,11 +17,11 @@ import logging
 import zipfile
 from io import BytesIO
 
-import pandas
+import pandas as pd
 import requests
 
 
-def download(variable: str) -> pandas.DataFrame:
+def download(variable: str) -> pd.DataFrame:
     """
     Download historical data from World Bank.
 
@@ -83,7 +83,7 @@ def download(variable: str) -> pandas.DataFrame:
         ][0]
 
         # Read the electricity demand per capita from the archive.
-        world_bank_data = pandas.read_csv(
+        world_bank_data = pd.read_csv(
             archive.open(world_bank_file_name), skiprows=4
         )
 

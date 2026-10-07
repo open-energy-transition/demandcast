@@ -23,7 +23,7 @@ Description:
 
 import os
 
-import pandas
+import pandas as pd
 import pycountry
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
@@ -35,9 +35,9 @@ from retrievals.socio_economic_data_sources import iiasa, world_bank
 
 def _add_first_and_last_years(
     variable: str,
-    data_source: pandas.DataFrame,
-    data_availability: pandas.DataFrame,
-) -> pandas.DataFrame:
+    data_source: pd.DataFrame,
+    data_availability: pd.DataFrame,
+) -> pd.DataFrame:
     """
     Add the first and last available years for historical data.
 
@@ -143,7 +143,7 @@ def run_check() -> None:
             raise ValueError(f"Code {code} with shape not in official list.")
 
     # Initialize a DataFrame to store the available data.
-    data_availability = pandas.DataFrame(index=entity_codes_with_shape)
+    data_availability = pd.DataFrame(index=entity_codes_with_shape)
     data_availability.index.name = "entity_code"
 
     # Add a column with the entity names.

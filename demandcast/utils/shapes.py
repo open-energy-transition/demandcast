@@ -12,7 +12,7 @@ import os
 
 import cartopy.io.shapereader
 import geopandas
-import pandas
+import pandas as pd
 import pycountry
 from shapely import Polygon
 
@@ -192,7 +192,7 @@ def get_standard_shape(
         ][0]
 
     # Convert the shape to a GeoDataFrame.
-    entity_shape = pandas.Series({"geometry": entity_shape.geometry})
+    entity_shape = pd.Series({"geometry": entity_shape.geometry})
     entity_shape = geopandas.GeoSeries(entity_shape)
     entity_shape = geopandas.GeoDataFrame.from_features(entity_shape, crs=4326)
 

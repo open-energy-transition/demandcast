@@ -11,7 +11,7 @@ import json
 import logging
 import os
 
-import pandas
+import pandas as pd
 import requests
 import yaml
 from dotenv import load_dotenv
@@ -193,7 +193,7 @@ def upload_to_zenodo(
         "metadata": {
             "title": title,
             "upload_type": "dataset",
-            "publication_date": pandas.Timestamp.now().strftime("%Y-%m-%d"),
+            "publication_date": pd.Timestamp.now().strftime("%Y-%m-%d"),
             "description": description,
             "creators": creators,
             "contributors": contributors,

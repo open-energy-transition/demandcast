@@ -16,7 +16,7 @@ Description:
 import logging
 import os
 
-import pandas
+import pandas as pd
 import utils.config
 import utils.entities
 import utils.fetcher
@@ -41,8 +41,8 @@ def redistribute() -> bool:
 
 def _check_input_parameters(
     code: str,
-    start_date: pandas.Timestamp | None = None,
-    end_date: pandas.Timestamp | None = None,
+    start_date: pd.Timestamp | None = None,
+    end_date: pd.Timestamp | None = None,
 ) -> None:
     """
     Check if the input parameters are valid.
@@ -61,13 +61,13 @@ def _check_input_parameters(
 
     if start_date is not None and end_date is not None:
         # Check if the retrieval period is less than 1 year.
-        assert (end_date - start_date) <= pandas.Timedelta("366days"), (
+        assert (end_date - start_date) <= pd.Timedelta("366days"), (
             "The retrieval period must be less than or equal to 1 year. "
             f"start_date: {start_date}, end_date: {end_date}"
         )
 
         # Read the start date of the available data.
-        start_date_of_data_availability = pandas.to_datetime(
+        start_date_of_data_availability = pd.to_datetime(
             utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
                 "entsoe"
             )[code][0]
@@ -83,7 +83,7 @@ def _check_input_parameters(
 
 def get_available_requests(
     code: str,
-) -> list[tuple[pandas.Timestamp, pandas.Timestamp]]:
+) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """
     Get the available requests.
 
@@ -112,8 +112,8 @@ def get_available_requests(
 
     # Define intervals for the retrieval periods. A one-year period is
     # the maximum available on the platform.
-    intervals = pandas.date_range(start_date, end_date, freq="YS")
-    intervals = intervals.union(pandas.to_datetime([start_date, end_date]))
+    intervals = pd.date_range(start_date, end_date, freq="YS")
+    intervals = intervals.union(pd.to_datetime([start_date, end_date]))
 
     # Define start and end dates of the retrieval periods.
     start_dates_and_times = intervals[:-1]
@@ -125,8 +125,8 @@ def get_available_requests(
 
 
 def get_url(
-    start_date: pandas.Timestamp,
-    end_date: pandas.Timestamp,
+    start_date: pd.Timestamp,
+    end_date: pd.Timestamp,
     code: str = "",
 ) -> str:
     """
@@ -192,10 +192,10 @@ def get_url(
 
 
 def download_and_extract_data_for_request(
-    start_date: pandas.Timestamp,
-    end_date: pandas.Timestamp,
+    start_date: pd.Timestamp,
+    end_date: pd.Timestamp,
     code: str,
-) -> pandas.Series:
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -265,7 +265,7 @@ def download_and_extract_data_for_request(
         else:
             # Assume a one-hour time difference if there is only one
             # time value.
-            time_difference = pandas.Timedelta("1h")
+            time_difference = pd.Timedelta("1h")
 
         # Add the time difference to the time values.
         electricity_demand_time_series.index = (

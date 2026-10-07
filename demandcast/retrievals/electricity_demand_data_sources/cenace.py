@@ -15,7 +15,7 @@ import logging
 import zipfile
 from io import BytesIO, StringIO
 
-import pandas
+import pandas as pd
 import requests
 import utils.entities
 import utils.fetcher
@@ -40,8 +40,8 @@ def redistribute() -> bool:
 
 def _check_input_parameters(
     code: str,
-    start_date: pandas.Timestamp | None = None,
-    end_date: pandas.Timestamp | None = None,
+    start_date: pd.Timestamp | None = None,
+    end_date: pd.Timestamp | None = None,
 ) -> None:
     """
     Check if the input parameters are valid.
@@ -60,13 +60,13 @@ def _check_input_parameters(
 
     if start_date is not None and end_date is not None:
         # Check if the retrieval period is less than 1 year.
-        assert (end_date - start_date) <= pandas.Timedelta("366days"), (
+        assert (end_date - start_date) <= pd.Timedelta("366days"), (
             "The retrieval period must be less than or equal to 1 year. "
             f"start_date: {start_date}, end_date: {end_date}"
         )
 
         # Read the start date of the available data.
-        start_date_of_data_availability = pandas.to_datetime(
+        start_date_of_data_availability = pd.to_datetime(
             utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
                 "cenace"
             )[code][0]
@@ -81,7 +81,7 @@ def _check_input_parameters(
 
 def get_available_requests(
     code: str,
-) -> list[tuple[pandas.Timestamp, pandas.Timestamp]]:
+) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """
     Get the available requests.
 
@@ -110,11 +110,11 @@ def get_available_requests(
 
     # Mexico has data until 15 days before the current date. Subtract
     # 10 days to the end date on top of the 5 days already considered.
-    end_date = pandas.to_datetime(end_date) - pandas.Timedelta("10days")
+    end_date = pd.to_datetime(end_date) - pd.Timedelta("10days")
 
     # Define intervals for the retrieval periods.
-    intervals = pandas.date_range(start_date, end_date, freq="YS")
-    intervals = intervals.union(pandas.to_datetime([start_date, end_date]))
+    intervals = pd.date_range(start_date, end_date, freq="YS")
+    intervals = intervals.union(pd.to_datetime([start_date, end_date]))
 
     # Define start and end dates of the retrieval periods.
     start_dates_and_times = intervals[:-1]
@@ -142,10 +142,10 @@ def get_url() -> str:
 
 
 def download_and_extract_data_for_request(
-    start_date: pandas.Timestamp,
-    end_date: pandas.Timestamp,
+    start_date: pd.Timestamp,
+    end_date: pd.Timestamp,
     code: str,
-) -> pandas.Series:
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -238,7 +238,7 @@ def download_and_extract_data_for_request(
 
     # Get all the dates in the time range.
     dates = (
-        pandas.date_range(start_date, end_date, freq="D")
+        pd.date_range(start_date, end_date, freq="D")
         .strftime("%Y-%m-%d")
         .tolist()
     )
@@ -300,7 +300,7 @@ def download_and_extract_data_for_request(
                     )
 
         # Read the file content into a pandas DataFrame.
-        dataset = pandas.read_csv(
+        dataset = pd.read_csv(
             StringIO(file_content), skiprows=skip_rows, index_col=False
         )
 
@@ -324,7 +324,7 @@ def download_and_extract_data_for_request(
 
         # Set a new index with the date and time for each hour of
         # the day.
-        daily_values.index = pandas.date_range(
+        daily_values.index = pd.date_range(
             start=date + " 00:00:00",
             end=date + " 23:59:59",
             freq="h",
@@ -335,11 +335,11 @@ def download_and_extract_data_for_request(
         daily_values_list.append(daily_values)
 
     # Concatenate the daily values into a single pandas Series.
-    electricity_demand_time_series = pandas.concat(daily_values_list)
+    electricity_demand_time_series = pd.concat(daily_values_list)
 
     # Add 1 hour to the index to indicate the end of the hour.
     electricity_demand_time_series.index = (
-        electricity_demand_time_series.index + pandas.Timedelta("1h")
+        electricity_demand_time_series.index + pd.Timedelta("1h")
     )
 
     return electricity_demand_time_series

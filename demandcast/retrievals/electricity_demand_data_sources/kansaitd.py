@@ -14,7 +14,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -70,7 +70,7 @@ def get_available_requests() -> list[tuple[int, int | None]]:
     )
 
     # Define the date that separates the two types of requests.
-    Mar_2024 = pandas.Timestamp("2024-03-01")
+    Mar_2024 = pd.Timestamp("2024-03-01")
 
     # Requests before March 2024.
     requests_before: list[tuple[int, int | None]] = [
@@ -128,7 +128,7 @@ def get_url(year: int, month: int | None) -> str:
 
 def download_and_extract_data_for_request(
     year: int, month: int | None
-) -> pandas.Series:
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -172,7 +172,7 @@ def download_and_extract_data_for_request(
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
@@ -184,15 +184,15 @@ def download_and_extract_data_for_request(
         )
 
         # Extract the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
+        electricity_demand_time_series = pd.Series(
             dataset["エリア需要〔MWh〕"].values,
-            index=pandas.to_datetime(dataset["DATE_TIME"]),
+            index=pd.to_datetime(dataset["DATE_TIME"]),
         )
 
         # Add one hour to the time index because the time values
         # appear to be provided at the beginning of the time
         # interval.
-        electricity_demand_time_series.index += pandas.Timedelta(hours=1)
+        electricity_demand_time_series.index += pd.Timedelta(hours=1)
 
     else:
         logging.info(
@@ -201,12 +201,12 @@ def download_and_extract_data_for_request(
         )
 
         # Convert date and hour columns into hourly timestamps.
-        index = pandas.to_datetime(dataset["DATE"]) + pandas.to_timedelta(
+        index = pd.to_datetime(dataset["DATE"]) + pd.to_timedelta(
             dataset["TIME"].astype(str) + ":00"
         )
 
         # Extract the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
+        electricity_demand_time_series = pd.Series(
             dataset["エリア需要"].values,
             index=index,
         )
@@ -214,7 +214,7 @@ def download_and_extract_data_for_request(
         # Add 30 minutes to the time index because the time values
         # appear to be provided at the beginning of the time
         # interval.
-        electricity_demand_time_series.index += pandas.Timedelta(minutes=30)
+        electricity_demand_time_series.index += pd.Timedelta(minutes=30)
 
     # Convert the time zone of the electricity demand time
     # series to UTC.

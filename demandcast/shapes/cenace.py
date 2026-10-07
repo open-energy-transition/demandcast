@@ -20,7 +20,7 @@ import zipfile
 from io import BytesIO
 
 import geopandas
-import pandas
+import pandas as pd
 import requests
 from shapely import Polygon
 
@@ -68,7 +68,7 @@ subdivisions = states[states["code"] == "MX-BCN"]
 subdivisions.loc[subdivisions["code"] == "MX-BCN", "code"] = "MEX_BCA"
 
 # Add the shape of Baja California Sur and set the code to "MEX_BCS".
-subdivisions = pandas.concat(
+subdivisions = pd.concat(
     [subdivisions, states[states["code"] == "MX-BCS"]]
 )
 subdivisions.loc[subdivisions["code"] == "MX-BCS", "code"] = "MEX_BCS"
@@ -82,7 +82,7 @@ merged_shape = merged_shape.reset_index()
 
 # Add the merged shape, Noroeste, to the subdivisions and set the name
 # to Noroeste and code to "MEX_NOR".
-subdivisions = pandas.concat([subdivisions, merged_shape])
+subdivisions = pd.concat([subdivisions, merged_shape])
 subdivisions.loc[subdivisions["code"] == "MX-SON", "code"] = "MEX_NOR"
 subdivisions.loc[subdivisions["code"] == "MEX_NOR", "name"] = "Noroeste"
 
@@ -95,7 +95,7 @@ merged_shape = merged_shape.reset_index()
 
 # Add the merged shape, Norte, to the subdivisions and set the name to
 # Norte and code to "MEX_NOR".
-subdivisions = pandas.concat([subdivisions, merged_shape])
+subdivisions = pd.concat([subdivisions, merged_shape])
 subdivisions.loc[subdivisions["code"] == "MX-CHH", "code"] = "MEX_NTE"
 subdivisions.loc[subdivisions["code"] == "MEX_NTE", "name"] = "Norte"
 
@@ -125,7 +125,7 @@ merged_shape = merged_shape.overlay(new_bounds, how="difference")
 
 # Add the merged shape, Peninsular, to the subdivisions and set the name
 # to Peninsular and code to "MEX_PEN".
-subdivisions = pandas.concat([subdivisions, merged_shape])
+subdivisions = pd.concat([subdivisions, merged_shape])
 subdivisions.loc[subdivisions["code"] == "MX-CAM", "code"] = "MEX_PEN"
 subdivisions.loc[subdivisions["code"] == "MEX_PEN", "name"] = "Peninsular"
 
@@ -152,7 +152,7 @@ new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 shape_to_cut = shape_to_cut.overlay(new_bounds, how="intersection")
 
 # Add the cut shape of Veracruz to the shapes to merge.
-shapes_to_merge = pandas.concat([shapes_to_merge, shape_to_cut])
+shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
 
 # Get the shapes of San Luis Potosi.
 shape_to_cut = states[states["code"].isin(["MX-SLP"])]
@@ -174,7 +174,7 @@ new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 shape_to_cut = shape_to_cut.overlay(new_bounds, how="intersection")
 
 # Add the cut shape of San Luis Potosi to the shapes to merge.
-shapes_to_merge = pandas.concat([shapes_to_merge, shape_to_cut])
+shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
 
 # Merge the shapes of Coahuila, Nuevo Leon, Tamaulipas, Veracruz and San
 # Luis Potosi.
@@ -183,7 +183,7 @@ merged_shape = merged_shape.reset_index()
 
 # Add the merged shape, Noreste, to the subdivisions and set the name to
 # Noreste and code to "MEX_NES".
-subdivisions = pandas.concat([subdivisions, merged_shape])
+subdivisions = pd.concat([subdivisions, merged_shape])
 subdivisions.loc[subdivisions["code"] == "MX-NLE", "code"] = "MEX_NES"
 subdivisions.loc[subdivisions["code"] == "MEX_NES", "name"] = "Noreste"
 
@@ -201,7 +201,7 @@ shape_to_cut = states[states["code"].isin(["MX-SLP"])]
 shape_to_cut = shape_to_cut.overlay(new_bounds, how="difference")
 
 # Add the cut shape of San Luis Potosi to the shapes to merge.
-shapes_to_merge = pandas.concat([shapes_to_merge, shape_to_cut])
+shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
 
 # Get the shapes of Guanajuato.
 shape_to_cut = states[states["code"].isin(["MX-GUA"])]
@@ -222,7 +222,7 @@ new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 shape_to_cut = shape_to_cut.overlay(new_bounds, how="difference")
 
 # Add the cut shape of Guanajuato to the shapes to merge.
-shapes_to_merge = pandas.concat([shapes_to_merge, shape_to_cut])
+shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
 
 # Get the shapes of Michoacan.
 shape_to_cut = states[states["code"].isin(["MX-MIC"])]
@@ -245,7 +245,7 @@ new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 shape_to_cut = shape_to_cut.overlay(new_bounds, how="difference")
 
 # Add the cut shape of Michoacan to the shapes to merge.
-shapes_to_merge = pandas.concat([shapes_to_merge, shape_to_cut])
+shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
 
 # Merge the shapes of Nayarit, Zacatecas, Jalisco, Aguascalientes,
 # Colima, San Luis Potosi and Michoacan.
@@ -254,7 +254,7 @@ merged_shape = merged_shape.reset_index()
 
 # Add the merged shape, Occidental, to the subdivisions and set the name
 # to Occidental and code to "MEX_OCC".
-subdivisions = pandas.concat([subdivisions, merged_shape])
+subdivisions = pd.concat([subdivisions, merged_shape])
 subdivisions.loc[subdivisions["code"] == "MX-AGU", "code"] = "MEX_OCC"
 subdivisions.loc[subdivisions["code"] == "MEX_OCC", "name"] = "Occidental"
 
@@ -281,10 +281,10 @@ new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 shape_to_cut = shape_to_cut.overlay(new_bounds, how="intersection")
 
 # Add the cut shape of Guerrero to the shapes to merge.
-shapes_to_merge = pandas.concat([shapes_to_merge, shape_to_cut])
+shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
 
 # Add the shapes of Michoacan and Guanajuato.
-shapes_to_merge = pandas.concat(
+shapes_to_merge = pd.concat(
     [shapes_to_merge, states[states["code"].isin(["MX-MIC", "MX-GUA"])]]
 )
 
@@ -301,7 +301,7 @@ merged_shape = merged_shape.overlay(
 
 # Add the merged shape, Central, to the subdivisions and set the name to
 # Central and code to "MEX_CEN".
-subdivisions = pandas.concat([subdivisions, merged_shape])
+subdivisions = pd.concat([subdivisions, merged_shape])
 subdivisions.loc[subdivisions["code"] == "MX-CMX", "code"] = "MEX_CEN"
 subdivisions.loc[subdivisions["code"] == "MEX_CEN", "name"] = "Central"
 
@@ -318,7 +318,7 @@ merged_states = merged_states.overlay(merged_subdivisions, how="difference")
 
 # Add the merged shape, Oriental, to the subdivisions and set the name
 # to Oriental and code to "MEX_ORI".
-subdivisions = pandas.concat([subdivisions, merged_states])
+subdivisions = pd.concat([subdivisions, merged_states])
 subdivisions.loc[subdivisions["code"] == "MX-AGU", "code"] = "MEX_ORI"
 subdivisions.loc[subdivisions["code"] == "MEX_ORI", "name"] = "Oriental"
 

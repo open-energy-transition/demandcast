@@ -13,7 +13,7 @@ import os
 
 import ml_models.lstm
 import ml_models.xgboost
-import pandas
+import pandas as pd
 import utils.config
 import utils.ml
 from pydantic import BaseModel, ValidationError
@@ -60,9 +60,9 @@ def _read_and_check_configuration() -> BaseModel:
 
 
 def _construct_output_dataset(
-    prepared_dataset: dict[str, pandas.Series | pandas.DataFrame],
-    predictions: pandas.Series,
-) -> pandas.DataFrame:
+    prepared_dataset: dict[str, pd.Series | pd.DataFrame],
+    predictions: pd.Series,
+) -> pd.DataFrame:
     """
     Construct the output dataset containing forecasts.
 
@@ -85,17 +85,17 @@ def _construct_output_dataset(
 
     # Construct the output dataset.
     output_dataset = prepared_dataset["time"].copy()
-    output_dataset = pandas.concat(
+    output_dataset = pd.concat(
         [output_dataset, prepared_dataset["group"]], axis=1
     )
-    output_dataset = pandas.concat(
+    output_dataset = pd.concat(
         [output_dataset, prepared_dataset["features"]], axis=1
     )
     if "others" in prepared_dataset:
-        output_dataset = pandas.concat(
+        output_dataset = pd.concat(
             [output_dataset, prepared_dataset["others"]], axis=1
         )
-    output_dataset = pandas.concat(
+    output_dataset = pd.concat(
         [output_dataset, predictions.rename("Forecast load (MW)")], axis=1
     )
 
@@ -133,7 +133,7 @@ def run_forecasting(
     data_path = utils.ml.get_assemble_data_path(data_path)
 
     # Read and prepare the dataset.
-    prepared_dataset: dict[str, pandas.Series | pandas.DataFrame] = (
+    prepared_dataset: dict[str, pd.Series | pd.DataFrame] = (
         utils.ml.prepare_dataset(
             data_path,
             False,

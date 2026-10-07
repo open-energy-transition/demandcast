@@ -12,9 +12,9 @@ Description:
 
 import os
 
-import matplotlib.pyplot
-import numpy
-import pandas
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import utils.config
 
 
@@ -24,7 +24,7 @@ def _read_mape(
     compare_with_version: str | None,
     by_group: bool,
     groups: dict[str, list[str]],
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     """
     Read MAPE values from CSV files.
 
@@ -49,10 +49,10 @@ def _read_mape(
         A DataFrame containing MAPE values.
     """
     # Initialize a DataFrame to hold the data.
-    mape = pandas.DataFrame()
+    mape = pd.DataFrame()
 
     # Read the MAPE values for all countries and subdivisions.
-    mape[f"{version}_all"] = pandas.read_csv(
+    mape[f"{version}_all"] = pd.read_csv(
         os.path.join(results_directory, version, "all.csv"),
         usecols=["entity_code", "MAPE_test"],
         index_col="entity_code",
@@ -61,7 +61,7 @@ def _read_mape(
     if compare_with_version is not None:
         # Read the MAPE values for all countries and subdivisions for
         # the version to compare with.
-        mape[f"{compare_with_version}_all"] = pandas.read_csv(
+        mape[f"{compare_with_version}_all"] = pd.read_csv(
             os.path.join(results_directory, compare_with_version, "all.csv"),
             usecols=["entity_code", "MAPE_test"],
             index_col="entity_code",
@@ -71,7 +71,7 @@ def _read_mape(
         for case in groups:
             for group in groups[case]:
                 # Read the MAPE values for the current group.
-                mape[f"{version}_{group}"] = pandas.read_csv(
+                mape[f"{version}_{group}"] = pd.read_csv(
                     os.path.join(results_directory, version, f"{group}.csv"),
                     usecols=["entity_code", "MAPE_test"],
                     index_col="entity_code",
@@ -80,7 +80,7 @@ def _read_mape(
                 if compare_with_version is not None:
                     # Read the MAPE values for the current group for
                     # the version to compare with.
-                    mape[f"{compare_with_version}_{group}"] = pandas.read_csv(
+                    mape[f"{compare_with_version}_{group}"] = pd.read_csv(
                         os.path.join(
                             results_directory,
                             compare_with_version,
@@ -97,8 +97,8 @@ def _read_mape(
 
 
 def _add_box_and_bar_plot(
-    axs: list[matplotlib.pyplot.Axes],
-    data: list[pandas.Series],
+    axs: list[plt.Axes],
+    data: list[pd.Series],
     marker_size: int = 10,
     line_width: float = 2.0,
     fontsize: float = 5.0,
@@ -176,7 +176,7 @@ def _add_box_and_bar_plot(
     x_axis_width = len(data[0])
 
     # Define the indices for the bars.
-    indices = numpy.arange(x_axis_width)
+    indices = np.arange(x_axis_width)
 
     # Add the bars to the axes.
     for i, series in enumerate(data):
@@ -194,7 +194,7 @@ def _add_box_and_bar_plot(
 
 
 def _add_legend(
-    fig: matplotlib.pyplot.Figure,
+    fig: plt.Figure,
     versions: list[str],
     y_pos: float = 1.05,
 ) -> None:
@@ -235,7 +235,7 @@ def _add_legend(
 
 
 def _add_explanatory_text(
-    fig: matplotlib.pyplot.Figure,
+    fig: plt.Figure,
 ) -> None:
     """
     Add explanatory text to the figure.
@@ -262,7 +262,7 @@ def _add_explanatory_text(
 def _plot_overall(
     figure_directory: str,
     version: str,
-    mape: pandas.DataFrame,
+    mape: pd.DataFrame,
 ) -> None:
     """
     Plot the overall MAPE values.
@@ -280,7 +280,7 @@ def _plot_overall(
     mape_to_plot = mape.sort_values(by=f"{version}_all")
 
     # Initialize the plot.
-    fig, axs = matplotlib.pyplot.subplots(
+    fig, axs = plt.subplots(
         1,
         2,
         figsize=(10, 5),
@@ -307,7 +307,7 @@ def _plot_overall(
     _add_legend(fig, [f"Version {version}"])
 
     # Save the plot to a file.
-    matplotlib.pyplot.savefig(
+    plt.savefig(
         os.path.join(figure_directory, f"mape_{version}.png"),
         dpi=300,
         bbox_inches="tight",
@@ -318,7 +318,7 @@ def _plot_comparison(
     figure_directory: str,
     version: str,
     compare_with_version: str,
-    mape: pandas.DataFrame,
+    mape: pd.DataFrame,
 ) -> None:
     """
     Plot the comparison of MAPE values between two versions.
@@ -339,7 +339,7 @@ def _plot_comparison(
     mape_to_plot = mape.sort_values(by=f"{version}_all")
 
     # Initialize the plot.
-    fig, axs = matplotlib.pyplot.subplots(
+    fig, axs = plt.subplots(
         1,
         2,
         figsize=(10, 5),
@@ -368,7 +368,7 @@ def _plot_comparison(
     _add_legend(fig, [f"Version {version}", f"Version {compare_with_version}"])
 
     # Save the plot to a file.
-    matplotlib.pyplot.savefig(
+    plt.savefig(
         os.path.join(
             figure_directory, f"mape_{version}_vs_{compare_with_version}.png"
         ),
@@ -380,7 +380,7 @@ def _plot_comparison(
 def _plot_by_group(
     figure_directory: str,
     version: str,
-    mape: pandas.DataFrame,
+    mape: pd.DataFrame,
     groups: dict[str, list[str]],
 ) -> None:
     """
@@ -414,7 +414,7 @@ def _plot_by_group(
         # Initialize the the plot where to show the MAPE values by
         # group.
         if case == "continent":
-            fig, axs = matplotlib.pyplot.subplots(
+            fig, axs = plt.subplots(
                 2,
                 9,
                 figsize=(10, 5),
@@ -423,7 +423,7 @@ def _plot_by_group(
                 gridspec_kw={"width_ratios": [1, 5, 0.3] * 2 + [1, 5, 0.001]},
             )
         elif case == "income":
-            fig, axs = matplotlib.pyplot.subplots(
+            fig, axs = plt.subplots(
                 1,
                 9,
                 figsize=(10, 2.5),
@@ -477,7 +477,7 @@ def _plot_by_group(
         )
 
         # Save the plot to a file.
-        matplotlib.pyplot.savefig(
+        plt.savefig(
             os.path.join(figure_directory, f"mape_{version}_by_{case}.png"),
             dpi=300,
             bbox_inches="tight",

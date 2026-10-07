@@ -43,7 +43,7 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 
 ## Conventions
 
-- Ruff formatting and linting, with lines of at most 79 characters (72 for docstrings and comments), NumPy-style docstrings and type hints.
+- Ruff formatting and linting, with lines of at most 79 characters (72 for docstrings and comments), NumPy-style docstrings and type hints. Import pandas, NumPy and Matplotlib as `pd`, `np` and `plt`.
 - Each script validates its YAML settings with a pydantic `ConfigModel`. Document new options in the YAML file and in `webpage/docs/`.
 - Data source modules return a `pandas.Series` of demand in MW with a time-zone-aware index; stored timestamps are in UTC.
 - Tests must not use the network: mock downloads (for example `utils.fetcher.fetch_data`) and write files to `tmp_path`. Mark the rare tests that need real downloaded data with `@pytest.mark.network`.
@@ -56,7 +56,7 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 
 - `to_numpy()` and `.values` can return read-only arrays (Copy-on-Write): create a new array instead of modifying it in place.
 - Datetime resolution is inferred, often microseconds, while weather data uses nanoseconds: convert with `.as_unit("ns")` before merging or comparing timestamps from different sources.
-- Text columns have the `str` dtype, so assigning numbers into them fails: replace the whole column, e.g. `df[col] = pandas.to_numeric(df[col])`.
+- Text columns have the `str` dtype, so assigning numbers into them fails: replace the whole column, e.g. `df[col] = pd.to_numeric(df[col])`.
 - Chained assignment such as `df[col][mask] = value` never changes `df`: use `df.loc[mask, col] = value`.
 
 ## Adding a data source

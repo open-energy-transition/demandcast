@@ -14,7 +14,7 @@ Description:
 import logging
 import os
 
-import pandas
+import pandas as pd
 import utils.config
 import utils.entities
 import utils.fetcher
@@ -37,8 +37,8 @@ def redistribute() -> bool:
 
 def _check_input_parameters(
     code: str,
-    start_date: pandas.Timestamp | None = None,
-    end_date: pandas.Timestamp | None = None,
+    start_date: pd.Timestamp | None = None,
+    end_date: pd.Timestamp | None = None,
 ) -> None:
     """
     Check if the input parameters are valid.
@@ -62,7 +62,7 @@ def _check_input_parameters(
         )
 
         # Read the start date of the available data.
-        start_date_of_data_availability = pandas.to_datetime(
+        start_date_of_data_availability = pd.to_datetime(
             utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
                 "eia"
             )[code][0]
@@ -78,7 +78,7 @@ def _check_input_parameters(
 
 def get_available_requests(
     code: str,
-) -> list[tuple[pandas.Timestamp, pandas.Timestamp]]:
+) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """
     Get the available requests.
 
@@ -108,8 +108,8 @@ def get_available_requests(
     # Define intervals for the retrieval periods. A six-month period
     # avoids the limitation of the API to retrieve a maximum of 5000
     # data points.
-    intervals = pandas.date_range(start_date, end_date, freq="6MS")
-    intervals = intervals.union(pandas.to_datetime([start_date, end_date]))
+    intervals = pd.date_range(start_date, end_date, freq="6MS")
+    intervals = intervals.union(pd.to_datetime([start_date, end_date]))
 
     # Define start and end dates of the retrieval periods.
     start_dates_and_times = intervals[:-1]
@@ -121,8 +121,8 @@ def get_available_requests(
 
 
 def get_url(
-    start_date: pandas.Timestamp,
-    end_date: pandas.Timestamp,
+    start_date: pd.Timestamp,
+    end_date: pd.Timestamp,
     code: str,
 ) -> str:
     """
@@ -184,10 +184,10 @@ def get_url(
 
 
 def download_and_extract_data_for_request(
-    start_date: pandas.Timestamp,
-    end_date: pandas.Timestamp,
+    start_date: pd.Timestamp,
+    end_date: pd.Timestamp,
     code: str,
-) -> pandas.Series:
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -234,16 +234,16 @@ def download_and_extract_data_for_request(
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
 
     # Create the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["value"].values,
-        index=pandas.to_datetime(dataset["period"]),
+        index=pd.to_datetime(dataset["period"]),
     ).tz_localize("UTC")
 
     return electricity_demand_time_series

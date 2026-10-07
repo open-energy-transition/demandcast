@@ -11,7 +11,7 @@ import urllib.error
 from io import BytesIO
 from unittest.mock import patch
 
-import pandas
+import pandas as pd
 import pytest
 import requests
 import utils.fetcher
@@ -27,11 +27,11 @@ def test_fetch_data_csv():
     fetching CSV data.
     """
     with patch("pandas.read_csv"):
-        pandas.read_csv.return_value = pandas.DataFrame({"a": [1]})
+        pd.read_csv.return_value = pd.DataFrame({"a": [1]})
         dataset = utils.fetcher.fetch_data(
             "http://example.com/file.csv", "csv"
         )
-        assert isinstance(dataset, pandas.DataFrame)
+        assert isinstance(dataset, pd.DataFrame)
 
 
 def test_fetch_data_excel():
@@ -43,11 +43,11 @@ def test_fetch_data_excel():
     DataFrame when fetching Excel data.
     """
     with patch("pandas.read_excel"):
-        pandas.read_excel.return_value = pandas.DataFrame({"a": [1]})
+        pd.read_excel.return_value = pd.DataFrame({"a": [1]})
         dataset = utils.fetcher.fetch_data(
             "http://example.com/file.xlsx", "excel"
         )
-        assert isinstance(dataset, pandas.DataFrame)
+        assert isinstance(dataset, pd.DataFrame)
 
 
 def test_fetch_data_html_urllib():
@@ -85,12 +85,12 @@ def test_fetch_data_html_requests_get():
         dataset = utils.fetcher.fetch_data(
             "http://example.com", "html", read_as="csv_table"
         )
-        assert isinstance(dataset, pandas.DataFrame)
+        assert isinstance(dataset, pd.DataFrame)
 
         # Prepare a mock Excel binary.
-        df_original = pandas.DataFrame({"a": [10, 20], "b": [30, 40]})
+        df_original = pd.DataFrame({"a": [10, 20], "b": [30, 40]})
         excel_binary = BytesIO()
-        with pandas.ExcelWriter(excel_binary) as writer:
+        with pd.ExcelWriter(excel_binary) as writer:
             df_original.to_excel(writer, index=False)
         excel_binary.seek(0)
 
@@ -100,14 +100,14 @@ def test_fetch_data_html_requests_get():
         dataset = utils.fetcher.fetch_data(
             "http://example.com", "html", read_as="excel_table"
         )
-        assert isinstance(dataset, pandas.DataFrame)
+        assert isinstance(dataset, pd.DataFrame)
 
         # Test reading of HTML content with tabular data as Excel file.
         requests.get.return_value.content = excel_binary.getvalue()
         dataset = utils.fetcher.fetch_data(
             "http://example.com", "html", read_as="excel_file"
         )
-        assert isinstance(dataset, pandas.ExcelFile)
+        assert isinstance(dataset, pd.ExcelFile)
 
         # Test reading HTML content with text.
         requests.get.return_value.text = "text content"
@@ -145,7 +145,7 @@ def test_fetch_data_html_requests_get_with_cookies():
             read_with="requests.get",
             get_cookies=True,
         )
-        assert isinstance(dataset, pandas.DataFrame)
+        assert isinstance(dataset, pd.DataFrame)
 
 
 def test_fetch_data_default_header_params_not_reused():
@@ -197,7 +197,7 @@ def test_fetch_data_html_requests_post_json():
             read_as="json",
             json_keys=["data"],
         )
-        assert isinstance(dataset, pandas.DataFrame)
+        assert isinstance(dataset, pd.DataFrame)
 
 
 def test_fetch_data_html_requests_post_aspx():
@@ -224,7 +224,7 @@ def test_fetch_data_html_requests_post_aspx():
             read_with="requests.post",
             query_aspx_webpage=True,
         )
-        assert isinstance(dataset, pandas.DataFrame)
+        assert isinstance(dataset, pd.DataFrame)
 
 
 def test_fetch_data_invalid_arguments():
@@ -258,13 +258,13 @@ def test_fetch_entsoe_demand():
     with a time series of demand data.
     """
     # Define a mock series to simulate demand data.
-    mock_series = pandas.Series(
-        [1, 2], index=pandas.date_range("2023-01-01", periods=2, freq="h")
+    mock_series = pd.Series(
+        [1, 2], index=pd.date_range("2023-01-01", periods=2, freq="h")
     )
 
     # Patch the EntsoePandasClient to return the mock series.
     with patch("utils.fetcher.EntsoePandasClient") as mock_client:
-        mock_client.return_value.query_load.return_value = pandas.DataFrame(
+        mock_client.return_value.query_load.return_value = pd.DataFrame(
             {"Actual Load": mock_series}
         )
 
@@ -272,19 +272,19 @@ def test_fetch_entsoe_demand():
         result = utils.fetcher.fetch_entsoe_demand(
             "dummy",
             "FRA",
-            pandas.Timestamp("2023-01-01"),
-            pandas.Timestamp("2023-01-02"),
+            pd.Timestamp("2023-01-01"),
+            pd.Timestamp("2023-01-02"),
         )
-        assert isinstance(result, pandas.Series)
+        assert isinstance(result, pd.Series)
 
         # Test with a country code that is added manually.
         result = utils.fetcher.fetch_entsoe_demand(
             "dummy",
             "XKX",
-            pandas.Timestamp("2023-01-01"),
-            pandas.Timestamp("2023-01-02"),
+            pd.Timestamp("2023-01-01"),
+            pd.Timestamp("2023-01-02"),
         )
-        assert isinstance(result, pandas.Series)
+        assert isinstance(result, pd.Series)
 
 
 def test_fetch_entsoe_demand_errors():
@@ -304,8 +304,8 @@ def test_fetch_entsoe_demand_errors():
             utils.fetcher.fetch_entsoe_demand(
                 "dummy",
                 "FRA",
-                pandas.Timestamp("2023-01-01"),
-                pandas.Timestamp("2023-01-02"),
+                pd.Timestamp("2023-01-01"),
+                pd.Timestamp("2023-01-02"),
                 retries=2,
                 retry_delay=0,
             )
@@ -317,10 +317,10 @@ def test_fetch_entsoe_demand_errors():
         result = utils.fetcher.fetch_entsoe_demand(
             "dummy",
             "FRA",
-            pandas.Timestamp("2023-01-01"),
-            pandas.Timestamp("2023-01-02"),
+            pd.Timestamp("2023-01-01"),
+            pd.Timestamp("2023-01-02"),
         )
-        assert isinstance(result, pandas.Series)
+        assert isinstance(result, pd.Series)
         assert result.empty
 
 
@@ -334,8 +334,8 @@ def test_fetch_entsoe_demand_retry_log_attempt_is_one_indexed(caplog):
             utils.fetcher.fetch_entsoe_demand(
                 "dummy",
                 "FRA",
-                pandas.Timestamp("2023-01-01"),
-                pandas.Timestamp("2023-01-02"),
+                pd.Timestamp("2023-01-01"),
+                pd.Timestamp("2023-01-02"),
                 retries=2,
                 retry_delay=0,
             )

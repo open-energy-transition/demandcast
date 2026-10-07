@@ -10,7 +10,7 @@ Description:
 import logging
 import os
 
-import pandas
+import pandas as pd
 from pydantic import BaseModel, ValidationError
 
 import utils.config
@@ -187,12 +187,12 @@ def get_assemble_data_path(data_path: str | None) -> str:
 
 
 def _split_temporally(
-    dataset: pandas.DataFrame,
+    dataset: pd.DataFrame,
     testing_set: bool,
     validation_set: bool,
     group_column: str,
     splitter_column: str,
-) -> dict[str, pandas.DataFrame]:
+) -> dict[str, pd.DataFrame]:
     """
     Split the dataset into training, validation, and test sets.
 
@@ -221,11 +221,11 @@ def _split_temporally(
     )
 
     # Initialize an empty dictionary to hold the split datasets.
-    split_dataset: dict[str, pandas.DataFrame] = {}
+    split_dataset: dict[str, pd.DataFrame] = {}
     if testing_set:
-        split_dataset["testing"] = pandas.DataFrame()
+        split_dataset["testing"] = pd.DataFrame()
     if validation_set:
-        split_dataset["validation"] = pandas.DataFrame()
+        split_dataset["validation"] = pd.DataFrame()
 
     # Initialize lists to keep track of indexes to be removed from
     # the original dataset.
@@ -252,7 +252,7 @@ def _split_temporally(
                 indexes_not_for_training.extend(data_of_entity.index)
 
                 # Append the data to the respective dataset.
-                split_dataset[split_name] = pandas.concat(
+                split_dataset[split_name] = pd.concat(
                     [split_dataset[split_name], data_of_entity],
                     ignore_index=True,
                 )
@@ -276,7 +276,7 @@ def _split_temporally(
 
 
 def _split_in_groups(
-    dataset: pandas.DataFrame,
+    dataset: pd.DataFrame,
     group_column: str,
     feature_columns: list[str],
     target_column: str,
@@ -284,7 +284,7 @@ def _split_in_groups(
     categorical_feature_columns: list[str] | None = None,
     scaling_variable_columns: list[str] | None = None,
     target: bool = True,
-) -> dict[str, dict[str, pandas.DataFrame | pandas.Series]]:
+) -> dict[str, dict[str, pd.DataFrame | pd.Series]]:
     """
     Split the dataset into features, target, group, and scaling factor.
 
@@ -389,9 +389,9 @@ def prepare_dataset(
     target: bool = True,
 ) -> dict[
     str,
-    pandas.Series
-    | pandas.DataFrame
-    | dict[str, pandas.DataFrame | pandas.Series],
+    pd.Series
+    | pd.DataFrame
+    | dict[str, pd.DataFrame | pd.Series],
 ]:
     """
     Prepare the dataset for training or validation.
@@ -417,7 +417,7 @@ def prepare_dataset(
     ml_config = read_and_check_ml_configuration()
 
     # Read the assembled data.
-    dataset = pandas.read_parquet(data_path)
+    dataset = pd.read_parquet(data_path)
 
     if testing_set or validation_set:
         # Split the dataset temporally.
@@ -431,7 +431,7 @@ def prepare_dataset(
 
         # Initialize a dictionary to hold prepared datasets.
         prepared_dataset: dict[
-            str, dict[str, pandas.DataFrame | pandas.Series]
+            str, dict[str, pd.DataFrame | pd.Series]
         ] = {}
 
         # Prepare features and target for each dataset.
@@ -464,7 +464,7 @@ def prepare_dataset(
 
 def save_results(
     case: str,
-    output_dataset: pandas.DataFrame,
+    output_dataset: pd.DataFrame,
     trained_model_name: str,
     assembled_data_file_name: str,
     file_name_prefix: str,
@@ -510,7 +510,7 @@ def save_results(
     results_file_name = os.path.join(
         model_results_folder,
         f"{file_name_prefix}_"
-        f"{pandas.Timestamp.now().strftime('%Y%m%d_%H%M%S')}",
+        f"{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}",
     )
 
     # Save the results to CSV and Parquet files.

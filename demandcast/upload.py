@@ -11,7 +11,7 @@ import importlib
 import logging
 import os
 
-import pandas
+import pandas as pd
 import utils.config
 import utils.entities
 import utils.uploader
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     config = _read_and_check_configuration()
 
     # Get the date of upload.
-    date_of_upload = pandas.Timestamp.today().strftime("%Y-%m-%d")
+    date_of_upload = pd.Timestamp.today().strftime("%Y-%m-%d")
 
     for file_name in os.listdir(config.data_directory):
         if file_name.endswith(".parquet"):

@@ -12,11 +12,11 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import sdmx
 
 
-def download_gdp_ppp_per_capita() -> pandas.DataFrame:
+def download_gdp_ppp_per_capita() -> pd.DataFrame:
     """
     Download historical GDP PPP per capita data from the IMF.
 

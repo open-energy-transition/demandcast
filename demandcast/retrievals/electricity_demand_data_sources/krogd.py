@@ -14,7 +14,7 @@ Description:
 import logging
 import os
 
-import pandas
+import pandas as pd
 import utils.config
 
 
@@ -57,7 +57,7 @@ def get_url() -> str:
     return "https://www.data.go.kr/data/15065266/fileData.do"
 
 
-def download_and_extract_data() -> pandas.Series:
+def download_and_extract_data() -> pd.Series:
     """
     Extract electricity demand data.
 
@@ -100,9 +100,9 @@ def download_and_extract_data() -> pandas.Series:
         )
 
     # Load the data from the downloaded files into a pandas DataFrame.
-    dataset = pandas.concat(
+    dataset = pd.concat(
         [
-            pandas.read_csv(file_path, encoding="euc-kr")
+            pd.read_csv(file_path, encoding="euc-kr")
             for file_path in downloaded_file_paths
         ]
     )
@@ -114,7 +114,7 @@ def download_and_extract_data() -> pandas.Series:
     )
 
     # Define the new index.
-    index = pandas.to_datetime(
+    index = pd.to_datetime(
         dataset.iloc[:, 0].astype(str)
         + " "
         + (
@@ -122,10 +122,10 @@ def download_and_extract_data() -> pandas.Series:
             - 1
         ).astype(str),
         format="%Y-%m-%d %H",
-    ) + pandas.Timedelta(hours=1)
+    ) + pd.Timedelta(hours=1)
 
     # Define the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["Value"].values,
         index=index,
     )

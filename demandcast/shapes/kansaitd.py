@@ -25,7 +25,7 @@ import zipfile
 from io import BytesIO
 
 import geopandas
-import pandas
+import pandas as pd
 import requests
 from shapely import Polygon
 
@@ -136,7 +136,7 @@ mask_mie = geopandas.GeoDataFrame(geometry=mask_mie, crs=4326)
 mie_cut = mie.overlay(mask_mie, how="intersection")
 
 # Merge all prefectures into one geometry.
-all_prefectures = pandas.concat(
+all_prefectures = pd.concat(
     [whole_prefectures, hyogo_cut, fukui_cut, mie_cut]
 )
 all_prefectures = all_prefectures.dissolve(by="ADM0_EN").reset_index()

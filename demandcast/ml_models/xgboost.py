@@ -9,7 +9,7 @@ Description:
 import logging
 import os
 
-import pandas
+import pandas as pd
 import utils.config
 import yaml
 from pydantic import BaseModel, ValidationError
@@ -130,7 +130,7 @@ def get_initialized_model() -> XGBRegressor:
 
 
 def train(
-    prepared_dataset: dict[str, dict[str, pandas.DataFrame | pandas.Series]],
+    prepared_dataset: dict[str, dict[str, pd.DataFrame | pd.Series]],
 ) -> XGBRegressor:
     """
     Train XGBoost model.
@@ -179,11 +179,11 @@ def predict(
     xgb_model: XGBRegressor,
     prepared_dataset: dict[
         str,
-        pandas.Series
-        | pandas.DataFrame
-        | dict[str, pandas.DataFrame | pandas.Series],
+        pd.Series
+        | pd.DataFrame
+        | dict[str, pd.DataFrame | pd.Series],
     ],
-) -> pandas.Series | dict[str, pandas.Series]:
+) -> pd.Series | dict[str, pd.Series]:
     """
     Make predictions using the trained XGBoost model.
 
@@ -207,17 +207,17 @@ def predict(
         # The prepared_dataset is a single dataset, not split into
         # training/validation/testing.
         # Make predictions and return them.
-        return pandas.Series(xgb_model.predict(prepared_dataset["features"]))
+        return pd.Series(xgb_model.predict(prepared_dataset["features"]))
 
     # Initialize predictions dictionary to store training,
     # validation, and testing predictions.
-    predictions: dict[str, pandas.Series] = {}
+    predictions: dict[str, pd.Series] = {}
 
     for split_name, data in prepared_dataset.items():
         # Make predictions for the current split.
         preds = xgb_model.predict(data["features"])
 
-        predictions[split_name] = pandas.Series(preds)
+        predictions[split_name] = pd.Series(preds)
 
         logging.info(
             f"Predictions made for {split_name} set: {len(preds)} records."

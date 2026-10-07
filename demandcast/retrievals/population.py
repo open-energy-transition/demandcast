@@ -13,7 +13,7 @@ Description:
 import logging
 import os
 
-import pandas
+import pandas as pd
 import utils.config
 import utils.entities
 import utils.geospatial
@@ -38,7 +38,7 @@ def get_available_scenarios() -> list[str]:
 
 def _extract_historical_population(
     code: str,
-    global_historical_population: pandas.DataFrame,
+    global_historical_population: pd.DataFrame,
     requested_historical_years: list[int],
     used_historical_years: list[int],
     available_historical_years_of_gridded_data: list[int],
@@ -72,12 +72,12 @@ def _extract_historical_population(
 
 def _extract_future_population(
     code: str,
-    global_future_population: pandas.DataFrame,
+    global_future_population: pd.DataFrame,
     future_years: list[int],
     available_future_years_of_gridded_data: list[int],
     available_historical_years_of_gridded_data: list[int],
     scenario: str,
-) -> pandas.Series:
+) -> pd.Series:
     """
     Extract the future population for the country or subdivision.
 

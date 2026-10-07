@@ -12,7 +12,7 @@ import logging
 
 import ml_models.lstm
 import ml_models.xgboost
-import pandas
+import pandas as pd
 import utils.config
 import utils.ml
 from pydantic import BaseModel, ValidationError
@@ -100,7 +100,7 @@ def run_model_training(
     # Define a model name based on timestamp.
     model_name = (
         f"{algorithm.lower()}_model_"
-        f"{pandas.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
+        f"{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
     )
 
     if algorithm.lower() == "xgboost":

@@ -15,7 +15,7 @@ Description:
 import logging
 import os
 
-import pandas
+import pandas as pd
 import utils.config
 
 
@@ -60,7 +60,7 @@ def get_url() -> str:
     return "https://www.eskom.co.za/dataportal/cf-api/CF600011bdba174"
 
 
-def download_and_extract_data() -> pandas.Series:
+def download_and_extract_data() -> pd.Series:
     """
     Extract electricity demand data.
 
@@ -99,14 +99,14 @@ def download_and_extract_data() -> pandas.Series:
         )
 
     # Load the data from the downloaded files into a pandas DataFrame.
-    dataset = pandas.concat(
-        [pandas.read_csv(file_path) for file_path in downloaded_file_paths]
+    dataset = pd.concat(
+        [pd.read_csv(file_path) for file_path in downloaded_file_paths]
     )
 
     # Extract the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["RSA Contracted Demand"].values,
-        index=pandas.to_datetime(
+        index=pd.to_datetime(
             dataset["Date Time Hour Beginning"], format="%Y-%m-%d %H:%M:%S %p"
         ),
     )
@@ -114,7 +114,7 @@ def download_and_extract_data() -> pandas.Series:
     # Add one hour to the index because the electricity demand seems to
     # be provided at the beginning of the hour.
     electricity_demand_time_series.index = (
-        electricity_demand_time_series.index + pandas.Timedelta(hours=1)
+        electricity_demand_time_series.index + pd.Timedelta(hours=1)
     )
 
     # Add the timezone information to the index.

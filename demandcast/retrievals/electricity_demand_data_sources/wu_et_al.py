@@ -13,7 +13,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.fetcher
 
 
@@ -54,7 +54,7 @@ def get_url() -> str:
     return "https://zenodo.org/records/8322210/files/Appendix%201_Hourly%20electric%20power%20load%20final.csv?download=1"
 
 
-def download_and_extract_data() -> pandas.Series:
+def download_and_extract_data() -> pd.Series:
     """
     Download and extract electricity demand data for China.
 
@@ -77,7 +77,7 @@ def download_and_extract_data() -> pandas.Series:
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
@@ -88,20 +88,20 @@ def download_and_extract_data() -> pandas.Series:
 
     # Convert all columns except the first one to numeric.
     for i in range(1, dataset.shape[1]):
-        dataset[dataset.columns[i]] = pandas.to_numeric(dataset.iloc[:, i])
+        dataset[dataset.columns[i]] = pd.to_numeric(dataset.iloc[:, i])
 
     # Sum the regional demand columns to get total national demand.
     dataset["National Demand"] = dataset.iloc[:, 1:].sum(axis=1)
 
     # Construct the index of the electricity demand time series.
-    timestamps = pandas.date_range(
+    timestamps = pd.date_range(
         start="2018-01-01 01:00:00",
         periods=8760,
         freq="h",
     )
 
     # Extract the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["National Demand"].values, index=timestamps
     )
 

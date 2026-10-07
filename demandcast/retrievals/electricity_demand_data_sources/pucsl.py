@@ -20,7 +20,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -40,8 +40,8 @@ def redistribute() -> bool:
 
 
 def _check_input_parameters(
-    start_date: pandas.Timestamp,
-    end_date: pandas.Timestamp,
+    start_date: pd.Timestamp,
+    end_date: pd.Timestamp,
 ) -> None:
     """
     Check if the input parameters are valid.
@@ -54,13 +54,13 @@ def _check_input_parameters(
         The end date of the data retrieval.
     """
     # Check if the retrieval period is within a week.
-    assert (end_date - start_date) <= pandas.Timedelta("7days"), (
+    assert (end_date - start_date) <= pd.Timedelta("7days"), (
         "The retrieval period must be 7 days or less. "
         f"start_date: {start_date}, end_date: {end_date}"
     )
 
     # Read the start date of the available data.
-    start_date_of_data_availability = pandas.to_datetime(
+    start_date_of_data_availability = pd.to_datetime(
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "pucsl"
         )["LKA"][0]
@@ -75,7 +75,7 @@ def _check_input_parameters(
 
 
 def get_available_requests() -> list[
-    tuple[pandas.Timestamp, pandas.Timestamp]
+    tuple[pd.Timestamp, pd.Timestamp]
 ]:
     """
     Get the available requests.
@@ -96,9 +96,9 @@ def get_available_requests() -> list[
     )
 
     # Define intervals for the retrieval periods.
-    intervals = pandas.date_range(start_date, end_date, freq="7D")
+    intervals = pd.date_range(start_date, end_date, freq="7D")
     intervals = intervals.union(
-        pandas.to_datetime([start_date, end_date])
+        pd.to_datetime([start_date, end_date])
     ).drop_duplicates()
     intervals = intervals.sort_values()
 
@@ -111,7 +111,7 @@ def get_available_requests() -> list[
     return list(zip(start_dates_and_times, end_dates_and_times))
 
 
-def get_url(start_date: pandas.Timestamp, end_date: pandas.Timestamp) -> str:
+def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
     """
     Get the URL of the electricity demand data on the PUCSL website.
 
@@ -143,8 +143,8 @@ def get_url(start_date: pandas.Timestamp, end_date: pandas.Timestamp) -> str:
 
 
 def download_and_extract_data_for_request(
-    start_date: pandas.Timestamp, end_date: pandas.Timestamp
-) -> pandas.Series:
+    start_date: pd.Timestamp, end_date: pd.Timestamp
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -190,14 +190,14 @@ def download_and_extract_data_for_request(
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
 
     # Convert timestamps to datetime
-    dataset["reportTimestamp"] = pandas.to_datetime(dataset["reportTimestamp"])
+    dataset["reportTimestamp"] = pd.to_datetime(dataset["reportTimestamp"])
 
     # Aggregate total generation (in MW) across all
     # power plants for each timestamp
@@ -206,14 +206,14 @@ def download_and_extract_data_for_request(
     ].sum()
 
     # Extract the electricity demand time series
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset_grouped["dispatchValueInMW"].values,
         index=dataset_grouped["reportTimestamp"],
     )
 
     # Add 15 minutes to the index because the electricity demand
     # seems to be provided at the beginning of the time-interval
-    electricity_demand_time_series.index += pandas.Timedelta(minutes=15)
+    electricity_demand_time_series.index += pd.Timedelta(minutes=15)
 
     # Add the time zone information to the time series.
     electricity_demand_time_series.index = (

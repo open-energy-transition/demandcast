@@ -15,14 +15,14 @@ import importlib
 import logging
 import os
 
-import pandas
+import pandas as pd
 import utils.config
 import utils.entities
 import utils.time_series
 from tqdm import tqdm
 
 
-def _retrieve_data(data_source: str, code: str) -> pandas.Series:
+def _retrieve_data(data_source: str, code: str) -> pd.Series:
     """
     Retrieve the electricity demand data.
 
@@ -117,7 +117,7 @@ def _retrieve_data(data_source: str, code: str) -> pandas.Series:
         ]
 
         # Concatenate the electricity demand time series of all periods.
-        electricity_demand_time_series = pandas.concat(
+        electricity_demand_time_series = pd.concat(
             electricity_demand_time_series_list
         )
 
@@ -130,7 +130,7 @@ def _retrieve_data(data_source: str, code: str) -> pandas.Series:
 
 
 def _save_data(
-    electricity_demand_time_series: pandas.Series,
+    electricity_demand_time_series: pd.Series,
     code: str,
     data_source: str,
 ) -> None:
@@ -152,7 +152,7 @@ def _save_data(
         The data source.
     """
     # Get the date of retrieval.
-    date_of_retrieval = pandas.Timestamp.today().strftime("%Y-%m-%d")
+    date_of_retrieval = pd.Timestamp.today().strftime("%Y-%m-%d")
 
     # Get the directory to store the electricity demand time series.
     result_directory = utils.config.read_folders_structure()[

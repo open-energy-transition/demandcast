@@ -16,7 +16,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -40,7 +40,7 @@ def redistribute() -> bool:
 
 
 def _check_input_parameters(
-    start_date: pandas.Timestamp, end_date: pandas.Timestamp
+    start_date: pd.Timestamp, end_date: pd.Timestamp
 ) -> None:
     """
     Check if the input parameters are valid.
@@ -53,13 +53,13 @@ def _check_input_parameters(
         The end date of the data retrieval.
     """
     # Check that the retrieval period is less than one month.
-    assert (end_date - start_date) <= pandas.Timedelta("31days"), (
+    assert (end_date - start_date) <= pd.Timedelta("31days"), (
         "The retrieval period is greater than 1 month. Please reduce the "
         "period to 1 month."
     )
 
     # Read the start date of the available data.
-    start_date_of_data_availability = pandas.to_datetime(
+    start_date_of_data_availability = pd.to_datetime(
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "xm"
         )["COL"][0]
@@ -74,7 +74,7 @@ def _check_input_parameters(
 
 
 def get_available_requests() -> list[
-    tuple[pandas.Timestamp, pandas.Timestamp]
+    tuple[pd.Timestamp, pd.Timestamp]
 ]:
     """
     Get the available requests.
@@ -95,8 +95,8 @@ def get_available_requests() -> list[
     )
 
     # Define one-month intervals for the retrieval periods.
-    intervals = pandas.date_range(start_date, end_date, freq="MS")
-    intervals = intervals.union(pandas.to_datetime([start_date, end_date]))
+    intervals = pd.date_range(start_date, end_date, freq="MS")
+    intervals = intervals.union(pd.to_datetime([start_date, end_date]))
 
     # Define start and end dates of the retrieval periods.
     start_dates_and_times = intervals[:-1]
@@ -107,7 +107,7 @@ def get_available_requests() -> list[
     return list(zip(start_dates_and_times, end_dates_and_times))
 
 
-def get_url(start_date: pandas.Timestamp, end_date: pandas.Timestamp) -> str:
+def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
     """
     Get the URL of the electricity demand data on the XM website.
 
@@ -138,8 +138,8 @@ def get_url(start_date: pandas.Timestamp, end_date: pandas.Timestamp) -> str:
 
 
 def download_and_extract_data_for_request(
-    start_date: pandas.Timestamp, end_date: pandas.Timestamp
-) -> pandas.Series:
+    start_date: pd.Timestamp, end_date: pd.Timestamp
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -183,7 +183,7 @@ def download_and_extract_data_for_request(
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
@@ -208,14 +208,14 @@ def download_and_extract_data_for_request(
 
         # Create and append a pandas Series for the day.
         daily_values_list.append(
-            pandas.Series(
+            pd.Series(
                 hourly_values,
-                index=pandas.to_datetime(date_and_time),
+                index=pd.to_datetime(date_and_time),
             )
         )
 
     # Concatenate the daily values into a single pandas Series.
-    electricity_demand_time_series = pandas.concat(daily_values_list)
+    electricity_demand_time_series = pd.concat(daily_values_list)
 
     # Convert the electricity demand values to float type.
     electricity_demand_time_series = electricity_demand_time_series.astype(
@@ -232,6 +232,6 @@ def download_and_extract_data_for_request(
 
     # Add 1 hour to the index to account for the fact that the time
     # is given at the beginning of the hour.
-    electricity_demand_time_series.index += pandas.Timedelta(hours=1)
+    electricity_demand_time_series.index += pd.Timedelta(hours=1)
 
     return electricity_demand_time_series

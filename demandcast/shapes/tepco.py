@@ -20,7 +20,7 @@ import zipfile
 from io import BytesIO
 
 import geopandas
-import pandas
+import pandas as pd
 import requests
 from shapely import Polygon
 
@@ -100,7 +100,7 @@ new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 cut_prefecture = prefecture_to_cut.overlay(new_bounds, how="intersection")
 
 # Merge the cut prefecture with the whole prefectures.
-all_prefectures = pandas.concat([whole_prefectures, cut_prefecture])
+all_prefectures = pd.concat([whole_prefectures, cut_prefecture])
 all_prefectures = all_prefectures.dissolve(by="ADM0_EN")
 all_prefectures = all_prefectures.reset_index()
 

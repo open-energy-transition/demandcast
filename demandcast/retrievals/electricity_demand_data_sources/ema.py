@@ -19,7 +19,7 @@ Description:
 import calendar
 import logging
 
-import pandas
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -78,31 +78,31 @@ def get_available_requests() -> list[tuple[int, int, int]]:
 
     # Subtract one week from the end date to ensure that the last
     # request is within the available data range.
-    end_date = end_date - pandas.Timedelta("7days")
+    end_date = end_date - pd.Timedelta("7days")
 
     # Create a list of dates that are not available on the EMA website.
     dates_not_available = [
-        pandas.Timestamp("2014-12-01"),
-        pandas.Timestamp("2014-12-08"),
-        pandas.Timestamp("2014-12-29"),
-        pandas.Timestamp("2015-01-12"),
-        pandas.Timestamp("2015-01-19"),
-        pandas.Timestamp("2015-01-26"),
-        pandas.Timestamp("2015-02-02"),
-        pandas.Timestamp("2015-02-09"),
-        pandas.Timestamp("2015-02-16"),
-        pandas.Timestamp("2015-02-23"),
-        pandas.Timestamp("2015-03-02"),
-        pandas.Timestamp("2015-03-09"),
-        pandas.Timestamp("2015-04-06"),
-        pandas.Timestamp("2015-04-13"),
+        pd.Timestamp("2014-12-01"),
+        pd.Timestamp("2014-12-08"),
+        pd.Timestamp("2014-12-29"),
+        pd.Timestamp("2015-01-12"),
+        pd.Timestamp("2015-01-19"),
+        pd.Timestamp("2015-01-26"),
+        pd.Timestamp("2015-02-02"),
+        pd.Timestamp("2015-02-09"),
+        pd.Timestamp("2015-02-16"),
+        pd.Timestamp("2015-02-23"),
+        pd.Timestamp("2015-03-02"),
+        pd.Timestamp("2015-03-09"),
+        pd.Timestamp("2015-04-06"),
+        pd.Timestamp("2015-04-13"),
     ]
 
     # Return the available requests, which are tuples in the format
     # (year, month, day).
     return [
         (date.year, date.month, date.day)
-        for date in pandas.date_range(
+        for date in pd.date_range(
             start=start_date, end=end_date, freq="7D"
         )
         if date not in dates_not_available
@@ -131,7 +131,7 @@ def get_url(year: int, month: int, day: int) -> str:
     _check_input_parameters(year, month, day)
 
     # Construct the request date.
-    request_date = pandas.Timestamp(year=year, month=month, day=day)
+    request_date = pd.Timestamp(year=year, month=month, day=day)
 
     # Define the base URL.
     base_url = (
@@ -140,19 +140,19 @@ def get_url(year: int, month: int, day: int) -> str:
     )
 
     # Construct the URL for the request.
-    if request_date < pandas.Timestamp("2014-12-15"):
+    if request_date < pd.Timestamp("2014-12-15"):
         month_abbr = calendar.month_abbr[month]
         return base_url + f"{year}/{day:02d}_{month_abbr}_{year}.xls"
-    if request_date == pandas.Timestamp(
+    if request_date == pd.Timestamp(
         "2025-01-13"
-    ) or request_date == pandas.Timestamp("2025-01-20"):
+    ) or request_date == pd.Timestamp("2025-01-20"):
         return base_url + f"{year}/{year}{month:02d}{day:02d}.xlsx"
     return base_url + f"{year}/{year}{month:02d}{day:02d}.xls"
 
 
 def download_and_extract_data_for_request(
     year: int, month: int, day: int
-) -> pandas.Series:
+) -> pd.Series:
     """
     Download and extract electricity demand data from EMA website.
 
@@ -195,7 +195,7 @@ def download_and_extract_data_for_request(
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
@@ -210,37 +210,37 @@ def download_and_extract_data_for_request(
     dataset = dataset.iloc[start_row : start_row + 48, :]
 
     # Reconstruct the request date.
-    request_date = pandas.Timestamp(year=year, month=month, day=day)
+    request_date = pd.Timestamp(year=year, month=month, day=day)
 
     # Keep only the columns with system demand data.
-    if request_date == pandas.Timestamp("2014-11-03"):
+    if request_date == pd.Timestamp("2014-11-03"):
         dataset = dataset.iloc[:, [1 + 2 * i for i in range(7)]]
-    elif request_date <= pandas.Timestamp("2014-09-22"):
+    elif request_date <= pd.Timestamp("2014-09-22"):
         dataset = dataset.iloc[:, 1:8]
     else:
         dataset = dataset.iloc[:, [1 + 3 * i for i in range(7)]]
 
     # Add a column for the hour of the day.
-    dataset["Hour"] = pandas.date_range(
+    dataset["Hour"] = pd.date_range(
         "00:00", periods=48, freq="30min"
     ).strftime("%H:%M")
 
     # Rename the columns to the corresponding dates.
     dataset.columns = [
         date.strftime("%Y-%m-%d")
-        for date in pandas.date_range(start=request_date, periods=7)
+        for date in pd.date_range(start=request_date, periods=7)
     ] + ["Hour"]
 
     # Reshape the dataset from wide to long format.
     dataset = dataset.melt(id_vars="Hour", var_name="Date", value_name="Value")
 
     # Define the new index.
-    index = pandas.to_datetime(
+    index = pd.to_datetime(
         dataset["Date"] + " " + dataset["Hour"], format="%Y-%m-%d %H:%M"
     )
 
     # Define the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["Value"].values, index=index
     )
 

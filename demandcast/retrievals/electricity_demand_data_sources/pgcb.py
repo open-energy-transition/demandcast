@@ -18,7 +18,7 @@ Description:
 import logging
 import re
 
-import pandas
+import pandas as pd
 import requests
 import utils.fetcher
 
@@ -96,7 +96,7 @@ def _clean_and_format(date: str) -> str:
 
     try:
         # Validate the date format.
-        pandas.to_datetime(date, format="%Y-%m-%d")
+        pd.to_datetime(date, format="%Y-%m-%d")
     except ValueError:
         raise ValueError(f"Cannot infer the date from the string: {date}.")
 
@@ -236,7 +236,7 @@ def get_url(file_number: str, extension: str) -> str:
 
 def download_and_extract_data_for_request(
     file_number: str, extension: str, date: str
-) -> pandas.Series:
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -265,7 +265,7 @@ def download_and_extract_data_for_request(
     url = get_url(file_number, extension)
 
     # Fetch the data from the URL.
-    excel_file: pandas.ExcelFile = utils.fetcher.fetch_data(
+    excel_file: pd.ExcelFile = utils.fetcher.fetch_data(
         url, "html", read_as="excel_file", verify_ssl=False
     )
 
@@ -276,10 +276,10 @@ def download_and_extract_data_for_request(
         demand_sheet = "L.curve"
     else:
         logging.error("No valid sheet found. Skipping this file.")
-        return pandas.Series(dtype=float)
+        return pd.Series(dtype=float)
 
     # Read the sheet containing the demand data.
-    dataset = pandas.read_excel(excel_file, sheet_name=demand_sheet)
+    dataset = pd.read_excel(excel_file, sheet_name=demand_sheet)
 
     # Find the row that contains both "TIME" and "TOTAL".
     header_row = None
@@ -295,10 +295,10 @@ def download_and_extract_data_for_request(
 
     if header_row is None or time_col is None or total_col is None:
         logging.error("No valid header/row found. Skipping this file.")
-        return pandas.Series(dtype=float)
+        return pd.Series(dtype=float)
 
     # Extract the following 48 rows containing the time and demand data.
-    dataset = pandas.read_excel(
+    dataset = pd.read_excel(
         excel_file,
         sheet_name=demand_sheet,
         header=header_row + 1,
@@ -307,21 +307,21 @@ def download_and_extract_data_for_request(
     )
 
     # Define the new index.
-    index = pandas.to_datetime([f"{date} {t}" for t in dataset[time_col]])
+    index = pd.to_datetime([f"{date} {t}" for t in dataset[time_col]])
 
     # Subtract 1 day from the index because the data in the file refers
     # to the day before the date in the file name.
-    index = index - pandas.Timedelta(days=1)
+    index = index - pd.Timedelta(days=1)
 
     # Define the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["TOTAL"].values, index=index
     )
 
     # Add 30 minutes to each timestamp to represent the end of
     # the half-hour period.
     electricity_demand_time_series.index = (
-        electricity_demand_time_series.index + pandas.Timedelta(minutes=30)
+        electricity_demand_time_series.index + pd.Timedelta(minutes=30)
     )
 
     # Add the timezone information.

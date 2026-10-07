@@ -14,7 +14,7 @@ Description:
 import logging
 import os
 
-import pandas
+import pandas as pd
 import utils.config
 import utils.entities
 import utils.scenarios
@@ -63,7 +63,7 @@ def get_available_scenarios() -> list[str]:
     ]
 
 
-def get_historical_data() -> pandas.DataFrame:
+def get_historical_data() -> pd.DataFrame:
     """
     Get historical electricity demand per capita data.
 

@@ -13,7 +13,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -123,7 +123,7 @@ def get_url(year: int) -> str:
     )
 
 
-def download_and_extract_data_for_request(year: int) -> pandas.Series:
+def download_and_extract_data_for_request(year: int) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -163,16 +163,16 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
 
     # Extract the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["ND"].values,
-        index=pandas.date_range(
+        index=pd.date_range(
             start=f"{year}-01-01 00:30",
             periods=len(dataset),
             freq="30min",

@@ -12,7 +12,7 @@ import functools
 import logging
 import os
 
-import pandas
+import pandas as pd
 import pycountry
 import pytz
 import yaml
@@ -448,7 +448,7 @@ def _get_all_codes_with_all_data() -> list[str]:
         required data is available.
     """
     # Read the CSV file containing the available data information.
-    data = pandas.read_csv(
+    data = pd.read_csv(
         os.path.join(
             utils.config.read_folders_structure()["checks_folder"],
             "data_availability_summary.csv",
@@ -1077,12 +1077,12 @@ def get_available_years(code: str) -> list[int]:
     # Convert the start and end dates to the time zone of the country or
     # subdivision.
     start_date = (
-        pandas.to_datetime(start_date)
+        pd.to_datetime(start_date)
         .tz_localize(entity_time_zone)
         .tz_convert("UTC")
     )
     end_date = (
-        pandas.to_datetime(end_date)
+        pd.to_datetime(end_date)
         .tz_localize(entity_time_zone)
         .tz_convert("UTC")
     )

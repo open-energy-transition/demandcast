@@ -14,7 +14,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -92,7 +92,7 @@ def get_url(year: int) -> str:
     return f"https://www4.tepco.co.jp/forecast/html/images/juyo-{year}.csv"
 
 
-def download_and_extract_data_for_request(year: int) -> pandas.Series:
+def download_and_extract_data_for_request(year: int) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -131,14 +131,14 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
 
     # Define the index of the time series.
-    index = pandas.to_datetime(
+    index = pd.to_datetime(
         [
             date + " " + time
             for date, time in zip(dataset["DATE"], dataset["TIME"])
@@ -149,11 +149,11 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
     # convert from 10,000 kW (Japanese way of expressing unit of
     # power) to MW.
     electricity_demand_time_series = (
-        pandas.Series(dataset["ÀÑ(kW)"].values, index=index) * 10
+        pd.Series(dataset["ÀÑ(kW)"].values, index=index) * 10
     )
 
     # Add one hour to the time index because the time values appear
     # to be provided at the beginning of the time interval.
-    electricity_demand_time_series.index += pandas.Timedelta(hours=1)
+    electricity_demand_time_series.index += pd.Timedelta(hours=1)
 
     return electricity_demand_time_series
