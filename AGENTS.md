@@ -34,6 +34,7 @@ Folder locations are defined in `config/directories_config.yaml`; use `utils.con
 cd demandcast
 uv sync --extra lstm                         # install all dependencies
 uv run --extra lstm pytest                   # run the tests
+uv run --extra lstm mypy                     # check the types
 cd ..
 uvx pre-commit run --all-files               # lint, format and check everything
 cd webpage && uv run mkdocs build --strict   # build the documentation, if you changed it
@@ -43,7 +44,7 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 
 ## Conventions
 
-- Ruff formatting and linting, with lines of at most 79 characters (72 for docstrings and comments), NumPy-style docstrings and type hints. Import pandas, NumPy and Matplotlib as `pd`, `np` and `plt`.
+- Ruff formatting and linting, with lines of at most 79 characters (72 for docstrings and comments), NumPy-style docstrings and type hints, checked by mypy. Import pandas, NumPy and Matplotlib as `pd`, `np` and `plt`.
 - Each script validates its YAML settings with a pydantic `ConfigModel`. Document new options in the YAML file and in `webpage/docs/`.
 - Data source modules return a `pandas.Series` of demand in MW with a time-zone-aware index; stored timestamps are in UTC.
 - Tests must not use the network: mock downloads (for example `utils.fetcher.fetch_data`) and write files to `tmp_path`. Mark the rare tests that need real downloaded data with `@pytest.mark.network`.

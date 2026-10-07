@@ -34,7 +34,7 @@ uvx pre-commit run --all-files  # run them on the whole repository
 ## Making changes
 
 1. Create a branch from `main` in your fork.
-2. Follow the existing style: [Ruff](https://docs.astral.sh/ruff/) formatting and linting (lines of at most 79 characters), NumPy-style docstrings and type hints. The pre-commit hooks check this for you.
+2. Follow the existing style: [Ruff](https://docs.astral.sh/ruff/) formatting and linting (lines of at most 79 characters), NumPy-style docstrings and type hints, checked by mypy. The pre-commit hooks check this for you.
 3. Add or update tests for your changes and run them from the `demandcast/` folder:
 
    ```bash

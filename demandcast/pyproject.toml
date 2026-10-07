@@ -57,9 +57,34 @@ torch = { index = "pytorch-cpu" }
 [dependency-groups]
 dev = [
     "diff-cover>=9.0.0",
+    "mypy>=2.4.0",
+    "pandas-stubs>=3.0.5.260914",
     "pytest>=9.0.3",
     "pytest-cov>=6.0.0",
+    "types-geopandas>=1.1.4.20261006",
+    "types-pytz>=2026.5.0.20261006",
+    "types-pyyaml>=6.0.12.20260906",
+    "types-requests>=2.33.0.20261006",
+    "types-shapely>=2.1.0.20260728",
+    "types-tqdm>=4.70.0.20260906",
 ]
+
+[tool.mypy]
+files = ["."]
+exclude = ["^archive/"]
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+[[tool.mypy.overrides]]
+# Libraries without type information.
+module = ["cartopy.*", "cdsapi", "cpi", "nepali_datetime", "sklearn.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Libraries with type hints but without a py.typed marker.
+module = ["google.cloud.storage", "google.cloud.storage.*"]
+follow_untyped_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
