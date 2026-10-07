@@ -42,11 +42,15 @@ def _check_input_parameters(year: int) -> None:
     ----------
     year : int
         The year of the data to retrieve.
+
+    Raises
+    ------
+    ValueError
+        If the input parameters are not valid.
     """
     # Check if the year is supported.
-    assert year in get_available_requests(), (
-        f"The year {year} is not in the supported range."
-    )
+    if year not in get_available_requests():
+        raise ValueError(f"The year {year} is not in the supported range.")
 
 
 def get_available_requests() -> list[int]:
@@ -85,6 +89,11 @@ def get_url(year: int) -> str:
     -------
     str
         The URL of the electricity demand data.
+
+    Raises
+    ------
+    ValueError
+        If the year is not supported.
     """
     # Check if input parameters are valid.
     _check_input_parameters(year)
@@ -111,9 +120,8 @@ def get_url(year: int) -> str:
     }
 
     # Check if the year of the dataset is supported.
-    assert year in dataset_name, (
-        f"The year {year} is not supported for the dataset."
-    )
+    if year not in dataset_name:
+        raise ValueError(f"The year {year} is not supported for the dataset.")
 
     # Return the URL of the electricity demand data.
     return (
@@ -142,7 +150,7 @@ def download_and_extract_data_for_request(year: int) -> pd.Series:
 
     Raises
     ------
-    ValueError
+    TypeError
         If the extracted data is not a pandas DataFrame.
     """
     # Check if input parameters are valid.
@@ -164,7 +172,7 @@ def download_and_extract_data_for_request(year: int) -> pd.Series:
 
     # Make sure the dataset is a pandas DataFrame.
     if not isinstance(dataset, pd.DataFrame):
-        raise ValueError(
+        raise TypeError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )

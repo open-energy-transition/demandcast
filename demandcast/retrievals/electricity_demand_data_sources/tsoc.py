@@ -43,6 +43,11 @@ def _check_input_parameters(start_date: pd.Timestamp) -> None:
     ----------
     start_date : pandas.Timestamp
         The start date of the data retrieval.
+
+    Raises
+    ------
+    ValueError
+        If the input parameters are not valid.
     """
     # Read the start date of the available data.
     start_date_of_data_availability = pd.to_datetime(
@@ -53,10 +58,11 @@ def _check_input_parameters(start_date: pd.Timestamp) -> None:
 
     # Check that the start date is greater than or equal to the
     # beginning of the data availability.
-    assert start_date >= start_date_of_data_availability, (
-        "The beginning of the data availability is "
-        f"{start_date_of_data_availability}."
-    )
+    if start_date < start_date_of_data_availability:
+        raise ValueError(
+            "The beginning of the data availability is "
+            f"{start_date_of_data_availability}."
+        )
 
 
 def get_available_requests() -> list[pd.Timestamp]:
@@ -207,7 +213,7 @@ def download_and_extract_data_for_request(
 
     Raises
     ------
-    ValueError
+    TypeError
         If the extracted page is not a string.
     """
     # Check if the input parameters are valid.
@@ -231,7 +237,7 @@ def download_and_extract_data_for_request(
 
     # Make sure the page content is a string.
     if not isinstance(page, str):
-        raise ValueError(
+        raise TypeError(
             f"The extracted page is a {type(page)} object, expected a string."
         )
 

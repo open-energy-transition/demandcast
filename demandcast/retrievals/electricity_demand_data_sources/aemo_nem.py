@@ -53,15 +53,22 @@ def _check_input_parameters(
         The year of the data to retrieve.
     month : int, optional
         The month of the data to retrieve.
+
+    Raises
+    ------
+    ValueError
+        If the input parameters are not valid.
     """
     # Check if the code is valid.
     utils.entities.check_code_in_data_source(code, "aemo_nem")
 
-    if year is not None and month is not None:
-        # Check if the year and month are valid.
-        assert (year, month) in get_available_requests(code), (
-            f"Year {year} and month {month} are not supported."
-        )
+    # Check if the year and month are valid.
+    if (
+        year is not None
+        and month is not None
+        and (year, month) not in get_available_requests(code)
+    ):
+        raise ValueError(f"Year {year} and month {month} are not supported.")
 
 
 def get_available_requests(code: str) -> list[tuple[int, int]]:
@@ -162,7 +169,7 @@ def download_and_extract_data_for_request(
 
     Raises
     ------
-    ValueError
+    TypeError
         If the extracted data is not a pandas DataFrame.
     """
     # Check if the input parameters are valid.
@@ -186,7 +193,7 @@ def download_and_extract_data_for_request(
 
     # Make sure the dataset is a pandas DataFrame.
     if not isinstance(dataset, pd.DataFrame):
-        raise ValueError(
+        raise TypeError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )

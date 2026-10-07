@@ -68,8 +68,10 @@ def download_and_extract_data() -> pd.Series:
 
     Raises
     ------
+    TypeError
+        If the extracted data is not a pandas ExcelFile or DataFrame.
     ValueError
-        If the extracted data is not a pandas DataFrame.
+        If the Excel file does not have the sheets of the main regions.
     """
     # Get the URL of the electricity demand data.
     url = get_url()
@@ -78,7 +80,7 @@ def download_and_extract_data() -> pd.Series:
     excel_file = utils.fetcher.fetch_data(url, "html", read_as="excel_file")
 
     if not isinstance(excel_file, pd.ExcelFile):
-        raise ValueError(
+        raise TypeError(
             f"The extracted data is a {type(excel_file)} object, "
             "expected a pandas ExcelFile."
         )
@@ -126,7 +128,7 @@ def download_and_extract_data() -> pd.Series:
 
         # Make sure the dataset is a pandas DataFrame.
         if not isinstance(dataset, pd.DataFrame):
-            raise ValueError(
+            raise TypeError(
                 f"The extracted data is a {type(dataset)} object, "
                 "expected a pandas DataFrame."
             )

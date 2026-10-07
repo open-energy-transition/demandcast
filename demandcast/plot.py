@@ -45,17 +45,17 @@ def _read_and_check_configuration() -> BaseModel:
         "Plot the specified figure for data availability and coverage.",
     )
 
+    # Validate the configuration.
     try:
-        # Validate the configuration.
         config = ConfigModel(**raw_config)
-
-        logging.info("Configuration validated successfully:")
-        for field, value in config.model_dump().items():
-            logging.info(f" - {field}: {value}")
-
-        return config
     except ValidationError as e:
         raise ValueError(f"Configuration validation error: {e}") from e
+
+    logging.info("Configuration validated successfully:")
+    for field, value in config.model_dump().items():
+        logging.info(f" - {field}: {value}")
+
+    return config
 
 
 if __name__ == "__main__":

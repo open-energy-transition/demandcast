@@ -76,11 +76,16 @@ def download(variable: str) -> pd.DataFrame:
     with zipfile.ZipFile(BytesIO(response.content), "r") as archive:
         # Get the name of data file in the archive. It is the file that
         # does not start with "Metadata" and ends with ".csv".
-        world_bank_file_name = [
-            name
-            for name in archive.namelist()
-            if not name.startswith("Metadata") and name.endswith(".csv")
-        ][0]
+        world_bank_file_name = next(
+            (
+                name
+                for name in archive.namelist()
+                if not name.startswith("Metadata") and name.endswith(".csv")
+            ),
+            None,
+        )
+        if world_bank_file_name is None:
+            raise ValueError("No data file found in the World Bank archive.")
 
         # Read the electricity demand per capita from the archive.
         world_bank_data = pd.read_csv(

@@ -43,11 +43,15 @@ def _check_input_parameters(file_number: int) -> None:
     ----------
     file_number : int
         The number of the file to read.
+
+    Raises
+    ------
+    ValueError
+        If the input parameters are not valid.
     """
     # Check if the file number is supported.
-    assert file_number in get_available_requests(), (
-        f"File number {file_number} is not supported."
-    )
+    if file_number not in get_available_requests():
+        raise ValueError(f"File number {file_number} is not supported.")
 
 
 def get_available_requests() -> list[int]:
@@ -191,7 +195,7 @@ def download_and_extract_data_for_request(file_number: int) -> pd.Series:
 
     Raises
     ------
-    ValueError
+    TypeError
         If the extracted data is not a pandas DataFrame.
     """
     # Check if the input parameters are valid.
@@ -224,7 +228,7 @@ def download_and_extract_data_for_request(file_number: int) -> pd.Series:
 
     # Make sure the dataset is a pandas DataFrame.
     if not isinstance(dataset, pd.DataFrame):
-        raise ValueError(
+        raise TypeError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )

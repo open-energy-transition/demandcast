@@ -140,18 +140,25 @@ def _get_fraction_of_grid_cells_in_shape(
     -------
     fraction_of_grid_cells_in_shape : xarray.DataArray
         Fraction of each grid cell that is in the given shape.
+
+    Raises
+    ------
+    ValueError
+        If the shape is outside the bounds of the gridded data, or if
+        the fractions are not finite values between 0 and 1.
     """
     # Ensure that the bounds of the entity shape are within gridded data
     # limits.
-    assert (
-        entity_shape.total_bounds[0] >= xarray_data.x.min().item()
-        and entity_shape.total_bounds[2] <= xarray_data.x.max().item()
-        and entity_shape.total_bounds[1] >= xarray_data.y.min().item()
-        and entity_shape.total_bounds[3] <= xarray_data.y.max().item()
-    ), (
-        "The bounds of the entity shape must be within the bounds of the "
-        "gridded data."
-    )
+    if (
+        entity_shape.total_bounds[0] < xarray_data.x.min().item()
+        or entity_shape.total_bounds[2] > xarray_data.x.max().item()
+        or entity_shape.total_bounds[1] < xarray_data.y.min().item()
+        or entity_shape.total_bounds[3] > xarray_data.y.max().item()
+    ):
+        raise ValueError(
+            "The bounds of the entity shape must be within the bounds of the "
+            "gridded data."
+        )
 
     # Get the coordinates of the xarray data as a matrix.
     x_coords, y_coords = np.meshgrid(
@@ -202,16 +209,22 @@ def _get_fraction_of_grid_cells_in_shape(
 
     # Check that the fraction is between 0 and 1 and that there are
     # no NaN or infinite values.
-    assert np.all(
+    if not np.all(
         (fraction_of_grid_cells_in_shape_np >= 0)
         & (fraction_of_grid_cells_in_shape_np <= 1)
-    ), "The fraction of grid cells in shape must be between 0 and 1."
-    assert not np.any(np.isnan(fraction_of_grid_cells_in_shape_np)), (
-        "The fraction of grid cells in shape must not contain NaN values."
-    )
-    assert not np.any(np.isinf(fraction_of_grid_cells_in_shape_np)), (
-        "The fraction of grid cells in shape must not contain infinite values."
-    )
+    ):
+        raise ValueError(
+            "The fraction of grid cells in shape must be between 0 and 1."
+        )
+    if np.any(np.isnan(fraction_of_grid_cells_in_shape_np)):
+        raise ValueError(
+            "The fraction of grid cells in shape must not contain NaN values."
+        )
+    if np.any(np.isinf(fraction_of_grid_cells_in_shape_np)):
+        raise ValueError(
+            "The fraction of grid cells in shape must not contain infinite "
+            "values."
+        )
 
     # Convert the numpy array to a xarray DataArray.
     fraction_of_grid_cells_in_shape = xarray.DataArray(
@@ -249,6 +262,11 @@ def from_density_to_count(
     -------
     xarray.DataArray
         The counts in the grid cells.
+
+    Raises
+    ------
+    ValueError
+        If the grid resolution is not uniform and equal in x and y.
     """
     # Calculate the x and y resolutions of the grid cells in degrees.
     x_resolution = density.x[1:].to_numpy() - density.x[:-1].to_numpy()
@@ -256,18 +274,17 @@ def from_density_to_count(
 
     # Check that the resolution of the grid cells is uniform along each
     # axis.
-    assert np.allclose(x_resolution, x_resolution[0]), (
-        "The x resolution must be uniform."
-    )
-    assert np.allclose(y_resolution, y_resolution[0]), (
-        "The y resolution must be uniform."
-    )
+    if not np.allclose(x_resolution, x_resolution[0]):
+        raise ValueError("The x resolution must be uniform.")
+    if not np.allclose(y_resolution, y_resolution[0]):
+        raise ValueError("The y resolution must be uniform.")
 
     # Check that the resolution is the same in both directions.
-    assert np.allclose(x_resolution[0], y_resolution[0]), (
-        "The x and y resolutions must be the same. "
-        f"Got {x_resolution[0]} and {y_resolution[0]}."
-    )
+    if not np.allclose(x_resolution[0], y_resolution[0]):
+        raise ValueError(
+            "The x and y resolutions must be the same. "
+            f"Got {x_resolution[0]} and {y_resolution[0]}."
+        )
 
     # Get the resolution in degrees.
     resolution = x_resolution[0]
@@ -392,6 +409,12 @@ def coarsen(
     -------
     xarray.DataArray
         The coarsened xarray data.
+
+    Raises
+    ------
+    ValueError
+        If the target resolution is not at least twice the original
+        resolution or does not divide 360.
     """
     # Get the original resolution of the xarray data.
     original_x_resolution = abs(
@@ -404,14 +427,17 @@ def coarsen(
 
     # Check if the target resolution is greater than the original
     # resolution.
-    assert target_resolution > 2 * original_resolution, (
-        "Target resolution must be at least twice the original resolution."
-    )
+    if target_resolution <= 2 * original_resolution:
+        raise ValueError(
+            "Target resolution must be at least twice the original resolution."
+        )
 
     # Check if the target resolution provides an integer number of bins.
-    assert 360 % target_resolution == 0, (
-        "Target resolution must result in an integer number when dividing 360."
-    )
+    if 360 % target_resolution != 0:
+        raise ValueError(
+            "Target resolution must result in an integer number when "
+            "dividing 360."
+        )
 
     # Define the new coarser resolution.
     x_list = np.linspace(-180, 180, int(360 / target_resolution) + 1)

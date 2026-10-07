@@ -197,13 +197,13 @@ def _from_iiasa_name_to_iso_alpha_3_code(name: str) -> str:
                 raise ValueError(
                     f"Multiple countries found for name '{name}': "
                     f"{[c.name for c in country]}"
-                )
+                ) from None
             iso_alpha_3_code = country[0].alpha_3
     except LookupError:
         if name in custom_mapping:
             iso_alpha_3_code = custom_mapping[name]
         else:
-            raise ValueError(f"Country name '{name}' not found.")
+            raise ValueError(f"Country name '{name}' not found.") from None
 
     return iso_alpha_3_code
 

@@ -52,17 +52,17 @@ def read_and_check_ml_configuration() -> BaseModel:
     with open(config_path, encoding="utf-8") as file:
         raw_config = utils.config.yaml.safe_load(file)
 
+    # Validate the configuration.
     try:
-        # Validate the configuration.
         config = ConfigModel(**raw_config)
-
-        logging.info("ML configuration validated successfully:")
-        for field, value in config.model_dump().items():
-            logging.info(f" - {field}: {value}")
-
-        return config
     except ValidationError as e:
         raise ValueError(f"Configuration validation error: {e}") from e
+
+    logging.info("ML configuration validated successfully:")
+    for field, value in config.model_dump().items():
+        logging.info(f" - {field}: {value}")
+
+    return config
 
 
 def get_trained_model_path(

@@ -330,7 +330,7 @@ def test_fetch_entsoe_demand_retry_log_attempt_is_one_indexed(caplog):
         mock_client.return_value.query_load.side_effect = ConnectionError(
             "Connection failed"
         )
-        with caplog.at_level("ERROR"), pytest.raises(ConnectionError):
+        with caplog.at_level("WARNING"), pytest.raises(ConnectionError):
             utils.fetcher.fetch_entsoe_demand(
                 "dummy",
                 "FRA",
@@ -366,7 +366,7 @@ def test_fetch_data_requests_get_errors():
     for error in errors:
         with patch("requests.get"):
             requests.get.side_effect = error
-            with pytest.raises(Exception):
+            with pytest.raises(ConnectionError, match="remote data"):
                 utils.fetcher.fetch_data(
                     "http://example.com", "html", retries=1, retry_delay=0
                 )
@@ -392,7 +392,7 @@ def test_fetch_data_urlopen_errors():
     for error in errors:
         with patch("urllib.request.urlopen"):
             urllib.request.urlopen.side_effect = error
-            with pytest.raises(Exception):
+            with pytest.raises(ConnectionError, match="remote data"):
                 utils.fetcher.fetch_data(
                     "http://example.com",
                     "html",

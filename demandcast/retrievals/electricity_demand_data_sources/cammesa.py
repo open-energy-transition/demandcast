@@ -59,11 +59,15 @@ def _check_input_parameters(date: str) -> None:
     date : str
         The date of the electricity demand data in the format
         YYYY-MM-DD.
+
+    Raises
+    ------
+    ValueError
+        If the input parameters are not valid.
     """
     # Check if the date is supported.
-    assert date in get_available_requests(), (
-        f"The date {date} is not in the supported range."
-    )
+    if date not in get_available_requests():
+        raise ValueError(f"The date {date} is not in the supported range.")
 
 
 def get_available_requests() -> list[str]:
@@ -145,7 +149,7 @@ def download_and_extract_data_for_request(date: str) -> pd.Series:
 
     Raises
     ------
-    ValueError
+    TypeError
         If the extracted data is not a pandas DataFrame.
 
     """
@@ -164,7 +168,7 @@ def download_and_extract_data_for_request(date: str) -> pd.Series:
 
     # Make sure the dataset is a pandas DataFrame.
     if not isinstance(dataset, pd.DataFrame):
-        raise ValueError(
+        raise TypeError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )

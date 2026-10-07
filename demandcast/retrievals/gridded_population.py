@@ -43,11 +43,17 @@ def _download_historical_gridded_population_density(
         The directory where the population density data will be saved.
     year : int
         The year of the population density data to be downloaded.
+
+    Raises
+    ------
+    ValueError
+        If the year is not available.
     """
-    assert year in list(range(2000, 2021, 5)), (
-        "year must be one of the available years: "
-        f"{list(range(2000, 2021, 5))}."
-    )
+    if year not in list(range(2000, 2021, 5)):
+        raise ValueError(
+            "year must be one of the available years: "
+            f"{list(range(2000, 2021, 5))}."
+        )
 
     # Define the file path for the population density data.
     file_path = os.path.join(downloaded_data_directory, f"{year}.tif")
@@ -97,11 +103,17 @@ def _download_future_gridded_population(
         The directory where the population data will be saved.
     scenario : str
         The scenario of the population data to be downloaded.
+
+    Raises
+    ------
+    ValueError
+        If the scenario is not available.
     """
-    assert scenario in ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"], (
-        "ssp must be one of the following: ['SSP1', 'SSP2', 'SSP3', "
-        "'SSP4', 'SSP5']."
-    )
+    if scenario not in ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]:
+        raise ValueError(
+            "ssp must be one of the following: ['SSP1', 'SSP2', 'SSP3', "
+            "'SSP4', 'SSP5']."
+        )
 
     # Define the folder name for the population data for the specified
     # scenario.

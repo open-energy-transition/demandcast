@@ -55,16 +55,22 @@ def _check_input_parameters(
         The start date of the data retrieval.
     end_date : pandas.Timestamp, optional
         The end date of the data retrieval.
+
+    Raises
+    ------
+    ValueError
+        If the input parameters are not valid.
     """
     # Check if the code is valid.
     utils.entities.check_code_in_data_source(code, "entsoe")
 
     if start_date is not None and end_date is not None:
         # Check if the retrieval period is less than 1 year.
-        assert (end_date - start_date) <= pd.Timedelta("366days"), (
-            "The retrieval period must be less than or equal to 1 year. "
-            f"start_date: {start_date}, end_date: {end_date}"
-        )
+        if end_date - start_date > pd.Timedelta("366days"):
+            raise ValueError(
+                "The retrieval period must be less than or equal to 1 year. "
+                f"start_date: {start_date}, end_date: {end_date}"
+            )
 
         # Read the start date of the available data.
         start_date_of_data_availability = pd.to_datetime(
@@ -75,10 +81,11 @@ def _check_input_parameters(
 
         # Check that the start date is greater than or equal to the
         # beginning of the data availability.
-        assert start_date >= start_date_of_data_availability, (
-            "The beginning of the data availability is "
-            f"{start_date_of_data_availability}."
-        )
+        if start_date < start_date_of_data_availability:
+            raise ValueError(
+                "The beginning of the data availability is "
+                f"{start_date_of_data_availability}."
+            )
 
 
 def get_available_requests(

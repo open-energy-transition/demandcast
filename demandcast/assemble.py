@@ -60,17 +60,17 @@ def _read_and_check_configuration() -> BaseModel:
         "training the machine learning models or forecasting.",
     )
 
+    # Validate the configuration.
     try:
-        # Validate the configuration.
         config = ConfigModel(**raw_config)
-
-        logging.info("Configuration validated successfully:")
-        for field, value in config.model_dump().items():
-            logging.info(f" - {field}: {value}")
-
-        return config
     except ValidationError as e:
         raise ValueError(f"Configuration validation error: {e}") from e
+
+    logging.info("Configuration validated successfully:")
+    for field, value in config.model_dump().items():
+        logging.info(f" - {field}: {value}")
+
+    return config
 
 
 def _is_date(string: str) -> bool:
@@ -89,9 +89,9 @@ def _is_date(string: str) -> bool:
     """
     try:
         datetime.datetime.strptime(string, "%Y-%m-%d")
-        return True
     except ValueError:
         return False
+    return True
 
 
 def _validate(

@@ -64,6 +64,11 @@ def get_url(code: str) -> str:
     -------
     str
         The URL of the electricity demand data.
+
+    Raises
+    ------
+    ValueError
+        If the subdivision code is not supported.
     """
     # Check if the code is valid.
     utils.entities.check_code_in_data_source(code, "ccei")
@@ -86,9 +91,10 @@ def get_url(code: str) -> str:
         "YT": ["YK", "TOTAL"],
     }
 
-    assert subdivision_code in variable_names, (
-        f"Subdivision code {subdivision_code} is not supported."
-    )
+    if subdivision_code not in variable_names:
+        raise ValueError(
+            f"Subdivision code {subdivision_code} is not supported."
+        )
 
     # Return the URL of the electricity demand data.
     return (
@@ -118,7 +124,7 @@ def download_and_extract_data(code: str) -> pd.Series:
 
     Raises
     ------
-    ValueError
+    TypeError
         If the extracted data is not a pandas DataFrame.
     """
     # Check if the code is valid.
@@ -132,7 +138,7 @@ def download_and_extract_data(code: str) -> pd.Series:
 
     # Make sure the dataset is a pandas DataFrame.
     if not isinstance(dataset, pd.DataFrame):
-        raise ValueError(
+        raise TypeError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )

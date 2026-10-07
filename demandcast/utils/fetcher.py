@@ -147,8 +147,9 @@ def fetch_data(
     ------
     ValueError
         If the content type is not supported.
-    Exception
-        If the request fails after the specified number of retries.
+    ConnectionError
+        If the request fails or the data cannot be fetched within the
+        specified number of retries.
     """
     if csv_kwargs is None:
         csv_kwargs = {}
@@ -315,21 +316,21 @@ def fetch_data(
                     )
 
                 except requests.exceptions.SSLError as e:
-                    logging.error(
+                    logging.warning(
                         f"SSL error: {e}.\nPlease verify the SSL certificate."
                         f"\nRetrying ({attempt + 1}/{retries})..."
                     )
                     time.sleep(retry_delay)
 
             except requests.exceptions.ConnectionError as e:
-                logging.error(
+                logging.warning(
                     f"Connection error: {e}.\n"
                     f"Retrying ({attempt + 1}/{retries})..."
                 )
                 time.sleep(retry_delay)
 
             except requests.exceptions.Timeout as e:
-                logging.error(
+                logging.warning(
                     f"Timeout error: {e}.\n"
                     f"Retrying ({attempt + 1}/{retries})..."
                 )
@@ -339,20 +340,21 @@ def fetch_data(
                 requests.exceptions.HTTPError,
                 urllib.error.HTTPError,
             ):
-                logging.error(
+                logging.warning(
                     "HTTP error while fetching remote data. "
                     f"Retrying ({attempt + 1}/{retries})..."
                 )
                 time.sleep(retry_delay)
 
-    except (requests.exceptions.RequestException, urllib.error.URLError):
-        logging.error(
+    except (requests.exceptions.RequestException, urllib.error.URLError) as e:
+        raise ConnectionError(
             "Request error while fetching remote data. "
             "The remote endpoint may be unavailable."
-        )
-        raise Exception("Request error while fetching remote data.")
+        ) from e
 
-    raise Exception(f"Failed to fetch remote data after {retries} retries.")
+    raise ConnectionError(
+        f"Failed to fetch remote data after {retries} retries."
+    )
 
 
 def fetch_entsoe_demand(
@@ -413,7 +415,7 @@ def fetch_entsoe_demand(
                 )["Actual Load"]
 
             except ConnectionError:
-                logging.error(
+                logging.warning(
                     f"Connection error. Retrying ({attempt + 1}/{retries})..."
                 )
                 time.sleep(retry_delay)

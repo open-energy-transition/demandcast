@@ -75,7 +75,7 @@ def download_and_extract_data() -> pd.Series:
 
     Raises
     ------
-    ValueError
+    TypeError
         If the extracted data is not a pandas DataFrame.
     FileNotFoundError
         If the data file is not found in the specified folder.
@@ -107,7 +107,7 @@ def download_and_extract_data() -> pd.Series:
 
     # Make sure the dataset is a pandas DataFrame.
     if not isinstance(dataset, pd.DataFrame):
-        raise ValueError(
+        raise TypeError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )

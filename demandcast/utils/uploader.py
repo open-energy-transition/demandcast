@@ -61,11 +61,15 @@ def upload_to_gcs(
     try:
         blob.upload_from_filename(file_path)
     except (OSError, GoogleCloudError) as e:
-        logging.error(
+        e.add_note(
             f"Failed to upload file {file_path} to GCS bucket {bucket_name} "
-            f"as {destination_blob_name}: {e}"
+            f"as {destination_blob_name}."
         )
         raise
+
+
+class ZenodoError(RuntimeError):
+    """Error returned by the Zenodo API."""
 
 
 def upload_to_zenodo(
@@ -101,9 +105,8 @@ def upload_to_zenodo(
     ------
     ValueError
         If the `data_type` is not 'actual' or 'synthetic'.
-    Exception
-        If there is an error uploading a file to Zenodo or if the
-        response from Zenodo is not successful.
+    ZenodoError
+        If a request to the Zenodo API is not successful.
     """
     # Get the root directory of the project.
     root_directory = utils.config.read_folders_structure()["root_folder"]
@@ -237,10 +240,9 @@ def upload_to_zenodo(
 
     # Check if the response is successful.
     if response.status_code != 200:
-        logging.error(
-            f"Failed to retrieve depositions from Zenodo: {response.text}"
+        raise ZenodoError(
+            f"Zenodo deposition retrieval failed: {response.text}"
         )
-        raise Exception(f"Zenodo deposition retrieval failed: {response.text}")
 
     # Check if a deposition with the same title already exists.
     new_version = False
@@ -272,10 +274,7 @@ def upload_to_zenodo(
 
         # Check if the response is successful.
         if response.status_code != 201:
-            logging.error(
-                f"Failed to create new version in Zenodo: {response.text}"
-            )
-            raise Exception(
+            raise ZenodoError(
                 f"Zenodo new version creation failed: {response.text}"
             )
 
@@ -295,11 +294,9 @@ def upload_to_zenodo(
 
         # Check if the response is successful.
         if response.status_code != 200:
-            logging.error(
-                "Failed to update metadata for new version in Zenodo: "
-                f"{response.text}"
+            raise ZenodoError(
+                f"Zenodo metadata update failed: {response.text}"
             )
-            raise Exception(f"Zenodo metadata update failed: {response.text}")
 
         # Get the list of files in the deposition.
         response = requests.get(
@@ -310,11 +307,7 @@ def upload_to_zenodo(
 
         # Check if the response is successful.
         if response.status_code != 200:
-            logging.error(
-                f"Failed to retrieve files from Zenodo deposition: "
-                f"{response.text}"
-            )
-            raise Exception(f"Zenodo file retrieval failed: {response.text}")
+            raise ZenodoError(f"Zenodo file retrieval failed: {response.text}")
 
         # Delete all files inherited from the previous version.
         for file_info in response.json():
@@ -327,12 +320,9 @@ def upload_to_zenodo(
 
             # Check if the response is successful.
             if response.status_code != 204:
-                logging.error(
-                    f"Failed to delete file {file_info['filename']} "
-                    f"from Zenodo deposition: {response.text}"
-                )
-                raise Exception(
-                    f"Zenodo file deletion failed: {response.text}"
+                raise ZenodoError(
+                    f"Zenodo deletion of the file {file_info['filename']} "
+                    f"failed: {response.text}"
                 )
     elif add_to_draft:
         # Update the metadata for the draft deposition in Zenodo.
@@ -347,11 +337,9 @@ def upload_to_zenodo(
 
         # Check if the response is successful.
         if response.status_code != 200:
-            logging.error(
-                f"Failed to update metadata for draft deposition in Zenodo: "
-                f"{response.text}"
+            raise ZenodoError(
+                f"Zenodo metadata update failed: {response.text}"
             )
-            raise Exception(f"Zenodo metadata update failed: {response.text}")
     else:
         # Create a new deposition in Zenodo.
         response = requests.post(
@@ -362,10 +350,7 @@ def upload_to_zenodo(
 
         # Check if the response is successful.
         if response.status_code != 201:
-            logging.error(
-                f"Failed to create deposition in Zenodo: {response.text}"
-            )
-            raise Exception(
+            raise ZenodoError(
                 f"Zenodo deposition creation failed: {response.text}"
             )
 
@@ -383,10 +368,10 @@ def upload_to_zenodo(
         )
 
         if response.status_code != 201:
-            logging.error(
-                f"Failed to upload file {file_path} to Zenodo: {response.text}"
+            raise ZenodoError(
+                f"Zenodo upload of the file {file_path} failed: "
+                f"{response.text}"
             )
-            raise Exception(f"Zenodo upload failed: {response.text}")
 
     if not publish:
         logging.info(
@@ -406,7 +391,4 @@ def upload_to_zenodo(
 
         # Check if the response is successful.
         if response.status_code != 202:
-            logging.error(
-                f"Failed to publish deposition in Zenodo: {response.text}"
-            )
-            raise Exception(f"Zenodo publication failed: {response.text}")
+            raise ZenodoError(f"Zenodo publication failed: {response.text}")

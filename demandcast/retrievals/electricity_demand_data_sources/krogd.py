@@ -72,7 +72,7 @@ def download_and_extract_data() -> pd.Series:
 
     Raises
     ------
-    ValueError
+    TypeError
         If the extracted data is not a pandas DataFrame.
 
     Raises

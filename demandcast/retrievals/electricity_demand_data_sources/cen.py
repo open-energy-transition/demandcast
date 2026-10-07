@@ -44,12 +44,18 @@ def _check_input_parameters(
         The start date of the data retrieval.
     end_date : pandas.Timestamp
         The end date of the data retrieval.
+
+    Raises
+    ------
+    ValueError
+        If the input parameters are not valid.
     """
     # Check that the retrieval period is less than one year.
-    assert (end_date - start_date) <= pd.Timedelta("366days"), (
-        "The retrieval period is greater than 1 year. "
-        "Please reduce the period to 1 year."
-    )
+    if end_date - start_date > pd.Timedelta("366days"):
+        raise ValueError(
+            "The retrieval period is greater than 1 year. "
+            "Please reduce the period to 1 year."
+        )
 
     # Read the start date of the available data.
     start_date_of_data_availability = pd.to_datetime(
@@ -60,10 +66,11 @@ def _check_input_parameters(
 
     # Check that the start date is greater than or equal to the
     # beginning of the data availability.
-    assert start_date >= start_date_of_data_availability, (
-        "The beginning of the data availability is "
-        f"{start_date_of_data_availability}."
-    )
+    if start_date < start_date_of_data_availability:
+        raise ValueError(
+            "The beginning of the data availability is "
+            f"{start_date_of_data_availability}."
+        )
 
 
 def get_available_requests() -> list[tuple[pd.Timestamp, pd.Timestamp]]:
@@ -151,7 +158,7 @@ def download_and_extract_data_for_request(
 
     Raises
     ------
-    ValueError
+    TypeError
         If the extracted data is not a pandas DataFrame.
     """
     # Check if the input parameters are valid.
@@ -186,7 +193,7 @@ def download_and_extract_data_for_request(
 
     # Make sure the dataset is a pandas DataFrame.
     if not isinstance(dataset, pd.DataFrame):
-        raise ValueError(
+        raise TypeError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )

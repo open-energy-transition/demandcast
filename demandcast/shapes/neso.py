@@ -24,11 +24,9 @@ all_shapes = cartopy.io.shapereader.natural_earth(
 reader = cartopy.io.shapereader.Reader(all_shapes)
 
 # Read the shapefile of the United Kingdom.
-uk_shape = [
-    shape
-    for shape in list(reader.records())
-    if shape.attributes["ISO_A2"] == "GB"
-][0]
+uk_shape = next(
+    shape for shape in reader.records() if shape.attributes["ISO_A2"] == "GB"
+)
 uk_shape = pd.Series({"geometry": uk_shape.geometry})
 uk_shape = geopandas.GeoSeries(uk_shape)
 uk_shape = geopandas.GeoDataFrame.from_features(uk_shape, crs=4326)

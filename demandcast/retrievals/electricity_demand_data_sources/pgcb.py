@@ -97,8 +97,10 @@ def _clean_and_format(date: str) -> str:
     try:
         # Validate the date format.
         pd.to_datetime(date, format="%Y-%m-%d")
-    except ValueError:
-        raise ValueError(f"Cannot infer the date from the string: {date}.")
+    except ValueError as e:
+        raise ValueError(
+            f"Cannot infer the date from the string: {date}."
+        ) from e
 
     return date
 

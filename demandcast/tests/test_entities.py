@@ -382,7 +382,7 @@ def test_check_codes():
     codes or data sources.
     """
     utils.entities.check_code_in_data_source("USA_TEX", data_source="eia")
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError, match="Invalid code"):
         utils.entities.check_code_in_data_source(
             "INVALID_CODE", data_source="entsoe"
         )

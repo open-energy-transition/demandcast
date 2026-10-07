@@ -54,16 +54,22 @@ def _check_input_parameters(
         The start date of the data retrieval.
     end_date : pandas.Timestamp, optional
         The end date of the data retrieval.
+
+    Raises
+    ------
+    ValueError
+        If the input parameters are not valid.
     """
     # Check if the code is valid.
     utils.entities.check_code_in_data_source(code, "cenace")
 
     if start_date is not None and end_date is not None:
         # Check if the retrieval period is less than 1 year.
-        assert (end_date - start_date) <= pd.Timedelta("366days"), (
-            "The retrieval period must be less than or equal to 1 year. "
-            f"start_date: {start_date}, end_date: {end_date}"
-        )
+        if end_date - start_date > pd.Timedelta("366days"):
+            raise ValueError(
+                "The retrieval period must be less than or equal to 1 year. "
+                f"start_date: {start_date}, end_date: {end_date}"
+            )
 
         # Read the start date of the available data.
         start_date_of_data_availability = pd.to_datetime(
@@ -74,9 +80,11 @@ def _check_input_parameters(
 
         # Check that the start date is greater than or equal to the
         # beginning of the data availability.
-        assert start_date >= start_date_of_data_availability, (
-            f"The beginning of the data availability is {start_date_of_data_availability}."
-        )
+        if start_date < start_date_of_data_availability:
+            raise ValueError(
+                "The beginning of the data availability is "
+                f"{start_date_of_data_availability}."
+            )
 
 
 def get_available_requests(
@@ -168,9 +176,10 @@ def download_and_extract_data_for_request(
 
     Raises
     ------
+    TypeError
+        If the response is not a requests.Response object.
     ValueError
-        If the response is not a requests.Response object or if no data
-        is found for the specified date.
+        If no data is found for a date.
     """
     # Check if the input parameters are valid.
     _check_input_parameters(code, start_date=start_date, end_date=end_date)
@@ -225,7 +234,7 @@ def download_and_extract_data_for_request(
 
     # Make sure the response is a requests.Response object.
     if not isinstance(response, requests.Response):
-        raise ValueError(
+        raise TypeError(
             f"The extracted response is a {type(response)} object, "
             "expected a requests.Response object."
         )
@@ -275,16 +284,20 @@ def download_and_extract_data_for_request(
 
             # Find the line that contains the header of the CSV
             # file.
-            skip_rows = file_content.split("\n").index(
-                [
-                    line
-                    for line in file_content.split("\n")
+            lines = file_content.split("\n")
+            skip_rows = next(
+                (
+                    i
+                    for i, line in enumerate(lines)
                     if "Estimacion de Demanda por Balance (MWh)" in line
-                ][0]
+                ),
+                None,
             )
+            if skip_rows is None:
+                raise ValueError(f"No header found in the file {file_name}.")
 
             # Check if the line after the header has some data.
-            if file_content.split("\n")[skip_rows + 1] != "":
+            if lines[skip_rows + 1] != "":
                 found_data = True
             else:
                 # If the line after the header is empty, try the
