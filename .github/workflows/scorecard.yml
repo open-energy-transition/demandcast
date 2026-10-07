@@ -1,3 +1,6 @@
+# Runs the OpenSSF Scorecard security analysis weekly and on pushes to main,
+# and publishes the results to code scanning and the README badge.
+
 name: Scorecard
 
 on:
@@ -17,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: read # Check the workflows' runs.
-      contents: read # Check out the repository.
+      contents: read
       id-token: write # Publish the results for the badge.
       security-events: write # Upload the results to code scanning.
     steps:

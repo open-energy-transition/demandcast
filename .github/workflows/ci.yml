@@ -1,3 +1,6 @@
+# Runs the pre-commit hooks and the tests on pull requests and on pushes to
+# main.
+
 name: CI
 
 on:

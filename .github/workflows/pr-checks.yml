@@ -1,3 +1,6 @@
+# Checks that pull request titles follow Conventional Commits and that every
+# commit is signed off (DCO).
+
 name: Pull request checks
 
 on:
@@ -41,8 +44,8 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     permissions:
-      contents: read # Read the commits.
-      pull-requests: read # List the pull request's commits.
+      contents: read
+      pull-requests: read
     steps:
       - name: Check that every commit is signed off by its author
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -63,7 +66,7 @@ jobs:
                 commit.author?.type === "Bot" ||
                 (commit.author?.login ?? "").endsWith("[bot]");
               if (commit.parents.length > 1 || isBot) {
-                continue; // Merge commits and bots don't need a sign-off.
+                continue;
               }
               const signOffs = [
                 ...commit.commit.message.matchAll(

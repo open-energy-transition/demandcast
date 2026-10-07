@@ -1,3 +1,5 @@
+# Issue form for suggesting a new electricity demand data source.
+
 name: New data source
 description: Suggest a new source of electricity demand data
 labels: ["Enhancement"]

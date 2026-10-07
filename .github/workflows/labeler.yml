@@ -1,7 +1,10 @@
+# Labels pull requests by the files they change (.github/labeler.yml) and by
+# the type in their Conventional Commits title. pull_request_target gives
+# write access on pull requests from forks, so this workflow must never check
+# out or run their code.
+
 name: "Pull Request Labeler"
 
-# pull_request_target gives the token write access on pull requests from
-# forks, so this workflow must never check out or run their code.
 on: # zizmor: ignore[dangerous-triggers] -- no PR code is checked out or run
   pull_request_target:
     types: [opened, edited, synchronize, reopened]
@@ -18,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read # Read the labeler configuration.
-      pull-requests: write # Add labels.
+      pull-requests: write
     steps:
       - name: Add labels for the changed files
         uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0

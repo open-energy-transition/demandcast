@@ -1,3 +1,6 @@
+# Labels added by the Pull Request Labeler workflow, based on the files a
+# pull request changes.
+
 Docs:
   - changed-files:
       - any-glob-to-any-file:

@@ -1,3 +1,6 @@
+# Builds the documentation site on pull requests that change it, and deploys it
+# to GitHub Pages from main.
+
 name: docs
 
 on:
@@ -52,7 +55,7 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     permissions:
-      pages: write # Deploy the site.
+      pages: write
       id-token: write # Verify the deployment's origin.
     environment:
       name: github-pages

@@ -1,3 +1,6 @@
+# Fails pull requests that add dependencies with known vulnerabilities or with
+# licenses incompatible with AGPL-3.0.
+
 name: Dependency review
 
 on:
@@ -16,10 +19,6 @@ jobs:
     permissions:
       contents: read
     steps:
-      # Fails if the pull request adds a dependency with a known
-      # vulnerability or a license that is not compatible with AGPL-3.0.
-      # The listed packages are existing dependencies whose license
-      # metadata uses non-standard identifiers.
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           allow-licenses: >-
@@ -29,6 +28,8 @@ jobs:
             LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only,
             LGPL-3.0-or-later, MIT, MIT-0, MIT-CMU, MPL-2.0, OFL-1.1,
             PSF-2.0, Python-2.0, Unlicense, Zlib, ZPL-2.1
+          # Existing dependencies whose license metadata uses non-standard
+          # identifiers.
           allow-dependencies-licenses: >-
             pkg:pypi/matplotlib, pkg:pypi/protobuf, pkg:pypi/pycryptodomex,
             pkg:pypi/pyproj, pkg:pypi/torch, pkg:pypi/xlrd
