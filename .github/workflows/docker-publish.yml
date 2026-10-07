@@ -1,6 +1,6 @@
-# Builds the Docker image on pull requests, checks that it runs and scans it
-# for vulnerabilities. On pushes to main and version tags, publishes it to the
-# GitHub Container Registry, signs it and attests its provenance.
+# Publishes the Docker image to the GitHub Container Registry on pushes to
+# main and version tags, signs it, attests its provenance and scans it for
+# vulnerabilities. Pull requests build it in the CI workflow.
 
 name: Docker
 
@@ -8,12 +8,10 @@ on:
   push:
     branches: ["main"]
     tags: ["v*"]
-  pull_request:
-    branches: ["main"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 permissions: {}
 
@@ -21,47 +19,8 @@ env:
   IMAGE: ghcr.io/${{ github.repository }}-demandcast
 
 jobs:
-  build:
-    name: "Docker image"
-    if: github.event_name == 'pull_request'
-    timeout-minutes: 60
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-
-      - name: Build the image
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: ./demandcast
-          load: true
-          tags: demandcast:test
-          cache-from: type=gha,scope=demandcast
-          cache-to: type=gha,mode=max,scope=demandcast
-
-      - name: Check that the image runs as an unprivileged user
-        run: |
-          test "$(docker run --rm demandcast:test id -u)" = 1000
-          docker run --rm demandcast:test uv run retrieve.py --help
-
-      - name: Scan the image for vulnerabilities
-        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
-        with:
-          image: demandcast:test
-          fail-build: false
-          only-fixed: true
-          output-format: table
-
   publish:
     name: "Publish the Docker image"
-    if: github.event_name != 'pull_request'
     timeout-minutes: 60
     runs-on: ubuntu-latest
     permissions:

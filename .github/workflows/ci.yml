@@ -1,5 +1,6 @@
-# Runs the pre-commit hooks and the tests on pull requests and on pushes to
-# main.
+# Runs the pre-commit hooks, the tests and a Docker build on pull requests and
+# on pushes to main. Pull requests that only change documentation skip the
+# tests and the Docker build.
 
 name: CI
 
@@ -17,6 +18,45 @@ concurrency:
 permissions: {}
 
 jobs:
+  # Detects pull requests that only change documentation, so that the
+  # tests and the Docker build can be skipped for them.
+  changes:
+    name: "Changed files"
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      docs-only: ${{ steps.check.outputs.docs-only }}
+    steps:
+      - name: Check whether only documentation changed
+        id: check
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            if (context.eventName !== "pull_request") {
+              core.setOutput("docs-only", "false");
+              return;
+            }
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              ...context.repo,
+              pull_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+            const isDocs = (path) =>
+              /^(webpage\/|\.github\/ISSUE_TEMPLATE\/)/.test(path) ||
+              /^(\.github\/PULL_REQUEST_TEMPLATE\.md|CITATION\.cff|LICENSE)$/.test(path) ||
+              (path.endsWith(".md") && !path.startsWith(".github/workflows/"));
+            const docsOnly =
+              files.length > 0 &&
+              files.every(
+                (file) =>
+                  isDocs(file.filename) &&
+                  (!file.previous_filename || isDocs(file.previous_filename)),
+              );
+            core.info(`Documentation-only change: ${docsOnly}`);
+            core.setOutput("docs-only", String(docsOnly));
+
   pre-commit:
     timeout-minutes: 15
     name: "pre-commit"
@@ -44,6 +84,8 @@ jobs:
 
   tests:
     name: "tests (${{ matrix.os }}, Python ${{ matrix.python }})"
+    needs: changes
+    if: needs.changes.outputs.docs-only != 'true'
     timeout-minutes: 20
     runs-on: ${{ matrix.os }}
     permissions:
@@ -101,16 +143,56 @@ jobs:
           cat diff-cover.md >> "$GITHUB_STEP_SUMMARY"
           exit "${status:-0}"
 
+  docker-image:
+    name: "Docker image"
+    needs: changes
+    if: needs.changes.outputs.docs-only != 'true'
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build the image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ./demandcast
+          load: true
+          tags: demandcast:test
+          cache-from: type=gha,scope=demandcast
+          cache-to: type=gha,mode=max,scope=demandcast
+
+      - name: Check that the image runs as an unprivileged user
+        run: |
+          test "$(docker run --rm demandcast:test id -u)" = 1000
+          docker run --rm demandcast:test uv run retrieve.py --help
+
+      - name: Scan the image for vulnerabilities
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: demandcast:test
+          fail-build: false
+          only-fixed: true
+          output-format: table
+
   # Single check for the branch ruleset to require, so that CI jobs can be
-  # added or renamed without changing the ruleset.
+  # added or renamed without changing the ruleset. Jobs skipped for
+  # documentation-only changes count as successful.
   ci-result:
     name: "CI result"
     if: always()
-    needs: [pre-commit, tests]
+    needs: [changes, pre-commit, tests, docker-image]
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - name: Check that all CI jobs succeeded
         env:
           RESULTS: ${{ toJSON(needs.*.result) }}
-        run: jq --exit-status 'all(. == "success")' <<< "$RESULTS"
+        run: jq --exit-status 'all(. == "success" or . == "skipped")' <<< "$RESULTS"
