@@ -56,7 +56,7 @@ def _map_from_region_to_country(
         # Get the data for the region of interest.
         iiasa_data_of_country = iiasa_data[iiasa_data["Region"] == region_code]
 
-        # Subsitute the region code with the ISO Alpha-3 codes.
+        # Substitute the region code with the ISO Alpha-3 codes.
         iiasa_data_of_country = iiasa_data_of_country.replace(
             {"Region": {region_code: iso_alpha_3_code}}
         )

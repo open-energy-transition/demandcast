@@ -1,0 +1,24 @@
+# Configuration of the typos spell checker (pre-commit hook).
+
+[files]
+extend-exclude = ["demandcast/archive/", "*.ipynb", "*.csv"]
+
+[default]
+extend-ignore-re = [
+  # ISO 3166 country codes, such as BA or THA.
+  "\\b[A-Z]{2,3}\\b",
+]
+
+[default.extend-words]
+# Mean absolute percentage error.
+mape = "mape"
+# numpy.arange.
+arange = "arange"
+# Place and organisation names, and column names of Spanish data sources.
+nam = "nam"
+sur = "sur"
+coordinador = "coordinador"
+estimacion = "estimacion"
+inicial = "inicial"
+# Spelling used in the licence terms quoted from a data source.
+transferrable = "transferrable"

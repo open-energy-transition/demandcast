@@ -1,7 +1,7 @@
 # Configuration read by the upload.py script.
 
 # REQUIRED.
-# The taget platform for uploading the data. Supported platforms are
+# The target platform for uploading the data. Supported platforms are
 # "gcs" (Google Cloud Storage) and "zenodo".
 target_platform: gcs
 

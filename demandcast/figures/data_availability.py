@@ -4,7 +4,7 @@ License: AGPL-3.0.
 
 Description:
 
-    This module contains funtions to generate a figure showing the
+    This module contains functions to generate a figure showing the
     availability of hourly and sub-hourly electricity demand data by GDP
     PPP and annual electricity demand per capita. It uses data from
     Ember, the World Bank and the IMF to visualize the coverage of
@@ -90,7 +90,7 @@ def _get_electricity_demand_per_capita(
         A list of ISO alpha-3 or a combination of ISO alpha-3 and
         subdivision codes.
     years_of_interest : dict[str, list[int]]
-        A dictionary where the keys are entitiy codes and the values are
+        A dictionary where the keys are entity codes and the values are
         lists of strings representing the years of interest.
 
     Returns
@@ -105,7 +105,7 @@ def _get_electricity_demand_per_capita(
     )
 
     # Initialize the electricity demand data series for each country or
-    # subdivision. The dictionary structure is specified bacause
+    # subdivision. The dictionary structure is specified because
     # required by the type hint.
     electricity_demand_data: dict[str, dict[str, pandas.Series]] = {}
 
@@ -158,7 +158,7 @@ def _get_gdp_ppp_per_capita(
         A list of ISO alpha-3 or a combination of ISO alpha-3 and
         subdivision codes.
     years_of_interest : dict[str, list[int]]
-        A dictionary where the keys are entitiy codes and the values are
+        A dictionary where the keys are entity codes and the values are
         lists of strings representing the years of interest.
 
     Returns
@@ -171,7 +171,7 @@ def _get_gdp_ppp_per_capita(
     gdp_ppp_per_capita = retrievals.gdp_ppp_per_capita.get_historical_data()
 
     # Initialize the GDP data series for each country or subdivision.
-    # The dictionary structure is specified bacause required by the type
+    # The dictionary structure is specified because required by the type
     # hint.
     gdp_data: dict[str, dict[str, pandas.Series]] = {}
 

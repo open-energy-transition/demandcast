@@ -202,7 +202,7 @@ def test_from_density_to_count():
         ]
     )  # [9.75, 10.25, 10.75, 11.25]
 
-    # For each latitide index, get lower and upper boundaries.
+    # For each latitude index, get lower and upper boundaries.
     lower_lat = boundary_lat[:-1]  # [9.75, 10.25, 10.75]
     upper_lat = boundary_lat[1:]  # [10.25, 10.75, 11.25]
 

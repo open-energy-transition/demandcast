@@ -202,7 +202,7 @@ def run_data_retrieval(
         # data of the country or subdivision.
         file_path_without_ext = os.path.join(result_directory, code)
 
-        # Get the selcted historical years.
+        # Get the selected historical years.
         selected_historical_years = list(
             set(
                 [

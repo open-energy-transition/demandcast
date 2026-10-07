@@ -566,7 +566,7 @@ def _build_temperature_database(
         "UTC"
     ).tz_convert(entity_time_zone)
 
-    # Get the montly average temperature.
+    # Get the monthly average temperature.
     monthly_average_temperature = (
         temperature_time_series_top_1.tz_localize(None).resample("ME").mean()
     )
