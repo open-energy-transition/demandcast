@@ -17,7 +17,7 @@ import pycountry
 import pycountry_convert
 import pytz
 import yaml
-from countryinfo import CountryInfo
+from countryinfo import CountryInfo, CountryNotFoundError
 from timezonefinder import TimezoneFinder
 
 import utils.config
@@ -32,6 +32,12 @@ extra_entities = {
         "time_zone": "Europe/Belgrade",
         "continent_code": "EU",
     },
+}
+
+# Time zones of countries with several time zones whose capital
+# coordinates in countryinfo point to the wrong one.
+capital_time_zones = {
+    "BRA": "America/Sao_Paulo",
 }
 
 
@@ -594,21 +600,28 @@ def _get_time_zone_of_country(iso_alpha_3_code: str) -> datetime.tzinfo:
                 "pytz and no predefined time zone is set for it."
             )
 
-    # If there are multiple time zones, find the time zone based on
-    # the capital city.
+    # If there are multiple time zones, use the time zone of the
+    # capital city.
     if len(time_zones) > 1:
-        # Get the country information from CountryInfo.
-        for __, info in CountryInfo().all().items():
-            if info["ISO"]["alpha3"] == iso_alpha_3_code:
-                break
+        if iso_alpha_3_code in capital_time_zones:
+            time_zone_name = capital_time_zones[iso_alpha_3_code]
+        else:
+            try:
+                location = CountryInfo(iso_alpha_3_code).capital_latlng()
+            except CountryNotFoundError:
+                location = None
 
-        # Get the capital city coordinates.
-        location = info["capital_latlng"]
+            time_zone_name = (
+                TimezoneFinder().timezone_at(lat=location[0], lng=location[1])
+                if location
+                else None
+            )
 
-        # Find time zone based on capital city coordinates.
-        time_zone_name = TimezoneFinder().timezone_at(
-            lat=location[0], lng=location[1]
-        )
+            # Use the first time zone of the country if the capital is
+            # unknown or lies in a time zone of another country.
+            if time_zone_name not in time_zones:
+                time_zone_name = time_zones[0]
+
         time_zone = pytz.timezone(time_zone_name)
     else:
         # Get the time zone of the country.
