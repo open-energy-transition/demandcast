@@ -239,7 +239,7 @@ def download_and_extract_data_for_request(
 
     # Get all the dates in the time range.
     dates = (
-        pandas.date_range(start_date, end_date, freq="d")
+        pandas.date_range(start_date, end_date, freq="D")
         .strftime("%Y-%m-%d")
         .tolist()
     )

@@ -392,6 +392,12 @@ def _load_data_for_entity(
     # Drop any rows with NaN values after resampling.
     entity_data = entity_data.dropna()
 
+    # Use the same time resolution for all datasets. Since pandas 3,
+    # the resolution is inferred (e.g., microseconds for parsed strings
+    # and nanoseconds for weather data), and merging datasets with
+    # different resolutions silently drops rows.
+    entity_data.index = entity_data.index.as_unit("ns")
+
     # Keep only rows with positive values in the specified numeric
     # columns.
     for column in numeric_columns:

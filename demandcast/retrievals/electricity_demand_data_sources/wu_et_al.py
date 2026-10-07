@@ -89,7 +89,7 @@ def download_and_extract_data() -> pandas.Series:
 
     # Convert all columns except the first one to numeric.
     for i in range(1, dataset.shape[1]):
-        dataset.iloc[:, i] = pandas.to_numeric(dataset.iloc[:, i])
+        dataset[dataset.columns[i]] = pandas.to_numeric(dataset.iloc[:, i])
 
     # Sum the regional demand columns to get total national demand.
     dataset["National Demand"] = dataset.iloc[:, 1:].sum(axis=1)
