@@ -435,7 +435,6 @@ def test_time_zones():
     )
 
 
-
 @pytest.mark.parametrize(
     ("code", "time_zone"),
     [

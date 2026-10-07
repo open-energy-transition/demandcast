@@ -611,7 +611,7 @@ def _get_time_zone_of_country(iso_alpha_3_code: str) -> datetime.tzinfo:
             except CountryNotFoundError:
                 location = None
 
-            time_zone_name = (
+            capital_time_zone = (
                 TimezoneFinder().timezone_at(lat=location[0], lng=location[1])
                 if location
                 else None
@@ -619,7 +619,12 @@ def _get_time_zone_of_country(iso_alpha_3_code: str) -> datetime.tzinfo:
 
             # Use the first time zone of the country if the capital is
             # unknown or lies in a time zone of another country.
-            if time_zone_name not in time_zones:
+            if (
+                capital_time_zone is not None
+                and capital_time_zone in time_zones
+            ):
+                time_zone_name = capital_time_zone
+            else:
                 time_zone_name = time_zones[0]
 
         time_zone = pytz.timezone(time_zone_name)
