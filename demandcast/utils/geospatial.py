@@ -193,10 +193,13 @@ def _get_fraction_of_grid_cells_in_shape(
     ).to_numpy()
 
     # Some rounding errors can lead to fractions slightly above 1.
-    # Set these values to 1.
-    fraction_of_grid_cells_in_shape_np[
-        numpy.isclose(fraction_of_grid_cells_in_shape_np, 1)
-    ] = 1.0
+    # Set these values to 1. A new array is created because, with
+    # Copy-on-Write, the array returned by to_numpy() is read-only.
+    fraction_of_grid_cells_in_shape_np = numpy.where(
+        numpy.isclose(fraction_of_grid_cells_in_shape_np, 1),
+        1.0,
+        fraction_of_grid_cells_in_shape_np,
+    )
 
     # Check that the fraction is between 0 and 1 and that there are
     # no NaN or infinite values.

@@ -55,7 +55,7 @@ def _get_year_fractions(codes: list[str]) -> dict[str, dict[int, float]]:
         days = pandas.date_range(
             start=data_time_ranges[code][0],
             end=data_time_ranges[code][1],
-            freq="d",
+            freq="D",
         )
 
         # Initialize the dictionary for the current country or
