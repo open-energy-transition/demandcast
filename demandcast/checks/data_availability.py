@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -24,22 +23,21 @@ Description:
 
 import os
 
-import pandas
+import pandas as pd
 import pycountry
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
-import retrievals.socio_economic_data_sources.iiasa as iiasa
-import retrievals.socio_economic_data_sources.world_bank as world_bank
 import utils.config
 import utils.shapes
 import yaml
+from retrievals.socio_economic_data_sources import iiasa, world_bank
 
 
 def _add_first_and_last_years(
     variable: str,
-    data_source: pandas.DataFrame,
-    data_availability: pandas.DataFrame,
-) -> pandas.DataFrame:
+    data_source: pd.DataFrame,
+    data_availability: pd.DataFrame,
+) -> pd.DataFrame:
     """
     Add the first and last available years for historical data.
 
@@ -135,9 +133,9 @@ def run_check() -> None:
     )
 
     # Get the list of all available ISO Alpha-3 codes.
-    official_iso_alpha_3_codes = []
-    for country in pycountry.countries:
-        official_iso_alpha_3_codes.append(country.alpha_3)
+    official_iso_alpha_3_codes = [
+        country.alpha_3 for country in pycountry.countries
+    ]
 
     # Check that all ISO Alpha-3 codes for countries and subdivisions
     # with available shapes are in the official list of ISO Alpha-3
@@ -147,7 +145,7 @@ def run_check() -> None:
             raise ValueError(f"Code {code} with shape not in official list.")
 
     # Initialize a DataFrame to store the available data.
-    data_availability = pandas.DataFrame(index=entity_codes_with_shape)
+    data_availability = pd.DataFrame(index=entity_codes_with_shape)
     data_availability.index.name = "entity_code"
 
     # Add a column with the entity names.
@@ -253,15 +251,13 @@ def run_check() -> None:
             "socio_economic_data_sources",
             "iam_regions_mapping.yaml",
         ),
-        "r",
     ) as iiasa_mapping_file:
         iiasa_future_electricity_demand_per_capita_mapping = yaml.safe_load(
             iiasa_mapping_file
         )
-    iiasa_future_electricity_demand_per_capita_codes = [
-        code
-        for code, __ in iiasa_future_electricity_demand_per_capita_mapping.items()
-    ]
+    iiasa_future_electricity_demand_per_capita_codes = list(
+        iiasa_future_electricity_demand_per_capita_mapping.keys()
+    )
 
     # Add a column to indicate the availability of future electricity
     # demand per capita data.

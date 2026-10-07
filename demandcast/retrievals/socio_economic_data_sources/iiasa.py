@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -18,14 +17,14 @@ import logging
 import os
 
 import cpi
-import pandas
+import pandas as pd
 import pycountry
 import yaml
 
 
 def _map_from_region_to_country(
-    iiasa_data: pandas.DataFrame,
-) -> pandas.DataFrame:
+    iiasa_data: pd.DataFrame,
+) -> pd.DataFrame:
     """
     Map the data of regions to countries.
 
@@ -49,7 +48,7 @@ def _map_from_region_to_country(
     )
 
     # Read the mapping from the yaml file.
-    with open(iam_region_mapping, "r", encoding="utf-8") as file:
+    with open(iam_region_mapping, encoding="utf-8") as file:
         iso_to_region = yaml.safe_load(file)
 
     for iso_alpha_3_code, region_code in iso_to_region.items():
@@ -62,7 +61,7 @@ def _map_from_region_to_country(
         )
 
         # Append the data to the main dataframe.
-        iiasa_data = pandas.concat(
+        iiasa_data = pd.concat(
             [iiasa_data, iiasa_data_of_country], ignore_index=True
         )
 
@@ -75,8 +74,8 @@ def _map_from_region_to_country(
 
 
 def _calculate_gdp_ppp_per_capita(
-    gdp_ppp: pandas.DataFrame, population: pandas.DataFrame
-) -> pandas.DataFrame:
+    gdp_ppp: pd.DataFrame, population: pd.DataFrame
+) -> pd.DataFrame:
     """
     Calculate the GDP PPP per capita from GDP PPP and population data.
 
@@ -93,9 +92,7 @@ def _calculate_gdp_ppp_per_capita(
         A DataFrame containing the calculated GDP PPP per capita data.
     """
     # Find regions contained in both datasets.
-    common_regions = sorted(
-        list(set(gdp_ppp["Region"]) & set(population["Region"]))
-    )
+    common_regions = sorted(set(gdp_ppp["Region"]) & set(population["Region"]))
 
     # Filter the datasets to keep only the common regions.
     gdp_ppp = gdp_ppp[gdp_ppp["Region"].isin(common_regions)].reset_index(
@@ -109,8 +106,7 @@ def _calculate_gdp_ppp_per_capita(
     years_of_interest = [str(year) for year in range(2025, 2101, 5)]
 
     # Merge the two datasets on Region and Scenario.
-    gdp_ppp_per_capita = pandas.merge(
-        gdp_ppp,
+    gdp_ppp_per_capita = gdp_ppp.merge(
         population,
         on=["Region", "Scenario"],
         suffixes=("_gdp", "_pop"),
@@ -125,7 +121,7 @@ def _calculate_gdp_ppp_per_capita(
         )
 
     # Keep only the relevant columns.
-    columns_to_keep = ["Region", "Scenario"] + years_of_interest
+    columns_to_keep = ["Region", "Scenario", *years_of_interest]
     gdp_ppp_per_capita = gdp_ppp_per_capita[columns_to_keep].copy()
 
     # Add the required columns.
@@ -140,7 +136,8 @@ def _calculate_gdp_ppp_per_capita(
         "Region",
         "Variable",
         "Unit",
-    ] + years_of_interest
+        *years_of_interest,
+    ]
     gdp_ppp_per_capita = gdp_ppp_per_capita[columns_order]
 
     # Update CPI data. This is needed to ensure that the inflation
@@ -211,7 +208,7 @@ def _from_iiasa_name_to_iso_alpha_3_code(name: str) -> str:
     return iso_alpha_3_code
 
 
-def read(variable: str) -> pandas.DataFrame:
+def read(variable: str) -> pd.DataFrame:
     """
     Read the IIASA data.
 
@@ -241,7 +238,7 @@ def read(variable: str) -> pandas.DataFrame:
     if variable == "population":
         logging.info("Loading future population data from IIASA.")
         # Read the population data.
-        iiasa_data = pandas.read_csv(
+        iiasa_data = pd.read_csv(
             os.path.join(base_file_path, "IAM_national_population.csv"),
         ).iloc[:-1, :]
 
@@ -266,7 +263,7 @@ def read(variable: str) -> pandas.DataFrame:
         )
         # Read the growth rate of the electricity demand per capita
         # data.
-        iiasa_data = pandas.read_excel(
+        iiasa_data = pd.read_excel(
             os.path.join(
                 base_file_path,
                 "IAM_regional_annual_electricity_demand_per_capita_growth.xlsx",
@@ -287,10 +284,10 @@ def read(variable: str) -> pandas.DataFrame:
                 "population data."
             )
             # Read population and GDP PPP data.
-            iiasa_population_data = pandas.read_csv(
+            iiasa_population_data = pd.read_csv(
                 os.path.join(base_file_path, "IAM_national_population.csv"),
             ).iloc[:-1, :]
-            iiasa_gdp_ppp_data = pandas.read_csv(
+            iiasa_gdp_ppp_data = pd.read_csv(
                 os.path.join(base_file_path, "IAM_national_gdp_ppp.csv"),
             ).iloc[:-1, :]
 
@@ -309,7 +306,7 @@ def read(variable: str) -> pandas.DataFrame:
         else:
             logging.info("Loading future GDP PPP per capita data from IIASA.")
             # Read the GDP PPP per capita data.
-            iiasa_data = pandas.read_csv(
+            iiasa_data = pd.read_csv(
                 os.path.join(gdp_ppp_per_capita_file_path),
             )
 
@@ -332,8 +329,8 @@ def read(variable: str) -> pandas.DataFrame:
 
 
 def _extract(
-    iiasa_data: pandas.DataFrame, iso_alpha_3_code: str, scenario: str
-) -> pandas.Series:
+    iiasa_data: pd.DataFrame, iso_alpha_3_code: str, scenario: str
+) -> pd.Series:
     """
     Extract the data for a given country, scenario and future years.
 
@@ -386,10 +383,10 @@ def _extract(
 
 
 def extract_and_interpolate(
-    iiasa_data: pandas.DataFrame,
+    iiasa_data: pd.DataFrame,
     iso_alpha_3_code: str,
     scenario: str,
-) -> pandas.Series:
+) -> pd.Series:
     """
     Interpolate the data for a given country, scenario and future years.
 
@@ -426,13 +423,13 @@ def extract_and_interpolate(
 
 
 def extrapolate(
-    iiasa_data: pandas.DataFrame,
+    iiasa_data: pd.DataFrame,
     iso_alpha_3_code: str,
     scenario: str,
     last_historical_value: float,
     last_historical_year: int,
     future_years: list[int],
-) -> pandas.Series:
+) -> pd.Series:
     """
     Extrapolate the data for a given country, scenario and future years.
 
@@ -470,7 +467,7 @@ def extrapolate(
     )
 
     # Initialize a Series to store the future values.
-    extrapolated_data = pandas.Series(
+    extrapolated_data = pd.Series(
         index=future_years,
         dtype=float,
     )

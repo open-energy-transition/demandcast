@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,11 +10,10 @@ Description:
 
 import logging
 import os
-from typing import Optional
 
 import ml_models.lstm
 import ml_models.xgboost
-import pandas
+import pandas as pd
 import utils.config
 import utils.ml
 from pydantic import BaseModel, ValidationError
@@ -40,8 +38,8 @@ def _read_and_check_configuration() -> BaseModel:
     # Define the configuration model.
     class ConfigModel(BaseModel):
         used_validation_set: bool
-        model_path: Optional[str] = None
-        data_path: Optional[str] = None
+        model_path: str | None = None
+        data_path: str | None = None
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(
@@ -64,10 +62,10 @@ def _read_and_check_configuration() -> BaseModel:
 
 
 def _calculate_mape_by_entity(
-    predictions: pandas.Series,
-    actual: pandas.Series,
-    entity_codes: pandas.Series,
-) -> pandas.Series:
+    predictions: pd.Series,
+    actual: pd.Series,
+    entity_codes: pd.Series,
+) -> pd.Series:
     """
     Calculate MAPE per entity.
 
@@ -90,7 +88,7 @@ def _calculate_mape_by_entity(
     list_mapes_values = []
 
     # Calculate MAPE for each entity.
-    for entity_code, entity_group in pandas.DataFrame(entity_codes).groupby(
+    for entity_code, entity_group in pd.DataFrame(entity_codes).groupby(
         "Entity code"
     ):
         current_mape = mean_absolute_percentage_error(
@@ -101,7 +99,7 @@ def _calculate_mape_by_entity(
         list_mapes_values.append(current_mape)
 
     # Create a Series for MAPE values indexed by entity codes.
-    mapes = pandas.Series(
+    mapes = pd.Series(
         data=list_mapes_values,
         index=list_entity_codes,
         name="MAPE",
@@ -111,9 +109,9 @@ def _calculate_mape_by_entity(
 
 
 def _calculate_mapes(
-    prepared_dataset: dict[str, dict[str, pandas.DataFrame | pandas.Series]],
-    predictions: dict[str, pandas.Series],
-) -> pandas.DataFrame:
+    prepared_dataset: dict[str, dict[str, pd.DataFrame | pd.Series]],
+    predictions: dict[str, pd.Series],
+) -> pd.DataFrame:
     """
     Calculate MAPE for training, validation, and testing datasets.
 
@@ -133,9 +131,9 @@ def _calculate_mapes(
         datasets.
     """
     # Initialize a DataFrame to hold MAPE results.
-    mapes = pandas.DataFrame()
+    mapes = pd.DataFrame()
 
-    for split in prepared_dataset.keys():
+    for split in prepared_dataset:
         # Calculate MAPE per entity for the current split.
         mapes_of_split = _calculate_mape_by_entity(
             predictions[split],
@@ -154,7 +152,7 @@ def _calculate_mapes(
     # Reset the index and reorder columns.
     mapes = mapes.reset_index()
     column_order = ["Entity code"] + [
-        f"{split.capitalize()} MAPE" for split in prepared_dataset.keys()
+        f"{split.capitalize()} MAPE" for split in prepared_dataset
     ]
     mapes = mapes[column_order]
 

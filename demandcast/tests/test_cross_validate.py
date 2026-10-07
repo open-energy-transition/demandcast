@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -22,8 +21,8 @@ import pytest
 
 pytest.importorskip("torch", reason="torch not installed; skipping LSTM tests")
 
-import cross_validate  # noqa: E402
-import ml_models.lstm as lstm_module  # noqa: E402
+import cross_validate
+import ml_models.lstm as lstm_module
 
 # Small hyperparameters so every test trains in under a second on CPU.
 _FAST_CONFIG = MagicMock(

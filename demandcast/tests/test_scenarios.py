@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -7,7 +6,7 @@ Description:
     This file contains unit tests for the scenario module.
 """
 
-import pandas
+import pandas as pd
 import pytest
 import utils.scenarios
 
@@ -467,7 +466,7 @@ def test_get_years_and_scenarios():
     scenario inputs, along with historical data availability.
     """
     # Define a simple DataFrame to simulate historical data.
-    data = pandas.DataFrame(
+    data = pd.DataFrame(
         {
             2020: [1],
             2021: [2],
@@ -497,7 +496,7 @@ def test_get_years_and_scenarios():
 
     # Define another DataFrame to simulate historical data with missing
     # years.
-    data = pandas.DataFrame(
+    data = pd.DataFrame(
         {
             2020: [1],
             2021: [2],
@@ -525,7 +524,7 @@ def test_get_years_and_scenarios():
     assert result[3] == []  # scenarios
 
     # Define a DataFrame to simulate the use of gridded data.
-    data = pandas.DataFrame(
+    data = pd.DataFrame(
         {
             2020: [1],
             2021: [2],
@@ -555,8 +554,8 @@ def test_get_years_and_scenarios():
 
     # Define a simple DataFrame to simulate historical data up to the
     # current year - 1.
-    data = pandas.DataFrame()
-    for year in range(2021, pandas.Timestamp.now().year):
+    data = pd.DataFrame()
+    for year in range(2021, pd.Timestamp.now().year):
         data[year] = [year - 2000]
     data.index = ["AAA"]
 

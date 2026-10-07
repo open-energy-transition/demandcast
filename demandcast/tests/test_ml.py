@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -10,9 +9,8 @@ Description:
 import os
 from unittest.mock import Mock, mock_open, patch
 
-import pandas
+import pandas as pd
 import pytest
-import utils.config
 import utils.ml
 
 
@@ -287,7 +285,7 @@ def test_split_temporally_with_testing_and_validation():
     training, testing, and validation sets based on the splitter column.
     """
     # Create a sample dataset.
-    dataset = pandas.DataFrame(
+    dataset = pd.DataFrame(
         {
             "entity_code": ["A", "A", "A", "B", "B", "B"],
             "year": [2020, 2021, 2022, 2020, 2021, 2022],
@@ -318,7 +316,7 @@ def test_split_temporally_with_testing_only():
     This test checks if the function correctly splits the dataset when
     only testing set is requested.
     """
-    dataset = pandas.DataFrame(
+    dataset = pd.DataFrame(
         {
             "entity_code": ["A", "A", "A"],
             "year": [2020, 2021, 2022],
@@ -348,7 +346,7 @@ def test_split_temporally_with_validation_only():
     This test checks if the function correctly splits the dataset when
     only validation set is requested.
     """
-    dataset = pandas.DataFrame(
+    dataset = pd.DataFrame(
         {
             "entity_code": ["A", "A", "A"],
             "year": [2020, 2021, 2022],
@@ -378,7 +376,7 @@ def test_split_temporally_without_splits():
     This test checks if the function returns only training set when
     no splits are requested.
     """
-    dataset = pandas.DataFrame(
+    dataset = pd.DataFrame(
         {
             "entity_code": ["A", "A", "A"],
             "year": [2020, 2021, 2022],
@@ -407,7 +405,7 @@ def test_split_in_groups():
     This test checks if the function correctly splits the dataset into
     features, target, group, time, and other components.
     """
-    dataset = pandas.DataFrame(
+    dataset = pd.DataFrame(
         {
             "entity_code": ["A", "B"],
             "feature1": [1, 2],
@@ -443,7 +441,7 @@ def test_split_in_groups_without_target():
     This test checks if the function works correctly when target is
     not included.
     """
-    dataset = pandas.DataFrame(
+    dataset = pd.DataFrame(
         {
             "entity_code": ["A", "B"],
             "feature1": [1, 2],
@@ -474,7 +472,7 @@ def test_split_in_groups_with_categorical_features():
     This test checks if the function correctly converts categorical
     features to category dtype.
     """
-    dataset = pandas.DataFrame(
+    dataset = pd.DataFrame(
         {
             "entity_code": ["A", "B"],
             "feature1": [1.0, 2.0],
@@ -505,7 +503,7 @@ def test_split_in_groups_with_scaling_variables():
     This test checks if the function correctly calculates the scaling
     factor from scaling variables.
     """
-    dataset = pandas.DataFrame(
+    dataset = pd.DataFrame(
         {
             "entity_code": ["A", "B"],
             "feature1": [1, 2],
@@ -538,7 +536,7 @@ def test_split_in_groups_with_additional_columns():
     This test checks if the function correctly handles additional
     columns not specified in the parameters.
     """
-    dataset = pandas.DataFrame(
+    dataset = pd.DataFrame(
         {
             "entity_code": ["A", "B"],
             "feature1": [1, 2],
@@ -568,7 +566,7 @@ def test_split_in_groups_missing_columns():
     This test checks if the function raises ValueError when required
     columns are missing from the dataset.
     """
-    dataset = pandas.DataFrame(
+    dataset = pd.DataFrame(
         {
             "entity_code": ["A", "B"],
             "feature1": [1, 2],
@@ -602,7 +600,7 @@ def test_prepare_dataset_with_splits():
     sample_config.categorical_features = None
     sample_config.scaling_variables = None
 
-    sample_data = pandas.DataFrame(
+    sample_data = pd.DataFrame(
         {
             "entity_code": ["A", "A", "A"],
             "feature1": [1, 2, 3],
@@ -649,7 +647,7 @@ def test_prepare_dataset_without_splits():
     sample_config.categorical_features = None
     sample_config.scaling_variables = None
 
-    sample_data = pandas.DataFrame(
+    sample_data = pd.DataFrame(
         {
             "entity_code": ["A", "B"],
             "feature1": [1, 2],
@@ -695,7 +693,7 @@ def test_prepare_dataset_without_target():
     sample_config.categorical_features = None
     sample_config.scaling_variables = None
 
-    sample_data = pandas.DataFrame(
+    sample_data = pd.DataFrame(
         {
             "entity_code": ["A", "B"],
             "feature1": [1, 2],
@@ -732,7 +730,7 @@ def test_save_results_validation():
     This test mocks the file system operations to check if the function
     correctly saves validation results.
     """
-    output_data = pandas.DataFrame({"mape": [0.1, 0.2]})
+    output_data = pd.DataFrame({"mape": [0.1, 0.2]})
 
     with (
         patch("utils.config.read_folders_structure") as mock_read_folders,
@@ -764,7 +762,7 @@ def test_save_results_cross_validation():
     This test checks if the function correctly saves cross-validation
     results.
     """
-    output_data = pandas.DataFrame({"mape": [0.1, 0.2]})
+    output_data = pd.DataFrame({"mape": [0.1, 0.2]})
 
     with (
         patch("utils.config.read_folders_structure") as mock_read_folders,
@@ -797,7 +795,7 @@ def test_save_results_forecasts():
 
     This test checks if the function correctly saves forecast results.
     """
-    output_data = pandas.DataFrame({"forecast": [100, 200]})
+    output_data = pd.DataFrame({"forecast": [100, 200]})
 
     with (
         patch("utils.config.read_folders_structure") as mock_read_folders,
@@ -829,7 +827,7 @@ def test_save_results_invalid_case():
     This test checks if the function raises ValueError when an invalid
     case is provided.
     """
-    output_data = pandas.DataFrame({"value": [1, 2]})
+    output_data = pd.DataFrame({"value": [1, 2]})
 
     with pytest.raises(ValueError):
         utils.ml.save_results(

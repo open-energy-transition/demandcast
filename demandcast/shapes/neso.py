@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -12,7 +11,7 @@ import os
 
 import cartopy.io.shapereader
 import geopandas
-import pandas
+import pandas as pd
 from shapely import Polygon
 
 # Load the shapefile containing the shapes of the countries from the
@@ -30,7 +29,7 @@ uk_shape = [
     for shape in list(reader.records())
     if shape.attributes["ISO_A2"] == "GB"
 ][0]
-uk_shape = pandas.Series({"geometry": uk_shape.geometry})
+uk_shape = pd.Series({"geometry": uk_shape.geometry})
 uk_shape = geopandas.GeoSeries(uk_shape)
 uk_shape = geopandas.GeoDataFrame.from_features(uk_shape, crs=4326)
 

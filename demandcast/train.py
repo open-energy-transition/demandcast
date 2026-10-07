@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -10,11 +9,10 @@ Description:
 """
 
 import logging
-from typing import Optional
 
 import ml_models.lstm
 import ml_models.xgboost
-import pandas
+import pandas as pd
 import utils.config
 import utils.ml
 from pydantic import BaseModel, ValidationError
@@ -39,7 +37,7 @@ def _read_and_check_configuration() -> BaseModel:
     class ConfigModel(BaseModel):
         reserve_testing_set: bool
         use_validation_set: bool
-        data_path: Optional[str] = None
+        data_path: str | None = None
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(
@@ -102,7 +100,7 @@ def run_model_training(
     # Define a model name based on timestamp.
     model_name = (
         f"{algorithm.lower()}_model_"
-        f"{pandas.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
+        f"{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
     )
 
     if algorithm.lower() == "xgboost":

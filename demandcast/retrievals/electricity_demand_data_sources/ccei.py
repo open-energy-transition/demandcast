@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,11 +10,11 @@ Description:
     various time resolutions.
 
     Source: https://energy-information.canada.ca/en/resources/high-frequency-electricity-data
-"""  # noqa: W505
+"""
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -87,7 +86,7 @@ def get_url(code: str) -> str:
         "YT": ["YK", "TOTAL"],
     }
 
-    assert subdivision_code in variable_names.keys(), (
+    assert subdivision_code in variable_names, (
         f"Subdivision code {subdivision_code} is not supported."
     )
 
@@ -100,7 +99,7 @@ def get_url(code: str) -> str:
     )
 
 
-def download_and_extract_data(code: str) -> pandas.Series:
+def download_and_extract_data(code: str) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -132,7 +131,7 @@ def download_and_extract_data(code: str) -> pandas.Series:
     dataset = utils.fetcher.fetch_data(url, "csv")
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
@@ -149,9 +148,9 @@ def download_and_extract_data(code: str) -> pandas.Series:
         dataset = dataset[~dataset["TIME_PERIOD"].str.contains("06:59:59")]
 
     # Extract the electricity demand time series with UTC time zone.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         data=dataset["OBS_VALUE"].values,
-        index=pandas.to_datetime(dataset["TIME_PERIOD"]),
+        index=pd.to_datetime(dataset["TIME_PERIOD"]),
     ).tz_localize("UTC")
 
     return electricity_demand_time_series

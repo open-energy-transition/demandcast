@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -16,7 +15,7 @@ Description:
 import logging
 import os
 
-import pandas
+import pandas as pd
 import utils.config
 
 
@@ -57,7 +56,7 @@ def get_url() -> str:
     return "https://iced.niti.gov.in/energy/electricity/distribution/national-level-consumption/load-curve"
 
 
-def download_and_extract_data() -> pandas.Series:
+def download_and_extract_data() -> pd.Series:
     """
     Extract electricity demand data.
 
@@ -96,14 +95,14 @@ def download_and_extract_data() -> pandas.Series:
         )
 
     # Load the data from the downloaded files into a pandas DataFrame.
-    dataset = pandas.concat(
-        [pandas.read_excel(file_path) for file_path in downloaded_file_paths]
+    dataset = pd.concat(
+        [pd.read_excel(file_path) for file_path in downloaded_file_paths]
     )
 
     # Extract the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["Hourly Demand Met (in MW)"].values,
-        index=pandas.to_datetime(
+        index=pd.to_datetime(
             dataset["Year"].astype(str) + " " + dataset["Date"],
             format="%Y %d-%b %I%p",
         ),
@@ -112,7 +111,7 @@ def download_and_extract_data() -> pandas.Series:
     # Add one hour to the index because the electricity demand seems to
     # be provided at the beginning of the hour.
     electricity_demand_time_series.index = (
-        electricity_demand_time_series.index + pandas.Timedelta(hours=1)
+        electricity_demand_time_series.index + pd.Timedelta(hours=1)
     )
 
     # Add the timezone information to the index.

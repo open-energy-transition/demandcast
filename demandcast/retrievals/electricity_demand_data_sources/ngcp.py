@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -14,7 +13,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.fetcher
 
 
@@ -55,7 +54,7 @@ def get_url() -> str:
     return "https://www.ngcp.ph/Attachment-Uploads/operations/Hourly%20Demand%20per%20Grid.xlsx"
 
 
-def download_and_extract_data() -> pandas.Series:
+def download_and_extract_data() -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -78,7 +77,7 @@ def download_and_extract_data() -> pandas.Series:
     # Read the Excel file from the URL.
     excel_file = utils.fetcher.fetch_data(url, "html", read_as="excel_file")
 
-    if not isinstance(excel_file, pandas.ExcelFile):
+    if not isinstance(excel_file, pd.ExcelFile):
         raise ValueError(
             f"The extracted data is a {type(excel_file)} object, "
             "expected a pandas ExcelFile."
@@ -126,38 +125,38 @@ def download_and_extract_data() -> pandas.Series:
         )
 
         # Make sure the dataset is a pandas DataFrame.
-        if not isinstance(dataset, pandas.DataFrame):
+        if not isinstance(dataset, pd.DataFrame):
             raise ValueError(
                 f"The extracted data is a {type(dataset)} object, "
                 "expected a pandas DataFrame."
             )
 
         # Keep only "Date" and hours 1 to 24.
-        selected_columns = ["DATE"] + list(range(1, 25))
+        selected_columns = ["DATE", *range(1, 25)]
         dataset = dataset.loc[:, selected_columns]
 
         # Reshape to long format.
         dataset = dataset.melt(
             id_vars=["DATE"], var_name="Hour", value_name="Demand"
         )
-        dataset["Hour"] = pandas.to_numeric(dataset["Hour"])
-        dataset["Demand"] = pandas.to_numeric(dataset["Demand"])
+        dataset["Hour"] = pd.to_numeric(dataset["Hour"])
+        dataset["Demand"] = pd.to_numeric(dataset["Demand"])
 
         # Convert date and hour columns into hourly timestamps.
-        dataset["Datetime"] = pandas.to_datetime(
+        dataset["Datetime"] = pd.to_datetime(
             dataset["DATE"]
-        ) + pandas.to_timedelta(dataset["Hour"], unit="h")
+        ) + pd.to_timedelta(dataset["Hour"], unit="h")
 
         # Retain only Datetime and Demand columns.
         dataset = dataset[["Datetime", "Demand"]]
         all_data.append(dataset)
 
     # Combine and aggregate data across all regions.
-    combined = pandas.concat(all_data)
+    combined = pd.concat(all_data)
     combined = combined.groupby("Datetime").sum().sort_index()
 
     # Extract the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         combined["Demand"].values, index=combined.index
     )
 

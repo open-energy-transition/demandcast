@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -10,7 +9,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 
 
 def _normalize_scenarios(scenarios: list[str]) -> list[str]:
@@ -198,7 +197,7 @@ def _get_scenarios_for_model(
     )
 
     if model is not None:
-        if model.upper() not in scenarios_for_model.keys():
+        if model.upper() not in scenarios_for_model:
             raise ValueError(
                 "model must be one of the following: "
                 f"{list(scenarios_for_model.keys())}."
@@ -213,7 +212,7 @@ def _get_scenarios_for_model(
             if scenario.upper() not in available_scenarios:
                 raise ValueError(
                     "scenario must be one of the following for model "
-                    f"{model_key}: {scenarios_for_model[model_key]}."
+                    f"{model_key}: {available_scenarios}."
                 )
             # Use the specified scenario.
             scenarios_for_model[model_key] = [scenario.upper()]
@@ -260,7 +259,7 @@ def get_year_and_scenario_combinations(
     """
     # Get the list of available years sorted without duplicates.
     available_years = sorted(
-        list(set(available_historical_years + available_future_years))
+        set(available_historical_years + available_future_years)
     )
 
     # Get the list of years and scenarios based on the input parameters.
@@ -277,13 +276,15 @@ def get_year_and_scenario_combinations(
             # If the year is both historical and future, include both
             # options.
             year_scenario_list.append((year, None))
-            for scenario in scenarios:
-                year_scenario_list.append((year, scenario))
+            year_scenario_list.extend(
+                (year, scenario) for scenario in scenarios
+            )
         elif year in available_historical_years:
             year_scenario_list.append((year, None))
         elif year in available_future_years:
-            for scenario in scenarios:
-                year_scenario_list.append((year, scenario))
+            year_scenario_list.extend(
+                (year, scenario) for scenario in scenarios
+            )
 
     return year_scenario_list
 
@@ -331,7 +332,7 @@ def get_year_model_and_scenario_combinations(
     """
     # Get the list of available years sorted without duplicates.
     available_years = sorted(
-        list(set(available_historical_years + available_future_years))
+        set(available_historical_years + available_future_years)
     )
 
     # Get the list of years and scenarios based on the input parameters.
@@ -356,10 +357,10 @@ def get_year_model_and_scenario_combinations(
                 model_key,
                 scenario_keys,
             ) in scenarios_for_model.items():
-                for scenario_key in scenario_keys:
-                    year_model_scenario_list.append(
-                        (year, model_key, scenario_key)
-                    )
+                year_model_scenario_list.extend(
+                    (year, model_key, scenario_key)
+                    for scenario_key in scenario_keys
+                )
         elif year in available_historical_years:
             year_model_scenario_list.append((year, None, None))
         elif year in available_future_years:
@@ -367,10 +368,10 @@ def get_year_model_and_scenario_combinations(
                 model_key,
                 scenario_keys,
             ) in scenarios_for_model.items():
-                for scenario_key in scenario_keys:
-                    year_model_scenario_list.append(
-                        (year, model_key, scenario_key)
-                    )
+                year_model_scenario_list.extend(
+                    (year, model_key, scenario_key)
+                    for scenario_key in scenario_keys
+                )
 
     return year_model_scenario_list
 
@@ -396,7 +397,7 @@ def _extend_historical_years(available_years: list[int]) -> list[int]:
         The extended list of available years.
     """
     # Get the current year and the last historical year.
-    current_year = pandas.Timestamp.now().year
+    current_year = pd.Timestamp.now().year
     last_historical_year = available_years[-1]
 
     # If the last historical year is already last year or later,
@@ -496,7 +497,7 @@ def get_years_and_scenarios(
 
     # Get the list of available years sorted without duplicates.
     available_years = sorted(
-        list(set(extended_available_historical_years + available_future_years))
+        set(extended_available_historical_years + available_future_years)
     )
 
     # Get the list of requested years.

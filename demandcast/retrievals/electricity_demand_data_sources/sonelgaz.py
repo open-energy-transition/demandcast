@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -16,7 +15,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.fetcher
 
 
@@ -61,7 +60,7 @@ def get_url() -> str:
     )
 
 
-def download_and_extract_data() -> pandas.Series:
+def download_and_extract_data() -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -85,7 +84,7 @@ def download_and_extract_data() -> pandas.Series:
     dataset = utils.fetcher.fetch_data(url, "excel")
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
@@ -98,17 +97,17 @@ def download_and_extract_data() -> pandas.Series:
     )
 
     # Define the new index.
-    index = pandas.to_datetime(
+    index = pd.to_datetime(
         dataset.iloc[:, 0].astype(str)
         + " "
         + (
             dataset.iloc[:, 1].astype(str).str.replace("h", "").astype(int) - 1
         ).astype(str),
         format="%Y-%m-%d %H",
-    ) + pandas.Timedelta(hours=1)
+    ) + pd.Timedelta(hours=1)
 
     # Define the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["Value"].values,
         index=index,
     )

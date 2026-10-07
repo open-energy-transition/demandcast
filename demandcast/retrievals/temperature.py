@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -15,8 +14,8 @@ import datetime
 import logging
 import os
 
-import numpy
-import pandas
+import numpy as np
+import pandas as pd
 import pytz
 import utils.config
 import utils.entities
@@ -160,7 +159,7 @@ def _load_gridded_temperature_data(
     for file_path, y in zip(temperature_data_file_paths, years_of_interest):
         if not os.path.exists(file_path) or (
             os.path.exists(file_path)
-            and y == pandas.Timestamp.now().year
+            and y == pd.Timestamp.now().year
             and climate_model is None
             and climate_scenario is None
         ):
@@ -227,10 +226,10 @@ def _load_gridded_population_data(
         If the scenario of the climate data is not valid.
     """
     # Define the available years for the historical population data.
-    available_historical_population_years = numpy.arange(2000, 2021, 5)
+    available_historical_population_years = np.arange(2000, 2021, 5)
 
     # Define the available years for the future population data.
-    available_future_population_years = numpy.arange(2025, 2101, 5)
+    available_future_population_years = np.arange(2025, 2101, 5)
 
     # Define the available scenarios for the population data.
     available_population_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
@@ -239,11 +238,11 @@ def _load_gridded_population_data(
     # of the temperature data.
     if climate_scenario is None:
         population_year = available_historical_population_years[
-            numpy.abs(available_historical_population_years - year).argmin()
+            np.abs(available_historical_population_years - year).argmin()
         ]
     else:
         population_year = available_future_population_years[
-            numpy.abs(available_future_population_years - year).argmin()
+            np.abs(available_future_population_years - year).argmin()
         ]
 
     # Find the scenario of the population data if the year of the
@@ -323,24 +322,24 @@ def _extract_temperature_in_most_populous_cells(
 
     # Find the closest grid cell in the temperature data to each of
     # the grid cells with the largest population.
-    selected_x_coords = numpy.array(
+    selected_x_coords = np.array(
         [
             temperature_data["x"]
             .sel(
                 x=temperature_data["x"].to_numpy()[
-                    numpy.abs(temperature_data["x"].to_numpy() - x).argmin()
+                    np.abs(temperature_data["x"].to_numpy() - x).argmin()
                 ]
             )
             .to_numpy()
             for x in x_coords
         ]
     )
-    selected_y_coords = numpy.array(
+    selected_y_coords = np.array(
         [
             temperature_data["y"]
             .sel(
                 y=temperature_data["y"].to_numpy()[
-                    numpy.abs(temperature_data["y"].to_numpy() - y).argmin()
+                    np.abs(temperature_data["y"].to_numpy() - y).argmin()
                 ]
             )
             .to_numpy()
@@ -382,7 +381,7 @@ def _extract_temperature_in_local_year(
     if projections:
         # Add 12 hours to the time coordinate to center the daily data
         # on noon.
-        temperature_data["time"] = temperature_data["time"] + pandas.Timedelta(
+        temperature_data["time"] = temperature_data["time"] + pd.Timedelta(
             hours=12
         )
 
@@ -392,15 +391,13 @@ def _extract_temperature_in_local_year(
 
     # Define the start and end date for the given year in local time.
     start_date = (
-        pandas.Timestamp(str(year) + "-01-01 00:00:00", tz=entity_time_zone)
+        pd.Timestamp(str(year) + "-01-01 00:00:00", tz=entity_time_zone)
         .tz_convert("UTC")
         .tz_localize(None)
     )
     try:
         end_date = (
-            pandas.Timestamp(
-                str(year) + "-12-31 23:59:59", tz=entity_time_zone
-            )
+            pd.Timestamp(str(year) + "-12-31 23:59:59", tz=entity_time_zone)
             .tz_convert("UTC")
             .tz_localize(None)
         )
@@ -409,9 +406,7 @@ def _extract_temperature_in_local_year(
         # falls in the ambiguous hour due to the end of daylight saving
         # time. In this case, we set the end date to 22:59:59.
         end_date = (
-            pandas.Timestamp(
-                str(year) + "-12-31 22:59:59", tz=entity_time_zone
-            )
+            pd.Timestamp(str(year) + "-12-31 22:59:59", tz=entity_time_zone)
             .tz_convert("UTC")
             .tz_localize(None)
         )
@@ -428,7 +423,7 @@ def _get_temperature_in_most_populous_cells(
     climate_scenario: str | None,
     entity_time_zone: datetime.tzinfo,
     number_of_grid_cells: int = 1,
-) -> pandas.Series:
+) -> pd.Series:
     """
     Get the temperature data for the most populous grid cells.
 
@@ -527,10 +522,10 @@ def _get_temperature_in_most_populous_cells(
 
 
 def _build_temperature_database(
-    temperature_time_series_top_1: pandas.Series,
-    temperature_time_series_top_3: pandas.Series,
+    temperature_time_series_top_1: pd.Series,
+    temperature_time_series_top_3: pd.Series,
     entity_time_zone: datetime.tzinfo,
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     """
     Build the temperature database for the given country or subdivision.
 
@@ -554,7 +549,7 @@ def _build_temperature_database(
         Temperature time series with added statistics.
     """
     # Create an empty DataFrame to store the temperature data.
-    temperature_database = pandas.DataFrame(
+    temperature_database = pd.DataFrame(
         index=temperature_time_series_top_1.index
     )
 
@@ -598,7 +593,7 @@ def _build_temperature_database(
     )
 
     # Get the annual average temperature.
-    annual_average_temperature = pandas.Series(
+    annual_average_temperature = pd.Series(
         temperature_time_series_top_1.tz_localize(None)
         .resample("YE")
         .mean()
@@ -607,11 +602,11 @@ def _build_temperature_database(
     )
 
     # Get the 5 and 95 percentiles of the temperature.
-    temperature_5_percentile = pandas.Series(
+    temperature_5_percentile = pd.Series(
         temperature_time_series_top_1.quantile(0.05),
         index=temperature_time_series_top_1.index,
     )
-    temperature_95_percentile = pandas.Series(
+    temperature_95_percentile = pd.Series(
         temperature_time_series_top_1.quantile(0.95),
         index=temperature_time_series_top_1.index,
     )
@@ -712,12 +707,10 @@ def run_data_retrieval(
     # Define the available years for the historical weather data.
     # Historical data is available from 1940 but it is not necessary to
     # go that far back for our purposes.
-    available_historical_years = list(
-        range(1990, pandas.Timestamp.now().year + 1)
-    )
+    available_historical_years = list(range(1990, pd.Timestamp.now().year + 1))
 
     # Define the available years for the future weather data.
-    available_future_years = list(range(pandas.Timestamp.now().year, 2101))
+    available_future_years = list(range(pd.Timestamp.now().year, 2101))
 
     # Get the available scenarios for the weather data.
     available_scenarios_for_model = get_available_scenarios_for_model()
@@ -779,7 +772,7 @@ def run_data_retrieval(
             ) or (
                 os.path.exists(file_path_without_ext + ".parquet")
                 and os.path.exists(file_path_without_ext + ".csv")
-                and year == pandas.Timestamp.now().year
+                and year == pd.Timestamp.now().year
                 and model is None
                 and scenario is None
             ):

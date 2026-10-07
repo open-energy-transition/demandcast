@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -22,13 +21,13 @@ import os
 # isort: off
 # torch must be imported before pandas — pandas side-effects corrupt
 # the Windows DLL loader state for torch's c10.dll initialisation.
-import utils.torch_windows  # noqa: E402
+import utils.torch_windows
 
 _dll_dir_tokens = utils.torch_windows.enable_torch_dll_directory()
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
-import torch.nn as nn  # noqa: E402
-import pandas  # noqa: E402
+from torch import nn  # noqa: E402
+import pandas as pd  # noqa: E402
 
 # isort: on
 import utils.config  # noqa: E402
@@ -208,9 +207,9 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
 
     def fit(
         self,
-        X: pandas.DataFrame | np.ndarray,
-        y: pandas.Series | np.ndarray,
-        groups: pandas.Series | np.ndarray | None = None,
+        X: pd.DataFrame | np.ndarray,
+        y: pd.Series | np.ndarray,
+        groups: pd.Series | np.ndarray | None = None,
     ) -> LSTMRegressor:
         """
         Fit the LSTM model.
@@ -277,8 +276,8 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
 
     def predict(
         self,
-        X: pandas.DataFrame | np.ndarray,
-        groups: pandas.Series | np.ndarray | None = None,
+        X: pd.DataFrame | np.ndarray,
+        groups: pd.Series | np.ndarray | None = None,
     ) -> np.ndarray:
         """
         Predict with the trained LSTM.
@@ -350,7 +349,7 @@ def _read_configuration() -> BaseModel:
         "lstm_config.yaml",
     )
 
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         raw_config = yaml.safe_load(f)
 
     try:
@@ -465,7 +464,7 @@ def get_initialized_model() -> LSTMRegressor:
 
 
 def train(
-    prepared_dataset: dict[str, dict[str, pandas.DataFrame | pandas.Series]],
+    prepared_dataset: dict[str, dict[str, pd.DataFrame | pd.Series]],
 ) -> LSTMRegressor:
     """
     Train an LSTM model on the prepared dataset.
@@ -507,11 +506,9 @@ def predict(
     lstm_model: LSTMRegressor,
     prepared_dataset: dict[
         str,
-        pandas.Series
-        | pandas.DataFrame
-        | dict[str, pandas.DataFrame | pandas.Series],
+        pd.Series | pd.DataFrame | dict[str, pd.DataFrame | pd.Series],
     ],
-) -> pandas.Series | dict[str, pandas.Series]:
+) -> pd.Series | dict[str, pd.Series]:
     """
     Make predictions with a trained LSTM model.
 
@@ -548,15 +545,15 @@ def predict(
             prepared_dataset["features"],
             groups=prepared_dataset.get("group"),
         )
-        return pandas.Series(preds)
+        return pd.Series(preds)
 
-    predictions: dict[str, pandas.Series] = {}
+    predictions: dict[str, pd.Series] = {}
     for split_name, data in prepared_dataset.items():
         preds = lstm_model.predict(
             data["features"],
             groups=data.get("group"),
         )
-        predictions[split_name] = pandas.Series(preds)
+        predictions[split_name] = pd.Series(preds)
         logging.info(
             f"Predictions made for {split_name} set: {len(preds)} records."
         )

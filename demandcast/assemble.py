@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -12,11 +11,11 @@ import datetime
 import glob
 import logging
 import os
+from collections.abc import Callable
 from functools import reduce
-from typing import Callable, Optional
 
 import dask.dataframe
-import pandas
+import pandas as pd
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
 import retrievals.population
@@ -45,14 +44,14 @@ def _read_and_check_configuration() -> BaseModel:
     # Define the configuration model.
     class ConfigModel(BaseModel):
         target_use: str
-        file: Optional[str] = None
-        start_year: Optional[int] = None
-        end_year: Optional[int] = None
-        scenario_for_annual_electricity_demand_per_capita: Optional[str] = None
-        scenario_for_gdp_ppp_per_capita: Optional[str] = None
-        scenario_for_population: Optional[str] = None
-        scenario_for_temperature: Optional[str] = None
-        climate_model_for_temperature: Optional[str] = None
+        file: str | None = None
+        start_year: int | None = None
+        end_year: int | None = None
+        scenario_for_annual_electricity_demand_per_capita: str | None = None
+        scenario_for_gdp_ppp_per_capita: str | None = None
+        scenario_for_population: str | None = None
+        scenario_for_temperature: str | None = None
+        climate_model_for_temperature: str | None = None
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(
@@ -258,12 +257,10 @@ def _get_files_to_load(
         # For electricity demand, find the folder with the most recent
         # date as name.
         data_folder = max(
-            [
-                os.path.join(data_folder, subfolder)
-                for subfolder in os.listdir(data_folder)
-                if os.path.isdir(os.path.join(data_folder, subfolder))
-                and _is_date(subfolder)
-            ]
+            os.path.join(data_folder, subfolder)
+            for subfolder in os.listdir(data_folder)
+            if os.path.isdir(os.path.join(data_folder, subfolder))
+            and _is_date(subfolder)
         )
 
         # For electricity demand, get the data source with the longest
@@ -297,9 +294,9 @@ def _get_files_to_load(
 
         if variable == "temperature":
             # Add all matching files for temperature.
-            files_to_load[entity_code] = [
-                f for f in glob.glob(os.path.join(data_folder, file_pattern))
-            ]
+            files_to_load[entity_code] = glob.glob(
+                os.path.join(data_folder, file_pattern)
+            )
 
             if not files_to_load[entity_code]:
                 logging.warning(
@@ -360,21 +357,21 @@ def _load_data_for_entity(
             continue
 
         # Read the current parquet file.
-        current_data = pandas.read_parquet(file_path)
+        current_data = pd.read_parquet(file_path)
 
         # Append to the entity dataframe.
         entity_data.append(current_data)
 
     if entity_data:
         # Concatenate all data for the entity.
-        entity_data = pandas.concat(entity_data)
+        entity_data = pd.concat(entity_data)
     else:
         # If no data was loaded, return None.
         return None
 
     # Ensure specified columns are numeric.
     for column in numeric_columns:
-        entity_data[column] = pandas.to_numeric(
+        entity_data[column] = pd.to_numeric(
             entity_data[column], errors="coerce"
         )
 
@@ -719,9 +716,7 @@ def _merge_datasets(
         merged_entities = merged_dataset["Entity code"].unique()
         original_entities = dataset["Entity code"].unique()
         excluded_entities = set(original_entities) - set(merged_entities)
-        logging.info(
-            f" - Dataset {i + 1}: {excluded_entities if excluded_entities else 'None'}"
-        )
+        logging.info(f" - Dataset {i + 1}: {excluded_entities or 'None'}")
 
     return merged_dataset
 

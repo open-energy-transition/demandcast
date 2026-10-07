@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -15,7 +14,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.fetcher
 
 
@@ -56,7 +55,7 @@ def get_url() -> str:
     return "https://data.mendeley.com/public-files/datasets/tcmmj4t6f4/files/1b23f797-b28e-445b-85ef-e8c773922a23/file_downloaded"
 
 
-def download_and_extract_data() -> pandas.Series:
+def download_and_extract_data() -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -80,22 +79,22 @@ def download_and_extract_data() -> pandas.Series:
     dataset = utils.fetcher.fetch_data(url, "html", read_as="excel_table")
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
 
     # Extract the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["Carga Real"].values,
-        index=pandas.to_datetime(dataset["Fecha Hora"]),
+        index=pd.to_datetime(dataset["Fecha Hora"]),
     )
 
     # Add one hour to the index because the electricity demand seems
     # to be provided at the beginning of the hour.
     electricity_demand_time_series.index = (
-        electricity_demand_time_series.index + pandas.Timedelta(hours=1)
+        electricity_demand_time_series.index + pd.Timedelta(hours=1)
     )
 
     # Add the timezone information to the index.

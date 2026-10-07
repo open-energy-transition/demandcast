@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -12,7 +11,7 @@ import json
 import logging
 import os
 
-import pandas
+import pandas as pd
 import requests
 import yaml
 from dotenv import load_dotenv
@@ -182,7 +181,7 @@ def upload_to_zenodo(
         )
 
     # Load the metadata from the YAML file.
-    with open(author_metadata_path, "r", encoding="utf-8") as file:
+    with open(author_metadata_path, encoding="utf-8") as file:
         author_metadata = yaml.safe_load(file)
 
     # Extract creators and contributors from the metadata.
@@ -194,7 +193,7 @@ def upload_to_zenodo(
         "metadata": {
             "title": title,
             "upload_type": "dataset",
-            "publication_date": pandas.Timestamp.now().strftime("%Y-%m-%d"),
+            "publication_date": pd.Timestamp.now().strftime("%Y-%m-%d"),
             "description": description,
             "creators": creators,
             "contributors": contributors,

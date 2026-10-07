@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -18,7 +17,7 @@ import cartopy.crs
 import cartopy.feature
 import matplotlib.cm
 import matplotlib.colors
-import matplotlib.pyplot
+import matplotlib.pyplot as plt
 import utils.entities
 import utils.shapes
 
@@ -52,7 +51,7 @@ def plot(figure_directory: str) -> None:
     data_crs = cartopy.crs.PlateCarree()
 
     # Define the colormap.
-    map_cmap = matplotlib.pyplot.get_cmap("Blues")
+    map_cmap = plt.get_cmap("Blues")
 
     # Define the extent of the colormap.
     lower_bound = 0.2
@@ -62,7 +61,7 @@ def plot(figure_directory: str) -> None:
     alpha = 0.8
 
     # Initialize the figure.
-    fig, ax = matplotlib.pyplot.subplots(
+    fig, ax = plt.subplots(
         figsize=(12, 16), subplot_kw={"projection": map_projection}
     )
 
@@ -155,7 +154,7 @@ def plot(figure_directory: str) -> None:
         transform=ax.transAxes,
         color="tab:blue",
     )
-    aed_title = matplotlib.pyplot.text(
+    aed_title = plt.text(
         0.5,
         1.05,
         "Countries and subdivisions with publicly available\nhigh-resolution electricity demand data",

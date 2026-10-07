@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,9 +10,8 @@ Description:
 import importlib
 import logging
 import os
-from typing import Optional
 
-import pandas
+import pandas as pd
 import utils.config
 import utils.entities
 import utils.uploader
@@ -39,9 +37,9 @@ def _read_and_check_configuration() -> BaseModel:
     class ConfigModel(BaseModel):
         target_platform: str
         data_directory: str
-        gcs_bucket_name: Optional[str] = None
-        publish_to_zenodo: Optional[bool] = None
-        made_by_oet: Optional[bool] = None
+        gcs_bucket_name: str | None = None
+        publish_to_zenodo: bool | None = None
+        made_by_oet: bool | None = None
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(
@@ -70,7 +68,7 @@ if __name__ == "__main__":
     config = _read_and_check_configuration()
 
     # Get the date of upload.
-    date_of_upload = pandas.Timestamp.today().strftime("%Y-%m-%d")
+    date_of_upload = pd.Timestamp.today().strftime("%Y-%m-%d")
 
     for file_name in os.listdir(config.data_directory):
         if file_name.endswith(".parquet"):

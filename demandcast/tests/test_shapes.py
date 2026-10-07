@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,7 +10,6 @@ from unittest.mock import patch
 
 import geopandas
 import pytest
-import utils.entities
 import utils.shapes
 from shapely import Polygon
 
@@ -211,9 +209,9 @@ def test_read_non_standard_shape_codes():
 
     # Check if the returned codes are in the expected format.
     assert isinstance(codes, dict)
-    assert "eia" in codes.keys()
-    assert "tepco" in codes.keys()
-    assert "neso" in codes.keys()
+    assert "eia" in codes
+    assert "tepco" in codes
+    assert "neso" in codes
     assert "BRA_N" in codes["ons"]
     assert "MEX_PEN" in codes["cenace"]
 

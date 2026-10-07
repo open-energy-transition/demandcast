@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -18,7 +17,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.fetcher
 
 
@@ -59,7 +58,7 @@ def get_url() -> str:
     return "https://zenodo.org/records/7537890/files/loadarea_10min_2017Jan_2022Jun.csv?download=1"
 
 
-def download_and_extract_data() -> pandas.Series:
+def download_and_extract_data() -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -86,7 +85,7 @@ def download_and_extract_data() -> pandas.Series:
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
@@ -101,15 +100,15 @@ def download_and_extract_data() -> pandas.Series:
     )
 
     # Extract the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["National Demand"].values,
-        index=pandas.to_datetime(dataset["datetime"]),
+        index=pd.to_datetime(dataset["datetime"]),
     )
 
     # Add 10 minutes to the index because the electricity demand
     # seems to be provided at the beginning of the time-interval
     electricity_demand_time_series.index = (
-        electricity_demand_time_series.index + pandas.Timedelta(minutes=10)
+        electricity_demand_time_series.index + pd.Timedelta(minutes=10)
     )
 
     # Add the timezone information to the index.

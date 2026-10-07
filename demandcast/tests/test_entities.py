@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -10,7 +9,7 @@ Description:
 import datetime
 from unittest.mock import patch
 
-import pandas
+import pandas as pd
 import pytest
 import pytz
 import utils.entities
@@ -161,7 +160,7 @@ def test_get_all_codes_with_all_data():
 
         # Mock the return value of pandas.read_csv to return a sample
         # DataFrame.
-        mock_read_csv.return_value = pandas.DataFrame(
+        mock_read_csv.return_value = pd.DataFrame(
             {
                 "historical_population": [True, True, True, False],
                 "historical_electricity_demand_per_capita": [
@@ -557,12 +556,14 @@ def test_time_zones_errors():
     ]
 
     # Check if the function raises errors for invalid time zones.
-    with pytest.raises(ValueError):
-        with patch(
+    with (
+        pytest.raises(ValueError),
+        patch(
             "utils.entities._read_entities_info",
             return_value=entity_with_invalid_time_zone,
-        ):
-            utils.entities._get_time_zones_in_data_source("dummy_data_source")
+        ),
+    ):
+        utils.entities._get_time_zones_in_data_source("dummy_data_source")
 
     # Define sample yaml file content with missing time zone.
     entity_with_missing_time_zone = [
@@ -577,12 +578,14 @@ def test_time_zones_errors():
     ]
 
     # Check if the function raises errors for missing time zones.
-    with pytest.raises(ValueError):
-        with patch(
+    with (
+        pytest.raises(ValueError),
+        patch(
             "utils.entities._read_entities_info",
             return_value=entity_with_missing_time_zone,
-        ):
-            utils.entities._get_time_zones_in_data_source("dummy_data_source")
+        ),
+    ):
+        utils.entities._get_time_zones_in_data_source("dummy_data_source")
 
     # Check if the function raises errors when the code is not found in
     # any data source, the time zone is not found, or there are
@@ -610,7 +613,7 @@ def test_time_zones_errors():
         mock_get_data_sources.return_value = ["source1", "source2"]
 
         # Define two different time zones.
-        time_zone1 = datetime.timezone.utc
+        time_zone1 = datetime.UTC
         time_zone2 = datetime.timezone(datetime.timedelta(hours=-1))
 
         # Mock the return value of _get_time_zones to return different
@@ -690,14 +693,16 @@ def test_date_ranges_errors():
     ]
 
     # Check if the function raises an error for invalid date ranges.
-    with pytest.raises(ValueError):
-        with patch(
+    with (
+        pytest.raises(ValueError),
+        patch(
             "utils.entities._read_entities_info",
             return_value=entities,
-        ):
-            utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-                "dummy_data_source"
-            )
+        ),
+    ):
+        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+            "dummy_data_source"
+        )
 
 
 def test_years():

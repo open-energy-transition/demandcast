@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -100,53 +99,52 @@ def _zenodo_request(
     # and response types.
     if error:
         response.status_code = 500
-    else:
-        if request_type == "get":
-            response.status_code = 200
-            if response_type == "actual":
-                response.json.return_value = [
-                    {
-                        "id": "12345",
-                        "metadata": {
-                            "title": (
-                                "Global Dataset of Hourly or Sub-Hourly "
-                                "Historical Electricity Demand"
-                            )
-                        },
-                        "submitted": submitted,
-                    }
-                ]
-            elif response_type == "synthetic":
-                response.json.return_value = [
-                    {
-                        "id": "12345",
-                        "metadata": {
-                            "title": (
-                                "Global Dataset of Hourly Synthetic "
-                                "Electricity Demand"
-                            )
-                        },
-                        "submitted": submitted,
-                    }
-                ]
-            elif response_type == "file":
-                response.json.return_value = [
-                    {"id": "12345", "filename": "file.csv"}
-                ]
-            elif response_type == "no_depositions":
-                response.json.return_value = []
-        elif request_type == "post":
-            if response_type == "new_deposition":
-                response.status_code = 201
-                response.json.return_value = {"id": "12345"}
-            elif response_type == "upload_file":
-                response.status_code = 201
-            elif response_type == "publish":
-                response.status_code = 202
-        elif request_type == "put":
-            response.status_code = 200
-        elif request_type == "delete":
-            response.status_code = 204
+    elif request_type == "get":
+        response.status_code = 200
+        if response_type == "actual":
+            response.json.return_value = [
+                {
+                    "id": "12345",
+                    "metadata": {
+                        "title": (
+                            "Global Dataset of Hourly or Sub-Hourly "
+                            "Historical Electricity Demand"
+                        )
+                    },
+                    "submitted": submitted,
+                }
+            ]
+        elif response_type == "synthetic":
+            response.json.return_value = [
+                {
+                    "id": "12345",
+                    "metadata": {
+                        "title": (
+                            "Global Dataset of Hourly Synthetic "
+                            "Electricity Demand"
+                        )
+                    },
+                    "submitted": submitted,
+                }
+            ]
+        elif response_type == "file":
+            response.json.return_value = [
+                {"id": "12345", "filename": "file.csv"}
+            ]
+        elif response_type == "no_depositions":
+            response.json.return_value = []
+    elif request_type == "post":
+        if response_type == "new_deposition":
+            response.status_code = 201
+            response.json.return_value = {"id": "12345"}
+        elif response_type == "upload_file":
+            response.status_code = 201
+        elif response_type == "publish":
+            response.status_code = 202
+    elif request_type == "put":
+        response.status_code = 200
+    elif request_type == "delete":
+        response.status_code = 204
 
     return response
 

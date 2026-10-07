@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -12,10 +11,10 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 
 
-def download_electricity_demand_per_capita() -> pandas.DataFrame:
+def download_electricity_demand_per_capita() -> pd.DataFrame:
     """
     Download historical electricity demand per capita from Ember.
 
@@ -27,8 +26,8 @@ def download_electricity_demand_per_capita() -> pandas.DataFrame:
     logging.info("Downloading electricity demand per capita data from Ember.")
 
     # Download the electricity demand dataset from Ember.
-    electricity_dataset = pandas.read_csv(
-        "https://storage.googleapis.com/emb-prod-bkt-publicdata/public-downloads/yearly_full_release_long_format.csv"  # noqa: W505
+    electricity_dataset = pd.read_csv(
+        "https://storage.googleapis.com/emb-prod-bkt-publicdata/public-downloads/yearly_full_release_long_format.csv"
     )
 
     # Extract the electricity demand per capita data.

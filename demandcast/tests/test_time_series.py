@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -9,8 +8,8 @@ Description:
 
 import logging
 
-import numpy
-import pandas
+import numpy as np
+import pandas as pd
 import pytest
 import pytz
 import utils.time_series
@@ -35,9 +34,9 @@ def sample_time_series():
         and some missing values.
     """
     # Define a one-year-long time series with 30-minute resolution.
-    dates = pandas.date_range(
-        "2023", "2024", freq="30min", tz=local_time_zone
-    )[:-1]
+    dates = pd.date_range("2023", "2024", freq="30min", tz=local_time_zone)[
+        :-1
+    ]
 
     # Define the data.
     data = list(range(len(dates)))
@@ -47,7 +46,7 @@ def sample_time_series():
     data[3] = None
     data[10] = None
 
-    return pandas.Series(data, index=dates)
+    return pd.Series(data, index=dates)
 
 
 def test_add_missing_time_steps(sample_time_series):
@@ -127,7 +126,7 @@ def test_linearly_interpolate(sample_time_series):
         and some missing values.
     """
     # Check the data point expected to be interpolated.
-    assert numpy.isnan(sample_time_series.iloc[10])
+    assert np.isnan(sample_time_series.iloc[10])
 
     # Count the number of missing data points.
     missing_data_points = sample_time_series.isna().sum()
@@ -142,8 +141,8 @@ def test_linearly_interpolate(sample_time_series):
     assert interpolated_time_series.isna().sum() == missing_data_points - 1
 
     # Check correct interpolation.
-    assert numpy.isnan(interpolated_time_series.iloc[2])
-    assert numpy.isnan(interpolated_time_series.iloc[3])
+    assert np.isnan(interpolated_time_series.iloc[2])
+    assert np.isnan(interpolated_time_series.iloc[3])
     assert interpolated_time_series.iloc[10] == 10
 
 
@@ -182,7 +181,7 @@ def test_harmonize_time_series(sample_time_series):
         resample=False,
         interpolate_missing_values=False,
     )
-    assert isinstance(not_harmonized_time_series, pandas.Series)
+    assert isinstance(not_harmonized_time_series, pd.Series)
 
 
 def test_check_time_series_data_quality_logs(caplog, sample_time_series):
@@ -207,10 +206,10 @@ def test_check_time_series_data_quality_logs(caplog, sample_time_series):
         assert "missing values" in caplog.text
 
     # Add a duplicate index and a zero value for testing.
-    time_series = pandas.concat(
+    time_series = pd.concat(
         [
             sample_time_series,
-            pandas.Series([0], index=[sample_time_series.index[5]]),
+            pd.Series([0], index=[sample_time_series.index[5]]),
         ]
     )
 
@@ -229,7 +228,7 @@ def test_convert_from_yearly_to_hourly():
     years.
     """
     # Prepare sample yearly data for 2020 and 2021.
-    values = pandas.Series([100, 200], index=pandas.Index([2020, 2021]))
+    values = pd.Series([100, 200], index=pd.Index([2020, 2021]))
 
     # Convert to hourly.
     hourly_series = utils.time_series.convert_from_yearly_to_hourly(
@@ -246,11 +245,11 @@ def test_convert_from_yearly_to_hourly():
 
     # Check that each year's values are correctly assigned
     assert hourly_series.iloc[0] == 100
-    idx_2020 = pandas.Timestamp("2020-12-31 23:00:00", tz=local_time_zone)
+    idx_2020 = pd.Timestamp("2020-12-31 23:00:00", tz=local_time_zone)
     assert hourly_series[idx_2020] == 100
-    idx_2021 = pandas.Timestamp("2021-01-01 00:00:00", tz=local_time_zone)
+    idx_2021 = pd.Timestamp("2021-01-01 00:00:00", tz=local_time_zone)
     assert hourly_series[idx_2021] == 200
-    idx_2021_end = pandas.Timestamp("2021-12-31 23:00:00", tz=local_time_zone)
+    idx_2021_end = pd.Timestamp("2021-12-31 23:00:00", tz=local_time_zone)
     assert hourly_series[idx_2021_end] == 200
 
     # Check all unique values are as expected
@@ -274,8 +273,8 @@ def test_clean_data(sample_time_series):
     """
     # Add a duplicate index and a zero value for testing.
     time_series = sample_time_series.copy()
-    time_series = pandas.concat(
-        [time_series, pandas.Series([0], index=[time_series.index[5]])]
+    time_series = pd.concat(
+        [time_series, pd.Series([0], index=[time_series.index[5]])]
     )
     time_series.iloc[1] = 0
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -13,7 +12,7 @@ import functools
 import logging
 import os
 
-import pandas
+import pandas as pd
 import pycountry
 import pytz
 import yaml
@@ -118,9 +117,9 @@ def get_name_from_code(code: str) -> str:
     if "_" not in code and "-" not in code:
         iso_alpha_3_code = code
     elif "_" in code:
-        iso_alpha_3_code = code.split("_")[0]
+        iso_alpha_3_code = code.split("_", maxsplit=1)[0]
     else:
-        iso_alpha_3_code = code.split("-")[0]
+        iso_alpha_3_code = code.split("-", maxsplit=1)[0]
 
     # Get the ISO Alpha-2 code of the country itself or the country to
     # which the subdivision belongs.
@@ -174,14 +173,13 @@ def get_name_from_code(code: str) -> str:
                 raise ValueError(
                     "pycountry.subdivisions should not return a list."
                 )
-            elif subdivision is None:
+            if subdivision is None:
                 raise ValueError(
                     f"Subdivision with code {subdivision_code} not found in "
                     "pycountry or any of the yaml files of the electricity "
                     "demand data sources."
                 )
-            else:
-                name = subdivision.name
+            name = subdivision.name
 
     return name
 
@@ -283,7 +281,7 @@ def _read_entities_info(
         )
 
     # Read the content from the file.
-    with open(file_path, "r", encoding="utf-8") as file:
+    with open(file_path, encoding="utf-8") as file:
         content = yaml.safe_load(file)
 
     # Return the information of the countries and subdivisions.
@@ -450,7 +448,7 @@ def _get_all_codes_with_all_data() -> list[str]:
         required data is available.
     """
     # Read the CSV file containing the available data information.
-    data = pandas.read_csv(
+    data = pd.read_csv(
         os.path.join(
             utils.config.read_folders_structure()["checks_folder"],
             "data_availability_summary.csv",
@@ -553,13 +551,11 @@ def check_and_get_codes_with(
                     f"{data_source}. Please choose one of the following: "
                     f"{', '.join(all_codes)}"
                 )
-            else:
-                raise ValueError(
-                    f"Code {code} does not have {feature}. Please choose "
-                    f"one of the following: {', '.join(all_codes)}"
-                )
-        else:
-            codes = [code]
+            raise ValueError(
+                f"Code {code} does not have {feature}. Please choose "
+                f"one of the following: {', '.join(all_codes)}"
+            )
+        codes = [code]
 
     elif file_path is not None:
         # Get the list of countries and subdivisions available on the
@@ -587,9 +583,8 @@ def check_and_get_codes_with(
                 "None of the codes in the file are available. Please choose "
                 f"from the following: {', '.join(all_codes)}"
             )
-        else:
-            # If there are codes left, return them.
-            codes = remaining_codes
+        # If there are codes left, return them.
+        codes = remaining_codes
     else:
         # If no code or file path is provided, use all available codes.
         codes = all_codes
@@ -865,7 +860,7 @@ def _get_time_zone_of_subdivision(code: str) -> datetime.tzinfo:
         # Get the time zone defined in the yaml files.
         return _get_defined_time_zone_for_code(code)
 
-    elif code in subdivision_codes_without_defined_time_zone:
+    if code in subdivision_codes_without_defined_time_zone:
         # Get the shape of the subdivision, which must be a standard
         # shape.
         subdivision_shape = utils.shapes.get_standard_shape(code)
@@ -887,8 +882,7 @@ def _get_time_zone_of_subdivision(code: str) -> datetime.tzinfo:
 
         return pytz.timezone(time_zone_name)
 
-    else:
-        raise ValueError(f"Code {code} is not recognized or not available.")
+    raise ValueError(f"Code {code} is not recognized or not available.")
 
 
 def get_time_zone(code: str) -> datetime.tzinfo:
@@ -919,10 +913,9 @@ def get_time_zone(code: str) -> datetime.tzinfo:
         # If the code specifies a subdivision, get the time zone of the
         # subdivision.
         return _get_time_zone_of_subdivision(code)
-    else:
-        # If the code specifies a country, get the time zone of the
-        # country.
-        return _get_time_zone_of_country(code)
+    # If the code specifies a country, get the time zone of the
+    # country.
+    return _get_time_zone_of_country(code)
 
 
 def read_date_ranges_of_electricity_demand_in_data_source(
@@ -1084,18 +1077,18 @@ def get_available_years(code: str) -> list[int]:
     # Convert the start and end dates to the time zone of the country or
     # subdivision.
     start_date = (
-        pandas.to_datetime(start_date)
+        pd.to_datetime(start_date)
         .tz_localize(entity_time_zone)
         .tz_convert("UTC")
     )
     end_date = (
-        pandas.to_datetime(end_date)
+        pd.to_datetime(end_date)
         .tz_localize(entity_time_zone)
         .tz_convert("UTC")
     )
 
     # Return the years of the data availability.
-    return [year for year in range(start_date.year, end_date.year + 1)]
+    return list(range(start_date.year, end_date.year + 1))
 
 
 def get_continent_code(code: str) -> str:
@@ -1123,7 +1116,7 @@ def get_continent_code(code: str) -> str:
     """
     # Get the ISO Alpha-3 code of the country or of the country to
     # which the subdivision belongs.
-    iso_alpha_3_code = code.split("_")[0]
+    iso_alpha_3_code = code.split("_", maxsplit=1)[0]
 
     continent_codes = _read_continent_codes()
     if iso_alpha_3_code in continent_codes:

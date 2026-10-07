@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -14,7 +13,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -30,7 +29,7 @@ def redistribute() -> bool:
     """
     logging.debug("Open data.")
     logging.debug(
-        "Source: https://www.grupoice.com/wps/wcm/connect/328d1cc7-6796-44cb-a981-8dca6043c983/Reglamento_funcionamiento_CENCE.pdf?MOD=AJPERES&CACHEID=ROOTWORKSPACE-328d1cc7-6796-44cb-a981-8dca6043c983-nWcNMD."  # noqa: W505
+        "Source: https://www.grupoice.com/wps/wcm/connect/328d1cc7-6796-44cb-a981-8dca6043c983/Reglamento_funcionamiento_CENCE.pdf?MOD=AJPERES&CACHEID=ROOTWORKSPACE-328d1cc7-6796-44cb-a981-8dca6043c983-nWcNMD."
     )
     return True
 
@@ -97,7 +96,7 @@ def get_url(year: int) -> str:
     )
 
 
-def download_and_extract_data_for_request(year: int) -> pandas.Series:
+def download_and_extract_data_for_request(year: int) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -135,22 +134,22 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
 
     # Extract the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["MW"].values,
-        index=pandas.to_datetime(dataset["fechaHora"]),
+        index=pd.to_datetime(dataset["fechaHora"]),
     )
 
     # Add 15 minutes to each timestamp to represent the end of the time
     # period.
     electricity_demand_time_series.index = (
-        electricity_demand_time_series.index + pandas.Timedelta(minutes=15)
+        electricity_demand_time_series.index + pd.Timedelta(minutes=15)
     )
 
     # Add the timezone information.

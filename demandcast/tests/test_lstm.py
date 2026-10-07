@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -176,9 +175,9 @@ def test_read_configuration_raises_on_bad_type():
             "builtins.open",
             mock_open(read_data="n_timesteps: not_an_int\n"),
         ),
+        pytest.raises(ValueError, match="Configuration validation"),
     ):
-        with pytest.raises(ValueError, match="Configuration validation"):
-            lstm_module._read_configuration()
+        lstm_module._read_configuration()
 
 
 # ----------------------------------------------------------------------

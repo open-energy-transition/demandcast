@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -17,12 +16,12 @@ Description:
     corresponds to the year 2074 BS.
 
     Source: https://opendatanepal.com/datasets/electricity-load-profile-of-nepal-in-2073-nepal-electricity-authority
-"""  # noqa: W505
+"""
 
 import logging
 
 import nepali_datetime
-import pandas
+import pandas as pd
 import utils.fetcher
 
 # Bikram Sambat year for dataset (April 2017–April 2018).
@@ -120,7 +119,7 @@ def get_url(bs_month: int) -> str:
     )
 
 
-def download_and_extract_data_for_request(bs_month: int) -> pandas.DataFrame:
+def download_and_extract_data_for_request(bs_month: int) -> pd.DataFrame:
     """
     Download and extract electricity demand data.
 
@@ -162,7 +161,7 @@ def download_and_extract_data_for_request(bs_month: int) -> pandas.DataFrame:
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
@@ -215,19 +214,17 @@ def download_and_extract_data_for_request(bs_month: int) -> pandas.DataFrame:
         gregorian_date = bs_date.to_datetime_date()
 
         # Combine date and time to form a complete datetime.
-        gregorian_datetime = pandas.to_datetime(
-            gregorian_date
-        ) + pandas.Timedelta(hours=dt[3], minutes=dt[4])
+        gregorian_datetime = pd.to_datetime(gregorian_date) + pd.Timedelta(
+            hours=dt[3], minutes=dt[4]
+        )
 
         # Append to the index.
-        index.append(pandas.Index([gregorian_datetime]))
+        index.append(pd.Index([gregorian_datetime]))
 
     # Define the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["Demand"].astype(float).to_numpy(),
-        index=pandas.DatetimeIndex(
-            [dt[0] for dt in index], tz="Asia/Kathmandu"
-        ),
+        index=pd.DatetimeIndex([dt[0] for dt in index], tz="Asia/Kathmandu"),
     ).sort_index()
 
     return electricity_demand_time_series

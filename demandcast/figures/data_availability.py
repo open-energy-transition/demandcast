@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -14,10 +13,10 @@ Description:
 import os
 
 import matplotlib.patches
-import matplotlib.pyplot
+import matplotlib.pyplot as plt
 import matplotlib.ticker
-import numpy
-import pandas
+import numpy as np
+import pandas as pd
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
 import utils.entities
@@ -52,7 +51,7 @@ def _get_year_fractions(codes: list[str]) -> dict[str, dict[int, float]]:
     for code in codes:
         # Define a series containing the days in the time range of the
         # data for the country or subdivision.
-        days = pandas.date_range(
+        days = pd.date_range(
             start=data_time_ranges[code][0],
             end=data_time_ranges[code][1],
             freq="D",
@@ -66,7 +65,7 @@ def _get_year_fractions(codes: list[str]) -> dict[str, dict[int, float]]:
         for year in days.year.unique():
             # Define the days in the current year.
             total_days_in_year = (
-                366 if pandas.Timestamp(year, 1, 1).is_leap_year else 365
+                366 if pd.Timestamp(year, 1, 1).is_leap_year else 365
             )
 
             # Append the fraction of year for which data is available.
@@ -80,7 +79,7 @@ def _get_year_fractions(codes: list[str]) -> dict[str, dict[int, float]]:
 def _get_electricity_demand_per_capita(
     codes: list[str],
     years_of_interest: dict[str, list[int]],
-) -> pandas.Series:
+) -> pd.Series:
     """
     Get the electricity demand per capita data.
 
@@ -107,7 +106,7 @@ def _get_electricity_demand_per_capita(
     # Initialize the electricity demand data series for each country or
     # subdivision. The dictionary structure is specified because
     # required by the type hint.
-    electricity_demand_data: dict[str, dict[str, pandas.Series]] = {}
+    electricity_demand_data: dict[str, dict[str, pd.Series]] = {}
 
     # Loop over the codes.
     for code in codes:
@@ -148,7 +147,7 @@ def _get_electricity_demand_per_capita(
 def _get_gdp_ppp_per_capita(
     codes: list[str],
     years_of_interest: dict[str, list[int]],
-) -> pandas.Series:
+) -> pd.Series:
     """
     Get the GDP PPP per capita data.
 
@@ -173,7 +172,7 @@ def _get_gdp_ppp_per_capita(
     # Initialize the GDP data series for each country or subdivision.
     # The dictionary structure is specified because required by the type
     # hint.
-    gdp_data: dict[str, dict[str, pandas.Series]] = {}
+    gdp_data: dict[str, dict[str, pd.Series]] = {}
 
     # Loop over the codes.
     for code in codes:
@@ -203,7 +202,7 @@ def _get_gdp_ppp_per_capita(
 
 
 def _get_occurrences(
-    data: dict[str, pandas.Series],
+    data: dict[str, pd.Series],
     codes: list[str],
     continent_codes: dict[str, str],
     continent_names: dict[str, str],
@@ -244,8 +243,8 @@ def _get_occurrences(
     """
     # Initialize the occurrence in the defined levels and by continent.
     occurrence = {
-        continent: {level: 0.0 for level in levels.keys()}
-        for continent in continent_names.keys()
+        continent: dict.fromkeys(levels.keys(), 0.0)
+        for continent in continent_names
     }
 
     # Loop over the countries and subdivisions.
@@ -303,11 +302,11 @@ def _add_bar_chart(
         The axes with the added bar chart.
     """
     # Initialize the cumulative height for the stacked bars.
-    cumulative_height = numpy.zeros(len(levels))
+    cumulative_height = np.zeros(len(levels))
 
     # Create a bar plot for the GDP occurrences with continents as
     # stacked bars.
-    for continent_code in occurrence.keys():
+    for continent_code in occurrence:
         # Create a bar plot for the current continent.
         ax.bar(
             occurrence[continent_code].keys(),
@@ -319,7 +318,7 @@ def _add_bar_chart(
         )
 
         # Update the cumulative height for the next iteration.
-        cumulative_height += numpy.array(
+        cumulative_height += np.array(
             list(occurrence[continent_code].values())
         )
 
@@ -329,7 +328,7 @@ def _add_bar_chart(
         range(len(levels)),
         [
             f">{int(min_val / 1000)}"
-            if numpy.isinf(max_val)
+            if np.isinf(max_val)
             else f"{int(min_val / 1000)} - {int(max_val / 1000)}"
             for min_val, max_val in levels.values()
         ],
@@ -443,10 +442,10 @@ def plot(figure_directory: str) -> None:
     }
 
     # Set the font size.
-    matplotlib.pyplot.rc("font", size=12)
+    plt.rc("font", size=12)
 
     # Create a figure to plot the GDP coverage.
-    fig, ax0 = matplotlib.pyplot.subplots(figsize=(15, 7))
+    fig, ax0 = plt.subplots(figsize=(15, 7))
     ax0.set_axis_off()
 
     # Add the bar chart for the electricity demand coverage.
@@ -488,8 +487,8 @@ def plot(figure_directory: str) -> None:
     ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
 
     # Initialize the GDP and electricity demand data to plot.
-    gdp_data_to_plot: dict[str, pandas.Series] = {}
-    electricity_data_to_plot: dict[str, pandas.Series] = {}
+    gdp_data_to_plot: dict[str, pd.Series] = {}
+    electricity_data_to_plot: dict[str, pd.Series] = {}
 
     # Get the ISO Alpha-3 codes for all countries and subdivisions.
     codes_with_iso_alpha_3_codes: dict[str, list[str]] = {}
@@ -501,15 +500,13 @@ def plot(figure_directory: str) -> None:
             codes_with_iso_alpha_3_codes[iso_alpha_3_code] = [code]
 
     # Loop over the ISO Alpha-3 codes and plot the data.
-    for iso_alpha_3_codes in codes_with_iso_alpha_3_codes.keys():
+    for iso_alpha_3_codes in codes_with_iso_alpha_3_codes:
         # Get the codes belonging to the current Alpha-3 code.
         local_codes = codes_with_iso_alpha_3_codes[iso_alpha_3_codes]
 
         # Initialize the GDP and electricity demand data to plot.
-        gdp_data_to_plot[iso_alpha_3_codes] = pandas.Series(dtype=float)
-        electricity_data_to_plot[iso_alpha_3_codes] = pandas.Series(
-            dtype=float
-        )
+        gdp_data_to_plot[iso_alpha_3_codes] = pd.Series(dtype=float)
+        electricity_data_to_plot[iso_alpha_3_codes] = pd.Series(dtype=float)
 
         # Get the GDP and electricity demand data for the current
         # alpha-3 code with the longest available time range.
@@ -576,15 +573,15 @@ def plot(figure_directory: str) -> None:
                     gdp_data_to_plot[iso_alpha_3_codes].iloc[0] / 1000,
                     electricity_data_to_plot[iso_alpha_3_codes].iloc[0] / 1000,
                 ),
-                arrowprops=dict(
-                    facecolor=colors[continent_codes[local_codes[0]]],
-                    edgecolor=(0, 0, 0, 0.7),
-                    linewidth=0.3,
-                    alpha=0.7,
-                    width=3,
-                    headwidth=8,
-                    headlength=8,
-                ),
+                arrowprops={
+                    "facecolor": colors[continent_codes[local_codes[0]]],
+                    "edgecolor": (0, 0, 0, 0.7),
+                    "linewidth": 0.3,
+                    "alpha": 0.7,
+                    "width": 3,
+                    "headwidth": 8,
+                    "headlength": 8,
+                },
             )
 
     # Add sample points for the GDP and electricity demand data to
@@ -602,14 +599,14 @@ def plot(figure_directory: str) -> None:
         text="",
         xy=(110, 0.3),
         xytext=(60, 0.3),
-        arrowprops=dict(
-            facecolor=(0, 0, 0, 1),
-            edgecolor=(0, 0, 0, 1),
-            linewidth=0.3,
-            width=3,
-            headwidth=8,
-            headlength=8,
-        ),
+        arrowprops={
+            "facecolor": (0, 0, 0, 1),
+            "edgecolor": (0, 0, 0, 1),
+            "linewidth": 0.3,
+            "width": 3,
+            "headwidth": 8,
+            "headlength": 8,
+        },
     )
     ax.annotate(text="First year\nof data", xy=(60, 0.36), ha="center")
     ax.annotate(text="Last year\nof data", xy=(110, 0.36), ha="center")
@@ -715,7 +712,7 @@ def plot(figure_directory: str) -> None:
     ax.set_ylabel("Annual electricity demand per capita (MWh)", fontsize=14)
 
     # Add a title to the figure.
-    matplotlib.pyplot.suptitle(
+    plt.suptitle(
         (
             "Availability of hourly and sub-hourly electricity demand data\n"
             "by GDP PPP and annual electricity demand per capita"

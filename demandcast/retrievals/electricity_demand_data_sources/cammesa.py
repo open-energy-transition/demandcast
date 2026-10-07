@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -13,11 +12,11 @@ Description:
     Source: https://api.cammesa.com/demanda-svc/swagger-ui.html#/demanda-ws
     Source: https://api.cammesa.com/demanda-svc/demanda/RegionesDemanda
     Source: https://microfe.cammesa.com/demandaregionchart/assets/data/regionesCammesa.geojson.json
-"""  # noqa: W505
+"""
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -87,14 +86,14 @@ def get_available_requests() -> list[str]:
     )
 
     # CAMMESA only provides data for the last 9 months.
-    start_date = pandas.Timestamp(
+    start_date = pd.Timestamp(
         f"{end_date.year}-{end_date.month}-01"
-    ) - pandas.DateOffset(months=8)
+    ) - pd.DateOffset(months=8)
 
     # Return the available requests, which are the dates in the format
     # YYYY-MM-DD.
     return (
-        pandas.date_range(start=start_date, end=end_date, freq="D")
+        pd.date_range(start=start_date, end=end_date, freq="D")
         .strftime("%Y-%m-%d")
         .to_list()
     )
@@ -126,7 +125,7 @@ def get_url(date: str) -> str:
     )
 
 
-def download_and_extract_data_for_request(date: str) -> pandas.Series:
+def download_and_extract_data_for_request(date: str) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -164,7 +163,7 @@ def download_and_extract_data_for_request(date: str) -> pandas.Series:
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
@@ -174,8 +173,8 @@ def download_and_extract_data_for_request(date: str) -> pandas.Series:
     dataset = dataset.dropna(subset=["dem"])
 
     # Extract the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
-        dataset["dem"].values, index=pandas.to_datetime(dataset["fecha"])
+    electricity_demand_time_series = pd.Series(
+        dataset["dem"].values, index=pd.to_datetime(dataset["fecha"])
     )
 
     # Drop the last value of the time series because it belongs to

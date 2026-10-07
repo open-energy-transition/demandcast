@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,12 +10,12 @@ Description:
     Excel files on the BC Hydro website.
 
     Source: https://www.bchydro.com/energy-in-bc/operations/transmission/transmission-system/balancing-authority-load-data/historical-transmission-data.html
-"""  # noqa: W505
+"""
 
 import logging
 
-import numpy
-import pandas
+import numpy as np
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -109,11 +108,11 @@ def get_url(year: int) -> str:
         or (year >= 2015 and year <= 2023)
     ):
         url += f"BalancingAuthorityLoad{year}.xls"
-    elif year >= 2007 and year <= 2008 or year == 2014:
+    elif (year >= 2007 and year <= 2008) or year == 2014:
         url += f"{year}controlareaload.xls"
     elif year >= 2009 and year <= 2012:
         url += f"jandec{year}controlareaload.xls"
-    elif year == 2024 or year == 2025:
+    elif year in {2024, 2025}:
         url += f"BalancingAuthorityLoad%20{year}.xls"
     else:
         raise ValueError(f"The year {year} is not implemented yet.")
@@ -164,7 +163,7 @@ def _get_excel_information(
     # Define the header of the Excel file.
     if year == 2007:
         header = None
-    elif year >= 2001 and year <= 2006 or year >= 2008 and year <= 2025:
+    elif (year >= 2001 and year <= 2006) or (year >= 2008 and year <= 2025):
         header = 0
     else:
         raise ValueError(f"The year {year} is not implemented yet.")
@@ -196,7 +195,7 @@ def _get_excel_information(
         load_column = [2]
     elif year >= 2008 and year <= 2011:
         load_column = ["MWh"]
-    elif year >= 2012 and year <= 2014 or year >= 2021 and year <= 2025:
+    elif (year >= 2012 and year <= 2014) or (year >= 2021 and year <= 2025):
         load_column = ["Control Area Load"]
     else:
         raise ValueError(f"The year {year} is not implemented yet.")
@@ -204,7 +203,7 @@ def _get_excel_information(
     return rows_to_skip, header, index_columns, load_column
 
 
-def download_and_extract_data_for_request(year: int) -> pandas.Series:
+def download_and_extract_data_for_request(year: int) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -251,7 +250,7 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
@@ -259,24 +258,24 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
 
     # Extract the first and last time steps of the electricity
     # demand time series.
-    first_time_step = pandas.to_datetime(
+    first_time_step = pd.to_datetime(
         str(dataset[index_columns[0]].iloc[0])
         + " "
         + str(int(dataset[index_columns[1]].iloc[0]) - 1)
         + ":00"
-    ) + pandas.Timedelta("1h")
-    last_time_step = pandas.to_datetime(
+    ) + pd.Timedelta("1h")
+    last_time_step = pd.to_datetime(
         str(dataset[index_columns[0]].iloc[-1])
         + " "
         + str(int(dataset[index_columns[1]].iloc[-1]) - 1)
         + ":00"
-    ) + pandas.Timedelta("1h")
+    ) + pd.Timedelta("1h")
 
     # Remove NaN and zero values where daylight saving time switch
     # occurs. The other data points are typically nice and clean.
     available_data = dataset[load_column[0]][
         (
-            numpy.logical_and(
+            np.logical_and(
                 dataset[load_column[0]] != 0,
                 dataset[load_column[0]].notna(),
             )
@@ -284,7 +283,7 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
     ]
 
     # Construct the index of the electricity demand time series.
-    timestamps = pandas.date_range(
+    timestamps = pd.date_range(
         start=first_time_step,
         end=last_time_step,
         freq="h",
@@ -292,7 +291,7 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
     )
 
     # Extract the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         available_data.values, index=timestamps
     )
 

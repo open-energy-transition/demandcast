@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -12,12 +11,12 @@ Description:
     The data is retrieved in 15-day intervals.
 
     Source: https://tsoc.org.cy/electrical-system/archive-total-daily-system-generation-on-the-transmission-system/
-"""  # noqa: W505
+"""
 
 import logging
 import re
 
-import pandas
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -36,7 +35,7 @@ def redistribute() -> bool:
     return False
 
 
-def _check_input_parameters(start_date: pandas.Timestamp) -> None:
+def _check_input_parameters(start_date: pd.Timestamp) -> None:
     """
     Check if the input parameters are valid.
 
@@ -46,7 +45,7 @@ def _check_input_parameters(start_date: pandas.Timestamp) -> None:
         The start date of the data retrieval.
     """
     # Read the start date of the available data.
-    start_date_of_data_availability = pandas.to_datetime(
+    start_date_of_data_availability = pd.to_datetime(
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "tsoc"
         )["CYP"][0]
@@ -60,7 +59,7 @@ def _check_input_parameters(start_date: pandas.Timestamp) -> None:
     )
 
 
-def get_available_requests() -> list[pandas.Timestamp]:
+def get_available_requests() -> list[pd.Timestamp]:
     """
     Get the available requests.
 
@@ -82,10 +81,10 @@ def get_available_requests() -> list[pandas.Timestamp]:
     # Return the available requests, which are the start dates of the
     # retrieval periods. We use 15-day intervals (the maximum available
     # on the website) to minimize the number of requests.
-    return list(pandas.date_range(start_date, end_date, freq="15D"))
+    return list(pd.date_range(start_date, end_date, freq="15D"))
 
 
-def get_url(start_date: pandas.Timestamp) -> str:
+def get_url(start_date: pd.Timestamp) -> str:
     """
     Get the URL of the electricity generation data on the TSOC website.
 
@@ -188,8 +187,8 @@ def _read_timestamp_and_generation(
 
 
 def download_and_extract_data_for_request(
-    start_date: pandas.Timestamp,
-) -> pandas.Series:
+    start_date: pd.Timestamp,
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -240,7 +239,7 @@ def download_and_extract_data_for_request(
     dates, hours, minutes, generation = _read_timestamp_and_generation(page)
 
     # Construct datetime index with time zone.
-    date_time = pandas.to_datetime(
+    date_time = pd.to_datetime(
         [
             f"{date} {hour}:{minute}"
             for date, hour, minute in zip(dates, hours, minutes)
@@ -248,7 +247,7 @@ def download_and_extract_data_for_request(
     ).tz_localize("Asia/Nicosia", nonexistent="NaT", ambiguous="NaT")
 
     # Create a Pandas Series for the electricity generation data.
-    electricity_generation_time_series = pandas.Series(
+    electricity_generation_time_series = pd.Series(
         data=generation, index=date_time
     )
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,11 +10,10 @@ Description:
 
 import logging
 import os
-from typing import Optional
 
 import ml_models.lstm
 import ml_models.xgboost
-import pandas
+import pandas as pd
 import utils.config
 import utils.ml
 from pydantic import BaseModel, ValidationError
@@ -42,8 +40,8 @@ def _read_and_check_configuration() -> BaseModel:
     # Define the configuration model.
     class ConfigModel(BaseModel):
         scoring_metric: str
-        n_jobs: Optional[int] = 1
-        data_path: Optional[str] = None
+        n_jobs: int | None = 1
+        data_path: str | None = None
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(
@@ -65,7 +63,7 @@ def _read_and_check_configuration() -> BaseModel:
         raise ValueError(f"Configuration validation error: {e}") from e
 
 
-def _log_mape_summary(mapes: pandas.DataFrame) -> None:
+def _log_mape_summary(mapes: pd.DataFrame) -> None:
     """
     Log average, median, and standard deviation of MAPE values.
 
@@ -85,10 +83,10 @@ def _log_mape_summary(mapes: pandas.DataFrame) -> None:
 
 
 def _cross_validate_xgboost(
-    prepared_dataset: dict[str, pandas.DataFrame],
+    prepared_dataset: dict[str, pd.DataFrame],
     scoring_metric: str,
     n_jobs: int,
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     """
     Run Leave-One-Group-Out cross-validation for XGBoost.
 
@@ -132,14 +130,13 @@ def _cross_validate_xgboost(
     logging.info("Cross-validation completed successfully.")
 
     # Initialize a DataFrame to store mapes.
-    mapes = pandas.DataFrame()
+    mapes = pd.DataFrame()
 
     # Extract entity codes.
-    list_entity_codes = []
-    for test_indices in cv_results["indices"]["test"]:
-        list_entity_codes.append(
-            prepared_dataset["group"].iloc[test_indices[0]]
-        )
+    list_entity_codes = [
+        prepared_dataset["group"].iloc[test_indices[0]]
+        for test_indices in cv_results["indices"]["test"]
+    ]
     mapes["Entity Code"] = list_entity_codes
 
     # Add train and test scores to the results DataFrame.
@@ -168,12 +165,12 @@ class _GroupAwareLSTM(BaseEstimator, RegressorMixin):
     def __init__(
         self,
         lstm_model: ml_models.lstm.LSTMRegressor,
-        group: pandas.Series,
+        group: pd.Series,
     ) -> None:
         self.lstm_model = lstm_model
         self.group = group
 
-    def predict(self, features: pandas.DataFrame) -> pandas.Series:
+    def predict(self, features: pd.DataFrame) -> pd.Series:
         """
         Predict target values for ``features``.
 
@@ -195,9 +192,9 @@ class _GroupAwareLSTM(BaseEstimator, RegressorMixin):
 
 
 def _cross_validate_lstm(
-    prepared_dataset: dict[str, pandas.DataFrame],
+    prepared_dataset: dict[str, pd.DataFrame],
     scoring_metric: str,
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     """
     Run manual Leave-One-Group-Out cross-validation for the LSTM.
 
@@ -264,12 +261,12 @@ def _cross_validate_lstm(
     logging.info("Cross-validation completed successfully.")
 
     # Initialize a DataFrame to store mapes.
-    mapes = pandas.DataFrame()
+    mapes = pd.DataFrame()
     mapes["Entity Code"] = list_entity_codes
 
     # Add train and test scores to the results DataFrame.
-    mapes["Training MAPE"] = -pandas.Series(train_scores)
-    mapes["Testing MAPE"] = -pandas.Series(test_scores)
+    mapes["Training MAPE"] = -pd.Series(train_scores)
+    mapes["Testing MAPE"] = -pd.Series(test_scores)
 
     _log_mape_summary(mapes)
 
@@ -277,11 +274,11 @@ def _cross_validate_lstm(
 
 
 def _cross_validate(
-    prepared_dataset: dict[str, pandas.DataFrame],
+    prepared_dataset: dict[str, pd.DataFrame],
     scoring_metric: str,
     n_jobs: int,
     algorithm: str,
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     """
     Run cross-validation for the specified machine learning model.
 
@@ -311,10 +308,9 @@ def _cross_validate(
         return _cross_validate_xgboost(
             prepared_dataset, scoring_metric, n_jobs
         )
-    elif algorithm.lower() == "lstm":
+    if algorithm.lower() == "lstm":
         return _cross_validate_lstm(prepared_dataset, scoring_metric)
-    else:
-        raise ValueError(f"Unsupported algorithm: {algorithm}")
+    raise ValueError(f"Unsupported algorithm: {algorithm}")
 
 
 def run_model_cross_validation(

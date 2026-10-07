@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -16,7 +15,7 @@ import logging
 import os
 
 import cpi
-import pandas
+import pandas as pd
 import utils.config
 import utils.entities
 import utils.geospatial
@@ -24,9 +23,7 @@ import utils.scenarios
 import utils.time_series
 from tqdm import tqdm
 
-import retrievals.socio_economic_data_sources.iiasa as iiasa
-import retrievals.socio_economic_data_sources.imf as imf
-import retrievals.socio_economic_data_sources.world_bank as world_bank
+from retrievals.socio_economic_data_sources import iiasa, imf, world_bank
 
 
 def get_available_scenarios() -> list[str]:
@@ -41,7 +38,7 @@ def get_available_scenarios() -> list[str]:
     return ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
 
 
-def get_historical_data() -> pandas.DataFrame:
+def get_historical_data() -> pd.DataFrame:
     """
     Get the historical GDP PPP per capita data.
 
@@ -67,7 +64,7 @@ def get_historical_data() -> pandas.DataFrame:
 
     # Limit the data up to the year before the current year.
     gdp_ppp_per_capita = gdp_ppp_per_capita.loc[
-        :, : pandas.Timestamp.now().year - 1
+        :, : pd.Timestamp.now().year - 1
     ]
 
     # Where the combined DataFrame is NaN because one of the datasets is
@@ -83,7 +80,7 @@ def _get_gdp_ppp_per_capita_from_gridded_data(
     available_years_of_gridded_data: list[int],
     last_available_historical_years_of_gridded_data: int | None = None,
     scenario: str | None = None,
-) -> pandas.Series:
+) -> pd.Series:
     """
     Get the GDP PPP per capita by aggregating gridded data.
 
@@ -145,11 +142,11 @@ def _get_gdp_ppp_per_capita_from_gridded_data(
 def _extract_historical_gdp_ppp_per_capita(
     code: str,
     iso_alpha_3_code: str,
-    global_historical_gdp_ppp_per_capita: pandas.DataFrame,
+    global_historical_gdp_ppp_per_capita: pd.DataFrame,
     requested_historical_years: list[int],
     used_historical_years: list[int],
     available_historical_years_of_gridded_data: list[int],
-) -> pandas.Series:
+) -> pd.Series:
     """
     Extract the historical GDP PPP per capita for a country.
 
@@ -209,12 +206,12 @@ def _extract_historical_gdp_ppp_per_capita(
 def _extract_future_gdp_ppp_per_capita(
     code: str,
     iso_alpha_3_code: str,
-    global_future_gdp_ppp_per_capita: pandas.DataFrame,
+    global_future_gdp_ppp_per_capita: pd.DataFrame,
     future_years: list[int],
     available_future_years_of_gridded_data: list[int],
     available_historical_years_of_gridded_data: list[int],
     scenario: str,
-) -> pandas.Series:
+) -> pd.Series:
     """
     Extract the future GDP PPP per capita for a country.
 

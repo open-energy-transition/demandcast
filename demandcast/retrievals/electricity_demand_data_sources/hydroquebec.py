@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -10,11 +9,11 @@ Description:
     at once.
 
     Source: https://donnees.hydroquebec.com/explore/dataset/historique-demande-electricite-quebec/information/
-"""  # noqa: W505
+"""
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.fetcher
 
 
@@ -29,7 +28,7 @@ def redistribute() -> bool:
     """
     logging.debug("Non-commercial use with attribution to Hydro-Québec.")
     logging.debug(
-        "Source: https://donnees.hydroquebec.com/explore/dataset/historique-demande-electricite-quebec/information/"  # noqa: W505
+        "Source: https://donnees.hydroquebec.com/explore/dataset/historique-demande-electricite-quebec/information/"
     )
     return True
 
@@ -61,7 +60,7 @@ def get_url() -> str:
     )
 
 
-def download_and_extract_data() -> pandas.Series:
+def download_and_extract_data() -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -85,7 +84,7 @@ def download_and_extract_data() -> pandas.Series:
     electricity_demand_time_series = utils.fetcher.fetch_data(url, "csv")
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(electricity_demand_time_series, pandas.DataFrame):
+    if not isinstance(electricity_demand_time_series, pd.DataFrame):
         raise ValueError(
             "The extracted data is a "
             f"{type(electricity_demand_time_series)} object, "
@@ -98,7 +97,7 @@ def download_and_extract_data() -> pandas.Series:
     ).squeeze()
 
     # Convert the index to a datetime object.
-    electricity_demand_time_series.index = pandas.to_datetime(
+    electricity_demand_time_series.index = pd.to_datetime(
         electricity_demand_time_series.index,
         format="%Y-%m-%dT%H:%M:%S%z",
         utc=True,

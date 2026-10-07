@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -9,15 +8,15 @@ Description:
     international dollars.
 
     Source: https://data.imf.org/en/Data-Explorer?datasetUrn=IMF.RES:WEO(6.0.0)&INDICATOR=NGDPRPPPPC
-"""  # noqa: W505
+"""
 
 import logging
 
-import pandas
+import pandas as pd
 import sdmx
 
 
-def download_gdp_ppp_per_capita() -> pandas.DataFrame:
+def download_gdp_ppp_per_capita() -> pd.DataFrame:
     """
     Download historical GDP PPP per capita data from the IMF.
 

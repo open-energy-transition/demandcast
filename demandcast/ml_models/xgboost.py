@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -9,9 +8,8 @@ Description:
 
 import logging
 import os
-from typing import Optional
 
-import pandas
+import pandas as pd
 import utils.config
 import yaml
 from pydantic import BaseModel, ValidationError
@@ -36,8 +34,8 @@ def _read_configuration() -> BaseModel:
     # Define the configuration model.
     class ConfigModel(BaseModel):
         random_state: int = 42
-        enable_categorical: Optional[bool] = True
-        evaluation_metric: Optional[str] = "mape"
+        enable_categorical: bool | None = True
+        evaluation_metric: str | None = "mape"
 
     # Read the configuration.
     config_path = os.path.join(
@@ -46,7 +44,7 @@ def _read_configuration() -> BaseModel:
     )
 
     # Read the raw configuration.
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         raw_config = yaml.safe_load(f)
 
     try:
@@ -132,7 +130,7 @@ def get_initialized_model() -> XGBRegressor:
 
 
 def train(
-    prepared_dataset: dict[str, dict[str, pandas.DataFrame | pandas.Series]],
+    prepared_dataset: dict[str, dict[str, pd.DataFrame | pd.Series]],
 ) -> XGBRegressor:
     """
     Train XGBoost model.
@@ -181,11 +179,9 @@ def predict(
     xgb_model: XGBRegressor,
     prepared_dataset: dict[
         str,
-        pandas.Series
-        | pandas.DataFrame
-        | dict[str, pandas.DataFrame | pandas.Series],
+        pd.Series | pd.DataFrame | dict[str, pd.DataFrame | pd.Series],
     ],
-) -> pandas.Series | dict[str, pandas.Series]:
+) -> pd.Series | dict[str, pd.Series]:
     """
     Make predictions using the trained XGBoost model.
 
@@ -209,21 +205,20 @@ def predict(
         # The prepared_dataset is a single dataset, not split into
         # training/validation/testing.
         # Make predictions and return them.
-        return pandas.Series(xgb_model.predict(prepared_dataset["features"]))
+        return pd.Series(xgb_model.predict(prepared_dataset["features"]))
 
-    else:
-        # Initialize predictions dictionary to store training,
-        # validation, and testing predictions.
-        predictions: dict[str, pandas.Series] = {}
+    # Initialize predictions dictionary to store training,
+    # validation, and testing predictions.
+    predictions: dict[str, pd.Series] = {}
 
-        for split_name, data in prepared_dataset.items():
-            # Make predictions for the current split.
-            preds = xgb_model.predict(data["features"])
+    for split_name, data in prepared_dataset.items():
+        # Make predictions for the current split.
+        preds = xgb_model.predict(data["features"])
 
-            predictions[split_name] = pandas.Series(preds)
+        predictions[split_name] = pd.Series(preds)
 
-            logging.info(
-                f"Predictions made for {split_name} set: {len(preds)} records."
-            )
+        logging.info(
+            f"Predictions made for {split_name} set: {len(preds)} records."
+        )
 
-        return predictions
+    return predictions

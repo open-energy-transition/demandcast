@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -13,12 +12,12 @@ Description:
 import datetime
 import logging
 
-import pandas
+import pandas as pd
 
 
 def add_missing_time_steps(
-    time_series: pandas.Series, local_time_zone: datetime.tzinfo
-) -> pandas.Series:
+    time_series: pd.Series, local_time_zone: datetime.tzinfo
+) -> pd.Series:
     """
     Add the missing time steps to a time series.
 
@@ -48,7 +47,7 @@ def add_missing_time_steps(
     # Calculate the expected number of time steps in the time series.
     expected_number_of_time_steps = int(
         (8760 if year % 4 != 0 else 8784)
-        * pandas.Timedelta("1h")
+        * pd.Timedelta("1h")
         / time_resolution
     )
 
@@ -61,7 +60,7 @@ def add_missing_time_steps(
 
         # Define the full time index for the time series in the local
         # time zone.
-        full_local_time_index = pandas.date_range(
+        full_local_time_index = pd.date_range(
             start=str(year),
             end=str(year + 1),
             freq=time_resolution,
@@ -75,8 +74,8 @@ def add_missing_time_steps(
 
 
 def resample_time_resolution(
-    time_series: pandas.Series, target_time_resolution: str = "1h"
-) -> pandas.Series:
+    time_series: pd.Series, target_time_resolution: str = "1h"
+) -> pd.Series:
     """
     Resample the time resolution of a time series.
 
@@ -102,7 +101,7 @@ def resample_time_resolution(
 
     # Check if the time resolution of the time series is less than the
     # target time resolution.
-    if time_resolution < pandas.Timedelta(target_time_resolution):
+    if time_resolution < pd.Timedelta(target_time_resolution):
         # Resample the time series to the target time resolution.
         time_series = time_series.resample(target_time_resolution).mean()
 
@@ -116,7 +115,7 @@ def resample_time_resolution(
     return time_series
 
 
-def linearly_interpolate(time_series: pandas.Series) -> pandas.Series:
+def linearly_interpolate(time_series: pd.Series) -> pd.Series:
     """
     Linearly interpolate the missing values in a time series.
 
@@ -158,7 +157,7 @@ def linearly_interpolate(time_series: pandas.Series) -> pandas.Series:
     return time_series
 
 
-def check_time_series_data_quality(time_series: pandas.Series) -> None:
+def check_time_series_data_quality(time_series: pd.Series) -> None:
     """
     Check the data quality of a time series.
 
@@ -205,12 +204,12 @@ def check_time_series_data_quality(time_series: pandas.Series) -> None:
 
 
 def harmonize_time_series(
-    time_series: pandas.Series,
+    time_series: pd.Series,
     local_time_zone: datetime.tzinfo,
     resample: bool = True,
     target_time_resolution: str = "1h",
     interpolate_missing_values: bool = True,
-) -> pandas.Series:
+) -> pd.Series:
     """
     Harmonize a given time series.
 
@@ -253,8 +252,8 @@ def harmonize_time_series(
 
 
 def convert_from_yearly_to_hourly(
-    time_series: pandas.Series, time_zone: datetime.tzinfo
-) -> pandas.Series:
+    time_series: pd.Series, time_zone: datetime.tzinfo
+) -> pd.Series:
     """
     Convert a yearly time series to an hourly time series.
 
@@ -271,19 +270,17 @@ def convert_from_yearly_to_hourly(
         The hourly time series.
     """
     # Define a new index with hourly frequency in the local time zone.
-    index = pandas.date_range(
-        start=(f"{str(time_series.index.min())}-01-01"),
-        end=(f"{str(time_series.index.max())}-12-31 23:00:00"),
+    index = pd.date_range(
+        start=(f"{time_series.index.min()!s}-01-01"),
+        end=(f"{time_series.index.max()!s}-12-31 23:00:00"),
         freq="h",
         tz=time_zone,
     )
 
-    return pandas.Series(index.year.map(time_series), index=index)
+    return pd.Series(index.year.map(time_series), index=index)
 
 
-def clean_data(
-    time_series: pandas.Series, variable_name: str
-) -> pandas.Series:
+def clean_data(time_series: pd.Series, variable_name: str) -> pd.Series:
     """
     Clean the time series.
 
@@ -312,12 +309,9 @@ def clean_data(
     # Check if the time series is timezone-aware.
     if time_series.index.tz is None:
         raise ValueError("The time series must be timezone-aware.")
-    else:
-        # Convert the time zone of the electricity demand time series to
-        # UTC and remove the time zone information.
-        time_series.index = time_series.index.tz_convert("UTC").tz_localize(
-            None
-        )
+    # Convert the time zone of the electricity demand time series to
+    # UTC and remove the time zone information.
+    time_series.index = time_series.index.tz_convert("UTC").tz_localize(None)
 
     # Set the name of the index and the series.
     time_series.index.name = "Time (UTC)"

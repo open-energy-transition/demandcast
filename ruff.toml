@@ -1,32 +1,56 @@
-target-version = "py312"
+# Ruff configuration: linting and formatting of the Python code. Rules are
+# listed explicitly, so that upgrading Ruff never enables new ones silently.
 
-# Set the maximum line length for code according to PEP 8.
+target-version = "py312"
 line-length = 79
 
-# Exclude specific files or directories from linting.
-exclude = ["*.yaml"]
-
-# Linting rules. See documentation for more rules (https://docs.astral.sh/ruff/rules/).
 [lint]
-# Add additional rules on top of the default `select` (`E4`, E7`, `E9`, and `F`).
-extend-select = [
-    "I", # sort imports
-    "TID", # tidy imports
-    "D", # tidy docstrings with pydocstyle
-    "DOC", # tidy docstrings with pydoclint
-    "PD", # lint pandas
-    "W", # raise warnings
+select = [
+    # Errors, warnings and Pyflakes, as in Ruff's former defaults.
+    "E4", "E7", "E9", "F", "W",
+    # Imports, docstrings and pandas.
+    "I", "TID", "D", "PD",
+    # Docstring parameters, returns and raises (pydoclint, preview rules).
+    "DOC102", "DOC201", "DOC202", "DOC402", "DOC403", "DOC501", "DOC502",
+    # Likely bugs, security, and modern, simpler and faster code.
+    "A", "ARG", "B", "BLE", "C4", "C90", "DTZ", "ERA", "FURB", "ICN", "ISC",
+    "N", "NPY", "PERF", "PIE", "PL", "PT", "RET", "RUF", "S", "SIM", "T20",
+    "TRY", "UP",
 ]
-# Define the convention for pydocstyle.
-pydocstyle.convention = "numpy"
-# Define the maximum length of docstrings and comments. Raises a warming if exceeded.
-pycodestyle.max-doc-length = 72
-# Enable potentially unstable new lint rules. This enables pydoclint.
+ignore = [
+    # Counts of returns, branches, arguments and statements: C90 limits the
+    # complexity of functions instead.
+    "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR0917",
+    # Literal numbers such as years and hours of the year.
+    "PLR2004",
+    # Named return values, which match the NumPy-style docstrings.
+    "RET504",
+    # Exception messages written where the exception is raised.
+    "TRY003",
+    # Temporary: existing findings, fixed in follow-up pull requests.
+    "A001", "B904", "B905", "C901", "DOC102", "DTZ002", "DTZ005", "DTZ007",
+    "N803", "N806", "PLC0206", "PLR1704", "PT018", "RUF001", "RUF002",
+    "RUF003", "RUF015", "S101", "S113", "S310", "TRY002", "TRY004",
+    "TRY300", "TRY400",
+]
+explicit-preview-rules = true
 preview = true
+pydocstyle.convention = "numpy"
+pycodestyle.max-doc-length = 72
+pep8-naming.extend-ignore-names = ["X", "X_*"]
 
-# Add specific rule codes/groups here to ignore them, or add a '#noqa' comment to the line of code to skip all checks.
-ignore = []
+[lint.per-file-ignores]
+"demandcast/tests/**" = [
+    "S101",
+    # Temporary: existing findings, fixed in follow-up pull requests.
+    "B017", "NPY002", "PT011", "PT012", "SIM117",
+]
+# Legacy notebooks and scripts keep the original rules.
+"demandcast/archive/**" = [
+    "A", "ARG", "B", "BLE", "C4", "C90", "DTZ", "ERA", "FURB", "ICN", "ISC",
+    "N", "NPY", "PERF", "PIE", "PL", "PT", "RET", "RUF", "S", "SIM", "T20",
+    "TRY", "UP",
+]
 
-# Formatting rules. See documentation for more rules (https://docs.astral.sh/ruff/rules/).
 [format]
 docstring-code-format = true

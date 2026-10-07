@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -14,7 +13,7 @@ import os
 
 import cartopy.io.shapereader
 import geopandas
-import pandas
+import pandas as pd
 
 # Define the codes of the Brazilian states and their corresponding
 # subdivisions.
@@ -73,9 +72,9 @@ state_shapes = [
 ]
 
 # Create a DataFrame from the shapes of the states.
-states = pandas.DataFrame(columns=["name", "code", "parent", "geometry"])
+states = pd.DataFrame(columns=["name", "code", "parent", "geometry"])
 for state_shape in state_shapes:
-    state = pandas.Series(
+    state = pd.Series(
         {
             "name": state_shape.attributes["name"],
             "code": state_shape.attributes["iso_3166_2"],
@@ -85,7 +84,7 @@ for state_shape in state_shapes:
             "geometry": state_shape.geometry,
         }
     )
-    states = pandas.concat([states, state.to_frame().T], ignore_index=True)
+    states = pd.concat([states, state.to_frame().T], ignore_index=True)
 
 # Add the coordinate reference system to the GeoDataFrame.
 states = geopandas.GeoDataFrame(states, geometry="geometry", crs="EPSG:4326")

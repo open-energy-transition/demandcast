@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,11 +10,11 @@ Description:
     website.
 
     Source: https://www.aeso.ca/market/market-and-system-reporting/data-requests/hourly-load-by-area-and-region
-"""  # noqa: W505
+"""
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.fetcher
 
 
@@ -156,19 +155,7 @@ def _get_excel_information(
             "CALGARY",
             "CENTRAL",
         ]
-    elif file_number == 3:
-        sheet_name = "Sheet1"
-        rows_to_skip = 0
-        index_columns = ["DT_MST"]
-        load_columns = [
-            "Calgary",
-            "Central",
-            "Edmonton",
-            "Northeast",
-            "Northwest",
-            "South",
-        ]
-    elif file_number == 4:
+    elif file_number in {3, 4}:
         sheet_name = "Sheet1"
         rows_to_skip = 0
         index_columns = ["DT_MST"]
@@ -184,7 +171,7 @@ def _get_excel_information(
     return sheet_name, rows_to_skip, index_columns, load_columns
 
 
-def download_and_extract_data_for_request(file_number: int) -> pandas.Series:
+def download_and_extract_data_for_request(file_number: int) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -236,20 +223,20 @@ def download_and_extract_data_for_request(file_number: int) -> pandas.Series:
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
 
-    if file_number == 1 or file_number == 2:
+    if file_number in {1, 2}:
         # Define starting time index.
         first_local_time_index = (
             dataset["DATE"][0]
-            + pandas.Timedelta(hours=int(dataset["HOUR ENDING"][0]))
+            + pd.Timedelta(hours=int(dataset["HOUR ENDING"][0]))
         ).tz_localize("America/Edmonton")
 
-    elif file_number == 3 or file_number == 4:
+    elif file_number in {3, 4}:
         # Define starting time index.
         first_local_time_index = (
             dataset["DT_MST"].iloc[0].tz_localize("America/Edmonton")
@@ -264,12 +251,10 @@ def download_and_extract_data_for_request(file_number: int) -> pandas.Series:
 
         # The Excel files seem to report the beginning of the hour,
         # so we need to add 1 hour.
-        first_local_time_index = first_local_time_index + pandas.Timedelta(
-            hours=1
-        )
+        first_local_time_index = first_local_time_index + pd.Timedelta(hours=1)
 
     # Define the local time index.
-    local_time_index = pandas.date_range(
+    local_time_index = pd.date_range(
         start=first_local_time_index,
         periods=len(dataset),
         freq="1h",
@@ -278,7 +263,7 @@ def download_and_extract_data_for_request(file_number: int) -> pandas.Series:
 
     # Extract the electricity demand time series in the local time
     # zone.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         data=dataset[load_columns].sum(axis=1).values,
         index=local_time_index,
     )

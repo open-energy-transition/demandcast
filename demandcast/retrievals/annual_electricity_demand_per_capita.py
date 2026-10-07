@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -15,16 +14,14 @@ Description:
 import logging
 import os
 
-import pandas
+import pandas as pd
 import utils.config
 import utils.entities
 import utils.scenarios
 import utils.time_series
 from tqdm import tqdm
 
-import retrievals.socio_economic_data_sources.ember as ember
-import retrievals.socio_economic_data_sources.iiasa as iiasa
-import retrievals.socio_economic_data_sources.world_bank as world_bank
+from retrievals.socio_economic_data_sources import ember, iiasa, world_bank
 
 
 def get_available_scenarios() -> list[str]:
@@ -66,7 +63,7 @@ def get_available_scenarios() -> list[str]:
     ]
 
 
-def get_historical_data() -> pandas.DataFrame:
+def get_historical_data() -> pd.DataFrame:
     """
     Get historical electricity demand per capita data.
 
@@ -204,35 +201,25 @@ def run_data_retrieval(
 
         # Get the selected historical years.
         selected_historical_years = list(
-            set(
-                [
-                    year
-                    for year, scenario in year_scenario_list
-                    if scenario is None
-                ]
-            )
+            {year for year, scenario in year_scenario_list if scenario is None}
         )
 
         # Get the selected future years.
         selected_future_years = list(
-            set(
-                [
-                    year
-                    for year, scenario in year_scenario_list
-                    if scenario is not None
-                ]
-            )
+            {
+                year
+                for year, scenario in year_scenario_list
+                if scenario is not None
+            }
         )
 
         # Get the selected scenarios.
         selected_scenarios = list(
-            set(
-                [
-                    scenario
-                    for __, scenario in year_scenario_list
-                    if scenario is not None
-                ]
-            )
+            {
+                scenario
+                for __, scenario in year_scenario_list
+                if scenario is not None
+            }
         )
 
         if selected_historical_years:

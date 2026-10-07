@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -18,7 +17,7 @@ Description:
         https://en.wikipedia.org/wiki/Kansai_Electric_Power_Company
         https://en.wikipedia.org/wiki/ISO_3166-2:JP
         https://data.humdata.org/dataset/cod-xa-jpn
-"""  # noqa: W505
+"""
 
 import os
 import shutil
@@ -26,7 +25,7 @@ import zipfile
 from io import BytesIO
 
 import geopandas
-import pandas
+import pandas as pd
 import requests
 from shapely import Polygon
 
@@ -137,9 +136,7 @@ mask_mie = geopandas.GeoDataFrame(geometry=mask_mie, crs=4326)
 mie_cut = mie.overlay(mask_mie, how="intersection")
 
 # Merge all prefectures into one geometry.
-all_prefectures = pandas.concat(
-    [whole_prefectures, hyogo_cut, fukui_cut, mie_cut]
-)
+all_prefectures = pd.concat([whole_prefectures, hyogo_cut, fukui_cut, mie_cut])
 all_prefectures = all_prefectures.dissolve(by="ADM0_EN").reset_index()
 
 # Select the columns of interest.

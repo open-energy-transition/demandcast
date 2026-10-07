@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -18,7 +17,7 @@ Description:
 import logging
 import os
 
-import pandas
+import pandas as pd
 import utils.config
 
 
@@ -61,7 +60,7 @@ def get_url() -> str:
     return "https://www.kaggle.com/datasets/tentative/ntdc-dataset"
 
 
-def download_and_extract_data() -> pandas.Series:
+def download_and_extract_data() -> pd.Series:
     """
     Extract electricity demand data.
 
@@ -102,33 +101,33 @@ def download_and_extract_data() -> pandas.Series:
         )
 
     # Load the data from the downloaded files into a pandas DataFrame.
-    dataset = pandas.concat(
-        [pandas.read_csv(file_path) for file_path in downloaded_file_paths]
+    dataset = pd.concat(
+        [pd.read_csv(file_path) for file_path in downloaded_file_paths]
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
 
     # Define the new index.
-    index = pandas.to_datetime(
+    index = pd.to_datetime(
         dataset.iloc[:, 0].astype(str)
         + " "
         + (dataset.iloc[:, 1].astype(str).astype(int) - 1).astype(str),
         format="%d/%m/%Y %H",
-    ) + pandas.Timedelta(hours=1)
+    ) + pd.Timedelta(hours=1)
 
     # Remove commas and convert SYSLOAD to numeric.
-    dataset["SYSLOAD"] = pandas.to_numeric(
+    dataset["SYSLOAD"] = pd.to_numeric(
         dataset["SYSLOAD"].astype(str).str.replace(",", ""),
         errors="coerce",
     )
 
     # Define the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["SYSLOAD"].values,
         index=index,
     )

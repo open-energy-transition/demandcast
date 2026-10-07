@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -16,7 +15,7 @@ Description:
 import calendar
 import logging
 
-import pandas
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -79,9 +78,9 @@ def get_available_requests() -> list[tuple[int, int | None]]:
     # Requests from 2024 onward.
     requests_after: list[tuple[int, int | None]] = [
         (date.year, date.month)
-        for date in pandas.date_range(
-            start=pandas.Timestamp(2024, 1, 1),
-            end=end_date - pandas.DateOffset(months=2),
+        for date in pd.date_range(
+            start=pd.Timestamp(2024, 1, 1),
+            end=end_date - pd.DateOffset(months=2),
             freq="MS",
         )
     ]
@@ -134,7 +133,7 @@ def get_url(year: int, month: int | None) -> str:
 
 def download_and_extract_data_for_request(
     year: int, month: int | None
-) -> pandas.Series:
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -181,16 +180,14 @@ def download_and_extract_data_for_request(
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
 
     # Keep only rows with valid data.
-    dataset = dataset[
-        pandas.to_datetime(dataset["Date"], errors="coerce").notna()
-    ]
+    dataset = dataset[pd.to_datetime(dataset["Date"], errors="coerce").notna()]
 
     # Define the column names based on the year.
     if year <= 2020:
@@ -201,12 +198,12 @@ def download_and_extract_data_for_request(
         demand_column = "CAISO"
 
     # Define the new index.
-    index = pandas.to_datetime(dataset["Date"]) + pandas.to_timedelta(
+    index = pd.to_datetime(dataset["Date"]) + pd.to_timedelta(
         dataset[hourly_column], unit="h"
     )
 
     # Define the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset[demand_column].values, index=index
     ).tz_localize("America/Los_Angeles", nonexistent="NaT", ambiguous="NaT")
 

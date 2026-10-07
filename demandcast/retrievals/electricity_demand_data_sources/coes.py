@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -14,7 +13,7 @@ Description:
 
 import logging
 
-import pandas
+import pandas as pd
 import utils.entities
 import utils.fetcher
 
@@ -73,7 +72,7 @@ def get_available_requests() -> list[int]:
     )
 
     # Return the available requests, which are the years.
-    return [year for year in range(start_date.year, end_date.year + 1)]
+    return list(range(start_date.year, end_date.year + 1))
 
 
 def get_url() -> str:
@@ -89,7 +88,7 @@ def get_url() -> str:
     return "https://www.coes.org.pe/Portal/portalinformacion/demanda"
 
 
-def download_and_extract_data_for_request(year: int) -> pandas.Series:
+def download_and_extract_data_for_request(year: int) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -136,21 +135,19 @@ def download_and_extract_data_for_request(year: int) -> pandas.Series:
     )
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pandas.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise ValueError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
 
     # Extract the electricity demand data from the dataset.
-    dataset = pandas.DataFrame(
-        dataset[dataset["Name"] == "Ejecutado"]["Data"][0]
-    )
+    dataset = pd.DataFrame(dataset[dataset["Name"] == "Ejecutado"]["Data"][0])
 
     # Extract the electricity demand time series.
-    electricity_demand_time_series = pandas.Series(
+    electricity_demand_time_series = pd.Series(
         dataset["Valor"].values,
-        index=pandas.to_datetime(dataset["Nombre"]),
+        index=pd.to_datetime(dataset["Nombre"]),
     )
 
     # Add timezone information to the index.

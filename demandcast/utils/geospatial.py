@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,8 +10,8 @@ import importlib
 import os
 
 import geopandas
-import numpy
-import pandas
+import numpy as np
+import pandas as pd
 import xarray
 from shapely import box
 
@@ -69,7 +68,7 @@ def harmonize_coords(
             "The x coordinate contains values less than -180. "
             "Please ensure that the x coordinate is in the correct range."
         )
-    elif float(ds["x"].max()) > 180.01:
+    if float(ds["x"].max()) > 180.01:
         raise ValueError(
             "The x coordinate contains values greater than 180. "
             "Please ensure that the x coordinate is in the correct range."
@@ -155,19 +154,19 @@ def _get_fraction_of_grid_cells_in_shape(
     )
 
     # Get the coordinates of the xarray data as a matrix.
-    x_coords, y_coords = numpy.meshgrid(
+    x_coords, y_coords = np.meshgrid(
         xarray_data.x.to_numpy(), xarray_data.y.to_numpy()
     )
 
     # Reshape the coordinates to a list of (x, y) pairs.
-    coords = numpy.vstack([x_coords.ravel(), y_coords.ravel()]).T
+    coords = np.vstack([x_coords.ravel(), y_coords.ravel()]).T
 
     # Calculate half the grid cell size.
     half_cell = (coords[len(xarray_data.x) + 1] - coords[0]) / 2
 
     # Define the grid cells as boxes.
     grid_cells = [
-        box(*c) for c in numpy.hstack((coords - half_cell, coords + half_cell))
+        box(*c) for c in np.hstack((coords - half_cell, coords + half_cell))
     ]
 
     # Create the grid as a GeoDataFrame where each row has the
@@ -195,22 +194,22 @@ def _get_fraction_of_grid_cells_in_shape(
     # Some rounding errors can lead to fractions slightly above 1.
     # Set these values to 1. A new array is created because, with
     # Copy-on-Write, the array returned by to_numpy() is read-only.
-    fraction_of_grid_cells_in_shape_np = numpy.where(
-        numpy.isclose(fraction_of_grid_cells_in_shape_np, 1),
+    fraction_of_grid_cells_in_shape_np = np.where(
+        np.isclose(fraction_of_grid_cells_in_shape_np, 1),
         1.0,
         fraction_of_grid_cells_in_shape_np,
     )
 
     # Check that the fraction is between 0 and 1 and that there are
     # no NaN or infinite values.
-    assert numpy.all(
+    assert np.all(
         (fraction_of_grid_cells_in_shape_np >= 0)
         & (fraction_of_grid_cells_in_shape_np <= 1)
     ), "The fraction of grid cells in shape must be between 0 and 1."
-    assert not numpy.any(numpy.isnan(fraction_of_grid_cells_in_shape_np)), (
+    assert not np.any(np.isnan(fraction_of_grid_cells_in_shape_np)), (
         "The fraction of grid cells in shape must not contain NaN values."
     )
-    assert not numpy.any(numpy.isinf(fraction_of_grid_cells_in_shape_np)), (
+    assert not np.any(np.isinf(fraction_of_grid_cells_in_shape_np)), (
         "The fraction of grid cells in shape must not contain infinite values."
     )
 
@@ -257,15 +256,15 @@ def from_density_to_count(
 
     # Check that the resolution of the grid cells is uniform along each
     # axis.
-    assert numpy.allclose(x_resolution, x_resolution[0]), (
+    assert np.allclose(x_resolution, x_resolution[0]), (
         "The x resolution must be uniform."
     )
-    assert numpy.allclose(y_resolution, y_resolution[0]), (
+    assert np.allclose(y_resolution, y_resolution[0]), (
         "The y resolution must be uniform."
     )
 
     # Check that the resolution is the same in both directions.
-    assert numpy.allclose(x_resolution[0], y_resolution[0]), (
+    assert np.allclose(x_resolution[0], y_resolution[0]), (
         "The x and y resolutions must be the same. "
         f"Got {x_resolution[0]} and {y_resolution[0]}."
     )
@@ -278,7 +277,7 @@ def from_density_to_count(
     latitudes = density.y.to_numpy()
 
     # Calculate the latitude values of the grid cell boundaries.
-    boundary_latitudes = numpy.concatenate(
+    boundary_latitudes = np.concatenate(
         [
             [latitudes[0] - resolution / 2],
             0.5 * (latitudes[1:] + latitudes[:-1]),
@@ -291,11 +290,11 @@ def from_density_to_count(
         data_vars={
             "upper_lat": (
                 ["y", "x"],
-                numpy.tile(boundary_latitudes[1:], (len(longitudes), 1)).T,
+                np.tile(boundary_latitudes[1:], (len(longitudes), 1)).T,
             ),
             "lower_lat": (
                 ["y", "x"],
-                numpy.tile(boundary_latitudes[:-1], (len(longitudes), 1)).T,
+                np.tile(boundary_latitudes[:-1], (len(longitudes), 1)).T,
             ),
         },
         coords={"y": latitudes, "x": longitudes},
@@ -306,12 +305,12 @@ def from_density_to_count(
 
     # Calculate the area of each grid cell in square kilometers.
     area = (
-        (numpy.pi / 180)
+        (np.pi / 180)
         * R**2
         * resolution
         * (
-            numpy.sin(numpy.deg2rad(boundary_latitudes["upper_lat"]))
-            - numpy.sin(numpy.deg2rad(boundary_latitudes["lower_lat"]))
+            np.sin(np.deg2rad(boundary_latitudes["upper_lat"]))
+            - np.sin(np.deg2rad(boundary_latitudes["lower_lat"]))
         )
     )
 
@@ -415,19 +414,19 @@ def coarsen(
     )
 
     # Define the new coarser resolution.
-    x_list = numpy.linspace(-180, 180, int(360 / target_resolution) + 1)
-    y_list = numpy.linspace(-90, 90, int(180 / target_resolution) + 1)
+    x_list = np.linspace(-180, 180, int(360 / target_resolution) + 1)
+    y_list = np.linspace(-90, 90, int(180 / target_resolution) + 1)
 
     # Define the left and right bounds of the x bins and y bins.
-    x_bins = numpy.concatenate(
+    x_bins = np.concatenate(
         [
-            numpy.array([-180]),
+            np.array([-180]),
             (x_list[:-1] + x_list[1:]) / 2,
-            numpy.array([180]),
+            np.array([180]),
         ]
     )
-    y_bins = numpy.concatenate(
-        [numpy.array([-90]), (y_list[:-1] + y_list[1:]) / 2, numpy.array([90])]
+    y_bins = np.concatenate(
+        [np.array([-90]), (y_list[:-1] + y_list[1:]) / 2, np.array([90])]
     )
 
     # Keep only the bins that are within the specified bounds.
@@ -478,8 +477,8 @@ def coarsen(
     # the edges. This is because the grid cells at -180 and 180
     # represent the same longitude line.
     if coarsened_xarray.x[0] == -180 and coarsened_xarray.x[-1] == 180:
-        coarsened_xarray.loc[dict(x=-180)] += coarsened_xarray.loc[dict(x=180)]
-        coarsened_xarray.loc[dict(x=180)] = coarsened_xarray.loc[dict(x=-180)]
+        coarsened_xarray.loc[{"x": -180}] += coarsened_xarray.loc[{"x": 180}]
+        coarsened_xarray.loc[{"x": 180}] = coarsened_xarray.loc[{"x": -180}]
 
     return coarsened_xarray
 
@@ -579,21 +578,17 @@ def _select_years_of_gridded_data(
     # Get the first year of available gridded data that is less than
     # or equal to the minimum selected year.
     first_selected_year_of_gridded_data = max(
-        [
-            year
-            for year in available_years_of_gridded_data
-            if year <= min(selected_years)
-        ]
+        year
+        for year in available_years_of_gridded_data
+        if year <= min(selected_years)
     )
 
     # Get the last year of available gridded data that is greater than
     # or equal to the maximum selected year.
     last_selected_year_of_gridded_data = min(
-        [
-            year
-            for year in available_years_of_gridded_data
-            if year >= max(selected_years)
-        ]
+        year
+        for year in available_years_of_gridded_data
+        if year >= max(selected_years)
     )
 
     # Select and return the years of gridded data that cover the years
@@ -614,7 +609,7 @@ def get_total_value_from_gridded_data(
     available_years_of_gridded_data: list[int],
     last_available_historical_years_of_gridded_data: int | None = None,
     scenario: str | None = None,
-) -> pandas.Series:
+) -> pd.Series:
     """
     Get the total value of a variable from gridded data.
 
@@ -688,8 +683,9 @@ def get_total_value_from_gridded_data(
     # to the list of available years of gridded data.
     if last_available_historical_years_of_gridded_data:
         available_years_of_gridded_data = [
-            last_available_historical_years_of_gridded_data
-        ] + available_years_of_gridded_data
+            last_available_historical_years_of_gridded_data,
+            *available_years_of_gridded_data,
+        ]
 
     # Sort the available years of gridded data.
     available_years_of_gridded_data.sort()
@@ -724,7 +720,7 @@ def get_total_value_from_gridded_data(
 
     # Construct a Series with the total values and the selected
     # years of gridded data as index.
-    total_values = pandas.Series(
+    total_values = pd.Series(
         data=total_value_list,
         index=selected_years_of_gridded_data,
     )

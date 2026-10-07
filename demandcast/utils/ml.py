@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -10,9 +9,8 @@ Description:
 
 import logging
 import os
-from typing import Optional
 
-import pandas
+import pandas as pd
 from pydantic import BaseModel, ValidationError
 
 import utils.config
@@ -41,8 +39,8 @@ def read_and_check_ml_configuration() -> BaseModel:
         target: str
         splitter: str
         time: str
-        categorical_features: Optional[list[str]] = None
-        scaling_variables: Optional[list[str]] = None
+        categorical_features: list[str] | None = None
+        scaling_variables: list[str] | None = None
 
     # Define the path to the features and target configuration file.
     config_path = os.path.join(
@@ -51,7 +49,7 @@ def read_and_check_ml_configuration() -> BaseModel:
     )
 
     # Read the configuration.
-    with open(config_path, "r", encoding="utf-8") as file:
+    with open(config_path, encoding="utf-8") as file:
         raw_config = utils.config.yaml.safe_load(file)
 
     try:
@@ -189,12 +187,12 @@ def get_assemble_data_path(data_path: str | None) -> str:
 
 
 def _split_temporally(
-    dataset: pandas.DataFrame,
+    dataset: pd.DataFrame,
     testing_set: bool,
     validation_set: bool,
     group_column: str,
     splitter_column: str,
-) -> dict[str, pandas.DataFrame]:
+) -> dict[str, pd.DataFrame]:
     """
     Split the dataset into training, validation, and test sets.
 
@@ -223,11 +221,11 @@ def _split_temporally(
     )
 
     # Initialize an empty dictionary to hold the split datasets.
-    split_dataset: dict[str, pandas.DataFrame] = {}
+    split_dataset: dict[str, pd.DataFrame] = {}
     if testing_set:
-        split_dataset["testing"] = pandas.DataFrame()
+        split_dataset["testing"] = pd.DataFrame()
     if validation_set:
-        split_dataset["validation"] = pandas.DataFrame()
+        split_dataset["validation"] = pd.DataFrame()
 
     # Initialize lists to keep track of indexes to be removed from
     # the original dataset.
@@ -238,7 +236,7 @@ def _split_temporally(
         latest_year = entity[splitter_column].max()
 
         if testing_set or validation_set:
-            for split_name in split_dataset.keys():
+            for split_name in split_dataset:
                 # Define the year to extract based on the split.
                 if split_name == "testing":
                     year_to_extract = latest_year
@@ -254,7 +252,7 @@ def _split_temporally(
                 indexes_not_for_training.extend(data_of_entity.index)
 
                 # Append the data to the respective dataset.
-                split_dataset[split_name] = pandas.concat(
+                split_dataset[split_name] = pd.concat(
                     [split_dataset[split_name], data_of_entity],
                     ignore_index=True,
                 )
@@ -264,11 +262,11 @@ def _split_temporally(
     split_dataset["training"] = dataset.drop(index=indexes_not_for_training)
 
     # Reset indexes for all datasets.
-    for key in split_dataset.keys():
+    for key in split_dataset:
         split_dataset[key] = split_dataset[key].reset_index(drop=True)
 
     logging.info("Dataset split complete:")
-    for key in split_dataset.keys():
+    for key in split_dataset:
         logging.info(
             f" - {key.capitalize()} set: {len(split_dataset[key])} records "
             f"({(len(split_dataset[key]) / len(dataset)) * 100:.2f}%)"
@@ -278,7 +276,7 @@ def _split_temporally(
 
 
 def _split_in_groups(
-    dataset: pandas.DataFrame,
+    dataset: pd.DataFrame,
     group_column: str,
     feature_columns: list[str],
     target_column: str,
@@ -286,7 +284,7 @@ def _split_in_groups(
     categorical_feature_columns: list[str] | None = None,
     scaling_variable_columns: list[str] | None = None,
     target: bool = True,
-) -> dict[str, dict[str, pandas.DataFrame | pandas.Series]]:
+) -> dict[str, dict[str, pd.DataFrame | pd.Series]]:
     """
     Split the dataset into features, target, group, and scaling factor.
 
@@ -323,7 +321,7 @@ def _split_in_groups(
     """
     # Construct the list of columns to check for existence in the
     # dataset.
-    columns_to_check = feature_columns + [group_column] + [time_column]
+    columns_to_check = [*feature_columns, group_column, time_column]
     if target:
         columns_to_check += [target_column]
     if categorical_feature_columns:
@@ -391,9 +389,7 @@ def prepare_dataset(
     target: bool = True,
 ) -> dict[
     str,
-    pandas.Series
-    | pandas.DataFrame
-    | dict[str, pandas.DataFrame | pandas.Series],
+    pd.Series | pd.DataFrame | dict[str, pd.DataFrame | pd.Series],
 ]:
     """
     Prepare the dataset for training or validation.
@@ -419,7 +415,7 @@ def prepare_dataset(
     ml_config = read_and_check_ml_configuration()
 
     # Read the assembled data.
-    dataset = pandas.read_parquet(data_path)
+    dataset = pd.read_parquet(data_path)
 
     if testing_set or validation_set:
         # Split the dataset temporally.
@@ -432,9 +428,7 @@ def prepare_dataset(
         )
 
         # Initialize a dictionary to hold prepared datasets.
-        prepared_dataset: dict[
-            str, dict[str, pandas.DataFrame | pandas.Series]
-        ] = {}
+        prepared_dataset: dict[str, dict[str, pd.DataFrame | pd.Series]] = {}
 
         # Prepare features and target for each dataset.
         for split_name, dataset in split_dataset.items():
@@ -451,23 +445,22 @@ def prepare_dataset(
 
         return prepared_dataset
 
-    else:
-        # Prepare and return the dataset without splitting.
-        return _split_in_groups(
-            dataset,
-            ml_config.group,
-            ml_config.features,
-            ml_config.target,
-            ml_config.time,
-            ml_config.categorical_features,
-            ml_config.scaling_variables,
-            target,
-        )
+    # Prepare and return the dataset without splitting.
+    return _split_in_groups(
+        dataset,
+        ml_config.group,
+        ml_config.features,
+        ml_config.target,
+        ml_config.time,
+        ml_config.categorical_features,
+        ml_config.scaling_variables,
+        target,
+    )
 
 
 def save_results(
     case: str,
-    output_dataset: pandas.DataFrame,
+    output_dataset: pd.DataFrame,
     trained_model_name: str,
     assembled_data_file_name: str,
     file_name_prefix: str,
@@ -512,8 +505,7 @@ def save_results(
     # Construct the results file name.
     results_file_name = os.path.join(
         model_results_folder,
-        f"{file_name_prefix}_"
-        f"{pandas.Timestamp.now().strftime('%Y%m%d_%H%M%S')}",
+        f"{file_name_prefix}_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}",
     )
 
     # Save the results to CSV and Parquet files.
