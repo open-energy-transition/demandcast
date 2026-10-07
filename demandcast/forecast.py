@@ -81,7 +81,7 @@ def _construct_output_dataset(
     output_dataset : pandas.DataFrame
         The output dataset with forecasts.
     """
-    # Scale the prodictions to MW using the annual electricity demand
+    # Scale the predictions to MW using the annual electricity demand
     # per capita (kWh) and population.
     predictions = predictions * prepared_dataset["scaling_factor"] / 1000
 

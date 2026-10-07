@@ -351,7 +351,7 @@ def test_fetch_data_requests_get_errors():
     RequestException, and SSLError. It checks that the fetch_data
     function handles these errors correctly.
     """
-    # Define the erors to test.
+    # Define the errors to test.
     errors = [
         requests.exceptions.SSLError(),  # Subclass of ConnectionError
         requests.exceptions.ConnectionError(),  # Subclass of RequestException
@@ -378,7 +378,7 @@ def test_fetch_data_urlopen_errors():
     various exceptions, including HTTPError and URLError. It checks
     that the fetch_data function handles these errors correctly.
     """
-    # Define the erors to test.
+    # Define the errors to test.
     errors = [
         urllib.error.HTTPError(
             url="", code=0, msg="", hdrs=email.message.Message(), fp=None

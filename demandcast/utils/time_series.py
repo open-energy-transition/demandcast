@@ -185,7 +185,7 @@ def check_time_series_data_quality(time_series: pandas.Series) -> None:
             "time steps in the time series."
         )
 
-    # Chech the frequency of the time series.
+    # Check the frequency of the time series.
     time_step_difference_values = (
         time_series.index.to_series()
         .diff()

@@ -191,7 +191,7 @@ def download_and_extract_data_for_request(
         )
 
     # Initialize the list to store the daily values.
-    dayly_values_list = []
+    daily_values_list = []
 
     # Iterate over the dates in the dataset.
     for date in dataset["Date"]:
@@ -208,7 +208,7 @@ def download_and_extract_data_for_request(
         date_and_time = [date + f" {hour:02d}:00" for hour in range(24)]
 
         # Create and append a pandas Series for the day.
-        dayly_values_list.append(
+        daily_values_list.append(
             pandas.Series(
                 hourly_values,
                 index=pandas.to_datetime(date_and_time),
@@ -216,7 +216,7 @@ def download_and_extract_data_for_request(
         )
 
     # Concatenate the daily values into a single pandas Series.
-    electricity_demand_time_series = pandas.concat(dayly_values_list)
+    electricity_demand_time_series = pandas.concat(daily_values_list)
 
     # Convert the electricity demand values to float type.
     electricity_demand_time_series = electricity_demand_time_series.astype(

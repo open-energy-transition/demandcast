@@ -1,49 +1,108 @@
-# Pre-commit configuration file
-# Run `uv run pre-commit run --all-files` to check all files
-# Run `uv run pre-commit autoupdate` to update hook versions
-
-ci:
-  # Automatically update pre-commit hooks on CI
-  autoupdate_schedule: quarterly
+# Hooks that lint, format and check the files before each commit. Install
+# them with `uvx pre-commit install`; CI runs them on every pull request.
+# Revisions are pinned to commit SHAs, and Dependabot proposes updates.
 
 repos:
-  # Basic file hygiene checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
     hooks:
-      - id: check-yaml # Ensure YAML files parse correctly
-      - id: end-of-file-fixer # Ensure files end with a single newline
-      - id: trailing-whitespace # Remove trailing whitespace
-      - id: check-merge-conflict # Detect unresolved merge conflicts
-      - id: mixed-line-ending # Normalize line endings
-      - id: check-added-large-files # Prevent accidentally committing huge files
-        args: ["--maxkb=5000"]
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-illegal-windows-names
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-toml
+      - id: check-yaml
+      - id: debug-statements
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+      - id: name-tests-test
+        args: ["--pytest-test-first"]
+      - id: trailing-whitespace
 
-  # Ruff: Linter and formatter for Python
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.3
+    rev: 3d44372123ca5e8617fdb65d9f11facd159b9e95 # frozen: v0.12.3
     hooks:
-      - id: ruff-check # Run Ruff linting (auto-fix if possible)
+      - id: ruff-check
         types_or: [python, pyi, jupyter]
         args: [--fix, --exit-non-zero-on-fix]
-      - id: ruff-format # Run Ruff code formatter
+      - id: ruff-format
 
-  # Prettier: Formatter for JSON, YAML, etc.
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0-alpha.8
-    hooks:
-      - id: prettier
-        types_or: [yaml, json5]
-
-  # Mypy: Static type checker for Python
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.17.0
+    rev: 850d8bf806620ef89a99381c5cf5ea2c1ea826dd # frozen: v1.17.0
     hooks:
       - id: mypy
         args: [--ignore-missing-imports, "--disable-error-code=import-untyped"]
 
-  # Jupyter notebook output stripper
   - repo: https://github.com/kynan/nbstripout
-    rev: 0.8.1
+    rev: 34071b78c181af3bf5af955c1426466e096fc3db # frozen: 0.9.1
     hooks:
-      - id: nbstripout # Strip output from Jupyter notebooks before commit
+      - id: nbstripout
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: a1785f8e81fe9936d828bef574e6db07e8c8c374 # frozen: 0.12.23
+    hooks:
+      - id: uv-lock
+        name: uv-lock (demandcast)
+        args: ["--project", "demandcast", "--check"]
+        files: ^demandcast/(pyproject\.toml|uv\.lock)$
+      - id: uv-lock
+        name: uv-lock (webpage)
+        args: ["--project", "webpage", "--check"]
+        files: ^webpage/(pyproject\.toml|uv\.lock)$
+
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: 17e12779811926f000bdfa1795f9e3735dd71ac3 # frozen: 0.26
+    hooks:
+      - id: validate-pyproject
+        files: pyproject\.toml$
+
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: ef4a397f916211b4a39ccf9d3d9cbb6562157251 # frozen: v3.9.9
+    hooks:
+      - id: prettier
+        types_or: [yaml, json]
+
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0494aa7fa1314e98913a41227d8f0a515b2c1049 # frozen: 0.38.2
+    hooks:
+      - id: check-dependabot
+      - id: check-github-workflows
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: 914e7df21a07ef503a81201c76d2b11c789d3fca # frozen: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: fa412071e4f5d44d44f9e365f4676f9df92456a2 # frozen: v1.30.1
+    hooks:
+      - id: zizmor
+
+  - repo: https://github.com/AleksaC/hadolint-py
+    rev: 6e7504451511eaeb62a3e7f14d63b0296cbf86eb # frozen: v2.15.1
+    hooks:
+      - id: hadolint
+        exclude: \.md$
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: 745eface02aef23e168a8afb6b5737818efbea95 # frozen: v0.11.0.1
+    hooks:
+      - id: shellcheck
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e # frozen: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/crate-ci/typos
+    rev: 7f9d0819ca1c008ade73f4b41fa9d258d48f605b # frozen: v1.51.1
+    hooks:
+      - id: typos
+        args: [--force-exclude]

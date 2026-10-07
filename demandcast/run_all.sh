@@ -40,10 +40,10 @@ xm"
 # Iterate over each data source and retrieve the electricity time series data.
 for source in $automated_data_sources; do
     printf "Retrieving data for source: %s\n" "$source"
-    uv run retrieve.py electricity_demand -d $source
+    uv run retrieve.py electricity_demand -d "$source"
 done
 
-# Define all the data sources for which the retrieval process is maually handled.
+# Define all the data sources for which the retrieval process is manually handled.
 manual_data_sources="epias \
 eskom \
 krogd \
@@ -53,7 +53,7 @@ ntdc"
 # Iterate over each data source and harmonize the electricity time series data.
 for source in $manual_data_sources; do
     printf "Harmonizing data for source: %s\n" "$source"
-    uv run retrieve.py electricity_demand -d $source
+    uv run retrieve.py electricity_demand -d "$source"
 done
 
 # Retrieve the population data.

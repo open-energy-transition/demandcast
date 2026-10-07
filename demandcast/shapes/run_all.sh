@@ -10,5 +10,5 @@ tepco"
 
 # Iterate over each script and run it.
 for script in $scripts; do
-    uv run $script.py
+    uv run "$script.py"
 done

@@ -4,7 +4,7 @@ License: AGPL-3.0.
 
 Description:
 
-    This module povides utility functions to read the configuration
+    This module provides utility functions to read the configuration
     files of various scripts.
 """
 

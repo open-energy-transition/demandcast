@@ -7,6 +7,8 @@ on:
   push:
     branches: [main]
   pull_request:
+    # Labels can skip the check of the changed lines, so re-run on changes.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}-${{ github.event.pull_request.number || github.sha }}
@@ -16,7 +18,7 @@ permissions: {}
 
 jobs:
   pre-commit:
-    timeout-minutes: 10
+    timeout-minutes: 15
     name: "pre-commit"
     runs-on: ubuntu-latest
     permissions:
@@ -26,9 +28,19 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: "Install uv"
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
 
-      - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
+      - name: "Cache the hook environments"
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: "Run the hooks"
+        run: uvx pre-commit@4.6.2 run --all-files --show-diff-on-failure
 
   tests:
     name: "tests (${{ matrix.os }}, Python ${{ matrix.python }})"
@@ -80,8 +92,10 @@ jobs:
           uv run --locked coverage report --fail-under=37
           uv run --locked coverage report --include="utils/*" --fail-under=95
 
+      # Maintainers can skip this check for mechanical changes, such as
+      # renames or lint fixes in untested code, with a label.
       - name: "Check the coverage of the changed lines"
-        if: ${{ matrix.coverage && github.event_name == 'pull_request' }}
+        if: ${{ matrix.coverage && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'skip-diff-cover') }}
         run: |
           uv run --locked diff-cover coverage.xml --compare-branch=origin/main --fail-under=80 --format markdown:diff-cover.md || status=$?
           cat diff-cover.md >> "$GITHUB_STEP_SUMMARY"

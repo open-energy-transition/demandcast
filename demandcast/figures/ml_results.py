@@ -4,7 +4,7 @@ License: AGPL-3.0.
 
 Description:
 
-    This module contains funtions to plot the mean absolute percentage
+    This module contains functions to plot the mean absolute percentage
     error (MAPE) of machine learning model predictions. The MAPE values
     are plotted for all countries and subdivisions, and can also be
     plotted by group (income level and continent) or compared between

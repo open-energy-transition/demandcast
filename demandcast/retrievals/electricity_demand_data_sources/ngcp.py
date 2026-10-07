@@ -105,7 +105,7 @@ def download_and_extract_data() -> pandas.Series:
         )
 
     # Define the number of rows to skip for each region's sheet.
-    rows_to_skeep = {
+    rows_to_skip = {
         "LUZON": 1,
         "VISAYAS": 2,
         "MINDANAO": 1,
@@ -121,7 +121,7 @@ def download_and_extract_data() -> pandas.Series:
             excel_kwargs={
                 "storage_options": {"User-Agent": "Mozilla/5.0"},
                 "sheet_name": sheet_names[region],
-                "skiprows": rows_to_skeep[region],
+                "skiprows": rows_to_skip[region],
             },
         )
 

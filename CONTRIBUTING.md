@@ -82,7 +82,7 @@ Common types are `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `build`, `ci
 
 ### Review
 
-Fill in the pull request template. A maintainer reviews every pull request, and all CI checks must pass before it is merged. Please keep pull requests focused: several small ones are easier to review than a large one.
+Fill in the pull request template. A maintainer reviews every pull request, and all CI checks must pass before it is merged. For mechanical changes to untested code, such as renames or lint fixes, maintainers can skip the check of the changed lines with the `skip-diff-cover` label. Please keep pull requests focused: several small ones are easier to review than a large one.
 
 ## AI-assisted contributions
 

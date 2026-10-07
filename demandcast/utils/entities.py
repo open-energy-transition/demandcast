@@ -4,7 +4,7 @@ License: AGPL-3.0.
 
 Description:
 
-    This module povides utility functions to read country and
+    This module provides utility functions to read country and
     subdivision codes, time zones, and date ranges from yaml files.
 """
 

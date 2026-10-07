@@ -55,3 +55,21 @@ updates:
       docker:
         patterns:
           - "*"
+
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 7
+    groups:
+      pre-commit:
+        patterns:
+          - "*"
+    # Ruff and mypy are upgraded with the code changes they require.
+    ignore:
+      - dependency-name: "*ruff-pre-commit*"
+      - dependency-name: "*mirrors-mypy*"
