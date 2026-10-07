@@ -1,0 +1,48 @@
+cff-version: 1.2.0
+message: If you use DemandCast, please cite the paper below.
+title: "DemandCast: Global hourly electricity demand forecasting"
+type: software
+authors:
+  - family-names: Steijn
+    given-names: Kevin
+  - family-names: Goli
+    given-names: Vamsi Priya
+  - family-names: Antonini
+    given-names: Enrico
+repository-code: https://github.com/open-energy-transition/demandcast
+url: https://open-energy-transition.github.io/demandcast/
+license: AGPL-3.0
+version: 1.0.0
+date-released: 2026-02-02
+keywords:
+  - electricity demand
+  - forecasting
+  - machine learning
+  - energy system modelling
+preferred-citation:
+  type: conference-paper
+  title: "DemandCast: Global hourly electricity demand forecasting"
+  authors:
+    - family-names: Steijn
+      given-names: Kevin
+    - family-names: Goli
+      given-names: Vamsi Priya
+    - family-names: Antonini
+      given-names: Enrico
+  collection-title: "NeurIPS 2025 Workshop: Tackling Climate Change with Machine Learning"
+  year: 2025
+  doi: 10.48550/arXiv.2510.08000
+  url: https://arxiv.org/abs/2510.08000
+references:
+  - type: data
+    title: "Global Dataset of Forecasted Hourly Electricity Demand from 2000 to 2024 Using DemandCast"
+    authors:
+      - family-names: Antonini
+        given-names: Enrico
+      - family-names: Goli
+        given-names: Vamsi Priya
+      - family-names: Steijn
+        given-names: Kevin
+    year: 2026
+    doi: 10.5281/zenodo.18374351
+    url: https://doi.org/10.5281/zenodo.18374351

@@ -1,2 +1,12 @@
-# Set the default behavior, in case people don't have core.autocrlf set.
-* text=auto
+# Store text files with LF line endings, whatever the contributor's platform.
+* text=auto eol=lf
+
+# Binary files.
+*.png binary
+*.jpg binary
+*.pdf binary
+*.parquet binary
+*.zip binary
+
+# Collapse generated lockfiles in pull request diffs.
+uv.lock linguist-generated=true

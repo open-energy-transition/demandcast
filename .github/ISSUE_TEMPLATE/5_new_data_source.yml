@@ -1,0 +1,58 @@
+name: New data source
+description: Suggest a new source of electricity demand data
+labels: ["Enhancement"]
+
+body:
+  - type: markdown
+    attributes:
+      value: >
+        #### Before submitting, please check that the source isn't already supported or requested by searching
+        [the past issues](https://github.com/open-energy-transition/demandcast/issues) and the
+        [Awesome Electricity Demand](https://github.com/open-energy-transition/Awesome-Electricity-Demand) list.
+
+  - type: input
+    attributes:
+      label: Data source
+      description: Organisation that publishes the data, and a link to the data.
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Countries or regions
+      description: Countries or subdivisions covered, ideally with their ISO 3166 codes.
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Time resolution and period
+      description: For example, hourly from 2015 to today.
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: Access
+      description: How can the data be retrieved?
+      options:
+        - Direct download
+        - API without key
+        - API with key
+        - Manual download only
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: License and terms of use
+      description: Under which terms is the data published? Can it be redistributed?
+    validations:
+      required: false
+
+  - type: checkboxes
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to implement the retrieval module myself.
+          required: false
