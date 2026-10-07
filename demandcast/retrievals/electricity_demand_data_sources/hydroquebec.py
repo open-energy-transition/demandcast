@@ -74,7 +74,7 @@ def download_and_extract_data() -> pd.Series:
 
     Raises
     ------
-    ValueError
+    TypeError
         If the extracted data is not a pandas DataFrame.
     """
     # Get the URL of the electricity demand data.
@@ -85,7 +85,7 @@ def download_and_extract_data() -> pd.Series:
 
     # Make sure the dataset is a pandas DataFrame.
     if not isinstance(electricity_demand_time_series, pd.DataFrame):
-        raise ValueError(
+        raise TypeError(
             "The extracted data is a "
             f"{type(electricity_demand_time_series)} object, "
             "expected a pandas DataFrame."

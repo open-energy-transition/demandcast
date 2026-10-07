@@ -47,11 +47,15 @@ def _check_input_parameters(year: int | None, before_Apr_2002: bool) -> None:
         The year of the data to retrieve.
     before_Apr_2002 : bool
         Whether the url is for the time period before April 2002.
+
+    Raises
+    ------
+    ValueError
+        If the input parameters are not valid.
     """
     # Check if the request is supported.
-    assert (year, before_Apr_2002) in get_available_requests(), (
-        "The request is not available."
-    )
+    if (year, before_Apr_2002) not in get_available_requests():
+        raise ValueError("The request is not available.")
 
 
 def get_available_requests() -> list[tuple[int | None, bool]]:
@@ -147,7 +151,7 @@ def download_and_extract_data_for_request(
 
     Raises
     ------
-    ValueError
+    TypeError
         If the extracted data is not a pandas DataFrame.
     """
     # Check if the input parameters are valid.
@@ -171,7 +175,7 @@ def download_and_extract_data_for_request(
 
         # Make sure the dataset is a pandas DataFrame.
         if not isinstance(dataset, pd.DataFrame):
-            raise ValueError(
+            raise TypeError(
                 f"The extracted data is a {type(dataset)} object, "
                 "expected a pandas DataFrame."
             )
@@ -204,7 +208,7 @@ def download_and_extract_data_for_request(
 
     # Make sure the dataset is a pandas DataFrame.
     if not isinstance(dataset, pd.DataFrame):
-        raise ValueError(
+        raise TypeError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )

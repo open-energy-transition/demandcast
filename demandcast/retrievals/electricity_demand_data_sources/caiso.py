@@ -44,11 +44,15 @@ def _check_input_parameters(year: int, month: int | None) -> None:
         The year of the data to retrieve.
     month : int | None
         The month of the data to retrieve.
+
+    Raises
+    ------
+    ValueError
+        If the input parameters are not valid.
     """
     # Check if the request is supported.
-    assert (year, month) in get_available_requests(), (
-        "The request is not available."
-    )
+    if (year, month) not in get_available_requests():
+        raise ValueError("The request is not available.")
 
 
 def get_available_requests() -> list[tuple[int, int | None]]:
@@ -154,7 +158,7 @@ def download_and_extract_data_for_request(
 
     Raises
     ------
-    ValueError
+    TypeError
         If the extracted data is not a pandas DataFrame.
     """
     # Check if the input parameters are valid.
@@ -181,7 +185,7 @@ def download_and_extract_data_for_request(
 
     # Make sure the dataset is a pandas DataFrame.
     if not isinstance(dataset, pd.DataFrame):
-        raise ValueError(
+        raise TypeError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )

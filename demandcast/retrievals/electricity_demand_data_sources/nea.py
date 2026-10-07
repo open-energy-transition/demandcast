@@ -53,11 +53,17 @@ def _check_input_parameters(bs_month: int) -> None:
     ----------
     bs_month : int
         The Bikram Sambat month number.
+
+    Raises
+    ------
+    ValueError
+        If the input parameters are not valid.
     """
     # Check if the month is supported.
-    assert bs_month in get_available_requests(), (
-        f"The month {bs_month} is not available for retrieval."
-    )
+    if bs_month not in get_available_requests():
+        raise ValueError(
+            f"The month {bs_month} is not available for retrieval."
+        )
 
 
 def get_available_requests() -> list[int]:
@@ -138,7 +144,7 @@ def download_and_extract_data_for_request(bs_month: int) -> pd.DataFrame:
 
     Raises
     ------
-    ValueError
+    TypeError
         If the extracted data is not a pandas DataFrame.
     """
     # Check if input parameters are valid.
@@ -162,7 +168,7 @@ def download_and_extract_data_for_request(bs_month: int) -> pd.DataFrame:
 
     # Make sure the dataset is a pandas DataFrame.
     if not isinstance(dataset, pd.DataFrame):
-        raise ValueError(
+        raise TypeError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )

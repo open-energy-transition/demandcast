@@ -48,17 +48,17 @@ def _read_and_check_configuration() -> BaseModel:
         "preprocessed data and algorithm.",
     )
 
+    # Validate the configuration.
     try:
-        # Validate the configuration.
         config = ConfigModel(**raw_config)
-
-        logging.info("Configuration validated successfully:")
-        for field, value in config.model_dump().items():
-            logging.info(f" - {field}: {value}")
-
-        return config
     except ValidationError as e:
         raise ValueError(f"Configuration validation error: {e}") from e
+
+    logging.info("Configuration validated successfully:")
+    for field, value in config.model_dump().items():
+        logging.info(f" - {field}: {value}")
+
+    return config
 
 
 def _calculate_mape_by_entity(

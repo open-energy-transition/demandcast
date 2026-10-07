@@ -45,15 +45,18 @@ def _check_input_parameters(
         The year of the data to retrieve.
     code : str, optional
         The code of the subdivision of interest.
+
+    Raises
+    ------
+    ValueError
+        If the input parameters are not valid.
     """
     # Check if the code is valid.
     utils.entities.check_code_in_data_source(code, "ons")
 
-    if year is not None:
-        # Check if the year is supported.
-        assert year in get_available_requests(code), (
-            f"The year {year} is not in the supported range."
-        )
+    # Check if the year is supported.
+    if year is not None and year not in get_available_requests(code):
+        raise ValueError(f"The year {year} is not in the supported range.")
 
 
 def get_available_requests(code: str) -> list[int]:
@@ -132,7 +135,7 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
 
     Raises
     ------
-    ValueError
+    TypeError
         If the extracted data is not a pandas DataFrame.
     """
     # Check if the input parameters are valid.
@@ -151,7 +154,7 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
 
     # Make sure the dataset is a pandas DataFrame.
     if not isinstance(dataset, pd.DataFrame):
-        raise ValueError(
+        raise TypeError(
             f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )

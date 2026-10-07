@@ -422,12 +422,18 @@ def check_code_in_data_source(code: str, data_source: str) -> None:
     data_source : str
         The name of the data source from which to read the available
         codes.
+
+    Raises
+    ------
+    ValueError
+        If the code is not available in the data source.
     """
     # Check if the code is valid.
-    assert code in read_codes_in(data_source=data_source), (
-        f"Invalid code: {code}. Available codes are: "
-        f"{', '.join(read_codes_in(data_source=data_source))}"
-    )
+    if code not in read_codes_in(data_source=data_source):
+        raise ValueError(
+            f"Invalid code: {code}. Available codes are: "
+            f"{', '.join(read_codes_in(data_source=data_source))}"
+        )
 
 
 def _get_all_codes_with_all_data() -> list[str]:
@@ -634,7 +640,7 @@ def _get_time_zone_of_country(iso_alpha_3_code: str) -> datetime.tzinfo:
             raise ValueError(
                 f"Country code {iso_alpha_3_code} is not available in "
                 "pytz and no predefined time zone is set for it."
-            )
+            ) from None
 
     # If there are multiple time zones, use the time zone of the
     # capital city.

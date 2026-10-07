@@ -129,6 +129,11 @@ def get_standard_shape(
     -------
     entity_shape : geopandas.GeoDataFrame
         GeoDataFrame containing the shape of the country or subdivision.
+
+    Raises
+    ------
+    ValueError
+        If no shape matches the code or the name of the entity.
     """
     # If there isn't an underscore in the code, it is the ISO Alpha-3
     # code of the country, and the entity is therefore the country.
@@ -169,27 +174,36 @@ def get_standard_shape(
     # Define a reader for the shapefile.
     reader = cartopy.io.shapereader.Reader(all_shapes)
 
-    try:
-        # Read the shape of the country or subdivision of interest by
-        # searching for its code.
-        entity_shape = [
+    # Read the shape of the country or subdivision of interest by
+    # searching for its code.
+    entity_shape = next(
+        (
             shape
-            for shape in list(reader.records())
+            for shape in reader.records()
             if code_to_search in [shape.attributes[key] for key in main_keys]
-        ][0]
-    except IndexError:
+        ),
+        None,
+    )
+
+    if entity_shape is None:
         # Get the name of the country or subdivision of interest based
         # on its code.
         name_to_search = utils.entities.get_name_from_code(code)
 
         # Read the shape of the country or subdivision of interest by
         # searching for its name.
-        entity_shape = [
-            shape
-            for shape in list(reader.records())
-            if name_to_search
-            in [shape.attributes[key] for key in secondary_keys]
-        ][0]
+        entity_shape = next(
+            (
+                shape
+                for shape in reader.records()
+                if name_to_search
+                in [shape.attributes[key] for key in secondary_keys]
+            ),
+            None,
+        )
+
+    if entity_shape is None:
+        raise ValueError(f"No shape found for {code} in Natural Earth.")
 
     # Convert the shape to a GeoDataFrame.
     entity_shape = pd.Series({"geometry": entity_shape.geometry})

@@ -27,11 +27,10 @@ ignore = [
     "RET504",
     # Exception messages written where the exception is raised.
     "TRY003",
-    # Temporary: existing findings, fixed in follow-up pull requests.
-    "A001", "B904", "B905", "C901", "DOC102", "DTZ002", "DTZ005", "DTZ007",
-    "N803", "N806", "PLC0206", "PLR1704", "PT018", "RUF001", "RUF002",
-    "RUF003", "RUF015", "S101", "S113", "S310", "TRY002", "TRY004",
-    "TRY300", "TRY400",
+    # Temporary: existing findings, fixed in a follow-up pull request.
+    "A001", "B905", "C901", "DOC102", "DTZ002", "DTZ005", "DTZ007", "N803",
+    "N806", "PLC0206", "PLR1704", "RUF001", "RUF002", "RUF003", "S113",
+    "S310",
 ]
 explicit-preview-rules = true
 preview = true
@@ -42,8 +41,8 @@ pep8-naming.extend-ignore-names = ["X", "X_*"]
 [lint.per-file-ignores]
 "demandcast/tests/**" = [
     "S101",
-    # Temporary: existing findings, fixed in follow-up pull requests.
-    "B017", "NPY002", "PT011", "PT012", "SIM117",
+    # Temporary: existing findings, fixed in a follow-up pull request.
+    "NPY002", "PT011", "PT012", "SIM117",
 ]
 # Legacy notebooks and scripts keep the original rules.
 "demandcast/archive/**" = [
