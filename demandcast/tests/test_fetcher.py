@@ -235,7 +235,11 @@ def test_fetch_data_invalid_arguments():
     """
     with pytest.raises(ValueError):
         utils.fetcher.fetch_data("http://example.com", "unsupported")
-    with pytest.raises(ValueError):
+    with (
+        patch("utils.fetcher.requests.Session"),
+        patch("utils.fetcher.requests.get"),
+        pytest.raises(ValueError),
+    ):
         utils.fetcher.fetch_data(
             "http://example.com", "html", read_as="unknown"
         )
