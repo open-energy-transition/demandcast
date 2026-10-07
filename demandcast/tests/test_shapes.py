@@ -102,7 +102,10 @@ def test_get_standard_shape_by_code():
             self.attributes = attr
             self.geometry = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
 
-    with patch("cartopy.io.shapereader.Reader") as mock_reader:
+    with (
+        patch("cartopy.io.shapereader.natural_earth"),
+        patch("cartopy.io.shapereader.Reader") as mock_reader,
+    ):
         # Mock the cartopy Reader to return dummy shapes for France and
         # Italy with ISO_A3 codes.
         mock_reader.return_value.records.return_value = [
@@ -147,7 +150,10 @@ def test_get_standard_shape_invalid_code():
             self.attributes = attr
             self.geometry = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
 
-    with patch("cartopy.io.shapereader.Reader") as mock_reader:
+    with (
+        patch("cartopy.io.shapereader.natural_earth"),
+        patch("cartopy.io.shapereader.Reader") as mock_reader,
+    ):
         # Mock the cartopy Reader to return dummy shapes for France and
         # Italy with invalid ISO_A2 codes.
         mock_reader.return_value.records.return_value = [
@@ -326,6 +332,7 @@ def test_get_entity_bounds(dummy_geodf):
     assert bounds[2] == 180
 
 
+@pytest.mark.network
 def test_get_all_codes_with_shapes():
     """
     Test the get_all_codes_with_shapes function.

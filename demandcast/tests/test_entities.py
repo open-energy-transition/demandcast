@@ -440,8 +440,15 @@ def test_time_zones():
         assert "FRA" in time_zones
         assert time_zones["FRA"] == pytz.timezone("Europe/Paris")
 
-    # Check if the function retrieves the time zone for a subdivision
-    # not defined in any yaml file.
+
+@pytest.mark.network
+def test_time_zone_of_subdivision_from_shapes():
+    """
+    Test the time zone of a subdivision not defined in any yaml file.
+
+    The time zone is derived from the shape of the subdivision, which
+    is downloaded from Natural Earth.
+    """
     assert utils.entities.get_time_zone("RUS_AD") == pytz.timezone(
         "Europe/Moscow"
     )
