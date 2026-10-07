@@ -69,7 +69,11 @@ updates:
       pre-commit:
         patterns:
           - "*"
-    # Ruff and mypy are upgraded with the code changes they require.
     ignore:
+      # Ruff and mypy are upgraded with the code changes they require.
       - dependency-name: "*ruff-pre-commit*"
       - dependency-name: "*mirrors-mypy*"
+      # The typos repository also tags releases of its libraries, such as
+      # varcon-core-v5.0.7, which Dependabot mistakes for typos releases.
+      - dependency-name: "*crate-ci/typos*"
+        versions: [">= 2"]
