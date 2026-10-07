@@ -14,6 +14,7 @@ import pandas
 import pytest
 import pytz
 import utils.entities
+from countryinfo import CountryNotFoundError
 
 
 def test_get_name_from_code():
@@ -432,6 +433,76 @@ def test_time_zones():
     assert utils.entities.get_time_zone("RUS_AD") == pytz.timezone(
         "Europe/Moscow"
     )
+
+
+@pytest.mark.parametrize(
+    ("code", "time_zone"),
+    [
+        ("ARG", "America/Argentina/Buenos_Aires"),
+        ("ATA", "Antarctica/McMurdo"),
+        ("AUS", "Australia/Sydney"),
+        ("BRA", "America/Sao_Paulo"),
+        ("CAN", "America/Toronto"),
+        ("CHL", "America/Santiago"),
+        ("CHN", "Asia/Shanghai"),
+        ("COD", "Africa/Kinshasa"),
+        ("CYP", "Asia/Nicosia"),
+        ("DEU", "Europe/Berlin"),
+        ("ECU", "America/Guayaquil"),
+        ("ESP", "Europe/Madrid"),
+        ("FSM", "Pacific/Pohnpei"),
+        ("GRL", "America/Nuuk"),
+        ("IDN", "Asia/Jakarta"),
+        ("KAZ", "Asia/Almaty"),
+        ("KIR", "Pacific/Tarawa"),
+        ("MEX", "America/Mexico_City"),
+        ("MHL", "Pacific/Majuro"),
+        ("MNG", "Asia/Ulaanbaatar"),
+        ("MYS", "Asia/Kuala_Lumpur"),
+        ("NZL", "Pacific/Auckland"),
+        ("PNG", "Pacific/Port_Moresby"),
+        ("PRT", "Europe/Lisbon"),
+        ("PSE", "Asia/Gaza"),
+        ("PYF", "Pacific/Tahiti"),
+        ("RUS", "Europe/Moscow"),
+        ("UKR", "Europe/Kyiv"),
+        ("USA", "America/New_York"),
+        ("UZB", "Asia/Tashkent"),
+    ],
+)
+def test_time_zones_of_countries_with_several_time_zones(code, time_zone):
+    """
+    Test the time zone of countries with several time zones.
+
+    The time zone must be the one of the capital city, or the first
+    time zone of the country if the capital is unknown or lies in a
+    time zone of another country.
+
+    Parameters
+    ----------
+    code : str
+        The ISO Alpha-3 code of the country.
+    time_zone : str
+        The expected time zone.
+    """
+    assert utils.entities._get_time_zone_of_country(code) == pytz.timezone(
+        time_zone
+    )
+
+
+def test_time_zone_of_country_unknown_to_countryinfo():
+    """
+    Test the time zone of a country that countryinfo does not know.
+
+    The first time zone of the country must be used.
+    """
+    with patch(
+        "utils.entities.CountryInfo",
+        side_effect=CountryNotFoundError("AUS"),
+    ):
+        assert utils.entities._get_time_zone_of_country(
+            "AUS"
+        ) == pytz.timezone(pytz.country_timezones["AU"][0])
 
 
 def test_time_zones_errors():
