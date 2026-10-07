@@ -159,7 +159,7 @@ def download_and_extract_data_for_request(
         The year of the electricity demand data.
     month : int
         The month of the electricity demand data.
-    subdivision_code : str
+    code : str
         The subdivision code of the electricity demand data.
 
     Returns

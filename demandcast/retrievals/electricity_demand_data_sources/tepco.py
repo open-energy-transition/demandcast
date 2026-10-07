@@ -145,7 +145,9 @@ def download_and_extract_data_for_request(year: int) -> pd.Series:
     index = pd.to_datetime(
         [
             date + " " + time
-            for date, time in zip(dataset["DATE"], dataset["TIME"])
+            for date, time in zip(
+                dataset["DATE"], dataset["TIME"], strict=True
+            )
         ]
     ).tz_localize("Asia/Tokyo")
 

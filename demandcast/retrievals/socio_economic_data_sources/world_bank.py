@@ -70,7 +70,7 @@ def download(variable: str) -> pd.DataFrame:
         )
 
     # Fetch the data from the World Bank.
-    response = requests.get(url)
+    response = requests.get(url, timeout=60)
 
     # Extract the archive from the response.
     with zipfile.ZipFile(BytesIO(response.content), "r") as archive:

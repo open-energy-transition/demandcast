@@ -128,10 +128,10 @@ def _get_fraction_of_grid_cells_in_shape(
 
     Parameters
     ----------
+    xarray_data : xarray.DataArray
+        The gridded data whose grid cells are compared with the shape.
     entity_shape : geopandas.GeoDataFrame
         GeoDataFrame containing the country or subdivision of interest.
-    resolution : float, optional
-        The resolution of the grid cells in degrees.
     make_plot : bool, optional
         Whether to make a plot of the fraction of the grid cells that
         are in the given country or subdivision.
@@ -318,12 +318,12 @@ def from_density_to_count(
     )
 
     # Define the radius of the Earth in kilometers.
-    R = 6371.0
+    earth_radius = 6371.0
 
     # Calculate the area of each grid cell in square kilometers.
     area = (
         (np.pi / 180)
-        * R**2
+        * earth_radius**2
         * resolution
         * (
             np.sin(np.deg2rad(boundary_latitudes["upper_lat"]))

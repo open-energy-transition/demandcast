@@ -306,11 +306,11 @@ def _add_bar_chart(
 
     # Create a bar plot for the GDP occurrences with continents as
     # stacked bars.
-    for continent_code in occurrence:
+    for continent_code, continent_occurrence in occurrence.items():
         # Create a bar plot for the current continent.
         ax.bar(
-            occurrence[continent_code].keys(),
-            occurrence[continent_code].values(),
+            continent_occurrence.keys(),
+            continent_occurrence.values(),
             bottom=cumulative_height,
             label=continent_names[continent_code],
             color=colors[continent_code],
@@ -318,9 +318,7 @@ def _add_bar_chart(
         )
 
         # Update the cumulative height for the next iteration.
-        cumulative_height += np.array(
-            list(occurrence[continent_code].values())
-        )
+        cumulative_height += np.array(list(continent_occurrence.values()))
 
     # Set the title and labels.
     ax.set_xlabel(xlabel, fontsize=14)
@@ -500,10 +498,7 @@ def plot(figure_directory: str) -> None:
             codes_with_iso_alpha_3_codes[iso_alpha_3_code] = [code]
 
     # Loop over the ISO Alpha-3 codes and plot the data.
-    for iso_alpha_3_codes in codes_with_iso_alpha_3_codes:
-        # Get the codes belonging to the current Alpha-3 code.
-        local_codes = codes_with_iso_alpha_3_codes[iso_alpha_3_codes]
-
+    for iso_alpha_3_codes, local_codes in codes_with_iso_alpha_3_codes.items():
         # Initialize the GDP and electricity demand data to plot.
         gdp_data_to_plot[iso_alpha_3_codes] = pd.Series(dtype=float)
         electricity_data_to_plot[iso_alpha_3_codes] = pd.Series(dtype=float)

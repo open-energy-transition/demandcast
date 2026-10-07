@@ -45,7 +45,7 @@ def _download_gdp_ppp(result_directory: str) -> None:
         url = "https://zenodo.org/records/7898409/files/GDP_025d%20(2000-2100).7z?download=1"
 
         # Fetch the data from the URL.
-        response = requests.get(url)
+        response = requests.get(url, timeout=60)
 
         # Check if the request was successful.
         response.raise_for_status()
@@ -176,33 +176,45 @@ def run_data_retrieval(
     )
 
     # Loop over the years and scenarios.
-    for year, scenario in tqdm(year_scenario_list, desc="Years and scenarios"):
+    for selected_year, selected_scenario in tqdm(
+        year_scenario_list, desc="Years and scenarios"
+    ):
         logging.info(
-            f"Processing gridded GDP PPP data for the year {year}"
-            + (f" and scenario {scenario}." if scenario else ".")
+            f"Processing gridded GDP PPP data for the year {selected_year}"
+            + (
+                f" and scenario {selected_scenario}."
+                if selected_scenario
+                else "."
+            )
         )
 
         # Define the year and scenario string for the file name.
-        year_scenario = f"{year}_{scenario}" if scenario else str(year)
+        year_scenario = (
+            f"{selected_year}_{selected_scenario}"
+            if selected_scenario
+            else str(selected_year)
+        )
 
         # Read the GDP data for the specified year and SSP.
         global_gdp_ppp = _read_gdp_ppp(result_directory, year_scenario)
 
         # Loop over the countries and subdivisions of interest.
-        for code in codes:
+        for entity_code in codes:
             # Define the file path of the GDP data for the country or
             # subdivision.
             file_path = os.path.join(
                 result_directory,
-                f"{code}_0.25_deg_{year_scenario}.nc",
+                f"{entity_code}_0.25_deg_{year_scenario}.nc",
             )
 
             if not os.path.exists(file_path):
-                logging.info(f"Extracting gridded GDP PPP data for {code}.")
+                logging.info(
+                    f"Extracting gridded GDP PPP data for {entity_code}."
+                )
 
                 # Get the shape of the country or subdivision.
                 entity_shape = utils.shapes.get_entity_shape(
-                    code, make_plot=False
+                    entity_code, make_plot=False
                 )
 
                 # Get the lateral bounds of the country or subdivision
@@ -226,16 +238,16 @@ def run_data_retrieval(
                     # Make a plot of the GDP PPP data.
                     utils.figures.simple_plot(
                         gdp_ppp,
-                        f"gdp_ppp_{code}_{year_scenario}",
+                        f"gdp_ppp_{entity_code}_{year_scenario}",
                     )
 
                 logging.info(
-                    f"Gridded GDP PPP data for {code} has been "
+                    f"Gridded GDP PPP data for {entity_code} has been "
                     "successfully extracted and saved."
                 )
 
             else:
                 logging.info(
-                    f"Gridded GDP PPP data for {code} already exists. "
+                    f"Gridded GDP PPP data for {entity_code} already exists. "
                     "Skipping extraction."
                 )

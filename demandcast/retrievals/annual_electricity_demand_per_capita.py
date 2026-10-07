@@ -157,13 +157,13 @@ def run_data_retrieval(
     available_scenarios = get_available_scenarios()
 
     # Loop over the countries and subdivisions.
-    for code in tqdm(codes, desc="Countries and subdivisions"):
+    for entity_code in tqdm(codes, desc="Countries and subdivisions"):
         # Get the ISO Alpha-3 code of the country itself or the country
         # to which the subdivision belongs.
-        iso_alpha_3_code = code.split("_")[0]
+        iso_alpha_3_code = entity_code.split("_")[0]
 
         # Get the time zone of the country or subdivision.
-        time_zone = utils.entities.get_time_zone(code)
+        time_zone = utils.entities.get_time_zone(entity_code)
 
         # Extract the electricity data for the country.
         historical_electricity_demand_per_capita = (
@@ -197,7 +197,7 @@ def run_data_retrieval(
 
         # Define the file path of the electricity demand per capita
         # data of the country or subdivision.
-        file_path_without_ext = os.path.join(result_directory, code)
+        file_path_without_ext = os.path.join(result_directory, entity_code)
 
         # Get the selected historical years.
         selected_historical_years = list(
@@ -227,8 +227,8 @@ def run_data_retrieval(
                 file_path_without_ext + ".parquet"
             ) or not os.path.exists(file_path_without_ext + ".csv"):
                 logging.info(
-                    f"Extracting historical annual electricity per capita data "
-                    f"for {code}."
+                    "Extracting historical annual electricity per capita data "
+                    f"for {entity_code}."
                 )
 
                 # Extract the respective electricity demand per capita.
@@ -267,27 +267,31 @@ def run_data_retrieval(
                 )
 
                 logging.info(
-                    f"Historical annual electricity per capita data for {code} "
+                    "Historical annual electricity per capita data for "
+                    f"{entity_code} "
                     "has been extracted and saved successfully."
                 )
 
             else:
                 logging.info(
-                    f"Historical annual electricity per capita data of {code} "
+                    "Historical annual electricity per capita data of "
+                    f"{entity_code} "
                     "already exists. Skipping retrieval."
                 )
 
         if selected_future_years:
-            for scenario in selected_scenarios:
+            for selected_scenario in selected_scenarios:
                 if not os.path.exists(
                     f"{file_path_without_ext}_"
-                    f"{scenario.replace('-', '_')}.parquet"
+                    f"{selected_scenario.replace('-', '_')}.parquet"
                 ) or not os.path.exists(
-                    f"{file_path_without_ext}_{scenario.replace('-', '_')}.csv"
+                    f"{file_path_without_ext}_"
+                    f"{selected_scenario.replace('-', '_')}.csv"
                 ):
                     logging.info(
                         f"Extracting future annual electricity demand per "
-                        f"capita data for {code} and {scenario}."
+                        f"capita data for {entity_code} and "
+                        f"{selected_scenario}."
                     )
 
                     # Get the last year and value of the historical
@@ -304,7 +308,7 @@ def run_data_retrieval(
                     future_electricity_demand_per_capita = iiasa.extrapolate(
                         global_future_electricity_demand_per_capita_growth_rates,
                         iso_alpha_3_code,
-                        scenario,
+                        selected_scenario,
                         last_historical_value,
                         last_historical_year,
                         available_future_years,
@@ -340,21 +344,23 @@ def run_data_retrieval(
                     # Save the electricity demand per capita data to
                     # parquet and CSV files.
                     selected_future_electricity_demand_per_capita.to_frame().to_parquet(
-                        f"{file_path_without_ext}_{scenario}.parquet"
+                        f"{file_path_without_ext}_{selected_scenario}.parquet"
                     )
                     selected_future_electricity_demand_per_capita.to_csv(
-                        f"{file_path_without_ext}_{scenario}.csv",
+                        f"{file_path_without_ext}_{selected_scenario}.csv",
                     )
 
                     logging.info(
                         f"Future annual electricity demand per capita data "
-                        f"for {code} and {scenario} has been extracted "
+                        f"for {entity_code} and {selected_scenario} has been "
+                        "extracted "
                         "and saved successfully."
                     )
 
                 else:
                     logging.info(
                         f"Future annual electricity demand per capita data "
-                        f"for {code} and {scenario} already exists. "
+                        f"for {entity_code} and {selected_scenario} already "
+                        "exists. "
                         "Skipping retrieval."
                     )

@@ -125,7 +125,7 @@ def get_url(year: int, month: int | None) -> str:
     else:
         # Monthly data from 2024 onward.
         month_name = calendar.month_name[month]
-        if year == 2024 and month in [1, 2, 3]:  # Jan–Mar 2024
+        if year == 2024 and month in [1, 2, 3]:  # January to March 2024
             url = (
                 f"{base_url}historicalemshourlyloadfor{month_name}{year}.xlsx"
             )

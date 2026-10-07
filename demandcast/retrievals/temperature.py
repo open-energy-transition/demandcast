@@ -156,7 +156,9 @@ def _load_gridded_temperature_data(
     # necessary. For the current year and historical data, we
     # re-download the data to account for possible updates in the
     # reanalysis data.
-    for file_path, y in zip(temperature_data_file_paths, years_of_interest):
+    for file_path, y in zip(
+        temperature_data_file_paths, years_of_interest, strict=True
+    ):
         if not os.path.exists(file_path) or (
             os.path.exists(file_path)
             and y == pd.Timestamp.now().year
@@ -730,19 +732,24 @@ def run_data_retrieval(
     )
 
     # Loop over the countries and subdivisions of interest.
-    for code in tqdm(codes, desc="Countries and subdivisions"):
-        logging.info(f"Retrieving temperature data for {code}.")
+    for entity_code in tqdm(codes, desc="Countries and subdivisions"):
+        logging.info(f"Retrieving temperature data for {entity_code}.")
 
         # Get the time zone of the country or subdivision.
-        entity_time_zone = utils.entities.get_time_zone(code)
+        entity_time_zone = utils.entities.get_time_zone(entity_code)
 
         # Loop over the year, model, and scenario combinations.
-        for year, model, scenario in year_model_scenario_list:
+        for (
+            selected_year,
+            selected_model,
+            selected_scenario,
+        ) in year_model_scenario_list:
             logging.info(
-                f"Extracting temperature data for the year {year}"
+                f"Extracting temperature data for the year {selected_year}"
                 + (
-                    f", model {model}, and scenario {scenario}."
-                    if model and scenario
+                    f", model {selected_model}, and scenario "
+                    f"{selected_scenario}."
+                    if selected_model and selected_scenario
                     else "."
                 )
             )
@@ -750,13 +757,13 @@ def run_data_retrieval(
             # Define the file paths of the temperature time series.
             file_path_without_ext = os.path.join(
                 result_directory,
-                f"{code}_{year}"
+                f"{entity_code}_{selected_year}"
                 + (
                     (
-                        f"_{model.replace('-', '_')}"
-                        f"_{scenario.replace('-', '_').replace('.', '_')}"
+                        f"_{selected_model.replace('-', '_')}_"
+                        + selected_scenario.replace("-", "_").replace(".", "_")
                     )
-                    if model and scenario
+                    if selected_model and selected_scenario
                     else ""
                 ),
             )
@@ -772,21 +779,21 @@ def run_data_retrieval(
             ) or (
                 os.path.exists(file_path_without_ext + ".parquet")
                 and os.path.exists(file_path_without_ext + ".csv")
-                and year == pd.Timestamp.now().year
-                and model is None
-                and scenario is None
+                and selected_year == pd.Timestamp.now().year
+                and selected_model is None
+                and selected_scenario is None
             ):
                 # Get the temperature data for the most populous grid
                 # cell in the given country or subdivision.
                 temperature_time_series_top_1 = (
                     _get_temperature_in_most_populous_cells(
-                        code,
-                        year,
+                        entity_code,
+                        selected_year,
                         available_future_years
-                        if model and scenario
+                        if selected_model and selected_scenario
                         else available_historical_years,
-                        model,
-                        scenario,
+                        selected_model,
+                        selected_scenario,
                         entity_time_zone,
                         number_of_grid_cells=1,
                     )
@@ -796,13 +803,13 @@ def run_data_retrieval(
                 # grid cells in the given country or subdivision.
                 temperature_time_series_top_3 = (
                     _get_temperature_in_most_populous_cells(
-                        code,
-                        year,
+                        entity_code,
+                        selected_year,
                         available_future_years
-                        if model and scenario
+                        if selected_model and selected_scenario
                         else available_historical_years,
-                        model,
-                        scenario,
+                        selected_model,
+                        selected_scenario,
                         entity_time_zone,
                         number_of_grid_cells=3,
                     )
@@ -822,20 +829,22 @@ def run_data_retrieval(
                 temperature_database.to_csv(file_path_without_ext + ".csv")
 
                 logging.info(
-                    f"Temperature time series for the year {year}"
+                    f"Temperature time series for the year {selected_year}"
                     + (
-                        f", model {model}, and scenario {scenario}"
-                        if model and scenario
+                        f", model {selected_model}, and scenario "
+                        f"{selected_scenario}"
+                        if selected_model and selected_scenario
                         else ""
                     )
                     + " has been successfully extracted and saved."
                 )
             else:
                 logging.info(
-                    f"Temperature time series for the year {year}"
+                    f"Temperature time series for the year {selected_year}"
                     + (
-                        f", model {model}, and scenario {scenario}"
-                        if model and scenario
+                        f", model {selected_model}, and scenario "
+                        f"{selected_scenario}"
+                        if selected_model and selected_scenario
                         else ""
                     )
                     + " already exists. Skipping extraction."

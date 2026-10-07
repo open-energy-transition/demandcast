@@ -11,6 +11,7 @@ import datetime
 import glob
 import logging
 import os
+import time
 from collections.abc import Callable
 from functools import reduce
 
@@ -88,7 +89,7 @@ def _is_date(string: str) -> bool:
         True if the string is a valid date, False otherwise.
     """
     try:
-        datetime.datetime.strptime(string, "%Y-%m-%d")
+        time.strptime(string, "%Y-%m-%d")
     except ValueError:
         return False
     return True
@@ -241,7 +242,6 @@ def _get_files_to_load(
         Scenario to load. None for historical data.
     selected_model : str | None
         Model to load (e.g., climate model). None for historical data.
-    data_source : dict[str, str] | None
 
     Returns
     -------
@@ -913,7 +913,7 @@ def run_data_assemply(
     output_path = os.path.join(
         assembled_data_folder,
         f"assembled_data_for_{target_use}_"
-        f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        f"{datetime.datetime.now().astimezone():%Y%m%d_%H%M%S}",
     )
 
     # Save the merged dataset to CSV and Parquet formats.

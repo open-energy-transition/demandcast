@@ -24,7 +24,7 @@ import nepali_datetime
 import pandas as pd
 import utils.fetcher
 
-# Bikram Sambat year for dataset (April 2017–April 2018).
+# Bikram Sambat year for dataset (April 2017 to April 2018).
 DATASET_BS_YEAR = 2074
 
 # In this dataset, hour 0 (midnight) is represented as 24.

@@ -130,7 +130,7 @@ def get_available_requests(
 
     # Return the available requests, which are the beginning and end of
     # each one-year period.
-    return list(zip(start_dates_and_times, end_dates_and_times))
+    return list(zip(start_dates_and_times, end_dates_and_times, strict=True))
 
 
 def get_url() -> str:

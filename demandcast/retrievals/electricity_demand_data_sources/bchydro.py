@@ -124,6 +124,25 @@ def get_url(year: int) -> str:
     return url
 
 
+# Format of the Excel files by period: the number of rows to skip, the
+# header, the index columns, and the column of the electricity demand
+# data.
+_EXCEL_FORMATS: dict[
+    range, tuple[int, int | None, tuple[str | int, ...], tuple[str | int, ...]]
+] = {
+    range(2001, 2007): (1, 0, ("Date", "HE"), ("Balancing Authority Load",)),
+    range(2007, 2008): (2, None, (0, 1), (2,)),
+    range(2008, 2012): (2, 0, ("Date", "HE"), ("MWh",)),
+    range(2012, 2014): (3, 0, ("Date ▲", "HE"), ("Control Area Load",)),
+    range(2014, 2015): (1, 0, ("Date ▲", "HE"), ("Control Area Load",)),
+    range(2015, 2016): (1, 0, ("Date ▲", "HE"), ("Balancing Authority Load",)),
+    range(2016, 2021): (1, 0, ("Date", "HE"), ("Balancing Authority Load",)),
+    range(2021, 2022): (1, 0, ("Date ?", "HE"), ("Control Area Load",)),
+    range(2022, 2025): (3, 0, ("Date ?", "HE"), ("Control Area Load",)),
+    range(2025, 2026): (3, 0, ("Date ", "HE"), ("Control Area Load",)),
+}
+
+
 def _get_excel_information(
     year: int,
 ) -> tuple[int, int | None, list[str | int], list[str | int]]:
@@ -154,57 +173,13 @@ def _get_excel_information(
     # Check if the input parameters are valid.
     _check_input_parameters(year)
 
-    # Define the number of rows to skip.
-    if (year >= 2001 and year <= 2006) or (year >= 2014 and year <= 2021):
-        rows_to_skip = 1
-    elif year >= 2007 and year <= 2011:
-        rows_to_skip = 2
-    elif (year >= 2012 and year <= 2013) or (year >= 2022 and year <= 2025):
-        rows_to_skip = 3
-    else:
-        raise ValueError(f"The year {year} is not implemented yet.")
+    # Return the format of the period that contains the year.
+    for years, excel_format in _EXCEL_FORMATS.items():
+        if year in years:
+            rows_to_skip, header, index_columns, load_column = excel_format
+            return rows_to_skip, header, list(index_columns), list(load_column)
 
-    # Define the header of the Excel file.
-    if year == 2007:
-        header = None
-    elif (year >= 2001 and year <= 2006) or (year >= 2008 and year <= 2025):
-        header = 0
-    else:
-        raise ValueError(f"The year {year} is not implemented yet.")
-
-    # Define the index columns of the Excel file.
-    index_columns: list[str | int]
-    if (
-        (year >= 2001 and year <= 2006)
-        or (year >= 2008 and year <= 2011)
-        or (year >= 2016 and year <= 2020)
-    ):
-        index_columns = ["Date", "HE"]
-    elif year == 2007:
-        index_columns = [0, 1]
-    elif year >= 2012 and year <= 2015:
-        index_columns = ["Date ▲", "HE"]
-    elif year >= 2021 and year <= 2024:
-        index_columns = ["Date ?", "HE"]
-    elif year == 2025:
-        index_columns = ["Date ", "HE"]
-    else:
-        raise ValueError(f"The year {year} is not implemented yet.")
-
-    # Define the column of the electricity demand data.
-    load_column: list[str | int]
-    if (year >= 2001 and year <= 2006) or (year >= 2015 and year <= 2020):
-        load_column = ["Balancing Authority Load"]
-    elif year == 2007:
-        load_column = [2]
-    elif year >= 2008 and year <= 2011:
-        load_column = ["MWh"]
-    elif (year >= 2012 and year <= 2014) or (year >= 2021 and year <= 2025):
-        load_column = ["Control Area Load"]
-    else:
-        raise ValueError(f"The year {year} is not implemented yet.")
-
-    return rows_to_skip, header, index_columns, load_column
+    raise ValueError(f"The year {year} is not implemented yet.")
 
 
 def download_and_extract_data_for_request(year: int) -> pd.Series:

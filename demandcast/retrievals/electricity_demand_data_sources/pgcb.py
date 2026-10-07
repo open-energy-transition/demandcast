@@ -203,7 +203,9 @@ def get_available_requests() -> list[tuple[str, str, str]]:
         # of tuples.
         requests_on_page = [
             (file_number, extension, date)
-            for (file_number, extension), date in zip(file_info, file_dates)
+            for (file_number, extension), date in zip(
+                file_info, file_dates, strict=True
+            )
             if date not in file_dates_not_available
         ]
 
@@ -287,12 +289,12 @@ def download_and_extract_data_for_request(
     header_row = None
     time_col = None
     total_col = None
-    for id in range(len(dataset)):
-        row = dataset.iloc[id].astype(str).str.upper()
+    for row_index in range(len(dataset)):
+        row = dataset.iloc[row_index].astype(str).str.upper()
         if "TIME" in row.to_list() and "TOTAL" in row.to_list():
-            header_row = id
-            time_col = dataset.iloc[id][row == "TIME"].iloc[0]
-            total_col = dataset.iloc[id][row == "TOTAL"].iloc[0]
+            header_row = row_index
+            time_col = dataset.iloc[row_index][row == "TIME"].iloc[0]
+            total_col = dataset.iloc[row_index][row == "TOTAL"].iloc[0]
             break
 
     if header_row is None or time_col is None or total_col is None:

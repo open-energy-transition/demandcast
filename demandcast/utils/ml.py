@@ -236,7 +236,7 @@ def _split_temporally(
         latest_year = entity[splitter_column].max()
 
         if testing_set or validation_set:
-            for split_name in split_dataset:
+            for split_name, split_data in split_dataset.items():
                 # Define the year to extract based on the split.
                 if split_name == "testing":
                     year_to_extract = latest_year
@@ -253,7 +253,7 @@ def _split_temporally(
 
                 # Append the data to the respective dataset.
                 split_dataset[split_name] = pd.concat(
-                    [split_dataset[split_name], data_of_entity],
+                    [split_data, data_of_entity],
                     ignore_index=True,
                 )
 
@@ -262,20 +262,20 @@ def _split_temporally(
     split_dataset["training"] = dataset.drop(index=indexes_not_for_training)
 
     # Reset indexes for all datasets.
-    for key in split_dataset:
-        split_dataset[key] = split_dataset[key].reset_index(drop=True)
+    for key, split_data in split_dataset.items():
+        split_dataset[key] = split_data.reset_index(drop=True)
 
     logging.info("Dataset split complete:")
-    for key in split_dataset:
+    for key, split_data in split_dataset.items():
         logging.info(
-            f" - {key.capitalize()} set: {len(split_dataset[key])} records "
-            f"({(len(split_dataset[key]) / len(dataset)) * 100:.2f}%)"
+            f" - {key.capitalize()} set: {len(split_data)} records "
+            f"({(len(split_data) / len(dataset)) * 100:.2f}%)"
         )
 
     return split_dataset
 
 
-def _split_in_groups(
+def _split_in_groups(  # noqa: C901
     dataset: pd.DataFrame,
     group_column: str,
     feature_columns: list[str],

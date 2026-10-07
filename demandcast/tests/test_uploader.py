@@ -59,7 +59,7 @@ def test_upload_to_gcs():
             )
 
 
-def _zenodo_request(
+def _zenodo_request(  # noqa: C901
     request_type: str = "",
     response_type: str = "",
     submitted: bool = True,

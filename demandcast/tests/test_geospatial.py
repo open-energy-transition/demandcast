@@ -192,7 +192,7 @@ def test_from_density_to_count():
 
     # Define constants for area calculation.
     resolution = 0.5  # degrees
-    R = 6371.0
+    earth_radius = 6371.0
 
     # Calculate boundary latitudes.
     boundary_lat = np.concatenate(
@@ -210,7 +210,7 @@ def test_from_density_to_count():
     # Compute expected area for each grid cell.
     area = (
         (np.pi / 180)
-        * R**2
+        * earth_radius**2
         * resolution
         * (np.sin(np.deg2rad(upper_lat)) - np.sin(np.deg2rad(lower_lat)))
     )

@@ -324,8 +324,10 @@ def run_model_cross_validation(
 
     Parameters
     ----------
-    use_validation_set : bool
-        Whether to use a validation set during cross-validation.
+    scoring_metric : str
+        The scoring metric of the cross-validation.
+    n_jobs : int
+        The number of jobs to run in parallel.
     data_path : str | None
         The path to the assembled data file. If None, the latest file
         in the default directory will be used.
