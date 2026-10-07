@@ -1,6 +1,6 @@
 # Docker
 
-DemandCast provides a Docker image with Python, the locked dependencies and the DemandCast code, so that the scripts run the same way on every system. The image is published to the GitHub Container Registry for every change on `main` and every release, and you can also build it yourself.
+DemandCast provides a Dockerfile to build an image with Python, the locked dependencies and the DemandCast code, so that the scripts run the same way on every system.
 
 ## Prerequisites
 
@@ -13,22 +13,6 @@ Check that Docker is installed and running:
 
 ```bash
 docker --version
-```
-
-## Using the published image
-
-Pull the image:
-
-```bash
-docker pull ghcr.io/open-energy-transition/demandcast-demandcast:latest
-```
-
-The available tags are `latest` (the current `main`), the release versions (for example `1.0.0`, `1.0` and `1`) and `sha-<commit>` for each commit on `main`.
-
-Each published image is signed with [Sigstore](https://www.sigstore.dev/) and comes with a provenance attestation and a software bill of materials (SBOM). You can verify where an image was built with the [GitHub CLI](https://cli.github.com/):
-
-```bash
-gh attestation verify oci://ghcr.io/open-energy-transition/demandcast-demandcast:latest --owner open-energy-transition
 ```
 
 ## Building the image
@@ -46,8 +30,6 @@ docker build -t demandcast --build-arg INSTALL_GCLOUD=true demandcast/
 ```
 
 ## Running the container
-
-The examples below use the image built locally (`demandcast`); replace it with `ghcr.io/open-energy-transition/demandcast-demandcast:latest` to use the published image.
 
 ### Interactive shell
 
@@ -105,7 +87,7 @@ The [Dockerfile](https://github.com/open-energy-transition/demandcast/blob/main/
 
 ## Best practices
 
-1. **Keep the image updated**: pull the latest image, or rebuild it after changing `pyproject.toml` or `uv.lock`.
+1. **Keep the image updated**: rebuild it after changing `pyproject.toml` or `uv.lock`.
 2. **Use volume mounts**: mount folders to keep data and logs after the container stops.
 3. **Manage secrets securely**: never put API keys in the image; pass them as environment variables or mounted files.
 4. **Resource limits**: for large-scale data processing, consider limiting memory and CPU with `--memory` and `--cpus`.
