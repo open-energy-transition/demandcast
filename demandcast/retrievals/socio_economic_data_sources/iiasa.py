@@ -106,8 +106,7 @@ def _calculate_gdp_ppp_per_capita(
     years_of_interest = [str(year) for year in range(2025, 2101, 5)]
 
     # Merge the two datasets on Region and Scenario.
-    gdp_ppp_per_capita = pd.merge(
-        gdp_ppp,
+    gdp_ppp_per_capita = gdp_ppp.merge(
         population,
         on=["Region", "Scenario"],
         suffixes=("_gdp", "_pop"),
