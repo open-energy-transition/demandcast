@@ -379,7 +379,9 @@ def test_zenodo_error_get_depositions():
         # Mock the content of the yaml file for OET metadata.
         mock_open_file.return_value = _oet_metadata()
 
-        with pytest.raises(Exception):
+        with pytest.raises(
+            utils.uploader.ZenodoError, match="deposition retrieval"
+        ):
             utils.uploader.upload_to_zenodo(
                 "/fake/root/file1.csv",
                 "actual",
@@ -415,7 +417,9 @@ def test_zenodo_error_new_version_of_deposition():
         # Mock the content of the yaml file for OET metadata.
         mock_open_file.return_value = _oet_metadata()
 
-        with pytest.raises(Exception):
+        with pytest.raises(
+            utils.uploader.ZenodoError, match="new version creation"
+        ):
             utils.uploader.upload_to_zenodo(
                 "/fake/root/file1.csv",
                 "synthetic",
@@ -458,7 +462,9 @@ def test_zenodo_error_update_new_version_of_deposition():
         # Mock the content of the yaml file for OET metadata.
         mock_open_file.return_value = _oet_metadata()
 
-        with pytest.raises(Exception):
+        with pytest.raises(
+            utils.uploader.ZenodoError, match="metadata update"
+        ):
             utils.uploader.upload_to_zenodo(
                 "/fake/root/file1.csv",
                 "synthetic",
@@ -507,7 +513,7 @@ def test_zenodo_error_get_files_in_draft():
         # Mock the content of the yaml file for OET metadata.
         mock_open_file.return_value = _oet_metadata()
 
-        with pytest.raises(Exception):
+        with pytest.raises(utils.uploader.ZenodoError, match="file retrieval"):
             utils.uploader.upload_to_zenodo(
                 "/fake/root/file1.csv",
                 "synthetic",
@@ -560,7 +566,9 @@ def test_zenodo_error_delete_files_in_draft():
         # Mock the content of the yaml file for OET metadata.
         mock_open_file.return_value = _oet_metadata()
 
-        with pytest.raises(Exception):
+        with pytest.raises(
+            utils.uploader.ZenodoError, match="deletion of the file"
+        ):
             utils.uploader.upload_to_zenodo(
                 "/fake/root/file1.csv",
                 "synthetic",
@@ -597,7 +605,9 @@ def test_zenodo_error_update_draft_metadata():
         # Mock the content of the yaml file for OET metadata.
         mock_open_file.return_value = _oet_metadata()
 
-        with pytest.raises(Exception):
+        with pytest.raises(
+            utils.uploader.ZenodoError, match="metadata update"
+        ):
             utils.uploader.upload_to_zenodo(
                 "/fake/root/file1.csv",
                 "synthetic",
@@ -633,7 +643,9 @@ def test_zenodo_error_create_new_deposition():
         # Mock the content of the yaml file for OET metadata.
         mock_open_file.return_value = _oet_metadata()
 
-        with pytest.raises(Exception):
+        with pytest.raises(
+            utils.uploader.ZenodoError, match="deposition creation"
+        ):
             utils.uploader.upload_to_zenodo(
                 "/fake/root/file1.csv",
                 "actual",
@@ -684,7 +696,9 @@ def test_zenodo_error_upload_file_to_deposition():
         # Combine the mock file contents.
         mock_open_file.side_effect = [yaml_content, file_content]
 
-        with pytest.raises(Exception):
+        with pytest.raises(
+            utils.uploader.ZenodoError, match="upload of the file"
+        ):
             utils.uploader.upload_to_zenodo(
                 "/fake/root/file1.csv",
                 "actual",
@@ -739,7 +753,7 @@ def test_zenodo_error_publish_deposition():
         # Combine the mock file contents.
         mock_open_file.side_effect = [yaml_content, file_content]
 
-        with pytest.raises(Exception):
+        with pytest.raises(utils.uploader.ZenodoError, match="publication"):
             utils.uploader.upload_to_zenodo(
                 "/fake/root/file1.csv",
                 "actual",
