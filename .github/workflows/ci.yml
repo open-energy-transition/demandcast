@@ -7,6 +7,8 @@ on:
   push:
     branches: [main]
   pull_request:
+    # Labels can skip the check of the changed lines, so re-run on changes.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}-${{ github.event.pull_request.number || github.sha }}
@@ -90,8 +92,10 @@ jobs:
           uv run --locked coverage report --fail-under=37
           uv run --locked coverage report --include="utils/*" --fail-under=95
 
+      # Maintainers can skip this check for mechanical changes, such as
+      # renames or lint fixes in untested code, with a label.
       - name: "Check the coverage of the changed lines"
-        if: ${{ matrix.coverage && github.event_name == 'pull_request' }}
+        if: ${{ matrix.coverage && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'skip-diff-cover') }}
         run: |
           uv run --locked diff-cover coverage.xml --compare-branch=origin/main --fail-under=80 --format markdown:diff-cover.md || status=$?
           cat diff-cover.md >> "$GITHUB_STEP_SUMMARY"
