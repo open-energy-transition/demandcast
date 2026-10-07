@@ -15,7 +15,6 @@ import cartopy.io.shapereader
 import geopandas
 import pandas
 import pycountry
-import pycountry_convert
 from shapely import Polygon
 
 import utils.config
@@ -154,7 +153,7 @@ def get_standard_shape(
         iso_alpha_3_code, subdivision_code = code.split("_")
 
         # Get the ISO Alpha-2 code from the ISO Alpha-3 code.
-        iso_alpha_2_code = pycountry_convert.country_alpha3_to_country_alpha2(
+        iso_alpha_2_code = utils.entities.get_iso_alpha_2_code(
             iso_alpha_3_code
         )
 

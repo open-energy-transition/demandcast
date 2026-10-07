@@ -41,13 +41,11 @@ def test_get_name_from_code():
     assert name == "Kosovo"
 
     with (
-        patch(
-            "pycountry_convert.country_alpha3_to_country_alpha2"
-        ) as mock_convert,
+        patch("utils.entities.get_iso_alpha_2_code") as mock_convert,
         patch("pycountry.subdivisions.get") as mock_get,
     ):
-        # Mock the pycountry_convert and pycountry.subdivisions.get
-        # methods to return invalid values.
+        # Mock get_iso_alpha_2_code and pycountry.subdivisions.get to
+        # return invalid values.
         mock_convert.return_value = "INVALID_CODE"
         mock_get.return_value = ["Invalid", "Code"]
 
@@ -62,6 +60,20 @@ def test_get_name_from_code():
         # subdivision.
         with pytest.raises(ValueError):
             utils.entities.get_name_from_code("INVALID_SUBDIVISION")
+
+
+def test_get_iso_alpha_2_code():
+    """
+    Test the conversion from ISO Alpha-3 to ISO Alpha-2 codes.
+
+    This test checks the conversion for a country in pycountry and for
+    a not fully recognized country, and that unknown codes raise an
+    error.
+    """
+    assert utils.entities.get_iso_alpha_2_code("FRA") == "FR"
+    assert utils.entities.get_iso_alpha_2_code("XKX") == "XK"
+    with pytest.raises(KeyError):
+        utils.entities.get_iso_alpha_2_code("INVALID")
 
 
 def test_read_codes():

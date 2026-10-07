@@ -23,7 +23,6 @@ dependencies = [
     "py7zr>=1.1.3",
     "pyarrow>=23.0.1",
     "pycountry>=24.6.1",
-    "pycountry-convert>=0.7.2",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.2",
     "pytz>=2025.1",
