@@ -251,9 +251,7 @@ def download_and_extract_data_for_request(file_number: int) -> pd.Series:
 
         # The Excel files seem to report the beginning of the hour,
         # so we need to add 1 hour.
-        first_local_time_index = first_local_time_index + pd.Timedelta(
-            hours=1
-        )
+        first_local_time_index = first_local_time_index + pd.Timedelta(hours=1)
 
     # Define the local time index.
     local_time_index = pd.date_range(

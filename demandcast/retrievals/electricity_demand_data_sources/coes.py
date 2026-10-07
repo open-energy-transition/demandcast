@@ -142,9 +142,7 @@ def download_and_extract_data_for_request(year: int) -> pd.Series:
         )
 
     # Extract the electricity demand data from the dataset.
-    dataset = pd.DataFrame(
-        dataset[dataset["Name"] == "Ejecutado"]["Data"][0]
-    )
+    dataset = pd.DataFrame(dataset[dataset["Name"] == "Ejecutado"]["Data"][0])
 
     # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(

@@ -174,7 +174,8 @@ def test_read_configuration_raises_on_bad_type():
         patch(
             "builtins.open",
             mock_open(read_data="n_timesteps: not_an_int\n"),
-        ),pytest.raises(ValueError, match="Configuration validation")
+        ),
+        pytest.raises(ValueError, match="Configuration validation"),
     ):
         lstm_module._read_configuration()
 

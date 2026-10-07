@@ -194,9 +194,7 @@ def fetch_data(
                                 .decode("utf-8")
                             )
 
-                        if (
-                            read_with in {"requests.get", "requests.post"}
-                        ):
+                        if read_with in {"requests.get", "requests.post"}:
                             if get_cookies:
                                 # Create a session to persist cookies.
                                 session = requests.Session()
@@ -285,9 +283,7 @@ def fetch_data(
                             if read_as == "excel_file":
                                 # Return the content read as an Excel
                                 # file.
-                                return pd.ExcelFile(
-                                    BytesIO(response.content)
-                                )
+                                return pd.ExcelFile(BytesIO(response.content))
                             if read_as == "text":
                                 # Return the content as a string.
                                 return response.text
@@ -315,8 +311,7 @@ def fetch_data(
                         )
 
                     raise ValueError(
-                        f"The content type {content_type} is not "
-                        "supported."
+                        f"The content type {content_type} is not supported."
                     )
 
                 except requests.exceptions.SSLError as e:

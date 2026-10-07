@@ -286,9 +286,7 @@ def run_data_retrieval(
     # Define the available years for the historical weather data.
     # Historical data is available from 1940 but it is not necessary to
     # go that far back for our purposes.
-    available_historical_years = list(
-        range(1990, pd.Timestamp.now().year + 1)
-    )
+    available_historical_years = list(range(1990, pd.Timestamp.now().year + 1))
 
     # Define the available years for the future weather data.
     available_future_years = list(range(pd.Timestamp.now().year, 2101))

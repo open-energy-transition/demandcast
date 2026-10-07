@@ -389,9 +389,7 @@ def prepare_dataset(
     target: bool = True,
 ) -> dict[
     str,
-    pd.Series
-    | pd.DataFrame
-    | dict[str, pd.DataFrame | pd.Series],
+    pd.Series | pd.DataFrame | dict[str, pd.DataFrame | pd.Series],
 ]:
     """
     Prepare the dataset for training or validation.
@@ -430,9 +428,7 @@ def prepare_dataset(
         )
 
         # Initialize a dictionary to hold prepared datasets.
-        prepared_dataset: dict[
-            str, dict[str, pd.DataFrame | pd.Series]
-        ] = {}
+        prepared_dataset: dict[str, dict[str, pd.DataFrame | pd.Series]] = {}
 
         # Prepare features and target for each dataset.
         for split_name, dataset in split_dataset.items():
@@ -509,8 +505,7 @@ def save_results(
     # Construct the results file name.
     results_file_name = os.path.join(
         model_results_folder,
-        f"{file_name_prefix}_"
-        f"{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}",
+        f"{file_name_prefix}_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}",
     )
 
     # Save the results to CSV and Parquet files.

@@ -1,4 +1,3 @@
-
 """
 License: AGPL-3.0.
 
@@ -68,9 +67,7 @@ def _check_input_parameters(
     )
 
 
-def get_available_requests() -> list[
-    tuple[pd.Timestamp, pd.Timestamp]
-]:
+def get_available_requests() -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """
     Get the available requests.
 

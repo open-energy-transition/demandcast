@@ -34,9 +34,9 @@ def sample_time_series():
         and some missing values.
     """
     # Define a one-year-long time series with 30-minute resolution.
-    dates = pd.date_range(
-        "2023", "2024", freq="30min", tz=local_time_zone
-    )[:-1]
+    dates = pd.date_range("2023", "2024", freq="30min", tz=local_time_zone)[
+        :-1
+    ]
 
     # Define the data.
     data = list(range(len(dates)))

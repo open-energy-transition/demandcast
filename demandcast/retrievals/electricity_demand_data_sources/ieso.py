@@ -115,11 +115,7 @@ def get_url(year: int | None, before_Apr_2002: bool) -> str:
             "https://www.ieso.ca/-/media/Files/IESO/Power-Data/data-directory/"
             "HourlyDemands_1994-2002.csv"
         )
-    elif (
-        year is not None
-        and year >= 2002
-        and year <= pd.Timestamp.now().year
-    ):
+    elif year is not None and year >= 2002 and year <= pd.Timestamp.now().year:
         url = (
             "https://reports-public.ieso.ca/public/Demand/"
             f"PUB_Demand_{year}.csv"
@@ -201,14 +197,10 @@ def download_and_extract_data_for_request(
 
         return electricity_demand_time_series
 
-    logging.info(
-        f"Retrieving electricity demand data for the year {year}."
-    )
+    logging.info(f"Retrieving electricity demand data for the year {year}.")
 
     # Fetch HTML content from the URL.
-    dataset = utils.fetcher.fetch_data(
-        url, "csv", csv_kwargs={"skiprows": 3}
-    )
+    dataset = utils.fetcher.fetch_data(url, "csv", csv_kwargs={"skiprows": 3})
 
     # Make sure the dataset is a pandas DataFrame.
     if not isinstance(dataset, pd.DataFrame):

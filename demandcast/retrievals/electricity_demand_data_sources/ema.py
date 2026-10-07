@@ -102,9 +102,7 @@ def get_available_requests() -> list[tuple[int, int, int]]:
     # (year, month, day).
     return [
         (date.year, date.month, date.day)
-        for date in pd.date_range(
-            start=start_date, end=end_date, freq="7D"
-        )
+        for date in pd.date_range(start=start_date, end=end_date, freq="7D")
         if date not in dates_not_available
     ]
 

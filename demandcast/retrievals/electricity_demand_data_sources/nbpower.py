@@ -95,9 +95,7 @@ def get_url() -> str:
     return "https://tso.nbpower.com/Public/en/system_information_archive.aspx"
 
 
-def download_and_extract_data_for_request(
-    year: int, month: int
-) -> pd.Series:
+def download_and_extract_data_for_request(year: int, month: int) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -158,9 +156,7 @@ def download_and_extract_data_for_request(
     # hour but this is not confirmed.
     electricity_demand_time_series = pd.Series(
         dataset["NB_LOAD"].values,
-        index=pd.to_datetime(
-            dataset["HOUR"].values, format="%Y-%m-%d %H:%M"
-        ),
+        index=pd.to_datetime(dataset["HOUR"].values, format="%Y-%m-%d %H:%M"),
     )
 
     # Convert the time zone of the electricity demand time series to

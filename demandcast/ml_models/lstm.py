@@ -506,9 +506,7 @@ def predict(
     lstm_model: LSTMRegressor,
     prepared_dataset: dict[
         str,
-        pd.Series
-        | pd.DataFrame
-        | dict[str, pd.DataFrame | pd.Series],
+        pd.Series | pd.DataFrame | dict[str, pd.DataFrame | pd.Series],
     ],
 ) -> pd.Series | dict[str, pd.Series]:
     """

@@ -87,7 +87,9 @@ def get_available_requests() -> list[tuple[bool, int, int | None, int | None]]:
 
     # Define the list of available requests for the pre-reform period,
     # which are the years from 2006 to 2023.
-    pre_reform_values = list(range(start_date.year, post_reform_start_date.year + 1))
+    pre_reform_values = list(
+        range(start_date.year, post_reform_start_date.year + 1)
+    )
 
     # Define the list of available requests for the post-reform period,
     # which are the year, month, and day from October 1, 2023, to today.

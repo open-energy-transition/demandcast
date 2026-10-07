@@ -276,11 +276,15 @@ def get_year_and_scenario_combinations(
             # If the year is both historical and future, include both
             # options.
             year_scenario_list.append((year, None))
-            year_scenario_list.extend((year, scenario) for scenario in scenarios)
+            year_scenario_list.extend(
+                (year, scenario) for scenario in scenarios
+            )
         elif year in available_historical_years:
             year_scenario_list.append((year, None))
         elif year in available_future_years:
-            year_scenario_list.extend((year, scenario) for scenario in scenarios)
+            year_scenario_list.extend(
+                (year, scenario) for scenario in scenarios
+            )
 
     return year_scenario_list
 
@@ -353,7 +357,10 @@ def get_year_model_and_scenario_combinations(
                 model_key,
                 scenario_keys,
             ) in scenarios_for_model.items():
-                year_model_scenario_list.extend((year, model_key, scenario_key) for scenario_key in scenario_keys)
+                year_model_scenario_list.extend(
+                    (year, model_key, scenario_key)
+                    for scenario_key in scenario_keys
+                )
         elif year in available_historical_years:
             year_model_scenario_list.append((year, None, None))
         elif year in available_future_years:
@@ -361,7 +368,10 @@ def get_year_model_and_scenario_combinations(
                 model_key,
                 scenario_keys,
             ) in scenarios_for_model.items():
-                year_model_scenario_list.extend((year, model_key, scenario_key) for scenario_key in scenario_keys)
+                year_model_scenario_list.extend(
+                    (year, model_key, scenario_key)
+                    for scenario_key in scenario_keys
+                )
 
     return year_model_scenario_list
 

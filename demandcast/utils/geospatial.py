@@ -579,16 +579,16 @@ def _select_years_of_gridded_data(
     # or equal to the minimum selected year.
     first_selected_year_of_gridded_data = max(
         year
-            for year in available_years_of_gridded_data
-            if year <= min(selected_years)
+        for year in available_years_of_gridded_data
+        if year <= min(selected_years)
     )
 
     # Get the last year of available gridded data that is greater than
     # or equal to the maximum selected year.
     last_selected_year_of_gridded_data = min(
         year
-            for year in available_years_of_gridded_data
-            if year >= max(selected_years)
+        for year in available_years_of_gridded_data
+        if year >= max(selected_years)
     )
 
     # Select and return the years of gridded data that cover the years
@@ -682,7 +682,10 @@ def get_total_value_from_gridded_data(
     # If an extra available year of gridded data is provided, add it
     # to the list of available years of gridded data.
     if last_available_historical_years_of_gridded_data:
-        available_years_of_gridded_data = [last_available_historical_years_of_gridded_data, *available_years_of_gridded_data]
+        available_years_of_gridded_data = [
+            last_available_historical_years_of_gridded_data,
+            *available_years_of_gridded_data,
+        ]
 
     # Sort the available years of gridded data.
     available_years_of_gridded_data.sort()

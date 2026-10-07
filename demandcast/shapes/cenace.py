@@ -68,9 +68,7 @@ subdivisions = states[states["code"] == "MX-BCN"]
 subdivisions.loc[subdivisions["code"] == "MX-BCN", "code"] = "MEX_BCA"
 
 # Add the shape of Baja California Sur and set the code to "MEX_BCS".
-subdivisions = pd.concat(
-    [subdivisions, states[states["code"] == "MX-BCS"]]
-)
+subdivisions = pd.concat([subdivisions, states[states["code"] == "MX-BCS"]])
 subdivisions.loc[subdivisions["code"] == "MX-BCS", "code"] = "MEX_BCS"
 
 # Get the shapes of Sonora and Sinaloa.

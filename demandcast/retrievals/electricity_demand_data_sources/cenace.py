@@ -306,9 +306,7 @@ def download_and_extract_data_for_request(
 
         # Define the column name for the subdivision code.
         column_name = (
-            "Sistema"
-            if subdivision_code in {"BCA", "BCS"}
-            else " Area"
+            "Sistema" if subdivision_code in {"BCA", "BCS"} else " Area"
         )
 
         # Extract the daily values for the subdivision.

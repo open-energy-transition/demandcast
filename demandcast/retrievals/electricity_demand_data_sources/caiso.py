@@ -187,9 +187,7 @@ def download_and_extract_data_for_request(
         )
 
     # Keep only rows with valid data.
-    dataset = dataset[
-        pd.to_datetime(dataset["Date"], errors="coerce").notna()
-    ]
+    dataset = dataset[pd.to_datetime(dataset["Date"], errors="coerce").notna()]
 
     # Define the column names based on the year.
     if year <= 2020:

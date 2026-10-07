@@ -133,7 +133,9 @@ def run_check() -> None:
     )
 
     # Get the list of all available ISO Alpha-3 codes.
-    official_iso_alpha_3_codes = [country.alpha_3 for country in pycountry.countries]
+    official_iso_alpha_3_codes = [
+        country.alpha_3 for country in pycountry.countries
+    ]
 
     # Check that all ISO Alpha-3 codes for countries and subdivisions
     # with available shapes are in the official list of ISO Alpha-3
@@ -253,7 +255,9 @@ def run_check() -> None:
         iiasa_future_electricity_demand_per_capita_mapping = yaml.safe_load(
             iiasa_mapping_file
         )
-    iiasa_future_electricity_demand_per_capita_codes = list(iiasa_future_electricity_demand_per_capita_mapping.keys())
+    iiasa_future_electricity_demand_per_capita_codes = list(
+        iiasa_future_electricity_demand_per_capita_mapping.keys()
+    )
 
     # Add a column to indicate the availability of future electricity
     # demand per capita data.

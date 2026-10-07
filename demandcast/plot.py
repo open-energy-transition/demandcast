@@ -70,9 +70,7 @@ if __name__ == "__main__":
     os.makedirs(figure_directory, exist_ok=True)
 
     # Plot the specified figure.
-    if (
-        config.figure in {"data_availability", "map_of_available_entities"}
-    ):
+    if config.figure in {"data_availability", "map_of_available_entities"}:
         # Make sure that other arguments are not provided.
         if (
             config.version is not None

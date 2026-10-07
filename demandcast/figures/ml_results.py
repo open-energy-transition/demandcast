@@ -229,7 +229,9 @@ def _add_legend(
             weight="bold",
             fontsize=12,
             bbox={
-                "boxstyle": "square", "facecolor": colors[i], "edgecolor": "none"
+                "boxstyle": "square",
+                "facecolor": colors[i],
+                "edgecolor": "none",
             },
         )
 
@@ -255,7 +257,11 @@ def _add_explanatory_text(
         weight="bold",
         fontsize=12,
         rotation=90,
-        bbox={"boxstyle": "larrow", "facecolor": "lightgrey", "edgecolor": "none"},
+        bbox={
+            "boxstyle": "larrow",
+            "facecolor": "lightgrey",
+            "edgecolor": "none",
+        },
     )
 
 

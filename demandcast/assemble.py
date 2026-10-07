@@ -258,9 +258,9 @@ def _get_files_to_load(
         # date as name.
         data_folder = max(
             os.path.join(data_folder, subfolder)
-                for subfolder in os.listdir(data_folder)
-                if os.path.isdir(os.path.join(data_folder, subfolder))
-                and _is_date(subfolder)
+            for subfolder in os.listdir(data_folder)
+            if os.path.isdir(os.path.join(data_folder, subfolder))
+            and _is_date(subfolder)
         )
 
         # For electricity demand, get the data source with the longest
@@ -294,7 +294,9 @@ def _get_files_to_load(
 
         if variable == "temperature":
             # Add all matching files for temperature.
-            files_to_load[entity_code] = glob.glob(os.path.join(data_folder, file_pattern))
+            files_to_load[entity_code] = glob.glob(
+                os.path.join(data_folder, file_pattern)
+            )
 
             if not files_to_load[entity_code]:
                 logging.warning(
@@ -714,9 +716,7 @@ def _merge_datasets(
         merged_entities = merged_dataset["Entity code"].unique()
         original_entities = dataset["Entity code"].unique()
         excluded_entities = set(original_entities) - set(merged_entities)
-        logging.info(
-            f" - Dataset {i + 1}: {excluded_entities or 'None'}"
-        )
+        logging.info(f" - Dataset {i + 1}: {excluded_entities or 'None'}")
 
     return merged_dataset
 

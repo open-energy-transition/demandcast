@@ -280,9 +280,7 @@ def convert_from_yearly_to_hourly(
     return pd.Series(index.year.map(time_series), index=index)
 
 
-def clean_data(
-    time_series: pd.Series, variable_name: str
-) -> pd.Series:
+def clean_data(time_series: pd.Series, variable_name: str) -> pd.Series:
     """
     Clean the time series.
 
@@ -313,9 +311,7 @@ def clean_data(
         raise ValueError("The time series must be timezone-aware.")
     # Convert the time zone of the electricity demand time series to
     # UTC and remove the time zone information.
-    time_series.index = time_series.index.tz_convert("UTC").tz_localize(
-        None
-    )
+    time_series.index = time_series.index.tz_convert("UTC").tz_localize(None)
 
     # Set the name of the index and the series.
     time_series.index.name = "Time (UTC)"

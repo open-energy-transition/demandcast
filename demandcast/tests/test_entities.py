@@ -556,9 +556,12 @@ def test_time_zones_errors():
     ]
 
     # Check if the function raises errors for invalid time zones.
-    with pytest.raises(ValueError), patch(
-        "utils.entities._read_entities_info",
-        return_value=entity_with_invalid_time_zone,
+    with (
+        pytest.raises(ValueError),
+        patch(
+            "utils.entities._read_entities_info",
+            return_value=entity_with_invalid_time_zone,
+        ),
     ):
         utils.entities._get_time_zones_in_data_source("dummy_data_source")
 
@@ -575,9 +578,12 @@ def test_time_zones_errors():
     ]
 
     # Check if the function raises errors for missing time zones.
-    with pytest.raises(ValueError), patch(
-        "utils.entities._read_entities_info",
-        return_value=entity_with_missing_time_zone,
+    with (
+        pytest.raises(ValueError),
+        patch(
+            "utils.entities._read_entities_info",
+            return_value=entity_with_missing_time_zone,
+        ),
     ):
         utils.entities._get_time_zones_in_data_source("dummy_data_source")
 
@@ -687,9 +693,12 @@ def test_date_ranges_errors():
     ]
 
     # Check if the function raises an error for invalid date ranges.
-    with pytest.raises(ValueError), patch(
-        "utils.entities._read_entities_info",
-        return_value=entities,
+    with (
+        pytest.raises(ValueError),
+        patch(
+            "utils.entities._read_entities_info",
+            return_value=entities,
+        ),
     ):
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "dummy_data_source"

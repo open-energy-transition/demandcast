@@ -506,9 +506,7 @@ def plot(figure_directory: str) -> None:
 
         # Initialize the GDP and electricity demand data to plot.
         gdp_data_to_plot[iso_alpha_3_codes] = pd.Series(dtype=float)
-        electricity_data_to_plot[iso_alpha_3_codes] = pd.Series(
-            dtype=float
-        )
+        electricity_data_to_plot[iso_alpha_3_codes] = pd.Series(dtype=float)
 
         # Get the GDP and electricity demand data for the current
         # alpha-3 code with the longest available time range.

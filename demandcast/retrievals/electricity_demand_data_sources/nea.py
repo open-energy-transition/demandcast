@@ -214,9 +214,9 @@ def download_and_extract_data_for_request(bs_month: int) -> pd.DataFrame:
         gregorian_date = bs_date.to_datetime_date()
 
         # Combine date and time to form a complete datetime.
-        gregorian_datetime = pd.to_datetime(
-            gregorian_date
-        ) + pd.Timedelta(hours=dt[3], minutes=dt[4])
+        gregorian_datetime = pd.to_datetime(gregorian_date) + pd.Timedelta(
+            hours=dt[3], minutes=dt[4]
+        )
 
         # Append to the index.
         index.append(pd.Index([gregorian_datetime]))
@@ -224,9 +224,7 @@ def download_and_extract_data_for_request(bs_month: int) -> pd.DataFrame:
     # Define the electricity demand time series.
     electricity_demand_time_series = pd.Series(
         dataset["Demand"].astype(float).to_numpy(),
-        index=pd.DatetimeIndex(
-            [dt[0] for dt in index], tz="Asia/Kathmandu"
-        ),
+        index=pd.DatetimeIndex([dt[0] for dt in index], tz="Asia/Kathmandu"),
     ).sort_index()
 
     return electricity_demand_time_series

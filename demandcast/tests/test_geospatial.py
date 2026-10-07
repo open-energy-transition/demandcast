@@ -212,10 +212,7 @@ def test_from_density_to_count():
         (np.pi / 180)
         * R**2
         * resolution
-        * (
-            np.sin(np.deg2rad(upper_lat))
-            - np.sin(np.deg2rad(lower_lat))
-        )
+        * (np.sin(np.deg2rad(upper_lat)) - np.sin(np.deg2rad(lower_lat)))
     )
     # Repeat area for each longitude (2 columns).
     expected_area = np.tile(area, (2, 1)).T  # Shape (3,2)
@@ -228,9 +225,7 @@ def test_from_density_to_count():
 
     # Assert shape and values are correct.
     assert output.shape == density_grid.shape
-    np.testing.assert_allclose(
-        output.to_numpy(), expected_counts, rtol=1e-6
-    )
+    np.testing.assert_allclose(output.to_numpy(), expected_counts, rtol=1e-6)
 
     # Assert output coordinates match input.
     assert np.all(output.x.to_numpy() == density_grid.x.to_numpy())

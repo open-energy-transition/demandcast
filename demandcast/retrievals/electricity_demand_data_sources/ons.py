@@ -111,9 +111,7 @@ def get_url(year: int) -> str:
     )
 
 
-def download_and_extract_data_for_request(
-    year: int, code: str
-) -> pd.Series:
+def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     """
     Download and extract electricity demand data.
 

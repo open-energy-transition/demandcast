@@ -397,9 +397,7 @@ def _extract_temperature_in_local_year(
     )
     try:
         end_date = (
-            pd.Timestamp(
-                str(year) + "-12-31 23:59:59", tz=entity_time_zone
-            )
+            pd.Timestamp(str(year) + "-12-31 23:59:59", tz=entity_time_zone)
             .tz_convert("UTC")
             .tz_localize(None)
         )
@@ -408,9 +406,7 @@ def _extract_temperature_in_local_year(
         # falls in the ambiguous hour due to the end of daylight saving
         # time. In this case, we set the end date to 22:59:59.
         end_date = (
-            pd.Timestamp(
-                str(year) + "-12-31 22:59:59", tz=entity_time_zone
-            )
+            pd.Timestamp(str(year) + "-12-31 22:59:59", tz=entity_time_zone)
             .tz_convert("UTC")
             .tz_localize(None)
         )
@@ -711,9 +707,7 @@ def run_data_retrieval(
     # Define the available years for the historical weather data.
     # Historical data is available from 1940 but it is not necessary to
     # go that far back for our purposes.
-    available_historical_years = list(
-        range(1990, pd.Timestamp.now().year + 1)
-    )
+    available_historical_years = list(range(1990, pd.Timestamp.now().year + 1))
 
     # Define the available years for the future weather data.
     available_future_years = list(range(pd.Timestamp.now().year, 2101))
