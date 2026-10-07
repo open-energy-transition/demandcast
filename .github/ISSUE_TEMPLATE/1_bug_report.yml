@@ -1,3 +1,5 @@
+# Issue form for bug reports.
+
 name: Bug report
 description: Report an error or unexpected behavior
 labels: ["Bug"]

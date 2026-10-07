@@ -1,3 +1,5 @@
+# Issue form for feature requests.
+
 name: Feature request
 description: Suggest a new feature or improvement
 labels: ["Enhancement"]

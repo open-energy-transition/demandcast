@@ -1,12 +1,57 @@
+# Labels pull requests by the files they change (.github/labeler.yml) and by
+# the type in their Conventional Commits title. pull_request_target gives
+# write access on pull requests from forks, so this workflow must never check
+# out or run their code.
+
 name: "Pull Request Labeler"
-on:
-  - pull_request_target
+
+on: # zizmor: ignore[dangerous-triggers] -- no PR code is checked out or run
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
 
 jobs:
   labeler:
-    permissions:
-      contents: read
-      pull-requests: write
+    timeout-minutes: 5
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # Read the labeler configuration.
+      pull-requests: write
     steps:
-      - uses: actions/labeler@v7
+      - name: Add labels for the changed files
+        uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+
+      - name: Add labels for the type in the Conventional Commits title
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const match = /^(\w+)(?:\([^)]*\))?(!)?: /.exec(
+              context.payload.pull_request.title,
+            );
+            if (!match) {
+              return; // The pull request checks report invalid titles.
+            }
+            const labels = [];
+            const byType = {
+              feat: "Enhancement",
+              fix: "Bug",
+              docs: "Documentation",
+            };
+            if (match[2]) {
+              labels.push("Breaking change");
+            }
+            if (byType[match[1]]) {
+              labels.push(byType[match[1]]);
+            }
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                ...context.repo,
+                issue_number: context.payload.pull_request.number,
+                labels,
+              });
+            }
