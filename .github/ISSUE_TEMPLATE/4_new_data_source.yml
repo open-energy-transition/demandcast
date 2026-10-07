@@ -1,6 +1,7 @@
 name: New data source
 description: Suggest a new source of electricity demand data
 labels: ["Enhancement"]
+type: Feature
 
 body:
   - type: markdown
