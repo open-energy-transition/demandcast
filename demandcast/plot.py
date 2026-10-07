@@ -71,8 +71,7 @@ if __name__ == "__main__":
 
     # Plot the specified figure.
     if (
-        config.figure == "data_availability"
-        or config.figure == "map_of_available_entities"
+        config.figure in {"data_availability", "map_of_available_entities"}
     ):
         # Make sure that other arguments are not provided.
         if (

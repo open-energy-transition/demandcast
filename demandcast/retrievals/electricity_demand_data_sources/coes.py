@@ -72,7 +72,7 @@ def get_available_requests() -> list[int]:
     )
 
     # Return the available requests, which are the years.
-    return [year for year in range(start_date.year, end_date.year + 1)]
+    return list(range(start_date.year, end_date.year + 1))
 
 
 def get_url() -> str:

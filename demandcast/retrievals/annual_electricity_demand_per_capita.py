@@ -201,35 +201,35 @@ def run_data_retrieval(
 
         # Get the selected historical years.
         selected_historical_years = list(
-            set(
-                [
+            {
+                
                     year
                     for year, scenario in year_scenario_list
                     if scenario is None
-                ]
-            )
+                
+            }
         )
 
         # Get the selected future years.
         selected_future_years = list(
-            set(
-                [
+            {
+                
                     year
                     for year, scenario in year_scenario_list
                     if scenario is not None
-                ]
-            )
+                
+            }
         )
 
         # Get the selected scenarios.
         selected_scenarios = list(
-            set(
-                [
+            {
+                
                     scenario
                     for __, scenario in year_scenario_list
                     if scenario is not None
-                ]
-            )
+                
+            }
         )
 
         if selected_historical_years:

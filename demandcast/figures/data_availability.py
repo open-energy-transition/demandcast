@@ -575,15 +575,15 @@ def plot(figure_directory: str) -> None:
                     gdp_data_to_plot[iso_alpha_3_codes].iloc[0] / 1000,
                     electricity_data_to_plot[iso_alpha_3_codes].iloc[0] / 1000,
                 ),
-                arrowprops=dict(
-                    facecolor=colors[continent_codes[local_codes[0]]],
-                    edgecolor=(0, 0, 0, 0.7),
-                    linewidth=0.3,
-                    alpha=0.7,
-                    width=3,
-                    headwidth=8,
-                    headlength=8,
-                ),
+                arrowprops={
+                    "facecolor": colors[continent_codes[local_codes[0]]],
+                    "edgecolor": (0, 0, 0, 0.7),
+                    "linewidth": 0.3,
+                    "alpha": 0.7,
+                    "width": 3,
+                    "headwidth": 8,
+                    "headlength": 8,
+                },
             )
 
     # Add sample points for the GDP and electricity demand data to
@@ -601,14 +601,14 @@ def plot(figure_directory: str) -> None:
         text="",
         xy=(110, 0.3),
         xytext=(60, 0.3),
-        arrowprops=dict(
-            facecolor=(0, 0, 0, 1),
-            edgecolor=(0, 0, 0, 1),
-            linewidth=0.3,
-            width=3,
-            headwidth=8,
-            headlength=8,
-        ),
+        arrowprops={
+            "facecolor": (0, 0, 0, 1),
+            "edgecolor": (0, 0, 0, 1),
+            "linewidth": 0.3,
+            "width": 3,
+            "headwidth": 8,
+            "headlength": 8,
+        },
     )
     ax.annotate(text="First year\nof data", xy=(60, 0.36), ha="center")
     ax.annotate(text="Last year\nof data", xy=(110, 0.36), ha="center")

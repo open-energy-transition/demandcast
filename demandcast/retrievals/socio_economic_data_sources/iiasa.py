@@ -93,7 +93,7 @@ def _calculate_gdp_ppp_per_capita(
     """
     # Find regions contained in both datasets.
     common_regions = sorted(
-        list(set(gdp_ppp["Region"]) & set(population["Region"]))
+        set(gdp_ppp["Region"]) & set(population["Region"])
     )
 
     # Filter the datasets to keep only the common regions.
@@ -124,7 +124,7 @@ def _calculate_gdp_ppp_per_capita(
         )
 
     # Keep only the relevant columns.
-    columns_to_keep = ["Region", "Scenario"] + years_of_interest
+    columns_to_keep = ["Region", "Scenario", *years_of_interest]
     gdp_ppp_per_capita = gdp_ppp_per_capita[columns_to_keep].copy()
 
     # Add the required columns.
@@ -133,13 +133,7 @@ def _calculate_gdp_ppp_per_capita(
     gdp_ppp_per_capita["Unit"] = "USD_2021/yr"
 
     # Reorder columns.
-    columns_order = [
-        "Model",
-        "Scenario",
-        "Region",
-        "Variable",
-        "Unit",
-    ] + years_of_interest
+    columns_order = ["Model", "Scenario", "Region", "Variable", "Unit", *years_of_interest]
     gdp_ppp_per_capita = gdp_ppp_per_capita[columns_order]
 
     # Update CPI data. This is needed to ensure that the inflation

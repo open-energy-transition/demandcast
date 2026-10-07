@@ -132,7 +132,7 @@ def download_and_extract_data() -> pandas.Series:
             )
 
         # Keep only "Date" and hours 1 to 24.
-        selected_columns = ["DATE"] + list(range(1, 25))
+        selected_columns = ["DATE", *range(1, 25)]
         dataset = dataset.loc[:, selected_columns]
 
         # Reshape to long format.

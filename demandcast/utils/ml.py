@@ -321,7 +321,7 @@ def _split_in_groups(
     """
     # Construct the list of columns to check for existence in the
     # dataset.
-    columns_to_check = feature_columns + [group_column] + [time_column]
+    columns_to_check = [*feature_columns, group_column, time_column]
     if target:
         columns_to_check += [target_column]
     if categorical_feature_columns:

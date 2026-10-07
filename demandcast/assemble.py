@@ -257,12 +257,10 @@ def _get_files_to_load(
         # For electricity demand, find the folder with the most recent
         # date as name.
         data_folder = max(
-            [
-                os.path.join(data_folder, subfolder)
+            os.path.join(data_folder, subfolder)
                 for subfolder in os.listdir(data_folder)
                 if os.path.isdir(os.path.join(data_folder, subfolder))
                 and _is_date(subfolder)
-            ]
         )
 
         # For electricity demand, get the data source with the longest
@@ -296,9 +294,7 @@ def _get_files_to_load(
 
         if variable == "temperature":
             # Add all matching files for temperature.
-            files_to_load[entity_code] = [
-                f for f in glob.glob(os.path.join(data_folder, file_pattern))
-            ]
+            files_to_load[entity_code] = glob.glob(os.path.join(data_folder, file_pattern))
 
             if not files_to_load[entity_code]:
                 logging.warning(

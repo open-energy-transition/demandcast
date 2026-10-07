@@ -133,11 +133,7 @@ def _cross_validate_xgboost(
     mapes = pandas.DataFrame()
 
     # Extract entity codes.
-    list_entity_codes = []
-    for test_indices in cv_results["indices"]["test"]:
-        list_entity_codes.append(
-            prepared_dataset["group"].iloc[test_indices[0]]
-        )
+    list_entity_codes = [prepared_dataset["group"].iloc[test_indices[0]] for test_indices in cv_results["indices"]["test"]]
     mapes["Entity Code"] = list_entity_codes
 
     # Add train and test scores to the results DataFrame.

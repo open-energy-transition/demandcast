@@ -167,7 +167,7 @@ if __name__ == "__main__":
                 "retrieval of gridded weather data."
             )
 
-        if config.weather_variable not in ["temperature"]:
+        if config.weather_variable != "temperature":
             raise ValueError(
                 f"The specified weather variable "
                 f"'{config.weather_variable}' is not recognized. "

@@ -136,13 +136,13 @@ def _add_box_and_bar_plot(
 
     # Define the properties of the box and whisker plot common to all
     # series.
-    medianprops = dict(linewidth=line_width * 1.5, color="tab:red")
-    meanpointprops = dict(
-        marker="D",
-        markersize=marker_size,
-        markerfacecolor="tab:green",
-        markeredgecolor="black",
-    )
+    medianprops = {"linewidth": line_width * 1.5, "color": "tab:red"}
+    meanpointprops = {
+        "marker": "D",
+        "markersize": marker_size,
+        "markerfacecolor": "tab:green",
+        "markeredgecolor": "black",
+    }
 
     # Define the box width based on the number of series.
     box_width = 0.2 if len(data) == 1 else 0.4
@@ -150,10 +150,10 @@ def _add_box_and_bar_plot(
     for i, series in enumerate(data):
         # Define the properties of the box and whisker plot for the
         # current series.
-        boxprops = dict(color=colors[i], linewidth=line_width)
-        whiskerprops = dict(color=colors[i], linewidth=line_width)
-        capprops = dict(color=colors[i], linewidth=line_width)
-        flierprops = dict(markeredgecolor=colors[i], linewidth=line_width)
+        boxprops = {"color": colors[i], "linewidth": line_width}
+        whiskerprops = {"color": colors[i], "linewidth": line_width}
+        capprops = {"color": colors[i], "linewidth": line_width}
+        flierprops = {"markeredgecolor": colors[i], "linewidth": line_width}
 
         # Add the box and whisker plot to the axes.
         axs[0].boxplot(
@@ -228,9 +228,9 @@ def _add_legend(
             ha="center",
             weight="bold",
             fontsize=12,
-            bbox=dict(
-                boxstyle="square", facecolor=colors[i], edgecolor="none"
-            ),
+            bbox={
+                "boxstyle": "square", "facecolor": colors[i], "edgecolor": "none"
+            },
         )
 
 
@@ -255,7 +255,7 @@ def _add_explanatory_text(
         weight="bold",
         fontsize=12,
         rotation=90,
-        bbox=dict(boxstyle="larrow", facecolor="lightgrey", edgecolor="none"),
+        bbox={"boxstyle": "larrow", "facecolor": "lightgrey", "edgecolor": "none"},
     )
 
 

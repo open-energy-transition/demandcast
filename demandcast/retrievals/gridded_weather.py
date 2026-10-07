@@ -169,10 +169,10 @@ def _download_data(
     )
 
     # Define the dataset.
-    if dataset == "reanalysis-era5-single-levels" or dataset == "reanalysis":
+    if dataset in {"reanalysis-era5-single-levels", "reanalysis"}:
         dataset = "reanalysis-era5-single-levels"
         file_path += ".nc"
-    elif dataset == "projections-cmip6" or dataset == "projections":
+    elif dataset in {"projections-cmip6", "projections"}:
         dataset = "projections-cmip6"
         file_path += ".zip"
     else:

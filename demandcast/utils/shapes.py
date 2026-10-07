@@ -516,4 +516,4 @@ def get_all_codes_with_shapes() -> list[str]:
     )
 
     # Remove any duplicates and sort the list of codes.
-    return sorted(list(set(all_codes)))
+    return sorted(set(all_codes))

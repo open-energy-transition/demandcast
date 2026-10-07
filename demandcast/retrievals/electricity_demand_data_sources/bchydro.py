@@ -112,7 +112,7 @@ def get_url(year: int) -> str:
         url += f"{year}controlareaload.xls"
     elif year >= 2009 and year <= 2012:
         url += f"jandec{year}controlareaload.xls"
-    elif year == 2024 or year == 2025:
+    elif year in {2024, 2025}:
         url += f"BalancingAuthorityLoad%20{year}.xls"
     else:
         raise ValueError(f"The year {year} is not implemented yet.")

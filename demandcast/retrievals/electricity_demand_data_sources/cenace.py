@@ -307,7 +307,7 @@ def download_and_extract_data_for_request(
         # Define the column name for the subdivision code.
         column_name = (
             "Sistema"
-            if subdivision_code == "BCA" or subdivision_code == "BCS"
+            if subdivision_code in {"BCA", "BCS"}
             else " Area"
         )
 

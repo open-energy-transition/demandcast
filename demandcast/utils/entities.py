@@ -1088,7 +1088,7 @@ def get_available_years(code: str) -> list[int]:
     )
 
     # Return the years of the data availability.
-    return [year for year in range(start_date.year, end_date.year + 1)]
+    return list(range(start_date.year, end_date.year + 1))
 
 
 def get_continent_code(code: str) -> str:

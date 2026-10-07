@@ -65,8 +65,7 @@ def _read_aspx_params(
     }
 
     # Add the additional parameters for the POST request.
-    for key, value in additional_post_data_params.items():
-        post_data_params[key] = value
+    post_data_params.update(additional_post_data_params)
 
     return post_data_params
 
@@ -196,8 +195,7 @@ def fetch_data(
                             )
 
                         if (
-                            read_with == "requests.get"
-                            or read_with == "requests.post"
+                            read_with in {"requests.get", "requests.post"}
                         ):
                             if get_cookies:
                                 # Create a session to persist cookies.

@@ -155,7 +155,7 @@ def _get_excel_information(
             "CALGARY",
             "CENTRAL",
         ]
-    elif file_number == 3 or file_number == 4:
+    elif file_number in {3, 4}:
         sheet_name = "Sheet1"
         rows_to_skip = 0
         index_columns = ["DT_MST"]
@@ -229,14 +229,14 @@ def download_and_extract_data_for_request(file_number: int) -> pandas.Series:
             "expected a pandas DataFrame."
         )
 
-    if file_number == 1 or file_number == 2:
+    if file_number in {1, 2}:
         # Define starting time index.
         first_local_time_index = (
             dataset["DATE"][0]
             + pandas.Timedelta(hours=int(dataset["HOUR ENDING"][0]))
         ).tz_localize("America/Edmonton")
 
-    elif file_number == 3 or file_number == 4:
+    elif file_number in {3, 4}:
         # Define starting time index.
         first_local_time_index = (
             dataset["DT_MST"].iloc[0].tz_localize("America/Edmonton")
