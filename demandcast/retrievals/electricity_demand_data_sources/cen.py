@@ -124,14 +124,11 @@ def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
     # Check if the input parameters are valid.
     _check_input_parameters(start_date, end_date)
 
-    # Convert the start and end date to string format.
-    start_date = start_date.strftime("%Y-%m-%d")
-    end_date = end_date.strftime("%Y-%m-%d")
-
     # Return the URL of the electricity demand data.
     return (
         "https://sipub.coordinador.cl/api/v1/recursos/"
-        f"demandasistemareal?fecha__gte={start_date}&fecha__lte={end_date}"
+        f"demandasistemareal?fecha__gte={start_date:%Y-%m-%d}"
+        f"&fecha__lte={end_date:%Y-%m-%d}"
     )
 
 
@@ -217,8 +214,8 @@ def download_and_extract_data_for_request(
     )
 
     # Add the timezone to the index.
-    electricity_demand_time_series.index = (
-        electricity_demand_time_series.index.tz_localize(
+    electricity_demand_time_series = (
+        electricity_demand_time_series.tz_localize(
             "America/Santiago", ambiguous="NaT", nonexistent="NaT"
         )
     )

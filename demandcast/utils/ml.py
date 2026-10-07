@@ -9,6 +9,7 @@ Description:
 
 import logging
 import os
+from typing import NotRequired, TypedDict
 
 import pandas as pd
 from pydantic import BaseModel, ValidationError
@@ -16,13 +17,37 @@ from pydantic import BaseModel, ValidationError
 import utils.config
 
 
-def read_and_check_ml_configuration() -> BaseModel:
+class ConfigModel(BaseModel):
+    """Settings of the machine learning models."""
+
+    algorithm: str
+    group: str
+    features: list[str]
+    target: str
+    splitter: str
+    time: str
+    categorical_features: list[str] | None = None
+    scaling_variables: list[str] | None = None
+
+
+class PreparedDataset(TypedDict):
+    """Dataset prepared for the machine learning models."""
+
+    features: pd.DataFrame
+    group: NotRequired[pd.Series]
+    time: NotRequired[pd.Series]
+    others: NotRequired[pd.DataFrame]
+    target: NotRequired[pd.Series]
+    scaling_factor: NotRequired[pd.Series]
+
+
+def read_and_check_ml_configuration() -> ConfigModel:
     """
     Read and check the features and target.
 
     Returns
     -------
-    config : BaseModel
+    config : ConfigModel
         A Pydantic model containing the ml configuration.
 
     Raises
@@ -30,18 +55,6 @@ def read_and_check_ml_configuration() -> BaseModel:
     ValueError
         If the configuration is invalid.
     """
-
-    # Define the configuration model.
-    class ConfigModel(BaseModel):
-        algorithm: str
-        group: str
-        features: list[str]
-        target: str
-        splitter: str
-        time: str
-        categorical_features: list[str] | None = None
-        scaling_variables: list[str] | None = None
-
     # Define the path to the features and target configuration file.
     config_path = os.path.join(
         utils.config.read_folders_structure()["config_folder"],
@@ -284,7 +297,7 @@ def _split_in_groups(  # noqa: C901
     categorical_feature_columns: list[str] | None = None,
     scaling_variable_columns: list[str] | None = None,
     target: bool = True,
-) -> dict[str, dict[str, pd.DataFrame | pd.Series]]:
+) -> PreparedDataset:
     """
     Split the dataset into features, target, group, and scaling factor.
 
@@ -310,7 +323,7 @@ def _split_in_groups(  # noqa: C901
 
     Returns
     -------
-    split_dataset : dict[str, pandas.DataFrame | pandas.Series]
+    split_dataset : PreparedDataset
         A dictionary containing the features, target, entity codes,
         and scaling factors (if any).
 
@@ -357,7 +370,7 @@ def _split_in_groups(  # noqa: C901
             )
 
     # Split the dataset into features and group.
-    split_dataset = {
+    split_dataset: PreparedDataset = {
         "features": features,
         "group": dataset[group_column].copy(),
         "time": dataset[time_column].copy(),
@@ -372,7 +385,7 @@ def _split_in_groups(  # noqa: C901
 
     if scaling_variable_columns:
         # Calculate the scaling factor.
-        scaling_factor = 1.0
+        scaling_factor = pd.Series(1.0, index=dataset.index)
         for scaling_variable in scaling_variable_columns:
             scaling_factor *= dataset[scaling_variable]
 
@@ -382,68 +395,28 @@ def _split_in_groups(  # noqa: C901
     return split_dataset
 
 
-def prepare_dataset(
-    data_path: str,
-    testing_set: bool,
-    validation_set: bool,
-    target: bool = True,
-) -> dict[
-    str,
-    pd.Series | pd.DataFrame | dict[str, pd.DataFrame | pd.Series],
-]:
+def prepare_dataset(data_path: str, target: bool = True) -> PreparedDataset:
     """
-    Prepare the dataset for training or validation.
+    Prepare the whole dataset for forecasting or cross-validation.
 
     Parameters
     ----------
     data_path : str
         The path to the assembled data file.
-    testing_set : bool
-        Whether to have a testing set.
-    validation_set : bool
-        Whether to have a validation set.
     target : bool, optional
         Whether to include the target variable in the prepared dataset.
 
     Returns
     -------
-    dict[str, pandas.DataFrame | pandas.Series |
-        dict[str, pandas.DataFrame | pandas.Series]]
-        A dictionary containing the prepared dataset(s).
+    PreparedDataset
+        The features, target, entity codes, and scaling factors (if
+        any) of the dataset.
     """
-    # Read and check machine learning configuration.
+    # Read the configuration of the machine learning models.
     ml_config = read_and_check_ml_configuration()
 
-    # Read the assembled data.
+    # Read the dataset.
     dataset = pd.read_parquet(data_path)
-
-    if testing_set or validation_set:
-        # Split the dataset temporally.
-        split_dataset = _split_temporally(
-            dataset,
-            testing_set,
-            validation_set,
-            ml_config.group,
-            ml_config.splitter,
-        )
-
-        # Initialize a dictionary to hold prepared datasets.
-        prepared_dataset: dict[str, dict[str, pd.DataFrame | pd.Series]] = {}
-
-        # Prepare features and target for each dataset.
-        for split_name, dataset in split_dataset.items():
-            prepared_dataset[split_name] = _split_in_groups(
-                dataset,
-                ml_config.group,
-                ml_config.features,
-                ml_config.target,
-                ml_config.time,
-                ml_config.categorical_features,
-                ml_config.scaling_variables,
-                target,
-            )
-
-        return prepared_dataset
 
     # Prepare and return the dataset without splitting.
     return _split_in_groups(
@@ -456,6 +429,54 @@ def prepare_dataset(
         ml_config.scaling_variables,
         target,
     )
+
+
+def prepare_split_datasets(
+    data_path: str, testing_set: bool, validation_set: bool
+) -> dict[str, PreparedDataset]:
+    """
+    Prepare the training, testing, and validation sets.
+
+    Parameters
+    ----------
+    data_path : str
+        The path to the assembled data file.
+    testing_set : bool
+        Whether to have a testing set.
+    validation_set : bool
+        Whether to have a validation set.
+
+    Returns
+    -------
+    dict[str, PreparedDataset]
+        The prepared datasets, with keys 'training', 'testing' (if
+        used), and 'validation' (if used).
+    """
+    # Read the configuration of the machine learning models.
+    ml_config = read_and_check_ml_configuration()
+
+    # Read the dataset and split it temporally.
+    split_dataset = _split_temporally(
+        pd.read_parquet(data_path),
+        testing_set,
+        validation_set,
+        ml_config.group,
+        ml_config.splitter,
+    )
+
+    # Prepare each split of the dataset.
+    return {
+        split_name: _split_in_groups(
+            dataset,
+            ml_config.group,
+            ml_config.features,
+            ml_config.target,
+            ml_config.time,
+            ml_config.categorical_features,
+            ml_config.scaling_variables,
+        )
+        for split_name, dataset in split_dataset.items()
+    }
 
 
 def save_results(

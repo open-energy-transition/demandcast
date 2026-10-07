@@ -17,13 +17,22 @@ import utils.config
 from pydantic import BaseModel, ValidationError
 
 
-def _read_and_check_configuration() -> BaseModel:
+class ConfigModel(BaseModel):
+    """Settings of plot.py."""
+
+    figure: str
+    version: str | None = None
+    compare_with_version: str | None = None
+    by_group: bool = False
+
+
+def _read_and_check_configuration() -> ConfigModel:
     """
     Read and check the configuration for plotting.
 
     Returns
     -------
-    BaseModel
+    ConfigModel
         A Pydantic model containing the validated configuration.
 
     Raises
@@ -31,14 +40,6 @@ def _read_and_check_configuration() -> BaseModel:
     ValueError
         If the configuration is invalid.
     """
-
-    # Define the configuration model.
-    class ConfigModel(BaseModel):
-        figure: str
-        version: str | None = None
-        compare_with_version: str | None = None
-        by_group: bool = False
-
     # Read the configuration.
     raw_config = utils.config.read_configuration(
         "plot",

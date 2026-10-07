@@ -13,6 +13,7 @@ Description:
 import datetime
 import logging
 import os
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -178,13 +179,13 @@ def _load_gridded_temperature_data(
             )
 
     # Read the temperature data.
-    temperature_data = xarray.open_mfdataset(temperature_data_file_paths)
+    dataset = xarray.open_mfdataset(temperature_data_file_paths)
 
     # Extract the temperature variable.
-    if "t2m" in temperature_data:
-        temperature_data = temperature_data["t2m"]
-    elif "tas" in temperature_data:
-        temperature_data = temperature_data["tas"]
+    if "t2m" in dataset:
+        temperature_data = dataset["t2m"]
+    elif "tas" in dataset:
+        temperature_data = dataset["tas"]
     else:
         raise ValueError(
             "The temperature variable is not found in the dataset. "
@@ -383,8 +384,8 @@ def _extract_temperature_in_local_year(
     if projections:
         # Add 12 hours to the time coordinate to center the daily data
         # on noon.
-        temperature_data["time"] = temperature_data["time"] + pd.Timedelta(
-            hours=12
+        temperature_data["time"] = temperature_data["time"] + np.timedelta64(
+            12, "h"
         )
 
         # Upsample the daily data to hourly data using linear
@@ -474,11 +475,9 @@ def _get_temperature_in_most_populous_cells(
     elif climate_model:
         # Climate model data has a time coordinate type of
         # cftime.DatetimeNoLeap. Convert it to datetime64.
-        temperature_data["time"] = (
-            temperature_data["time"]
-            .to_index()
-            .to_datetimeindex(time_unit="ns")
-        )
+        temperature_data["time"] = cast(
+            xarray.CFTimeIndex, temperature_data["time"].to_index()
+        ).to_datetimeindex(time_unit="ns")
 
     # Load the population data.
     population_data = _load_gridded_population_data(
@@ -563,11 +562,16 @@ def _build_temperature_database(
         "UTC"
     ).tz_convert(entity_time_zone)
 
+    # Get the local time of the temperature time series.
+    local_time = pd.DatetimeIndex(temperature_time_series_top_1.index)
+
     # Get the monthly average temperature.
     monthly_average_temperature = (
         temperature_time_series_top_1.tz_localize(None).resample("ME").mean()
     )
-    monthly_average_temperature.index = monthly_average_temperature.index.month
+    monthly_average_temperature.index = pd.DatetimeIndex(
+        monthly_average_temperature.index
+    ).month
 
     # Get the rank of the monthly average temperature.
     monthly_average_temperature_rank = monthly_average_temperature.rank(
@@ -576,20 +580,16 @@ def _build_temperature_database(
 
     # Map the monthly average temperature to the original temperature
     # time series.
-    monthly_average_temperature = (
-        temperature_time_series_top_1.index.month.map(
-            monthly_average_temperature
-        ).to_series()
-    )
+    monthly_average_temperature = local_time.month.map(
+        monthly_average_temperature.to_dict()
+    ).to_series()
     monthly_average_temperature.index = temperature_time_series_top_1.index
 
     # Map the monthly average temperature rank to the original
     # temperature time series.
-    monthly_average_temperature_rank = (
-        temperature_time_series_top_1.index.month.map(
-            monthly_average_temperature_rank
-        ).to_series()
-    )
+    monthly_average_temperature_rank = local_time.month.map(
+        monthly_average_temperature_rank.to_dict()
+    ).to_series()
     monthly_average_temperature_rank.index = (
         temperature_time_series_top_1.index
     )
@@ -615,18 +615,12 @@ def _build_temperature_database(
 
     # Add the hour of the day, day of the week, month of the year, and
     # year to the DataFrame.
-    temperature_database["Local hour of the day"] = (
-        temperature_time_series_top_1.index.hour
-    )
+    temperature_database["Local hour of the day"] = local_time.hour
     temperature_database["Local weekend indicator"] = (
-        temperature_time_series_top_1.index.dayofweek >= 5
+        local_time.dayofweek >= 5
     ).astype(int)
-    temperature_database["Local month of the year"] = (
-        temperature_time_series_top_1.index.month
-    )
-    temperature_database["Local year"] = (
-        temperature_time_series_top_1.index.year
-    )
+    temperature_database["Local month of the year"] = local_time.month
+    temperature_database["Local year"] = local_time.year
 
     # Add the temperature statistics to the temperature time series.
     temperature_database["Temperature - Top 1 (K)"] = (

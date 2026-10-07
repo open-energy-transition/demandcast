@@ -20,9 +20,7 @@ import utils.figures
 import utils.shapes
 
 
-def harmonize_coords(
-    ds: xarray.DataArray | xarray.Dataset,
-) -> xarray.DataArray | xarray.Dataset:
+def harmonize_coords[T: (xarray.DataArray, xarray.Dataset)](ds: T) -> T:
     """
     Rename coordinates and reset longitudes.
 
@@ -303,7 +301,7 @@ def from_density_to_count(
     )
 
     # Create an xarray DataArray for the boundary latitudes.
-    boundary_latitudes = xarray.Dataset(
+    boundary_latitude_grid = xarray.Dataset(
         data_vars={
             "upper_lat": (
                 ["y", "x"],
@@ -326,8 +324,8 @@ def from_density_to_count(
         * earth_radius**2
         * resolution
         * (
-            np.sin(np.deg2rad(boundary_latitudes["upper_lat"]))
-            - np.sin(np.deg2rad(boundary_latitudes["lower_lat"]))
+            np.sin(np.deg2rad(boundary_latitude_grid["upper_lat"]))
+            - np.sin(np.deg2rad(boundary_latitude_grid["lower_lat"]))
         )
     )
 

@@ -99,10 +99,14 @@ def _remove_islands_and_clip_to_180(  # noqa: C901
     if new_bounds is not None:
         # Convert the GeoSeries to a GeoDataFrame and set the coordinate
         # reference system to EPSG 4326.
-        new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
+        new_bounds_frame = geopandas.GeoDataFrame.from_features(
+            new_bounds, crs=4326
+        )
 
         # Remove any area outside the new bounds.
-        entity_shape = entity_shape.overlay(new_bounds, how="intersection")
+        entity_shape = entity_shape.overlay(
+            new_bounds_frame, how="intersection"
+        )
 
     return entity_shape
 
@@ -206,15 +210,20 @@ def get_standard_shape(
         raise ValueError(f"No shape found for {code} in Natural Earth.")
 
     # Convert the shape to a GeoDataFrame.
-    entity_shape = pd.Series({"geometry": entity_shape.geometry})
-    entity_shape = geopandas.GeoSeries(entity_shape)
-    entity_shape = geopandas.GeoDataFrame.from_features(entity_shape, crs=4326)
+    entity_series = geopandas.GeoSeries(
+        pd.Series({"geometry": entity_shape.geometry})
+    )
+    entity_shape_frame = geopandas.GeoDataFrame.from_features(
+        entity_series, crs=4326
+    )
 
     # Remove small remote islands from the shape of some countries.
     if remove_remote_islands:
-        entity_shape = _remove_islands_and_clip_to_180(entity_shape, code)
+        entity_shape_frame = _remove_islands_and_clip_to_180(
+            entity_shape_frame, code
+        )
 
-    return entity_shape
+    return entity_shape_frame
 
 
 def _read_non_standard_shape_codes() -> dict[str, list[str]]:
@@ -428,11 +437,9 @@ def get_entity_bounds(
         )
 
     # Round the bounds to the closest target resolution.
-    entity_bounds = [
+    return [
         round(x / target_resolution) * target_resolution for x in entity_bounds
     ]
-
-    return entity_bounds
 
 
 def get_all_codes_with_shapes() -> list[str]:
@@ -448,6 +455,11 @@ def get_all_codes_with_shapes() -> list[str]:
     -------
     all_codes : list[str]
         List of all available codes for which shapes are available.
+
+    Raises
+    ------
+    ValueError
+        If a subdivision has an unknown ISO Alpha-2 code.
     """
     # Get the shape of all countries from the Natural Earth shapefile
     # database.
@@ -507,9 +519,10 @@ def get_all_codes_with_shapes() -> list[str]:
     # corresponding ISO Alpha-3 code.
     for i, code in enumerate(codes_of_all_standard_subdivisions):
         iso_alpha_2_code, subdivision_code = code.split("-")
-        iso_alpha_3_code = pycountry.countries.get(
-            alpha_2=iso_alpha_2_code
-        ).alpha_3
+        country = pycountry.countries.get(alpha_2=iso_alpha_2_code)
+        if country is None:
+            raise ValueError(f"Unknown ISO Alpha-2 code: {iso_alpha_2_code}.")
+        iso_alpha_3_code = country.alpha_3
         codes_of_all_standard_subdivisions[i] = (
             iso_alpha_3_code + "_" + subdivision_code
         )

@@ -81,20 +81,17 @@ def download_and_extract_data() -> pd.Series:
     url = get_url()
 
     # Fetch the electricity demand data.
-    electricity_demand_time_series = utils.fetcher.fetch_data(url, "csv")
+    dataset = utils.fetcher.fetch_data(url, "csv")
 
     # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(electricity_demand_time_series, pd.DataFrame):
+    if not isinstance(dataset, pd.DataFrame):
         raise TypeError(
-            "The extracted data is a "
-            f"{type(electricity_demand_time_series)} object, "
+            f"The extracted data is a {type(dataset)} object, "
             "expected a pandas DataFrame."
         )
 
-    # Set the date as the index.
-    electricity_demand_time_series = electricity_demand_time_series.set_index(
-        "date", drop=True
-    ).squeeze()
+    # Set the date as the index and extract the demand.
+    electricity_demand_time_series = dataset.set_index("date").iloc[:, 0]
 
     # Convert the index to a datetime object.
     electricity_demand_time_series.index = pd.to_datetime(

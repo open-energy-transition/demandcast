@@ -22,13 +22,21 @@ from sklearn.metrics import get_scorer
 from sklearn.model_selection import LeaveOneGroupOut, cross_validate
 
 
-def _read_and_check_configuration() -> BaseModel:
+class ConfigModel(BaseModel):
+    """Settings of cross_validate.py."""
+
+    scoring_metric: str
+    n_jobs: int | None = 1
+    data_path: str | None = None
+
+
+def _read_and_check_configuration() -> ConfigModel:
     """
     Read and check the configuration for model cross-validation.
 
     Returns
     -------
-    config : BaseModel
+    config : ConfigModel
         A Pydantic model containing the validated configuration.
 
     Raises
@@ -36,13 +44,6 @@ def _read_and_check_configuration() -> BaseModel:
     ValueError
         If the configuration is invalid.
     """
-
-    # Define the configuration model.
-    class ConfigModel(BaseModel):
-        scoring_metric: str
-        n_jobs: int | None = 1
-        data_path: str | None = None
-
     # Read the configuration.
     raw_config = utils.config.read_configuration(
         "cross_validate",
@@ -83,9 +84,9 @@ def _log_mape_summary(mapes: pd.DataFrame) -> None:
 
 
 def _cross_validate_xgboost(
-    prepared_dataset: dict[str, pd.DataFrame],
+    prepared_dataset: utils.ml.PreparedDataset,
     scoring_metric: str,
-    n_jobs: int,
+    n_jobs: int | None,
 ) -> pd.DataFrame:
     """
     Run Leave-One-Group-Out cross-validation for XGBoost.
@@ -98,12 +99,12 @@ def _cross_validate_xgboost(
 
     Parameters
     ----------
-    prepared_dataset : dict[str, pandas.DataFrame]
+    prepared_dataset : PreparedDataset
         A dictionary containing prepared features, target, and entity
         codes.
     scoring_metric : str
         The scoring metric to use for evaluation.
-    n_jobs : int
+    n_jobs : int | None
         The number of parallel jobs to run.
 
     Returns
@@ -192,7 +193,7 @@ class _GroupAwareLSTM(BaseEstimator, RegressorMixin):
 
 
 def _cross_validate_lstm(
-    prepared_dataset: dict[str, pd.DataFrame],
+    prepared_dataset: utils.ml.PreparedDataset,
     scoring_metric: str,
 ) -> pd.DataFrame:
     """
@@ -209,7 +210,7 @@ def _cross_validate_lstm(
 
     Parameters
     ----------
-    prepared_dataset : dict[str, pandas.DataFrame]
+    prepared_dataset : PreparedDataset
         A dictionary containing prepared features, target, and entity
         codes.
     scoring_metric : str
@@ -233,7 +234,7 @@ def _cross_validate_lstm(
     for train_index, test_index in LeaveOneGroupOut().split(
         features, target, group
     ):
-        fold_dataset = {
+        fold_dataset: dict[str, utils.ml.PreparedDataset] = {
             "training": {
                 "features": features.iloc[train_index],
                 "target": target.iloc[train_index],
@@ -274,9 +275,9 @@ def _cross_validate_lstm(
 
 
 def _cross_validate(
-    prepared_dataset: dict[str, pd.DataFrame],
+    prepared_dataset: utils.ml.PreparedDataset,
     scoring_metric: str,
-    n_jobs: int,
+    n_jobs: int | None,
     algorithm: str,
 ) -> pd.DataFrame:
     """
@@ -284,12 +285,12 @@ def _cross_validate(
 
     Parameters
     ----------
-    prepared_dataset : dict[str, pandas.DataFrame]
+    prepared_dataset : PreparedDataset
         A dictionary containing prepared features, target, and entity
         codes.
     scoring_metric : str
         The scoring metric to use for evaluation.
-    n_jobs : int
+    n_jobs : int | None
         The number of parallel jobs to run.
     algorithm : str
         The machine learning algorithm to use.
@@ -315,7 +316,7 @@ def _cross_validate(
 
 def run_model_cross_validation(
     scoring_metric: str,
-    n_jobs: int,
+    n_jobs: int | None,
     data_path: str | None,
     algorithm: str,
 ) -> None:
@@ -326,7 +327,7 @@ def run_model_cross_validation(
     ----------
     scoring_metric : str
         The scoring metric of the cross-validation.
-    n_jobs : int
+    n_jobs : int | None
         The number of jobs to run in parallel.
     data_path : str | None
         The path to the assembled data file. If None, the latest file
@@ -340,11 +341,7 @@ def run_model_cross_validation(
     data_path = utils.ml.get_assemble_data_path(data_path)
 
     # Read and prepare the dataset.
-    prepared_dataset = utils.ml.prepare_dataset(
-        data_path,
-        False,
-        False,
-    )
+    prepared_dataset = utils.ml.prepare_dataset(data_path)
 
     # Run Leave-One-Group-Out cross-validation.
     mapes = _cross_validate(

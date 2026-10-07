@@ -101,9 +101,9 @@ def download_and_extract_data() -> pd.Series:
     )
 
     # Round the index to the nearest second.
-    electricity_demand_time_series.index = (
-        electricity_demand_time_series.index.round("s")
-    )
+    electricity_demand_time_series.index = pd.DatetimeIndex(
+        electricity_demand_time_series.index
+    ).round("s")
 
     # Add one hour to the index because the electricity demand seems
     # to be provided at the beginning of the hour.
@@ -112,8 +112,8 @@ def download_and_extract_data() -> pd.Series:
     )
 
     # Add the timezone information to the index.
-    electricity_demand_time_series.index = (
-        electricity_demand_time_series.index.tz_localize("Africa/Lagos")
+    electricity_demand_time_series = (
+        electricity_demand_time_series.tz_localize("Africa/Lagos")
     )
 
     return electricity_demand_time_series

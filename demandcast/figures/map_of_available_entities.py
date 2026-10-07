@@ -65,11 +65,14 @@ def plot(figure_directory: str) -> None:
         figsize=(12, 16), subplot_kw={"projection": map_projection}
     )
 
-    # Plot the land.
-    ax.add_feature(cartopy.feature.LAND, facecolor="lightgray")
-
-    # Plot the ocean.
-    ax.add_feature(cartopy.feature.OCEAN, facecolor="white")
+    # Plot the land and the ocean. cartopy has no type information, so
+    # mypy does not know that ax is a cartopy GeoAxes.
+    ax.add_feature(  # type: ignore[attr-defined]
+        cartopy.feature.LAND, facecolor="lightgray"
+    )
+    ax.add_feature(  # type: ignore[attr-defined]
+        cartopy.feature.OCEAN, facecolor="white"
+    )
 
     # Loop over the countries.
     for code in codes:

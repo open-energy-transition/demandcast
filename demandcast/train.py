@@ -18,13 +18,21 @@ import utils.ml
 from pydantic import BaseModel, ValidationError
 
 
-def _read_and_check_configuration() -> BaseModel:
+class ConfigModel(BaseModel):
+    """Settings of train.py."""
+
+    reserve_testing_set: bool
+    use_validation_set: bool
+    data_path: str | None = None
+
+
+def _read_and_check_configuration() -> ConfigModel:
     """
     Read and check the configuration for model training.
 
     Returns
     -------
-    config : BaseModel
+    config : ConfigModel
         A Pydantic model containing the validated configuration.
 
     Raises
@@ -32,13 +40,6 @@ def _read_and_check_configuration() -> BaseModel:
     ValueError
         If the configuration is invalid.
     """
-
-    # Define the configuration model.
-    class ConfigModel(BaseModel):
-        reserve_testing_set: bool
-        use_validation_set: bool
-        data_path: str | None = None
-
     # Read the configuration.
     raw_config = utils.config.read_configuration(
         "train",
@@ -91,10 +92,8 @@ def run_model_training(
     data_path = utils.ml.get_assemble_data_path(data_path)
 
     # Read and prepare the dataset.
-    prepared_dataset = utils.ml.prepare_dataset(
-        data_path,
-        reserve_testing_set,
-        use_validation_set,
+    prepared_dataset = utils.ml.prepare_split_datasets(
+        data_path, reserve_testing_set, use_validation_set
     )
 
     # Define a model name based on timestamp.

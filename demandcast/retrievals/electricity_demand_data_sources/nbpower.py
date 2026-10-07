@@ -165,8 +165,8 @@ def download_and_extract_data_for_request(year: int, month: int) -> pd.Series:
 
     # Convert the time zone of the electricity demand time series to
     # UTC.
-    electricity_demand_time_series.index = (
-        electricity_demand_time_series.index.tz_localize(
+    electricity_demand_time_series = (
+        electricity_demand_time_series.tz_localize(
             "America/Moncton", ambiguous="infer"
         )
     )

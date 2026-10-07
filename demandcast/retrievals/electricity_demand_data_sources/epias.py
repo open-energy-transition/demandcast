@@ -113,8 +113,8 @@ def download_and_extract_data() -> pd.Series:
     )
 
     # Add the timezone information to the index.
-    electricity_demand_time_series.index = (
-        electricity_demand_time_series.index.tz_localize(
+    electricity_demand_time_series = (
+        electricity_demand_time_series.tz_localize(
             "Europe/Istanbul", ambiguous="NaT", nonexistent="NaT"
         )
     )

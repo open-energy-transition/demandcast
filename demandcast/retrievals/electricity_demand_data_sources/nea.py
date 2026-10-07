@@ -125,7 +125,7 @@ def get_url(bs_month: int) -> str:
     )
 
 
-def download_and_extract_data_for_request(bs_month: int) -> pd.DataFrame:
+def download_and_extract_data_for_request(bs_month: int) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -139,7 +139,7 @@ def download_and_extract_data_for_request(bs_month: int) -> pd.DataFrame:
 
     Returns
     -------
-    pandas.DataFrame
+    pandas.Series
         The electricity demand data for the given month.
 
     Raises

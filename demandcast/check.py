@@ -14,13 +14,19 @@ import utils.config
 from pydantic import BaseModel, ValidationError
 
 
-def _read_and_check_configuration() -> BaseModel:
+class ConfigModel(BaseModel):
+    """Settings of check.py."""
+
+    check: str
+
+
+def _read_and_check_configuration() -> ConfigModel:
     """
     Read and check the configuration for checks.
 
     Returns
     -------
-    BaseModel
+    ConfigModel
         A Pydantic model containing the validated configuration.
 
     Raises
@@ -28,11 +34,6 @@ def _read_and_check_configuration() -> BaseModel:
     ValueError
         If the configuration is invalid.
     """
-
-    # Define the configuration model.
-    class ConfigModel(BaseModel):
-        check: str
-
     # Read the configuration.
     raw_config = utils.config.read_configuration(
         "check",

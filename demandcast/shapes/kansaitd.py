@@ -92,10 +92,10 @@ mask_hyogo = geopandas.GeoSeries(
         ]
     )
 )
-mask_hyogo = geopandas.GeoDataFrame(geometry=mask_hyogo, crs=4326)
+mask_hyogo_frame = geopandas.GeoDataFrame(geometry=mask_hyogo, crs=4326)
 
 # Cut Hyogo Prefecture with the mask polygon.
-hyogo_cut = hyogo.overlay(mask_hyogo, how="intersection")
+hyogo_cut = hyogo.overlay(mask_hyogo_frame, how="intersection")
 
 # Select the shape of the Fukui Prefecture.
 fukui = prefectures[prefectures["ADM1_PCODE"] == "JP18"]
@@ -111,10 +111,10 @@ mask_fukui = geopandas.GeoSeries(
         ]
     )
 )
-mask_fukui = geopandas.GeoDataFrame(geometry=mask_fukui, crs=4326)
+mask_fukui_frame = geopandas.GeoDataFrame(geometry=mask_fukui, crs=4326)
 
 # Cut Fukui Prefecture with the mask polygon.
-fukui_cut = fukui.overlay(mask_fukui, how="intersection")
+fukui_cut = fukui.overlay(mask_fukui_frame, how="intersection")
 
 # Select the shape of the Mie Prefecture.
 mie = prefectures[prefectures["ADM1_PCODE"] == "JP24"]
@@ -130,10 +130,10 @@ mask_mie = geopandas.GeoSeries(
         ]
     )
 )
-mask_mie = geopandas.GeoDataFrame(geometry=mask_mie, crs=4326)
+mask_mie_frame = geopandas.GeoDataFrame(geometry=mask_mie, crs=4326)
 
 # Cut Mie Prefecture with the mask polygon.
-mie_cut = mie.overlay(mask_mie, how="intersection")
+mie_cut = mie.overlay(mask_mie_frame, how="intersection")
 
 # Merge all prefectures into one geometry.
 all_prefectures = pd.concat([whole_prefectures, hyogo_cut, fukui_cut, mie_cut])

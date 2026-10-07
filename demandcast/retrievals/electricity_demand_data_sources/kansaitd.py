@@ -222,8 +222,8 @@ def download_and_extract_data_for_request(
 
     # Convert the time zone of the electricity demand time
     # series to UTC.
-    electricity_demand_time_series.index = (
-        electricity_demand_time_series.index.tz_localize("Asia/Tokyo")
+    electricity_demand_time_series = (
+        electricity_demand_time_series.tz_localize("Asia/Tokyo")
     )
 
     return electricity_demand_time_series

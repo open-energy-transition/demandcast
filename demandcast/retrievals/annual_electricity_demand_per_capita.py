@@ -13,6 +13,7 @@ Description:
 
 import logging
 import os
+from typing import cast
 
 import pandas as pd
 import utils.config
@@ -166,10 +167,11 @@ def run_data_retrieval(
         time_zone = utils.entities.get_time_zone(entity_code)
 
         # Extract the electricity data for the country.
-        historical_electricity_demand_per_capita = (
+        historical_electricity_demand_per_capita = cast(
+            pd.Series,
             global_historical_electricity_demand_per_capita.loc[
                 iso_alpha_3_code
-            ]
+            ],
         ).dropna()
 
         # Get the years of available historical data.

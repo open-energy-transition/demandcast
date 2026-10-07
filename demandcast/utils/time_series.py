@@ -42,7 +42,7 @@ def add_missing_time_steps(
     time_resolution = time_series.index.to_series().diff().min()
 
     # Get the year of the time series.
-    year = time_series.index.year[0]
+    year = pd.DatetimeIndex(time_series.index).year[0]
 
     # Calculate the expected number of time steps in the time series.
     expected_number_of_time_steps = int(
@@ -277,7 +277,7 @@ def convert_from_yearly_to_hourly(
         tz=time_zone,
     )
 
-    return pd.Series(index.year.map(time_series), index=index)
+    return pd.Series(index.year.map(time_series.to_dict()), index=index)
 
 
 def clean_data(time_series: pd.Series, variable_name: str) -> pd.Series:
@@ -307,11 +307,14 @@ def clean_data(time_series: pd.Series, variable_name: str) -> pd.Series:
         If the time series is not timezone-aware.
     """
     # Check if the time series is timezone-aware.
-    if time_series.index.tz is None:
+    if (
+        not isinstance(time_series.index, pd.DatetimeIndex)
+        or time_series.index.tz is None
+    ):
         raise ValueError("The time series must be timezone-aware.")
     # Convert the time zone of the electricity demand time series to
     # UTC and remove the time zone information.
-    time_series.index = time_series.index.tz_convert("UTC").tz_localize(None)
+    time_series = time_series.tz_convert("UTC").tz_localize(None)
 
     # Set the name of the index and the series.
     time_series.index.name = "Time (UTC)"

@@ -19,13 +19,20 @@ import utils.ml
 from pydantic import BaseModel, ValidationError
 
 
-def _read_and_check_configuration() -> BaseModel:
+class ConfigModel(BaseModel):
+    """Settings of forecast.py."""
+
+    model_path: str | None = None
+    data_path: str | None = None
+
+
+def _read_and_check_configuration() -> ConfigModel:
     """
     Read and check the configuration for forecasting.
 
     Returns
     -------
-    config : BaseModel
+    config : ConfigModel
         A Pydantic model containing the validated configuration.
 
     Raises
@@ -33,12 +40,6 @@ def _read_and_check_configuration() -> BaseModel:
     ValueError
         If the configuration is invalid.
     """
-
-    # Define the configuration model.
-    class ConfigModel(BaseModel):
-        model_path: str | None = None
-        data_path: str | None = None
-
     # Read the configuration.
     raw_config = utils.config.read_configuration(
         "forecast",
@@ -60,7 +61,7 @@ def _read_and_check_configuration() -> BaseModel:
 
 
 def _construct_output_dataset(
-    prepared_dataset: dict[str, pd.Series | pd.DataFrame],
+    prepared_dataset: utils.ml.PreparedDataset,
     predictions: pd.Series,
 ) -> pd.DataFrame:
     """
@@ -68,7 +69,7 @@ def _construct_output_dataset(
 
     Parameters
     ----------
-    prepared_dataset : dict[str, pandas.Series | pandas.DataFrame]
+    prepared_dataset : PreparedDataset
         The prepared dataset containing features and other relevant
         data.
     predictions : pandas.Series
@@ -84,22 +85,16 @@ def _construct_output_dataset(
     predictions = predictions * prepared_dataset["scaling_factor"] / 1000
 
     # Construct the output dataset.
-    output_dataset = prepared_dataset["time"].copy()
-    output_dataset = pd.concat(
-        [output_dataset, prepared_dataset["group"]], axis=1
-    )
-    output_dataset = pd.concat(
-        [output_dataset, prepared_dataset["features"]], axis=1
-    )
+    columns: list[pd.Series | pd.DataFrame] = [
+        prepared_dataset["time"],
+        prepared_dataset["group"],
+        prepared_dataset["features"],
+    ]
     if "others" in prepared_dataset:
-        output_dataset = pd.concat(
-            [output_dataset, prepared_dataset["others"]], axis=1
-        )
-    output_dataset = pd.concat(
-        [output_dataset, predictions.rename("Forecast load (MW)")], axis=1
-    )
+        columns.append(prepared_dataset["others"])
+    columns.append(predictions.rename("Forecast load (MW)"))
 
-    return output_dataset
+    return pd.concat(columns, axis=1)
 
 
 def run_forecasting(
@@ -133,14 +128,7 @@ def run_forecasting(
     data_path = utils.ml.get_assemble_data_path(data_path)
 
     # Read and prepare the dataset.
-    prepared_dataset: dict[str, pd.Series | pd.DataFrame] = (
-        utils.ml.prepare_dataset(
-            data_path,
-            False,
-            False,
-            False,
-        )
-    )
+    prepared_dataset = utils.ml.prepare_dataset(data_path, target=False)
 
     if algorithm.lower() == "xgboost":
         # Get the trained model path.

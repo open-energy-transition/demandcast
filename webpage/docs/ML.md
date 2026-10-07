@@ -126,7 +126,7 @@ The LSTM model requires `torch>=2.0.0`, which is included in `demandcast/pyproje
 
 ### Input and Output Format
 
-The LSTM model consumes the same `prepared_dataset` structure produced by `utils.ml.prepare_dataset` as XGBoost. Each split (`"training"`, `"validation"`, `"testing"`) is a dictionary containing:
+The LSTM model consumes the same `prepared_dataset` structure produced by `utils.ml.prepare_split_datasets` as XGBoost. Each split (`"training"`, `"validation"`, `"testing"`) is a dictionary containing:
 
 - `"features"` — `pandas.DataFrame` of input features
 - `"target"` — `pandas.Series` of target values

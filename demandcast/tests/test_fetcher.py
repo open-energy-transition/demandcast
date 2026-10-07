@@ -26,8 +26,8 @@ def test_fetch_data_csv():
     It checks that the fetch_data function returns a DataFrame when
     fetching CSV data.
     """
-    with patch("pandas.read_csv"):
-        pd.read_csv.return_value = pd.DataFrame({"a": [1]})
+    with patch("pandas.read_csv") as mock_read_csv:
+        mock_read_csv.return_value = pd.DataFrame({"a": [1]})
         dataset = utils.fetcher.fetch_data(
             "http://example.com/file.csv", "csv"
         )
@@ -42,8 +42,8 @@ def test_fetch_data_excel():
     DataFrame. It checks that the fetch_data function returns a
     DataFrame when fetching Excel data.
     """
-    with patch("pandas.read_excel"):
-        pd.read_excel.return_value = pd.DataFrame({"a": [1]})
+    with patch("pandas.read_excel") as mock_read_excel:
+        mock_read_excel.return_value = pd.DataFrame({"a": [1]})
         dataset = utils.fetcher.fetch_data(
             "http://example.com/file.xlsx", "excel"
         )
@@ -58,10 +58,8 @@ def test_fetch_data_html_urllib():
     response with HTML content. It checks that the fetch_data function
     returns a string containing the HTML content.
     """
-    with patch("urllib.request.urlopen"):
-        urllib.request.urlopen.return_value.read.return_value = (
-            b"<html>Content</html>"
-        )
+    with patch("urllib.request.urlopen") as mock_urlopen:
+        mock_urlopen.return_value.read.return_value = b"<html>Content</html>"
         html_text = utils.fetcher.fetch_data(
             "http://example.com",
             "html",
@@ -79,9 +77,9 @@ def test_fetch_data_html_requests_get():
     This test mocks the requests.get function to read various formats
     of HTML data, including CSV, text, and plain response.
     """
-    with patch("requests.get"):
+    with patch("requests.get") as mock_get:
         # Test reading of HTML content with tabular data in CSV format.
-        requests.get.return_value.text = "col1,col2\n1,2"
+        mock_get.return_value.text = "col1,col2\n1,2"
         dataset = utils.fetcher.fetch_data(
             "http://example.com", "html", read_as="csv_table"
         )
@@ -96,21 +94,21 @@ def test_fetch_data_html_requests_get():
 
         # Test reading of HTML content with tabular data in Excel
         # format.
-        requests.get.return_value.content = excel_binary.getvalue()
+        mock_get.return_value.content = excel_binary.getvalue()
         dataset = utils.fetcher.fetch_data(
             "http://example.com", "html", read_as="excel_table"
         )
         assert isinstance(dataset, pd.DataFrame)
 
         # Test reading of HTML content with tabular data as Excel file.
-        requests.get.return_value.content = excel_binary.getvalue()
+        mock_get.return_value.content = excel_binary.getvalue()
         dataset = utils.fetcher.fetch_data(
             "http://example.com", "html", read_as="excel_file"
         )
         assert isinstance(dataset, pd.ExcelFile)
 
         # Test reading HTML content with text.
-        requests.get.return_value.text = "text content"
+        mock_get.return_value.text = "text content"
         html_text = utils.fetcher.fetch_data(
             "http://example.com", "html", read_as="text", encoding_type="utf-8"
         )
@@ -118,8 +116,8 @@ def test_fetch_data_html_requests_get():
         assert html_text == "text content"
 
         # Test reading HTML content with plain format.
-        requests.get.return_value = requests.Response()
-        requests.get.return_value.status_code = 200
+        mock_get.return_value = requests.Response()
+        mock_get.return_value.status_code = 200
         response = utils.fetcher.fetch_data(
             "http://example.com", "html", read_as="plain"
         )
@@ -134,9 +132,12 @@ def test_fetch_data_html_requests_get_with_cookies():
     simulate fetching data with cookies. It checks that the fetch_data
     function returns a DataFrame.
     """
-    with patch("requests.get"), patch("requests.Session"):
-        requests.get.return_value.text = "col1,col2\n1,2"
-        requests.Session.return_value.cookies.get_dict.return_value = {
+    with (
+        patch("requests.get") as mock_get,
+        patch("requests.Session") as mock_session,
+    ):
+        mock_get.return_value.text = "col1,col2\n1,2"
+        mock_session.return_value.cookies.get_dict.return_value = {
             "sessionid": "12345"
         }
         dataset = utils.fetcher.fetch_data(
@@ -155,9 +156,12 @@ def test_fetch_data_default_header_params_not_reused():
     This test validates that a first call with cookies enabled does not
     leak a Cookie header into a later call that relies on defaults.
     """
-    with patch("requests.get"), patch("requests.Session"):
-        requests.get.return_value.text = "col1,col2\n1,2"
-        requests.Session.return_value.cookies.get_dict.return_value = {
+    with (
+        patch("requests.get") as mock_get,
+        patch("requests.Session") as mock_session,
+    ):
+        mock_get.return_value.text = "col1,col2\n1,2"
+        mock_session.return_value.cookies.get_dict.return_value = {
             "sessionid": "12345"
         }
 
@@ -174,8 +178,8 @@ def test_fetch_data_default_header_params_not_reused():
             get_cookies=False,
         )
 
-        first_headers = requests.get.call_args_list[0].kwargs["headers"]
-        second_headers = requests.get.call_args_list[1].kwargs["headers"]
+        first_headers = mock_get.call_args_list[0].kwargs["headers"]
+        second_headers = mock_get.call_args_list[1].kwargs["headers"]
         assert first_headers == {"Cookie": "sessionid=12345"}
         assert second_headers == {}
 
@@ -188,8 +192,8 @@ def test_fetch_data_html_requests_post_json():
     containing a list of dictionaries. It checks that the fetch_data
     function returns a DataFrame.
     """
-    with patch("requests.post"):
-        requests.post.return_value.json = lambda: {"data": [{"a": 1}]}
+    with patch("requests.post") as mock_post:
+        mock_post.return_value.json = lambda: {"data": [{"a": 1}]}
         dataset = utils.fetcher.fetch_data(
             "http://example.com",
             "html",
@@ -210,14 +214,14 @@ def test_fetch_data_html_requests_post_aspx():
     eventvalidation values, and returns a DataFrame.
     """
     with (
-        patch("requests.get"),
-        patch("requests.post"),
+        patch("requests.get") as mock_get,
+        patch("requests.post") as mock_post,
     ):
-        requests.get.return_value.text = """
+        mock_get.return_value.text = """
             <input id="__VIEWSTATE" value="VS" />
             <input id="__EVENTVALIDATION" value="EV" />
         """
-        requests.post.return_value.text = "col1,col2\n1,2"
+        mock_post.return_value.text = "col1,col2\n1,2"
         dataset = utils.fetcher.fetch_data(
             "http://example.com",
             "html",
@@ -370,8 +374,8 @@ def test_fetch_data_requests_get_errors():
 
     # Iterate through the errors and test each one.
     for error in errors:
-        with patch("requests.get"):
-            requests.get.side_effect = error
+        with patch("requests.get") as mock_get:
+            mock_get.side_effect = error
             with pytest.raises(ConnectionError, match="remote data"):
                 utils.fetcher.fetch_data(
                     "http://example.com", "html", retries=1, retry_delay=0
@@ -396,8 +400,8 @@ def test_fetch_data_urlopen_errors():
 
     # Iterate through the errors and test each one.
     for error in errors:
-        with patch("urllib.request.urlopen"):
-            urllib.request.urlopen.side_effect = error
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_urlopen.side_effect = error
             with pytest.raises(ConnectionError, match="remote data"):
                 utils.fetcher.fetch_data(
                     "http://example.com",

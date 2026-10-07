@@ -162,7 +162,7 @@ def get_url(
 
 def download_and_extract_data_for_request(
     pre_reform: bool, year: int, month: int | None, day: int | None
-) -> pd.DataFrame:
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -219,8 +219,8 @@ def download_and_extract_data_for_request(
         )
 
         # Add the timezone information to the index.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index.tz_localize(
+        electricity_demand_time_series = (
+            electricity_demand_time_series.tz_localize(
                 "Australia/Perth",
                 ambiguous="NaT",
                 nonexistent="NaT",

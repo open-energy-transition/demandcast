@@ -13,6 +13,7 @@ Description:
 
 import logging
 import os
+from typing import cast
 
 import cpi
 import pandas as pd
@@ -182,8 +183,9 @@ def _extract_historical_gdp_ppp_per_capita(
     if iso_alpha_3_code in global_historical_gdp_ppp_per_capita.index:
         # Get the historical GDP PPP per capita for the
         # country of interest.
-        historical_gdp_ppp_per_capita = (
-            global_historical_gdp_ppp_per_capita.loc[iso_alpha_3_code]
+        historical_gdp_ppp_per_capita = cast(
+            pd.Series,
+            global_historical_gdp_ppp_per_capita.loc[iso_alpha_3_code],
         ).dropna()
     else:
         # Interpolate the historical GDP PPP per capita from
