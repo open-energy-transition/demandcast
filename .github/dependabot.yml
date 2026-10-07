@@ -1,0 +1,45 @@
+# Dependabot configuration.
+#
+# - Security updates are raised as soon as an advisory is published and,
+#   for each directory, grouped into a single pull request, so that bumps
+#   sharing a lockfile do not conflict with each other.
+# - Version updates run monthly. Minor and patch bumps are grouped into a
+#   single pull request per directory, while major bumps are raised
+#   individually so that breaking changes can be reviewed one at a time.
+# - Version updates wait 7 days after a release before being proposed.
+
+version: 2
+updates:
+  # Python dependencies managed with uv.
+  - package-ecosystem: "uv"
+    directories:
+      - "/demandcast"
+      - "/webpage"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 7
+    groups:
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "*"
+
+  # Actions used in the GitHub workflows.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns:
+          - "*"
