@@ -15,6 +15,7 @@ Description:
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 
 import utils.torch_windows
@@ -22,3 +23,7 @@ import utils.torch_windows
 if sys.platform == "win32" and importlib.util.find_spec("torch") is not None:
     _dll_dir_tokens = utils.torch_windows.enable_torch_dll_directory()
     import torch  # noqa: F401
+
+# Draw figures without a display: interactive backends need Tcl/Tk,
+# which is missing on some systems, such as Windows CI runners.
+os.environ["MPLBACKEND"] = "Agg"
