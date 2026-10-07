@@ -202,7 +202,7 @@ uv run --with jupyter jupyter lab --allow-root
 
 ```bash
 cd demandcast
-uv run --extra lstm pytest --cov=utils --cov-report=term-missing
+uv run --extra lstm pytest --cov
 ```
 
 ### Pre-commit and lint code

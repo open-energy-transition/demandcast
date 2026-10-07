@@ -146,7 +146,9 @@ def test_get_trained_model_path_without_provided_path():
 
         result = utils.ml.get_trained_model_path(None, "xgboost")
 
-        assert result == "/models/xgboost_model_20240102_120000.json"
+        assert result == os.path.join(
+            "/models", "xgboost_model_20240102_120000.json"
+        )
 
 
 def test_get_trained_model_path_no_files_found():
@@ -254,7 +256,9 @@ def test_get_assemble_data_path_without_provided_path():
 
         result = utils.ml.get_assemble_data_path(None)
 
-        assert result == "/data/assembled_data_20240102_120000.parquet"
+        assert result == os.path.join(
+            "/data", "assembled_data_20240102_120000.parquet"
+        )
 
 
 def test_get_assemble_data_path_no_files_found():
