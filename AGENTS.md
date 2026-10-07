@@ -46,7 +46,7 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 - Ruff formatting and linting, with lines of at most 79 characters (72 for docstrings and comments), NumPy-style docstrings and type hints.
 - Each script validates its YAML settings with a pydantic `ConfigModel`. Document new options in the YAML file and in `webpage/docs/`.
 - Data source modules return a `pandas.Series` of demand in MW with a time-zone-aware index; stored timestamps are in UTC.
-- Tests must not use the network: mock downloads (for example `utils.fetcher.fetch_data`) and write files to `tmp_path`.
+- Tests must not use the network: mock downloads (for example `utils.fetcher.fetch_data`) and write files to `tmp_path`. Mark the rare tests that need real downloaded data with `@pytest.mark.network`.
 - The code must also work on Windows: build paths with `os.path.join` or `pathlib`, also in tests.
 - Change dependencies in `pyproject.toml` and run `uv lock`; never edit `uv.lock` by hand.
 - `README.md` and `webpage/docs/index.md` share most of their content: update both.

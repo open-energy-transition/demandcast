@@ -56,6 +56,32 @@ torch = { index = "pytorch-cpu" }
 
 [dependency-groups]
 dev = [
+    "diff-cover>=9.0.0",
     "pytest>=9.0.3",
     "pytest-cov>=6.0.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+xfail_strict = true
+markers = [
+    "network: needs network access (deselect with -m 'not network')",
+]
+# Deprecations are errors, so that upgrades of pandas, NumPy, Dask, xarray
+# and other dependencies fail loudly instead of silently changing results.
+filterwarnings = [
+    "error::DeprecationWarning",
+    "error::PendingDeprecationWarning",
+    "error::FutureWarning",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["."]
+omit = ["tests/*", "archive/*", ".venv/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_also = ['if __name__ == "__main__":']

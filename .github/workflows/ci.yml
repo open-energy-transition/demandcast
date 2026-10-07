@@ -30,32 +30,69 @@ jobs:
 
       - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
 
-  pytest:
-    timeout-minutes: 10
-    name: "pytest+coverage"
-    runs-on: ubuntu-latest
+  tests:
+    name: "tests (${{ matrix.os }}, Python ${{ matrix.python }})"
+    timeout-minutes: 20
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: "3.12"
+            coverage: true
+          - os: ubuntu-latest
+            python: "3.14"
+            coverage: false
+          - os: windows-latest
+            python: "3.12"
+            coverage: false
+    defaults:
+      run:
+        working-directory: ./demandcast
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0 # diff-cover compares pull requests with main.
 
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-
-      - name: "Install uv"
+      - name: "Install uv and Python"
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: ${{ matrix.python }}
+          cache-dependency-glob: demandcast/uv.lock
 
-      - name: "Run pytest with coverage report"
-        run: uv run --extra lstm pytest --cov=utils --cov-report=term-missing --cov-fail-under=95
-        working-directory: ./demandcast
+      - name: "Run the tests"
+        if: ${{ !matrix.coverage }}
+        run: uv run --locked --extra lstm pytest
+
+      - name: "Run the tests with coverage"
+        if: ${{ matrix.coverage }}
+        run: uv run --locked --extra lstm pytest --cov --cov-report=xml
+
+      # Raise the floor of the total coverage as tests are added.
+      - name: "Check the coverage"
+        if: ${{ matrix.coverage }}
+        run: |
+          uv run --locked coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+          uv run --locked coverage report --fail-under=37
+          uv run --locked coverage report --include="utils/*" --fail-under=95
+
+      - name: "Check the coverage of the changed lines"
+        if: ${{ matrix.coverage && github.event_name == 'pull_request' }}
+        run: |
+          uv run --locked diff-cover coverage.xml --compare-branch=origin/main --fail-under=80 --format markdown:diff-cover.md || status=$?
+          cat diff-cover.md >> "$GITHUB_STEP_SUMMARY"
+          exit "${status:-0}"
 
   # Single check for the branch ruleset to require, so that CI jobs can be
   # added or renamed without changing the ruleset.
   ci-result:
     name: "CI result"
     if: always()
-    needs: [pre-commit, pytest]
+    needs: [pre-commit, tests]
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
