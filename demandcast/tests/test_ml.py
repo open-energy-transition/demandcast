@@ -106,7 +106,7 @@ def test_read_and_check_ml_configuration_error():
         mock_read_folders.return_value = {"config_folder": "/config"}
         mock_yaml_load.return_value = invalid_config
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Configuration validation error"):
             utils.ml.read_and_check_ml_configuration()
 
 
@@ -573,7 +573,7 @@ def test_split_in_groups_missing_columns():
         }
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="required columns are missing"):
         utils.ml._split_in_groups(
             dataset,
             group_column="entity_code",
@@ -829,7 +829,7 @@ def test_save_results_invalid_case():
     """
     output_data = pd.DataFrame({"value": [1, 2]})
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid case"):
         utils.ml.save_results(
             case="invalid_case",
             output_dataset=output_data,

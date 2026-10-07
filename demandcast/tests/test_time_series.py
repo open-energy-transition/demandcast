@@ -293,5 +293,7 @@ def test_clean_data(sample_time_series):
     cleaned_time_series.index = cleaned_time_series.index.tz_localize(None)
 
     # Check if the function raises an error for an timezone-naive index.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="The time series must be timezone-aware"
+    ):
         utils.time_series.clean_data(cleaned_time_series, "TestVariable")

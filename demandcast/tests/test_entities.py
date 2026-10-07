@@ -49,7 +49,7 @@ def test_get_name_from_code():
         mock_get.return_value = ["Invalid", "Code"]
 
         # Test the function with a code that does not match any country.
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="should not return a list"):
             utils.entities.get_name_from_code("INVALID_CODE")
 
         # Mock the pycountry.subdivisions.get method to return None.
@@ -57,7 +57,7 @@ def test_get_name_from_code():
 
         # Test the function with a code that does not match any
         # subdivision.
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="not found in pycountry"):
             utils.entities.get_name_from_code("INVALID_SUBDIVISION")
 
 
@@ -131,13 +131,18 @@ def test_read_codes_errors():
     paths, invalid data sources, and invalid codes.
     """
     # Check if common errors in input data are handled correctly.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Either file_path or data_source must be provided"
+    ):
         utils.entities.read_codes_in(file_path="", data_source="")
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="Only one of file_path or data_source must be provided",
+    ):
         utils.entities.read_codes_in(
             file_path="INVALID_DATA_SOURCE", data_source="INVALID_DATA_SOURCE"
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid data source"):
         utils.entities.read_codes_in(data_source="INVALID_DATA_SOURCE")
 
 
@@ -274,26 +279,28 @@ def test_check_and_get_codes_with_errors():
     expected codes.
     """
     # Check if the function raises an error for an invalid feature.
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid feature"):
         utils.entities.check_and_get_codes_with(
             "INVALID_FEATURE", code="FRA", data_source="entsoe"
         )
 
     # Check if the function raises an error when a data source is
     # provided for the "all_data" feature.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="is not associated with a data source"
+    ):
         utils.entities.check_and_get_codes_with(
             "all_data", code="FRA", data_source="entsoe"
         )
 
     # Check if the function raises an error for an invalid code.
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="is not available in data source"):
         utils.entities.check_and_get_codes_with(
             "electricity_demand_data",
             code="INVALID_CODE",
             data_source="entsoe",
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="does not have all_data"):
         utils.entities.check_and_get_codes_with(
             "all_data",
             code="INVALID_CODE",
@@ -301,71 +308,77 @@ def test_check_and_get_codes_with_errors():
 
     # Check if the function raises an error for invalid codes read from
     # a file.
-    with pytest.raises(ValueError):
-        with (
-            patch("utils.entities.read_codes_in") as mock_read_codes,
-            patch(
-                "utils.entities.read_all_codes_with_electricity_demand_data"
-            ) as mock_read_all_codes,
+    with (
+        patch("utils.entities.read_codes_in") as mock_read_codes,
+        patch(
+            "utils.entities.read_all_codes_with_electricity_demand_data"
+        ) as mock_read_all_codes,
+    ):
+        # Mock the return value of read_codes_in to return invalid
+        # codes.
+        mock_read_codes.return_value = ["USA_CAL", "USA_TEX"]
+
+        # Mock the return value of
+        # read_all_codes_with_electricity_demand_data
+        # to return all available codes with demand data.
+        mock_read_all_codes.return_value = [
+            "FRA",
+            "DEU",
+            "ITA",
+        ]
+
+        # Check if the function raises an error for invalid codes.
+        with pytest.raises(
+            ValueError, match="None of the codes in the file are available"
         ):
-            # Mock the return value of read_codes_in to return invalid
-            # codes.
-            mock_read_codes.return_value = ["USA_CAL", "USA_TEX"]
-
-            # Mock the return value of
-            # read_all_codes_with_electricity_demand_data
-            # to return all available codes with demand data.
-            mock_read_all_codes.return_value = [
-                "FRA",
-                "DEU",
-                "ITA",
-            ]
-
-            # Check if the function raises an error for invalid codes.
             utils.entities.check_and_get_codes_with(
                 "electricity_demand_data", file_path="dummy.yaml"
             )
 
     # Check if the function raises an error for invalid codes read from
     # a file.
-    with pytest.raises(ValueError):
-        with (
-            patch("utils.entities.read_codes_in") as mock_read_codes,
-            patch(
-                "utils.entities._get_all_codes_with_all_data"
-            ) as mock_read_all_codes,
+    with (
+        patch("utils.entities.read_codes_in") as mock_read_codes,
+        patch(
+            "utils.entities._get_all_codes_with_all_data"
+        ) as mock_read_all_codes,
+    ):
+        # Mock the return value of read_codes_in to return invalid
+        # codes.
+        mock_read_codes.return_value = ["USA_CAL", "USA_TEX"]
+
+        # Mock the return value of
+        # read_all_codes_with_electricity_demand_data
+        # to return all available codes with demand data.
+        mock_read_all_codes.return_value = [
+            "FRA",
+            "DEU",
+            "ITA",
+        ]
+
+        # Check if the function raises an error for invalid codes.
+        with pytest.raises(
+            ValueError, match="None of the codes in the file are available"
         ):
-            # Mock the return value of read_codes_in to return invalid
-            # codes.
-            mock_read_codes.return_value = ["USA_CAL", "USA_TEX"]
-
-            # Mock the return value of
-            # read_all_codes_with_electricity_demand_data
-            # to return all available codes with demand data.
-            mock_read_all_codes.return_value = [
-                "FRA",
-                "DEU",
-                "ITA",
-            ]
-
-            # Check if the function raises an error for invalid codes.
             utils.entities.check_and_get_codes_with(
                 "all_data", file_path="dummy.yaml"
             )
 
-    with pytest.raises(ValueError):
-        with patch("utils.entities.read_codes_in") as mock_read_codes:
-            # Check if the function raises an error for invalid codes.
-            # Mock the return value of read_codes_in for two times, the
-            # first time for electricity demand data, the second time
-            # for the codes in the file.
-            mock_read_codes.side_effect = [
-                ["USA_CAL", "USA_TEX"],
-                ["FRA", "DEU", "ITA"],
-            ]
+    with patch("utils.entities.read_codes_in") as mock_read_codes:
+        # Check if the function raises an error for invalid codes.
+        # Mock the return value of read_codes_in for two times, the
+        # first time for electricity demand data, the second time
+        # for the codes in the file.
+        mock_read_codes.side_effect = [
+            ["USA_CAL", "USA_TEX"],
+            ["FRA", "DEU", "ITA"],
+        ]
 
-            # Check if the function raises an error when the codes in
-            # the file do not match the expected codes.
+        # Check if the function raises an error when the codes in
+        # the file do not match the expected codes.
+        with pytest.raises(
+            ValueError, match="None of the codes in the file are available"
+        ):
             utils.entities.check_and_get_codes_with(
                 "electricity_demand_data",
                 data_source="entsoe",
@@ -386,7 +399,7 @@ def test_check_codes():
         utils.entities.check_code_in_data_source(
             "INVALID_CODE", data_source="entsoe"
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid data source"):
         utils.entities.check_code_in_data_source(
             "FRA", data_source="INVALID_DATA_SOURCE"
         )
@@ -532,11 +545,11 @@ def test_time_zones_errors():
     files.
     """
     # Test if invalid codes raise errors.
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="is not recognized or not available"):
         utils.entities.get_time_zone("INVALID_CODE")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="is not available in pytz"):
         utils.entities._get_time_zone_of_country("INVALID_CODE")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="is not available in pytz"):
         utils.entities._get_time_zone_of_country("INVALIDCODE")
 
     # Test not fully recognized countries.
@@ -557,7 +570,9 @@ def test_time_zones_errors():
 
     # Check if the function raises errors for invalid time zones.
     with (
-        pytest.raises(ValueError),
+        pytest.raises(
+            ValueError, match="does not match the expected time zone"
+        ),
         patch(
             "utils.entities._read_entities_info",
             return_value=entity_with_invalid_time_zone,
@@ -579,7 +594,7 @@ def test_time_zones_errors():
 
     # Check if the function raises errors for missing time zones.
     with (
-        pytest.raises(ValueError),
+        pytest.raises(ValueError, match="The time zone is not defined"),
         patch(
             "utils.entities._read_entities_info",
             return_value=entity_with_missing_time_zone,
@@ -605,7 +620,9 @@ def test_time_zones_errors():
         # Check if the function raises an error for codes not found in
         # any data source. This error is raised when the code refers to
         # a subdivision.
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="is not available in any data source"
+        ):
             utils.entities._get_defined_time_zone_for_code("XX_YY")
 
         # Mock the return value for the case when the code is found in
@@ -625,7 +642,7 @@ def test_time_zones_errors():
 
         # Check if the function raises an error for conflicting time
         # zones in multiple yaml files.
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Conflicting time zones"):
             utils.entities._get_defined_time_zone_for_code("YY")
 
 
@@ -696,7 +713,7 @@ def test_date_ranges_errors():
 
     # Check if the function raises an error for invalid date ranges.
     with (
-        pytest.raises(ValueError),
+        pytest.raises(ValueError, match="is after the end date"),
         patch(
             "utils.entities._read_entities_info",
             return_value=entities,
@@ -724,7 +741,7 @@ def test_years():
     assert all(isinstance(year, int) for year in years)
 
     # Check if the function catches errors for invalid codes.
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="is not recognized or not available"):
         utils.entities.get_available_years("INVALID_CODE")
 
 
@@ -742,5 +759,5 @@ def test_continents():
     assert utils.entities.get_continent_code("XKX") == "EU"
 
     # Check if the function catches errors for invalid codes.
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="No continent code is available"):
         utils.entities.get_continent_code("INVALID_CODE")

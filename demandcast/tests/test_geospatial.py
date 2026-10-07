@@ -55,10 +55,10 @@ def test_harmonize_coords():
     # Test the handling of coordinates with values outside the valid
     # range.
     ds = xarray.Dataset(coords={"x": [-200, -170], "y": [50, 60]})
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="contains values less than -180"):
         utils.geospatial.harmonize_coords(ds)
     ds = xarray.Dataset(coords={"x": [-10, 200], "y": [50, 60]})
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="contains values greater than 180"):
         utils.geospatial.harmonize_coords(ds)
 
     # Test the sorting of coordinates.
@@ -80,7 +80,7 @@ def test_clean_raster():
     """
     # Create a mock DataArray with 'band' dimension and extra variables.
     data = xarray.DataArray(
-        np.random.rand(1, 5, 5),
+        np.random.default_rng(0).random((1, 5, 5)),
         dims=["band", "y", "x"],
         coords={"band": [1], "spatial_ref": 0},
         name="original_var",
@@ -470,7 +470,9 @@ def test_get_total_value_from_gridded_data_errors():
     scenario = "SSP2"
 
     # Test for ValueError when an unsupported variable is provided.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="must be either 'population' or 'gdp_ppp'"
+    ):
         utils.geospatial.get_total_value_from_gridded_data(
             "variable_not_supported",
             code,
@@ -480,7 +482,7 @@ def test_get_total_value_from_gridded_data_errors():
 
     # Test for ValueError when scenario is provided but not the last
     # available historical year.
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="If scenario is provided"):
         utils.geospatial.get_total_value_from_gridded_data(
             variable,
             code,
@@ -492,7 +494,7 @@ def test_get_total_value_from_gridded_data_errors():
 
     # Test for ValueError when the last available historical year is
     # provided but not the scenario.
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="scenario must also be provided"):
         utils.geospatial.get_total_value_from_gridded_data(
             variable,
             code,
@@ -504,7 +506,9 @@ def test_get_total_value_from_gridded_data_errors():
 
     # Test for ValueError when the last available historical year is
     # greater or equal to the minimum available year.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="must be less than the minimum available"
+    ):
         utils.geospatial.get_total_value_from_gridded_data(
             variable,
             code,

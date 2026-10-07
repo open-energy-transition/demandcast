@@ -46,23 +46,35 @@ def test_get_years_errors():
     available_years = [2018, 2019, 2020, 2021]
 
     # Both year and start_year/end_year provided.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="start_year and end_year must be None"
+    ):
         utils.scenarios._get_years(2019, 2018, None, available_years)
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="start_year and end_year must be None"
+    ):
         utils.scenarios._get_years(2019, None, 2020, available_years)
 
     # Year not in available years.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="year must be one of the available years"
+    ):
         utils.scenarios._get_years(2022, None, None, available_years)
 
     # start_year greater than end_year.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="start_year must be less than end_year"
+    ):
         utils.scenarios._get_years(None, 2020, 2019, available_years)
 
     # Only one of start_year or end_year provided.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Both start_year and end_year must be specified"
+    ):
         utils.scenarios._get_years(None, 2018, None, available_years)
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Both start_year and end_year must be specified"
+    ):
         utils.scenarios._get_years(None, None, 2019, available_years)
 
     # start_year or end_year out of available years range. This only
@@ -144,7 +156,9 @@ def test_get_year_and_scenario_combinations_errors():
     available_scenarios = ["S1", "S2"]
 
     # Both year and start_year/end_year provided.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="start_year and end_year must be None"
+    ):
         utils.scenarios.get_year_and_scenario_combinations(
             2025,
             2024,
@@ -154,7 +168,9 @@ def test_get_year_and_scenario_combinations_errors():
             None,
             available_scenarios,
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="start_year and end_year must be None"
+    ):
         utils.scenarios.get_year_and_scenario_combinations(
             2025,
             None,
@@ -166,7 +182,9 @@ def test_get_year_and_scenario_combinations_errors():
         )
 
     # Year not in available years.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="year must be one of the available years"
+    ):
         utils.scenarios.get_year_and_scenario_combinations(
             2023,
             None,
@@ -178,7 +196,9 @@ def test_get_year_and_scenario_combinations_errors():
         )
 
     # start_year greater than end_year.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="start_year must be less than end_year"
+    ):
         utils.scenarios.get_year_and_scenario_combinations(
             None,
             2025,
@@ -190,7 +210,9 @@ def test_get_year_and_scenario_combinations_errors():
         )
 
     # Only one of start_year or end_year provided.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Both start_year and end_year must be specified"
+    ):
         utils.scenarios.get_year_and_scenario_combinations(
             None,
             2024,
@@ -200,7 +222,9 @@ def test_get_year_and_scenario_combinations_errors():
             None,
             available_scenarios,
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Both start_year and end_year must be specified"
+    ):
         utils.scenarios.get_year_and_scenario_combinations(
             None,
             None,
@@ -233,7 +257,9 @@ def test_get_year_and_scenario_combinations_errors():
     )
 
     # Scenario not in available scenarios.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="scenario must be one of the following"
+    ):
         utils.scenarios.get_year_and_scenario_combinations(
             None,
             None,
@@ -335,7 +361,9 @@ def test_get_year_model_and_scenario_combinations_errors():
     scenarios_for_model = {"M1": ["S1", "S2"], "M2": ["S2"]}
 
     # Both year and start_year/end_year provided.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="start_year and end_year must be None"
+    ):
         utils.scenarios.get_year_model_and_scenario_combinations(
             2025,
             2024,
@@ -346,7 +374,9 @@ def test_get_year_model_and_scenario_combinations_errors():
             None,
             scenarios_for_model,
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="start_year and end_year must be None"
+    ):
         utils.scenarios.get_year_model_and_scenario_combinations(
             2025,
             None,
@@ -359,7 +389,9 @@ def test_get_year_model_and_scenario_combinations_errors():
         )
 
     # Year not in available years.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="year must be one of the available years"
+    ):
         utils.scenarios.get_year_model_and_scenario_combinations(
             2023,
             None,
@@ -372,7 +404,9 @@ def test_get_year_model_and_scenario_combinations_errors():
         )
 
     # start_year greater than end_year.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="start_year must be less than end_year"
+    ):
         utils.scenarios.get_year_model_and_scenario_combinations(
             None,
             2025,
@@ -385,7 +419,9 @@ def test_get_year_model_and_scenario_combinations_errors():
         )
 
     # Only one of start_year or end_year provided.
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Both start_year and end_year must be specified"
+    ):
         utils.scenarios.get_year_model_and_scenario_combinations(
             None,
             2024,
@@ -396,7 +432,9 @@ def test_get_year_model_and_scenario_combinations_errors():
             None,
             scenarios_for_model,
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Both start_year and end_year must be specified"
+    ):
         utils.scenarios.get_year_model_and_scenario_combinations(
             None,
             None,
@@ -432,7 +470,7 @@ def test_get_year_model_and_scenario_combinations_errors():
     )
 
     # Model or scenario not in available models/scenarios.
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="model must be one of the following"):
         utils.scenarios.get_year_model_and_scenario_combinations(
             None,
             None,
@@ -443,7 +481,9 @@ def test_get_year_model_and_scenario_combinations_errors():
             None,
             scenarios_for_model,
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="scenario must be one of the following for model"
+    ):
         utils.scenarios.get_year_model_and_scenario_combinations(
             None,
             None,

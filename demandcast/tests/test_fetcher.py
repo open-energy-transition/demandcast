@@ -234,17 +234,23 @@ def test_fetch_data_invalid_arguments():
     This test checks that the fetch_data function raises ValueError
     when provided with unsupported formats or read methods.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="The content type unsupported is not supported"
+    ):
         utils.fetcher.fetch_data("http://example.com", "unsupported")
     with (
         patch("utils.fetcher.requests.Session"),
         patch("utils.fetcher.requests.get"),
-        pytest.raises(ValueError),
+        pytest.raises(
+            ValueError, match="The read_as parameter unknown is not supported"
+        ),
     ):
         utils.fetcher.fetch_data(
             "http://example.com", "html", read_as="unknown"
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Library unknown_lib is not supported"
+    ):
         utils.fetcher.fetch_data(
             "http://example.com", "html", read_with="unknown_lib"
         )

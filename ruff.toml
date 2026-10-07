@@ -37,11 +37,7 @@ pep8-naming.extend-ignore-names = ["X", "X_*"]
 allowed-confusables = ["ı", "〔", "〕"]
 
 [lint.per-file-ignores]
-"demandcast/tests/**" = [
-    "S101",
-    # Temporary: existing findings, fixed in a follow-up pull request.
-    "NPY002", "PT011", "PT012", "SIM117",
-]
+"demandcast/tests/**" = ["S101"]
 # Legacy notebooks and scripts keep the original rules.
 "demandcast/archive/**" = [
     "A", "ARG", "B", "BLE", "C4", "C90", "DTZ", "ERA", "FURB", "ICN", "ISC",

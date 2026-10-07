@@ -44,7 +44,7 @@ def test_upload_to_gcs():
 
         # Check if the OSError is handled correctly.
         mock_blob.upload_from_filename.side_effect = OSError("file not found")
-        with pytest.raises(OSError):
+        with pytest.raises(OSError, match="file not found"):
             utils.uploader.upload_to_gcs(
                 "bad/path.txt", "test-bucket", "dest/path.txt"
             )
@@ -348,7 +348,7 @@ def test_zenodo_error_invalid_input():
     This test checks if the function raises appropriate exceptions for
     invalid inputs.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid data_type"):
         utils.uploader.upload_to_zenodo(
             "/fake/root/file1.csv",
             "invalid_type",
