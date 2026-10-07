@@ -1,0 +1,6 @@
+# Commits that git blame skips: mass formatting and lint fixes that don't
+# change behaviour. GitHub uses this file automatically; to use it locally,
+# run `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+
+# style: upgrade Ruff and apply its automatic fixes (#189)
+dc0701990f57537ba51af3eba8a947a3d90e4d80
