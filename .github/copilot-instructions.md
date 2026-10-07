@@ -91,7 +91,7 @@ The project uses a single unified environment in the `demandcast/` directory.
 ```bash
 cd demandcast
 uv sync  # ALWAYS run before tests if .venv doesn't exist
-uv run pytest --cov=utils --cov-report=term-missing
+uv run --extra lstm pytest --cov=utils --cov-report=term-missing
 ```
 - Test suite takes ~37 seconds
 - Requires 95% code coverage for `utils/` module only (enforced in CI)
@@ -228,7 +228,7 @@ Before submitting changes:
 2. **Run tests** (for code changes):
    ```bash
    cd demandcast
-   uv run pytest --cov=utils --cov-report=term-missing --cov-fail-under=95
+   uv run --extra lstm pytest --cov=utils --cov-report=term-missing --cov-fail-under=95
    ```
 
 3. **Check documentation builds** (for doc changes):
