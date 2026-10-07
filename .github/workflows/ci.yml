@@ -46,3 +46,17 @@ jobs:
       - name: "Run pytest with coverage report"
         run: uv run --extra lstm pytest --cov=utils --cov-report=term-missing --cov-fail-under=95
         working-directory: ./demandcast
+
+  # Single check for the branch ruleset to require, so that CI jobs can be
+  # added or renamed without changing the ruleset.
+  ci-result:
+    name: "CI result"
+    if: always()
+    needs: [pre-commit, pytest]
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check that all CI jobs succeeded
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: jq --exit-status 'all(. == "success")' <<< "$RESULTS"
