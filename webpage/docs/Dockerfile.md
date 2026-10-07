@@ -1,185 +1,120 @@
-# Dockerfile
+# Docker
 
-DemandCast provides a Dockerfile to create a containerized environment with all dependencies pre-installed. Containers package the application and its dependencies into a single, portable unit that runs consistently across different systems.
+DemandCast provides a Docker image with Python, the locked dependencies and the DemandCast code, so that the scripts run the same way on every system. The image is published to the GitHub Container Registry for every change on `main` and every release, and you can also build it yourself.
 
 ## Prerequisites
 
-Before using the Dockerfile, ensure you have Docker installed on your system:
+Install Docker:
 
 - **Docker Desktop** (recommended for Windows and macOS): [Install Docker Desktop](https://docs.docker.com/get-docker/)
 - **Docker Engine** (for Linux): [Install Docker Engine](https://docs.docker.com/engine/install/)
 
-To verify Docker is installed and running:
+Check that Docker is installed and running:
+
 ```bash
 docker --version
 ```
 
-## Building the Container
+## Using the published image
 
-To build the Docker image, navigate to the repository root and run:
+Pull the image:
 
 ```bash
-cd demandcast
-docker build -t demandcast -f demandcast/Dockerfile demandcast/
+docker pull ghcr.io/open-energy-transition/demandcast-demandcast:latest
 ```
 
-This command:
-- `-t demandcast`: Tags the image with the name "demandcast"
-- `-f demandcast/Dockerfile`: Specifies the Dockerfile location
-- `demandcast/`: Sets the build context to the demandcast directory
+The available tags are `latest` (the current `main`), the release versions (for example `1.0.0`, `1.0` and `1`) and `sha-<commit>` for each commit on `main`.
 
-The build process typically takes 5-10 minutes depending on your internet connection and system performance.
+Each published image is signed with [Sigstore](https://www.sigstore.dev/) and comes with a provenance attestation and a software bill of materials (SBOM). You can verify where an image was built with the [GitHub CLI](https://cli.github.com/):
 
-## Running the Container
+```bash
+gh attestation verify oci://ghcr.io/open-energy-transition/demandcast-demandcast:latest --owner open-energy-transition
+```
 
-Once built, you can run the container in different ways:
+## Building the image
 
-### Interactive Shell
+From the root of the repository, run:
 
-To start an interactive shell session inside the container:
+```bash
+docker build -t demandcast demandcast/
+```
+
+The image does not include the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install), which DemandCast does not need. To add it, run:
+
+```bash
+docker build -t demandcast --build-arg INSTALL_GCLOUD=true demandcast/
+```
+
+## Running the container
+
+The examples below use the image built locally (`demandcast`); replace it with `ghcr.io/open-energy-transition/demandcast-demandcast:latest` to use the published image.
+
+### Interactive shell
 
 ```bash
 docker run -it --rm demandcast bash
 ```
 
-This allows you to run commands interactively within the containerized environment:
-- `-it`: Runs the container in interactive mode with a terminal
-- `--rm`: Automatically removes the container when it exits
-- `bash`: Starts a bash shell
+- `-it`: runs the container interactively with a terminal
+- `--rm`: removes the container when it exits
 
-### Running a Specific Script
-
-To execute a specific script:
+### Running a script
 
 ```bash
 docker run --rm demandcast uv run retrieve.py
 ```
 
-### Mounting Local Data
+### Mounting local data
 
-To access local files or save outputs to your host machine, mount a volume:
+To keep the data after the container stops, mount a local folder on `/app/data`:
 
 ```bash
-docker run -it --rm -v $(pwd)/data:/app/data demandcast bash
+docker run -it --rm -v "$(pwd)/data:/app/data" demandcast bash
 ```
 
-This mounts your local `data/` directory to `/app/data` inside the container, allowing the container to read/write files that persist after the container stops.
+The container runs as an unprivileged user with ID 1000. On Linux, if your user ID is different (check with `id -u`), make the folder writable for the container:
 
-### Using Environment Variables
+```bash
+chmod a+rwx data
+```
 
-To pass API keys and other environment variables:
+### Using environment variables
+
+Pass API keys as environment variables, from a file or one by one:
 
 ```bash
 docker run --rm --env-file demandcast/.env demandcast uv run retrieve.py
-```
-
-Or pass individual variables:
-
-```bash
 docker run --rm -e CDS_API_KEY=your_key demandcast uv run retrieve.py
 ```
 
-## Dockerfile Explained
+To upload data to Google Cloud Storage, mount a service account key and point `GOOGLE_APPLICATION_CREDENTIALS` to it:
 
-Below we explain the contents of the Dockerfile and the reasoning behind what we included. The container ensures that all team members and deployment environments run with the same dependencies and configuration.
-
-## Base Image
-
-```dockerfile
-FROM --platform=linux/amd64 python:3.12
+```bash
+docker run --rm -v "$HOME/key.json:/secrets/key.json:ro" -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/key.json demandcast uv run upload.py
 ```
 
-The Dockerfile starts with the official Python 3.12 image for the `linux/amd64` platform.
-This ensures consistent behavior across different operating systems.
+## What the image contains
 
-## Google Cloud CLI Installation
+The [Dockerfile](https://github.com/open-energy-transition/demandcast/blob/main/demandcast/Dockerfile):
 
-```dockerfile
-RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
-    tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-    gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
-    apt-get update -y && \
-    apt-get install google-cloud-cli -y
-```
+- starts from the official `python:3.12-slim` image, and copies [uv](https://docs.astral.sh/uv/) from its official image, both pinned to an exact digest (Dependabot proposes updates);
+- installs the dependencies from `uv.lock` (`uv sync --locked --no-dev`) into `/app/.venv`, without development tools such as pytest;
+- copies the DemandCast code to `/app`, without the tests and the `archive/` folder;
+- runs as the unprivileged user `demandcast` (ID 1000);
+- puts the virtual environment on the `PATH`, so `python` and `uv run` use it directly, without changing it.
 
-This multi-step command installs the Google Cloud CLI, which is essential for the projects data pipeline:
+## Best practices
 
-1. **Add Google Cloud SDK repository**: Adds the official Google Cloud SDK package repository to the systems package sources
-2. **Import GPG key**: Downloads and imports Googles GPG key to verify package authenticity
-3. **Update package lists**: Refreshes the apt package index with the newly added repository
-4. **Install Google Cloud CLI**: Installs the `google-cloud-cli` package
-
-The Google Cloud CLI is a dependency because the project interacts with Google Cloud Storage and Google Cloud Platform is our deployment target.
-
-## UV Package Manager Installation
-
-```dockerfile
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-```
-
-This step installs [uv](https://docs.astral.sh/uv/), a Python package manager, by copying the pre-built binaries from the official distroless image (See their [docs](https://docs.astral.sh/uv/guides/integration/docker/#installing-uv) for more detail).
-
-## Copying Code into Container
-
-```dockerfile
-ADD . /app
-WORKDIR /app
-```
-
-1. **Copy project files**: Adds all project files from the build context to `/app` in the container
-
-2. **Set working directory**: Changes the working directory to `/app` for subsequent commands
-
-## Dependency Installation
-
-```dockerfile
-RUN uv sync --frozen
-```
-
-This command synchronizes the project dependencies using uv:
-
-- **`sync`**: Installs dependencies and creates a virtual environment
-- **`--frozen`**: Uses the exact versions specified in the lockfile without attempting to update them, ensuring:
-  - Reproducible builds across different environments
-  - Consistent dependency versions in development and production
-  - Faster installation by skipping dependency resolution
-
-The `--frozen` flag is particularly important for the DemandCast project, which has complex dependencies on:
-- Geospatial libraries (pyogrio, geopandas)
-- Machine learning frameworks (XGBoost)
-- Data processing tools (pandas, polars, numpy)
-- Testing frameworks (pytest)
-- Weather data APIs (cdsapi)
-
-## Environment Activation
-
-```dockerfile
-ENV PATH="/app/.venv/bin:$PATH"
-```
-
-This final step activates the virtual environment by prepending its binary directory to the system PATH. This means:
-
-- All Python commands will use the virtual environment's Python interpreter
-- Installed packages are immediately available without explicit activation
-- The container is ready to run retrieval scripts, ML training, forecasting, or any other project scripts
-
-This approach is cleaner than traditional virtual environment activation in Docker, as it doesn't require sourcing activation scripts in each RUN command.
-
-## Best Practices
-
-When working with the Docker container:
-
-1. **Keep the image updated**: Rebuild the image after updating dependencies in `pyproject.toml` or `uv.lock`
-2. **Use volume mounts**: Mount directories to persist data and logs between container runs
-3. **Manage secrets securely**: Never include API keys in the Dockerfile; always pass them via environment variables or mounted `.env` files
-4. **Resource limits**: For large-scale data processing, consider setting memory and CPU limits using `--memory` and `--cpus` flags
-5. **Cleanup**: Remove unused containers and images periodically with `docker system prune`
+1. **Keep the image updated**: pull the latest image, or rebuild it after changing `pyproject.toml` or `uv.lock`.
+2. **Use volume mounts**: mount folders to keep data and logs after the container stops.
+3. **Manage secrets securely**: never put API keys in the image; pass them as environment variables or mounted files.
+4. **Resource limits**: for large-scale data processing, consider limiting memory and CPU with `--memory` and `--cpus`.
+5. **Cleanup**: remove unused containers and images with `docker system prune`.
 
 ## Troubleshooting
 
-**Build fails with network errors**: Check your internet connection and retry. The build process downloads packages from external repositories.
+**Build fails with network errors**: check your internet connection and retry. The build downloads the base images and the Python packages.
 
-**Permission errors when accessing mounted volumes**: On Linux, you may need to adjust file permissions or run the container with appropriate user mapping using `--user $(id -u):$(id -g)`.
+**Permission errors when writing to mounted folders**: make the folder writable for the container's user (ID 1000), see [Mounting local data](#mounting-local-data).
 
-**Container runs out of memory**: Increase Docker's memory allocation in Docker Desktop settings or use the `--memory` flag to allocate more resources.
+**Container runs out of memory**: increase Docker's memory in the Docker Desktop settings, or use the `--memory` flag.

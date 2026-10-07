@@ -1,5 +1,6 @@
-# Builds the Docker image on pull requests; on pushes to main and version tags,
-# also publishes it to the GitHub Container Registry and signs it with Sigstore.
+# Builds the Docker image on pull requests, checks that it runs and scans it
+# for vulnerabilities. On pushes to main and version tags, publishes it to the
+# GitHub Container Registry, signs it and attests its provenance.
 
 name: Docker
 
@@ -17,24 +18,57 @@ concurrency:
 permissions: {}
 
 env:
-  REGISTRY: ghcr.io
+  IMAGE: ghcr.io/${{ github.repository }}-demandcast
 
 jobs:
-  build-images:
-    strategy:
-      matrix:
-        include:
-          - name: demandcast
-            context: ./demandcast
-            dockerfile: ./demandcast/Dockerfile
-
+  build:
+    name: "Docker image"
+    if: github.event_name == 'pull_request'
     timeout-minutes: 60
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
-      id-token: write # Sign the image with Sigstore (outside pull requests).
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build the image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ./demandcast
+          load: true
+          tags: demandcast:test
+          cache-from: type=gha,scope=demandcast
+          cache-to: type=gha,mode=max,scope=demandcast
+
+      - name: Check that the image runs as an unprivileged user
+        run: |
+          test "$(docker run --rm demandcast:test id -u)" = 1000
+          docker run --rm demandcast:test uv run retrieve.py --help
+
+      - name: Scan the image for vulnerabilities
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: demandcast:test
+          fail-build: false
+          output-format: table
+
+  publish:
+    name: "Publish the Docker image"
+    if: github.event_name != 'pull_request'
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write # Sign the image and attest its provenance with Sigstore.
+      packages: write
+      security-events: write # Upload the vulnerability scan to code scanning.
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,19 +76,15 @@ jobs:
           persist-credentials: false
 
       - name: Install cosign
-        if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-        with:
-          cosign-release: "v2.2.4"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - name: Log into registry ${{ env.REGISTRY }}
-        if: github.event_name != 'pull_request'
+      - name: Log in to the GitHub Container Registry
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -62,31 +92,51 @@ jobs:
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.name }}
+          images: ${{ env.IMAGE }}
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push Docker image
+      # Built without cache, so that a cache written by a pull request can
+      # never end up in a published image.
+      - name: Build and push the image
         id: build-and-push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          push: ${{ github.event_name != 'pull_request' }}
+          context: ./demandcast
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          provenance: mode=max
+          sbom: true
 
-      - name: Sign the published Docker image
-        if: ${{ github.event_name != 'pull_request' }}
+      - name: Sign the image
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
-        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+        run: echo "${TAGS}" | xargs -I {} cosign sign --yes "{}@${DIGEST}"
+
+      - name: Attest the provenance of the image
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.build-and-push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Scan the image for vulnerabilities
+        id: scan
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: ${{ env.IMAGE }}@${{ steps.build-and-push.outputs.digest }}
+          fail-build: false
+          output-format: sarif
+
+      - name: Upload the scan to code scanning
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}
+          category: docker-image

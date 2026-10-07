@@ -1,3 +1,8 @@
+# Files kept out of the Docker image: data, secrets, caches, and the legacy
+# notebooks and tests, which the image does not need.
+archive/
+tests/
+
 data/*
 
 # Data files
