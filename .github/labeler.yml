@@ -1,8 +1,8 @@
 Docs:
   - changed-files:
       - any-glob-to-any-file:
-          - docs/*
-          - README.md
+          - webpage/**
+          - "**/*.md"
 
 GitHub Actions:
   - changed-files:

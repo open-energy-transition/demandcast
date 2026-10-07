@@ -7,6 +7,8 @@
 #   single pull request per directory, while major bumps are raised
 #   individually so that breaking changes can be reviewed one at a time.
 # - Version updates wait 7 days after a release before being proposed.
+# - Commit messages and titles follow Conventional Commits, e.g.
+#   "build(deps): bump pandas" or "ci(deps): bump actions/checkout".
 
 version: 2
 updates:
@@ -15,6 +17,9 @@ updates:
     directories:
       - "/demandcast"
       - "/webpage"
+    commit-message:
+      prefix: "build"
+      include: "scope"
     schedule:
       interval: "monthly"
     cooldown:
@@ -35,6 +40,9 @@ updates:
   # Actions used in the GitHub workflows.
   - package-ecosystem: "github-actions"
     directory: "/"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
     schedule:
       interval: "monthly"
     cooldown:

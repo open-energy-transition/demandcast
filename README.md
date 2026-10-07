@@ -6,6 +6,7 @@
     <a href="https://github.com/open-energy-transition/demandcast/actions/workflows/ci.yml"><img src="https://github.com/open-energy-transition/demandcast/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
     <a href="https://arxiv.org/abs/2510.08000"><img src="https://img.shields.io/badge/arXiv-2510.08000-b31b1b" alt="arXiv paper"></a>
     <a href="https://doi.org/10.5281/zenodo.18374351"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.18374351.svg" alt="Dataset DOI"></a>
+    <a href="https://scorecard.dev/viewer/?uri=github.com/open-energy-transition/demandcast"><img src="https://api.scorecard.dev/projects/github.com/open-energy-transition/demandcast/badge" alt="OpenSSF Scorecard"></a>
     <a href="https://github.com/open-energy-transition/demandcast/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License: AGPL-3.0"></a>
 </p>
 
