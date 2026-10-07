@@ -1,0 +1,928 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../getting_started/">
+      
+      
+        <link rel="next" href="../ML/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../lightning_logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Data Retrieval - DemandCast</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        
+        <link rel="stylesheet" href="../assets/external/fonts.googleapis.com/css.49ea35f2.css">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#data-retrieval" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="DemandCast" class="md-header__button md-logo" aria-label="DemandCast" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.716 1.329a1.341 1.341 0 0 1 2.109 1.55L15.147 9h4.161c1.623 0 2.372 2.016 1.143 3.075L8.102 22.721a1.148 1.148 0 0 1-1.81-1.317L8.996 15H4.674c-1.619 0-2.37-2.008-1.148-3.07l12.19-10.6Zm.452 1.595L4.51 13.061a.25.25 0 0 0 .164.439h5.45a.75.75 0 0 1 .692 1.041l-2.559 6.066 11.215-9.668a.25.25 0 0 0-.164-.439H14a.75.75 0 0 1-.687-1.05Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            DemandCast
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Data Retrieval
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="green"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/open-energy-transition/demandcast" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15 4.75a3.25 3.25 0 1 1 6.5 0 3.25 3.25 0 0 1-6.5 0M2.5 19.25a3.25 3.25 0 1 1 6.5 0 3.25 3.25 0 0 1-6.5 0m0-14.5a3.25 3.25 0 1 1 6.5 0 3.25 3.25 0 0 1-6.5 0M5.75 6.5a1.75 1.75 0 1 0-.001-3.501A1.75 1.75 0 0 0 5.75 6.5m0 14.5a1.75 1.75 0 1 0-.001-3.501A1.75 1.75 0 0 0 5.75 21m12.5-14.5a1.75 1.75 0 1 0-.001-3.501A1.75 1.75 0 0 0 18.25 6.5"/><path d="M5.75 16.75A.75.75 0 0 1 5 16V8a.75.75 0 0 1 1.5 0v8a.75.75 0 0 1-.75.75"/><path d="M17.5 8.75v-1H19v1a3.75 3.75 0 0 1-3.75 3.75h-7a1.75 1.75 0 0 0-1.75 1.75H5A3.25 3.25 0 0 1 8.25 11h7a2.25 2.25 0 0 0 2.25-2.25"/></svg>
+  </div>
+  <div class="md-source__repository">
+    open-energy-transition/demandcast
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="DemandCast" class="md-nav__button md-logo" aria-label="DemandCast" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.716 1.329a1.341 1.341 0 0 1 2.109 1.55L15.147 9h4.161c1.623 0 2.372 2.016 1.143 3.075L8.102 22.721a1.148 1.148 0 0 1-1.81-1.317L8.996 15H4.674c-1.619 0-2.37-2.008-1.148-3.07l12.19-10.6Zm.452 1.595L4.51 13.061a.25.25 0 0 0 .164.439h5.45a.75.75 0 0 1 .692 1.041l-2.559 6.066 11.215-9.668a.25.25 0 0 0-.164-.439H14a.75.75 0 0 1-.687-1.05Z"/></svg>
+
+    </a>
+    DemandCast
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/open-energy-transition/demandcast" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15 4.75a3.25 3.25 0 1 1 6.5 0 3.25 3.25 0 0 1-6.5 0M2.5 19.25a3.25 3.25 0 1 1 6.5 0 3.25 3.25 0 0 1-6.5 0m0-14.5a3.25 3.25 0 1 1 6.5 0 3.25 3.25 0 0 1-6.5 0M5.75 6.5a1.75 1.75 0 1 0-.001-3.501A1.75 1.75 0 0 0 5.75 6.5m0 14.5a1.75 1.75 0 1 0-.001-3.501A1.75 1.75 0 0 0 5.75 21m12.5-14.5a1.75 1.75 0 1 0-.001-3.501A1.75 1.75 0 0 0 18.25 6.5"/><path d="M5.75 16.75A.75.75 0 0 1 5 16V8a.75.75 0 0 1 1.5 0v8a.75.75 0 0 1-.75.75"/><path d="M17.5 8.75v-1H19v1a3.75 3.75 0 0 1-3.75 3.75h-7a1.75 1.75 0 0 0-1.75 1.75H5A3.25 3.25 0 0 1 8.25 11h7a2.25 2.25 0 0 0 2.25-2.25"/></svg>
+  </div>
+  <div class="md-source__repository">
+    open-energy-transition/demandcast
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started (Extended)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Retrieval
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Retrieval
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#application-programming-interface-api-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application Programming Interface (API) keys
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#retrieving-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrieving data
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Retrieving data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#electricity-demand" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Electricity demand
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#annual-electricity-demand-per-capita" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Annual electricity demand per capita
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#population" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Population
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gridded-population" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gridded population
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gross-domestic-product-gdp-purchasing-power-parity-ppp-per-capita" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gross Domestic Product (GDP), Purchasing Power Parity (PPP) per capita
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gridded-gdp-ppp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gridded GDP PPP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gridded-weather" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gridded weather
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#temperature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Temperature
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ML/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machine Learning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analyzing and plotting data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Dockerfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dockerfile
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="data-retrieval">Data Retrieval</h1>
+<p>The data retrieval modules are responsible for fetching and processing raw data from various public sources. The retrieved data includes electricity demand, population, weather, and socio-economic indicators. The data is processed to ensure consistency in time zones, units, and formats before being saved for further analysis and modeling.</p>
+<h2 id="overview">Overview</h2>
+<p>The data retrieval process is managed through the <code>retrieve.py</code> script located in the <code>demandcast/</code> directory. This script utilizes a configuration file to specify parameters for data retrieval, such as the type of data, countries or subdivisions of interest, time ranges, and scenarios for future projections.
+The process consists of four main stages:</p>
+<ol>
+<li>Retrieve raw data from online sources or APIs,</li>
+<li>Convert raw data into structured, tabular (Parquet-compatible) formats,</li>
+<li>Ensure time synchronization and unit consistency</li>
+<li>Export cleaned data in Parquet or CSV format.</li>
+</ol>
+<h2 id="application-programming-interface-api-keys">Application Programming Interface (API) keys</h2>
+<p>Some modules require API keys to access data from external services. These keys should be stored in a <code>.env</code> file in the <code>demandcast/</code> directory. The <code>.env</code> file should not be included in the repository and should contain the following environment variables:</p>
+<pre><code class="language-plaintext">CDS_API_KEY=&lt;your_key&gt;             # For data retrieval from Copernicus CDS
+ENTSOE_API_KEY=&lt;your_key&gt;          # For data retrieval from ENTSO-E
+EIA_API_KEY=&lt;your_key&gt;             # For data retrieval from EIA
+ZENODO_API_KEY=&lt;your_key&gt;          # For data upload to Zenodo
+SANDBOX_ZENODO_API_KEY=&lt;your_key&gt;  # For data upload to Zenodo Sandbox
+</code></pre>
+<h2 id="retrieving-data">Retrieving data</h2>
+<p>The script <code>retrieve.py</code> is used to download and process various types of data, including electricity demand, population, weather, and GDP data. The script accepts only the path to a configuration file:</p>
+<pre><code class="language-bash">cd demandcast
+uv run retrieve.py [--config path/to/config.yaml]
+</code></pre>
+<p>If no config file is specified, the script uses the default <code>demandcast/config/retrieve_config.yaml</code> file. All retrieval parameters are configured in the YAML configuration file. The only required parameter is <code>variable</code>, which specifies the type of data to retrieve. Below is the description of each retrieval module and its configuration parameters.</p>
+<h3 id="electricity-demand">Electricity demand</h3>
+<p>The module <code>demandcast/retrievals/electricity_demand.py</code> downloads and processes historical electricity demand data from multiple sources such as ENTSO-E, EIA, and CCEI. The data is processed to have all timestamps in UTC and electricity demand in MW.</p>
+<p>To run the electricity demand data retrieval:</p>
+<pre><code class="language-bash">cd demandcast
+uv run retrieve.py
+</code></pre>
+<p><strong>Configuration variables</strong> (<code>retrieve_config.yaml</code>):</p>
+<pre><code class="language-yaml">variable: electricity_demand
+
+electricity_data_source:           # Acronym of data source (entsoe, eia, ccei, etc.) from which to retrieve data
+
+code:                              # ISO Alpha-3 code (e.g., FRA) or subdivision (e.g., USA_CAL) for which to retrieve data
+
+file:                              # Path to YAML file with list of codes for which to retrieve data
+</code></pre>
+<p>The script will store electricity demand data in <code>data/electricity_demand/YYYY-MM-DD/</code>, where <code>YYYY-MM-DD</code> is the date of retrieval.</p>
+<h4 id="data-source-specific-retrieval-modules">Data source specific retrieval modules</h4>
+<p>Each retrieval module in the <code>demandcast/retrievals/electricity_demand_data_sources/</code> folder is designed to fetch electricity demand data from a specific data source. The main functions in each module typically include:</p>
+<ul>
+<li><strong>Redistribution rights (<code>redistribute</code>)</strong>: Information about the redistribution rights of the data source.</li>
+<li><strong>Check input parameters (<code>_check_input_parameters</code>)</strong>: Checks that the input parameters are valid.</li>
+<li><strong>Data request construction (<code>get_available_requests</code>)</strong>: Builds all data requests based on the availability of the data source.</li>
+<li><strong>URL construction (<code>get_url</code>)</strong>: Generates the appropriate web request URL.</li>
+<li><strong>Data download and processing (<code>download_and_extract_data_for_request</code>)</strong>: Fetches the data using <code>utils.fetcher</code> functions and transforms it into a <code>pandas.Series</code>.</li>
+</ul>
+<h4 id="names-codes-time-zones-and-data-time-ranges-for-countries-and-subdivisions">Names, codes, time zones, and data time ranges for countries and subdivisions</h4>
+<p>For each retrieval module in the <code>demandcast/retrievals/electricity_demand_data_sources/</code> folder, a corresponding YAML file must be created. The YAML file should contain a list of dictionaries, each representing a country or subdivision from the respective data source. The following rules apply:</p>
+<ul>
+<li>Names and codes should adhere to the ISO 3166 standard.</li>
+<li>For countries and standard subdivisions, use Alpha-3 codes.</li>
+<li>For non-standard subdivisions, use a widely accepted name and code.</li>
+<li>Data time range must be specified.</li>
+<li>For subdivisions, time zone must be specified.</li>
+</ul>
+<h4 id="non-standard-subdivisions">Non-standard subdivisions</h4>
+<p>Some countries have subdivisions that are not standard ISO subdivisions. For these cases, the <code>demandcast/shapes/</code> folder contains scripts to generate the shapes of these subdivisions. The scripts are named after the data source (e.g., <code>eia.py</code>, <code>ons.py</code>) and contain functions to generate the shapes. The generated shapes are then used in the retrieval modules and for plotting.</p>
+<h3 id="annual-electricity-demand-per-capita">Annual electricity demand per capita</h3>
+<p>The module <code>demandcast/retrievals/annual_electricity_demand_per_capita.py</code> retrieves annual electricity demand per capita data from the World Bank and Ember for the historical period and from the Integrated Assessment Modeling Consortium (IAMC) database for different future scenarios.</p>
+<pre><code class="language-bash">cd demandcast
+uv run retrieve.py
+</code></pre>
+<p><strong>Configuration variables</strong> (<code>retrieve_config.yaml</code>):</p>
+<pre><code class="language-yaml">variable: annual_electricity_demand_per_capita
+
+code:                              # ISO Alpha-3 code (e.g., FRA) or subdivision (e.g., USA_CAL) for which to retrieve data
+
+file:                              # Path to YAML file with list of codes for which to retrieve data
+
+year:                              # Specific year to retrieve
+
+start_year:                        # Start year of a range
+
+end_year:                          # End year of a range (inclusive)
+
+scenario:                          # SSP scenario (e.g., SSP2-Baseline) for which to retrieve projected data
+</code></pre>
+<p>The script will store annual electricity demand per capita data in <code>data/annual_electricity_demand_per_capita/</code>.</p>
+<h3 id="population">Population</h3>
+<p>The module <code>demandcast/retrievals/population.py</code> retrieves total population count from the World Bank for the historical period and from the Integrated Assessment Modeling Consortium (IAMC) database for different future scenarios. For subdivisions, the population data is calculated by aggregating gridded population data.</p>
+<pre><code class="language-bash">cd demandcast
+uv run retrieve.py
+</code></pre>
+<p><strong>Configuration variables</strong> (<code>retrieve_config.yaml</code>):</p>
+<pre><code class="language-yaml">variable: population
+
+code:                              # ISO Alpha-3 code (e.g., FRA) or subdivision (e.g., USA_CAL) for which to retrieve data
+
+file:                              # Path to YAML file with list of codes  for which to retrieve data
+
+year:                              # Specific year to retrieve
+
+start_year:                        # Start year of a range
+
+end_year:                          # End year of a range (inclusive)
+
+scenario:                          # SSP scenario (e.g., SSP2) for which to retrieve projected data
+</code></pre>
+<p>The script will store population data in <code>data/population/</code>.</p>
+<h3 id="gridded-population">Gridded population</h3>
+<p>The module <code>demandcast/retrievals/gridded_population.py</code> retrieves gridded population density data from the Socioeconomic Data and Applications Center (SEDAC) for the historical period and gridded population count from a Figshare repository for future scenarios. From the global gridded population at 30-arcsecond resolution, the module calculates when necessary the population count from the density, aggregates to 0.25° resolution to match the weather data, and extracts subsets of gridded population count for the countries and subdivisions of interest.</p>
+<pre><code class="language-bash">cd demandcast
+uv run retrieve.py
+</code></pre>
+<p><strong>Configuration variables</strong> (<code>retrieve_config.yaml</code>):</p>
+<pre><code class="language-yaml">variable: gridded_population
+
+code:                              # ISO Alpha-3 code (e.g., FRA) or subdivision (e.g., USA_CAL) for which to retrieve data
+
+file:                              # Path to YAML file with list of codes  for which to retrieve data
+
+year:                              # Specific year to retrieve
+
+start_year:                        # Start year of a range
+
+end_year:                          # End year of a range (inclusive)
+
+scenario:                          # SSP scenario (e.g., SSP2) for which to retrieve projected data
+</code></pre>
+<p>The script will store gridded population data in <code>data/gridded_population/</code>.</p>
+<h3 id="gross-domestic-product-gdp-purchasing-power-parity-ppp-per-capita">Gross Domestic Product (GDP), Purchasing Power Parity (PPP) per capita</h3>
+<p>The module <code>demandcast/retrievals/gdp_ppp_per_capita.py</code> retrieves country-level GDP, PPP per capita data from the World Bank and the International Monetary Fund (IMF) for the historical period and from the Integrated Assessment Modeling Consortium (IAMC) database for different future scenarios.</p>
+<pre><code class="language-bash">cd demandcast
+uv run retrieve.py
+</code></pre>
+<p><strong>Configuration variables</strong> (<code>retrieve_config.yaml</code>):</p>
+<pre><code class="language-yaml">variable: gdp_ppp_per_capita
+
+code:                              # ISO Alpha-3 code (e.g., FRA) or subdivision (e.g., USA_CAL) for which to retrieve data
+
+file:                              # Path to YAML file with list of codes  for which to retrieve data
+
+year:                              # Specific year to retrieve
+
+start_year:                        # Start year of a range
+
+end_year:                          # End year of a range (inclusive)
+
+scenario:                          # SSP scenario (e.g., SSP2) for which to retrieve projected data
+</code></pre>
+<p>The script will store GDP, PPP per capita data in <code>data/gdp_ppp_per_capita/</code>.</p>
+<h3 id="gridded-gdp-ppp">Gridded GDP PPP</h3>
+<p>The module <code>demandcast/retrievals/gridded_gdp_ppp.py</code> retrieves gridded GDP, PPP data from a Zenodo repository for both the historical period and future scenarios. From the global gridded GDP, PPP at 0.25° resolution, the module extracts subsets of gridded GDP, PPP for the countries and subdivisions of interest.</p>
+<pre><code class="language-bash">cd demandcast
+uv run retrieve.py
+</code></pre>
+<p><strong>Configuration variables</strong> (<code>retrieve_config.yaml</code>):</p>
+<pre><code class="language-yaml">variable: gridded_gdp_ppp
+
+code:                              # ISO Alpha-3 code (e.g., FRA) or subdivision (e.g., USA_CAL) for which to retrieve data
+
+file:                              # Path to YAML file with list of codes  for which to retrieve data
+
+year:                              # Specific year to retrieve
+
+start_year:                        # Start year of a range
+
+end_year:                          # End year of a range (inclusive)
+
+scenario:                          # SSP scenario (e.g., SSP2) for which to retrieve projected data
+</code></pre>
+<h3 id="gridded-weather">Gridded weather</h3>
+<p>The module <code>demandcast/retrievals/gridded_weather.py</code> retrieves gridded weather data from the Copernicus Climate Data Store (CDS). The weather data is stored in NetCDF format for each country and subdivision of interest.</p>
+<p>To retrieve weather data from the Copernicus Climate Data Store (CDS), first ensure that you are registered on the website and have your API key stored in the <code>.env</code> file. Instructions for the API key can be found <a href="https://cds.climate.copernicus.eu/how-to-api">here</a>. Then run:</p>
+<pre><code class="language-bash">cd demandcast
+uv run retrieve.py
+</code></pre>
+<p><strong>Configuration variables</strong> (<code>retrieve_config.yaml</code>):</p>
+<pre><code class="language-yaml">variable: gridded_weather
+
+code:                              # ISO Alpha-3 code (e.g., FRA) or subdivision (e.g., USA_CAL) for which to retrieve data
+
+file:                              # Path to YAML file with list of codes  for which to retrieve data
+
+year:                              # Specific year to retrieve
+
+start_year:                        # Start year of a range
+
+end_year:                          # End year of a range (inclusive)
+
+scenario:                          # Climate model scenario (e.g., SSP2-4.5) for which to retrieve projected data
+
+weather_variable: temperature      # Weather variable (currently only temperature supported)
+
+climate_model:                     # Climate model (e.g., CESM2)
+</code></pre>
+<p>The script will store weather data in <code>data/gridded_weather/</code>. Note that the size of weather data files is on the order of 100 MB per country per year, so ensure you have sufficient storage space.</p>
+<h3 id="temperature">Temperature</h3>
+<p>The module <code>demandcast/retrievals/temperature.py</code> extracts temperature time series from the gridded weather data based on population count. It uses both the gridded weather data and the gridded population data to identify the most populated areas and extract temperature time series for those areas.</p>
+<pre><code class="language-bash">cd demandcast
+uv run retrieve.py
+</code></pre>
+<p><strong>Configuration variables</strong> (<code>retrieve_config.yaml</code>):</p>
+<pre><code class="language-yaml">variable: temperature
+
+code:                              # ISO Alpha-3 code (e.g., FRA) or subdivision (e.g., USA_CAL) for which to retrieve data
+
+file:                              # Path to YAML file with list of codes  for which to retrieve data
+
+year:                              # Specific year to retrieve
+
+start_year:                        # Start year of a range
+
+end_year:                          # End year of a range (inclusive)
+
+scenario:                          # Climate model scenario (e.g., SSP2-4.5) for which to retrieve projected data
+
+weather_variable: temperature      # Weather variable (currently only temperature supported)
+
+climate_model:                     # Climate model (e.g., CESM2)
+</code></pre>
+<p>The script will store temperature data in <code>data/temperature/</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../getting_started/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Getting Started (Extended)">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Getting Started (Extended)
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../ML/" class="md-footer__link md-footer__link--next" aria-label="Next: Machine Learning">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Machine Learning
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.progress", "navigation.tracking", "search.highlight", "search.suggest", "toc.integrate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../assets/external/unpkg.com/mermaid@11/dist/mermaid.min.js"></script>
+      
+    
+  </body>
+</html>
