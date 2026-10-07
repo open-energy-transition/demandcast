@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,7 +10,6 @@ Description:
 import importlib
 import logging
 import os
-from typing import Optional
 
 import pandas
 import utils.config
@@ -39,9 +37,9 @@ def _read_and_check_configuration() -> BaseModel:
     class ConfigModel(BaseModel):
         target_platform: str
         data_directory: str
-        gcs_bucket_name: Optional[str] = None
-        publish_to_zenodo: Optional[bool] = None
-        made_by_oet: Optional[bool] = None
+        gcs_bucket_name: str | None = None
+        publish_to_zenodo: bool | None = None
+        made_by_oet: bool | None = None
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(

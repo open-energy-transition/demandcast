@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -213,7 +212,7 @@ def _get_scenarios_for_model(
             if scenario.upper() not in available_scenarios:
                 raise ValueError(
                     "scenario must be one of the following for model "
-                    f"{model_key}: {scenarios_for_model[model_key]}."
+                    f"{model_key}: {available_scenarios}."
                 )
             # Use the specified scenario.
             scenarios_for_model[model_key] = [scenario.upper()]

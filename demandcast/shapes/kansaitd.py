@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -18,7 +17,7 @@ Description:
         https://en.wikipedia.org/wiki/Kansai_Electric_Power_Company
         https://en.wikipedia.org/wiki/ISO_3166-2:JP
         https://data.humdata.org/dataset/cod-xa-jpn
-"""  # noqa: W505
+"""
 
 import os
 import shutil

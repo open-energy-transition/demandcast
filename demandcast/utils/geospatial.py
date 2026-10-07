@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -69,7 +68,7 @@ def harmonize_coords(
             "The x coordinate contains values less than -180. "
             "Please ensure that the x coordinate is in the correct range."
         )
-    elif float(ds["x"].max()) > 180.01:
+    if float(ds["x"].max()) > 180.01:
         raise ValueError(
             "The x coordinate contains values greater than 180. "
             "Please ensure that the x coordinate is in the correct range."

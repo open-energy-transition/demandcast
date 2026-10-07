@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -10,7 +9,7 @@ Description:
     current year. The data is retrieved in one-year intervals.
 
     Source: https://www.coordinador.cl/operacion/graficos/operacion-real/demanda-real/
-"""  # noqa: W505
+"""
 
 import logging
 

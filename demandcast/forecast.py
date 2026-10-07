@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,7 +10,6 @@ Description:
 
 import logging
 import os
-from typing import Optional
 
 import ml_models.lstm
 import ml_models.xgboost
@@ -38,8 +36,8 @@ def _read_and_check_configuration() -> BaseModel:
 
     # Define the configuration model.
     class ConfigModel(BaseModel):
-        model_path: Optional[str] = None
-        data_path: Optional[str] = None
+        model_path: str | None = None
+        data_path: str | None = None
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(

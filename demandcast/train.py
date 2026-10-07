@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -10,7 +9,6 @@ Description:
 """
 
 import logging
-from typing import Optional
 
 import ml_models.lstm
 import ml_models.xgboost
@@ -39,7 +37,7 @@ def _read_and_check_configuration() -> BaseModel:
     class ConfigModel(BaseModel):
         reserve_testing_set: bool
         use_validation_set: bool
-        data_path: Optional[str] = None
+        data_path: str | None = None
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(

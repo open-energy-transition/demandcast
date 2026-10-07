@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,7 +10,7 @@ Description:
     various time resolutions.
 
     Source: https://energy-information.canada.ca/en/resources/high-frequency-electricity-data
-"""  # noqa: W505
+"""
 
 import logging
 
@@ -87,7 +86,7 @@ def get_url(code: str) -> str:
         "YT": ["YK", "TOTAL"],
     }
 
-    assert subdivision_code in variable_names.keys(), (
+    assert subdivision_code in variable_names, (
         f"Subdivision code {subdivision_code} is not supported."
     )
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -10,7 +9,6 @@ Description:
 
 import logging
 import os
-from typing import Optional
 
 import figures.data_availability
 import figures.map_of_available_entities
@@ -37,8 +35,8 @@ def _read_and_check_configuration() -> BaseModel:
     # Define the configuration model.
     class ConfigModel(BaseModel):
         figure: str
-        version: Optional[str] = None
-        compare_with_version: Optional[str] = None
+        version: str | None = None
+        compare_with_version: str | None = None
         by_group: bool = False
 
     # Read the configuration.

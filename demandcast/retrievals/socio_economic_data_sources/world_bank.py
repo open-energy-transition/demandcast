@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -47,7 +46,7 @@ def download(variable: str) -> pandas.DataFrame:
         logging.info("Downloading population data from the World Bank.")
 
         # Define the URL to download the population data.
-        url = "https://api.worldbank.org/v2/en/indicator/SP.POP.TOTL?downloadformat=csv"  # noqa: W505
+        url = "https://api.worldbank.org/v2/en/indicator/SP.POP.TOTL?downloadformat=csv"
     elif variable == "electricity_demand_per_capita":
         logging.info(
             "Downloading electricity demand per capita data from the World "
@@ -56,14 +55,14 @@ def download(variable: str) -> pandas.DataFrame:
 
         # Define the URL to download the electricity demand per capita
         # data.
-        url = "https://api.worldbank.org/v2/en/indicator/EG.USE.ELEC.KH.PC?downloadformat=csv"  # noqa: W505
+        url = "https://api.worldbank.org/v2/en/indicator/EG.USE.ELEC.KH.PC?downloadformat=csv"
     elif variable == "gdp_ppp_per_capita":
         logging.info(
             "Downloading GDP PPP per capita data from the World Bank."
         )
 
         # Define the URL to download the GDP PPP per capita data.
-        url = "https://api.worldbank.org/v2/en/indicator/NY.GDP.PCAP.PP.KD?downloadformat=csv"  # noqa: W505
+        url = "https://api.worldbank.org/v2/en/indicator/NY.GDP.PCAP.PP.KD?downloadformat=csv"
     else:
         raise ValueError(
             "The variable must be 'population', "

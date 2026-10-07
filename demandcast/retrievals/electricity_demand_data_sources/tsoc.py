@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -12,7 +11,7 @@ Description:
     The data is retrieved in 15-day intervals.
 
     Source: https://tsoc.org.cy/electrical-system/archive-total-daily-system-generation-on-the-transmission-system/
-"""  # noqa: W505
+"""
 
 import logging
 import re

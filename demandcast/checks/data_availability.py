@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -28,11 +27,10 @@ import pandas
 import pycountry
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
-import retrievals.socio_economic_data_sources.iiasa as iiasa
-import retrievals.socio_economic_data_sources.world_bank as world_bank
 import utils.config
 import utils.shapes
 import yaml
+from retrievals.socio_economic_data_sources import iiasa, world_bank
 
 
 def _add_first_and_last_years(
@@ -253,7 +251,6 @@ def run_check() -> None:
             "socio_economic_data_sources",
             "iam_regions_mapping.yaml",
         ),
-        "r",
     ) as iiasa_mapping_file:
         iiasa_future_electricity_demand_per_capita_mapping = yaml.safe_load(
             iiasa_mapping_file

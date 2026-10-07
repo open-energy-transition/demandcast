@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -14,7 +13,7 @@ Description:
     number of Excel files that need to be processed.
 
     Source: https://erp.powergrid.gov.bd/w/report/eyJpdiI6IldsU2ZQTGkvbkRnQU9FMjZ5UHhmeGc9PSIsInZhbHVlIjoiQzhONVl5ZGxRY3E3T3ZVNCtLZGt1Zz09IiwibWFjIjoiN2JiNTI5MzNhOWIxZDVjY2NkMmFlZWU4ZDU1N2I4OWZlYjNlZWM1ZGU4NzRiNWU4ZjQ3ZDc1ODRlMTk3MDc0YyIsInRhZyI6IiJ9/show_report
-"""  # noqa: W505
+"""
 
 import logging
 import re
@@ -182,7 +181,7 @@ def get_available_requests() -> list[tuple[str, str, str]]:
         # Use regular expressions to find all file numbers and
         # extensions.
         file_info = re.findall(
-            r"https://erp\.powergrid\.gov\.bd/web/files/download\?location=erp%2Fweb%2Freport_docs%2F(\d+)\.(xlsm|xlsx|xls)",  # noqa: W505
+            r"https://erp\.powergrid\.gov\.bd/web/files/download\?location=erp%2Fweb%2Freport_docs%2F(\d+)\.(xlsm|xlsx|xls)",
             html_content.text,
         )
 
@@ -191,7 +190,7 @@ def get_available_requests() -> list[tuple[str, str, str]]:
 
         # Use regular expressions to find all file dates.
         file_dates = re.findall(
-            r'<td style="text-align: left; font-size: 14px;">(?:[a-zA-Z]+)(?:[\s_]+)(?:[a-zA-Z]+)(?:[\s_-]*)(.+)</td>',  # noqa: W505
+            r'<td style="text-align: left; font-size: 14px;">(?:[a-zA-Z]+)(?:[\s_]+)(?:[a-zA-Z]+)(?:[\s_-]*)(.+)</td>',
             html_content.text,
         )
 

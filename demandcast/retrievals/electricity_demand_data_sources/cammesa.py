@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -13,7 +12,7 @@ Description:
     Source: https://api.cammesa.com/demanda-svc/swagger-ui.html#/demanda-ws
     Source: https://api.cammesa.com/demanda-svc/demanda/RegionesDemanda
     Source: https://microfe.cammesa.com/demandaregionchart/assets/data/regionesCammesa.geojson.json
-"""  # noqa: W505
+"""
 
 import logging
 

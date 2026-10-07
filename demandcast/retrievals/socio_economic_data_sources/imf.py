@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -9,7 +8,7 @@ Description:
     international dollars.
 
     Source: https://data.imf.org/en/Data-Explorer?datasetUrn=IMF.RES:WEO(6.0.0)&INDICATOR=NGDPRPPPPC
-"""  # noqa: W505
+"""
 
 import logging
 

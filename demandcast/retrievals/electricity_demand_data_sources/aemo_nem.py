@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -12,7 +11,7 @@ Description:
     AEMO website.
 
     Source: https://aemo.com.au/energy-systems/electricity/national-electricity-market-nem/data-nem/aggregated-data
-"""  # noqa: W505
+"""
 
 import logging
 

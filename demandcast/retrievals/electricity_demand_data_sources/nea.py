@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -17,7 +16,7 @@ Description:
     corresponds to the year 2074 BS.
 
     Source: https://opendatanepal.com/datasets/electricity-load-profile-of-nepal-in-2073-nepal-electricity-authority
-"""  # noqa: W505
+"""
 
 import logging
 

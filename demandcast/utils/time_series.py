@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -272,8 +271,8 @@ def convert_from_yearly_to_hourly(
     """
     # Define a new index with hourly frequency in the local time zone.
     index = pandas.date_range(
-        start=(f"{str(time_series.index.min())}-01-01"),
-        end=(f"{str(time_series.index.max())}-12-31 23:00:00"),
+        start=(f"{time_series.index.min()!s}-01-01"),
+        end=(f"{time_series.index.max()!s}-12-31 23:00:00"),
         freq="h",
         tz=time_zone,
     )
@@ -312,12 +311,11 @@ def clean_data(
     # Check if the time series is timezone-aware.
     if time_series.index.tz is None:
         raise ValueError("The time series must be timezone-aware.")
-    else:
-        # Convert the time zone of the electricity demand time series to
-        # UTC and remove the time zone information.
-        time_series.index = time_series.index.tz_convert("UTC").tz_localize(
-            None
-        )
+    # Convert the time zone of the electricity demand time series to
+    # UTC and remove the time zone information.
+    time_series.index = time_series.index.tz_convert("UTC").tz_localize(
+        None
+    )
 
     # Set the name of the index and the series.
     time_series.index.name = "Time (UTC)"

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -13,7 +12,7 @@ Description:
     Source: https://en.wikipedia.org/wiki/Tokyo_Electric_Power_Company
     Source: https://en.wikipedia.org/wiki/ISO_3166-2:JP
     Source: https://data.humdata.org/dataset/cod-xa-jpn
-"""  # noqa: W505
+"""
 
 import os
 import shutil

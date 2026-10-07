@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -10,7 +9,7 @@ Description:
     to today. The data is retrieved in one-year intervals.
 
     Source: https://www.cenace.gob.mx/Paginas/SIM/Reportes/EstimacionDemandaReal.aspx
-"""  # noqa: W505
+"""
 
 import logging
 import zipfile

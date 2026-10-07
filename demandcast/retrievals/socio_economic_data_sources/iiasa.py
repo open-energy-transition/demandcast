@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -49,7 +48,7 @@ def _map_from_region_to_country(
     )
 
     # Read the mapping from the yaml file.
-    with open(iam_region_mapping, "r", encoding="utf-8") as file:
+    with open(iam_region_mapping, encoding="utf-8") as file:
         iso_to_region = yaml.safe_load(file)
 
     for iso_alpha_3_code, region_code in iso_to_region.items():

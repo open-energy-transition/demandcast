@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -176,11 +175,11 @@ def fetch_data(
                         # Read the CSV file from the URL.
                         return pandas.read_csv(url, **csv_kwargs)
 
-                    elif content_type == "excel":
+                    if content_type == "excel":
                         # Read the Excel file from the URL.
                         return pandas.read_excel(url, **excel_kwargs)
 
-                    elif content_type == "html":
+                    if content_type == "html":
                         if read_with == "urllib.request":
                             # Read the HTML content from the URL using
                             # the urllib.request module.
@@ -196,7 +195,7 @@ def fetch_data(
                                 .decode("utf-8")
                             )
 
-                        elif (
+                        if (
                             read_with == "requests.get"
                             or read_with == "requests.post"
                         ):
@@ -279,22 +278,22 @@ def fetch_data(
                                 return pandas.read_csv(
                                     StringIO(response.text), **csv_kwargs
                                 )
-                            elif read_as == "excel_table":
+                            if read_as == "excel_table":
                                 # Return the content read as an Excel
                                 # table.
                                 return pandas.read_excel(
                                     BytesIO(response.content), **excel_kwargs
                                 )
-                            elif read_as == "excel_file":
+                            if read_as == "excel_file":
                                 # Return the content read as an Excel
                                 # file.
                                 return pandas.ExcelFile(
                                     BytesIO(response.content)
                                 )
-                            elif read_as == "text":
+                            if read_as == "text":
                                 # Return the content as a string.
                                 return response.text
-                            elif read_as == "json":
+                            if read_as == "json":
                                 # Read the content of the response
                                 content = response.json()
 
@@ -305,25 +304,22 @@ def fetch_data(
 
                                 # Return the content as a DataFrame.
                                 return pandas.DataFrame(content)
-                            elif read_as == "plain":
+                            if read_as == "plain":
                                 # Return just the response.
                                 return response
-                            else:
-                                raise ValueError(
-                                    f"The read_as parameter {read_as} is not "
-                                    "supported."
-                                )
-
-                        else:
                             raise ValueError(
-                                f"Library {read_with} is not supported."
+                                f"The read_as parameter {read_as} is not "
+                                "supported."
                             )
 
-                    else:
                         raise ValueError(
-                            f"The content type {content_type} is not "
-                            "supported."
+                            f"Library {read_with} is not supported."
                         )
+
+                    raise ValueError(
+                        f"The content type {content_type} is not "
+                        "supported."
+                    )
 
                 except requests.exceptions.SSLError as e:
                     logging.error(

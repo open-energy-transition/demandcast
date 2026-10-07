@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -15,7 +14,7 @@ Description:
 
     Source: https://atlas.eia.gov/datasets/eia::balancing-authorities/about
     Source: https://www.eia.gov/electricity/gridmonitor/expanded-view/electric_overview/US48/US48/ElectricStatusMap-1
-"""  # noqa: W505
+"""
 
 import os
 

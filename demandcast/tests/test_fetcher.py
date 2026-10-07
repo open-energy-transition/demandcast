@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -69,7 +68,8 @@ def test_fetch_data_html_urllib():
             read_with="urllib.request",
             header_params={"User-Agent": "test"},
         )
-        assert isinstance(html_text, str) and "<html>" in html_text
+        assert isinstance(html_text, str)
+        assert "<html>" in html_text
 
 
 def test_fetch_data_html_requests_get():
@@ -114,7 +114,8 @@ def test_fetch_data_html_requests_get():
         html_text = utils.fetcher.fetch_data(
             "http://example.com", "html", read_as="text", encoding_type="utf-8"
         )
-        assert isinstance(html_text, str) and html_text == "text content"
+        assert isinstance(html_text, str)
+        assert html_text == "text content"
 
         # Test reading HTML content with plain format.
         requests.get.return_value = requests.Response()
@@ -319,7 +320,8 @@ def test_fetch_entsoe_demand_errors():
             pandas.Timestamp("2023-01-01"),
             pandas.Timestamp("2023-01-02"),
         )
-        assert isinstance(result, pandas.Series) and result.empty
+        assert isinstance(result, pandas.Series)
+        assert result.empty
 
 
 def test_fetch_entsoe_demand_retry_log_attempt_is_one_indexed(caplog):

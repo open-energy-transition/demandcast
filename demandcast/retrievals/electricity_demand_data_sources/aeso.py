@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,7 +10,7 @@ Description:
     website.
 
     Source: https://www.aeso.ca/market/market-and-system-reporting/data-requests/hourly-load-by-area-and-region
-"""  # noqa: W505
+"""
 
 import logging
 
@@ -156,19 +155,7 @@ def _get_excel_information(
             "CALGARY",
             "CENTRAL",
         ]
-    elif file_number == 3:
-        sheet_name = "Sheet1"
-        rows_to_skip = 0
-        index_columns = ["DT_MST"]
-        load_columns = [
-            "Calgary",
-            "Central",
-            "Edmonton",
-            "Northeast",
-            "Northwest",
-            "South",
-        ]
-    elif file_number == 4:
+    elif file_number == 3 or file_number == 4:
         sheet_name = "Sheet1"
         rows_to_skip = 0
         index_columns = ["DT_MST"]

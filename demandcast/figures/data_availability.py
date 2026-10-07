@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -244,8 +243,8 @@ def _get_occurrences(
     """
     # Initialize the occurrence in the defined levels and by continent.
     occurrence = {
-        continent: {level: 0.0 for level in levels.keys()}
-        for continent in continent_names.keys()
+        continent: dict.fromkeys(levels.keys(), 0.0)
+        for continent in continent_names
     }
 
     # Loop over the countries and subdivisions.
@@ -307,7 +306,7 @@ def _add_bar_chart(
 
     # Create a bar plot for the GDP occurrences with continents as
     # stacked bars.
-    for continent_code in occurrence.keys():
+    for continent_code in occurrence:
         # Create a bar plot for the current continent.
         ax.bar(
             occurrence[continent_code].keys(),
@@ -501,7 +500,7 @@ def plot(figure_directory: str) -> None:
             codes_with_iso_alpha_3_codes[iso_alpha_3_code] = [code]
 
     # Loop over the ISO Alpha-3 codes and plot the data.
-    for iso_alpha_3_codes in codes_with_iso_alpha_3_codes.keys():
+    for iso_alpha_3_codes in codes_with_iso_alpha_3_codes:
         # Get the codes belonging to the current Alpha-3 code.
         local_codes = codes_with_iso_alpha_3_codes[iso_alpha_3_codes]
 

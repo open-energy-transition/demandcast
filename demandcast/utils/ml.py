@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -10,7 +9,6 @@ Description:
 
 import logging
 import os
-from typing import Optional
 
 import pandas
 from pydantic import BaseModel, ValidationError
@@ -41,8 +39,8 @@ def read_and_check_ml_configuration() -> BaseModel:
         target: str
         splitter: str
         time: str
-        categorical_features: Optional[list[str]] = None
-        scaling_variables: Optional[list[str]] = None
+        categorical_features: list[str] | None = None
+        scaling_variables: list[str] | None = None
 
     # Define the path to the features and target configuration file.
     config_path = os.path.join(
@@ -51,7 +49,7 @@ def read_and_check_ml_configuration() -> BaseModel:
     )
 
     # Read the configuration.
-    with open(config_path, "r", encoding="utf-8") as file:
+    with open(config_path, encoding="utf-8") as file:
         raw_config = utils.config.yaml.safe_load(file)
 
     try:
@@ -238,7 +236,7 @@ def _split_temporally(
         latest_year = entity[splitter_column].max()
 
         if testing_set or validation_set:
-            for split_name in split_dataset.keys():
+            for split_name in split_dataset:
                 # Define the year to extract based on the split.
                 if split_name == "testing":
                     year_to_extract = latest_year
@@ -264,11 +262,11 @@ def _split_temporally(
     split_dataset["training"] = dataset.drop(index=indexes_not_for_training)
 
     # Reset indexes for all datasets.
-    for key in split_dataset.keys():
+    for key in split_dataset:
         split_dataset[key] = split_dataset[key].reset_index(drop=True)
 
     logging.info("Dataset split complete:")
-    for key in split_dataset.keys():
+    for key in split_dataset:
         logging.info(
             f" - {key.capitalize()} set: {len(split_dataset[key])} records "
             f"({(len(split_dataset[key]) / len(dataset)) * 100:.2f}%)"
@@ -451,18 +449,17 @@ def prepare_dataset(
 
         return prepared_dataset
 
-    else:
-        # Prepare and return the dataset without splitting.
-        return _split_in_groups(
-            dataset,
-            ml_config.group,
-            ml_config.features,
-            ml_config.target,
-            ml_config.time,
-            ml_config.categorical_features,
-            ml_config.scaling_variables,
-            target,
-        )
+    # Prepare and return the dataset without splitting.
+    return _split_in_groups(
+        dataset,
+        ml_config.group,
+        ml_config.features,
+        ml_config.target,
+        ml_config.time,
+        ml_config.categorical_features,
+        ml_config.scaling_variables,
+        target,
+    )
 
 
 def save_results(

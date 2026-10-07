@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -10,7 +9,7 @@ Description:
     year. The data is retrieved in six-month intervals.
 
     Source: https://www.eia.gov/opendata/browser/electricity/rto/region-data
-"""  # noqa: W505
+"""
 
 import logging
 import os

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -12,7 +11,7 @@ Description:
 
     Source: https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html
     Source: https://github.com/EnergieID/entsoe-py
-"""  # noqa: W505
+"""
 
 import logging
 import os
@@ -35,7 +34,7 @@ def redistribute() -> bool:
     """
     logging.debug("CC-BY 4.0 license. Use for any purpose with attribution.")
     logging.debug(
-        "Source: https://transparency.entsoe.eu/content/static_content/download?path=/Static%20content/terms%20and%20conditions/230309_ENTSOE_Transparency_Terms_Conditions_MC_APPROVED.pdf"  # noqa: W505
+        "Source: https://transparency.entsoe.eu/content/static_content/download?path=/Static%20content/terms%20and%20conditions/230309_ENTSOE_Transparency_Terms_Conditions_MC_APPROVED.pdf"
     )
     return True
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -12,7 +11,6 @@ from unittest.mock import Mock, mock_open, patch
 
 import pandas
 import pytest
-import utils.config
 import utils.ml
 
 

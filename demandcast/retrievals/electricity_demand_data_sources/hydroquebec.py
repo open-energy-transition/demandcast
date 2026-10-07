@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -10,7 +9,7 @@ Description:
     at once.
 
     Source: https://donnees.hydroquebec.com/explore/dataset/historique-demande-electricite-quebec/information/
-"""  # noqa: W505
+"""
 
 import logging
 
@@ -29,7 +28,7 @@ def redistribute() -> bool:
     """
     logging.debug("Non-commercial use with attribution to Hydro-Québec.")
     logging.debug(
-        "Source: https://donnees.hydroquebec.com/explore/dataset/historique-demande-electricite-quebec/information/"  # noqa: W505
+        "Source: https://donnees.hydroquebec.com/explore/dataset/historique-demande-electricite-quebec/information/"
     )
     return True
 

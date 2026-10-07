@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,7 +10,6 @@ from unittest.mock import patch
 
 import geopandas
 import pytest
-import utils.entities
 import utils.shapes
 from shapely import Polygon
 

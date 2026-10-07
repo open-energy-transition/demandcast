@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -43,7 +42,7 @@ def _download_gdp_ppp(result_directory: str) -> None:
         logging.info("Downloading global gridded GDP PPP data from Zenodo.")
 
         # Define the URL to download the GDP PPP data.
-        url = "https://zenodo.org/records/7898409/files/GDP_025d%20(2000-2100).7z?download=1"  # noqa: W505
+        url = "https://zenodo.org/records/7898409/files/GDP_025d%20(2000-2100).7z?download=1"
 
         # Fetch the data from the URL.
         response = requests.get(url)

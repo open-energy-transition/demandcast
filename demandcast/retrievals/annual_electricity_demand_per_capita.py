@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -22,9 +21,7 @@ import utils.scenarios
 import utils.time_series
 from tqdm import tqdm
 
-import retrievals.socio_economic_data_sources.ember as ember
-import retrievals.socio_economic_data_sources.iiasa as iiasa
-import retrievals.socio_economic_data_sources.world_bank as world_bank
+from retrievals.socio_economic_data_sources import ember, iiasa, world_bank
 
 
 def get_available_scenarios() -> list[str]:

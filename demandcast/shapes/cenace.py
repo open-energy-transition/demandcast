@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -13,7 +12,7 @@ Description:
     Source: https://github.com/jschleuss/mexican-states
     Source: https://acclaimenergy.com.mx/wp-content/uploads/2019/03/TMCA-Map.jpg
     Source: https://doi.org/10.1016/j.tej.2022.107142
-"""  # noqa: W505
+"""
 
 import os
 import shutil

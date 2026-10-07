@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -202,34 +201,33 @@ def download_and_extract_data_for_request(
 
         return electricity_demand_time_series
 
-    else:
-        logging.info(
-            f"Retrieving electricity demand data for the year {year}."
+    logging.info(
+        f"Retrieving electricity demand data for the year {year}."
+    )
+
+    # Fetch HTML content from the URL.
+    dataset = utils.fetcher.fetch_data(
+        url, "csv", csv_kwargs={"skiprows": 3}
+    )
+
+    # Make sure the dataset is a pandas DataFrame.
+    if not isinstance(dataset, pandas.DataFrame):
+        raise ValueError(
+            f"The extracted data is a {type(dataset)} object, "
+            "expected a pandas DataFrame."
         )
 
-        # Fetch HTML content from the URL.
-        dataset = utils.fetcher.fetch_data(
-            url, "csv", csv_kwargs={"skiprows": 3}
-        )
+    # Extract the index of the electricity demand time series.
+    index = pandas.to_datetime(
+        [
+            date + " " + str(time - 1) + ":00"
+            for date, time in zip(dataset["Date"], dataset["Hour"])
+        ]
+    ).tz_localize("America/Toronto", ambiguous="NaT", nonexistent="NaT")
 
-        # Make sure the dataset is a pandas DataFrame.
-        if not isinstance(dataset, pandas.DataFrame):
-            raise ValueError(
-                f"The extracted data is a {type(dataset)} object, "
-                "expected a pandas DataFrame."
-            )
+    # Extract the electricity demand time series.
+    electricity_demand_time_series = pandas.Series(
+        dataset["Ontario Demand"].values, index=index
+    )
 
-        # Extract the index of the electricity demand time series.
-        index = pandas.to_datetime(
-            [
-                date + " " + str(time - 1) + ":00"
-                for date, time in zip(dataset["Date"], dataset["Hour"])
-            ]
-        ).tz_localize("America/Toronto", ambiguous="NaT", nonexistent="NaT")
-
-        # Extract the electricity demand time series.
-        electricity_demand_time_series = pandas.Series(
-            dataset["Ontario Demand"].values, index=index
-        )
-
-        return electricity_demand_time_series
+    return electricity_demand_time_series

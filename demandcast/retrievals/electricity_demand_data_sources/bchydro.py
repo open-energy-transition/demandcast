@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,7 +10,7 @@ Description:
     Excel files on the BC Hydro website.
 
     Source: https://www.bchydro.com/energy-in-bc/operations/transmission/transmission-system/balancing-authority-load-data/historical-transmission-data.html
-"""  # noqa: W505
+"""
 
 import logging
 
@@ -109,7 +108,7 @@ def get_url(year: int) -> str:
         or (year >= 2015 and year <= 2023)
     ):
         url += f"BalancingAuthorityLoad{year}.xls"
-    elif year >= 2007 and year <= 2008 or year == 2014:
+    elif (year >= 2007 and year <= 2008) or year == 2014:
         url += f"{year}controlareaload.xls"
     elif year >= 2009 and year <= 2012:
         url += f"jandec{year}controlareaload.xls"
@@ -164,7 +163,7 @@ def _get_excel_information(
     # Define the header of the Excel file.
     if year == 2007:
         header = None
-    elif year >= 2001 and year <= 2006 or year >= 2008 and year <= 2025:
+    elif (year >= 2001 and year <= 2006) or (year >= 2008 and year <= 2025):
         header = 0
     else:
         raise ValueError(f"The year {year} is not implemented yet.")
@@ -196,7 +195,7 @@ def _get_excel_information(
         load_column = [2]
     elif year >= 2008 and year <= 2011:
         load_column = ["MWh"]
-    elif year >= 2012 and year <= 2014 or year >= 2021 and year <= 2025:
+    elif (year >= 2012 and year <= 2014) or (year >= 2021 and year <= 2025):
         load_column = ["Control Area Load"]
     else:
         raise ValueError(f"The year {year} is not implemented yet.")

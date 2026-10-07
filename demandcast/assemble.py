@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -12,8 +11,8 @@ import datetime
 import glob
 import logging
 import os
+from collections.abc import Callable
 from functools import reduce
-from typing import Callable, Optional
 
 import dask.dataframe
 import pandas
@@ -45,14 +44,14 @@ def _read_and_check_configuration() -> BaseModel:
     # Define the configuration model.
     class ConfigModel(BaseModel):
         target_use: str
-        file: Optional[str] = None
-        start_year: Optional[int] = None
-        end_year: Optional[int] = None
-        scenario_for_annual_electricity_demand_per_capita: Optional[str] = None
-        scenario_for_gdp_ppp_per_capita: Optional[str] = None
-        scenario_for_population: Optional[str] = None
-        scenario_for_temperature: Optional[str] = None
-        climate_model_for_temperature: Optional[str] = None
+        file: str | None = None
+        start_year: int | None = None
+        end_year: int | None = None
+        scenario_for_annual_electricity_demand_per_capita: str | None = None
+        scenario_for_gdp_ppp_per_capita: str | None = None
+        scenario_for_population: str | None = None
+        scenario_for_temperature: str | None = None
+        climate_model_for_temperature: str | None = None
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(
@@ -720,7 +719,7 @@ def _merge_datasets(
         original_entities = dataset["Entity code"].unique()
         excluded_entities = set(original_entities) - set(merged_entities)
         logging.info(
-            f" - Dataset {i + 1}: {excluded_entities if excluded_entities else 'None'}"
+            f" - Dataset {i + 1}: {excluded_entities or 'None'}"
         )
 
     return merged_dataset

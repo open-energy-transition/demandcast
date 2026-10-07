@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -22,12 +21,12 @@ import os
 # isort: off
 # torch must be imported before pandas — pandas side-effects corrupt
 # the Windows DLL loader state for torch's c10.dll initialisation.
-import utils.torch_windows  # noqa: E402
+import utils.torch_windows
 
 _dll_dir_tokens = utils.torch_windows.enable_torch_dll_directory()
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
-import torch.nn as nn  # noqa: E402
+from torch import nn  # noqa: E402
 import pandas  # noqa: E402
 
 # isort: on
@@ -350,7 +349,7 @@ def _read_configuration() -> BaseModel:
         "lstm_config.yaml",
     )
 
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         raw_config = yaml.safe_load(f)
 
     try:

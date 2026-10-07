@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -13,7 +12,7 @@ Description:
 
     Source: https://data.wa.aemo.com.au/#operational-demand
     Source: https://data.wa.aemo.com.au/public/market-data/wemde/operationalDemandWithdrawal/dailyFiles/
-"""  # noqa: W505
+"""
 
 import logging
 
@@ -149,14 +148,13 @@ def get_url(
             f"operational-demand-{year}.csv"
         )
 
-    else:
-        # If the request is for the post-reform period, set the URL to
-        # fetch .json files for data from September 2023 onward.
-        return (
-            "https://data.wa.aemo.com.au/public/market-data/wemde/"
-            "operationalDemandWithdrawal/dailyFiles/"
-            f"OperationalDemandAndWithdrawal_{year}-{month:02d}-{day:02d}.json"
-        )
+    # If the request is for the post-reform period, set the URL to
+    # fetch .json files for data from September 2023 onward.
+    return (
+        "https://data.wa.aemo.com.au/public/market-data/wemde/"
+        "operationalDemandWithdrawal/dailyFiles/"
+        f"OperationalDemandAndWithdrawal_{year}-{month:02d}-{day:02d}.json"
+    )
 
 
 def download_and_extract_data_for_request(

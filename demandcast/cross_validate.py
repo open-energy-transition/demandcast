@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,7 +10,6 @@ Description:
 
 import logging
 import os
-from typing import Optional
 
 import ml_models.lstm
 import ml_models.xgboost
@@ -42,8 +40,8 @@ def _read_and_check_configuration() -> BaseModel:
     # Define the configuration model.
     class ConfigModel(BaseModel):
         scoring_metric: str
-        n_jobs: Optional[int] = 1
-        data_path: Optional[str] = None
+        n_jobs: int | None = 1
+        data_path: str | None = None
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(
@@ -311,10 +309,9 @@ def _cross_validate(
         return _cross_validate_xgboost(
             prepared_dataset, scoring_metric, n_jobs
         )
-    elif algorithm.lower() == "lstm":
+    if algorithm.lower() == "lstm":
         return _cross_validate_lstm(prepared_dataset, scoring_metric)
-    else:
-        raise ValueError(f"Unsupported algorithm: {algorithm}")
+    raise ValueError(f"Unsupported algorithm: {algorithm}")
 
 
 def run_model_cross_validation(

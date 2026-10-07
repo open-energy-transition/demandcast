@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -69,7 +68,7 @@ def _read_mape(
         )
 
     if by_group:
-        for case in groups.keys():
+        for case in groups:
             for group in groups[case]:
                 # Read the MAPE values for the current group.
                 mape[f"{version}_{group}"] = pandas.read_csv(
@@ -411,7 +410,7 @@ def _plot_by_group(
         "SA": "South America",
     }
 
-    for case in groups.keys():
+    for case in groups:
         # Initialize the the plot where to show the MAPE values by
         # group.
         if case == "continent":
@@ -544,7 +543,7 @@ def plot(
             "The --by_group and --compare_with_version options cannot be "
             "used together at the moment."
         )
-    elif by_group:
+    if by_group:
         _plot_by_group(figure_directory, version, mape, groups)
     elif compare_with_version is not None:
         _plot_comparison(figure_directory, version, compare_with_version, mape)

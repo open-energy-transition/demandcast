@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -10,7 +9,7 @@ Description:
     to current year. The data is retrieved in one-month intervals.
 
     Source: https://tso.nbpower.com/Public/en/system_information_archive.aspx
-"""  # noqa: W505
+"""
 
 import logging
 

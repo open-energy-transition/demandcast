@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -33,7 +32,7 @@ def redistribute() -> bool:
         "Content may not be used for any commercial and non-private purposes."
     )
     logging.debug(
-        "Source: https://www.eskom.co.za/wp-content/uploads/2021/10/WEBSITE-TERMS-AND-CONDITIONS_Sep2021.pdf"  # noqa: W505
+        "Source: https://www.eskom.co.za/wp-content/uploads/2021/10/WEBSITE-TERMS-AND-CONDITIONS_Sep2021.pdf"
     )
     return False
 

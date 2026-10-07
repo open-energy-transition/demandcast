@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -15,7 +14,7 @@ Description:
     considerable time — up to 10 minutes in total.
 
     Source: https://www.ema.gov.sg/resources/statistics/half-hourly-system-demand-data
-"""  # noqa: W505
+"""
 
 import calendar
 import logging
@@ -144,12 +143,11 @@ def get_url(year: int, month: int, day: int) -> str:
     if request_date < pandas.Timestamp("2014-12-15"):
         month_abbr = calendar.month_abbr[month]
         return base_url + f"{year}/{day:02d}_{month_abbr}_{year}.xls"
-    elif request_date == pandas.Timestamp(
+    if request_date == pandas.Timestamp(
         "2025-01-13"
     ) or request_date == pandas.Timestamp("2025-01-20"):
         return base_url + f"{year}/{year}{month:02d}{day:02d}.xlsx"
-    else:
-        return base_url + f"{year}/{year}{month:02d}{day:02d}.xls"
+    return base_url + f"{year}/{year}{month:02d}{day:02d}.xls"
 
 
 def download_and_extract_data_for_request(
@@ -216,11 +214,11 @@ def download_and_extract_data_for_request(
 
     # Keep only the columns with system demand data.
     if request_date == pandas.Timestamp("2014-11-03"):
-        dataset = dataset.iloc[:, [1 + 2 * i for i in range(0, 7)]]
+        dataset = dataset.iloc[:, [1 + 2 * i for i in range(7)]]
     elif request_date <= pandas.Timestamp("2014-09-22"):
         dataset = dataset.iloc[:, 1:8]
     else:
-        dataset = dataset.iloc[:, [1 + 3 * i for i in range(0, 7)]]
+        dataset = dataset.iloc[:, [1 + 3 * i for i in range(7)]]
 
     # Add a column for the hour of the day.
     dataset["Hour"] = pandas.date_range(

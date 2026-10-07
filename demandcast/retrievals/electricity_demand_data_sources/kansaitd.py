@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,7 +10,7 @@ Description:
     CSV files on the KansaiTD website.
 
     Source: https://www.kansai-td.co.jp/english/home/denkiyoho/area-performance/index.html
-"""  # noqa: W505
+"""
 
 import logging
 

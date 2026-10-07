@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -32,12 +31,14 @@ def test_harmonize_coords():
     # Test the renaming of longitude and latitude to x and y.
     ds = xarray.Dataset(coords={"longitude": [0, 20], "latitude": [50, 60]})
     result = utils.geospatial.harmonize_coords(ds)
-    assert "x" in result.coords and "y" in result.coords
+    assert "x" in result.coords
+    assert "y" in result.coords
 
     # Test the renaming of lon and lat to x and y.
     ds = xarray.Dataset(coords={"lon": [0, 20], "lat": [50, 60]})
     result = utils.geospatial.harmonize_coords(ds)
-    assert "x" in result.coords and "y" in result.coords
+    assert "x" in result.coords
+    assert "y" in result.coords
 
     # Test the remapping of longitudes from [0, 360] to [-180, 180].
     ds = xarray.Dataset(coords={"x": [0, 90, 270], "y": [50, 60]})
@@ -295,7 +296,8 @@ def test_coarsen_function():
 
     # Check the result.
     assert isinstance(result, xarray.DataArray)
-    assert "x" in result.coords and "y" in result.coords
+    assert "x" in result.coords
+    assert "y" in result.coords
     assert result.ndim == 2
     assert result.shape[0] < da.shape[0]
     assert result.shape[1] < da.shape[1]

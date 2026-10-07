@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 License: AGPL-3.0.
 
@@ -11,7 +10,6 @@ Description:
 
 import logging
 import os
-from typing import Optional
 
 import ml_models.lstm
 import ml_models.xgboost
@@ -40,8 +38,8 @@ def _read_and_check_configuration() -> BaseModel:
     # Define the configuration model.
     class ConfigModel(BaseModel):
         used_validation_set: bool
-        model_path: Optional[str] = None
-        data_path: Optional[str] = None
+        model_path: str | None = None
+        data_path: str | None = None
 
     # Read the configuration.
     raw_config = utils.config.read_configuration(
@@ -135,7 +133,7 @@ def _calculate_mapes(
     # Initialize a DataFrame to hold MAPE results.
     mapes = pandas.DataFrame()
 
-    for split in prepared_dataset.keys():
+    for split in prepared_dataset:
         # Calculate MAPE per entity for the current split.
         mapes_of_split = _calculate_mape_by_entity(
             predictions[split],
@@ -154,7 +152,7 @@ def _calculate_mapes(
     # Reset the index and reorder columns.
     mapes = mapes.reset_index()
     column_order = ["Entity code"] + [
-        f"{split.capitalize()} MAPE" for split in prepared_dataset.keys()
+        f"{split.capitalize()} MAPE" for split in prepared_dataset
     ]
     mapes = mapes[column_order]
 
