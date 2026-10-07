@@ -1,6 +1,7 @@
 name: Bug report
 description: Report an error or unexpected behavior
 labels: ["Bug"]
+type: Bug
 
 body:
   - type: markdown
@@ -21,15 +22,41 @@ body:
     attributes:
       label: Steps to reproduce
       description: |
-        Please provide detailed steps to reproduce the bug.
+        Please provide detailed steps to reproduce the bug, including the script and configuration you used.
         If we cannot reproduce the bug, it is unlikely that we will be able to help you.
     validations:
       required: true
+
+  - type: textarea
+    attributes:
+      label: Error message or logs
+      description: Paste the full error message or the relevant log output.
+      render: text
+    validations:
+      required: false
 
   - type: input
     attributes:
       label: Version
       description: What commit/version are you using?
-      placeholder: e.g., v0.0.1 (2af802e 2025-01-26)
+      placeholder: e.g., v1.0.0 or commit 19b44ee
     validations:
       required: true
+
+  - type: dropdown
+    attributes:
+      label: Environment
+      description: How do you run DemandCast?
+      options:
+        - Locally with uv
+        - Docker image
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Operating system and Python version
+      placeholder: e.g., Ubuntu 24.04, Python 3.12
+    validations:
+      required: false

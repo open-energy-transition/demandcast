@@ -2,6 +2,13 @@
 
 <h2 align="center"><b>Global hourly electricity demand forecasting</b></h2>
 
+<p align="center">
+    <a href="https://github.com/open-energy-transition/demandcast/actions/workflows/ci.yml"><img src="https://github.com/open-energy-transition/demandcast/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+    <a href="https://arxiv.org/abs/2510.08000"><img src="https://img.shields.io/badge/arXiv-2510.08000-b31b1b" alt="arXiv paper"></a>
+    <a href="https://doi.org/10.5281/zenodo.18374351"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.18374351.svg" alt="Dataset DOI"></a>
+    <a href="https://github.com/open-energy-transition/demandcast/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License: AGPL-3.0"></a>
+</p>
+
 <h3 align="center"><b>A project developed by</b></h3>
 
 <p align="center">
@@ -35,6 +42,7 @@
 - [Development workflow](#development-workflow)
   - [Run tests and check test coverage](#run-tests-and-check-test-coverage)
   - [Pre-commit and lint code](#pre-commit-and-lint-code)
+- [Citation](#citation)
 - [Maintainers](#maintainers)
 - [License](#license)
 
@@ -90,7 +98,7 @@ We welcome contributions in the form of:
 - New or improved forecasting models
 - Documentation and testing enhancements
 
-Please follow the repository’s structure and submit your changes via pull request.
+Please read the [contributing guidelines](CONTRIBUTING.md) before opening a pull request, and follow our [Code of Conduct](CODE_OF_CONDUCT.md). Issues labelled [good first issue](https://github.com/open-energy-transition/demandcast/labels/good%20first%20issue) are a good place to start.
 
 We also would like to hear your feedback and suggestions. You can share your thoughts by completing this short [survey](https://forms.gle/nMYvCAfzbrUDjqRQ8).
 
@@ -125,14 +133,17 @@ demandcast/
 │   ├── uv.lock                     # Locked dependencies for the project
 │   └── validate.py                 # Script to validate data
 ├── webpage/                        # Documentation website files (MkDocs)
+├── .editorconfig                   # Editor settings shared by all contributors
 ├── .gitattributes                  # Git attributes for handling line endings
 ├── .gitignore                      # File lists that git ignores
 ├── .pre-commit-config.yaml         # Pre-commit configuration
+├── AGENTS.md                       # Instructions for AI coding agents
+├── CITATION.cff                    # Citation metadata
+├── CODE_OF_CONDUCT.md              # Code of Conduct
 ├── CONTRIBUTING.md                 # Guide to contributing
 ├── LICENSE                         # License file
 ├── README.md                       # Project overview and instructions
-├── ruff.toml                       # Ruff configuration
-└── security.md                     # Security policy
+└── ruff.toml                       # Ruff configuration
 ```
 
 ## DemandCast structure
@@ -234,6 +245,21 @@ To ensure code quality, we use [pre-commit](https://pre-commit.com/) hooks. Thes
 To run pre-commit hooks, you can use:
 ```bash
 uvx pre-commit
+```
+
+## Citation
+
+If you use DemandCast in your work, please cite the [paper](https://arxiv.org/abs/2510.08000). GitHub's "Cite this repository" button, generated from [CITATION.cff](CITATION.cff), provides the reference in other formats.
+
+```bibtex
+@inproceedings{steijn2025demandcast,
+  title     = {DemandCast: Global hourly electricity demand forecasting},
+  author    = {Steijn, Kevin and Goli, Vamsi Priya and Antonini, Enrico},
+  booktitle = {NeurIPS 2025 Workshop: Tackling Climate Change with Machine Learning},
+  year      = {2025},
+  doi       = {10.48550/arXiv.2510.08000},
+  url       = {https://arxiv.org/abs/2510.08000}
+}
 ```
 
 ## Maintainers
