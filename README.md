@@ -139,7 +139,6 @@ demandcast/
 ├── .pre-commit-config.yaml         # Pre-commit configuration
 ├── AGENTS.md                       # Instructions for AI coding agents
 ├── CITATION.cff                    # Citation metadata
-├── CLAUDE.md                       # Pointer to AGENTS.md for Claude Code
 ├── CODE_OF_CONDUCT.md              # Code of Conduct
 ├── CONTRIBUTING.md                 # Guide to contributing
 ├── LICENSE                         # License file
