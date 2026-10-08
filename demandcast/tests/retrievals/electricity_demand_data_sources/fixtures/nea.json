@@ -1,0 +1,16 @@
+{
+  "help": "https://admin.opendatanepal.com/api/3/action/help_show?name=datastore_search",
+  "success": true,
+  "result": {
+    "records": [
+      {
+        "_id": 1,
+        "Day": "1",
+        "1:00": "800.5",
+        "2:00": "780",
+        "0:00": "750.25"
+      },
+      { "_id": 2, "Day": "2", "1:00": "810", "2:00": "790.5", "0:00": "760" }
+    ]
+  }
+}
