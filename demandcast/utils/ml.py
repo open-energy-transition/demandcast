@@ -11,10 +11,16 @@ import logging
 import os
 from typing import Any, NotRequired, TypedDict
 
+import numpy as np
 import pandas as pd
 from pydantic import BaseModel, ValidationError
 
 import utils.config
+
+# The column of the local year of each row. assemble.py computes the
+# target as the fraction of the annual total of each entity and local
+# year, so converting it needs the local year of each row.
+LOCAL_YEAR_COLUMN = "Local year"
 
 
 class ConfigModel(BaseModel):
@@ -39,6 +45,7 @@ class PreparedDataset(TypedDict):
     others: NotRequired[pd.DataFrame]
     target: NotRequired[pd.Series]
     scaling_factor: NotRequired[pd.Series]
+    local_year: NotRequired[pd.Series]
 
 
 def read_and_check_ml_configuration() -> ConfigModel:
@@ -226,6 +233,77 @@ def get_assemble_data_path(data_path: str | None) -> str:
     logging.info(f"Using assembled data file: {data_path}")
 
     return data_path
+
+
+def _hours_in_year(local_year: pd.Series) -> np.ndarray:
+    """
+    Count the hours of each year: 8784 in leap years, 8760 otherwise.
+
+    Parameters
+    ----------
+    local_year : pandas.Series
+        The local year of each row.
+
+    Returns
+    -------
+    numpy.ndarray
+        The hours in the local year of each row.
+    """
+    years = local_year.to_numpy(dtype=int)
+    is_leap_year = (years % 4 == 0) & ((years % 100 != 0) | (years % 400 == 0))
+    return np.where(is_leap_year, 8784, 8760)
+
+
+def to_load_relative_to_annual_mean(
+    load_fraction: pd.Series, local_year: pd.Series
+) -> pd.Series:
+    """
+    Express the load relative to the annual mean.
+
+    The fraction of the annual total of an average hour is 1/8760 (or
+    1/8784 in leap years), which is too small for the models: the gain
+    of an XGBoost split scales with the square of the target, so almost
+    no split reaches its minimum gain (issue #145). Multiplying by the
+    hours in the local year gives the load relative to the annual mean,
+    so that an average hour is 1.
+
+    Parameters
+    ----------
+    load_fraction : pandas.Series
+        The load as a fraction of the annual total.
+    local_year : pandas.Series
+        The local year of each row, in the same order.
+
+    Returns
+    -------
+    pandas.Series
+        The load relative to the annual mean.
+    """
+    return load_fraction * _hours_in_year(local_year)
+
+
+def to_load_fraction_of_annual_total(
+    load_relative: pd.Series, local_year: pd.Series
+) -> pd.Series:
+    """
+    Convert the load relative to the annual mean back to a fraction.
+
+    This is the inverse of `to_load_relative_to_annual_mean`, for the
+    predictions of the models.
+
+    Parameters
+    ----------
+    load_relative : pandas.Series
+        The load relative to the annual mean.
+    local_year : pandas.Series
+        The local year of each row, in the same order.
+
+    Returns
+    -------
+    pandas.Series
+        The load as a fraction of the annual total.
+    """
+    return load_relative / _hours_in_year(local_year)
 
 
 def _split_temporally(
@@ -427,6 +505,60 @@ def _split_in_groups(  # noqa: C901
     return split_dataset
 
 
+def _prepare(
+    dataset: pd.DataFrame, ml_config: ConfigModel, target: bool = True
+) -> PreparedDataset:
+    """
+    Prepare a dataset, with the target relative to the annual mean.
+
+    Parameters
+    ----------
+    dataset : pandas.DataFrame
+        The dataset to prepare.
+    ml_config : ConfigModel
+        The configuration of the machine learning models.
+    target : bool, optional
+        Whether to include the target variable in the prepared dataset.
+
+    Returns
+    -------
+    PreparedDataset
+        The features, target, entity codes, local years and scaling
+        factors (if any) of the dataset.
+
+    Raises
+    ------
+    ValueError
+        If the dataset has no local year column.
+    """
+    if LOCAL_YEAR_COLUMN not in dataset.columns:
+        raise ValueError(
+            f"The dataset has no '{LOCAL_YEAR_COLUMN}' column, which is "
+            "needed to convert the target and the predictions."
+        )
+
+    prepared_dataset = _split_in_groups(
+        dataset,
+        ml_config.group,
+        ml_config.features,
+        ml_config.target,
+        ml_config.time,
+        ml_config.categorical_features,
+        ml_config.scaling_variables,
+        target,
+    )
+
+    # Keep the local years, to convert the predictions back.
+    prepared_dataset["local_year"] = dataset[LOCAL_YEAR_COLUMN].copy()
+
+    if target:
+        prepared_dataset["target"] = to_load_relative_to_annual_mean(
+            prepared_dataset["target"], prepared_dataset["local_year"]
+        )
+
+    return prepared_dataset
+
+
 def prepare_dataset(data_path: str, target: bool = True) -> PreparedDataset:
     """
     Prepare the whole dataset for forecasting or cross-validation.
@@ -441,8 +573,9 @@ def prepare_dataset(data_path: str, target: bool = True) -> PreparedDataset:
     Returns
     -------
     PreparedDataset
-        The features, target, entity codes, and scaling factors (if
-        any) of the dataset.
+        The features, target, entity codes, local years and scaling
+        factors (if any) of the dataset. The target is the load
+        relative to the annual mean.
     """
     # Read the configuration of the machine learning models.
     ml_config = read_and_check_ml_configuration()
@@ -451,16 +584,7 @@ def prepare_dataset(data_path: str, target: bool = True) -> PreparedDataset:
     dataset = pd.read_parquet(data_path)
 
     # Prepare and return the dataset without splitting.
-    return _split_in_groups(
-        dataset,
-        ml_config.group,
-        ml_config.features,
-        ml_config.target,
-        ml_config.time,
-        ml_config.categorical_features,
-        ml_config.scaling_variables,
-        target,
-    )
+    return _prepare(dataset, ml_config, target)
 
 
 def prepare_split_datasets(
@@ -482,7 +606,8 @@ def prepare_split_datasets(
     -------
     dict[str, PreparedDataset]
         The prepared datasets, with keys 'training', 'testing' (if
-        used), and 'validation' (if used).
+        used), and 'validation' (if used). Their target is the load
+        relative to the annual mean.
     """
     # Read the configuration of the machine learning models.
     ml_config = read_and_check_ml_configuration()
@@ -498,15 +623,7 @@ def prepare_split_datasets(
 
     # Prepare each split of the dataset.
     return {
-        split_name: _split_in_groups(
-            dataset,
-            ml_config.group,
-            ml_config.features,
-            ml_config.target,
-            ml_config.time,
-            ml_config.categorical_features,
-            ml_config.scaling_variables,
-        )
+        split_name: _prepare(dataset, ml_config)
         for split_name, dataset in split_dataset.items()
     }
 

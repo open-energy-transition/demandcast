@@ -98,13 +98,13 @@ def _write_assembled_data(
             )
             dataset["Population"] = 5e6 * (country_number + 1)
             if target:
-                # Keep the load around 1 instead of 1/8760: XGBoost does
-                # not split on such small values in a dataset this size.
+                # The load is around 1/8760 like the real target: an
+                # average hour of a year of 8760 hours.
                 dataset["Load (fraction of annual total)"] = (
                     1
                     + 0.2 * np.sin(2 * np.pi * time.hour.to_numpy() / 24)
                     + 0.005 * np.abs(temperature - 288)
-                )
+                ) / 8760
             datasets.append(dataset)
 
     os.makedirs(tmp_folders["assembled_data_folder"], exist_ok=True)
@@ -309,17 +309,17 @@ def test_cross_validate(tmp_folders, algorithm, expected_mapes):
         (
             "XGBoost",
             {
-                "AUT": 3943433945.685625,
-                "DNK": 8499964048.862457,
-                "PRT": 13634317284.64365,
+                "AUT": 448933.7369860684,
+                "DNK": 967664.3953623016,
+                "PRT": 1552176.3757563354,
             },
         ),
         pytest.param(
             "LSTM",
             {
-                "AUT": 132032748.74389172,
-                "DNK": 285023076.6534805,
-                "PRT": 458970983.72876644,
+                "AUT": 15031.044379059897,
+                "DNK": 32447.968818288035,
+                "PRT": 52250.79152173277,
             },
             marks=LSTM_MARKS,
         ),
