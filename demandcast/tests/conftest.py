@@ -48,7 +48,7 @@ def tmp_folders(tmp_path, monkeypatch):
 
     The folders keep their layout in the temporary folder, and the
     folders of the repository, such as the configuration, stay where
-    they are.
+    they are. A test can change a folder in the returned dictionary.
 
     Returns
     -------
