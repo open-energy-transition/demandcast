@@ -82,6 +82,23 @@ class FakeDownloads:
 
 
 @pytest.fixture
+def manual_downloads_folder(tmp_folders):
+    """
+    Create the folder of the manually downloaded files, empty.
+
+    Returns
+    -------
+    pathlib.Path
+        The folder, in a temporary folder.
+    """
+    folder = pathlib.Path(
+        tmp_folders["manually_downloaded_electricity_demand_folder"]
+    )
+    folder.mkdir(parents=True)
+    return folder
+
+
+@pytest.fixture
 def fake_downloads(monkeypatch):
     """
     Replace the downloads with synthetic files.
