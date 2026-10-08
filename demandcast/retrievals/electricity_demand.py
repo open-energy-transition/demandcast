@@ -40,6 +40,11 @@ def _retrieve_data(data_source: str, code: str) -> pd.Series:
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Raises
+    ------
+    TypeError
+        If the values of the time series are not numbers.
     """
     # Check if there is only one code in the data source.
     one_code_in_data_source = (
@@ -119,6 +124,14 @@ def _retrieve_data(data_source: str, code: str) -> pd.Series:
         # Concatenate the electricity demand time series of all periods.
         electricity_demand_time_series = pd.concat(
             electricity_demand_time_series_list
+        )
+
+    # Check that the values are numbers, so that the data of a source
+    # that returns text are not saved as text.
+    if not pd.api.types.is_numeric_dtype(electricity_demand_time_series):
+        raise TypeError(
+            f"The data source {data_source} returned values of type "
+            f"{electricity_demand_time_series.dtype}, not numbers."
         )
 
     # Clean the data.

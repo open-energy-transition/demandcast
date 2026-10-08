@@ -138,6 +138,23 @@ def test_one_entity_in_one_download(tmp_folders, add_data_source):
     }
 
 
+def test_values_that_are_not_numbers(add_data_source):
+    """Test that a data source that returns text is an error."""
+    add_data_source(
+        "text",
+        ["FRA"],
+        get_available_requests=Mock(return_value=None),
+        download_and_extract_data=Mock(
+            return_value=_demand("2024-01-01 01:00", [100.0, 200.0]).astype(
+                str
+            )
+        ),
+    )
+
+    with pytest.raises(TypeError, match="text returned values of type str"):
+        retrievals.electricity_demand.run_data_retrieval("text", None, None)
+
+
 def test_one_entity_with_requests(tmp_folders, add_data_source):
     """Test a data source with one entity, downloaded by request."""
     downloads = {
