@@ -4,9 +4,6 @@ archive/
 tests/
 
 data/*
-
-# Data files
-*.csv
 *.parquet
 
 # Byte-compiled / optimized / DLL files

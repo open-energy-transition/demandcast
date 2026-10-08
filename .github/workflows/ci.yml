@@ -202,6 +202,11 @@ jobs:
           test "$(docker run --rm demandcast:test id -u)" = 1000
           docker run --rm demandcast:test uv run retrieve.py --help
 
+      - name: Check that the image contains the input files of the retrievals
+        run: |
+          docker run --rm demandcast:test test -f \
+            retrievals/socio_economic_data_sources/manual_downloads/IAM_national_population.csv
+
       - name: Scan the image for vulnerabilities
         uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         with:
