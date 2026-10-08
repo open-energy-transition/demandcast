@@ -1,8 +1,4 @@
-# Configuration read by the validate.py script.
-
-# REQUIRED.
-# Whether to use a validation set during training.
-use_validation_set: false
+# Configuration read by the cross_validate.py script.
 
 # REQUIRED.
 # Metric(s) to use for scoring during cross-validation.
@@ -13,5 +9,5 @@ scoring_metric: neg_mean_absolute_percentage_error
 n_jobs: 1
 
 # OPTIONAL.
-# The path to the assembled data to be used for validation.
+# The path to the assembled data to be used for cross-validation.
 data_path:

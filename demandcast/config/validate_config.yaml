@@ -5,7 +5,7 @@
 used_validation_set: false
 
 # OPTIONAL.
-# The machine learning algorithm to be used for validation.
+# The path to the trained model to be validated.
 model_path:
 
 # OPTIONAL.
