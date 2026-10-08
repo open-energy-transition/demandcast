@@ -11,7 +11,7 @@ Description:
 import logging
 import os
 
-import ml_models.xgboost
+import ml_models.registry
 import pandas as pd
 import utils.config
 import utils.ml
@@ -179,14 +179,11 @@ def run_model_validation(
         in the default directory will be used.
     algorithm : str
         The machine learning algorithm to use for validation.
-
-    Raises
-    ------
-    ValueError
-        If an unsupported algorithm is specified or if there is a
-        mismatch between model features and dataset features.
     """
     logging.info("Starting model validation process.")
+
+    # Get the module of the model.
+    model_module = ml_models.registry.get_model_module(algorithm)
 
     # Get the assembled data path.
     data_path = utils.ml.get_assemble_data_path(data_path)
@@ -196,59 +193,18 @@ def run_model_validation(
         data_path, True, used_validation_set
     )
 
-    if algorithm.lower() == "xgboost":
-        # Get the trained model path.
-        trained_model_path = utils.ml.get_trained_model_path(
-            model_path, algorithm.lower()
-        )
+    # Load the trained model, and check that it was trained with the
+    # features of the prepared dataset.
+    trained_model_path = utils.ml.get_trained_model_path(
+        model_path, algorithm.lower(), model_module.FILE_EXTENSION
+    )
+    model = model_module.load(trained_model_path)
+    utils.ml.check_model_features(
+        model, prepared_dataset["training"]["features"]
+    )
 
-        # Load the trained model.
-        model = ml_models.xgboost.load(trained_model_path)
-
-        # Check that the model was trained with the same features of the
-        # prepared dataset.
-        data_features = prepared_dataset["training"][
-            "features"
-        ].columns.tolist()
-        model_features = model.feature_names_in_.tolist()
-        if data_features != model_features:
-            raise ValueError(
-                "The features used in the prepared dataset do not match "
-                "those used during model training."
-            )
-
-        # Make predictions.
-        predictions = ml_models.xgboost.predict(model, prepared_dataset)
-
-    elif algorithm.lower() == "lstm":
-        # The LSTM model needs the optional lstm extra.
-        from ml_models import lstm  # noqa: PLC0415
-
-        # Get the trained model path.
-        trained_model_path = utils.ml.get_trained_model_path(
-            model_path, algorithm.lower(), extension=".pt"
-        )
-
-        # Load the trained model.
-        model = lstm.load(trained_model_path)
-
-        # Check that the model was trained with the same features of the
-        # prepared dataset.
-        data_features = prepared_dataset["training"][
-            "features"
-        ].columns.tolist()
-        model_features = model.feature_names_in_.tolist()
-        if data_features != model_features:
-            raise ValueError(
-                "The features used in the prepared dataset do not match "
-                "those used during model training."
-            )
-
-        # Make predictions.
-        predictions = lstm.predict(model, prepared_dataset)
-
-    else:
-        raise ValueError(f"Unsupported algorithm: {algorithm}")
+    # Make predictions.
+    predictions = model_module.predict(model, prepared_dataset)
 
     # Calculate MAPEs.
     mapes = _calculate_mapes(prepared_dataset, predictions)
