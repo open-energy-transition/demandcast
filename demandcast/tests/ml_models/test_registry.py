@@ -24,11 +24,11 @@ from sklearn.utils.validation import check_is_fitted
 if TYPE_CHECKING:
     import ml_models.lstm
 
-    # Check with mypy that the model modules provide the interface.
-    _model_modules: list[ml_models.registry.ModelModule] = [
-        ml_models.xgboost,
-        ml_models.lstm,
-    ]
+    def _check_interface(module: ml_models.registry.ModelModule) -> None:
+        """Check with mypy that the module provides the interface."""
+
+    _check_interface(ml_models.xgboost)
+    _check_interface(ml_models.lstm)
 
 
 @pytest.fixture(params=sorted(ml_models.registry.MODEL_MODULES))
@@ -41,10 +41,11 @@ def model_module(request):
     ModelModule
         The module of the model.
     """
-    try:
-        return ml_models.registry.get_model_module(request.param)
-    except ModuleNotFoundError as error:
-        pytest.skip(f"{error.name} not installed")
+    pytest.importorskip(
+        ml_models.registry.MODEL_MODULES[request.param],
+        exc_type=ModuleNotFoundError,
+    )
+    return ml_models.registry.get_model_module(request.param)
 
 
 def _prepared_dataset() -> utils.ml.PreparedDataset:
