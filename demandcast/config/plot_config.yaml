@@ -17,4 +17,4 @@ compare_with_version:
 
 # OPTIONAL.
 # Whether to plot the results by group (income level and continent).
-by_group:
+by_group: false
