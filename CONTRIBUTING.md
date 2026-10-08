@@ -53,6 +53,16 @@ Each source is a module in `demandcast/retrievals/electricity_demand_data_source
 - shapes for non-standard subdivisions in `demandcast/shapes/`, if needed;
 - the source to `demandcast/run_all.sh`.
 
+### Adding a machine learning model
+
+Each model is a module in `demandcast/ml_models/` that provides the interface of `ModelModule` in `demandcast/ml_models/registry.py`: `get_initialized_model()`, `train()`, `predict()`, `save()` and `load()`, and the extension of its saved files. Its settings go in `demandcast/config/<model>_config.yaml`; `ml_models/xgboost.py` is a good template. Please also:
+
+- add the module to `MODEL_MODULES` in `ml_models/registry.py`, and to the modules that mypy checks in `demandcast/tests/ml_models/test_registry.py`, whose contract test then trains, saves, loads and predicts with the model;
+- put heavy dependencies in an optional extra in `demandcast/pyproject.toml`, like `lstm`;
+- describe the model in `webpage/docs/ML.md`.
+
+The scripts then use the model when `algorithm` in `demandcast/config/ml_config.yaml` is its name.
+
 ## Commits and pull requests
 
 ### Sign off your commits (DCO)
