@@ -38,6 +38,9 @@ from pydantic import BaseModel, ValidationError  # noqa: E402
 from sklearn.base import BaseEstimator, RegressorMixin  # noqa: E402
 from sklearn.utils.validation import check_is_fitted  # noqa: E402
 
+# The extension of the files of the saved models.
+FILE_EXTENSION = ".pt"
+
 # ----------------------------------------------------------------------
 # Private PyTorch network
 # ----------------------------------------------------------------------
@@ -425,7 +428,7 @@ def save(lstm_model: LSTMRegressor, model_name: str) -> None:
     ]
     os.makedirs(model_folder, exist_ok=True)
 
-    output_path = os.path.join(model_folder, f"{model_name}.pt")
+    output_path = os.path.join(model_folder, f"{model_name}{FILE_EXTENSION}")
 
     checkpoint: dict = {
         "params": lstm_model.get_params(),
