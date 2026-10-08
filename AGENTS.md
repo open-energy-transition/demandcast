@@ -24,7 +24,7 @@ Folder locations are defined in `config/directories_config.yaml`; use `utils.con
   - `retrievals/`: data retrieval. Each electricity demand source is a module plus a YAML file in `retrievals/electricity_demand_data_sources/`.
   - `ml_models/`: models sharing one interface (`get_initialized_model`, `train`, `predict`, `save`, `load`).
   - `utils/`: shared helpers; CI requires at least 95% test coverage.
-  - `tests/`: the pytest suite.
+  - `tests/`: the pytest suite, in folders that mirror the code: the tests of `utils/ml.py` are in `tests/utils/test_ml.py`, and those of the scripts are at the top of `tests/`.
   - `archive/`: legacy notebooks and scripts; do not modify.
 - `webpage/`: the MkDocs documentation site, a separate uv project.
 

@@ -35,7 +35,7 @@ uvx pre-commit run --all-files  # run them on the whole repository
 
 1. Create a branch from `main` in your fork.
 2. Follow the existing style: [Ruff](https://docs.astral.sh/ruff/) formatting and linting (lines of at most 79 characters), NumPy-style docstrings and type hints, checked by mypy. The pre-commit hooks check this for you.
-3. Add or update tests for your changes and run them from the `demandcast/` folder:
+3. Add or update tests for your changes in `demandcast/tests/`, whose folders mirror the code (the tests of `utils/ml.py` are in `tests/utils/test_ml.py`), and run them from the `demandcast/` folder:
 
    ```bash
    uv run --extra lstm pytest
@@ -49,7 +49,7 @@ uvx pre-commit run --all-files  # run them on the whole repository
 
 Each source is a module in `demandcast/retrievals/electricity_demand_data_sources/` with a YAML file listing its countries or subdivisions (ISO 3166 names and codes, time zones and data period). A module provides `redistribute()`, `get_available_requests()`, `get_url()` and `download_and_extract_data()` (or `download_and_extract_data_for_request()`), and returns demand in MW with UTC timestamps; existing modules are good templates. Please also add:
 
-- a small **synthetic** test fixture that mimics the source's file format, and a test that parses it (see [#161](https://github.com/open-energy-transition/demandcast/issues/161));
+- a small **synthetic** test fixture that mimics the source's file format, and a test that parses it, in `demandcast/tests/retrievals/electricity_demand_data_sources/` (see [#161](https://github.com/open-energy-transition/demandcast/issues/161));
 - shapes for non-standard subdivisions in `demandcast/shapes/`, if needed;
 - the source to `demandcast/run_all.sh`.
 
