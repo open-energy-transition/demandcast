@@ -13,6 +13,7 @@ Description:
     Source: https://aemo.com.au/energy-systems/electricity/national-electricity-market-nem/data-nem/aggregated-data
 """
 
+import datetime
 import logging
 
 import pandas as pd
@@ -204,10 +205,11 @@ def download_and_extract_data_for_request(
         index=pd.to_datetime(dataset["SETTLEMENTDATE"]),
     )
 
-    # Add the time zone information to the index.
+    # Add the time zone information to the index. The timestamps are in
+    # NEM time, which is UTC+10 all year, without daylight saving.
     electricity_demand_time_series = (
         electricity_demand_time_series.tz_localize(
-            "Australia/Sydney", ambiguous="NaT", nonexistent="NaT"
+            datetime.timezone(datetime.timedelta(hours=10))
         )
     )
 
