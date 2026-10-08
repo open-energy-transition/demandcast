@@ -129,6 +129,11 @@ def get_available_requests() -> list[tuple[str, str, str]]:
     available_requests : list[tuple[str, str, str]
         A list of tuples, each containing the file number, file
         extension, and date in the format.
+
+    Raises
+    ------
+    TypeError
+        If the extracted response is not a requests.Response object.
     """
     logging.info("Retrieving the available requests from the PGCB website.")
 
@@ -173,12 +178,19 @@ def get_available_requests() -> list[tuple[str, str, str]]:
         )
 
         # Fetch the HTML content of the page.
-        html_content: requests.Response = utils.fetcher.fetch_data(
+        html_content = utils.fetcher.fetch_data(
             url=page_url,
             content_type="html",
             read_as="plain",
             verify_ssl=False,
         )
+
+        # Make sure the response is a requests.Response object.
+        if not isinstance(html_content, requests.Response):
+            raise TypeError(
+                f"The extracted response is a {type(html_content)} object, "
+                "expected a requests.Response object."
+            )
 
         # Use regular expressions to find all file numbers and
         # extensions.
@@ -260,6 +272,11 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Raises
+    ------
+    TypeError
+        If the extracted data is not a pandas ExcelFile.
     """
     logging.info(
         f"Retrieving electricity demand data from file with date {date}."
@@ -269,9 +286,16 @@ def download_and_extract_data_for_request(
     url = get_url(file_number, extension)
 
     # Fetch the data from the URL.
-    excel_file: pd.ExcelFile = utils.fetcher.fetch_data(
+    excel_file = utils.fetcher.fetch_data(
         url, "html", read_as="excel_file", verify_ssl=False
     )
+
+    # Make sure the data is an Excel file.
+    if not isinstance(excel_file, pd.ExcelFile):
+        raise TypeError(
+            f"The extracted data is a {type(excel_file)} object, "
+            "expected a pandas ExcelFile."
+        )
 
     # Extract the name of the sheet containing the demand data.
     if "L-Curve" in excel_file.sheet_names:
@@ -329,8 +353,8 @@ def download_and_extract_data_for_request(
     )
 
     # Add the timezone information.
-    electricity_demand_time_series.index = (
-        electricity_demand_time_series.index.tz_localize("Asia/Dhaka")
+    electricity_demand_time_series = (
+        electricity_demand_time_series.tz_localize("Asia/Dhaka")
     )
 
     return electricity_demand_time_series

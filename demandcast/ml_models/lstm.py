@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import cast, overload
 
 # isort: off
 # torch must be imported before pandas — pandas side-effects corrupt
@@ -31,6 +32,7 @@ import pandas as pd  # noqa: E402
 
 # isort: on
 import utils.config  # noqa: E402
+import utils.ml  # noqa: E402
 import yaml  # noqa: E402
 from pydantic import BaseModel, ValidationError  # noqa: E402
 from sklearn.base import BaseEstimator, RegressorMixin  # noqa: E402
@@ -319,13 +321,26 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
 # ----------------------------------------------------------------------
 
 
-def _read_configuration() -> BaseModel:
+class ConfigModel(BaseModel):
+    """Settings of the LSTM model."""
+
+    n_timesteps: int = 24
+    n_units: int = 32
+    n_layers: int = 1
+    dropout: float = 0.0
+    epochs: int = 5
+    batch_size: int = 256
+    learning_rate: float = 1e-3
+    random_state: int = 42
+
+
+def _read_configuration() -> ConfigModel:
     """
     Read and validate the LSTM configuration file.
 
     Returns
     -------
-    BaseModel
+    ConfigModel
         Validated configuration model with all LSTM hyperparameters.
 
     Raises
@@ -333,17 +348,6 @@ def _read_configuration() -> BaseModel:
     ValueError
         If the configuration file contains invalid values.
     """
-
-    class ConfigModel(BaseModel):
-        n_timesteps: int = 24
-        n_units: int = 32
-        n_layers: int = 1
-        dropout: float = 0.0
-        epochs: int = 5
-        batch_size: int = 256
-        learning_rate: float = 1e-3
-        random_state: int = 42
-
     config_path = os.path.join(
         utils.config.read_folders_structure()["config_folder"],
         "lstm_config.yaml",
@@ -464,7 +468,7 @@ def get_initialized_model() -> LSTMRegressor:
 
 
 def train(
-    prepared_dataset: dict[str, dict[str, pd.DataFrame | pd.Series]],
+    prepared_dataset: dict[str, utils.ml.PreparedDataset],
 ) -> LSTMRegressor:
     """
     Train an LSTM model on the prepared dataset.
@@ -475,9 +479,8 @@ def train(
 
     Parameters
     ----------
-    prepared_dataset :
-        dict[str, dict[str, pandas.DataFrame | pandas.Series]]
-        Dataset produced by ``utils.ml.prepare_dataset`` with at
+    prepared_dataset : dict[str, PreparedDataset]
+        Datasets produced by ``utils.ml.prepare_split_datasets`` with at
         least a ``"training"`` key containing ``"features"``,
         ``"target"``, and ``"group"`` sub-keys.
 
@@ -502,12 +505,23 @@ def train(
     return lstm_model
 
 
+@overload
+def predict(
+    lstm_model: LSTMRegressor, prepared_dataset: utils.ml.PreparedDataset
+) -> pd.Series: ...
+
+
+@overload
 def predict(
     lstm_model: LSTMRegressor,
-    prepared_dataset: dict[
-        str,
-        pd.Series | pd.DataFrame | dict[str, pd.DataFrame | pd.Series],
-    ],
+    prepared_dataset: dict[str, utils.ml.PreparedDataset],
+) -> dict[str, pd.Series]: ...
+
+
+def predict(
+    lstm_model: LSTMRegressor,
+    prepared_dataset: utils.ml.PreparedDataset
+    | dict[str, utils.ml.PreparedDataset],
 ) -> pd.Series | dict[str, pd.Series]:
     """
     Make predictions with a trained LSTM model.
@@ -527,10 +541,9 @@ def predict(
     ----------
     lstm_model : LSTMRegressor
         Fitted LSTM model.
-    prepared_dataset :
-        dict[str, pandas.Series | pandas.DataFrame |
-        dict[str, pandas.DataFrame | pandas.Series]]
-        Dataset produced by ``utils.ml.prepare_dataset``.
+    prepared_dataset : PreparedDataset | dict[str, PreparedDataset]
+        Dataset produced by ``utils.ml.prepare_dataset``, or datasets
+        produced by ``utils.ml.prepare_split_datasets``.
 
     Returns
     -------
@@ -541,9 +554,10 @@ def predict(
     logging.info("Making predictions with the trained LSTM model.")
 
     if "features" in prepared_dataset:
+        dataset = cast("utils.ml.PreparedDataset", prepared_dataset)
         preds = lstm_model.predict(
-            prepared_dataset["features"],
-            groups=prepared_dataset.get("group"),
+            dataset["features"],
+            groups=dataset.get("group"),
         )
         return pd.Series(preds)
 

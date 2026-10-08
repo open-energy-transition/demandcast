@@ -39,7 +39,8 @@ def simple_plot(
 
     # Plot the data.
     fig, ax = plt.subplots()
-    data_to_plot.plot(ax=ax)
+    # xarray types the plot accessor in a way that mypy misreads.
+    data_to_plot.plot(ax=ax)  # type: ignore[call-arg]
     fig.savefig(
         os.path.join(figure_directory, figure_name + ".png"),
         dpi=300,

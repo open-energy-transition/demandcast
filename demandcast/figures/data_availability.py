@@ -11,6 +11,7 @@ Description:
 """
 
 import os
+from typing import cast
 
 import matplotlib.patches
 import matplotlib.pyplot as plt
@@ -79,7 +80,7 @@ def _get_year_fractions(codes: list[str]) -> dict[str, dict[int, float]]:
 def _get_electricity_demand_per_capita(
     codes: list[str],
     years_of_interest: dict[str, list[int]],
-) -> pd.Series:
+) -> dict[str, dict[str, pd.Series]]:
     """
     Get the electricity demand per capita data.
 
@@ -115,8 +116,8 @@ def _get_electricity_demand_per_capita(
         iso_alpha_3_code = code.split("_")[0]
 
         # Extract the electricity demand data for the country.
-        electricity_demand_per_capita_of_country = (
-            electricity_demand_per_capita.loc[iso_alpha_3_code]
+        electricity_demand_per_capita_of_country = cast(
+            pd.Series, electricity_demand_per_capita.loc[iso_alpha_3_code]
         )
 
         # Extract the electricity demand per capita data for the years
@@ -147,7 +148,7 @@ def _get_electricity_demand_per_capita(
 def _get_gdp_ppp_per_capita(
     codes: list[str],
     years_of_interest: dict[str, list[int]],
-) -> pd.Series:
+) -> dict[str, dict[str, pd.Series]]:
     """
     Get the GDP PPP per capita data.
 
@@ -181,9 +182,9 @@ def _get_gdp_ppp_per_capita(
         iso_alpha_3_code = code.split("_")[0]
 
         # Extract the GDP data for the country.
-        gdp_ppp_per_capita_of_country = gdp_ppp_per_capita.loc[
-            iso_alpha_3_code
-        ]
+        gdp_ppp_per_capita_of_country = cast(
+            pd.Series, gdp_ppp_per_capita.loc[iso_alpha_3_code]
+        )
 
         # Extract the GDP data for the years of interest.
         gdp_ppp_per_capita_of_country = gdp_ppp_per_capita_of_country[
@@ -202,7 +203,7 @@ def _get_gdp_ppp_per_capita(
 
 
 def _get_occurrences(
-    data: dict[str, pd.Series],
+    data: dict[str, dict[str, pd.Series]],
     codes: list[str],
     continent_codes: dict[str, str],
     continent_names: dict[str, str],
@@ -214,7 +215,7 @@ def _get_occurrences(
 
     Parameters
     ----------
-    data : dict[str, pandas.Series]
+    data : dict[str, dict[str, pandas.Series]]
         A dictionary where the keys are entity codes and the values are
         pandas Series with years as index and values as electricity
         demand or GDP per capita.
@@ -309,8 +310,8 @@ def _add_bar_chart(
     for continent_code, continent_occurrence in occurrence.items():
         # Create a bar plot for the current continent.
         ax.bar(
-            continent_occurrence.keys(),
-            continent_occurrence.values(),
+            list(continent_occurrence.keys()),
+            list(continent_occurrence.values()),
             bottom=cumulative_height,
             label=continent_names[continent_code],
             color=colors[continent_code],
@@ -447,7 +448,7 @@ def plot(figure_directory: str) -> None:
     ax0.set_axis_off()
 
     # Add the bar chart for the electricity demand coverage.
-    ax = fig.add_axes([0.0, 0.0, 0.2, 1])
+    ax = fig.add_axes((0.0, 0.0, 0.2, 1))
     ax = _add_bar_chart(
         ax,
         gdp_levels,
@@ -463,7 +464,7 @@ def plot(figure_directory: str) -> None:
     ax.set_ylabel("Number of years", fontsize=14)
 
     # Add the bar chart for the GDP coverage.
-    ax = fig.add_axes([0.25, 0.0, 0.2, 1])
+    ax = fig.add_axes((0.25, 0.0, 0.2, 1))
     ax = _add_bar_chart(
         ax,
         electricity_demand_levels,
@@ -476,7 +477,7 @@ def plot(figure_directory: str) -> None:
     ax.set_ylim(0, 520)
 
     # Add scatter plot for the GDP and annual demand per capita data.
-    ax = fig.add_axes([0.55, 0.0, 0.45, 1])
+    ax = fig.add_axes((0.55, 0.0, 0.45, 1))
 
     # Make the x and y axes logarithmic.
     ax.set_xscale("log", base=2)
@@ -539,9 +540,9 @@ def plot(figure_directory: str) -> None:
             # electricity demand data.
             gdp_data_to_plot[iso_alpha_3_codes] = gdp_data_to_plot[
                 iso_alpha_3_codes
-            ].iloc[[0, -1]]
+            ].take([0, -1])
             electricity_data_to_plot[iso_alpha_3_codes] = (
-                electricity_data_to_plot[iso_alpha_3_codes].iloc[[0, -1]]
+                electricity_data_to_plot[iso_alpha_3_codes].take([0, -1])
             )
 
             # Plot the of GDP per capita and annual electricity demand

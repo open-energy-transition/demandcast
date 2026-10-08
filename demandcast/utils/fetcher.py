@@ -14,7 +14,9 @@ import re
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Mapping
 from io import BytesIO, StringIO
+from typing import Any
 
 import pandas as pd
 import requests
@@ -26,20 +28,20 @@ import utils.entities
 
 
 def _read_aspx_params(
-    response: requests.Response, post_data_params: dict[str, str | int]
+    response: requests.Response, post_data_params: Mapping[str, str | int]
 ) -> dict[str, str | int]:
     """
     Read the ASPX parameters from the response.
 
     This function extracts relevant ASPX parameters such as
     `__VIEWSTATE` and `__EVENTVALIDATION` from the HTML content of the
-    response and adds them to the provided POST data parameters.
+    response and returns them with the provided POST data parameters.
 
     Parameters
     ----------
     response : requests.Response
         The response object from the GET request.
-    post_data_params : dict[str, str | int]
+    post_data_params : Mapping[str, str | int]
         The original POST data parameters.
 
     Returns
@@ -58,16 +60,12 @@ def _read_aspx_params(
         r"id=\"__EVENTVALIDATION\" value=\"(.+)\"", html_content
     )[0]
 
-    # Prepare the parameters for the POST request.
-    additional_post_data_params = {
+    # Return the POST data parameters with the ASPX parameters added.
+    return {
+        **post_data_params,
         "__VIEWSTATE": viewstate,
         "__EVENTVALIDATION": eventvalidation,
     }
-
-    # Add the additional parameters for the POST request.
-    post_data_params.update(additional_post_data_params)
-
-    return post_data_params
 
 
 def fetch_data(  # noqa: C901
@@ -79,15 +77,12 @@ def fetch_data(  # noqa: C901
     read_with: str = "requests.get",
     encoding_type: str | None = None,
     read_as: str = "csv_table",
-    csv_kwargs: dict[str, str | int] | None = None,
-    excel_kwargs: dict[
-        str, str | int | list[str] | list[str | int] | dict[str, str] | None
-    ]
-    | None = None,
+    csv_kwargs: dict[str, Any] | None = None,
+    excel_kwargs: dict[str, Any] | None = None,
     verify_ssl: bool = True,
-    request_params: dict[str, str] | None = None,
-    post_data_params: dict[str, str | int] | None = None,
-    header_params: dict[str, str] | None = None,
+    request_params: Mapping[str, str] | None = None,
+    post_data_params: Mapping[str, str | int] | None = None,
+    header_params: Mapping[str, str] | None = None,
     json_keys: list[str] | None = None,
     query_aspx_webpage: bool = False,
     get_cookies: bool = False,
@@ -118,18 +113,17 @@ def fetch_data(  # noqa: C901
         The encoding to use for reading the content.
     read_as : str, optional
         The format to read the content as.
-    csv_kwargs : dict[str, str | int], optional
+    csv_kwargs : dict[str, Any], optional
         The keyword arguments for reading CSV files.
-    excel_kwargs : dict[str, str | int | list[str] | list[str | int] |
-                        dict[str, str] | None], optional
+    excel_kwargs : dict[str, Any], optional
         The keyword arguments for reading Excel files.
     verify_ssl : bool, optional
         Verify the SSL certificate.
-    header_params : dict[str, str], optional
+    header_params : Mapping[str, str], optional
         The headers for the request.
-    request_params : dict[str, str], optional
+    request_params : Mapping[str, str], optional
         The parameters for the request.
-    post_data_params : dict[str, str | int], optional
+    post_data_params : Mapping[str, str | int], optional
         The data for the POST request.
     json_keys : list[str], optional
         The keys to extract from the JSON response.
@@ -160,8 +154,8 @@ def fetch_data(  # noqa: C901
         request_params = {}
     if post_data_params is None:
         post_data_params = {}
-    if header_params is None:
-        header_params = {}
+    # Copy the headers, which are updated with cookies below.
+    header_params = dict(header_params or {})
     if json_keys is None:
         json_keys = []
 

@@ -131,14 +131,11 @@ def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
     # Check if the input parameters are valid.
     _check_input_parameters(start_date, end_date)
 
-    # Convert the start and end date to string format.
-    start_date = start_date.strftime("%Y-%m-%d")
-    end_date = end_date.strftime("%Y-%m-%d")
-
     # Return the URL of the electricity demand data.
     return (
         "https://50uclmn31c.execute-api.us-east-1.amazonaws.com/prod/xmproxy?"
-        f"metricId=DemaReal&entity=Sistema&start={start_date}&end={end_date}"
+        f"metricId=DemaReal&entity=Sistema&start={start_date:%Y-%m-%d}"
+        f"&end={end_date:%Y-%m-%d}"
     )
 
 
@@ -231,8 +228,8 @@ def download_and_extract_data_for_request(
     electricity_demand_time_series = electricity_demand_time_series / 1000
 
     # Add the timezone to the index.
-    electricity_demand_time_series.index = (
-        electricity_demand_time_series.index.tz_localize("America/Bogota")
+    electricity_demand_time_series = (
+        electricity_demand_time_series.tz_localize("America/Bogota")
     )
 
     # Add 1 hour to the index to account for the fact that the time

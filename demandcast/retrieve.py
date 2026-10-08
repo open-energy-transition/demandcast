@@ -25,13 +25,28 @@ import utils.entities
 from pydantic import BaseModel, ValidationError
 
 
-def _read_and_check_configuration() -> BaseModel:
+class ConfigModel(BaseModel):
+    """Settings of retrieve.py."""
+
+    variable: str
+    electricity_data_source: str | None = None
+    code: str | None = None
+    file: str | None = None
+    year: int | None = None
+    start_year: int | None = None
+    end_year: int | None = None
+    scenario: str | None = None
+    weather_variable: str | None = None
+    climate_model: str | None = None
+
+
+def _read_and_check_configuration() -> ConfigModel:
     """
     Read and check the configuration for data retrieval.
 
     Returns
     -------
-    BaseModel
+    ConfigModel
         A Pydantic model containing the validated configuration.
 
     Raises
@@ -39,20 +54,6 @@ def _read_and_check_configuration() -> BaseModel:
     ValueError
         If the configuration is invalid.
     """
-
-    # Define the configuration model.
-    class ConfigModel(BaseModel):
-        variable: str
-        electricity_data_source: str | None = None
-        code: str | None = None
-        file: str | None = None
-        year: int | None = None
-        start_year: int | None = None
-        end_year: int | None = None
-        scenario: str | None = None
-        weather_variable: str | None = None
-        climate_model: str | None = None
-
     # Read the configuration.
     raw_config = utils.config.read_configuration(
         "retrieve",

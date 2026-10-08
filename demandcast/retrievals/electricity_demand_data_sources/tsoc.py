@@ -107,14 +107,11 @@ def get_url(start_date: pd.Timestamp) -> str:
     # Check if input parameters are valid.
     _check_input_parameters(start_date)
 
-    # Convert the start and end dates and times to the required format.
-    start_date = start_date.strftime("%d-%m-%Y")
-
     # Return the URL of the electricity generation data.
     return (
         "https://tsoc.org.cy/electrical-system/"
         "archive-total-daily-system-generation-on-the-transmission-system/?"
-        f"startdt={start_date}&enddt=%2B15days"
+        f"startdt={start_date:%d-%m-%Y}&enddt=%2B15days"
     )
 
 

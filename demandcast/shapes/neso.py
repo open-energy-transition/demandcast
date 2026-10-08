@@ -29,7 +29,7 @@ uk_shape = next(
 )
 uk_shape = pd.Series({"geometry": uk_shape.geometry})
 uk_shape = geopandas.GeoSeries(uk_shape)
-uk_shape = geopandas.GeoDataFrame.from_features(uk_shape, crs=4326)
+uk_shape_frame = geopandas.GeoDataFrame.from_features(uk_shape, crs=4326)
 
 # Define a polygon to exclude the Northern Ireland and remote islands
 # from the UK shape.
@@ -46,10 +46,10 @@ new_bounds = geopandas.GeoSeries(
         ]
     )
 )
-new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
+new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
 # Cut the UK shape.
-gb_shape = uk_shape.overlay(new_bounds, how="intersection")
+gb_shape = uk_shape_frame.overlay(new_bounds_frame, how="intersection")
 
 # Add the name and code of the subdivision.
 gb_shape["name"] = ["Great Britain"]

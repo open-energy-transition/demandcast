@@ -39,7 +39,7 @@ def sample_time_series():
     ]
 
     # Define the data.
-    data = list(range(len(dates)))
+    data: list[int | None] = list(range(len(dates)))
 
     # Remove three data points, two of which are consecutive.
     data[2] = None
@@ -241,6 +241,7 @@ def test_convert_from_yearly_to_hourly():
     assert len(hourly_series) == expected_hours_2020 + expected_hours_2021
 
     # Check the index type and timezone.
+    assert isinstance(hourly_series.index, pd.DatetimeIndex)
     assert str(hourly_series.index.tz) == str(local_time_zone)
 
     # Check that each year's values are correctly assigned
@@ -290,7 +291,7 @@ def test_clean_data(sample_time_series):
     assert cleaned_time_series.name == "TestVariable"
 
     # Remove the time zone from the index.
-    cleaned_time_series.index = cleaned_time_series.index.tz_localize(None)
+    cleaned_time_series = cleaned_time_series.tz_localize(None)
 
     # Check if the function raises an error for an timezone-naive index.
     with pytest.raises(

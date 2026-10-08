@@ -103,6 +103,31 @@ def _add_first_and_last_years(
     return data_availability
 
 
+def _get_country_name(iso_alpha_3_code: str) -> str:
+    """
+    Get the name of a country from its ISO Alpha-3 code.
+
+    Parameters
+    ----------
+    iso_alpha_3_code : str
+        The ISO Alpha-3 code of the country.
+
+    Returns
+    -------
+    str
+        The name of the country.
+
+    Raises
+    ------
+    ValueError
+        If the code is not a valid ISO Alpha-3 code.
+    """
+    country = pycountry.countries.get(alpha_3=iso_alpha_3_code)
+    if country is None:
+        raise ValueError(f"Unknown ISO Alpha-3 code: {iso_alpha_3_code}.")
+    return country.name
+
+
 def run_check() -> None:
     """
     Check for the availability of data.
@@ -150,9 +175,9 @@ def run_check() -> None:
 
     # Add a column with the entity names.
     data_availability["entity_name"] = [
-        f"Subdivision of {pycountry.countries.get(alpha_3=code.split('_')[0]).name}"
+        f"Subdivision of {_get_country_name(code.split('_')[0])}"
         if "_" in code
-        else pycountry.countries.get(alpha_3=code).name
+        else _get_country_name(code)
         for code in data_availability.index
     ]
 

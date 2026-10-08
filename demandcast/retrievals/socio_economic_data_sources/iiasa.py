@@ -190,13 +190,13 @@ def _from_iiasa_name_to_iso_alpha_3_code(name: str) -> str:
             country = pycountry.countries.lookup(name)
             iso_alpha_3_code = country.alpha_3
         except LookupError:
-            country = pycountry.countries.search_fuzzy(name)
-            if len(country) > 1:
+            countries = pycountry.countries.search_fuzzy(name)
+            if len(countries) > 1:
                 raise ValueError(
                     f"Multiple countries found for name '{name}': "
-                    f"{[c.name for c in country]}"
+                    f"{[c.name for c in countries]}"
                 ) from None
-            iso_alpha_3_code = country[0].alpha_3
+            iso_alpha_3_code = countries[0].alpha_3
     except LookupError:
         if name in custom_mapping:
             iso_alpha_3_code = custom_mapping[name]
@@ -368,16 +368,15 @@ def _extract(
 
     # Convert to a Series with years as index by selecting only the
     # columns that are digits and dropping NaN values.
-    iiasa_data_of_country = iiasa_data_of_country.iloc[
+    values_by_year = iiasa_data_of_country.iloc[
         0,
         iiasa_data_of_country.columns.astype(str).str.isdigit(),
     ].dropna()
 
     # Convert the index to integers and the values to floats.
-    iiasa_data_of_country.index = iiasa_data_of_country.index.astype(int)
-    iiasa_data_of_country = iiasa_data_of_country.astype(float)
+    values_by_year.index = values_by_year.index.astype(int)
 
-    return iiasa_data_of_country
+    return values_by_year.astype(float)
 
 
 def extract_and_interpolate(

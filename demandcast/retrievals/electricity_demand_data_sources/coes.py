@@ -155,8 +155,8 @@ def download_and_extract_data_for_request(year: int) -> pd.Series:
     )
 
     # Add timezone information to the index.
-    electricity_demand_time_series.index = (
-        electricity_demand_time_series.index.tz_localize("America/Lima")
+    electricity_demand_time_series = (
+        electricity_demand_time_series.tz_localize("America/Lima")
     )
 
     return electricity_demand_time_series

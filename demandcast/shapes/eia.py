@@ -91,10 +91,10 @@ regions.loc[regions["name"] == "Southwest", "geometry"] = regions.loc[
 new_bounds = geopandas.GeoSeries(
     Polygon([(-120, 25), (-90, 25), (-90, 40), (-120, 40)])
 )
-new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
+new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 regions.loc[regions["name"] == "Southwest", "geometry"] = regions.loc[
     regions["name"] == "Southwest", "geometry"
-].intersection(new_bounds.geometry, align=False)
+].intersection(new_bounds_frame.geometry, align=False)
 
 # Using the Southwest region, cut the Northwest region.
 regions.loc[regions["name"] == "Northwest", "geometry"] = regions.loc[
@@ -124,10 +124,10 @@ regions.loc[regions["name"] == "Central", "geometry"] = regions.loc[
 new_bounds = geopandas.GeoSeries(
     Polygon([(-105, 45), (-100, 45), (-100, 48), (-105, 48)])
 )
-new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
+new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 regions.loc[regions["name"] == "Northwest", "geometry"] = regions.loc[
     regions["name"] == "Northwest", "geometry"
-].union(new_bounds.geometry, align=False)
+].union(new_bounds_frame.geometry, align=False)
 
 # Using the Central region, cut the Northwest region.
 regions.loc[regions["name"] == "Northwest", "geometry"] = regions.loc[
@@ -140,10 +140,10 @@ regions.loc[regions["name"] == "Northwest", "geometry"] = regions.loc[
 new_bounds = geopandas.GeoSeries(
     Polygon([(-100, 25), (-80, 25), (-80, 50), (-100, 50)])
 )
-new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
+new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 regions.loc[regions["name"] == "Midwest", "geometry"] = regions.loc[
     regions["name"] == "Midwest", "geometry"
-].intersection(new_bounds.geometry, align=False)
+].intersection(new_bounds_frame.geometry, align=False)
 
 # Using the Texas region, cut the Midwest region.
 regions.loc[regions["name"] == "Midwest", "geometry"] = regions.loc[

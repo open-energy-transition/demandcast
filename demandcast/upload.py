@@ -18,13 +18,23 @@ import utils.uploader
 from pydantic import BaseModel, ValidationError
 
 
-def _read_and_check_configuration() -> BaseModel:
+class ConfigModel(BaseModel):
+    """Settings of upload.py."""
+
+    target_platform: str
+    data_directory: str
+    gcs_bucket_name: str | None = None
+    publish_to_zenodo: bool | None = None
+    made_by_oet: bool | None = None
+
+
+def _read_and_check_configuration() -> ConfigModel:
     """
     Read and check the configuration for data upload.
 
     Returns
     -------
-    config : BaseModel
+    config : ConfigModel
         A Pydantic model containing the validated configuration.
 
     Raises
@@ -32,15 +42,6 @@ def _read_and_check_configuration() -> BaseModel:
     ValueError
         If the configuration is invalid.
     """
-
-    # Define the configuration model.
-    class ConfigModel(BaseModel):
-        target_platform: str
-        data_directory: str
-        gcs_bucket_name: str | None = None
-        publish_to_zenodo: bool | None = None
-        made_by_oet: bool | None = None
-
     # Read the configuration.
     raw_config = utils.config.read_configuration(
         os.path.basename(__file__),
@@ -76,6 +77,11 @@ if __name__ == "__main__":
             file_path = os.path.join(config.data_directory, file_name)
 
             if config.target_platform == "gcs":
+                if config.gcs_bucket_name is None:
+                    raise ValueError(
+                        "gcs_bucket_name is required to upload to GCS."
+                    )
+
                 # Upload the parquet file of the electricity demand time
                 # series to GCS.
                 utils.uploader.upload_to_gcs(
@@ -84,7 +90,16 @@ if __name__ == "__main__":
                     f"upload_{date_of_upload}/{file_name}",
                 )
             elif config.target_platform == "zenodo":
-                if not config["made_by_oet"]:
+                if (
+                    config.made_by_oet is None
+                    or config.publish_to_zenodo is None
+                ):
+                    raise ValueError(
+                        "made_by_oet and publish_to_zenodo are required to "
+                        "upload to Zenodo."
+                    )
+
+                if not config.made_by_oet:
                     # Check if a metadata file other than the default
                     # one for OET-created content has been provided.
                     metadata_file_path = os.path.join(

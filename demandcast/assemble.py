@@ -27,13 +27,27 @@ from pydantic import BaseModel, ValidationError
 from tqdm import tqdm
 
 
-def _read_and_check_configuration() -> BaseModel:
+class ConfigModel(BaseModel):
+    """Settings of assemble.py."""
+
+    target_use: str
+    file: str | None = None
+    start_year: int | None = None
+    end_year: int | None = None
+    scenario_for_annual_electricity_demand_per_capita: str | None = None
+    scenario_for_gdp_ppp_per_capita: str | None = None
+    scenario_for_population: str | None = None
+    scenario_for_temperature: str | None = None
+    climate_model_for_temperature: str | None = None
+
+
+def _read_and_check_configuration() -> ConfigModel:
     """
     Read and check the configuration for data assembly.
 
     Returns
     -------
-    config : BaseModel
+    config : ConfigModel
         A Pydantic model containing the validated configuration.
 
     Raises
@@ -41,19 +55,6 @@ def _read_and_check_configuration() -> BaseModel:
     ValueError
         If the configuration is invalid.
     """
-
-    # Define the configuration model.
-    class ConfigModel(BaseModel):
-        target_use: str
-        file: str | None = None
-        start_year: int | None = None
-        end_year: int | None = None
-        scenario_for_annual_electricity_demand_per_capita: str | None = None
-        scenario_for_gdp_ppp_per_capita: str | None = None
-        scenario_for_population: str | None = None
-        scenario_for_temperature: str | None = None
-        climate_model_for_temperature: str | None = None
-
     # Read the configuration.
     raw_config = utils.config.read_configuration(
         "assemble",
@@ -346,7 +347,7 @@ def _load_data_for_entity(
         no data was loaded.
     """
     # Initialize a list to hold the data for the entity.
-    entity_data = []
+    entity_frames: list[pd.DataFrame] = []
 
     for file_path in file_paths:
         if not os.path.exists(file_path):
@@ -360,11 +361,11 @@ def _load_data_for_entity(
         current_data = pd.read_parquet(file_path)
 
         # Append to the entity dataframe.
-        entity_data.append(current_data)
+        entity_frames.append(current_data)
 
-    if entity_data:
+    if entity_frames:
         # Concatenate all data for the entity.
-        entity_data = pd.concat(entity_data)
+        entity_data = pd.concat(entity_frames)
     else:
         # If no data was loaded, return None.
         return None
@@ -393,7 +394,7 @@ def _load_data_for_entity(
     # the resolution is inferred (e.g., microseconds for parsed strings
     # and nanoseconds for weather data), and merging datasets with
     # different resolutions silently drops rows.
-    entity_data.index = entity_data.index.as_unit("ns")
+    entity_data.index = pd.DatetimeIndex(entity_data.index).as_unit("ns")
 
     # Keep only rows with positive values in the specified numeric
     # columns.

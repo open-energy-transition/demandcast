@@ -584,9 +584,9 @@ def test_split_in_groups_missing_columns():
         )
 
 
-def test_prepare_dataset_with_splits():
+def test_prepare_split_datasets():
     """
-    Test prepare_dataset with testing and validation sets.
+    Test prepare_split_datasets with testing and validation sets.
 
     This test mocks the configuration reading and data loading to check
     if the function correctly prepares the dataset with splits.
@@ -617,16 +617,58 @@ def test_prepare_dataset_with_splits():
         mock_read_config.return_value = sample_config
         mock_read_parquet.return_value = sample_data
 
-        result = utils.ml.prepare_dataset(
+        result = utils.ml.prepare_split_datasets(
             "/path/to/data.parquet",
             testing_set=True,
             validation_set=True,
-            target=True,
         )
 
         assert "training" in result
         assert "testing" in result
         assert "validation" in result
+        assert "features" in result["training"]
+        assert "target" in result["training"]
+
+
+def test_prepare_split_datasets_with_training_set_only():
+    """
+    Test prepare_split_datasets without testing and validation sets.
+
+    This test checks that the whole dataset is the training set.
+    """
+    sample_config = Mock()
+    sample_config.group = "entity_code"
+    sample_config.features = ["feature1"]
+    sample_config.target = "demand"
+    sample_config.splitter = "year"
+    sample_config.time = "timestamp"
+    sample_config.categorical_features = None
+    sample_config.scaling_variables = None
+
+    sample_data = pd.DataFrame(
+        {
+            "entity_code": ["A", "A", "A"],
+            "feature1": [1, 2, 3],
+            "demand": [10, 20, 30],
+            "year": [2020, 2021, 2022],
+            "timestamp": [2020, 2021, 2022],
+        }
+    )
+
+    with (
+        patch("utils.ml.read_and_check_ml_configuration") as mock_read_config,
+        patch("pandas.read_parquet") as mock_read_parquet,
+    ):
+        mock_read_config.return_value = sample_config
+        mock_read_parquet.return_value = sample_data
+
+        result = utils.ml.prepare_split_datasets(
+            "/path/to/data.parquet",
+            testing_set=False,
+            validation_set=False,
+        )
+
+        assert list(result) == ["training"]
         assert "features" in result["training"]
         assert "target" in result["training"]
 
@@ -666,8 +708,6 @@ def test_prepare_dataset_without_splits():
 
         result = utils.ml.prepare_dataset(
             "/path/to/data.parquet",
-            testing_set=False,
-            validation_set=False,
             target=True,
         )
 
@@ -712,8 +752,6 @@ def test_prepare_dataset_without_target():
 
         result = utils.ml.prepare_dataset(
             "/path/to/data.parquet",
-            testing_set=False,
-            validation_set=False,
             target=False,
         )
 

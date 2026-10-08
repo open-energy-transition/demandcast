@@ -20,13 +20,21 @@ from pydantic import BaseModel, ValidationError
 from sklearn.metrics import mean_absolute_percentage_error
 
 
-def _read_and_check_configuration() -> BaseModel:
+class ConfigModel(BaseModel):
+    """Settings of validate.py."""
+
+    used_validation_set: bool
+    model_path: str | None = None
+    data_path: str | None = None
+
+
+def _read_and_check_configuration() -> ConfigModel:
     """
     Read and check the configuration for model validation.
 
     Returns
     -------
-    config : BaseModel
+    config : ConfigModel
         A Pydantic model containing the validated configuration.
 
     Raises
@@ -34,13 +42,6 @@ def _read_and_check_configuration() -> BaseModel:
     ValueError
         If the configuration is invalid.
     """
-
-    # Define the configuration model.
-    class ConfigModel(BaseModel):
-        used_validation_set: bool
-        model_path: str | None = None
-        data_path: str | None = None
-
     # Read the configuration.
     raw_config = utils.config.read_configuration(
         "validate",
@@ -109,7 +110,7 @@ def _calculate_mape_by_entity(
 
 
 def _calculate_mapes(
-    prepared_dataset: dict[str, dict[str, pd.DataFrame | pd.Series]],
+    prepared_dataset: dict[str, utils.ml.PreparedDataset],
     predictions: dict[str, pd.Series],
 ) -> pd.DataFrame:
     """
@@ -117,8 +118,7 @@ def _calculate_mapes(
 
     Parameters
     ----------
-    prepared_dataset :
-        dict[str, dict[str, pandas.DataFrame | pandas.Series]]
+    prepared_dataset : dict[str, PreparedDataset]
         A dictionary containing the prepared datasets for training,
         validation, and testing.
     predictions : dict[str, pandas.Series]
@@ -193,10 +193,8 @@ def run_model_validation(
     data_path = utils.ml.get_assemble_data_path(data_path)
 
     # Read and prepare the dataset.
-    prepared_dataset = utils.ml.prepare_dataset(
-        data_path,
-        True,
-        used_validation_set,
+    prepared_dataset = utils.ml.prepare_split_datasets(
+        data_path, True, used_validation_set
     )
 
     if algorithm.lower() == "xgboost":

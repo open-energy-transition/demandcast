@@ -94,10 +94,12 @@ new_bounds = geopandas.GeoSeries(
         ]
     )
 )
-new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
+new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
 # Cut the prefecture.
-cut_prefecture = prefecture_to_cut.overlay(new_bounds, how="intersection")
+cut_prefecture = prefecture_to_cut.overlay(
+    new_bounds_frame, how="intersection"
+)
 
 # Merge the cut prefecture with the whole prefectures.
 all_prefectures = pd.concat([whole_prefectures, cut_prefecture])
@@ -117,10 +119,10 @@ new_bounds = geopandas.GeoSeries(
         ]
     )
 )
-new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
+new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
 # Cut the remote islands.
-all_prefectures = all_prefectures.overlay(new_bounds, how="intersection")
+all_prefectures = all_prefectures.overlay(new_bounds_frame, how="intersection")
 
 # Select the columns of interest.
 all_prefectures = all_prefectures[["ADM1_EN", "ADM1_PCODE", "geometry"]]

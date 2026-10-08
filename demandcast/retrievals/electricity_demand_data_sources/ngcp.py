@@ -94,7 +94,7 @@ def download_and_extract_data() -> pd.Series:
     # already aggregated in the main Visayas sheet.
     sheet_names = {
         sheet.split(" ")[0].upper(): sheet
-        for sheet in excel_file.sheet_names
+        for sheet in map(str, excel_file.sheet_names)
         if sheet.split(" ")[0].upper() in regions
     }
 
@@ -163,8 +163,8 @@ def download_and_extract_data() -> pd.Series:
     )
 
     # Add the timezone information to the index.
-    electricity_demand_time_series.index = (
-        electricity_demand_time_series.index.tz_localize("Asia/Manila")
+    electricity_demand_time_series = (
+        electricity_demand_time_series.tz_localize("Asia/Manila")
     )
 
     return electricity_demand_time_series

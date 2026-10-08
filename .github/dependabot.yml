@@ -70,8 +70,6 @@ updates:
         patterns:
           - "*"
     ignore:
-      # mypy is upgraded with the code changes it requires.
-      - dependency-name: "*mirrors-mypy*"
       # The typos repository also tags releases of its libraries, such as
       # varcon-core-v5.0.7, which Dependabot mistakes for typos releases.
       - dependency-name: "*crate-ci/typos*"

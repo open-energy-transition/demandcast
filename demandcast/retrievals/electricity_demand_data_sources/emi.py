@@ -193,8 +193,8 @@ def download_and_extract_data_for_request(
     )
 
     # Add the time zone information to the time series.
-    electricity_demand_time_series.index = (
-        electricity_demand_time_series.index.tz_localize(
+    electricity_demand_time_series = (
+        electricity_demand_time_series.tz_localize(
             "Pacific/Auckland", ambiguous="NaT", nonexistent="NaT"
         )
     )

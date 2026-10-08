@@ -79,7 +79,10 @@ jobs:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
 
+      # The mypy job checks the types with the project's dependencies.
       - name: "Run the hooks"
+        env:
+          SKIP: mypy
         run: uvx pre-commit@4.6.2 run --all-files --show-diff-on-failure
 
   tests:
@@ -143,6 +146,31 @@ jobs:
           cat diff-cover.md >> "$GITHUB_STEP_SUMMARY"
           exit "${status:-0}"
 
+  mypy:
+    name: "mypy"
+    needs: changes
+    if: needs.changes.outputs.docs-only != 'true'
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ./demandcast
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: "Install uv and Python"
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          cache-dependency-glob: demandcast/uv.lock
+
+      - name: "Check the types"
+        run: uv run --locked --extra lstm mypy
+
   docker-image:
     name: "Docker image"
     needs: changes
@@ -188,7 +216,7 @@ jobs:
   ci-result:
     name: "CI result"
     if: always()
-    needs: [changes, pre-commit, tests, docker-image]
+    needs: [changes, pre-commit, tests, mypy, docker-image]
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:

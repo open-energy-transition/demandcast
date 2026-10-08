@@ -23,6 +23,7 @@ pytest.importorskip("torch", reason="torch not installed; skipping LSTM tests")
 
 import cross_validate
 import ml_models.lstm as lstm_module
+import utils.ml
 
 # Small hyperparameters so every test trains in under a second on CPU.
 _FAST_CONFIG = MagicMock(
@@ -39,7 +40,7 @@ _FAST_CONFIG = MagicMock(
 _ENTITIES = ["DEU", "FRA", "GBR"]
 
 
-def _make_prepared_dataset() -> dict:
+def _make_prepared_dataset() -> utils.ml.PreparedDataset:
     """
     Build a flat prepared_dataset spanning three entities.
 
@@ -47,8 +48,7 @@ def _make_prepared_dataset() -> dict:
     -------
     dict
         Dict with "features", "target", and "group" keys, matching
-        the output of ``utils.ml.prepare_dataset(testing_set=False,
-        validation_set=False)``.
+        the output of ``utils.ml.prepare_dataset()``.
     """
     rng = np.random.default_rng(0)
     n_per = 20

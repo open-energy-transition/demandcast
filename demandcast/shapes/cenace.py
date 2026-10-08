@@ -116,10 +116,10 @@ new_bounds = geopandas.GeoSeries(
         ]
     )
 )
-new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
+new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
 # Cut the merged shape.
-merged_shape = merged_shape.overlay(new_bounds, how="difference")
+merged_shape = merged_shape.overlay(new_bounds_frame, how="difference")
 
 # Add the merged shape, Peninsular, to the subdivisions and set the name
 # to Peninsular and code to "MEX_PEN".
@@ -144,10 +144,10 @@ new_bounds = geopandas.GeoSeries(
         ]
     )
 )
-new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
+new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
 # Cut the shape of Veracruz.
-shape_to_cut = shape_to_cut.overlay(new_bounds, how="intersection")
+shape_to_cut = shape_to_cut.overlay(new_bounds_frame, how="intersection")
 
 # Add the cut shape of Veracruz to the shapes to merge.
 shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
@@ -166,10 +166,10 @@ new_bounds = geopandas.GeoSeries(
         ]
     )
 )
-new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
+new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
 # Cut the shape of San Luis Potosi.
-shape_to_cut = shape_to_cut.overlay(new_bounds, how="intersection")
+shape_to_cut = shape_to_cut.overlay(new_bounds_frame, how="intersection")
 
 # Add the cut shape of San Luis Potosi to the shapes to merge.
 shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
@@ -196,7 +196,7 @@ shape_to_cut = states[states["code"].isin(["MX-SLP"])]
 
 # Using the same polygon as before, keep the Western part of San Luis
 # Potosi.
-shape_to_cut = shape_to_cut.overlay(new_bounds, how="difference")
+shape_to_cut = shape_to_cut.overlay(new_bounds_frame, how="difference")
 
 # Add the cut shape of San Luis Potosi to the shapes to merge.
 shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
@@ -214,10 +214,10 @@ new_bounds = geopandas.GeoSeries(
         ]
     )
 )
-new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
+new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
 # Cut the shape of Guanajuato.
-shape_to_cut = shape_to_cut.overlay(new_bounds, how="difference")
+shape_to_cut = shape_to_cut.overlay(new_bounds_frame, how="difference")
 
 # Add the cut shape of Guanajuato to the shapes to merge.
 shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
@@ -237,10 +237,10 @@ new_bounds = geopandas.GeoSeries(
         ]
     )
 )
-new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
+new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
 # Cut the shape of Michoacan.
-shape_to_cut = shape_to_cut.overlay(new_bounds, how="difference")
+shape_to_cut = shape_to_cut.overlay(new_bounds_frame, how="difference")
 
 # Add the cut shape of Michoacan to the shapes to merge.
 shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
@@ -273,10 +273,10 @@ new_bounds = geopandas.GeoSeries(
         ]
     )
 )
-new_bounds = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
+new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
 # Cut the shape of Guerrero.
-shape_to_cut = shape_to_cut.overlay(new_bounds, how="intersection")
+shape_to_cut = shape_to_cut.overlay(new_bounds_frame, how="intersection")
 
 # Add the cut shape of Guerrero to the shapes to merge.
 shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])

@@ -725,7 +725,7 @@ def _get_time_zones_in_data_source(
         # If the code specifies a subdivision, extract the time zone
         # from the file.
         if "time_zone" in entity and "_" in entity_code:
-            time_zone = pytz.timezone(entity["time_zone"])
+            time_zone: datetime.tzinfo = pytz.timezone(entity["time_zone"])
 
         # If the code specifies a country, get the time zone based on
         # the country code.
@@ -874,11 +874,11 @@ def _get_time_zone_of_subdivision(code: str) -> datetime.tzinfo:
         subdivision_shape = utils.shapes.get_standard_shape(code)
 
         # Get the centroid of the subdivision shape by projecting it to
-        # an equal area projection and then back to the original
-        # projection to get accurate coordinates.
+        # an equal area projection and then back to longitude and
+        # latitude (EPSG 4326) to get accurate coordinates.
         centroid = (
             subdivision_shape.geometry.to_crs("+proj=cea")
-            .centroid.to_crs(subdivision_shape.crs)
+            .centroid.to_crs(epsg=4326)
             .iloc[0]
             .coords[0]
         )
@@ -887,6 +887,8 @@ def _get_time_zone_of_subdivision(code: str) -> datetime.tzinfo:
         time_zone_name = TimezoneFinder().timezone_at(
             lat=centroid[1], lng=centroid[0]
         )
+        if time_zone_name is None:
+            raise ValueError(f"No time zone found for {code}.")
 
         return pytz.timezone(time_zone_name)
 

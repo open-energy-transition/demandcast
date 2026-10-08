@@ -34,11 +34,15 @@ repos:
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 850d8bf806620ef89a99381c5cf5ea2c1ea826dd # frozen: v1.17.0
+  # mypy needs the project's dependencies, so it runs in its environment.
+  - repo: local
     hooks:
       - id: mypy
-        args: [--ignore-missing-imports, "--disable-error-code=import-untyped"]
+        name: mypy
+        entry: uv run --directory demandcast --locked --extra lstm mypy
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: false
 
   - repo: https://github.com/kynan/nbstripout
     rev: 34071b78c181af3bf5af955c1426466e096fc3db # frozen: 0.9.1
