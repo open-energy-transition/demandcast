@@ -241,12 +241,16 @@ uv run --extra lstm pytest --cov
 
 ### Pre-commit and lint code
 
-To ensure code quality, we use [pre-commit](https://pre-commit.com/) hooks. These hooks automatically run checks on your code before committing changes. Among the pre-commit hooks, we also use [ruff](https://docs.astral.sh/ruff/) to enforce code style and linting. All the pre-commit hooks are defined in the `.pre-commit-config.yaml` file.
+To ensure code quality, we use [pre-commit](https://pre-commit.com/) hooks, defined in `.pre-commit-config.yaml`. They lint and format the code with [Ruff](https://docs.astral.sh/ruff/), check the types with [mypy](https://mypy-lang.org/), and check the other files, such as workflows and configuration files.
 
-To run pre-commit hooks, you can use:
+From the root of the repository, install the hooks to run them on every commit, or run them on all files:
+
 ```bash
-uvx pre-commit
+uvx pre-commit install
+uvx pre-commit run --all-files
 ```
+
+To check only the types, run `uv run --extra lstm mypy` in the `demandcast` folder.
 
 ## Citation
 
