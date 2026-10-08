@@ -47,5 +47,6 @@ RUN --mount=type=cache,target=/home/demandcast/.cache/uv,uid=1000 \
 COPY --chown=1000:1000 . .
 RUN mkdir -p data
 
+# Use the installed environment directly, and keep uv run from changing it.
 ENV PATH="/app/.venv/bin:$PATH" \
     UV_NO_SYNC=1

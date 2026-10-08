@@ -1,6 +1,6 @@
-# Runs the pre-commit hooks, the tests and a Docker build on pull requests and
-# on pushes to main. Pull requests that only change documentation skip the
-# tests and the Docker build.
+# Runs the pre-commit hooks, the tests, mypy and a Docker build on pull
+# requests and on pushes to main. Pull requests that only change
+# documentation skip the tests, mypy and the Docker build.
 
 name: CI
 
@@ -19,7 +19,7 @@ permissions: {}
 
 jobs:
   # Detects pull requests that only change documentation, so that the
-  # tests and the Docker build can be skipped for them.
+  # tests, mypy and the Docker build can be skipped for them.
   changes:
     name: "Changed files"
     timeout-minutes: 5
