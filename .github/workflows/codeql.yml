@@ -1,0 +1,54 @@
+# Analyses the code with CodeQL on pushes to main, on pull requests to
+# main, including those from forks, and every week. It replaces the
+# default setup of code scanning, which skips the pull requests from
+# forks, so that they also get the results that the ruleset of main
+# requires.
+
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "27 4 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  analyze:
+    name: "Analyze (${{ matrix.language }})"
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # Upload the results to code scanning.
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [actions, python]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          # The extended suite, which the default setup used.
+          queries: security-extended
+
+      - name: Analyse
+        uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          # The categories of the default setup, which keep the history
+          # of the alerts.
+          category: /language:${{ matrix.language }}
