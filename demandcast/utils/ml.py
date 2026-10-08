@@ -258,7 +258,7 @@ def to_load_relative_to_annual_mean(
     load_fraction: pd.Series, local_year: pd.Series
 ) -> pd.Series:
     """
-    Convert the fraction of the annual total to the annual mean.
+    Express the load relative to the annual mean.
 
     The fraction of the annual total of an average hour is 1/8760 (or
     1/8784 in leap years), which is too small for the models: the gain
