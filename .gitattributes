@@ -1,7 +1,7 @@
-# Store text files with LF line endings, whatever the contributor's platform.
+# How git stores files: text with LF line endings, whatever the
+# contributor's platform, and binary files as they are.
 * text=auto eol=lf
 
-# Binary files.
 *.png binary
 *.jpg binary
 *.pdf binary
