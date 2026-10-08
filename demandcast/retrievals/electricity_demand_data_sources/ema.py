@@ -224,6 +224,10 @@ def download_and_extract_data_for_request(
     else:
         dataset = dataset.iloc[:, [1 + 3 * i for i in range(7)]]
 
+    # Convert the values to numbers: the columns also hold the dates and
+    # the titles above the values, so pandas reads them as objects.
+    dataset = dataset.apply(pd.to_numeric)
+
     # Add a column for the hour of the day.
     dataset["Hour"] = pd.date_range(
         "00:00", periods=48, freq="30min"
