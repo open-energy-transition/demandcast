@@ -79,9 +79,10 @@ def _clean_and_format(date: str) -> str:
     date = date.strip().strip(".").replace(".", "-").replace("/", "-")
 
     # Extract the date components.
-    day = date.split("-")[0]
-    month = date.split("-")[1]
-    year = date.split("-")[2]
+    date_components = date.split("-")
+    if len(date_components) != 3:
+        raise ValueError(f"Cannot infer the date from the string: {date}.")
+    day, month, year = date_components
 
     # Add leading zero to month if needed.
     if len(month) == 1:
@@ -192,38 +193,47 @@ def get_available_requests() -> list[tuple[str, str, str]]:
                 "expected a requests.Response object."
             )
 
-        # Use regular expressions to find all file numbers and
-        # extensions.
-        file_info = re.findall(
-            r"https://erp\.powergrid\.gov\.bd/web/files/download\?location=erp%2Fweb%2Freport_docs%2F(\d+)\.(xlsm|xlsx|xls)",
-            html_content.text,
-        )
-
-        # Remove duplicates and keep the order.
-        file_info = list(dict.fromkeys(file_info))
-
-        # Use regular expressions to find all file dates.
-        file_dates = re.findall(
-            r'<td style="text-align: left; font-size: 14px;">(?:[a-zA-Z]+)(?:[\s_]+)(?:[a-zA-Z]+)(?:[\s_-]*)(.+)</td>',
-            html_content.text,
-        )
-
-        # Format the dates to YYYY-MM-DD.
-        file_dates = [_clean_and_format(date) for date in file_dates]
-
-        # Combine the file numbers, extensions, and dates into a list
-        # of tuples.
-        requests_on_page = [
-            (file_number, extension, date)
-            for (file_number, extension), date in zip(
-                file_info, file_dates, strict=True
+        # Read each row of the table on its own: the report name gives
+        # the date, and the link the number and extension of the file.
+        for row in re.findall(r"<tr>.*?</tr>", html_content.text, re.DOTALL):
+            report_name = re.search(
+                r'<td style="text-align: left; font-size: 14px;">(.+?)</td>',
+                row,
             )
-            if date not in file_dates_not_available
-        ]
+            if report_name is None:
+                # The row is the header of the table.
+                continue
 
-        # Add the requests from the current page to the list of
-        # available requests.
-        available_requests += requests_on_page
+            file_info = re.search(
+                r"https://erp\.powergrid\.gov\.bd/web/files/download\?location=erp%2Fweb%2Freport_docs%2F(\d+)\.(xlsm|xlsx|xls)",
+                row,
+            )
+            date_text = re.fullmatch(
+                r"(?:[a-zA-Z]+)(?:[\s_]+)(?:[a-zA-Z]+)(?:[\s_-]*)(.+)",
+                report_name.group(1),
+            )
+            try:
+                date = (
+                    _clean_and_format(date_text.group(1))
+                    if date_text
+                    else None
+                )
+            except ValueError:
+                date = None
+
+            # Skip the rows without a spreadsheet or a date, such as a
+            # test row that appeared on the website in September 2026.
+            if file_info is None or date is None:
+                logging.warning(
+                    f"Skipping the report '{report_name.group(1)}' on page "
+                    f"{page_number}, without a spreadsheet or a date."
+                )
+                continue
+
+            if date not in file_dates_not_available:
+                available_requests.append(
+                    (file_info.group(1), file_info.group(2), date)
+                )
 
     return available_requests
 
