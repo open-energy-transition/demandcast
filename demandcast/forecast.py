@@ -113,7 +113,7 @@ def run_forecasting(
         The path to the assembled data file. If None, the latest file
         in the default directory will be used.
     algorithm : str
-        The machine learning algorithm to use for validation.
+        The machine learning algorithm to use for forecasting.
 
     Raises
     ------
@@ -121,7 +121,7 @@ def run_forecasting(
         If an unsupported algorithm is specified or if there is a
         mismatch between model features and data features.
     """
-    logging.info("Starting model validation process.")
+    logging.info("Starting model forecasting process.")
 
     # Get the assembled data path.
     data_path = utils.ml.get_assemble_data_path(data_path)
@@ -201,7 +201,7 @@ def run_forecasting(
 
 if __name__ == "__main__":
     # Set up the logging configuration.
-    utils.config.set_up_logging("model_validation")
+    utils.config.set_up_logging("model_forecasting")
 
     # Read and check the configuration.
     config = _read_and_check_configuration()
