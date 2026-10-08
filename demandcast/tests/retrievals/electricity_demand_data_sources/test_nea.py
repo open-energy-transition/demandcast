@@ -17,7 +17,7 @@ def test_get_available_requests():
 def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
     """Test that the Nepali days and hourly columns are converted."""
     fake_downloads.serve(
-        "https://admin.opendatanepal.com/api/action/datastore_search?"
+        "https://api.opendatanepal.com/api/action/datastore_search?"
         "resource_id=b72c50b8-2e05-43f6-8232-7696caf07c70&sort=_id asc",
         "nea.json",
     )
