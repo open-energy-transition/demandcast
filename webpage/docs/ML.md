@@ -273,8 +273,6 @@ uv run cross_validate.py [--config path/to/config.yaml]
 **Configuration variables** (`cross_validate_config.yaml`):
 
 ```yaml
-use_validation_set: false          # Use validation set during training
-
 scoring_metric: neg_mean_absolute_percentage_error  # Metric for scoring
 
 n_jobs: 1                          # Number of parallel jobs

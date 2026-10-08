@@ -11,7 +11,6 @@ Description:
 import logging
 import os
 
-import ml_models.lstm
 import ml_models.xgboost
 import pandas as pd
 import utils.config
@@ -114,7 +113,7 @@ def run_forecasting(
         The path to the assembled data file. If None, the latest file
         in the default directory will be used.
     algorithm : str
-        The machine learning algorithm to use for validation.
+        The machine learning algorithm to use for forecasting.
 
     Raises
     ------
@@ -122,7 +121,7 @@ def run_forecasting(
         If an unsupported algorithm is specified or if there is a
         mismatch between model features and data features.
     """
-    logging.info("Starting model validation process.")
+    logging.info("Starting model forecasting process.")
 
     # Get the assembled data path.
     data_path = utils.ml.get_assemble_data_path(data_path)
@@ -155,13 +154,16 @@ def run_forecasting(
         logging.info("Forecasting completed successfully.")
 
     elif algorithm.lower() == "lstm":
+        # The LSTM model needs the optional lstm extra.
+        from ml_models import lstm  # noqa: PLC0415
+
         # Get the trained model path.
         trained_model_path = utils.ml.get_trained_model_path(
             model_path, algorithm.lower(), extension=".pt"
         )
 
         # Load the trained model.
-        model = ml_models.lstm.load(trained_model_path)
+        model = lstm.load(trained_model_path)
 
         # Check that the model was trained with the same features of the
         # prepared dataset.
@@ -174,7 +176,7 @@ def run_forecasting(
             )
 
         # Make predictions.
-        predictions = ml_models.lstm.predict(model, prepared_dataset)
+        predictions = lstm.predict(model, prepared_dataset)
 
         logging.info("Forecasting completed successfully.")
 
@@ -199,7 +201,7 @@ def run_forecasting(
 
 if __name__ == "__main__":
     # Set up the logging configuration.
-    utils.config.set_up_logging("model_validation")
+    utils.config.set_up_logging("model_forecasting")
 
     # Read and check the configuration.
     config = _read_and_check_configuration()

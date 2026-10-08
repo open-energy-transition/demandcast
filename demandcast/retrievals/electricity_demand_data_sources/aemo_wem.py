@@ -14,6 +14,7 @@ Description:
     Source: https://data.wa.aemo.com.au/public/market-data/wemde/operationalDemandWithdrawal/dailyFiles/
 """
 
+import datetime
 import logging
 
 import pandas as pd
@@ -218,12 +219,12 @@ def download_and_extract_data_for_request(
             index=pd.to_datetime(dataset["Trading Interval"]),
         )
 
-        # Add the timezone information to the index.
+        # Add the time zone information to the index. The timestamps are
+        # in AWST, which is UTC+8 all year, also during the daylight
+        # saving that Perth trialled from 2006 to 2009.
         electricity_demand_time_series = (
             electricity_demand_time_series.tz_localize(
-                "Australia/Perth",
-                ambiguous="NaT",
-                nonexistent="NaT",
+                datetime.timezone(datetime.timedelta(hours=8))
             ).tz_convert("UTC")
         )
 

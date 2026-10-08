@@ -542,7 +542,10 @@ def test_split_in_groups_with_additional_columns():
             "feature1": [1, 2],
             "target": [10, 20],
             "timestamp": [2020, 2021],
-            "extra_col": [100, 200],
+            "zeta": [100, 200],
+            "alpha": [300, 400],
+            "mu": [500, 600],
+            "beta": [700, 800],
         }
     )
 
@@ -555,8 +558,7 @@ def test_split_in_groups_with_additional_columns():
         target=True,
     )
 
-    assert "others" in result
-    assert "extra_col" in result["others"].columns
+    assert result["others"].columns.tolist() == ["zeta", "alpha", "mu", "beta"]
 
 
 def test_split_in_groups_missing_columns():

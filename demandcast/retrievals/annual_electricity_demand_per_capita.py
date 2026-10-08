@@ -283,12 +283,17 @@ def run_data_retrieval(
 
         if selected_future_years:
             for selected_scenario in selected_scenarios:
+                # Define the file path of the scenario data, with the
+                # file name that assemble.py reads.
+                scenario_file_path_without_ext = (
+                    f"{file_path_without_ext}_"
+                    f"{selected_scenario.replace('-', '_')}"
+                )
+
                 if not os.path.exists(
-                    f"{file_path_without_ext}_"
-                    f"{selected_scenario.replace('-', '_')}.parquet"
+                    scenario_file_path_without_ext + ".parquet"
                 ) or not os.path.exists(
-                    f"{file_path_without_ext}_"
-                    f"{selected_scenario.replace('-', '_')}.csv"
+                    scenario_file_path_without_ext + ".csv"
                 ):
                     logging.info(
                         f"Extracting future annual electricity demand per "
@@ -346,10 +351,10 @@ def run_data_retrieval(
                     # Save the electricity demand per capita data to
                     # parquet and CSV files.
                     selected_future_electricity_demand_per_capita.to_frame().to_parquet(
-                        f"{file_path_without_ext}_{selected_scenario}.parquet"
+                        scenario_file_path_without_ext + ".parquet"
                     )
                     selected_future_electricity_demand_per_capita.to_csv(
-                        f"{file_path_without_ext}_{selected_scenario}.csv",
+                        scenario_file_path_without_ext + ".csv",
                     )
 
                     logging.info(

@@ -8,10 +8,12 @@ Description:
     (LOGO) strategy and saving the results.
 """
 
+from __future__ import annotations
+
 import logging
 import os
+from typing import TYPE_CHECKING
 
-import ml_models.lstm
 import ml_models.xgboost
 import pandas as pd
 import utils.config
@@ -20,6 +22,9 @@ from pydantic import BaseModel, ValidationError
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.metrics import get_scorer
 from sklearn.model_selection import LeaveOneGroupOut, cross_validate
+
+if TYPE_CHECKING:
+    from ml_models import lstm
 
 
 class ConfigModel(BaseModel):
@@ -165,7 +170,7 @@ class _GroupAwareLSTM(BaseEstimator, RegressorMixin):
 
     def __init__(
         self,
-        lstm_model: ml_models.lstm.LSTMRegressor,
+        lstm_model: lstm.LSTMRegressor,
         group: pd.Series,
     ) -> None:
         self.lstm_model = lstm_model
@@ -186,7 +191,10 @@ class _GroupAwareLSTM(BaseEstimator, RegressorMixin):
         pandas.Series
             Predicted values, one per row of ``features``.
         """
-        return ml_models.lstm.predict(
+        # The LSTM model needs the optional lstm extra.
+        from ml_models import lstm  # noqa: PLC0415
+
+        return lstm.predict(
             self.lstm_model,
             {"features": features, "group": self.group},
         )
@@ -221,6 +229,9 @@ def _cross_validate_lstm(
     mapes : pandas.DataFrame
         DataFrame containing MAPE values for each entity.
     """
+    # The LSTM model needs the optional lstm extra.
+    from ml_models import lstm  # noqa: PLC0415
+
     scorer = get_scorer(scoring_metric)
 
     features = prepared_dataset["features"]
@@ -241,7 +252,7 @@ def _cross_validate_lstm(
                 "group": group.iloc[train_index],
             }
         }
-        lstm_model = ml_models.lstm.train(fold_dataset)
+        lstm_model = lstm.train(fold_dataset)
 
         train_scores.append(
             scorer(

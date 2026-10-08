@@ -44,7 +44,7 @@ def _read_and_check_configuration() -> ConfigModel:
     """
     # Read the configuration.
     raw_config = utils.config.read_configuration(
-        os.path.basename(__file__),
+        "upload",
         "Upload the electricity demand data to the specified destination.",
     )
 
@@ -59,6 +59,39 @@ def _read_and_check_configuration() -> ConfigModel:
         logging.info(f" - {field}: {value}")
 
     return config
+
+
+def _get_data_source(file_name: str) -> str:
+    """
+    Get the data source of an electricity demand file.
+
+    Parameters
+    ----------
+    file_name : str
+        The name of the file, `<code>_<data source>.parquet`.
+
+    Returns
+    -------
+    str
+        The data source.
+
+    Raises
+    ------
+    ValueError
+        If the file name does not end with the name of a data source.
+    """
+    # Match the whole data source name at the end of the file name, and
+    # keep the longest match in case a data source name ends with
+    # another one.
+    stem = file_name.removesuffix(".parquet")
+    data_sources = [
+        data_source
+        for data_source in utils.entities.read_data_sources()
+        if stem.endswith(f"_{data_source}")
+    ]
+    if not data_sources:
+        raise ValueError(f"No data source found for the file {file_name}.")
+    return max(data_sources, key=len)
 
 
 if __name__ == "__main__":
@@ -119,9 +152,7 @@ if __name__ == "__main__":
                         )
 
                 # Get the data source from the file name.
-                for data_source in utils.entities.read_data_sources():
-                    if data_source in file_name:
-                        break
+                data_source = _get_data_source(file_name)
 
                 # Import the retrieval module for the data source.
                 retrieval_module = importlib.import_module(
