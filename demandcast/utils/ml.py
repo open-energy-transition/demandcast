@@ -350,8 +350,11 @@ def _split_in_groups(  # noqa: C901
             f"dataset: {missing_columns}"
         )
 
-    # Check if additional columns are present in the dataset.
-    additional_columns = set(dataset.columns) - set(columns_to_check)
+    # Check if additional columns are present in the dataset, and keep
+    # them in the order of the dataset.
+    additional_columns = [
+        column for column in dataset.columns if column not in columns_to_check
+    ]
     if additional_columns:
         logging.warning(
             "The following additional columns are present in the "
@@ -377,7 +380,7 @@ def _split_in_groups(  # noqa: C901
     }
 
     if additional_columns:
-        split_dataset["others"] = dataset[list(additional_columns)].copy()
+        split_dataset["others"] = dataset[additional_columns].copy()
 
     if target:
         # Extract target.
