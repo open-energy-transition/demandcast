@@ -98,15 +98,13 @@ def _write_assembled_data(
             )
             dataset["Population"] = 5e6 * (country_number + 1)
             if target:
-                # The load is around 1 rather than around 1/8760 like
-                # the real target. It no longer has to be, now that
-                # train() scales the target (issue #145), but keeping
-                # it leaves the pinned values of both models untouched.
+                # The load is around 1/8760 like the real target: an
+                # average hour of a year of 8760 hours.
                 dataset["Load (fraction of annual total)"] = (
                     1
                     + 0.2 * np.sin(2 * np.pi * time.hour.to_numpy() / 24)
                     + 0.005 * np.abs(temperature - 288)
-                )
+                ) / 8760
             datasets.append(dataset)
 
     os.makedirs(tmp_folders["assembled_data_folder"], exist_ok=True)
@@ -155,14 +153,14 @@ def test_train(tmp_folders, algorithm):
             False,
             {
                 "Testing MAPE": [
-                    0.0025794332341625833,
-                    0.002433515016104097,
-                    0.0022782030227231124,
+                    0.002625633759713018,
+                    0.0025499050833588843,
+                    0.002388368457431127,
                 ],
                 "Training MAPE": [
-                    2.7337817857749833e-05,
-                    4.100238204011339e-05,
-                    3.0856345749857636e-05,
+                    0.0005770885380484866,
+                    0.000671918533910985,
+                    0.0005765584853238016,
                 ],
             },
         ),
@@ -171,19 +169,19 @@ def test_train(tmp_folders, algorithm):
             True,
             {
                 "Testing MAPE": [
-                    0.00303500128886127,
-                    0.0035680602584659818,
-                    0.0033467129641963898,
+                    0.003183712039986607,
+                    0.0036532106678935734,
+                    0.003423679041496076,
                 ],
                 "Validation MAPE": [
-                    0.003108287165843022,
-                    0.0035714452598398436,
-                    0.003295132154805743,
+                    0.003100233641773482,
+                    0.0035367313869888502,
+                    0.0032321542822177484,
                 ],
                 "Training MAPE": [
-                    6.007507442925016e-06,
-                    6.811818744403626e-06,
-                    5.700188215995595e-06,
+                    0.0006529032875232171,
+                    0.0005973631435366301,
+                    0.0005399450488411878,
                 ],
             },
         ),
@@ -255,14 +253,14 @@ def test_validate(tmp_folders, algorithm, use_validation_set, expected_mapes):
             "XGBoost",
             {
                 "Training MAPE": [
-                    2.2439701513998194e-05,
-                    4.032426188923892e-05,
-                    3.2883793430862695e-05,
+                    0.0005716077804356003,
+                    0.0005468303520148839,
+                    0.0005576343421525988,
                 ],
                 "Testing MAPE": [
-                    0.0024907406677085082,
-                    0.0021054310821984287,
-                    0.0023569862823521583,
+                    0.0024987742907980944,
+                    0.0021860056411586986,
+                    0.0024467068765894142,
                 ],
             },
         ),
@@ -311,17 +309,17 @@ def test_cross_validate(tmp_folders, algorithm, expected_mapes):
         (
             "XGBoost",
             {
-                "AUT": 3943512892.752886,
-                "DNK": 8499959209.442139,
-                "PRT": 13634559314.578772,
+                "AUT": 448933.7369860684,
+                "DNK": 967664.3953623016,
+                "PRT": 1552176.3757563354,
             },
         ),
         pytest.param(
             "LSTM",
             {
-                "AUT": 132032748.74389172,
-                "DNK": 285023076.6534805,
-                "PRT": 458970983.72876644,
+                "AUT": 15031.044379059897,
+                "DNK": 32447.968818288035,
+                "PRT": 52250.79152173277,
             },
             marks=LSTM_MARKS,
         ),

@@ -17,6 +17,10 @@ The machine learning process in DemandCast follows a structured pipeline that tr
 
 The target variable represents normalized hourly electricity consumption. Take each hour's electricity demand (in MW) and divide it by the total yearly electricity demand for that region. This produces a fraction of the year's electricity consumed in that hour. For example, 0.00015 means this hour consumed 0.015% of the year's total electricity. This normalization allows the model to learn patterns across regions of different sizes—a small country and a large country both have values in a comparable range.
 
+**What the models learn: Load relative to the annual mean**
+
+The fraction of the annual total of an average hour is about 1/8760, too small for the models: the gain of an XGBoost split scales with the square of the target, so at that magnitude the model barely splits and never uses the continuous features ([issue #145](https://github.com/open-energy-transition/demandcast/issues/145)). When preparing the data, `utils.ml.to_load_relative_to_annual_mean()` therefore multiplies the target by the hours in its local year (8760, or 8784 in leap years), giving the load relative to the annual mean: 1.0 is an average hour, and 1.2 an hour with 20% more demand than average. All models are trained on this target, and `forecast.py` converts their predictions back with `utils.ml.to_load_fraction_of_annual_total()` before scaling them to MW. The assembled data keeps the fraction of the annual total. Models trained before this conversion was introduced must be retrained.
+
 **Temporal Splitting**
 
 Unlike typical machine learning where data is randomly split, temporal splitting is required for time-series forecasting. Random splitting would "leak" future information into training, making results unrealistically good. The dataset is split using the following logic:
@@ -78,12 +82,6 @@ DemandCast currently implements XGBoost (eXtreme Gradient Boosting) as its prima
 ### Motivation
 
 The core motivation for using XGBoost to generate hourly electricity demand forecasts is based on previous work in the literature that applies gradient boosting models to load forecasting (e.g. [Mattsson et al., 2021](https://doi.org/10.1016/j.esr.2020.100606)). Our approach uses socioeconomic and weather parameters as inputs to predict hourly electricity demand, in line with these studies that combine meteorological and economic indicators for improved forecast accuracy. XGBoost is fast to train and perform inference, handles both categorical and continuous features natively, and provides built-in regularization to prevent overfitting. These characteristics make it an excellent baseline model that can be expanded upon in future work.
-
-### Target Scaling
-
-The target, `Load (fraction of annual total)`, is around 1/8760: the share of the annual load that falls in an average hour. The gain of a split scales with the square of the target, so at that magnitude almost no split reaches XGBoost's minimum gain, and the model barely splits: nearly every tree stays a single leaf and the continuous features (temperature, GDP and electricity demand per capita) are never used ([issue #145](https://github.com/open-energy-transition/demandcast/issues/145)).
-
-To avoid this, `train()` in `ml_models/xgboost.py` multiplies the target by `TARGET_SCALE_FACTOR` (8760, so that 1.0 is an average hour) before fitting, and `predict()` divides the predictions by the same factor. The scaling is therefore internal to the module: the assembled data, the saved model and the rest of the pipeline keep the original units. Models trained before this scaling was introduced must be retrained.
 
 ### XGBoost Configuration
 
