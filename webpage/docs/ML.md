@@ -99,7 +99,7 @@ The motivation for including an LSTM model builds on peer-reviewed work that ben
 
 The LSTM implementation in DemandCast (`ml_models/lstm.py`) is built on PyTorch's `nn.LSTM` module paired with a single linear output layer. The network accepts input tensors of shape `(batch, n_timesteps, n_features)`, passes them through one or more stacked LSTM layers, and projects the final hidden state to a scalar prediction via `nn.Linear(n_units, 1)`. Dropout can be applied between stacked layers when `n_layers > 1`.
 
-The `LSTMRegressor` class wraps this network in a scikit-learn-compatible estimator (`BaseEstimator`, `RegressorMixin`), giving it `fit()` and `predict()` methods that accept `pandas.DataFrame` and `pandas.Series` inputs. This interface allows the model to be passed directly to `sklearn.model_selection.cross_validate` and `LeaveOneGroupOut`, using the same evaluation infrastructure as XGBoost without modification.
+The `LSTMRegressor` class wraps this network in a scikit-learn-compatible estimator, giving it `fit()` and `predict()` methods that accept `pandas.DataFrame` and `pandas.Series` inputs. Cross-validation trains and scores the LSTM and XGBoost with the same Leave-One-Group-Out loop, which passes the entity codes to both the training and the predictions.
 
 Sequence construction is entity-aware. Each training or inference sample requires a lookback window of `n_timesteps` consecutive rows. Rather than drawing rows across entity (country or region) boundaries, the sequence builder identifies contiguous runs of the same entity label from the `"group"` column of the prepared dataset and zero-pads the leading edge of each new run. This ensures that predictions for the first hours of a new entity are not contaminated by data from the preceding entity in the DataFrame.
 
@@ -122,7 +122,7 @@ To use the LSTM algorithm, set `algorithm: LSTM` in `ml_config.yaml`.
 
 ### Dependencies
 
-The LSTM model requires `torch>=2.0.0`, which is included in `demandcast/pyproject.toml`. CPU-only installation is sufficient for the default configuration; no GPU is required. Training time on CPU with the default hyperparameters is comparable to XGBoost for typical dataset sizes.
+The LSTM model requires `torch>=2.0.0`, from the optional `lstm` extra of `demandcast/pyproject.toml`: install it with `uv sync --extra lstm`. XGBoost works without it. uv installs the CPU-only build of PyTorch, which is sufficient for the default configuration; no GPU is required. Training time on CPU with the default hyperparameters is comparable to XGBoost for typical dataset sizes.
 
 ### Input and Output Format
 
