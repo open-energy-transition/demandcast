@@ -70,6 +70,8 @@ git rebase --signoff origin/main
 git push --force-with-lease
 ```
 
+When you commit on GitHub's website, GitHub signs off your commits for you.
+
 ### Pull request titles
 
 Pull requests are squash-merged, and their title becomes the commit message on `main`. Titles must follow [Conventional Commits](https://www.conventionalcommits.org/): `type(optional scope): description`, for example:
@@ -82,7 +84,7 @@ Common types are `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `build`, `ci
 
 ### Review
 
-Fill in the pull request template. A maintainer reviews every pull request, and all CI checks must pass before it is merged. For mechanical changes to untested code, such as renames or lint fixes, maintainers can skip the check of the changed lines with the `skip-diff-cover` label. Please keep pull requests focused: several small ones are easier to review than a large one.
+Fill in the pull request template. On pull requests from forks, CI starts once a maintainer approves it. A maintainer reviews every pull request. Before it is merged, all CI checks must pass and every review conversation must be resolved, including the automatic comments of GitHub Code Quality. For mechanical changes to untested code, such as renames or lint fixes, maintainers can skip the check of the changed lines with the `skip-diff-cover` label. Please keep pull requests focused: several small ones are easier to review than a large one.
 
 ## AI-assisted contributions
 
