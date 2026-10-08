@@ -107,7 +107,7 @@ def download_and_extract_data() -> pd.Series:
     electricity_demand_time_series = pd.Series(
         dataset["RSA Contracted Demand"].values,
         index=pd.to_datetime(
-            dataset["Date Time Hour Beginning"], format="%Y-%m-%d %H:%M:%S %p"
+            dataset["Date Time Hour Beginning"], format="%Y-%m-%d %I:%M:%S %p"
         ),
     )
 
