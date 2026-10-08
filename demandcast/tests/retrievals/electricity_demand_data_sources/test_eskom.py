@@ -23,16 +23,14 @@ def test_download_and_extract_data(manual_downloads_folder, assert_demand):
 
     time_series = eskom.download_and_extract_data()
 
-    # The 12-hour times are read as 24-hour times, ignoring AM and PM:
-    # midnight becomes noon and 1 PM becomes 1 AM. The times mark the
-    # end of each hour.
+    # The times mark the end of each hour.
     assert_demand(
         time_series,
         "Africa/Johannesburg",
         {
-            "2023-04-01 11:00": 22000.5,
+            "2023-03-31 23:00": 22000.5,
             "2023-04-01 10:00": 27000.25,
-            "2023-04-01 00:00": 26000.75,
+            "2023-04-01 12:00": 26000.75,
         },
     )
 

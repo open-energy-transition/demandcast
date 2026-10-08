@@ -1,0 +1,24 @@
+{
+  "help": "https://api.neso.energy/api/3/action/help_show?name=package_show",
+  "success": true,
+  "result": {
+    "name": "historic-demand-data",
+    "resources": [
+      {
+        "name": "Frequently Asked Questions (FAQ)",
+        "id": "243ca76a-eefe-419d-a4b5-397073deb100",
+        "format": "DOC"
+      },
+      {
+        "name": "Historic Demand Data 2025",
+        "id": "b2bde559-3455-4021-b179-dfe60c0337b0",
+        "format": "CSV"
+      },
+      {
+        "name": "Historic Demand Data 2026",
+        "id": "8a4a771c-3929-4e56-93ad-cdf13219dea5",
+        "format": "CSV"
+      }
+    ]
+  }
+}

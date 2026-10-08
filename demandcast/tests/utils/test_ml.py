@@ -597,7 +597,7 @@ def test_prepare_split_datasets():
     sample_config.group = "entity_code"
     sample_config.features = ["feature1"]
     sample_config.target = "demand"
-    sample_config.splitter = "year"
+    sample_config.splitter = "Local year"
     sample_config.time = "timestamp"
     sample_config.categorical_features = None
     sample_config.scaling_variables = None
@@ -607,7 +607,7 @@ def test_prepare_split_datasets():
             "entity_code": ["A", "A", "A"],
             "feature1": [1, 2, 3],
             "demand": [10, 20, 30],
-            "year": [2020, 2021, 2022],
+            "Local year": [2020, 2021, 2022],
             "timestamp": [2020, 2021, 2022],
         }
     )
@@ -642,7 +642,7 @@ def test_prepare_split_datasets_with_training_set_only():
     sample_config.group = "entity_code"
     sample_config.features = ["feature1"]
     sample_config.target = "demand"
-    sample_config.splitter = "year"
+    sample_config.splitter = "Local year"
     sample_config.time = "timestamp"
     sample_config.categorical_features = None
     sample_config.scaling_variables = None
@@ -652,7 +652,7 @@ def test_prepare_split_datasets_with_training_set_only():
             "entity_code": ["A", "A", "A"],
             "feature1": [1, 2, 3],
             "demand": [10, 20, 30],
-            "year": [2020, 2021, 2022],
+            "Local year": [2020, 2021, 2022],
             "timestamp": [2020, 2021, 2022],
         }
     )
@@ -686,7 +686,7 @@ def test_prepare_dataset_without_splits():
     sample_config.group = "entity_code"
     sample_config.features = ["feature1"]
     sample_config.target = "demand"
-    sample_config.splitter = "year"
+    sample_config.splitter = "Local year"
     sample_config.time = "timestamp"
     sample_config.categorical_features = None
     sample_config.scaling_variables = None
@@ -696,7 +696,7 @@ def test_prepare_dataset_without_splits():
             "entity_code": ["A", "B"],
             "feature1": [1, 2],
             "demand": [10, 20],
-            "year": [2020, 2021],
+            "Local year": [2020, 2021],
             "timestamp": [2020, 2021],
         }
     )
@@ -714,9 +714,13 @@ def test_prepare_dataset_without_splits():
         )
 
         assert "features" in result
-        assert "target" in result
         assert "group" in result
         assert "time" in result
+
+        # The target is relative to the annual mean: 2020 is a leap
+        # year of 8784 hours, 2021 a year of 8760.
+        assert result["target"].tolist() == [10 * 8784, 20 * 8760]
+        assert result["local_year"].tolist() == [2020, 2021]
 
 
 def test_prepare_dataset_without_target():
@@ -730,7 +734,7 @@ def test_prepare_dataset_without_target():
     sample_config.group = "entity_code"
     sample_config.features = ["feature1"]
     sample_config.target = "demand"
-    sample_config.splitter = "year"
+    sample_config.splitter = "Local year"
     sample_config.time = "timestamp"
     sample_config.categorical_features = None
     sample_config.scaling_variables = None
@@ -740,7 +744,7 @@ def test_prepare_dataset_without_target():
             "entity_code": ["A", "B"],
             "feature1": [1, 2],
             "demand": [10, 20],
-            "year": [2020, 2021],
+            "Local year": [2020, 2021],
             "timestamp": [2020, 2021],
         }
     )
@@ -761,6 +765,66 @@ def test_prepare_dataset_without_target():
         assert "target" not in result
         assert "group" in result
         assert "time" in result
+        assert result["local_year"].tolist() == [2020, 2021]
+
+
+def test_prepare_dataset_without_local_year():
+    """Test that prepare_dataset needs the local year of each row."""
+    sample_config = Mock()
+    sample_config.group = "entity_code"
+    sample_config.features = ["feature1"]
+    sample_config.target = "demand"
+    sample_config.splitter = "Local year"
+    sample_config.time = "timestamp"
+    sample_config.categorical_features = None
+    sample_config.scaling_variables = None
+
+    sample_data = pd.DataFrame(
+        {
+            "entity_code": ["A", "B"],
+            "feature1": [1, 2],
+            "demand": [10, 20],
+            "timestamp": [2020, 2021],
+        }
+    )
+
+    with (
+        patch("utils.ml.read_and_check_ml_configuration") as mock_read_config,
+        patch("pandas.read_parquet") as mock_read_parquet,
+    ):
+        mock_read_config.return_value = sample_config
+        mock_read_parquet.return_value = sample_data
+
+        with pytest.raises(ValueError, match="no 'Local year' column"):
+            utils.ml.prepare_dataset("/path/to/data.parquet")
+
+
+def test_to_load_relative_to_annual_mean():
+    """Test the conversion of the target, in common and leap years."""
+    # 2000 and 2024 are leap years; 2100 is not, as a century that is
+    # not divisible by 400.
+    local_year = pd.Series([2023, 2024, 2100, 2000])
+    load_fraction = pd.Series([1 / 8760, 1 / 8784, 2 / 8760, 2 / 8784])
+
+    load_relative = utils.ml.to_load_relative_to_annual_mean(
+        load_fraction, local_year
+    )
+
+    assert load_relative.tolist() == pytest.approx([1, 1, 2, 2])
+
+
+def test_to_load_fraction_of_annual_total():
+    """Test that converting the predictions inverts the target."""
+    local_year = pd.Series([2023, 2024, 2100, 2000])
+    load_fraction = pd.Series([1.1e-4, 1.2e-4, 0.9e-4, 1.0e-4])
+
+    load_relative = utils.ml.to_load_relative_to_annual_mean(
+        load_fraction, local_year
+    )
+
+    assert utils.ml.to_load_fraction_of_annual_total(
+        load_relative, local_year
+    ).tolist() == pytest.approx(load_fraction.tolist())
 
 
 def test_save_results_validation():

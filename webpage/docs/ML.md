@@ -17,6 +17,10 @@ The machine learning process in DemandCast follows a structured pipeline that tr
 
 The target variable represents normalized hourly electricity consumption. Take each hour's electricity demand (in MW) and divide it by the total yearly electricity demand for that region. This produces a fraction of the year's electricity consumed in that hour. For example, 0.00015 means this hour consumed 0.015% of the year's total electricity. This normalization allows the model to learn patterns across regions of different sizes—a small country and a large country both have values in a comparable range.
 
+**What the models learn: Load relative to the annual mean**
+
+The fraction of the annual total of an average hour is about 1/8760, too small for the models: the gain of an XGBoost split scales with the square of the target, so at that magnitude the model barely splits and rarely uses the continuous features ([issue #145](https://github.com/open-energy-transition/demandcast/issues/145)). When preparing the data, `utils.ml.to_load_relative_to_annual_mean()` therefore multiplies the target by the hours in its local year (8760, or 8784 in leap years), giving the load relative to the annual mean: 1.0 is an average hour, and 1.2 an hour with 20% more demand than average. All models are trained on this target, and `forecast.py` converts their predictions back with `utils.ml.to_load_fraction_of_annual_total()` before scaling them to MW. The assembled data keeps the fraction of the annual total. Models trained before this conversion was introduced must be retrained.
+
 **Temporal Splitting**
 
 Unlike typical machine learning where data is randomly split, temporal splitting is required for time-series forecasting. Random splitting would "leak" future information into training, making results unrealistically good. The dataset is split using the following logic:
