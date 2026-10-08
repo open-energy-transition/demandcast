@@ -51,7 +51,7 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 - The code must also work on Windows: build paths with `os.path.join` or `pathlib`, also in tests.
 - Change dependencies in `pyproject.toml` and run `uv lock`; never edit `uv.lock` by hand.
 - `README.md` and `webpage/docs/index.md` share most of their content: update both.
-- Never commit data files (`data/`, `*.parquet`, `*.csv`) or `.env` files, which hold the API keys (`CDS_API_KEY`, `ENTSOE_API_KEY`, `EIA_API_KEY`, `ZENODO_API_KEY`, `SANDBOX_ZENODO_API_KEY`).
+- Never commit data files (`data/`, `*.parquet`, `*.csv`; the small synthetic fixtures of the tests are fine) or `.env` files, which hold the API keys (`CDS_API_KEY`, `ENTSOE_API_KEY`, `EIA_API_KEY`, `ZENODO_API_KEY`, `SANDBOX_ZENODO_API_KEY`).
 
 ## pandas 3 pitfalls
 
@@ -64,7 +64,7 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 
 1. Add `retrievals/electricity_demand_data_sources/<source>.py` with `redistribute()`, `get_available_requests()`, `get_url()` and `download_and_extract_data()` (or `download_and_extract_data_for_request()`). Follow an existing module.
 2. Add `<source>.yaml` listing its entities: `country_name` and `country_code` (ISO 3166 alpha-3), `subdivision_name`, `subdivision_code` and `time_zone` for subdivisions, and `start_date` and `end_date` (a date or `today`).
-3. Add shapes for non-standard subdivisions in `shapes/`, the source to `run_all.sh`, and a test that parses a small synthetic fixture of the source's files (see issue #161).
+3. Add shapes for non-standard subdivisions in `shapes/`, the source to `run_all.sh`, and a test that parses a small synthetic fixture of the source's files: `tests/retrievals/electricity_demand_data_sources/test_<source>.py`, with the fixture in its `fixtures/` folder, served by the `fake_downloads` fixture (see `test_aemo_nem.py` and issue #161).
 
 ## Adding a model
 

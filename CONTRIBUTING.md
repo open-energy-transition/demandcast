@@ -49,7 +49,7 @@ uvx pre-commit run --all-files  # run them on the whole repository
 
 Each source is a module in `demandcast/retrievals/electricity_demand_data_sources/` with a YAML file listing its countries or subdivisions (ISO 3166 names and codes, time zones and data period). A module provides `redistribute()`, `get_available_requests()`, `get_url()` and `download_and_extract_data()` (or `download_and_extract_data_for_request()`), and returns demand in MW with UTC timestamps; existing modules are good templates. Please also add:
 
-- a small **synthetic** test fixture that mimics the source's file format, and a test that parses it, in `demandcast/tests/retrievals/electricity_demand_data_sources/` (see [#161](https://github.com/open-energy-transition/demandcast/issues/161));
+- a small **synthetic** test fixture that mimics the source's file format, in `demandcast/tests/retrievals/electricity_demand_data_sources/fixtures/`, and a test `test_<source>.py` next to it that parses it: the `fake_downloads` fixture serves the file instead of the download, and `assert_demand` checks the result (see `test_aemo_nem.py` and [#161](https://github.com/open-energy-transition/demandcast/issues/161));
 - shapes for non-standard subdivisions in `demandcast/shapes/`, if needed;
 - the source to `demandcast/run_all.sh`.
 
