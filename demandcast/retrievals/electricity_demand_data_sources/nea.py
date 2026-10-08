@@ -120,7 +120,7 @@ def get_url(bs_month: int) -> str:
 
     # Return the URL for the given month.
     return (
-        "https://admin.opendatanepal.com/api/action/datastore_search?"
+        "https://api.opendatanepal.com/api/action/datastore_search?"
         f"resource_id={file_id_number[bs_month]}&sort=_id asc"
     )
 
