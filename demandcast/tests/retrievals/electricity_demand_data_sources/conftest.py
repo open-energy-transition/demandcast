@@ -156,7 +156,10 @@ def fake_downloads(monkeypatch):
 
 
 def _assert_demand(
-    time_series: pd.Series, time_zone: str, expected: dict[str, float]
+    time_series: pd.Series,
+    time_zone: str,
+    expected: dict[str, float],
+    dtype: str = "float64",
 ) -> None:
     """
     Check the electricity demand that a data source returns.
@@ -171,6 +174,8 @@ def _assert_demand(
         The expected electricity demand in MW, in its order, by time in
         UTC in the format "YYYY-MM-DD HH:MM". The names of the series
         and of its index are not checked.
+    dtype : str, optional
+        The expected data type of the values.
     """
     assert isinstance(time_series.index, pd.DatetimeIndex)
     assert str(time_series.index.tz) == time_zone
@@ -181,7 +186,7 @@ def _assert_demand(
                 "%Y-%m-%d %H:%M"
             ),
         ),
-        pd.Series(expected, dtype=float),
+        pd.Series(expected, dtype=dtype),
         check_names=False,
     )
 
@@ -195,7 +200,7 @@ def assert_demand():
     -------
     Callable
         A function that takes the electricity demand that a data source
-        returns, the time zone of its index and the expected values in
-        MW by time in UTC.
+        returns, the time zone of its index, the expected values in MW
+        by time in UTC and, optionally, their data type.
     """
     return _assert_demand
