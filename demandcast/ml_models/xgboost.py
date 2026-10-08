@@ -17,6 +17,9 @@ import yaml
 from pydantic import BaseModel, ValidationError
 from xgboost import XGBRegressor
 
+# The extension of the files of the saved models.
+FILE_EXTENSION = ".json"
+
 
 class ConfigModel(BaseModel):
     """Settings of the XGBoost model."""
@@ -99,7 +102,7 @@ def save(xgb_model: XGBRegressor, model_name: str) -> None:
     # Define the output path for the model.
     output_path = os.path.join(
         model_folder,
-        f"{model_name}.json",
+        f"{model_name}{FILE_EXTENSION}",
     )
 
     # Save the trained model.

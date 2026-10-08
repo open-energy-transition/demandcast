@@ -22,7 +22,7 @@ Folder locations are defined in `config/directories_config.yaml`; use `utils.con
 
 - `demandcast/`: the Python project. Run all Python commands from this folder, because modules are imported as top-level packages (`import utils.config`, not `import demandcast.utils.config`).
   - `retrievals/`: data retrieval. Each electricity demand source is a module plus a YAML file in `retrievals/electricity_demand_data_sources/`.
-  - `ml_models/`: models sharing one interface (`get_initialized_model`, `train`, `predict`, `save`, `load`).
+  - `ml_models/`: the models. `registry.py` lists them and defines the interface of their modules (`ModelModule`).
   - `utils/`: shared helpers; CI requires at least 95% test coverage.
   - `tests/`: the pytest suite, in folders that mirror the code: the tests of `utils/ml.py` are in `tests/utils/test_ml.py`, and those of the scripts are at the top of `tests/`.
   - `archive/`: legacy notebooks and scripts; do not modify.
@@ -68,9 +68,10 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 
 ## Adding a model
 
-1. Add `ml_models/<model>.py` with the shared interface, and its settings in `config/<model>_config.yaml`, validated with pydantic.
-2. Handle the new `algorithm` value (set in `config/ml_config.yaml`) in `train.py`, `validate.py`, `cross_validate.py` and `forecast.py`.
-3. Put heavy dependencies in an optional extra in `pyproject.toml`, like `lstm`.
+1. Add `ml_models/<model>.py` with the interface of `ModelModule` in `ml_models/registry.py`, and its settings in `config/<model>_config.yaml`, validated with pydantic.
+2. Add the module to `MODEL_MODULES` in `ml_models/registry.py`, and to the modules that mypy checks in `tests/ml_models/test_registry.py`, whose contract test then runs the model.
+3. Handle the new `algorithm` value (set in `config/ml_config.yaml`) in `validate.py`, `cross_validate.py` and `forecast.py`, which do not use the registry yet.
+4. Put heavy dependencies in an optional extra in `pyproject.toml`, like `lstm`.
 
 ## Pull requests
 
