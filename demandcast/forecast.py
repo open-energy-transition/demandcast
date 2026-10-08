@@ -11,7 +11,6 @@ Description:
 import logging
 import os
 
-import ml_models.lstm
 import ml_models.xgboost
 import pandas as pd
 import utils.config
@@ -155,13 +154,16 @@ def run_forecasting(
         logging.info("Forecasting completed successfully.")
 
     elif algorithm.lower() == "lstm":
+        # The LSTM model needs the optional lstm extra.
+        from ml_models import lstm  # noqa: PLC0415
+
         # Get the trained model path.
         trained_model_path = utils.ml.get_trained_model_path(
             model_path, algorithm.lower(), extension=".pt"
         )
 
         # Load the trained model.
-        model = ml_models.lstm.load(trained_model_path)
+        model = lstm.load(trained_model_path)
 
         # Check that the model was trained with the same features of the
         # prepared dataset.
@@ -174,7 +176,7 @@ def run_forecasting(
             )
 
         # Make predictions.
-        predictions = ml_models.lstm.predict(model, prepared_dataset)
+        predictions = lstm.predict(model, prepared_dataset)
 
         logging.info("Forecasting completed successfully.")
 
