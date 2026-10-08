@@ -1,0 +1,14 @@
+{
+  "data": {
+    "data": [
+      {
+        "asAtTimeStamp": "2025-01-15T08:05:00+08:00",
+        "operationalDemand": 2800.5
+      },
+      {
+        "asAtTimeStamp": "2025-01-15T08:10:00+08:00",
+        "operationalDemand": 2810
+      }
+    ]
+  }
+}
