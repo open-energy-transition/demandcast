@@ -18,7 +18,10 @@ import pytest
 )
 def test_script_imports_without_torch(script, monkeypatch):
     """Test that the script imports when PyTorch is not installed."""
-    # Make "import torch" fail, and import the script again.
+    # Import the script, then make "import torch" fail and import the
+    # script again. The packages that the script uses stay imported:
+    # some, such as scipy, fail when they find None for torch.
+    importlib.import_module(script)
     monkeypatch.setitem(sys.modules, "torch", None)
     for module in (script, "ml_models.lstm"):
         monkeypatch.delitem(sys.modules, module, raising=False)
