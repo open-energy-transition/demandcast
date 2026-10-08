@@ -115,7 +115,7 @@ demandcast/
 │   ├── ml_models/                  # Machine learning models for forecasting electricity demand
 │   ├── retrievals/                 # Modules to retrieve data from various sources
 │   ├── shapes/                     # Scripts to generate shapes for non-standard subdivisions and resulting shapefiles
-│   ├── tests/                      # Unit tests for the utilities and retrieval scripts
+│   ├── tests/                      # Tests, in folders that mirror the code
 │   ├── utils/                      # Shared utilities for data fetching, processing, and uploading
 │   ├── .dockerignore               # Files and directories to ignore in Docker build context
 │   ├── .env                        # API keys (not included in repo)

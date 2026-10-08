@@ -27,7 +27,7 @@ def test_load_paths():
 
     # Get the root path of DemandCast.
     absolute_path = os.path.abspath(
-        os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+        os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
     )
 
     # Check if the folders are read correctly.
