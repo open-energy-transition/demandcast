@@ -44,7 +44,7 @@ def _read_and_check_configuration() -> ConfigModel:
     """
     # Read the configuration.
     raw_config = utils.config.read_configuration(
-        os.path.basename(__file__),
+        "upload",
         "Upload the electricity demand data to the specified destination.",
     )
 
