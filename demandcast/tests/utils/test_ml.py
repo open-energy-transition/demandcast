@@ -893,3 +893,20 @@ def test_check_model_features_errors(columns):
 
     with pytest.raises(ValueError, match="do not match those used during"):
         utils.ml.check_model_features(model, pd.DataFrame(columns=columns))
+
+
+def test_get_latest_file(tmp_path):
+    """Test that the latest file is found by the time in its name."""
+    for file_name in [
+        "assembled_data_for_training_20250102_000000.parquet",
+        "assembled_data_for_training_20250103_000000.parquet",
+        "assembled_data_for_training_20250101_000000.parquet",
+        "assembled_data_for_training_20250104_000000.csv",
+        "other_data_20250105_000000.parquet",
+    ]:
+        (tmp_path / file_name).touch()
+
+    assert utils.ml._get_latest_file(
+        str(tmp_path), "assembled_data", ".parquet"
+    ) == str(tmp_path / "assembled_data_for_training_20250103_000000.parquet")
+    assert utils.ml._get_latest_file(str(tmp_path), "model", ".json") is None

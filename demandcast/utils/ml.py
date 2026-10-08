@@ -78,6 +78,42 @@ def read_and_check_ml_configuration() -> ConfigModel:
     return config
 
 
+def _get_latest_file(folder: str, prefix: str, extension: str) -> str | None:
+    """
+    Get the latest file of a folder by the time in its name.
+
+    The names of the files end with the time of their creation, in the
+    format YYYYMMDD_HHMMSS, before the extension.
+
+    Parameters
+    ----------
+    folder : str
+        The folder to search.
+    prefix : str
+        The start of the names of the files.
+    extension : str
+        The extension of the files, such as ".parquet".
+
+    Returns
+    -------
+    latest_path : str | None
+        The path of the latest file, or None if there is no file.
+    """
+    latest_path = None
+    latest_time = "00000000_000000"
+    for file_name in os.listdir(folder):
+        time = file_name[-len(latest_time) - len(extension) : -len(extension)]
+        if (
+            file_name.startswith(prefix)
+            and file_name.endswith(extension)
+            and time > latest_time
+        ):
+            latest_time = time
+            latest_path = os.path.join(folder, file_name)
+
+    return latest_path
+
+
 def get_trained_model_path(
     model_path: str | None,
     algorithm_name: str,
@@ -114,25 +150,9 @@ def get_trained_model_path(
 
     # If no model path is provided, find the latest trained model file.
     if model_path is None:
-        # List all files in the trained models folder.
-        model_paths = os.listdir(trained_models_folder)
-
-        # Initialize a variable to hold the latest datetime and model
-        # path.
-        model_path = None
-        datetime = "00000000_000000"
-        for path in model_paths:
-            # Extract datetime from the file name.
-            datetime_of_file = path[
-                -len(datetime) - len(extension) : -len(extension)
-            ]
-            if (
-                path.startswith(f"{algorithm_name}_model")
-                and path.endswith(extension)
-                and datetime_of_file > datetime
-            ):
-                datetime = datetime_of_file
-                model_path = os.path.join(trained_models_folder, path)
+        model_path = _get_latest_file(
+            trained_models_folder, f"{algorithm_name}_model", extension
+        )
         if model_path is None:
             raise FileNotFoundError(
                 f"No trained model files found in '{trained_models_folder}'."
@@ -195,25 +215,9 @@ def get_assemble_data_path(data_path: str | None) -> str:
 
     # If no data path is provided, find the latest assembled data file.
     if data_path is None:
-        # List all files in the assembled data folder.
-        data_paths = os.listdir(assembled_data_folder)
-
-        # Initialize a variable to hold the latest datetime and data
-        # path.
-        data_path = None
-        datetime = "00000000_000000"
-        for path in data_paths:
-            # Extract datetime from the file name.
-            datetime_of_file = path[
-                -len(datetime) - len(".parquet") : -len(".parquet")
-            ]
-            if (
-                path.startswith("assembled_data")
-                and path.endswith(".parquet")
-                and datetime_of_file > datetime
-            ):
-                datetime = datetime_of_file
-                data_path = os.path.join(assembled_data_folder, path)
+        data_path = _get_latest_file(
+            assembled_data_folder, "assembled_data", ".parquet"
+        )
         if data_path is None:
             raise FileNotFoundError(
                 f"No assembled data files found in '{assembled_data_folder}'."
