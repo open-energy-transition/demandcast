@@ -70,8 +70,7 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 
 1. Add `ml_models/<model>.py` with the interface of `ModelModule` in `ml_models/registry.py`, and its settings in `config/<model>_config.yaml`, validated with pydantic.
 2. Add the module to `MODEL_MODULES` in `ml_models/registry.py`, and to the modules that mypy checks in `tests/ml_models/test_registry.py`, whose contract test then runs the model.
-3. Handle the new `algorithm` value (set in `config/ml_config.yaml`) in `cross_validate.py`, which does not use the registry yet.
-4. Put heavy dependencies in an optional extra in `pyproject.toml`, like `lstm`.
+3. Put heavy dependencies in an optional extra in `pyproject.toml`, like `lstm`.
 
 ## Pull requests
 
