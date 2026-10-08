@@ -250,7 +250,7 @@ def download_and_extract_data_for_request(
 
     if api_key is None:
         raise ValueError(
-            "The ENTSO-E API key is not set. Please set the ENTSO_API_KEY "
+            "The ENTSO-E API key is not set. Please set the ENTSOE_API_KEY "
             "environment variable."
         )
 
