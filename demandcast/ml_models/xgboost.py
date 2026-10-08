@@ -20,6 +20,15 @@ from xgboost import XGBRegressor
 # The extension of the files of the saved models.
 FILE_EXTENSION = ".json"
 
+# The target ("Load (fraction of annual total)") is about 1/8760, and
+# the gain of a split scales with the square of the target, so at that
+# magnitude almost no split reaches XGBoost's minimum gain and the
+# model barely splits (issue #145). train() therefore fits the target
+# multiplied by this factor, which makes 1.0 an average hour, and
+# predict() divides the predictions by it to return them in the units
+# of the dataset. Models trained before this change must be retrained.
+TARGET_SCALE_FACTOR = 8760.0
+
 
 class ConfigModel(BaseModel):
     """Settings of the XGBoost model."""
@@ -158,19 +167,21 @@ def train(
     xgb_model = get_initialized_model()
 
     # Prepare evaluation set if the validation dataset is provided.
+    # Its target is scaled like the training target, so that the
+    # evaluation metric compares values of the same magnitude.
     eval_set = None
     if "validation" in prepared_dataset:
         eval_set = [
             (
                 prepared_dataset["validation"]["features"],
-                prepared_dataset["validation"]["target"],
+                prepared_dataset["validation"]["target"] * TARGET_SCALE_FACTOR,
             )
         ]
 
-    # Train the model.
+    # Train the model on the scaled target.
     xgb_model.fit(
         prepared_dataset["training"]["features"],
-        prepared_dataset["training"]["target"],
+        prepared_dataset["training"]["target"] * TARGET_SCALE_FACTOR,
         eval_set=eval_set,
         verbose=False,
     )
@@ -221,16 +232,18 @@ def predict(
         # training/validation/testing.
         dataset = cast("utils.ml.PreparedDataset", prepared_dataset)
 
-        # Make predictions and return them.
-        return pd.Series(xgb_model.predict(dataset["features"]))
+        # Make predictions and return them in the units of the dataset.
+        preds = xgb_model.predict(dataset["features"])
+        return pd.Series(preds) / TARGET_SCALE_FACTOR
 
     # Initialize predictions dictionary to store training,
     # validation, and testing predictions.
     predictions: dict[str, pd.Series] = {}
 
     for split_name, data in prepared_dataset.items():
-        # Make predictions for the current split.
-        preds = xgb_model.predict(data["features"])
+        # Make predictions for the current split, in the units of the
+        # dataset.
+        preds = xgb_model.predict(data["features"]) / TARGET_SCALE_FACTOR
 
         predictions[split_name] = pd.Series(preds)
 
