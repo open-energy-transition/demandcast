@@ -877,3 +877,19 @@ def test_save_results_invalid_case():
             assembled_data_file_name="assembled_data",
             file_name_prefix="test",
         )
+
+
+def test_check_model_features():
+    """Test that the features of the trained model are accepted."""
+    model = Mock(feature_names_in_=pd.Index(["a", "b"]))
+
+    utils.ml.check_model_features(model, pd.DataFrame(columns=["a", "b"]))
+
+
+@pytest.mark.parametrize("columns", [["b", "a"], ["a"], ["a", "b", "c"]])
+def test_check_model_features_errors(columns):
+    """Test that other features, or another order, raise an error."""
+    model = Mock(feature_names_in_=pd.Index(["a", "b"]))
+
+    with pytest.raises(ValueError, match="do not match those used during"):
+        utils.ml.check_model_features(model, pd.DataFrame(columns=columns))

@@ -9,7 +9,7 @@ Description:
 
 import logging
 import os
-from typing import NotRequired, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 import pandas as pd
 from pydantic import BaseModel, ValidationError
@@ -141,6 +141,31 @@ def get_trained_model_path(
     logging.info(f"Using trained model file: {model_path}")
 
     return model_path
+
+
+def check_model_features(model: Any, features: pd.DataFrame) -> None:
+    """
+    Check that a model was trained with the given features.
+
+    Parameters
+    ----------
+    model : Any
+        The trained model, with the names of its features in
+        ``feature_names_in_``.
+    features : pandas.DataFrame
+        The features to give to the model.
+
+    Raises
+    ------
+    ValueError
+        If the features, or their order, differ from those used to
+        train the model.
+    """
+    if model.feature_names_in_.tolist() != features.columns.tolist():
+        raise ValueError(
+            "The features used in the prepared dataset do not match "
+            "those used during model training."
+        )
 
 
 def get_assemble_data_path(data_path: str | None) -> str:
