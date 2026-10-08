@@ -134,7 +134,7 @@ jobs:
         if: ${{ matrix.coverage }}
         run: |
           uv run --locked coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
-          uv run --locked coverage report --fail-under=54
+          uv run --locked coverage report --fail-under=55
           uv run --locked coverage report --include="utils/*" --fail-under=95
 
       # Maintainers can skip this check for mechanical changes, such as
