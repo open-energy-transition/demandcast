@@ -16,7 +16,6 @@ import ml_models.xgboost
 import numpy as np
 import pandas as pd
 import pytest
-import utils.config
 import utils.ml
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
@@ -83,13 +82,8 @@ def test_get_model_module_errors():
         ml_models.registry.get_model_module("Unknown")
 
 
-def test_model_module(model_module, tmp_path, monkeypatch):
+def test_model_module(model_module, tmp_folders):
     """Test that the model trains, saves, loads and predicts."""
-    folders = utils.config.read_folders_structure()
-    folders["trained_ml_models_folder"] = str(tmp_path)
-    monkeypatch.setattr(
-        utils.config, "read_folders_structure", lambda: dict(folders)
-    )
     dataset = _prepared_dataset()
 
     # The initialised model is not trained yet.
@@ -100,7 +94,10 @@ def test_model_module(model_module, tmp_path, monkeypatch):
     model = model_module.train({"training": dataset})
     model_module.save(model, "model")
     loaded_model = model_module.load(
-        os.path.join(tmp_path, f"model{model_module.FILE_EXTENSION}")
+        os.path.join(
+            tmp_folders["trained_ml_models_folder"],
+            f"model{model_module.FILE_EXTENSION}",
+        )
     )
     assert (
         loaded_model.feature_names_in_.tolist()

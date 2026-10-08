@@ -11,20 +11,15 @@ from unittest.mock import patch
 
 import pandas as pd
 import retrievals.annual_electricity_demand_per_capita as annual_demand
-import utils.config
 
 
-def test_run_data_retrieval_of_future_scenario(tmp_path):
+def test_run_data_retrieval_of_future_scenario(tmp_folders):
     """Test that future data is saved where assemble.py reads it."""
-    folders = utils.config.read_folders_structure() | {
-        "annual_electricity_demand_per_capita_folder": str(tmp_path)
-    }
     historical_data = pd.DataFrame(
         {2020: [7000.0], 2021: [7100.0]}, index=["FRA"]
     )
 
     with (
-        patch("utils.config.read_folders_structure", return_value=folders),
         patch.object(
             annual_demand, "get_historical_data", return_value=historical_data
         ),
@@ -46,7 +41,9 @@ def test_run_data_retrieval_of_future_scenario(tmp_path):
                 scenario="SSP2-45",
             )
 
-    assert sorted(os.listdir(tmp_path)) == [
+    assert sorted(
+        os.listdir(tmp_folders["annual_electricity_demand_per_capita_folder"])
+    ) == [
         "FRA_SSP2_45.csv",
         "FRA_SSP2_45.parquet",
     ]
