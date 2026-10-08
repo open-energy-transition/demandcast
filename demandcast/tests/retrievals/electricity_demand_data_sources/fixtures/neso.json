@@ -1,0 +1,26 @@
+{
+  "help": "https://api.neso.energy/api/3/action/help_show?name=datastore_search_sql",
+  "success": true,
+  "result": {
+    "records": [
+      {
+        "_id": 1,
+        "SETTLEMENT_DATE": "2025-01-01",
+        "SETTLEMENT_PERIOD": 1,
+        "ND": 25000,
+        "TSD": 27000
+      },
+      {
+        "_id": 2,
+        "SETTLEMENT_DATE": "2025-01-01",
+        "SETTLEMENT_PERIOD": 2,
+        "ND": 24500,
+        "TSD": 26600
+      }
+    ],
+    "fields": [
+      { "id": "_id", "type": "int" },
+      { "id": "ND", "type": "int" }
+    ]
+  }
+}
