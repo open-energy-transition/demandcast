@@ -979,10 +979,7 @@ def read_date_ranges_of_electricity_demand_in_data_source(
         if entity["end_date"] == "today":
             # If the end date is "today", set it to a few days before
             # today to avoid issues with the latest data.
-            end_date = (
-                datetime.datetime.now().astimezone()
-                - datetime.timedelta(days=5)
-            ).date()
+            end_date = (pd.Timestamp.now() - pd.Timedelta(days=5)).date()
         else:
             end_date = entity["end_date"]
 
