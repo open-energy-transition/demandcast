@@ -17,7 +17,7 @@ def test_download_and_extract_data(fake_downloads, assert_demand):
         "taipower.csv",
     )
 
-    time_series = taipower.download_and_extract_data()
+    time_series = taipower.download_and_extract_data_for_request(None, "TWN")
 
     # The times move ten minutes later, to the end of each interval.
     assert_demand(

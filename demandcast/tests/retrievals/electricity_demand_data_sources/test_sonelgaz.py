@@ -38,7 +38,7 @@ def test_download_and_extract_data(fake_downloads, assert_demand, tmp_path):
         ).to_excel(writer, sheet_name="Feuil3", index=False)
     fake_downloads.serve(URL, file_path)
 
-    time_series = sonelgaz.download_and_extract_data()
+    time_series = sonelgaz.download_and_extract_data_for_request(None, "DZA")
 
     # The repeated day is kept, and removed later with the other
     # duplicated times by the cleaning of the data.

@@ -12,6 +12,7 @@ Description:
     Source: https://www.aeso.ca/market/market-and-system-reporting/data-requests/hourly-load-by-area-and-region
 """
 
+import datetime
 import logging
 
 import pandas as pd
@@ -35,31 +36,23 @@ def redistribute() -> bool:
     return True
 
 
-def _check_input_parameters(file_number: int) -> None:
-    """
-    Check if the input parameters are valid.
-
-    Parameters
-    ----------
-    file_number : int
-        The number of the file to read.
-
-    Raises
-    ------
-    ValueError
-        If the input parameters are not valid.
-    """
-    # Check if the file number is supported.
-    if file_number not in get_available_requests():
-        raise ValueError(f"File number {file_number} is not supported.")
-
-
-def get_available_requests() -> list[int]:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[int]:
     """
     Get the available requests.
 
     This function retrieves the available requests for the electricity
     demand data from the AESO website.
+
+    Parameters
+    ----------
+    code : str
+        The code of Alberta.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
 
     Returns
     -------
@@ -85,9 +78,6 @@ def get_url(file_number: int) -> str:
     url : str
         The URL of the electricity demand data.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(file_number)
-
     # Define the base URL.
     url = "https://www.aeso.ca/assets/Uploads/"
 
@@ -131,9 +121,6 @@ def _get_excel_information(
         The sheet name, number of rows to skip, index columns, and load
         columns for the Excel file.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(file_number)
-
     # Define the excel information.
     if file_number == 1:
         sheet_name = "Load by AESO Planning Area"
@@ -175,7 +162,9 @@ def _get_excel_information(
     return sheet_name, rows_to_skip, index_columns, load_columns
 
 
-def download_and_extract_data_for_request(file_number: int) -> pd.Series:
+def download_and_extract_data_for_request(
+    file_number: int, code: str
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -187,6 +176,8 @@ def download_and_extract_data_for_request(file_number: int) -> pd.Series:
     ----------
     file_number : int
         The number of the file to read.
+    code : str
+        The code of Alberta.
 
     Returns
     -------
@@ -198,9 +189,6 @@ def download_and_extract_data_for_request(file_number: int) -> pd.Series:
     TypeError
         If the extracted data is not a pandas DataFrame.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(file_number)
-
     logging.info(
         "Retrieving electricity demand data from the "
         f"file number {file_number}."

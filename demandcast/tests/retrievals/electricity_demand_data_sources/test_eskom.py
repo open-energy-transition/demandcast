@@ -21,7 +21,7 @@ def test_download_and_extract_data(manual_downloads_folder, assert_demand):
         encoding="utf-8",
     )
 
-    time_series = eskom.download_and_extract_data()
+    time_series = eskom.download_and_extract_data_for_request(None, "ZAF")
 
     # The times mark the end of each hour.
     assert_demand(
@@ -46,7 +46,7 @@ def test_download_and_extract_data_with_text(
         encoding="utf-8",
     )
 
-    time_series = eskom.download_and_extract_data()
+    time_series = eskom.download_and_extract_data_for_request(None, "ZAF")
 
     assert_demand(
         time_series,
@@ -60,4 +60,4 @@ def test_download_and_extract_data_with_text(
 def test_download_and_extract_data_without_files():
     """Test that the error says where to put the downloaded files."""
     with pytest.raises(FileNotFoundError, match="named starting with 'ESK'"):
-        eskom.download_and_extract_data()
+        eskom.download_and_extract_data_for_request(None, "ZAF")

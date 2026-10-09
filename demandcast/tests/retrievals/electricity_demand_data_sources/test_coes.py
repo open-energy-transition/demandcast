@@ -6,14 +6,18 @@ Description:
     Tests for the retrieval of electricity demand data from COES.
 """
 
-import pytest
+import datetime
+
 from retrievals.electricity_demand_data_sources import coes
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
-    assert coes.get_available_requests() == list(range(1997, 2026))
+    requests = coes.get_available_requests(
+        "PER", datetime.date(1997, 1, 1), datetime.date(2025, 12, 28)
+    )
+
+    assert requests == list(range(1997, 2026))
 
 
 def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
@@ -24,7 +28,7 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
         method="POST",
     )
 
-    time_series = coes.download_and_extract_data_for_request(2025)
+    time_series = coes.download_and_extract_data_for_request(2025, "PER")
 
     assert fake_downloads.requests[0][2]["params"] == {
         "fechaInicial": "01/01/2025",

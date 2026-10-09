@@ -6,9 +6,10 @@ Description:
     Tests for the retrieval of electricity demand data from TSOC.
 """
 
+import datetime
+
 import numpy as np
 import pandas as pd
-import pytest
 from retrievals.electricity_demand_data_sources import tsoc
 
 URL_2019 = (
@@ -64,19 +65,20 @@ def _write_yearly_file(file_path, first_day, minutes_early):
     pd.DataFrame(rows).to_excel(file_path, header=False, index=False)
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the years that have ended."""
-    assert tsoc.get_available_requests() == list(range(2018, 2025))
+    requests = tsoc.get_available_requests(
+        "CYP", datetime.date(2018, 1, 1), datetime.date(2025, 12, 28)
+    )
+
+    assert requests == list(range(2018, 2025))
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_url():
     """Test that the URL of a year is the address of its Excel file."""
     assert tsoc.get_url(2019) == URL_2019
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_download_and_extract_data_for_request(
     fake_downloads, assert_demand, tmp_path
 ):
@@ -85,7 +87,7 @@ def test_download_and_extract_data_for_request(
     _write_yearly_file(file_path, "2019-01-10", minutes_early=30)
     fake_downloads.serve(URL_2019, file_path)
 
-    time_series = tsoc.download_and_extract_data_for_request(2019)
+    time_series = tsoc.download_and_extract_data_for_request(2019, "CYP")
 
     # The files of 2019 are 30 minutes early, and the intervals that
     # start at 00:00 in Cyprus end at 22:15 in UTC.
@@ -103,7 +105,6 @@ def test_download_and_extract_data_for_request(
     )
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_download_and_extract_data_for_request_one_hour_late(
     fake_downloads, assert_demand, tmp_path, caplog
 ):
@@ -113,7 +114,7 @@ def test_download_and_extract_data_for_request_one_hour_late(
     _write_yearly_file(file_path, "2024-01-10", minutes_early=-60)
     fake_downloads.serve(url_2024, file_path)
 
-    time_series = tsoc.download_and_extract_data_for_request(2024)
+    time_series = tsoc.download_and_extract_data_for_request(2024, "CYP")
 
     times = pd.date_range("2024-01-09 22:15", periods=10 * 96, freq="15min")
     assert_demand(

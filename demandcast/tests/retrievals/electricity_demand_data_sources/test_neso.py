@@ -6,6 +6,8 @@ Description:
     Tests for the retrieval of electricity demand data from NESO.
 """
 
+import datetime
+
 import pytest
 from retrievals.electricity_demand_data_sources import neso
 
@@ -19,10 +21,13 @@ URL_2025 = (
 )
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
-    assert neso.get_available_requests() == list(range(2009, 2026))
+    requests = neso.get_available_requests(
+        "GBR_GB", datetime.date(2009, 1, 1), datetime.date(2025, 12, 28)
+    )
+
+    assert requests == list(range(2009, 2026))
 
 
 def test_get_url(fake_downloads):
@@ -46,7 +51,7 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
     fake_downloads.serve(CATALOGUE_URL, "neso_catalogue.json")
     fake_downloads.serve(URL_2025, "neso.json")
 
-    time_series = neso.download_and_extract_data_for_request(2025)
+    time_series = neso.download_and_extract_data_for_request(2025, "GBR_GB")
 
     # The times come from the order of the records, every 30 minutes,
     # not from their settlement dates and periods.
