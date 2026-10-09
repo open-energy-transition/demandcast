@@ -8,7 +8,6 @@ Description:
 
 import logging
 import os
-import sys
 import textwrap
 
 import pytest
@@ -93,7 +92,7 @@ def test_load_paths():
     )
 
 
-def test_read_configuration_with_existing_file(tmp_path, monkeypatch):
+def test_read_configuration_with_existing_file(tmp_path):
     """
     Test reading a configuration file.
 
@@ -113,40 +112,34 @@ def test_read_configuration_with_existing_file(tmp_path, monkeypatch):
     config_file = tmp_path / "my_script_config.yaml"
     config_file.write_text(config_content, encoding="utf-8")
 
-    # Make argparse see the temporary config file path.
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        ["pytest", "--config", str(config_file)],
-    )
-
     # Read the configuration using the utility function.
-    config = utils.config.read_configuration("my_script", "Test script")
+    config = utils.config.read_configuration(
+        "my_script", "Test script", command_line=["--config", str(config_file)]
+    )
 
     # Check if the configuration is read correctly.
     assert config == {"foo": 1, "bar": True, "baz": "hello"}
 
     # Create a non-existing configuration file path.
     missing_file = tmp_path / "non_existing_config.yaml"
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        ["pytest", "--config", str(missing_file)],
-    )
 
     # Attempt to read the non-existing configuration file and expect
     # a FileNotFoundError.
     with pytest.raises(FileNotFoundError):
-        utils.config.read_configuration("my_script", "Test script")
+        utils.config.read_configuration(
+            "my_script",
+            "Test script",
+            command_line=["--config", str(missing_file)],
+        )
 
 
-def test_read_configuration_with_overrides(tmp_path, monkeypatch):
+def test_read_configuration_with_overrides(tmp_path):
     """
     Test that command line overrides replace the file values.
 
-    This is what run_all.sh relies on: it writes a configuration file
-    holding only the values of the run it is about to make, so the
-    overrides must win over whatever the file contains.
+    This is what run_all.sh relies on: it passes the values of the run
+    it is about to make with --set, so the overrides must win over
+    whatever the file contains.
     """
     # Create a temporary configuration file.
     config_content = textwrap.dedent(
@@ -158,13 +151,6 @@ def test_read_configuration_with_overrides(tmp_path, monkeypatch):
     config_file = tmp_path / "my_script_config.yaml"
     config_file.write_text(config_content, encoding="utf-8")
 
-    # Make argparse see the temporary config file path.
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        ["pytest", "--config", str(config_file)],
-    )
-
     # Read the configuration, overriding two of its values.
     config = utils.config.read_configuration(
         "my_script",
@@ -173,6 +159,7 @@ def test_read_configuration_with_overrides(tmp_path, monkeypatch):
             "variable": "electricity_demand",
             "electricity_data_source": "ieso",
         },
+        command_line=["--config", str(config_file)],
     )
 
     # The overridden values win, the other ones are left alone.
@@ -182,7 +169,9 @@ def test_read_configuration_with_overrides(tmp_path, monkeypatch):
     }
 
     # Without overrides the file is read as it is.
-    config = utils.config.read_configuration("my_script", "Test script")
+    config = utils.config.read_configuration(
+        "my_script", "Test script", command_line=["--config", str(config_file)]
+    )
     assert config == {
         "variable": "population",
         "electricity_data_source": "entsoe",
@@ -190,11 +179,84 @@ def test_read_configuration_with_overrides(tmp_path, monkeypatch):
 
     # An empty mapping of overrides changes nothing either, so a caller
     # can pass one unconditionally.
-    config = utils.config.read_configuration("my_script", "Test script", {})
+    config = utils.config.read_configuration(
+        "my_script",
+        "Test script",
+        {},
+        command_line=["--config", str(config_file)],
+    )
     assert config == {
         "variable": "population",
         "electricity_data_source": "entsoe",
     }
+
+
+def test_read_configuration_with_set_values(tmp_path):
+    """
+    Test that --set reads the "key=value" pairs of the command line.
+
+    This is how run_all.sh drives the script: the pairs are applied
+    over the values of the file, which needs no file of its own.
+    """
+    # Create a temporary configuration file.
+    config_content = textwrap.dedent(
+        """
+        variable: population
+        electricity_data_source: entsoe
+        """
+    )
+    config_file = tmp_path / "my_script_config.yaml"
+    config_file.write_text(config_content, encoding="utf-8")
+
+    # Read the configuration, overriding two of its values.
+    config = utils.config.read_configuration(
+        "my_script",
+        "Test script",
+        command_line=[
+            "--config",
+            str(config_file),
+            "--set",
+            "variable=electricity_demand",
+            "--set",
+            "electricity_data_source=ieso",
+        ],
+    )
+
+    # The overridden values win, the other ones are left alone.
+    assert config == {
+        "variable": "electricity_demand",
+        "electricity_data_source": "ieso",
+    }
+
+    # A value may itself contain an "=" sign, as a URL does.
+    config = utils.config.read_configuration(
+        "my_script",
+        "Test script",
+        command_line=[
+            "--config",
+            str(config_file),
+            "--set",
+            "url=http://example.com/?a=1&b=2",
+        ],
+    )
+    assert config["url"] == "http://example.com/?a=1&b=2"
+
+    # Without --set the file is read as it is.
+    config = utils.config.read_configuration(
+        "my_script", "Test script", command_line=["--config", str(config_file)]
+    )
+    assert config == {
+        "variable": "population",
+        "electricity_data_source": "entsoe",
+    }
+
+    # A pair without "=" is a mistake of the caller, not a value.
+    with pytest.raises(ValueError, match="expected KEY=VALUE"):
+        utils.config.read_configuration(
+            "my_script",
+            "Test script",
+            command_line=["--config", str(config_file), "--set", "variable"],
+        )
 
 
 def test_set_up_logging(tmp_path, monkeypatch):
