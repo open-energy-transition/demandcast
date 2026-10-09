@@ -72,8 +72,8 @@ def test_download_and_extract_data_for_request(
 
     time_series = ema.download_and_extract_data_for_request(2025, 12, 15)
 
-    # The times are the starts of the half hours, in Singapore (UTC+8).
-    times = pd.date_range("2025-12-14 16:00", periods=7 * 48, freq="30min")
+    # The times are the ends of the half hours, in Singapore (UTC+8).
+    times = pd.date_range("2025-12-14 16:30", periods=7 * 48, freq="30min")
     assert_demand(
         time_series,
         "Asia/Singapore",

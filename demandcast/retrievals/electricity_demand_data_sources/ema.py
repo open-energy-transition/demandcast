@@ -242,10 +242,11 @@ def download_and_extract_data_for_request(
     # Reshape the dataset from wide to long format.
     dataset = dataset.melt(id_vars="Hour", var_name="Date", value_name="Value")
 
-    # Define the new index.
+    # Define the new index. The rows of the files are the ends of the
+    # half hours ("Period Ending Time"), 30 minutes after their starts.
     index = pd.to_datetime(
         dataset["Date"] + " " + dataset["Hour"], format="%Y-%m-%d %H:%M"
-    )
+    ) + pd.Timedelta(minutes=30)
 
     # Define the electricity demand time series.
     electricity_demand_time_series = pd.Series(
