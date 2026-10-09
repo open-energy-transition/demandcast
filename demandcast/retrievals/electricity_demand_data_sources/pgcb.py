@@ -241,7 +241,9 @@ def get_available_requests(
                     (file_info.group(1), file_info.group(2), date)
                 )
 
-    return available_requests
+    # Return the requests in chronological order, as the other data
+    # sources do: the website lists the reports from the newest.
+    return sorted(available_requests, key=lambda request: request[2])
 
 
 def get_url(file_number: str, extension: str) -> str:
