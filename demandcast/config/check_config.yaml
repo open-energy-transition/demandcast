@@ -2,5 +2,8 @@
 
 # REQUIRED.
 # The check to perform. Supported checks are:
-# - data_availability.
+# - data_availability: the socio-economic data available for each country
+#   and subdivision.
+# - data_sources: a live check of the electricity demand data sources, with
+#   the settings of check_data_sources_config.yaml.
 check: data_availability

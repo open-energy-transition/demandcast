@@ -1,0 +1,27 @@
+# Configuration read by the check.py script for the live check of the
+# electricity demand data sources:
+# uv run check.py --config config/check_data_sources_config.yaml
+
+# REQUIRED.
+# The check to perform.
+check: data_sources
+
+# OPTIONAL.
+# The data sources to check. All of them if not specified.
+# data_sources: [ons, hydroquebec]
+
+# OPTIONAL.
+# The days after which the latest value of a data source that ends today is
+# too old (60 by default).
+maximum_age_days: 60
+
+# OPTIONAL.
+# The days of the data sources that publish their data later. CAISO
+# publishes a month one to four months after its end.
+maximum_age_days_by_source:
+  caiso: 180
+
+# OPTIONAL.
+# The minutes after which the data sources that have not answered fail (15
+# by default).
+time_limit_minutes: 15

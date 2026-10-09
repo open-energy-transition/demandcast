@@ -4,12 +4,13 @@ License: AGPL-3.0.
 Description:
 
     This script performs checks on the data data quality and
-    availability.
+    availability, and on the electricity demand data sources.
 """
 
 import logging
 
 import checks.data_availability
+import checks.data_sources
 import utils.config
 from pydantic import BaseModel, ValidationError
 
@@ -18,6 +19,10 @@ class ConfigModel(BaseModel):
     """Settings of check.py."""
 
     check: str
+    data_sources: list[str] | None = None
+    maximum_age_days: int = 60
+    maximum_age_days_by_source: dict[str, int] = {}
+    time_limit_minutes: float = 15
 
 
 def _read_and_check_configuration() -> ConfigModel:
@@ -63,3 +68,10 @@ if __name__ == "__main__":
     # Run the specified check.
     if config.check == "data_availability":
         checks.data_availability.run_check()
+    elif config.check == "data_sources":
+        checks.data_sources.run_check(
+            config.data_sources,
+            config.maximum_age_days,
+            config.maximum_age_days_by_source,
+            config.time_limit_minutes,
+        )
