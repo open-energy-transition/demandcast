@@ -13,6 +13,7 @@ import pandas as pd
 import pytest
 import pytz
 import utils.entities
+import yaml
 from countryinfo import CountryNotFoundError
 
 
@@ -722,6 +723,98 @@ def test_date_ranges_errors():
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "dummy_data_source"
         )
+
+
+# A country and a subdivision, as in the yaml file of a data source.
+FRANCE = {
+    "country_name": "France",
+    "country_code": "FRA",
+    "start_date": datetime.date(2014, 12, 15),
+    "end_date": "today",
+}
+TEXAS = {
+    "country_name": "United States",
+    "country_code": "USA",
+    "subdivision_name": "Texas",
+    "subdivision_code": "TEX",
+    "time_zone": "America/Chicago",
+    "start_date": datetime.date(2020, 1, 1),
+    "end_date": datetime.date(2024, 12, 31),
+}
+
+
+@pytest.fixture
+def write_data_source(tmp_folders, tmp_path):
+    """
+    Get a function that writes the yaml file of a data source.
+
+    Returns
+    -------
+    Callable
+        A function that writes its argument as the yaml file of the data
+        source "test_source", in a temporary folder of data sources.
+    """
+    folder = tmp_path / "electricity_demand_data_sources"
+    folder.mkdir()
+    tmp_folders["electricity_demand_data_sources_folder"] = str(folder)
+
+    def write(content: object) -> None:
+        with open(folder / "test_source.yaml", "w", encoding="utf-8") as file:
+            yaml.safe_dump(content, file)
+
+    return write
+
+
+def test_read_entities_of_data_source(write_data_source):
+    """Test that a valid yaml file of a data source is read as is."""
+    write_data_source({"entities": [FRANCE, TEXAS]})
+
+    entities = utils.entities._read_entities_info(data_source="test_source")
+
+    assert entities == [FRANCE, TEXAS]
+
+
+@pytest.mark.parametrize(
+    ("content", "error"),
+    [
+        (None, "valid dictionary"),
+        ({"entities": [FRANCE], "licence": "CC-BY-4.0"}, "licence"),
+        ({"entities": [FRANCE | {"start_dat": "2014"}]}, "start_dat"),
+        (
+            {
+                "entities": [
+                    {k: v for k, v in FRANCE.items() if k != "end_date"}
+                ]
+            },
+            "end_date",
+        ),
+        # An unquoted subdivision code such as ON is read as a boolean.
+        ({"entities": [TEXAS | {"subdivision_code": True}]}, "valid string"),
+        (
+            {"entities": [TEXAS | {"time_zone": None}]},
+            "USA_TEX: a subdivision needs a name, a code and a time zone",
+        ),
+        (
+            {"entities": [TEXAS | {"time_zone": "America/Atlantis"}]},
+            "USA_TEX: unknown time zone America/Atlantis",
+        ),
+        (
+            {"entities": [TEXAS | {"end_date": datetime.date(2019, 12, 31)}]},
+            "USA_TEX: the start date is after the end date",
+        ),
+        ({"entities": [FRANCE, TEXAS, FRANCE]}, r"\['FRA'\] come more than"),
+    ],
+)
+def test_read_entities_of_invalid_data_source(
+    write_data_source, content, error
+):
+    """Test that a yaml file of a data source with an error fails."""
+    write_data_source(content)
+
+    with pytest.raises(
+        ValueError, match=f"(?s)data source test_source is not valid.*{error}"
+    ):
+        utils.entities._read_entities_info(data_source="test_source")
 
 
 def test_years():

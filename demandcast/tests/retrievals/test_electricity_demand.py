@@ -9,6 +9,7 @@ Description:
     data and the saved files.
 """
 
+import datetime
 import os
 import sys
 import types
@@ -45,17 +46,23 @@ def add_data_source(tmp_folders, tmp_path, monkeypatch):
 
     def add(name: str, codes: list[str], **functions: Mock) -> None:
         # The codes are country codes, followed by subdivision codes
-        # for subdivisions.
-        entities = [
-            dict(
-                zip(
-                    ["country_code", "subdivision_code"],
-                    code.split("_"),
-                    strict=False,
-                )
-            )
-            for code in codes
-        ]
+        # for subdivisions, which also have a name and a time zone.
+        entities = []
+        for code in codes:
+            country_code, _, subdivision_code = code.partition("_")
+            entity = {
+                "country_name": f"Country {country_code}",
+                "country_code": country_code,
+                "start_date": datetime.date(2020, 1, 1),
+                "end_date": "today",
+            }
+            if subdivision_code:
+                entity |= {
+                    "subdivision_name": f"Subdivision {subdivision_code}",
+                    "subdivision_code": subdivision_code,
+                    "time_zone": "Europe/Paris",
+                }
+            entities.append(entity)
         with open(
             data_sources_folder / f"{name}.yaml", "w", encoding="utf-8"
         ) as file:

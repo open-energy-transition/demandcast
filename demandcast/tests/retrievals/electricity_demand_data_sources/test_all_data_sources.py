@@ -9,20 +9,16 @@ Description:
     arguments that it passes.
 """
 
-import datetime
 import importlib
 import inspect
 import os
 import socket
-import zoneinfo
-from typing import Literal
 
 import pytest
 import utils.config
 import utils.entities
 import utils.fetcher
 import yaml
-from pydantic import BaseModel, ConfigDict
 
 DATA_SOURCES = sorted(utils.entities.read_data_sources())
 
@@ -34,36 +30,18 @@ ONLINE_REQUESTS = {"caiso", "pgcb"}
 CODES_OUTSIDE_ISO_3166 = {"XKX"}
 
 
-class _Entity(BaseModel):
-    """An entity in the YAML file of a data source."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    country_name: str
-    country_code: str
-    subdivision_name: str | None = None
-    subdivision_code: str | None = None
-    time_zone: str | None = None
-    start_date: datetime.date
-    end_date: datetime.date | Literal["today"]
-
-
 def _read_entities(file_name: str) -> list[dict]:
     """
-    Read the entities of a YAML file of the configuration or a source.
+    Read the entities of a YAML file of the configuration.
 
     Returns
     -------
     list[dict]
         The entities.
     """
-    folders = utils.config.read_folders_structure()
-    if file_name.startswith("config/"):
-        file_path = os.path.join(folders["root_folder"], file_name)
-    else:
-        file_path = os.path.join(
-            folders["electricity_demand_data_sources_folder"], file_name
-        )
+    file_path = os.path.join(
+        utils.config.read_folders_structure()["root_folder"], file_name
+    )
     with open(file_path, encoding="utf-8") as file:
         content = yaml.safe_load(file)
     assert list(content) == ["entities"]
@@ -98,7 +76,7 @@ def test_each_data_source_has_a_module():
 
 @pytest.mark.parametrize("data_source", DATA_SOURCES)
 def test_entities(data_source):
-    """Test that the YAML file describes the entities of the source."""
+    """Test that the YAML file describes known countries and regions."""
     countries = {
         entity["country_code"]
         for entity in _read_entities("config/world_countries.yaml")
@@ -108,33 +86,14 @@ def test_entities(data_source):
         for entity in _read_entities("config/available_subdivisions.yaml")
     }
 
-    entities = [
-        _Entity(**entity) for entity in _read_entities(f"{data_source}.yaml")
-    ]
-    codes = []
-    for entity in entities:
-        assert entity.country_code in countries | CODES_OUTSIDE_ISO_3166
-
-        # Subdivisions have a name, a code and a time zone, and
-        # countries none of them.
-        if entity.subdivision_code is None:
-            assert entity.subdivision_name is None
-            assert entity.time_zone is None
-            codes.append(entity.country_code)
-        else:
-            assert entity.subdivision_name is not None
-            assert entity.time_zone is not None
-            assert (entity.country_code, entity.subdivision_code) in (
+    # Reading the entities of a source checks its YAML file, with
+    # utils.entities.DataSourceEntity.
+    for entity in utils.entities._read_entities_info(data_source=data_source):
+        assert entity["country_code"] in countries | CODES_OUTSIDE_ISO_3166
+        if "subdivision_code" in entity:
+            assert (entity["country_code"], entity["subdivision_code"]) in (
                 subdivisions
             )
-            # The time zone exists.
-            zoneinfo.ZoneInfo(entity.time_zone)
-            codes.append(f"{entity.country_code}_{entity.subdivision_code}")
-
-        if entity.end_date != "today":
-            assert entity.start_date <= entity.end_date
-
-    assert len(codes) == len(set(codes))
 
 
 @pytest.mark.parametrize("data_source", DATA_SOURCES)
