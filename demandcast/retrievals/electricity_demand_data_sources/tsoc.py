@@ -5,20 +5,60 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the Transmission System Operator of Cyprus
-    (TSOC). The data seems to represent the total electricity generation
-    in MW, which can be considered a proxy for the electricity demand.
-    The data is retrieved for the years from 2008 to the current year.
-    The data is retrieved in 15-day intervals.
+    (TSOC). The data is the total demand every 15 minutes in MW, which
+    TSOC publishes in one Excel file per year from 2018, on the archive
+    page below. The data is retrieved in one-year intervals, for the
+    years that have ended.
+
+    The times of the files do not always follow the same convention:
+    some years are 15 or 30 minutes early, and daylight saving time is
+    applied wrongly in 2023 and 2024. The module corrects them with the
+    shifts that align the files with the archive page, which displays
+    Cyprus local time, and checks the result against the time of the
+    estimated solar generation of the files: a remaining shift of whole
+    hours is corrected, with a warning.
 
     Source: https://tsoc.org.cy/electrical-system/archive-total-daily-system-generation-on-the-transmission-system/
 """
 
 import logging
-import re
+import urllib.parse
 
+import numpy as np
 import pandas as pd
 import utils.entities
 import utils.fetcher
+
+# The first year with an Excel file.
+FIRST_YEAR = 2018
+
+# The shift in minutes to add to the times of the files, from each day
+# on, to get the start of each interval in Cyprus local time. They align
+# the files with the archive page, and agree with the time of the solar
+# generation.
+TIME_SHIFTS = {
+    "2018-01-01": 0,
+    "2019-01-01": 30,
+    "2021-08-01": 15,
+    "2023-01-01": 0,
+    "2023-03-27": -60,
+    "2023-10-30": 0,
+    "2024-03-31": 60,
+    "2024-10-27": 0,
+    "2024-10-29": 60,
+    "2025-01-01": 0,
+}
+
+# The longitude of Nicosia in degrees, for the time of the solar noon.
+LONGITUDE = 33.38
+
+# How many hours after the solar noon the middle of the daily peak of
+# the estimated solar generation comes, in the years whose times are
+# right.
+SOLAR_DELAY = 0.2
+
+# The fewest clear days that can show a shift of whole hours.
+MINIMUM_CLEAR_DAYS = 5
 
 
 def redistribute() -> bool:
@@ -35,46 +75,36 @@ def redistribute() -> bool:
     return False
 
 
-def _check_input_parameters(start_date: pd.Timestamp) -> None:
+def _check_input_parameters(year: int) -> None:
     """
     Check if the input parameters are valid.
 
     Parameters
     ----------
-    start_date : pandas.Timestamp
-        The start date of the data retrieval.
+    year : int
+        The year of the data to retrieve.
 
     Raises
     ------
     ValueError
         If the input parameters are not valid.
     """
-    # Read the start date of the available data.
-    start_date_of_data_availability = pd.to_datetime(
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            "tsoc"
-        )["CYP"][0]
-    )
-
-    # Check that the start date is greater than or equal to the
-    # beginning of the data availability.
-    if start_date < start_date_of_data_availability:
-        raise ValueError(
-            "The beginning of the data availability is "
-            f"{start_date_of_data_availability}."
-        )
+    # Check if the year is supported.
+    if year not in get_available_requests():
+        raise ValueError(f"The year {year} is not in the supported range.")
 
 
-def get_available_requests() -> list[pd.Timestamp]:
+def get_available_requests() -> list[int]:
     """
     Get the available requests.
 
     This function retrieves the available requests for the electricity
-    demand data from the TSOC website.
+    demand data from the TSOC website: the years that have ended, since
+    the file of a year is published after it ends.
 
     Returns
     -------
-    list[pandas.Timestamp]
+    list[int]
         The list of available requests.
     """
     # Read the start and end date of the available data.
@@ -84,114 +114,201 @@ def get_available_requests() -> list[pd.Timestamp]:
         )["CYP"]
     )
 
-    # Return the available requests, which are the start dates of the
-    # retrieval periods. We use 15-day intervals (the maximum available
-    # on the website) to minimize the number of requests.
-    return list(pd.date_range(start_date, end_date, freq="15D"))
+    # Return the available requests, which are the years.
+    return list(range(max(start_date.year, FIRST_YEAR), end_date.year))
 
 
-def get_url(start_date: pd.Timestamp) -> str:
+def get_url(year: int) -> str:
     """
-    Get the URL of the electricity generation data on the TSOC website.
+    Get the URL of the electricity demand data on the TSOC website.
 
     Parameters
     ----------
-    start_date : pandas.Timestamp
-        The starting date for the data retrieval period.
+    year : int
+        The year of the electricity demand data.
 
     Returns
     -------
     str
-        The URL of the electricity generation data.
+        The URL of the electricity demand data.
     """
     # Check if input parameters are valid.
-    _check_input_parameters(start_date)
+    _check_input_parameters(year)
 
-    # Return the URL of the electricity generation data.
-    return (
-        "https://tsoc.org.cy/electrical-system/"
-        "archive-total-daily-system-generation-on-the-transmission-system/?"
-        f"startdt={start_date:%d-%m-%Y}&enddt=%2B15days"
+    # Return the URL of the Excel file of the year.
+    path = (
+        "/files/electrical-system/daily-system-generation/"
+        f"Ημερήσια Παραγωγή Ηλεκτρικού Συστήματος - {year}.xlsx"
     )
+    return "https://tsoc.org.cy" + urllib.parse.quote(path)
 
 
-def _read_generation(generation_step):
+def _solar_noon(days: pd.DatetimeIndex) -> np.ndarray:
     """
-    Read and calculate the total generation.
+    Calculate the time of the solar noon in Nicosia.
 
     Parameters
     ----------
-    generation_step : tuple of str
-        A tuple containing the wind, solar, total, and conventional
-        generation values.
+    days : pandas.DatetimeIndex
+        The days.
 
     Returns
     -------
-    float | None
-        The total generation in MW, or None if data is unavailable.
+    numpy.ndarray
+        The time of the solar noon of each day, in hours after midnight
+        in UTC.
     """
-    # Extract the wind, solar, total, and conventional generation values
-    # from the tuple.
-    wind, solar, total, conventional = generation_step
-
-    # If total generation is null, it usually means no data is
-    # available.
-    if total == "null":
-        return None
-
-    # If total generation is 0, attempt to compute it from wind, solar,
-    # and conventional values.
-    if total == "0":
-        wind = float(wind) if wind != "null" else 0
-        solar = float(solar) if solar != "null" else 0
-        conventional = float(conventional) if conventional != "null" else 0
-        total_estimated = wind + solar + conventional
-
-        # If the sum is still 0, return None.
-        return total_estimated if total_estimated > 0 else None
-
-    # Otherwise, return the total generation as a float.
-    return float(total)
+    # The approximation of the equation of time of NOAA, in minutes.
+    angle = 2 * np.pi / 365 * (days.dayofyear.to_numpy() - 1)
+    equation_of_time = 229.18 * (
+        0.000075
+        + 0.001868 * np.cos(angle)
+        - 0.032077 * np.sin(angle)
+        - 0.014615 * np.cos(2 * angle)
+        - 0.040849 * np.sin(2 * angle)
+    )
+    return (720 - 4 * LONGITUDE - equation_of_time) / 60
 
 
-def _read_timestamp_and_generation(
-    page: str,
-) -> tuple[list[str], list[str], list[str], list[float | None]]:
+def _middle_of_solar_peak(day: pd.DataFrame) -> float:
     """
-    Extract dates, hours, minutes, and generation data from the page.
+    Find the middle of the daily peak of the solar generation.
+
+    The middle of the peak is halfway between the times when the solar
+    generation rises above and falls below half of its maximum.
 
     Parameters
     ----------
-    page : str
-        The HTML file content.
+    day : pandas.DataFrame
+        The solar generation of a day ("solar") at the middle of each
+        interval, in hours of local time ("hour").
 
     Returns
     -------
-    tuple[list[str], list[str], list[str], list[float | None]]
-        A tuple containing lists of dates, hours, minutes, and total
-        generation data.
+    float
+        The middle of the peak in hours of local time, or NaN if it
+        cannot be found.
     """
-    # Extract the dates, hours, minutes, and generation data from the
-    # HTML content using regex patterns.
-    dates = re.findall(r'var dateStr = "(\d{4}-\d{2}-\d{2})";', page)
-    hours = re.findall(r'var hourStr = "(\d{2})";', page)
-    minutes = re.findall(r'var minutesStr = "(\d{2})";', page)
-    # The following values represent wind, solar, total, and
-    # conventional generation, respectively.
-    generation_matches = re.findall(
-        r"\[dateStrFormat, (\d+|null), (\d+|null), (\d+|null), (\d+|null)\]",
-        page,
-    )
+    hours = day["hour"].to_numpy()
+    solar = np.nan_to_num(day["solar"].to_numpy())
+    half = solar.max() / 2
+    above = np.flatnonzero(solar >= half)
+    if half <= 0 or above[0] == 0 or above[-1] == len(solar) - 1:
+        return np.nan
+    first, last = above[0], above[-1]
 
-    # Process the generation data to determine the total generation.
-    total_generation = [_read_generation(g) for g in generation_matches]
+    # Interpolate the times of the crossings of half of the maximum.
+    rise = hours[first - 1] + (half - solar[first - 1]) / (
+        solar[first] - solar[first - 1]
+    ) * (hours[first] - hours[first - 1])
+    fall = hours[last] + (solar[last] - half) / (
+        solar[last] - solar[last + 1]
+    ) * (hours[last + 1] - hours[last])
+    return float((rise + fall) / 2)
 
-    return dates, hours, minutes, total_generation
+
+def _utc_offset(days: pd.Series) -> pd.Series:
+    """
+    Get the offset of Cyprus local time from UTC at the start of days.
+
+    Parameters
+    ----------
+    days : pandas.Series
+        The days, at midnight.
+
+    Returns
+    -------
+    pandas.Series
+        The offset of each day in hours.
+    """
+    offsets = {}
+    for day in days.unique():
+        offset = pd.Timestamp(day).tz_localize("Asia/Nicosia").utcoffset()
+        offsets[day] = (offset or pd.Timedelta(0)) / pd.Timedelta(hours=1)
+    return days.map(offsets)
 
 
-def download_and_extract_data_for_request(
-    start_date: pd.Timestamp,
+def _correct_whole_hours(
+    local_start: pd.Series, distributed: pd.Series, year: int
 ) -> pd.Series:
+    """
+    Correct the shifts of whole hours that the solar generation shows.
+
+    The middle of the peak of the estimated distributed generation,
+    mostly solar, is compared with the solar noon on the clear days of
+    each month, separately before and after a change of daylight saving
+    time. A difference of one hour or more, over at least a few clear
+    days, moves the times by whole hours, with a warning.
+
+    Parameters
+    ----------
+    local_start : pandas.Series
+        The start of each interval in Cyprus local time.
+    distributed : pandas.Series
+        The estimated distributed generation of each interval in MW.
+    year : int
+        The year of the file.
+
+    Returns
+    -------
+    pandas.Series
+        The corrected starts of the intervals.
+    """
+    data = pd.DataFrame(
+        {
+            "day": local_start.dt.normalize(),
+            "hour": local_start.dt.hour + local_start.dt.minute / 60 + 0.125,
+            "distributed": distributed,
+        }
+    )
+    data["offset"] = _utc_offset(data["day"])
+
+    # The solar generation is the generation above the minimum of the
+    # day.
+    data["solar"] = data["distributed"] - data.groupby("day")[
+        "distributed"
+    ].transform("min")
+
+    # Find the middle of the solar peak of the clear days, whose peak is
+    # close to the ones of the sunniest days of their month.
+    peaks = data.groupby("day")["solar"].max()
+    month_peaks = peaks.groupby(pd.DatetimeIndex(peaks.index).month).transform(
+        lambda month: month.quantile(0.75)
+    )
+    clear_days = peaks.index[peaks >= 0.9 * month_peaks]
+    middles = (
+        data[data["day"].isin(clear_days)]
+        .groupby(["day", "offset"])[["hour", "solar"]]
+        .apply(_middle_of_solar_peak)
+        .dropna()
+    )
+
+    # Compare the middles, in UTC, with the solar noon, by month and
+    # offset from UTC.
+    days = pd.DatetimeIndex(middles.index.get_level_values("day"))
+    offsets = middles.index.get_level_values("offset").to_numpy()
+    delays = middles.to_numpy() - offsets - _solar_noon(days)
+    segments = pd.Series(delays - SOLAR_DELAY).groupby([days.month, offsets])
+    shifts = segments.median().round()[segments.size() >= MINIMUM_CLEAR_DAYS]
+
+    # Move the times of the segments with a shift of whole hours.
+    corrected = local_start.copy()
+    for (month, offset), shift in zip(
+        shifts.index.tolist(), shifts.to_numpy(), strict=True
+    ):
+        if shift == 0:
+            continue
+        logging.warning(
+            f"The times of the TSOC file of {year} in month {month} seem "
+            f"{shift:+.0f} hours from the solar generation, and are "
+            "corrected."
+        )
+        rows = (data["day"].dt.month == month) & (data["offset"] == offset)
+        corrected[rows] = local_start[rows] - pd.Timedelta(hours=shift)
+    return corrected
+
+
+def download_and_extract_data_for_request(year: int) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -200,58 +317,68 @@ def download_and_extract_data_for_request(
 
     Parameters
     ----------
-    start_date : pandas.Timestamp
-        The starting date for the data retrieval.
+    year : int
+        The year of the electricity demand data.
 
     Returns
     -------
-    electricity_generation_time_series : pandas.Series
-        The electricity generation time series in MW.
+    pandas.Series
+        The electricity demand time series in MW.
 
     Raises
     ------
     TypeError
-        If the extracted page is not a string.
+        If the extracted data is not a pandas DataFrame.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(start_date)
+    # Check if input parameters are valid.
+    _check_input_parameters(year)
 
-    logging.info(
-        "Retrieving electricity demand data for the 15-day period "
-        f"starting from {start_date.date()}."
+    logging.info(f"Retrieving electricity demand data for the year {year}.")
+
+    # Read the start of each interval, the total demand and the
+    # estimated distributed generation, below the four rows of the
+    # header.
+    dataset = utils.fetcher.fetch_data(
+        get_url(year),
+        "excel",
+        excel_kwargs={"header": None, "skiprows": 4, "usecols": [0, 6, 8]},
     )
 
-    # Get the URL of the electricity generation data.
-    url = get_url(start_date)
-
-    # Fetch HTML content from the URL.
-    page = utils.fetcher.fetch_data(
-        url,
-        "html",
-        read_with="urllib.request",
-        header_params={"User-Agent": "Mozilla/5.0"},
-    )
-
-    # Make sure the page content is a string.
-    if not isinstance(page, str):
+    # Make sure the dataset is a pandas DataFrame.
+    if not isinstance(dataset, pd.DataFrame):
         raise TypeError(
-            f"The extracted page is a {type(page)} object, expected a string."
+            f"The extracted data is a {type(dataset)} object, "
+            "expected a pandas DataFrame."
         )
 
-    # Extract time and generation data.
-    dates, hours, minutes, generation = _read_timestamp_and_generation(page)
+    dataset.columns = ["start", "demand", "distributed"]
+    # The times are stored with rounding errors of up to a second.
+    dataset["start"] = pd.to_datetime(
+        dataset["start"], errors="coerce"
+    ).dt.round("min")
+    dataset = dataset[dataset["start"].notna()].reset_index(drop=True)
 
-    # Construct datetime index with time zone.
-    date_time = pd.to_datetime(
-        [
-            f"{date} {hour}:{minute}"
-            for date, hour, minute in zip(dates, hours, minutes, strict=True)
-        ]
-    ).tz_localize("Asia/Nicosia", nonexistent="NaT", ambiguous="NaT")
-
-    # Create a Pandas Series for the electricity generation data.
-    electricity_generation_time_series = pd.Series(
-        data=generation, index=date_time
+    # Shift the times by the corrections of their days, to the start of
+    # each interval in Cyprus local time.
+    shifts = pd.Series(TIME_SHIFTS).rename(index=pd.Timestamp).sort_index()
+    shift_of_rows = shifts.reindex(
+        dataset["start"].dt.normalize(), method="ffill"
+    ).fillna(0)
+    local_start = dataset["start"] + pd.to_timedelta(
+        shift_of_rows.to_numpy(), unit="min"
     )
 
-    return electricity_generation_time_series
+    # Correct the shifts of whole hours that remain.
+    local_start = _correct_whole_hours(
+        local_start,
+        pd.to_numeric(dataset["distributed"], errors="coerce"),
+        year,
+    )
+
+    # Mark the end of each interval, in Cyprus local time.
+    electricity_demand_time_series = pd.Series(
+        pd.to_numeric(dataset["demand"]).to_numpy(),
+        index=pd.DatetimeIndex(local_start + pd.Timedelta(minutes=15)),
+    ).tz_localize("Asia/Nicosia", ambiguous="NaT", nonexistent="NaT")
+
+    return electricity_demand_time_series
