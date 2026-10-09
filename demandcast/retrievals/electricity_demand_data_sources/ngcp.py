@@ -6,7 +6,7 @@ Description:
     This module provides functions to retrieve the electricity demand
     data from the website of the National Grid Corporation of the
     Philippines (NGCP). The data is downloaded from Jan 1, 2013 to Dec
-    31, 2024. The data is retrieved all at once.
+    31, 2025. The data is retrieved all at once.
 
     Source: https://www.ngcp.ph/operations#operations
 """
@@ -76,8 +76,13 @@ def download_and_extract_data() -> pd.Series:
     # Get the URL of the electricity demand data.
     url = get_url()
 
-    # Read the Excel file from the URL.
-    excel_file = utils.fetcher.fetch_data(url, "html", read_as="excel_file")
+    # Download the Excel file once, and read its sheets below.
+    excel_file = utils.fetcher.fetch_data(
+        url,
+        "html",
+        read_as="excel_file",
+        header_params={"User-Agent": "Mozilla/5.0"},
+    )
 
     if not isinstance(excel_file, pd.ExcelFile):
         raise TypeError(
@@ -114,16 +119,10 @@ def download_and_extract_data() -> pd.Series:
 
     all_data = []
 
-    # Fetch and process each sheet individually.
+    # Read and process each sheet individually.
     for region in regions:
-        dataset = utils.fetcher.fetch_data(
-            url,
-            "excel",
-            excel_kwargs={
-                "storage_options": {"User-Agent": "Mozilla/5.0"},
-                "sheet_name": sheet_names[region],
-                "skiprows": rows_to_skip[region],
-            },
+        dataset = excel_file.parse(
+            sheet_names[region], skiprows=rows_to_skip[region]
         )
 
         # Make sure the dataset is a pandas DataFrame.
@@ -153,9 +152,12 @@ def download_and_extract_data() -> pd.Series:
         dataset = dataset[["Datetime", "Demand"]]
         all_data.append(dataset)
 
-    # Combine and aggregate data across all regions.
+    # Combine and aggregate data across all regions. An hour without the
+    # demand of every region gets no total, rather than a partial one.
     combined = pd.concat(all_data)
-    combined = combined.groupby("Datetime").sum().sort_index()
+    combined = (
+        combined.groupby("Datetime").sum(min_count=len(regions)).sort_index()
+    )
 
     # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(

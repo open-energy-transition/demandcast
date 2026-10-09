@@ -200,13 +200,14 @@ def test_download_and_extract_data_for_request_of_the_sin(
         pd.Timestamp("2024-03-09"), pd.Timestamp("2024-03-10"), "MEX_NOR"
     )
 
-    # Each area is read in its own time zone, UTC-7 for Noroeste.
-    times = pd.date_range("2024-03-09 08:00", periods=48, freq="h")
+    # The areas of the SIN are read in the time of central Mexico, UTC-6
+    # in 2024, also Noroeste, whose own clock is an hour behind.
+    times = pd.date_range("2024-03-09 07:00", periods=48, freq="h")
     values = [3000.5 + hour for hour in range(24)]
     values += [4000.5 + hour for hour in range(24)]
     assert_demand(
         time_series,
-        "America/Mazatlan",
+        "America/Mexico_City",
         dict(zip(times.strftime("%Y-%m-%d %H:%M"), values, strict=True)),
     )
 
@@ -214,7 +215,7 @@ def test_download_and_extract_data_for_request_of_the_sin(
 def test_download_and_extract_data_for_request_of_norte_in_2022(
     fake_downloads, assert_demand, tmp_path
 ):
-    """Test the extra hour of Norte on 30 October 2022."""
+    """Test the 25 hours of Norte on 30 October 2022."""
     _serve_archive(
         fake_downloads,
         tmp_path,
@@ -233,12 +234,56 @@ def test_download_and_extract_data_for_request_of_norte_in_2022(
     )
 
     # Like every area of the SIN, Norte has 25 hours on the day when
-    # daylight saving time ended in Mexico, but its time zone,
-    # America/Chihuahua, has 24: the third hour is dropped.
-    times = pd.date_range("2022-10-30 07:00", periods=24, freq="h")
-    values = [5000.5 + hour for hour in range(25) if hour != 2]
+    # daylight saving time ended in central Mexico, whose time the SIN
+    # uses: the first hour ends at 01:00 in summer time (UTC-5).
+    times = pd.date_range("2022-10-30 06:00", periods=25, freq="h")
+    values = [5000.5 + hour for hour in range(25)]
     assert_demand(
         time_series,
-        "America/Chihuahua",
+        "America/Mexico_City",
         dict(zip(times.strftime("%Y-%m-%d %H:%M"), values, strict=True)),
     )
+
+
+def test_download_and_extract_data_for_request_with_days_without_data(
+    fake_downloads, assert_demand, tmp_path, caplog
+):
+    """Test that the days without data in any settlement are skipped."""
+    # The archive has no file of 8 March 2024, and only settlements
+    # without data of 9 March.
+    name = "Demanda Real Balance_{}_v3 Dia Operacion {} v{}.csv"
+    _serve_archive(
+        fake_downloads,
+        tmp_path,
+        {
+            name.format(0, "2024-03-09", "2024 03 23_12 25 01"): _daily_file(
+                "09/03/2024", 0, {}
+            ),
+            name.format(1, "2024-03-09", "2024 05 04_12 30 01"): _daily_file(
+                "09/03/2024", 1, {}
+            ),
+            name.format(0, "2024-03-10", "2024 03 24_12 25 01"): _daily_file(
+                "10/03/2024",
+                0,
+                {("SIN", "CEN"): [6000.5 + hour for hour in range(24)]},
+            ),
+        },
+    )
+
+    time_series = cenace.download_and_extract_data_for_request(
+        pd.Timestamp("2024-03-08"), pd.Timestamp("2024-03-10"), "MEX_CEN"
+    )
+
+    assert "No data found for the date 2024-03-08, skipped." in caplog.text
+    assert "No data found for the date 2024-03-09, skipped." in caplog.text
+    times = pd.date_range("2024-03-10 07:00", periods=24, freq="h")
+    values = [6000.5 + hour for hour in range(24)]
+    assert_demand(
+        time_series,
+        "America/Mexico_City",
+        dict(zip(times.strftime("%Y-%m-%d %H:%M"), values, strict=True)),
+    )
+    # A request without any day with data gives an empty series.
+    assert cenace.download_and_extract_data_for_request(
+        pd.Timestamp("2024-03-09"), pd.Timestamp("2024-03-09"), "MEX_CEN"
+    ).empty
