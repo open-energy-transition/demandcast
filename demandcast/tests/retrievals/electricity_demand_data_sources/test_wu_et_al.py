@@ -15,29 +15,32 @@ from retrievals.electricity_demand_data_sources import wu_et_al
 
 def _write_wu_et_al_file(file_path: Path) -> None:
     """
-    Write a synthetic year of semicolon-delimited regional demand.
+    Write a synthetic year in the source's semicolon-delimited format.
 
     Parameters
     ----------
     file_path : pathlib.Path
         The path of the CSV file to write.
     """
-    # The source creates 8760 hourly timestamps, so the file needs one
-    # demand row for each hour of 2018.
-    timestamps = pd.date_range(
-        start="2018-01-01 01:00:00",
-        periods=8760,
-        freq="h",
-    )
-
+    # The file numbers each hour; the source builds timestamps itself.
+    hours = range(8760)
     df = pd.DataFrame(
         {
-            "Time": timestamps,
-            "Beijing": [100.5 + i for i in range(8760)],
-            "Shanghai": [200.5 + i * 2 for i in range(8760)],
+            "Time Series(unit:MWh)": range(1, 8761),
+            "BJ": [100.5 + i for i in hours],
+            "TJ": [200.5 + 2 * i for i in hours],
+            "HB": [300.5 + 3 * i for i in hours],
         }
     )
-    df.to_csv(file_path, sep=";", index=False)
+    # The real header uses HB for both Hebei and Hubei.
+    df.insert(
+        4,
+        "HB",
+        [400.5 + 4 * i for i in hours],
+        allow_duplicates=True,
+    )
+    # The real file begins with a UTF-8 byte order mark.
+    df.to_csv(file_path, sep=";", index=False, encoding="utf-8-sig")
 
 
 def test_download_and_extract_data(fake_downloads, assert_demand, tmp_path):
@@ -58,8 +61,8 @@ def test_download_and_extract_data(fake_downloads, assert_demand, tmp_path):
         selected,
         "Asia/Shanghai",
         {
-            "2017-12-31 17:00": 301.0,
-            "2017-12-31 18:00": 304.0,
-            "2018-12-31 16:00": 26578.0,
+            "2017-12-31 17:00": 1002.0,
+            "2017-12-31 18:00": 1012.0,
+            "2018-12-31 16:00": 88592.0,
         },
     )
