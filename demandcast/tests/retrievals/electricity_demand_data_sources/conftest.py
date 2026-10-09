@@ -133,6 +133,7 @@ def fake_downloads(monkeypatch):
 
         def __init__(self) -> None:
             self.cookies = requests.cookies.RequestsCookieJar()
+            self.headers: dict[str, str] = {}
             self.get = send("GET")
 
     def urlopen(request: urllib.request.Request, **kwargs: Any) -> io.BytesIO:
