@@ -6,17 +6,28 @@ Description:
     This module provides functions to retrieve the electricity demand
     data from the website of the Tokyo Electric Power Company (TEPCO) in
     Japan. The data is retrieved for the years from 2016 to the current
-    year. The data is retrieved from the available CSV files on the
-    TEPCO website.
+    year: until 2024 from one CSV file per year, and from 2025 from one
+    ZIP file per month, with one CSV file per day, since the yearly file
+    of 2025 stops in July.
 
-    Source: https://www4.tepco.co.jp/en/forecast/html/download-e.html
+    Source: https://www.tepco.co.jp/en/forecast/html/download-e.html
 """
 
+import io
 import logging
+import zipfile
 
 import pandas as pd
+import requests
 import utils.entities
 import utils.fetcher
+
+# The last year with a yearly file.
+LAST_YEARLY_FILE = 2024
+
+# The header of the hourly values in the daily files, which also have
+# the values every five minutes under another header.
+HOURLY_HEADER = "DATE,TIME,当日実績(万kW)"
 
 
 def redistribute() -> bool:
@@ -33,49 +44,85 @@ def redistribute() -> bool:
     return False
 
 
-def _check_input_parameters(year: int) -> None:
+def _check_input_parameters(year: int, month: int | None) -> None:
     """
     Check if the input parameters are valid.
 
     Parameters
     ----------
     year : int
-        The year of the electricity demand data.
+        The year of the data to retrieve.
+    month : int | None
+        The month of the data to retrieve, or None for a whole year.
 
     Raises
     ------
     ValueError
         If the input parameters are not valid.
     """
-    # Check if the year is supported.
-    if year not in get_available_requests():
-        raise ValueError(f"The year {year} is not in the supported range.")
-
-
-def get_available_requests() -> list[int]:
-    """
-    Get the available requests.
-
-    This function retrieves the available requests for the electricity
-    demand data from the TEPCO website.
-
-    Returns
-    -------
-    list[int]
-        The list of available requests.
-    """
-    # Read the start and end date of the available data.
+    # Get the start and end dates of the data.
     start_date, end_date = (
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             "tepco"
         )["JPN_Kantō"]
     )
 
-    # Return the available requests, which are the years.
-    return list(range(start_date.year, end_date.year + 1))
+    # Check if the request is supported: the years with a yearly file,
+    # and the months after them.
+    if month is None:
+        is_valid = start_date.year <= year <= LAST_YEARLY_FILE
+    else:
+        is_valid = (
+            year > LAST_YEARLY_FILE
+            and 1 <= month <= 12
+            and pd.Timestamp(year, month, 1) <= pd.Timestamp(end_date)
+        )
+    if not is_valid:
+        raise ValueError("The request is not available.")
 
 
-def get_url(year: int) -> str:
+def get_available_requests() -> list[tuple[int, int | None]]:
+    """
+    Get the available requests.
+
+    This function retrieves the available requests for the electricity
+    demand data from the TEPCO website: the years with a yearly file,
+    and then the months.
+
+    Returns
+    -------
+    list[tuple[int, int | None]]
+        The list of available requests.
+    """
+    # Get the start and end dates of the data.
+    start_date, end_date = (
+        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+            "tepco"
+        )["JPN_Kantō"]
+    )
+
+    # Requests of the yearly files.
+    requests_of_years: list[tuple[int, int | None]] = [
+        (year, None)
+        for year in range(
+            start_date.year, min(end_date.year, LAST_YEARLY_FILE) + 1
+        )
+    ]
+
+    # Requests of the monthly files.
+    requests_of_months: list[tuple[int, int | None]] = [
+        (date.year, date.month)
+        for date in pd.date_range(
+            start=pd.Timestamp(LAST_YEARLY_FILE + 1, 1, 1),
+            end=pd.Timestamp(end_date),
+            freq="MS",
+        )
+    ]
+
+    return requests_of_years + requests_of_months
+
+
+def get_url(year: int, month: int | None) -> str:
     """
     Get the URL of the electricity demand data on the TEPCO website.
 
@@ -83,20 +130,108 @@ def get_url(year: int) -> str:
     ----------
     year : int
         The year of the electricity demand data.
+    month : int | None
+        The month of the electricity demand data, or None for a whole
+        year.
 
     Returns
     -------
     str
         The URL of the electricity demand data.
     """
-    # Check if input parameters are valid.
-    _check_input_parameters(year)
+    # Check if the input parameters are valid.
+    _check_input_parameters(year, month)
 
-    # Return the URL of the electricity demand data.
-    return f"https://www4.tepco.co.jp/forecast/html/images/juyo-{year}.csv"
+    if month is None:
+        return f"https://www4.tepco.co.jp/forecast/html/images/juyo-{year}.csv"
+
+    return (
+        "https://www.tepco.co.jp/forecast/html/images/"
+        f"{year}{month:02d}_power_usage.zip"
+    )
 
 
-def download_and_extract_data_for_request(year: int) -> pd.Series:
+def _read_yearly_file(content: bytes) -> pd.Series:
+    """
+    Read the hourly values of a yearly file.
+
+    Parameters
+    ----------
+    content : bytes
+        The content of the CSV file, in Shift JIS.
+
+    Returns
+    -------
+    pandas.Series
+        The values in 10 MW, at the start of each hour.
+    """
+    # Skip the time of the last update and an empty line.
+    dataset = pd.read_csv(io.StringIO(content.decode("cp932")), skiprows=2)
+
+    return pd.Series(
+        dataset["実績(万kW)"].to_numpy(),
+        index=pd.to_datetime(
+            dataset["DATE"] + " " + dataset["TIME"], format="%Y/%m/%d %H:%M"
+        ),
+    )
+
+
+def _read_monthly_file(content: bytes) -> pd.Series:
+    """
+    Read the hourly values of the daily files of a monthly file.
+
+    Parameters
+    ----------
+    content : bytes
+        The content of the ZIP file, with one CSV file per day, in
+        Shift JIS.
+
+    Returns
+    -------
+    pandas.Series
+        The values in 10 MW, at the start of each hour.
+
+    Raises
+    ------
+    ValueError
+        If a daily file has no hourly values.
+    """
+    daily_values = []
+    with zipfile.ZipFile(io.BytesIO(content)) as archive:
+        for file_name in sorted(archive.namelist()):
+            lines = archive.read(file_name).decode("cp932").splitlines()
+
+            # Read the 24 lines after the header of the hourly values.
+            header_line = next(
+                (
+                    number
+                    for number, line in enumerate(lines)
+                    if line.startswith(HOURLY_HEADER)
+                ),
+                None,
+            )
+            if header_line is None:
+                raise ValueError(f"No hourly values in {file_name}.")
+            dataset = pd.read_csv(
+                io.StringIO("\n".join(lines[header_line : header_line + 25]))
+            )
+
+            daily_values.append(
+                pd.Series(
+                    dataset["当日実績(万kW)"].to_numpy(),
+                    index=pd.to_datetime(
+                        dataset["DATE"] + " " + dataset["TIME"],
+                        format="%Y/%m/%d %H:%M",
+                    ),
+                )
+            )
+
+    return pd.concat(daily_values)
+
+
+def download_and_extract_data_for_request(
+    year: int, month: int | None
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -107,59 +242,50 @@ def download_and_extract_data_for_request(year: int) -> pd.Series:
     ----------
     year : int
         The year of the electricity demand data.
+    month : int | None
+        The month of the electricity demand data, or None for a whole
+        year.
 
     Returns
     -------
-    electricity_demand_time_series : pandas.Series
+    pandas.Series
         The electricity demand time series in MW.
 
     Raises
     ------
     TypeError
-        If the extracted data is not a pandas DataFrame.
+        If the extracted data is not a requests.Response object.
     """
     # Check if the input parameters are valid.
-    _check_input_parameters(year)
+    _check_input_parameters(year, month)
 
-    logging.info(f"Retrieving electricity demand data for the year {year}.")
-
-    # Get the URL of the electricity demand data.
-    url = get_url(year)
-
-    # Fetch the data from the URL.
-    dataset = utils.fetcher.fetch_data(
-        url,
-        "html",
-        read_with="requests.get",
-        csv_kwargs={"skiprows": 2},
+    logging.info(
+        f"Retrieving electricity demand data for {year}"
+        + (f"-{month:02d}." if month is not None else ".")
     )
 
-    # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pd.DataFrame):
+    # Fetch the file. The website rejects the user agent of requests.
+    response = utils.fetcher.fetch_data(
+        get_url(year, month),
+        "html",
+        read_as="plain",
+        header_params={"User-Agent": "Mozilla/5.0"},
+    )
+
+    # Make sure the response is a requests.Response object.
+    if not isinstance(response, requests.Response):
         raise TypeError(
-            f"The extracted data is a {type(dataset)} object, "
-            "expected a pandas DataFrame."
+            f"The extracted data is a {type(response)} object, "
+            "expected a requests.Response object."
         )
 
-    # Define the index of the time series.
-    index = pd.to_datetime(
-        [
-            date + " " + time
-            for date, time in zip(
-                dataset["DATE"], dataset["TIME"], strict=True
-            )
-        ]
-    ).tz_localize("Asia/Tokyo")
+    if month is None:
+        values = _read_yearly_file(response.content)
+    else:
+        values = _read_monthly_file(response.content)
 
-    # Extract the electricity demand time series. Multiply by 10 to
-    # convert from 10,000 kW (Japanese way of expressing unit of
-    # power) to MW.
-    electricity_demand_time_series = (
-        pd.Series(dataset["ÀÑ(kW)"].values, index=index) * 10
-    )
-
-    # Add one hour to the time index because the time values appear
-    # to be provided at the beginning of the time interval.
+    # Convert from 10 MW to MW, and mark the end of each hour.
+    electricity_demand_time_series = values * 10
     electricity_demand_time_series.index += pd.Timedelta(hours=1)
 
-    return electricity_demand_time_series
+    return electricity_demand_time_series.tz_localize("Asia/Tokyo")
