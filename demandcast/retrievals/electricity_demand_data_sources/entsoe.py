@@ -262,21 +262,18 @@ def download_and_extract_data_for_request(
 
     if not electricity_demand_time_series.empty:
         # The time values are provided at the beginning of the time
-        # step. Set them at the end of the time step for
-        # consistency.
-        if len(electricity_demand_time_series) > 1:
-            # Calculate the time difference between the time values.
-            time_difference = (
-                electricity_demand_time_series.index.to_series().diff().min()
-            )
-        else:
-            # Assume a one-hour time difference if there is only one
-            # time value.
-            time_difference = pd.Timedelta("1h")
-
-        # Add the time difference to the time values.
+        # steps. Move each one to the end of its step, the shorter of
+        # the intervals to the times before and after it: some countries
+        # changed from hourly to 15-minute data within a year, and the
+        # data can have gaps. A single time value is one hour long.
+        times = electricity_demand_time_series.index.to_series()
+        steps = (
+            pd.concat([times.diff(), -times.diff(-1)], axis=1)
+            .min(axis=1)
+            .fillna(pd.Timedelta("1h"))
+        )
         electricity_demand_time_series.index = (
-            electricity_demand_time_series.index + time_difference
+            electricity_demand_time_series.index + pd.TimedeltaIndex(steps)
         )
 
     return electricity_demand_time_series
