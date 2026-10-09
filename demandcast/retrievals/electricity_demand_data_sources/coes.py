@@ -11,10 +11,10 @@ Description:
     Source: https://www.coes.org.pe/Portal/portalinformacion/demanda
 """
 
+import datetime
 import logging
 
 import pandas as pd
-import utils.entities
 import utils.fetcher
 
 
@@ -37,44 +37,29 @@ def redistribute() -> bool:
     return False
 
 
-def _check_input_parameters(year: int) -> None:
-    """
-    Check if the input parameters are valid.
-
-    Parameters
-    ----------
-    year : int
-        The year of the data to retrieve.
-
-    Raises
-    ------
-    ValueError
-        If the input parameters are not valid.
-    """
-    # Check if the year is supported.
-    if year not in get_available_requests():
-        raise ValueError(f"The year {year} is not in the supported range.")
-
-
-def get_available_requests() -> list[int]:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[int]:
     """
     Get the available requests.
 
     This function retrieves the available requests for the electricity
     demand data from the COES website.
 
+    Parameters
+    ----------
+    code : str
+        The code of Peru.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
+
     Returns
     -------
     list[int]
         The list of available requests.
     """
-    # Read the start and end date of the available data.
-    start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            "coes"
-        )["PER"]
-    )
-
     # Return the available requests, which are the years.
     return list(range(start_date.year, end_date.year + 1))
 
@@ -92,7 +77,7 @@ def get_url() -> str:
     return "https://www.coes.org.pe/Portal/portalinformacion/demanda"
 
 
-def download_and_extract_data_for_request(year: int) -> pd.Series:
+def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -103,6 +88,8 @@ def download_and_extract_data_for_request(year: int) -> pd.Series:
     ----------
     year : int
         The year of the electricity demand data.
+    code : str
+        The code of Peru.
 
     Returns
     -------
@@ -114,9 +101,6 @@ def download_and_extract_data_for_request(year: int) -> pd.Series:
     TypeError
         If the extracted data is not a pandas DataFrame.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(year)
-
     logging.info(f"Retrieving electricity demand data for the year {year}.")
 
     # Get the URL of the electricity demand data.

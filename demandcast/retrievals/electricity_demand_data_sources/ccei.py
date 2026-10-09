@@ -148,15 +148,28 @@ def download_and_extract_data(code: str) -> pd.Series:
         dataset["TIME_PERIOD"] = dataset["TIME_PERIOD"].str.replace(
             ".000Z", ""
         )
+
     if code == "CAN_ON":
-        # Remove dummy time steps where the time is equal to
-        # 06:59:59 right before the daylight saving time change.
-        dataset = dataset[~dataset["TIME_PERIOD"].str.contains("06:59:59")]
+        # The data of Ontario comes from IESO, whose hours end at 1:00
+        # to 24:00 in Eastern Standard Time all year. CCEI keeps these
+        # times in DATETIME_LOCAL, with the hour 24 at 00:00 of the same
+        # day, and converts them to UTC (TIME_PERIOD) as if they
+        # followed daylight saving time: an hour early in summer, and a
+        # day early at midnight. Read them in Eastern Standard Time
+        # (UTC-5), with the hour 24 at midnight of the next day.
+        local_times = pd.to_datetime(dataset["DATETIME_LOCAL"])
+        local_times += pd.to_timedelta(
+            (local_times.dt.hour == 0).astype(int), unit="D"
+        )
+        times = pd.DatetimeIndex(local_times + pd.Timedelta(hours=5))
+    else:
+        times = pd.DatetimeIndex(pd.to_datetime(dataset["TIME_PERIOD"]))
 
     # Extract the electricity demand time series with UTC time zone.
-    electricity_demand_time_series = pd.Series(
-        data=dataset["OBS_VALUE"].values,
-        index=pd.to_datetime(dataset["TIME_PERIOD"]),
-    ).tz_localize("UTC")
+    electricity_demand_time_series = (
+        pd.Series(data=dataset["OBS_VALUE"].values, index=times)
+        .tz_localize("UTC")
+        .sort_index()
+    )
 
     return electricity_demand_time_series

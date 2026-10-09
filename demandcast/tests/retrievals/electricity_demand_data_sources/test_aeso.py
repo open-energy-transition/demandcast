@@ -78,7 +78,7 @@ def test_download_and_extract_data_for_request_of_2011_to_2016(
         ).to_excel(writer, sheet_name=sheet_name, startrow=1, index=False)
     fake_downloads.serve(URL_FOLDER + file_name, tmp_path / file_name)
 
-    time_series = aeso.download_and_extract_data_for_request(1)
+    time_series = aeso.download_and_extract_data_for_request(1, "CAN_AB")
 
     # The hours follow the first one, which ends at 23:00 in standard
     # time (06:00 in UTC), and the loads of the regions are summed.
@@ -117,7 +117,7 @@ def test_download_and_extract_data_for_request_of_2017_to_2020(
         ).to_excel(writer, sheet_name="Load by Area and Region", index=False)
     fake_downloads.serve(URL_FOLDER + file_name, tmp_path / file_name)
 
-    time_series = aeso.download_and_extract_data_for_request(2)
+    time_series = aeso.download_and_extract_data_for_request(2, "CAN_AB")
 
     # The hour from 01:00 to 02:00 comes twice: in daylight saving time
     # (07:00 to 08:00 in UTC) and in standard time (08:00 to 09:00).
@@ -152,7 +152,7 @@ def test_download_and_extract_data_for_request_of_2023_to_2024(
         URL_FOLDER + "data-requests/" + file_name, tmp_path / file_name
     )
 
-    time_series = aeso.download_and_extract_data_for_request(4)
+    time_series = aeso.download_and_extract_data_for_request(4, "CAN_AB")
 
     # The hour that starts at 00:00 in standard time ends at 08:00 in
     # UTC.

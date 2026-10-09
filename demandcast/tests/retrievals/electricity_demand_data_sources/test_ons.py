@@ -6,15 +6,19 @@ Description:
     Tests for the retrieval of electricity demand data from ONS.
 """
 
+import datetime
+
 import numpy as np
-import pytest
 from retrievals.electricity_demand_data_sources import ons
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
-    assert ons.get_available_requests("BRA_SE") == list(range(2000, 2026))
+    requests = ons.get_available_requests(
+        "BRA_SE", datetime.date(2000, 1, 1), datetime.date(2025, 12, 28)
+    )
+
+    assert requests == list(range(2000, 2026))
 
 
 def test_download_and_extract_data_for_request(fake_downloads, assert_demand):

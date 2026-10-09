@@ -33,7 +33,7 @@ def test_download_and_extract_data(fake_downloads, assert_demand, tmp_path):
     ).to_excel(file_path, sheet_name="Post-dispatch Query", index=False)
     fake_downloads.serve(URL, file_path)
 
-    time_series = cnd.download_and_extract_data()
+    time_series = cnd.download_and_extract_data_for_request(None, "PAN")
 
     # The times are the starts of the hours: the first hour of each
     # week ("Hora (sem.)") starts at 00:00. They move one hour later to

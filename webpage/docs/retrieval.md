@@ -65,10 +65,9 @@ The script will store electricity demand data in `data/electricity_demand/YYYY-M
 Each retrieval module in the `demandcast/retrievals/electricity_demand_data_sources/` folder is designed to fetch electricity demand data from a specific data source. The main functions in each module typically include:
 
 - **Redistribution rights (`redistribute`)**: Information about the redistribution rights of the data source.
-- **Check input parameters (`_check_input_parameters`)**: Checks that the input parameters are valid.
-- **Data request construction (`get_available_requests`)**: Builds all data requests based on the availability of the data source.
+- **Data request construction (`get_available_requests`)**: Builds the requests of a country or subdivision from its code and the dates of its data in the YAML file, which the retrieval code passes. A source that downloads all its data at once returns a single request, `None`.
 - **URL construction (`get_url`)**: Generates the appropriate web request URL.
-- **Data download and processing (`download_and_extract_data_for_request`)**: Fetches the data using `utils.fetcher` functions and transforms it into a `pandas.Series`.
+- **Data download and processing (`download_and_extract_data_for_request`)**: Fetches the data of a request, which the retrieval code passes with the code, using `utils.fetcher` functions, and transforms it into a `pandas.Series` of the demand in MW, with time-zone-aware times that mark the end of each interval.
 
 #### Names, codes, time zones, and data time ranges for countries and subdivisions
 

@@ -13,6 +13,7 @@ Description:
     Source: https://seffaflik.epias.com.tr/
 """
 
+import datetime
 import logging
 import os
 
@@ -34,14 +35,30 @@ def redistribute() -> bool:
     return True
 
 
-def get_available_requests() -> None:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[None]:
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the EPIAS website.
+    The data is read at once from the files downloaded manually, so
+    there is a single request, without parameters.
+
+    Parameters
+    ----------
+    code : str
+        The code of Turkey.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
+
+    Returns
+    -------
+    list[None]
+        The single request.
     """
-    logging.debug("The data is retrieved manually.")
+    return [None]
 
 
 def get_url() -> str:
@@ -57,13 +74,22 @@ def get_url() -> str:
     return "https://seffaflik.epias.com.tr/"
 
 
-def download_and_extract_data() -> pd.Series:
+def download_and_extract_data_for_request(
+    request: None, code: str
+) -> pd.Series:
     """
     Extract electricity demand data.
 
     This function extracts the electricity demand data from the EPIAS
     website. This function assumes that the data has been downloaded and
     is available in the specified folder.
+
+    Parameters
+    ----------
+    request : None
+        The single request of the data, without parameters.
+    code : str
+        The code of Turkey.
 
     Returns
     -------

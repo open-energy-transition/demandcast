@@ -62,7 +62,7 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 
 ## Adding a data source
 
-1. Add `retrievals/electricity_demand_data_sources/<source>.py` with `redistribute()`, `get_available_requests()`, `get_url()` and `download_and_extract_data()` (or `download_and_extract_data_for_request()`). Follow an existing module.
+1. Add `retrievals/electricity_demand_data_sources/<source>.py` with `redistribute()`, `get_url()`, `get_available_requests(code, start_date, end_date)` and `download_and_extract_data_for_request(request, code)`. The retrieval code passes the code and the dates of the data from the YAML file, and then each request with the code; a source that downloads its data at once returns `[None]`. Return the demand in MW with time-zone-aware times that mark the end of each interval. Follow `ons.py` or `hydroquebec.py`.
 2. Add `<source>.yaml` listing its entities: `country_name` and `country_code` (ISO 3166 alpha-3), `subdivision_name`, `subdivision_code` and `time_zone` for subdivisions, and `start_date` and `end_date` (a date or `today`).
 3. Add shapes for non-standard subdivisions in `shapes/`, the source to `run_all.sh`, and a test that parses a small synthetic fixture of the source's files: `tests/retrievals/electricity_demand_data_sources/test_<source>.py`, with the fixture in its `fixtures/` folder, served by the `fake_downloads` fixture (see `test_aemo_nem.py` and issue #161).
 

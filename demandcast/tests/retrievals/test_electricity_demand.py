@@ -9,10 +9,11 @@ Description:
     data and the saved files.
 """
 
+import datetime
 import os
 import sys
 import types
-from unittest.mock import Mock, call
+from unittest.mock import Mock, call, create_autospec
 
 import pandas as pd
 import pytest
@@ -45,17 +46,23 @@ def add_data_source(tmp_folders, tmp_path, monkeypatch):
 
     def add(name: str, codes: list[str], **functions: Mock) -> None:
         # The codes are country codes, followed by subdivision codes
-        # for subdivisions.
-        entities = [
-            dict(
-                zip(
-                    ["country_code", "subdivision_code"],
-                    code.split("_"),
-                    strict=False,
-                )
-            )
-            for code in codes
-        ]
+        # for subdivisions, which also have a name and a time zone.
+        entities = []
+        for code in codes:
+            country_code, _, subdivision_code = code.partition("_")
+            entity = {
+                "country_name": f"Country {country_code}",
+                "country_code": country_code,
+                "start_date": datetime.date(2020, 1, 1),
+                "end_date": "today",
+            }
+            if subdivision_code:
+                entity |= {
+                    "subdivision_name": f"Subdivision {subdivision_code}",
+                    "subdivision_code": subdivision_code,
+                    "time_zone": "Europe/Paris",
+                }
+            entities.append(entity)
         with open(
             data_sources_folder / f"{name}.yaml", "w", encoding="utf-8"
         ) as file:
@@ -112,6 +119,88 @@ def _read_saved_data(
     return {
         f"{time:%Y-%m-%d %H:%M}": value
         for time, value in data["Load (MW)"].items()
+    }
+
+
+def _get_available_requests(code, start_date, end_date):
+    """Get the requests of a data source, from the code and dates."""
+
+
+def _download_and_extract_data_for_request(request, code):
+    """Download the data of a request of a data source."""
+
+
+def test_one_entity_with_the_code_and_the_dates(tmp_folders, add_data_source):
+    """Test a data source with one entity, downloaded at once."""
+    get_available_requests = create_autospec(
+        _get_available_requests, return_value=[None]
+    )
+    download_and_extract_data_for_request = create_autospec(
+        _download_and_extract_data_for_request,
+        return_value=_demand("2024-01-01 01:00", [100.0, 200.0]),
+    )
+    add_data_source(
+        "single",
+        ["FRA"],
+        get_available_requests=get_available_requests,
+        download_and_extract_data_for_request=(
+            download_and_extract_data_for_request
+        ),
+    )
+
+    retrievals.electricity_demand.run_data_retrieval("single", None, None)
+
+    # The code is passed also with one entity, with the dates of its
+    # data in the YAML file: from 2020-01-01 to five days before today.
+    # The source downloads its data at once, with a single request.
+    get_available_requests.assert_called_once_with(
+        "FRA", datetime.date(2020, 1, 1), datetime.date(2025, 12, 28)
+    )
+    download_and_extract_data_for_request.assert_called_once_with(None, "FRA")
+    assert _read_saved_data(tmp_folders, "FRA", "single") == {
+        "2024-01-01 00:00": 100.0,
+        "2024-01-01 01:00": 200.0,
+    }
+
+
+def test_several_entities_with_the_code_and_the_dates(
+    tmp_folders, add_data_source
+):
+    """Test that each request is passed whole, with the code."""
+    get_available_requests = create_autospec(
+        _get_available_requests, return_value=[(2024, 1), (2024, 2)]
+    )
+    download_and_extract_data_for_request = create_autospec(
+        _download_and_extract_data_for_request,
+        side_effect=lambda request, _code: _demand(
+            f"{request[0]}-{request[1]:02d}-01 00:00",
+            [100.0 * request[1]],
+            "America/Los_Angeles",
+        ),
+    )
+    add_data_source(
+        "subdivisions",
+        ["USA_CAL", "USA_NY"],
+        get_available_requests=get_available_requests,
+        download_and_extract_data_for_request=(
+            download_and_extract_data_for_request
+        ),
+    )
+
+    retrievals.electricity_demand.run_data_retrieval(
+        "subdivisions", "USA_CAL", None
+    )
+
+    get_available_requests.assert_called_once_with(
+        "USA_CAL", datetime.date(2020, 1, 1), datetime.date(2025, 12, 28)
+    )
+    assert download_and_extract_data_for_request.call_args_list == [
+        call((2024, 1), "USA_CAL"),
+        call((2024, 2), "USA_CAL"),
+    ]
+    assert _read_saved_data(tmp_folders, "USA_CAL", "subdivisions") == {
+        "2024-01-01 08:00": 100.0,
+        "2024-02-01 08:00": 200.0,
     }
 
 

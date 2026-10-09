@@ -6,16 +6,16 @@ Description:
     Tests for the retrieval of electricity demand data from IESO.
 """
 
-import pytest
+import datetime
+
 from retrievals.electricity_demand_data_sources import ieso
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the old file and the years after."""
-    assert ieso.get_available_requests() == [(None, True)] + [
-        (year, False) for year in range(2002, 2026)
-    ]
+    assert ieso.get_available_requests(
+        "CAN_ON", datetime.date(1994, 1, 1), datetime.date(2025, 12, 28)
+    ) == [(None, True)] + [(year, False) for year in range(2002, 2026)]
 
 
 def test_download_and_extract_data_for_request_before_may_2002(
@@ -28,7 +28,9 @@ def test_download_and_extract_data_for_request_before_may_2002(
         "ieso_1994-2002.csv",
     )
 
-    time_series = ieso.download_and_extract_data_for_request(None, True)
+    time_series = ieso.download_and_extract_data_for_request(
+        (None, True), "CAN_ON"
+    )
 
     # The certificate of the website is checked.
     assert fake_downloads.requests[0][2]["verify"] is True
@@ -58,7 +60,9 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
         "ieso_2024.csv",
     )
 
-    time_series = ieso.download_and_extract_data_for_request(2024, False)
+    time_series = ieso.download_and_extract_data_for_request(
+        (2024, False), "CAN_ON"
+    )
 
     # The hours are numbered from 1 to 24 by their ends, in Eastern
     # Standard Time all year, so the hour 24 ends at midnight of the

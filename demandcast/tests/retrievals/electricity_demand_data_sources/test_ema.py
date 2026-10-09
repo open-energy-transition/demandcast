@@ -6,8 +6,9 @@ Description:
     Tests for the retrieval of electricity demand data from EMA.
 """
 
+import datetime
+
 import pandas as pd
-import pytest
 from retrievals.electricity_demand_data_sources import ema
 
 
@@ -46,10 +47,11 @@ def _write_weekly_file(file_path, first_day):
     pd.DataFrame(rows).to_excel(file_path, header=False, index=False)
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the published weeks of the data."""
-    requests = ema.get_available_requests()
+    requests = ema.get_available_requests(
+        "SGP", datetime.date(2014, 1, 6), datetime.date(2025, 12, 28)
+    )
 
     assert requests[0] == (2014, 1, 6)
     assert requests[-1] == (2025, 12, 15)
@@ -70,7 +72,9 @@ def test_download_and_extract_data_for_request(
         file_path,
     )
 
-    time_series = ema.download_and_extract_data_for_request(2025, 12, 15)
+    time_series = ema.download_and_extract_data_for_request(
+        (2025, 12, 15), "SGP"
+    )
 
     # The times are the ends of the half hours, in Singapore (UTC+8).
     times = pd.date_range("2025-12-14 16:30", periods=7 * 48, freq="30min")
