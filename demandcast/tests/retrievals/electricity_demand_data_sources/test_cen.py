@@ -6,15 +6,17 @@ Description:
     Tests for the retrieval of electricity demand data from CEN.
 """
 
+import datetime
+
 import pandas as pd
-import pytest
 from retrievals.electricity_demand_data_sources import cen
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
-    requests = cen.get_available_requests()
+    requests = cen.get_available_requests(
+        "CHL", datetime.date(1999, 1, 1), datetime.date(2025, 12, 28)
+    )
 
     assert requests[0] == (
         pd.Timestamp("1999-01-01"),
@@ -36,7 +38,7 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
     )
 
     time_series = cen.download_and_extract_data_for_request(
-        pd.Timestamp("2025-01-01"), pd.Timestamp("2025-12-28")
+        (pd.Timestamp("2025-01-01"), pd.Timestamp("2025-12-28")), "CHL"
     )
 
     assert fake_downloads.requests[0][2]["headers"]["Origin"] == (
@@ -66,7 +68,7 @@ def test_download_and_extract_data_for_request_when_daylight_saving_ends(
     )
 
     time_series = cen.download_and_extract_data_for_request(
-        pd.Timestamp("2025-01-01"), pd.Timestamp("2025-12-28")
+        (pd.Timestamp("2025-01-01"), pd.Timestamp("2025-12-28")), "CHL"
     )
 
     assert_demand(

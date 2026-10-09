@@ -6,10 +6,10 @@ Description:
     Tests for the retrieval of electricity demand data from CENACE.
 """
 
+import datetime
 import zipfile
 
 import pandas as pd
-import pytest
 from retrievals.electricity_demand_data_sources import cenace
 
 URL = (
@@ -136,10 +136,11 @@ def _serve_march_2024(fake_downloads, tmp_path) -> None:
     )
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
-    requests = cenace.get_available_requests("MEX_BCA")
+    requests = cenace.get_available_requests(
+        "MEX_BCA", datetime.date(2016, 1, 27), datetime.date(2025, 12, 28)
+    )
 
     # The data ends 15 days before today, and each request ends on the
     # day that the next one starts.
@@ -161,7 +162,7 @@ def test_download_and_extract_data_for_request(
     _serve_march_2024(fake_downloads, tmp_path)
 
     time_series = cenace.download_and_extract_data_for_request(
-        pd.Timestamp("2024-03-09"), pd.Timestamp("2024-03-10"), "MEX_BCA"
+        (pd.Timestamp("2024-03-09"), pd.Timestamp("2024-03-10")), "MEX_BCA"
     )
 
     # The days are posted in the form, which asks for the archive.
@@ -197,7 +198,7 @@ def test_download_and_extract_data_for_request_of_the_sin(
     _serve_march_2024(fake_downloads, tmp_path)
 
     time_series = cenace.download_and_extract_data_for_request(
-        pd.Timestamp("2024-03-09"), pd.Timestamp("2024-03-10"), "MEX_NOR"
+        (pd.Timestamp("2024-03-09"), pd.Timestamp("2024-03-10")), "MEX_NOR"
     )
 
     # The areas of the SIN are read in the time of central Mexico, UTC-6
@@ -230,7 +231,7 @@ def test_download_and_extract_data_for_request_of_norte_in_2022(
     )
 
     time_series = cenace.download_and_extract_data_for_request(
-        pd.Timestamp("2022-10-30"), pd.Timestamp("2022-10-30"), "MEX_NTE"
+        (pd.Timestamp("2022-10-30"), pd.Timestamp("2022-10-30")), "MEX_NTE"
     )
 
     # Like every area of the SIN, Norte has 25 hours on the day when
@@ -271,7 +272,7 @@ def test_download_and_extract_data_for_request_with_days_without_data(
     )
 
     time_series = cenace.download_and_extract_data_for_request(
-        pd.Timestamp("2024-03-08"), pd.Timestamp("2024-03-10"), "MEX_CEN"
+        (pd.Timestamp("2024-03-08"), pd.Timestamp("2024-03-10")), "MEX_CEN"
     )
 
     assert "No data found for the date 2024-03-08, skipped." in caplog.text
@@ -285,5 +286,5 @@ def test_download_and_extract_data_for_request_with_days_without_data(
     )
     # A request without any day with data gives an empty series.
     assert cenace.download_and_extract_data_for_request(
-        pd.Timestamp("2024-03-09"), pd.Timestamp("2024-03-09"), "MEX_CEN"
+        (pd.Timestamp("2024-03-09"), pd.Timestamp("2024-03-09")), "MEX_CEN"
     ).empty

@@ -6,15 +6,18 @@ Description:
     Tests for the retrieval of electricity demand data from EIA.
 """
 
+import datetime
+
 import pandas as pd
 import pytest
 from retrievals.electricity_demand_data_sources import eia
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the half years of the data."""
-    requests = eia.get_available_requests("USA_CAL")
+    requests = eia.get_available_requests(
+        "USA_CAL", datetime.date(2020, 1, 1), datetime.date(2025, 12, 28)
+    )
 
     assert requests[0] == (
         pd.Timestamp("2020-01-01"),
@@ -42,7 +45,7 @@ def test_download_and_extract_data_for_request(
     )
 
     time_series = eia.download_and_extract_data_for_request(
-        pd.Timestamp("2025-07-01"), pd.Timestamp("2025-12-28"), "USA_CAL"
+        (pd.Timestamp("2025-07-01"), pd.Timestamp("2025-12-28")), "USA_CAL"
     )
 
     # The API gives the values as text.

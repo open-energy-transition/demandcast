@@ -6,6 +6,8 @@ Description:
     Tests for the retrieval of electricity demand data from PGCB.
 """
 
+import datetime
+
 from retrievals.electricity_demand_data_sources import pgcb
 
 PAGE_URL = (
@@ -24,7 +26,9 @@ def test_get_available_requests(fake_downloads, caplog):
             PAGE_URL + str(page_number), "pgcb_empty_page.html"
         )
 
-    requests = pgcb.get_available_requests()
+    requests = pgcb.get_available_requests(
+        "BGD", datetime.date(2014, 1, 1), datetime.date(2025, 12, 28)
+    )
 
     # The date with a typo is corrected, the report of a date without
     # data is left out, and the row without a spreadsheet or a date is

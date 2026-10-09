@@ -15,6 +15,7 @@ Description:
     Source: https://erp.powergrid.gov.bd/w/report/eyJpdiI6IldsU2ZQTGkvbkRnQU9FMjZ5UHhmeGc9PSIsInZhbHVlIjoiQzhONVl5ZGxRY3E3T3ZVNCtLZGt1Zz09IiwibWFjIjoiN2JiNTI5MzNhOWIxZDVjY2NkMmFlZWU4ZDU1N2I4OWZlYjNlZWM1ZGU4NzRiNWU4ZjQ3ZDc1ODRlMTk3MDc0YyIsInRhZyI6IiJ9/show_report
 """
 
+import datetime
 import logging
 import re
 
@@ -106,15 +107,9 @@ def _clean_and_format(date: str) -> str:
     return date
 
 
-def _check_input_parameters() -> None:
-    """Check if the input parameters are valid."""
-    logging.debug(
-        "Checking if the input parameters are valid would be extremely "
-        "time-consuming. Skipping this step."
-    )
-
-
-def get_available_requests() -> list[tuple[str, str, str]]:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[tuple[str, str, str]]:
     """
     Get the available requests.
 
@@ -124,6 +119,15 @@ def get_available_requests() -> list[tuple[str, str, str]]:
     extension, and date. The function scrapes the website to find
     all available files and returns a list of tuples containing
     the file number, file extension, and date.
+
+    Parameters
+    ----------
+    code : str
+        The code of Bangladesh.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
 
     Returns
     -------
@@ -263,7 +267,7 @@ def get_url(file_number: str, extension: str) -> str:
 
 
 def download_and_extract_data_for_request(
-    file_number: str, extension: str, date: str
+    file_number_extension_and_date: tuple[str, str, str], code: str
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
@@ -273,12 +277,11 @@ def download_and_extract_data_for_request(
 
     Parameters
     ----------
-    file_number : str
-        The file number of the Excel file.
-    extension : str
-        The file extension of the Excel file (xls, xlsx, xlsm).
-    date : str
-        The date in the format YYYY-MM-DD.
+    file_number_extension_and_date : tuple[str, str, str]
+        The file number of the Excel file, its file extension (xls,
+        xlsx, xlsm), and the date in the format YYYY-MM-DD.
+    code : str
+        The code of Bangladesh.
 
     Returns
     -------
@@ -290,6 +293,8 @@ def download_and_extract_data_for_request(
     TypeError
         If the extracted data is not a pandas ExcelFile.
     """
+    file_number, extension, date = file_number_extension_and_date
+
     logging.info(
         f"Retrieving electricity demand data from file with date {date}."
     )

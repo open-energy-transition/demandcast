@@ -6,12 +6,12 @@ Description:
     Tests for the retrieval of electricity demand data from CAISO.
 """
 
+import datetime
+
 import pandas as pd
-import pytest
 from retrievals.electricity_demand_data_sources import caiso
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests(fake_downloads):
     """Test that the months are the published ones, until today."""
     fake_downloads.serve(
@@ -21,7 +21,10 @@ def test_get_available_requests(fake_downloads):
 
     # The years until 2023, then the months of the page until the end
     # of 2025: the months of 2026 are after today.
-    assert caiso.get_available_requests() == [
+    requests = caiso.get_available_requests(
+        "USA_CAL", datetime.date(2019, 1, 1), datetime.date(2025, 12, 28)
+    )
+    assert requests == [
         (2019, None),
         (2020, None),
         (2021, None),
@@ -33,7 +36,6 @@ def test_get_available_requests(fake_downloads):
     ]
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_download_and_extract_data_for_request(
     fake_downloads, assert_demand, tmp_path
 ):
@@ -53,7 +55,9 @@ def test_download_and_extract_data_for_request(
         file_path,
     )
 
-    time_series = caiso.download_and_extract_data_for_request(2025, 12)
+    time_series = caiso.download_and_extract_data_for_request(
+        (2025, 12), "USA_CAL"
+    )
 
     # The row of the totals is left out, and the hour ending at 01:00 in
     # Los Angeles ends at 09:00 in UTC.
@@ -66,11 +70,3 @@ def test_download_and_extract_data_for_request(
             "2025-12-01 11:00": 23500.25,
         },
     )
-
-
-@pytest.mark.usefixtures("frozen_now")
-@pytest.mark.parametrize("request_", [(2024, None), (2023, 1), (2026, 1)])
-def test_get_url_of_an_unavailable_request(request_):
-    """Test that the years are until 2023 and the months until today."""
-    with pytest.raises(ValueError, match="not available"):
-        caiso.get_url(*request_)

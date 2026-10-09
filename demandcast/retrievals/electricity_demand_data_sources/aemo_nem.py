@@ -17,7 +17,6 @@ import datetime
 import logging
 
 import pandas as pd
-import utils.entities
 import utils.fetcher
 
 
@@ -38,41 +37,9 @@ def redistribute() -> bool:
     return True
 
 
-def _check_input_parameters(
-    code: str,
-    year: int | None = None,
-    month: int | None = None,
-) -> None:
-    """
-    Check if the input parameters are valid.
-
-    Parameters
-    ----------
-    code : str
-        The code of the subdivision.
-    year : int, optional
-        The year of the data to retrieve.
-    month : int, optional
-        The month of the data to retrieve.
-
-    Raises
-    ------
-    ValueError
-        If the input parameters are not valid.
-    """
-    # Check if the code is valid.
-    utils.entities.check_code_in_data_source(code, "aemo_nem")
-
-    # Check if the year and month are valid.
-    if (
-        year is not None
-        and month is not None
-        and (year, month) not in get_available_requests(code)
-    ):
-        raise ValueError(f"Year {year} and month {month} are not supported.")
-
-
-def get_available_requests(code: str) -> list[tuple[int, int]]:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[tuple[int, int]]:
     """
     Get the available requests.
 
@@ -83,22 +50,16 @@ def get_available_requests(code: str) -> list[tuple[int, int]]:
     ----------
     code : str
         The code of the subdivision.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
 
     Returns
     -------
     available_requests : list[tuple[int, int]]
         The list of available requests.
     """
-    # Check if input parameters are valid.
-    _check_input_parameters(code)
-
-    # Read the start and end date of the available data.
-    start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            "aemo_nem"
-        )[code]
-    )
-
     # Get the list of available requests (year, month).
     values_list = (
         pd.date_range(start=start_date, end=end_date, freq="ME")
@@ -130,9 +91,6 @@ def get_url(year: int, month: int, code: str) -> str:
     url : str
         The URL of the electricity demand data.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(code, year=year, month=month)
-
     # Extract the subdivision code.
     subdivision_code = code.split("_")[1]
 
@@ -146,7 +104,7 @@ def get_url(year: int, month: int, code: str) -> str:
 
 
 def download_and_extract_data_for_request(
-    year: int, month: int, code: str
+    year_and_month: tuple[int, int], code: str
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
@@ -156,10 +114,8 @@ def download_and_extract_data_for_request(
 
     Parameters
     ----------
-    year : int
-        The year of the electricity demand data.
-    month : int
-        The month of the electricity demand data.
+    year_and_month : tuple[int, int]
+        The year and month of the electricity demand data.
     code : str
         The subdivision code of the electricity demand data.
 
@@ -173,8 +129,7 @@ def download_and_extract_data_for_request(
     TypeError
         If the extracted data is not a pandas DataFrame.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(code, year=year, month=month)
+    year, month = year_and_month
 
     logging.info(
         "Retrieving electricity demand data for the "

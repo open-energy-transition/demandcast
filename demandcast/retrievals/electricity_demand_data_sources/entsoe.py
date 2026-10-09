@@ -13,12 +13,12 @@ Description:
     Source: https://github.com/EnergieID/entsoe-py
 """
 
+import datetime
 import logging
 import os
 
 import pandas as pd
 import utils.config
-import utils.entities
 import utils.fetcher
 from dotenv import load_dotenv
 
@@ -39,57 +39,8 @@ def redistribute() -> bool:
     return True
 
 
-def _check_input_parameters(
-    code: str,
-    start_date: pd.Timestamp | None = None,
-    end_date: pd.Timestamp | None = None,
-) -> None:
-    """
-    Check if the input parameters are valid.
-
-    Parameters
-    ----------
-    code : str
-        The code of the subdivision of interest.
-    start_date : pandas.Timestamp, optional
-        The start date of the data retrieval.
-    end_date : pandas.Timestamp, optional
-        The end date of the data retrieval.
-
-    Raises
-    ------
-    ValueError
-        If the input parameters are not valid.
-    """
-    # Check if the code is valid.
-    utils.entities.check_code_in_data_source(code, "entsoe")
-
-    if start_date is not None and end_date is not None:
-        # Check if the retrieval period is less than 1 year.
-        if end_date - start_date > pd.Timedelta("366days"):
-            raise ValueError(
-                "The retrieval period must be less than or equal to 1 year. "
-                f"start_date: {start_date}, end_date: {end_date}"
-            )
-
-        # Read the start date of the available data.
-        start_date_of_data_availability = pd.to_datetime(
-            utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-                "entsoe"
-            )[code][0]
-        )
-
-        # Check that the start date is greater than or equal to the
-        # beginning of the data availability.
-        if start_date < start_date_of_data_availability:
-            raise ValueError(
-                "The beginning of the data availability is "
-                f"{start_date_of_data_availability}."
-            )
-
-
 def get_available_requests(
-    code: str,
+    code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """
     Get the available requests.
@@ -101,22 +52,16 @@ def get_available_requests(
     ----------
     code : str
         The code of the country.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
 
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
         The list of available requests.
     """
-    # Check if input parameters are valid.
-    _check_input_parameters(code)
-
-    # Read the start and end date of the available data.
-    start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            "entsoe"
-        )[code]
-    )
-
     # Define intervals for the retrieval periods. A one-year period is
     # the maximum available on the platform.
     intervals = pd.date_range(start_date, end_date, freq="YS")
@@ -160,9 +105,6 @@ def get_url(
     ValueError
         If the ENTSO-E API key is not set in the environment variables.
     """
-    # Check if input parameters are valid.
-    _check_input_parameters(code, start_date=start_date, end_date=end_date)
-
     # Convert the start and end dates and times to the required format.
     start = start_date.strftime("%Y%m%d%H00")
     end = end_date.strftime("%Y%m%d%H00")
@@ -199,9 +141,7 @@ def get_url(
 
 
 def download_and_extract_data_for_request(
-    start_date: pd.Timestamp,
-    end_date: pd.Timestamp,
-    code: str,
+    period: tuple[pd.Timestamp, pd.Timestamp], code: str
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
@@ -211,10 +151,8 @@ def download_and_extract_data_for_request(
 
     Parameters
     ----------
-    start_date : pandas.Timestamp
-        The start date of the data retrieval period.
-    end_date : pandas.Timestamp
-        The end date of the data retrieval period.
+    period : tuple[pandas.Timestamp, pandas.Timestamp]
+        The start and end date of the data retrieval period.
     code : str
         The ISO Alpha-3 code of the country.
 
@@ -226,10 +164,18 @@ def download_and_extract_data_for_request(
     Raises
     ------
     ValueError
-        If the ENTSO-E API key is not set in the environment variables.
+        If the retrieval period is longer than 1 year, or if the
+        ENTSO-E API key is not set in the environment variables.
     """
-    # Check if input parameters are valid.
-    _check_input_parameters(code, start_date=start_date, end_date=end_date)
+    start_date, end_date = period
+
+    # Check if the retrieval period is less than 1 year, the maximum
+    # available on the platform.
+    if end_date - start_date > pd.Timedelta("366days"):
+        raise ValueError(
+            "The retrieval period must be less than or equal to 1 year. "
+            f"start_date: {start_date}, end_date: {end_date}"
+        )
 
     logging.info(
         f"Retrieving electricity demand data from {start_date.date()} to {end_date.date()}."
