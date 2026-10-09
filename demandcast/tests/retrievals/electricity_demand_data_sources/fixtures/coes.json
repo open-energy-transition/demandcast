@@ -1,0 +1,105 @@
+{
+  "Chart": {
+    "Series": [
+      {
+        "Name": "Ejecutado",
+        "Data": [
+          {
+            "Nombre": "2025/01/01 00:30:00",
+            "Valor": 7000.5,
+            "CodColor": "#33B8FF",
+            "Valores": null,
+            "Valores_": null,
+            "Codigo": 0,
+            "RER": null
+          },
+          {
+            "Nombre": "2025/01/01 01:00:00",
+            "Valor": 6900.25,
+            "CodColor": "#33B8FF",
+            "Valores": null,
+            "Valores_": null,
+            "Codigo": 0,
+            "RER": null
+          },
+          {
+            "Nombre": "2025/01/02 00:00:00",
+            "Valor": 7100.0,
+            "CodColor": "#33B8FF",
+            "Valores": null,
+            "Valores_": null,
+            "Codigo": 0,
+            "RER": null
+          }
+        ]
+      },
+      {
+        "Name": "Programación Diaria",
+        "Data": [
+          {
+            "Nombre": "2025/01/01 00:30:00",
+            "Valor": 1.0,
+            "CodColor": "#33B8FF",
+            "Valores": null,
+            "Valores_": null,
+            "Codigo": 0,
+            "RER": null
+          },
+          {
+            "Nombre": "2025/01/01 01:00:00",
+            "Valor": 1.0,
+            "CodColor": "#33B8FF",
+            "Valores": null,
+            "Valores_": null,
+            "Codigo": 0,
+            "RER": null
+          },
+          {
+            "Nombre": "2025/01/02 00:00:00",
+            "Valor": 1.0,
+            "CodColor": "#33B8FF",
+            "Valores": null,
+            "Valores_": null,
+            "Codigo": 0,
+            "RER": null
+          }
+        ]
+      },
+      {
+        "Name": "Programación Semanal",
+        "Data": [
+          {
+            "Nombre": "2025/01/01 00:30:00",
+            "Valor": 2.0,
+            "CodColor": "#33B8FF",
+            "Valores": null,
+            "Valores_": null,
+            "Codigo": 0,
+            "RER": null
+          },
+          {
+            "Nombre": "2025/01/01 01:00:00",
+            "Valor": 2.0,
+            "CodColor": "#33B8FF",
+            "Valores": null,
+            "Valores_": null,
+            "Codigo": 0,
+            "RER": null
+          },
+          {
+            "Nombre": "2025/01/02 00:00:00",
+            "Valor": 2.0,
+            "CodColor": "#33B8FF",
+            "Valores": null,
+            "Valores_": null,
+            "Codigo": 0,
+            "RER": null
+          }
+        ]
+      }
+    ]
+  },
+  "LastDate": "2025/01/02",
+  "LastTime": "00:00",
+  "LastValue": 7100.0
+}
