@@ -245,9 +245,10 @@ def download_and_extract_data_for_request(
             "expected a pandas DataFrame."
         )
 
-    # Create the electricity demand time series.
+    # Create the electricity demand time series. The API gives the
+    # values as text.
     electricity_demand_time_series = pd.Series(
-        dataset["value"].values,
+        pd.to_numeric(dataset["value"]).to_numpy(),
         index=pd.to_datetime(dataset["period"]),
     ).tz_localize("UTC")
 

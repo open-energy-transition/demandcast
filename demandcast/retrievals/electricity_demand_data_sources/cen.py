@@ -204,8 +204,9 @@ def download_and_extract_data_for_request(
         for date, time in zip(dataset["fecha"], dataset["hora"], strict=True)
     ]
 
-    # Sort the dataset by date and time.
-    dataset = dataset.sort_values(by="date and time", ascending=True)
+    # Sort the dataset by date and time, with the 25th hour after the
+    # 24th.
+    dataset = dataset.sort_values(by=["date and time", "hora"])
 
     # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
@@ -213,10 +214,14 @@ def download_and_extract_data_for_request(
         index=pd.to_datetime(dataset["date and time"]),
     )
 
-    # Add the timezone to the index.
+    # Add the timezone to the index. When daylight saving time ends, the
+    # 24th and the 25th hours both start at 23:00: the 24th in daylight
+    # saving time, and the 25th in standard time.
     electricity_demand_time_series = (
         electricity_demand_time_series.tz_localize(
-            "America/Santiago", ambiguous="NaT", nonexistent="NaT"
+            "America/Santiago",
+            ambiguous=(dataset["hora"] <= 24).to_numpy(),
+            nonexistent="NaT",
         )
     )
 
