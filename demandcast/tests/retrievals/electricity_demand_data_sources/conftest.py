@@ -144,7 +144,12 @@ def fake_downloads(monkeypatch):
     def read_with(reader):
         def read(source: Any, *args: Any, **kwargs: Any) -> Any:
             if isinstance(source, str) and source.startswith("http"):
-                source = downloads.get_file("GET", source)
+                # pandas sends the storage options of a URL as the
+                # headers of its download, and rejects them for a file.
+                download_kwargs: dict[str, Any] = {}
+                if "storage_options" in kwargs:
+                    download_kwargs["headers"] = kwargs.pop("storage_options")
+                source = downloads.get_file("GET", source, **download_kwargs)
             return reader(source, *args, **kwargs)
 
         return read

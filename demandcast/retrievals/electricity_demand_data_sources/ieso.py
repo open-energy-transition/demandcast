@@ -9,15 +9,24 @@ Description:
     1994 to current year. The data is retrieved from the available CSV
     files on the IESO website.
 
+    The times of IESO are in Eastern Standard Time all year, without
+    daylight saving time, as on the Power Data page below ("Hour Ending
+    (EST)").
+
     Source: https://www.ieso.ca/Power-Data/Data-Directory
     Source: https://reports-public.ieso.ca/public/Demand/
+    Source: https://www.ieso.ca/power-data
 """
 
+import datetime
 import logging
 
 import pandas as pd
 import utils.entities
 import utils.fetcher
+
+# Eastern Standard Time, the time of IESO all year.
+EASTERN_STANDARD_TIME = datetime.timezone(datetime.timedelta(hours=-5))
 
 
 def redistribute() -> bool:
@@ -167,10 +176,7 @@ def download_and_extract_data_for_request(
 
         # Fetch HTML content from the URL.
         dataset = utils.fetcher.fetch_data(
-            url,
-            "html",
-            read_with="requests.get",
-            verify_ssl=False,
+            url, "html", read_with="requests.get"
         )
 
         # Make sure the dataset is a pandas DataFrame.
@@ -180,23 +186,16 @@ def download_and_extract_data_for_request(
                 "expected a pandas DataFrame."
             )
 
-        # Extract the electricity demand time series.
+        # Extract the electricity demand time series. The times of 1996
+        # have a different format from the other years.
         electricity_demand_time_series = pd.Series(
             dataset["OntarioDemand"].values,
-            index=pd.to_datetime(dataset["DateTime"]),
-        )
+            index=pd.to_datetime(dataset["DateTime"], format="mixed"),
+        ).tz_localize(EASTERN_STANDARD_TIME)
 
-        # Convert the time zone of the electricity demand time
-        # series to UTC.
-        electricity_demand_time_series = (
-            electricity_demand_time_series.tz_localize(
-                "America/Toronto", ambiguous="NaT", nonexistent="NaT"
-            )
-        )
-
-        # Add one hour to the time index because the time values
-        # appear to be provided at the beginning of the time
-        # interval.
+        # The times are the starts of the hours: the file ends at 23:00
+        # on 30 April 2002, the hour before the first one of the yearly
+        # files. Move them to the ends of the hours.
         electricity_demand_time_series.index += pd.Timedelta(hours=1)
 
         return electricity_demand_time_series
@@ -213,15 +212,12 @@ def download_and_extract_data_for_request(
             "expected a pandas DataFrame."
         )
 
-    # Extract the index of the electricity demand time series.
-    index = pd.to_datetime(
-        [
-            date + " " + str(time - 1) + ":00"
-            for date, time in zip(
-                dataset["Date"], dataset["Hour"], strict=True
-            )
-        ]
-    ).tz_localize("America/Toronto", ambiguous="NaT", nonexistent="NaT")
+    # The hours of each day are numbered from 1 to 24 by their ends, so
+    # the hour 24 ends at midnight of the next day.
+    index = pd.DatetimeIndex(
+        pd.to_datetime(dataset["Date"])
+        + pd.to_timedelta(dataset["Hour"], unit="h")
+    ).tz_localize(EASTERN_STANDARD_TIME)
 
     # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
