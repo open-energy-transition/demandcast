@@ -30,7 +30,7 @@ def test_get_available_requests():
 def test_download_and_extract_data_for_request(
     fake_downloads, assert_demand, monkeypatch
 ):
-    """Test that the periods are read as times in UTC."""
+    """Test that the periods are times in UTC and the values numbers."""
     monkeypatch.setenv("EIA_API_KEY", "test-key")
     fake_downloads.serve(
         "https://api.eia.gov/v2/electricity/rto/region-data/data/?"
@@ -45,16 +45,16 @@ def test_download_and_extract_data_for_request(
         pd.Timestamp("2025-07-01"), pd.Timestamp("2025-12-28"), "USA_CAL"
     )
 
-    # The values stay text, as the API gives them.
+    # The API gives the values as text.
     assert_demand(
         time_series,
         "UTC",
         {
-            "2025-07-01 00:00": "30000",
-            "2025-07-01 01:00": "29500",
-            "2025-07-01 02:00": "29000",
+            "2025-07-01 00:00": 30000,
+            "2025-07-01 01:00": 29500,
+            "2025-07-01 02:00": 29000,
         },
-        dtype="str",
+        dtype="int64",
     )
 
 
