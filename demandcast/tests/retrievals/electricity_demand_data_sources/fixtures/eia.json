@@ -1,0 +1,59 @@
+{
+  "response": {
+    "total": "3",
+    "dateFormat": "YYYY-MM-DD\"T\"HH24",
+    "frequency": "hourly",
+    "data": [
+      {
+        "period": "2025-07-01T00",
+        "respondent": "CAL",
+        "respondent-name": "California",
+        "type": "D",
+        "type-name": "Demand",
+        "value": "30000",
+        "value-units": "megawatthours"
+      },
+      {
+        "period": "2025-07-01T01",
+        "respondent": "CAL",
+        "respondent-name": "California",
+        "type": "D",
+        "type-name": "Demand",
+        "value": "29500",
+        "value-units": "megawatthours"
+      },
+      {
+        "period": "2025-07-01T02",
+        "respondent": "CAL",
+        "respondent-name": "California",
+        "type": "D",
+        "type-name": "Demand",
+        "value": "29000",
+        "value-units": "megawatthours"
+      }
+    ],
+    "description": "Hourly demand, day-ahead demand forecast, net generation, and interchange by balancing authority."
+  },
+  "request": {
+    "command": "/v2/electricity/rto/region-data/data/",
+    "params": {
+      "facets": {
+        "type": ["D"],
+        "respondent": ["CAL"]
+      },
+      "start": "2025-07-01T00",
+      "end": "2025-12-28T00",
+      "frequency": "hourly",
+      "data": ["value"],
+      "sort": [
+        {
+          "column": "period",
+          "direction": "asc"
+        }
+      ],
+      "offset": "0",
+      "length": "5000"
+    }
+  },
+  "apiVersion": "2.1.14"
+}

@@ -1,0 +1,21 @@
+Demand trends
+
+From www.emi.ea.govt.nz provided by the Electricity Authority (New Zealand)
+Run at: 20260102030405
+
+Parameters
+Date range,01 Jan 2024 - 01 Jan 2025
+Region type,New Zealand
+Time scale,Trading period
+Show,GWh
+
+Period start,Period end,Region ID,Region,Demand (GWh),Demand ($)
+01/01/2024 00:00:00,01/01/2024 00:30:00,NZ,New Zealand,1.500,450000.50
+07/04/2024 01:30:00,07/04/2024 02:00:00,NZ,New Zealand,1.800,500000.00
+07/04/2024 02:00:00,07/04/2024 02:30:00,NZ,New Zealand,1.750,490000.00
+07/04/2024 02:30:00,07/04/2024 03:00:00,NZ,New Zealand,1.700,480000.00
+07/04/2024 02:40:00,07/04/2024 03:10:00,NZ,New Zealand,1.650,470000.00
+07/04/2024 02:50:00,07/04/2024 03:20:00,NZ,New Zealand,1.600,460000.00
+07/04/2024 03:00:00,07/04/2024 03:30:00,NZ,New Zealand,1.550,450000.00
+29/09/2024 01:30:00,29/09/2024 02:00:00,NZ,New Zealand,1.850,3700.00
+29/09/2024 03:00:00,29/09/2024 03:30:00,NZ,New Zealand,1.825,7400.00

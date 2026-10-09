@@ -37,7 +37,9 @@ class FakeDownloads:
         self._files: dict[tuple[str, str], pathlib.Path] = {}
         self.requests: list[tuple[str, str, dict[str, Any]]] = []
 
-    def serve(self, url: str, file_name: str, method: str = "GET") -> None:
+    def serve(
+        self, url: str, file_name: str | pathlib.Path, method: str = "GET"
+    ) -> None:
         """
         Serve a file of the fixtures folder at a URL.
 
@@ -45,8 +47,9 @@ class FakeDownloads:
         ----------
         url : str
             The URL of the download.
-        file_name : str
-            The name of the file in the fixtures folder.
+        file_name : str | pathlib.Path
+            The name of the file in the fixtures folder, or the path of
+            a file that the test wrote.
         method : str, optional
             The HTTP method of the download, "GET" or "POST".
         """
