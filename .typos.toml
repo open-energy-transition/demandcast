@@ -19,6 +19,7 @@ nam = "nam"
 sur = "sur"
 coordinador = "coordinador"
 estimacion = "estimacion"
+informacion = "informacion"
 inicial = "inicial"
 # Spelling used in the licence terms quoted from a data source.
 transferrable = "transferrable"
