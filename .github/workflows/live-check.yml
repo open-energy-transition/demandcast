@@ -1,0 +1,118 @@
+# Checks the electricity demand data sources over the network every week,
+# and keeps one issue open with the data sources that fail two checks in a
+# row. The API keys are secrets of the environment live-checks, which only
+# the main branch can use.
+
+name: Live check
+
+on:
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  check:
+    name: "Check the data sources"
+    if: github.ref == 'refs/heads/main'
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    environment: live-checks
+    permissions:
+      actions: read # Download the report of the previous check.
+      contents: read
+    defaults:
+      run:
+        working-directory: ./demandcast
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: "Install uv and Python"
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          enable-cache: false
+
+      # The check counts the failures in a row of each data source from the
+      # report of the previous check, if there is one.
+      - name: "Download the report of the previous check"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          run_id="$(gh run list --workflow live-check.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+          if [ -n "$run_id" ]; then
+            gh run download "$run_id" --name data-sources-report --dir checks ||
+              echo "::notice::The previous check has no report."
+          fi
+
+      - name: "Check the data sources"
+        env:
+          ENTSOE_API_KEY: ${{ secrets.ENTSOE_API_KEY }}
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
+        run: uv run --locked check.py --config config/check_data_sources_config.yaml
+
+      - name: "Write the summary"
+        run: cat checks/data_sources_report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "Upload the report"
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: data-sources-report
+          path: demandcast/checks/data_sources_report.*
+          if-no-files-found: error
+          retention-days: 90
+
+  # Runs without the code and the API keys: it only reads the report.
+  report:
+    name: "Report the failures"
+    needs: check
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write # Open, update and close the tracking issue.
+    steps:
+      - name: "Download the report"
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: data-sources-report
+
+      # A data source is reported after two failures in a row, since a
+      # website can be out of reach for a while.
+      - name: "Open, update or close the tracking issue"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: live-check
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          failing="$(jq '[.results[] | select(.failures_in_a_row >= 2)] | length' data_sources_report.json)"
+          issue="$(gh issue list --label "$LABEL" --state open --limit 1 --json number --jq '.[0].number // empty')"
+
+          if [ "$failing" -gt 0 ]; then
+            {
+              echo
+              echo "Updated by the [weekly live check]($RUN_URL). A data source is" \
+                "reported when it fails two checks in a row, and this issue is" \
+                "closed when no data source does."
+            } >> data_sources_report.md
+            if [ -n "$issue" ]; then
+              gh issue edit "$issue" --body-file data_sources_report.md
+            else
+              gh label create "$LABEL" --force --color D93F0B \
+                --description "Data sources that fail the live check"
+              gh issue create --label "$LABEL" \
+                --title "Data sources that fail the live check" \
+                --body-file data_sources_report.md
+            fi
+          elif [ -n "$issue" ]; then
+            gh issue close "$issue" --comment \
+              "No data source fails two [live checks]($RUN_URL) in a row any more."
+          fi

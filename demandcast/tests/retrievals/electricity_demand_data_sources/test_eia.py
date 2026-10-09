@@ -61,9 +61,12 @@ def test_download_and_extract_data_for_request(
     )
 
 
-def test_get_url_without_api_key(monkeypatch):
-    """Test that the error says how to set the API key."""
+@pytest.mark.parametrize("api_key", [None, ""])
+def test_get_url_without_api_key(monkeypatch, api_key):
+    """Test that the error says how to set a missing or empty key."""
     monkeypatch.delenv("EIA_API_KEY", raising=False)
+    if api_key is not None:
+        monkeypatch.setenv("EIA_API_KEY", api_key)
     # Ignore a local .env file with a real key.
     monkeypatch.setattr(eia, "load_dotenv", lambda **_: None)
 
