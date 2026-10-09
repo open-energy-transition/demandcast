@@ -343,6 +343,7 @@ def test_run_check(fake_checks, tmp_path):
         "last_time": None,
         "messages": ["Its files are downloaded manually."],
         "seconds": 0.0,
+        "failures_in_a_row": 0,
     }
     with open(file_path + ".md", encoding="utf-8") as file:
         lines = file.read().splitlines()
@@ -352,9 +353,9 @@ def test_run_check(fake_checks, tmp_path):
         "",
         "### Failed",
         "",
-        "| Data source | Entity | Request | Problem |",
-        "| --- | --- | --- | --- |",
-        "| `cen` | CHL | 2026-01-01, 2026-10-04 | Too old.<br>A \\| B |",
+        "| Data source | Entity | Request | Problem | Failures in a row |",
+        "| --- | --- | --- | --- | --- |",
+        "| `cen` | CHL | 2026-01-01, 2026-10-04 | Too old.<br>A \\| B | 1 |",
         "",
         "### Passed",
         "",
@@ -366,6 +367,35 @@ def test_run_check(fake_checks, tmp_path):
         "",
         "- `epias`: Its files are downloaded manually.",
     ]
+
+
+@pytest.mark.usefixtures("fake_checks")
+def test_run_check_counts_the_failures_in_a_row(tmp_path):
+    """Test that the failures are counted from the previous report."""
+    file_path = os.path.join(tmp_path, "checks", "data_sources_report.json")
+
+    # Cen fails each check, and ONS passes after failing the first one.
+    for failures_in_a_row in [1, 2, 3]:
+        results = checks.data_sources.run_check(["ons", "cen"])
+
+        assert results[0].failures_in_a_row == 0
+        assert results[1].failures_in_a_row == failures_in_a_row
+        with open(file_path, encoding="utf-8") as file:
+            report = json.load(file)
+        assert report["results"][1]["failures_in_a_row"] == failures_in_a_row
+
+        if failures_in_a_row == 1:
+            # A report of before the failures were counted.
+            report["results"][0]["status"] = "failed"
+            del report["results"][1]["failures_in_a_row"]
+            with open(file_path, "w", encoding="utf-8") as file:
+                json.dump(report, file)
+
+    # A report that cannot be read is ignored.
+    with open(file_path, "w", encoding="utf-8") as file:
+        file.write("not a report")
+    results = checks.data_sources.run_check(["ons", "cen"])
+    assert results[1].failures_in_a_row == 1
 
 
 def test_run_check_of_all_data_sources(fake_checks):
@@ -411,6 +441,7 @@ def test_run_check_without_an_answer(monkeypatch):
         data_source="cen",
         messages=["No answer within 0.005 minutes."],
         seconds=0.3,
+        failures_in_a_row=1,
     )
     assert results[1].status == "passed"
 

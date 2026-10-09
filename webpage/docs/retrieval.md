@@ -100,6 +100,8 @@ For each data source that is downloaded automatically, the check downloads the l
 
 The data sources read from manually downloaded files are skipped, and ENTSO-E and EIA need their API keys. The results are saved to `checks/data_sources_report.md` and `checks/data_sources_report.json`. In the configuration file, `data_sources` limits the check to some data sources, `maximum_age_days_by_source` gives more days to the data sources that publish later, and `time_limit_minutes` is the time after which the data sources that have not answered fail.
 
+The report also counts the checks that each data source has failed in a row, from the report of the previous check in the same folder. On GitHub, the `Live check` workflow runs the check every Monday, with the API keys of the `live-checks` environment, and writes the report to the summary of its run. It keeps one issue open, labelled `live-check`, with the data sources that fail two checks in a row, since a website can be out of reach for a while, and closes it when no data source does.
+
 ### Annual electricity demand per capita
 
 The module `demandcast/retrievals/annual_electricity_demand_per_capita.py` retrieves annual electricity demand per capita data from the World Bank and Ember for the historical period and from the Integrated Assessment Modeling Consortium (IAMC) database for different future scenarios.
