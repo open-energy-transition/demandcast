@@ -7,6 +7,7 @@ Description:
     file, which is the only command line the script accepts since #105.
 """
 
+import os
 import pathlib
 import re
 
@@ -20,7 +21,14 @@ RUN_ALL_SCRIPT = DEMANDCAST_FOLDER / "run_all.sh"
 def test_run_all_script_is_executable():
     """Test that run_all.sh can be executed directly."""
     assert RUN_ALL_SCRIPT.is_file()
-    assert RUN_ALL_SCRIPT.stat().st_mode & 0o111
+    # Windows has no POSIX executable bit and git does not preserve one
+    # there. The shebang is what makes the script directly executable on
+    # POSIX systems, so assert that instead on Windows.
+    if os.name == "nt":
+        content = RUN_ALL_SCRIPT.read_text(encoding="utf-8")
+        assert content.startswith("#!"), "run_all.sh has no shebang line"
+    else:
+        assert RUN_ALL_SCRIPT.stat().st_mode & 0o111
 
 
 def test_run_all_script_passes_a_configuration_file_to_every_run():
