@@ -178,7 +178,9 @@ def get_available_requests() -> list[tuple[str, str, str]]:
             f"show_report?page={page_number}"
         )
 
-        # Fetch the HTML content of the page.
+        # Fetch the HTML content of the page. The server does not send
+        # its intermediate certificate, so the certificate of the
+        # website cannot be checked.
         html_content = utils.fetcher.fetch_data(
             url=page_url,
             content_type="html",
@@ -295,7 +297,8 @@ def download_and_extract_data_for_request(
     # Get the URL of the electricity demand data.
     url = get_url(file_number, extension)
 
-    # Fetch the data from the URL.
+    # Fetch the data from the URL, without checking the certificate of
+    # the website, whose server does not send its intermediate one.
     excel_file = utils.fetcher.fetch_data(
         url, "html", read_as="excel_file", verify_ssl=False
     )
