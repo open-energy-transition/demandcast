@@ -5,8 +5,9 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the New Brunswick Power Corporation
-    (NB Power) in Canada. The data is retrieved for the years from 2018
-    to current year. The data is retrieved in one-month intervals.
+    (NB Power) in Canada. The data is retrieved for the years from 2019,
+    the first year of the archive, to current year. The data is
+    retrieved in one-month intervals.
 
     Source: https://tso.nbpower.com/Public/en/system_information_archive.aspx
 """
