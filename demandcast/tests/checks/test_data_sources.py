@@ -19,7 +19,6 @@ import pandas as pd
 import pytest
 import utils.config
 import utils.entities
-from checks.data_sources import Result
 from retrievals.electricity_demand_data_sources import (
     ccei,
     hydroquebec,
@@ -84,7 +83,7 @@ def test_check_data_source(ons_downloads):
     assert ons_downloads["requests"] == [(2025, "BRA_N")]
     assert result.seconds >= 0
     result.seconds = 0.0
-    assert result == Result(
+    assert result == checks.data_sources.Result(
         data_source="ons",
         status="passed",
         code="BRA_N",
@@ -289,16 +288,18 @@ def fake_checks(monkeypatch, tmp_folders, tmp_path):
     tmp_folders["checks_folder"] = os.path.join(tmp_path, "checks")
     maximum_ages = {}
 
-    def check_data_source(data_source: str, maximum_age_days: int) -> Result:
+    def check_data_source(
+        data_source: str, maximum_age_days: int
+    ) -> checks.data_sources.Result:
         maximum_ages[data_source] = maximum_age_days
         if data_source == "cen":
-            return Result(
+            return checks.data_sources.Result(
                 data_source="cen",
                 code="CHL",
                 request="2026-01-01, 2026-10-04",
                 messages=["Too old.", "A | B"],
             )
-        return Result(
+        return checks.data_sources.Result(
             data_source=data_source,
             status="passed",
             code="BRA_N",
@@ -423,10 +424,14 @@ def test_run_check_without_an_answer(monkeypatch):
     """Test that a data source that does not answer fails."""
     answer = threading.Event()
 
-    def check_data_source(data_source: str, _maximum_age_days: int) -> Result:
+    def check_data_source(
+        data_source: str, _maximum_age_days: int
+    ) -> checks.data_sources.Result:
         if data_source == "cen":
             answer.wait(timeout=30)
-        return Result(data_source=data_source, status="passed")
+        return checks.data_sources.Result(
+            data_source=data_source, status="passed"
+        )
 
     monkeypatch.setattr(
         checks.data_sources, "check_data_source", check_data_source
@@ -437,7 +442,7 @@ def test_run_check_without_an_answer(monkeypatch):
     )
     answer.set()
 
-    assert results[0] == Result(
+    assert results[0] == checks.data_sources.Result(
         data_source="cen",
         messages=["No answer within 0.005 minutes."],
         seconds=0.3,
