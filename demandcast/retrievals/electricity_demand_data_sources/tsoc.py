@@ -21,16 +21,13 @@ Description:
     Source: https://tsoc.org.cy/electrical-system/archive-total-daily-system-generation-on-the-transmission-system/
 """
 
+import datetime
 import logging
 import urllib.parse
 
 import numpy as np
 import pandas as pd
-import utils.entities
 import utils.fetcher
-
-# The first year with an Excel file.
-FIRST_YEAR = 2018
 
 # The shift in minutes to add to the times of the files, from each day
 # on, to get the start of each interval in Cyprus local time. They align
@@ -75,26 +72,9 @@ def redistribute() -> bool:
     return False
 
 
-def _check_input_parameters(year: int) -> None:
-    """
-    Check if the input parameters are valid.
-
-    Parameters
-    ----------
-    year : int
-        The year of the data to retrieve.
-
-    Raises
-    ------
-    ValueError
-        If the input parameters are not valid.
-    """
-    # Check if the year is supported.
-    if year not in get_available_requests():
-        raise ValueError(f"The year {year} is not in the supported range.")
-
-
-def get_available_requests() -> list[int]:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[int]:
     """
     Get the available requests.
 
@@ -102,20 +82,22 @@ def get_available_requests() -> list[int]:
     demand data from the TSOC website: the years that have ended, since
     the file of a year is published after it ends.
 
+    Parameters
+    ----------
+    code : str
+        The code of Cyprus.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
+
     Returns
     -------
     list[int]
         The list of available requests.
     """
-    # Read the start and end date of the available data.
-    start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            "tsoc"
-        )["CYP"]
-    )
-
     # Return the available requests, which are the years.
-    return list(range(max(start_date.year, FIRST_YEAR), end_date.year))
+    return list(range(start_date.year, end_date.year))
 
 
 def get_url(year: int) -> str:
@@ -132,9 +114,6 @@ def get_url(year: int) -> str:
     str
         The URL of the electricity demand data.
     """
-    # Check if input parameters are valid.
-    _check_input_parameters(year)
-
     # Return the URL of the Excel file of the year.
     path = (
         "/files/electrical-system/daily-system-generation/"
@@ -308,7 +287,7 @@ def _correct_whole_hours(
     return corrected
 
 
-def download_and_extract_data_for_request(year: int) -> pd.Series:
+def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -319,6 +298,8 @@ def download_and_extract_data_for_request(year: int) -> pd.Series:
     ----------
     year : int
         The year of the electricity demand data.
+    code : str
+        The code of Cyprus.
 
     Returns
     -------
@@ -330,9 +311,6 @@ def download_and_extract_data_for_request(year: int) -> pd.Series:
     TypeError
         If the extracted data is not a pandas DataFrame.
     """
-    # Check if input parameters are valid.
-    _check_input_parameters(year)
-
     logging.info(f"Retrieving electricity demand data for the year {year}.")
 
     # Read the start of each interval, the total demand and the

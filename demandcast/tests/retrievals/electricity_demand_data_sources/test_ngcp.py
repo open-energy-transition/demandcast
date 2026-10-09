@@ -62,7 +62,7 @@ def test_download_and_extract_data(fake_downloads, assert_demand, tmp_path):
         )
     fake_downloads.serve(URL, file_path)
 
-    time_series = ngcp.download_and_extract_data()
+    time_series = ngcp.download_and_extract_data_for_request(None, "PHL")
 
     # The file is downloaded once, as a browser.
     assert [request[2]["headers"] for request in fake_downloads.requests] == [

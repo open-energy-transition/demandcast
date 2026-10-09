@@ -22,7 +22,7 @@ def test_download_and_extract_data(manual_downloads_folder, assert_demand):
         }
     ).to_excel(manual_downloads_folder / "NITI_2023.xlsx", index=False)
 
-    time_series = niti.download_and_extract_data()
+    time_series = niti.download_and_extract_data_for_request(None, "IND")
 
     # The times mark the end of each hour.
     assert_demand(
@@ -36,4 +36,4 @@ def test_download_and_extract_data(manual_downloads_folder, assert_demand):
 def test_download_and_extract_data_without_files():
     """Test that the error says where to put the downloaded files."""
     with pytest.raises(FileNotFoundError, match="named starting with 'NIT'"):
-        niti.download_and_extract_data()
+        niti.download_and_extract_data_for_request(None, "IND")

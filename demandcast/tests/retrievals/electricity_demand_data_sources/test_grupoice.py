@@ -6,14 +6,18 @@ Description:
     Tests for the retrieval of electricity demand data from Grupo ICE.
 """
 
-import pytest
+import datetime
+
 from retrievals.electricity_demand_data_sources import grupoice
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
-    assert grupoice.get_available_requests() == list(range(2012, 2026))
+    requests = grupoice.get_available_requests(
+        "CRI", datetime.date(2012, 3, 1), datetime.date(2025, 12, 28)
+    )
+
+    assert requests == list(range(2012, 2026))
 
 
 def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
@@ -24,7 +28,7 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
         "grupoice_2024.csv",
     )
 
-    time_series = grupoice.download_and_extract_data_for_request(2024)
+    time_series = grupoice.download_and_extract_data_for_request(2024, "CRI")
 
     # The times are the starts of the 15 minutes, which move 15 minutes
     # later to mark their ends, and the file includes the last day.

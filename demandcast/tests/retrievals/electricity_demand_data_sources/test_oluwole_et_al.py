@@ -43,7 +43,9 @@ def test_download_and_extract_data(fake_downloads, assert_demand, tmp_path):
         )
     fake_downloads.serve(URL, file_path)
 
-    time_series = oluwole_et_al.download_and_extract_data()
+    time_series = oluwole_et_al.download_and_extract_data_for_request(
+        None, "NGA"
+    )
 
     # From April, the times of the file are 1 or 2 ms before the start
     # of the hours. They are rounded, and move one hour later to mark

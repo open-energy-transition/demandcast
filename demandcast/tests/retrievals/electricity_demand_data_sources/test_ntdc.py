@@ -19,7 +19,7 @@ def test_download_and_extract_data(manual_downloads_folder, assert_demand):
         encoding="utf-8",
     )
 
-    time_series = ntdc.download_and_extract_data()
+    time_series = ntdc.download_and_extract_data_for_request(None, "PAK")
 
     # The times mark the end of each hour.
     assert_demand(
@@ -33,4 +33,4 @@ def test_download_and_extract_data(manual_downloads_folder, assert_demand):
 def test_download_and_extract_data_without_files():
     """Test that the error says where to put the downloaded files."""
     with pytest.raises(FileNotFoundError, match="named starting with 'NTD'"):
-        ntdc.download_and_extract_data()
+        ntdc.download_and_extract_data_for_request(None, "PAK")

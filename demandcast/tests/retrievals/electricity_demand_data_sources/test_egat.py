@@ -6,12 +6,18 @@ Description:
     Tests for the retrieval of electricity demand data from EGAT.
 """
 
+import datetime
+
 from retrievals.electricity_demand_data_sources import egat
 
 
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
-    assert egat.get_available_requests() == [2023, 2024]
+    requests = egat.get_available_requests(
+        "THA", datetime.date(2023, 1, 1), datetime.date(2024, 12, 31)
+    )
+
+    assert requests == [2023, 2024]
 
 
 def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
@@ -21,7 +27,7 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
         "egat_2024.csv",
     )
 
-    time_series = egat.download_and_extract_data_for_request(2024)
+    time_series = egat.download_and_extract_data_for_request(2024, "THA")
 
     # The days run from 0:00 to 23:00, the starts of the hours, which
     # move one hour later to mark their ends. Only the first row of each
