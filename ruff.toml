@@ -38,6 +38,9 @@ allowed-confusables = ["ı", "〔", "〕"]
 
 [lint.per-file-ignores]
 "demandcast/tests/**" = ["S101"]
+# The functions of a data source take all the arguments that the
+# retrieval code passes, even those that a source does not need.
+"demandcast/retrievals/electricity_demand_data_sources/*.py" = ["ARG001"]
 # Legacy notebooks and scripts keep the original rules.
 "demandcast/archive/**" = [
     "A", "ARG", "B", "BLE", "C4", "C90", "DTZ", "ERA", "FURB", "ICN", "ISC",

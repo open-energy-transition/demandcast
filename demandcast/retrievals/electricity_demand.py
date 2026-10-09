@@ -12,8 +12,10 @@ Description:
 """
 
 import importlib
+import inspect
 import logging
 import os
+import types
 
 import pandas as pd
 import utils.config
@@ -22,15 +24,48 @@ import utils.time_series
 from tqdm import tqdm
 
 
-def _retrieve_data(data_source: str, code: str) -> pd.Series:
+def _takes_code_and_dates(retrieval_module: types.ModuleType) -> bool:
     """
-    Retrieve the electricity demand data.
+    Check if a data source takes the code and the dates of its data.
 
-    This function retrieves the electricity demand time series from the
-    specified data source.
+    The data sources move one at a time to the interface in which the
+    retrieval code passes the code of the entity and the dates of its
+    data to get_available_requests, and each request with the code to
+    download_and_extract_data_for_request. The other ones keep the call
+    shapes of _retrieve_data_with_old_call_shapes until they all move.
 
     Parameters
     ----------
+    retrieval_module : types.ModuleType
+        The module of the data source.
+
+    Returns
+    -------
+    bool
+        True if the data source takes the code and the dates.
+    """
+    return (
+        "start_date"
+        in inspect.signature(
+            retrieval_module.get_available_requests
+        ).parameters
+    )
+
+
+def _retrieve_data_with_old_call_shapes(
+    retrieval_module: types.ModuleType, data_source: str, code: str
+) -> pd.Series:
+    """
+    Retrieve the electricity demand data with the old call shapes.
+
+    The code is passed only to the data sources with several entities,
+    a data source without requests downloads its data at once, and
+    tuple requests are unpacked.
+
+    Parameters
+    ----------
+    retrieval_module : types.ModuleType
+        The module of the data source.
     data_source : str
         The data source.
     code : str
@@ -40,20 +75,10 @@ def _retrieve_data(data_source: str, code: str) -> pd.Series:
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
-
-    Raises
-    ------
-    TypeError
-        If the values of the time series are not numbers.
     """
     # Check if there is only one code in the data source.
     one_code_in_data_source = (
         len(utils.entities.read_codes_in(data_source=data_source)) == 1
-    )
-
-    # Import the retrieval module for the data source.
-    retrieval_module = importlib.import_module(
-        f"retrievals.electricity_demand_data_sources.{data_source}"
     )
 
     # Get the list of requests to retrieve the electricity demand time
@@ -124,6 +149,69 @@ def _retrieve_data(data_source: str, code: str) -> pd.Series:
         # Concatenate the electricity demand time series of all periods.
         electricity_demand_time_series = pd.concat(
             electricity_demand_time_series_list
+        )
+
+    return electricity_demand_time_series
+
+
+def _retrieve_data(data_source: str, code: str) -> pd.Series:
+    """
+    Retrieve the electricity demand data.
+
+    This function retrieves the electricity demand time series from the
+    specified data source.
+
+    Parameters
+    ----------
+    data_source : str
+        The data source.
+    code : str
+        The code of the country or subdivision.
+
+    Returns
+    -------
+    electricity_demand_time_series : pandas.Series
+        The electricity demand time series in MW.
+
+    Raises
+    ------
+    TypeError
+        If the values of the time series are not numbers.
+    """
+    # Import the retrieval module for the data source.
+    retrieval_module = importlib.import_module(
+        f"retrievals.electricity_demand_data_sources.{data_source}"
+    )
+
+    if _takes_code_and_dates(retrieval_module):
+        # Get the requests for the dates of the entity in the yaml file
+        # of the data source, and download each of them with the code.
+        start_date, end_date = (
+            utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+                data_source
+            )[code]
+        )
+        electricity_demand_time_series_list = [
+            retrieval_module.download_and_extract_data_for_request(
+                request, code
+            )
+            for request in retrieval_module.get_available_requests(
+                code, start_date, end_date
+            )
+        ]
+
+        # Concatenate the electricity demand time series of the requests
+        # with data.
+        electricity_demand_time_series = pd.concat(
+            [
+                time_series
+                for time_series in electricity_demand_time_series_list
+                if not time_series.empty
+            ]
+        )
+    else:
+        electricity_demand_time_series = _retrieve_data_with_old_call_shapes(
+            retrieval_module, data_source, code
         )
 
     # Check that the values are numbers, so that the data of a source

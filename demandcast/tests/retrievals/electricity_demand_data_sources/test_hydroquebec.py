@@ -7,10 +7,23 @@ Description:
     Hydro-Québec.
 """
 
+import datetime
+
 from retrievals.electricity_demand_data_sources import hydroquebec
 
 
-def test_download_and_extract_data(fake_downloads, assert_demand, caplog):
+def test_get_available_requests():
+    """Test that the data is retrieved with a single request."""
+    requests = hydroquebec.get_available_requests(
+        "CAN_QC", datetime.date(2019, 1, 1), datetime.date(2024, 12, 31)
+    )
+
+    assert requests == [None]
+
+
+def test_download_and_extract_data_for_request(
+    fake_downloads, assert_demand, caplog
+):
     """Test that the hourly demand is read in UTC, once per hour."""
     fake_downloads.serve(
         "https://donnees.hydroquebec.com/api/explore/v2.1/catalog/datasets/"
@@ -19,7 +32,9 @@ def test_download_and_extract_data(fake_downloads, assert_demand, caplog):
         "hydroquebec.csv",
     )
 
-    time_series = hydroquebec.download_and_extract_data()
+    time_series = hydroquebec.download_and_extract_data_for_request(
+        None, "CAN_QC"
+    )
 
     # The export starts with a byte order mark and is not in order, and
     # each time marks the end of its hour. When daylight saving time
