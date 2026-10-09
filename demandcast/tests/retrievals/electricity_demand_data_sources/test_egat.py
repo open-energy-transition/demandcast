@@ -23,9 +23,9 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
 
     time_series = egat.download_and_extract_data_for_request(2024)
 
-    # The times move one hour later, as if they marked the start of each
-    # hour, although each file starts at 0:05, which suggests that they
-    # mark the end. Each file ends on 1 January of the next year.
+    # The days run from 0:00 to 23:00, the starts of the hours, which
+    # move one hour later to mark their ends. Only the first row of each
+    # file is at 0:05, and each file ends on 1 January of the next year.
     assert_demand(
         time_series,
         "Asia/Bangkok",
