@@ -7,14 +7,17 @@ Description:
     Transmission and Distribution (Kansai TD).
 """
 
+import datetime
+
 import pytest
 from retrievals.electricity_demand_data_sources import kansaitd
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are years, then months from March 2024."""
-    requests = kansaitd.get_available_requests()
+    requests = kansaitd.get_available_requests(
+        "JPN_Kansai", datetime.date(2016, 1, 1), datetime.date(2025, 12, 28)
+    )
 
     # The years are fiscal years, from April to March, so the data start
     # in April 2016, not in January as the YAML file says.
@@ -36,7 +39,9 @@ def test_download_and_extract_data_for_request_yearly(
         f"kansaitd_{year}.csv",
     )
 
-    time_series = kansaitd.download_and_extract_data_for_request(year, None)
+    time_series = kansaitd.download_and_extract_data_for_request(
+        (year, None), "JPN_Kansai"
+    )
 
     # The files cover the fiscal year, from April to March, and their
     # times mark the start of each hour.
@@ -62,7 +67,9 @@ def test_download_and_extract_data_for_request_monthly(
         "kansaitd_2024-03.csv",
     )
 
-    time_series = kansaitd.download_and_extract_data_for_request(2024, 3)
+    time_series = kansaitd.download_and_extract_data_for_request(
+        (2024, 3), "JPN_Kansai"
+    )
 
     # The files give the average demand in MW, with the date and the
     # start of each half hour in two columns.

@@ -7,14 +7,16 @@ Description:
     the Wholesale Electricity Market (WEM).
 """
 
-import pytest
+import datetime
+
 from retrievals.electricity_demand_data_sources import aemo_wem
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are years before the reform, then days."""
-    requests = aemo_wem.get_available_requests()
+    requests = aemo_wem.get_available_requests(
+        "AUS_WA", datetime.date(2006, 9, 20), datetime.date(2025, 12, 28)
+    )
 
     assert requests[:2] == [(True, 2006, None, None), (True, 2007, None, None)]
     assert requests[17:19] == [
@@ -37,7 +39,7 @@ def test_download_and_extract_data_for_request_before_reform(
     )
 
     time_series = aemo_wem.download_and_extract_data_for_request(
-        True, 2006, None, None
+        (True, 2006, None, None), "AUS_WA"
     )
 
     # The timestamps mark the end of the 30-minute trading intervals.
@@ -64,7 +66,7 @@ def test_download_and_extract_data_for_request_after_reform(
     )
 
     time_series = aemo_wem.download_and_extract_data_for_request(
-        False, 2025, 1, 15
+        (False, 2025, 1, 15), "AUS_WA"
     )
 
     assert_demand(

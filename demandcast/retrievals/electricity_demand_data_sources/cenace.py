@@ -24,6 +24,7 @@ Description:
     Source: https://www.eia.gov/opendata/browser/electricity/rto/interchange-data
 """
 
+import datetime
 import logging
 import zipfile
 import zoneinfo
@@ -55,57 +56,8 @@ def redistribute() -> bool:
     return False
 
 
-def _check_input_parameters(
-    code: str,
-    start_date: pd.Timestamp | None = None,
-    end_date: pd.Timestamp | None = None,
-) -> None:
-    """
-    Check if the input parameters are valid.
-
-    Parameters
-    ----------
-    code : str
-        The code of the subdivision of interest.
-    start_date : pandas.Timestamp, optional
-        The start date of the data retrieval.
-    end_date : pandas.Timestamp, optional
-        The end date of the data retrieval.
-
-    Raises
-    ------
-    ValueError
-        If the input parameters are not valid.
-    """
-    # Check if the code is valid.
-    utils.entities.check_code_in_data_source(code, "cenace")
-
-    if start_date is not None and end_date is not None:
-        # Check if the retrieval period is less than 1 year.
-        if end_date - start_date > pd.Timedelta("366days"):
-            raise ValueError(
-                "The retrieval period must be less than or equal to 1 year. "
-                f"start_date: {start_date}, end_date: {end_date}"
-            )
-
-        # Read the start date of the available data.
-        start_date_of_data_availability = pd.to_datetime(
-            utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-                "cenace"
-            )[code][0]
-        )
-
-        # Check that the start date is greater than or equal to the
-        # beginning of the data availability.
-        if start_date < start_date_of_data_availability:
-            raise ValueError(
-                "The beginning of the data availability is "
-                f"{start_date_of_data_availability}."
-            )
-
-
 def get_available_requests(
-    code: str,
+    code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """
     Get the available requests.
@@ -117,22 +69,16 @@ def get_available_requests(
     ----------
     code : str
         The code of the subdivision of interest.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
 
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
         The list of available requests.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(code)
-
-    # Read the start and end date of the available data.
-    start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            "cenace"
-        )[code]
-    )
-
     # Mexico has data until 15 days before the current date. Subtract
     # 10 days to the end date on top of the 5 days already considered.
     end_date = pd.to_datetime(end_date) - pd.Timedelta("10days")
@@ -167,9 +113,7 @@ def get_url() -> str:
 
 
 def download_and_extract_data_for_request(
-    start_date: pd.Timestamp,
-    end_date: pd.Timestamp,
-    code: str,
+    period: tuple[pd.Timestamp, pd.Timestamp], code: str
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
@@ -179,10 +123,8 @@ def download_and_extract_data_for_request(
 
     Parameters
     ----------
-    start_date : pandas.Timestamp
-        The start date of the data retrieval.
-    end_date : pandas.Timestamp
-        The end date of the data retrieval.
+    period : tuple[pandas.Timestamp, pandas.Timestamp]
+        The start and end date of the data retrieval.
     code : str
         The code of the subdivision of interest.
 
@@ -196,10 +138,17 @@ def download_and_extract_data_for_request(
     TypeError
         If the response is not a requests.Response object.
     ValueError
-        If a file of the archive has no header.
+        If the retrieval period is longer than 1 year, or if a file of
+        the archive has no header.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(code, start_date=start_date, end_date=end_date)
+    start_date, end_date = period
+
+    # Check if the retrieval period is less than 1 year.
+    if end_date - start_date > pd.Timedelta("366days"):
+        raise ValueError(
+            "The retrieval period must be less than or equal to 1 year. "
+            f"start_date: {start_date}, end_date: {end_date}"
+        )
 
     logging.info(
         "Retrieving electricity demand data from "

@@ -6,15 +6,18 @@ Description:
     Tests for the retrieval of electricity demand data from ENTSO-E.
 """
 
+import datetime
+
 import pandas as pd
 import pytest
 from retrievals.electricity_demand_data_sources import entsoe
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are periods of one year at most."""
-    requests = entsoe.get_available_requests("BEL")
+    requests = entsoe.get_available_requests(
+        "BEL", datetime.date(2014, 11, 24), datetime.date(2025, 12, 28)
+    )
 
     assert requests[0] == (
         pd.Timestamp("2014-11-24"),
@@ -39,8 +42,7 @@ def test_download_and_extract_data_for_request(
     fake_downloads.serve("https://web-api.tp.entsoe.eu/api", "entsoe.xml")
 
     time_series = entsoe.download_and_extract_data_for_request(
-        pd.Timestamp("2024-03-31 00:00"),
-        pd.Timestamp("2024-03-31 02:00"),
+        (pd.Timestamp("2024-03-31 00:00"), pd.Timestamp("2024-03-31 02:00")),
         "BEL",
     )
 
@@ -89,8 +91,7 @@ def test_download_and_extract_data_for_request_with_change_of_time_step(
     )
 
     time_series = entsoe.download_and_extract_data_for_request(
-        pd.Timestamp("2024-06-12 21:00"),
-        pd.Timestamp("2024-06-13 01:00"),
+        (pd.Timestamp("2024-06-12 21:00"), pd.Timestamp("2024-06-13 01:00")),
         "POL",
     )
 
@@ -119,5 +120,5 @@ def test_download_and_extract_data_for_request_without_api_key(monkeypatch):
 
     with pytest.raises(ValueError, match="ENTSOE_API_KEY"):
         entsoe.download_and_extract_data_for_request(
-            pd.Timestamp("2024-03-31"), pd.Timestamp("2024-04-01"), "BEL"
+            (pd.Timestamp("2024-03-31"), pd.Timestamp("2024-04-01")), "BEL"
         )

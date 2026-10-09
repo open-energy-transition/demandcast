@@ -7,14 +7,16 @@ Description:
     the National Electricity Market (NEM).
 """
 
-import pytest
+import datetime
+
 from retrievals.electricity_demand_data_sources import aemo_nem
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the months of the data."""
-    requests = aemo_nem.get_available_requests("AUS_NSW")
+    requests = aemo_nem.get_available_requests(
+        "AUS_NSW", datetime.date(1998, 12, 7), datetime.date(2025, 12, 28)
+    )
 
     assert requests[0] == (1998, 12)
     assert requests[-1] == (2025, 11)
@@ -31,7 +33,7 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
     fake_downloads.serve(url, "aemo_nem.csv")
 
     time_series = aemo_nem.download_and_extract_data_for_request(
-        2025, 10, "AUS_NSW"
+        (2025, 10), "AUS_NSW"
     )
 
     assert fake_downloads.requests[0][2]["headers"] == {

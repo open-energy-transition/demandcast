@@ -13,13 +13,13 @@ Description:
     Source: https://www.tepco.co.jp/en/forecast/html/download-e.html
 """
 
+import datetime
 import io
 import logging
 import zipfile
 
 import pandas as pd
 import requests
-import utils.entities
 import utils.fetcher
 
 # The last year with a yearly file.
@@ -44,44 +44,9 @@ def redistribute() -> bool:
     return False
 
 
-def _check_input_parameters(year: int, month: int | None) -> None:
-    """
-    Check if the input parameters are valid.
-
-    Parameters
-    ----------
-    year : int
-        The year of the data to retrieve.
-    month : int | None
-        The month of the data to retrieve, or None for a whole year.
-
-    Raises
-    ------
-    ValueError
-        If the input parameters are not valid.
-    """
-    # Get the start and end dates of the data.
-    start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            "tepco"
-        )["JPN_Kantō"]
-    )
-
-    # Check if the request is supported: the years with a yearly file,
-    # and the months after them.
-    if month is None:
-        is_valid = start_date.year <= year <= LAST_YEARLY_FILE
-    else:
-        is_valid = (
-            year > LAST_YEARLY_FILE
-            and 1 <= month <= 12
-            and pd.Timestamp(year, month, 1) <= pd.Timestamp(end_date)
-        )
-    if not is_valid:
-        raise ValueError("The request is not available.")
-
-
-def get_available_requests() -> list[tuple[int, int | None]]:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[tuple[int, int | None]]:
     """
     Get the available requests.
 
@@ -89,18 +54,20 @@ def get_available_requests() -> list[tuple[int, int | None]]:
     demand data from the TEPCO website: the years with a yearly file,
     and then the months.
 
+    Parameters
+    ----------
+    code : str
+        The code of the Kantō region.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
+
     Returns
     -------
     list[tuple[int, int | None]]
         The list of available requests.
     """
-    # Get the start and end dates of the data.
-    start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            "tepco"
-        )["JPN_Kantō"]
-    )
-
     # Requests of the yearly files.
     requests_of_years: list[tuple[int, int | None]] = [
         (year, None)
@@ -139,9 +106,6 @@ def get_url(year: int, month: int | None) -> str:
     str
         The URL of the electricity demand data.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(year, month)
-
     if month is None:
         return f"https://www4.tepco.co.jp/forecast/html/images/juyo-{year}.csv"
 
@@ -230,7 +194,7 @@ def _read_monthly_file(content: bytes) -> pd.Series:
 
 
 def download_and_extract_data_for_request(
-    year: int, month: int | None
+    year_and_month: tuple[int, int | None], code: str
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
@@ -240,11 +204,11 @@ def download_and_extract_data_for_request(
 
     Parameters
     ----------
-    year : int
-        The year of the electricity demand data.
-    month : int | None
-        The month of the electricity demand data, or None for a whole
-        year.
+    year_and_month : tuple[int, int | None]
+        The year and month of the electricity demand data, with None
+        as the month for a whole year.
+    code : str
+        The code of the Kantō region.
 
     Returns
     -------
@@ -256,8 +220,7 @@ def download_and_extract_data_for_request(
     TypeError
         If the extracted data is not a requests.Response object.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(year, month)
+    year, month = year_and_month
 
     logging.info(
         f"Retrieving electricity demand data for {year}"

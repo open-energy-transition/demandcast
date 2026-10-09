@@ -6,15 +6,17 @@ Description:
     Tests for the retrieval of electricity demand data from ADME.
 """
 
+import datetime
+
 import pandas as pd
-import pytest
 from retrievals.electricity_demand_data_sources import adme
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
-    requests = adme.get_available_requests()
+    requests = adme.get_available_requests(
+        "URY", datetime.date(2019, 1, 1), datetime.date(2025, 12, 28)
+    )
 
     assert requests[0] == (
         pd.Timestamp("2019-01-01"),
@@ -36,7 +38,7 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
     )
 
     time_series = adme.download_and_extract_data_for_request(
-        pd.Timestamp("2024-01-01"), pd.Timestamp("2025-01-01")
+        (pd.Timestamp("2024-01-01"), pd.Timestamp("2025-01-01")), "URY"
     )
 
     # The times mark the end of each hour. The files include the last
