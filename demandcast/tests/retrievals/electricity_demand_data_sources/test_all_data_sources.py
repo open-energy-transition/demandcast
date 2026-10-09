@@ -27,7 +27,7 @@ from pydantic import BaseModel, ConfigDict
 DATA_SOURCES = sorted(utils.entities.read_data_sources())
 
 # The data sources that read their requests from their website.
-ONLINE_REQUESTS = {"pgcb"}
+ONLINE_REQUESTS = {"caiso", "pgcb"}
 
 # Kosovo has no ISO 3166 code: XKX is the code of the World Bank and the
 # European Union.
