@@ -121,8 +121,9 @@ def get_url(
     # Get the ENTSO-E API client.
     api_key = os.getenv("ENTSOE_API_KEY")
 
-    # Check if the API key is set.
-    if api_key is None:
+    # Check if the API key is set: a secret that is not set on GitHub
+    # gives an empty key.
+    if not api_key:
         raise ValueError(
             "The ENTSOE API key is not set. Please set the ENTSOE_API_KEY "
             "environment variable."
@@ -194,7 +195,7 @@ def download_and_extract_data_for_request(
     start_date = start_date.tz_localize("UTC")
     end_date = end_date.tz_localize("UTC")
 
-    if api_key is None:
+    if not api_key:
         raise ValueError(
             "The ENTSO-E API key is not set. Please set the ENTSOE_API_KEY "
             "environment variable."

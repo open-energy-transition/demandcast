@@ -112,9 +112,14 @@ def test_download_and_extract_data_for_request_with_change_of_time_step(
     )
 
 
-def test_download_and_extract_data_for_request_without_api_key(monkeypatch):
-    """Test that the error says how to set the API key."""
+@pytest.mark.parametrize("api_key", [None, ""])
+def test_download_and_extract_data_for_request_without_api_key(
+    monkeypatch, api_key
+):
+    """Test that the error says how to set a missing or empty API key."""
     monkeypatch.delenv("ENTSOE_API_KEY", raising=False)
+    if api_key is not None:
+        monkeypatch.setenv("ENTSOE_API_KEY", api_key)
     # Ignore a local .env file with a real key.
     monkeypatch.setattr(entsoe, "load_dotenv", lambda **_: None)
 
