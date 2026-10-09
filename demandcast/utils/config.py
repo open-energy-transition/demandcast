@@ -11,6 +11,7 @@ import argparse
 import logging
 import os
 from datetime import datetime
+from typing import Any
 
 import yaml
 
@@ -65,6 +66,8 @@ def read_folders_structure() -> dict[str, str]:
 def read_configuration(
     script_name: str,
     script_description: str,
+    config_overrides: dict[str, Any] | None = None,
+    command_line: list[str] | None = None,
 ) -> dict:
     """
     Read a configuration file in yaml format.
@@ -75,6 +78,17 @@ def read_configuration(
         The name of the script for which the configuration is read.
     script_description : str
         A brief description of the script.
+    config_overrides : dict[str, Any] or None, optional
+        Configuration values that replace the ones read from the file.
+        This lets a caller such as run_all.sh drive the script without
+        writing a configuration file of its own. Keys that are not
+        configuration fields of the script are left to the validation of
+        the caller to reject, so that a typo fails loudly there rather
+        than being silently ignored here.
+    command_line : list[str] or None, optional
+        The command line to read, without the name of the script. It
+        defaults to the command line of the process, which a test that
+        runs under pytest cannot control.
 
     Returns
     -------
@@ -85,6 +99,8 @@ def read_configuration(
     ------
     FileNotFoundError
         If the configuration file does not exist.
+    ValueError
+        If a configuration value is not given as KEY=VALUE.
     """
     # Create a parser for the command line arguments.
     parser = argparse.ArgumentParser(description=script_description)
@@ -102,8 +118,34 @@ def read_configuration(
         required=False,
     )
 
-    # Extract the config file path.
-    config_file_path = parser.parse_args().config
+    # Add the argument for the configuration values, which are given
+    # as "key=value" pairs and can be repeated.
+    parser.add_argument(
+        "--set",
+        type=str,
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help=(
+            "A configuration value that replaces the one of the file, "
+            "given as KEY=VALUE. Can be repeated."
+        ),
+        required=False,
+    )
+
+    # Extract the config file path and the configuration values.
+    arguments = parser.parse_args(command_line)
+    config_file_path = arguments.config
+    config_overrides = config_overrides or {}
+
+    # Read the "key=value" pairs into a dictionary.
+    for pair in arguments.set:
+        key, separator, value = pair.partition("=")
+        if not separator:
+            raise ValueError(
+                f"Invalid configuration value '{pair}': expected KEY=VALUE."
+            )
+        config_overrides[key] = value
 
     if not os.path.exists(config_file_path):
         raise FileNotFoundError(
@@ -113,6 +155,10 @@ def read_configuration(
     # Read the configuration file.
     with open(config_file_path, encoding="utf-8") as file:
         config = yaml.safe_load(file)
+
+    # Apply the overrides last, so that they win over the file.
+    if config_overrides:
+        config.update(config_overrides)
 
     return config
 

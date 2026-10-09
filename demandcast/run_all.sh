@@ -1,8 +1,20 @@
 #!/bin/bash
 
 # Retrieves the electricity demand of all data sources, then the
-# population, GDP and weather data. Outdated: retrieve.py now reads its
-# settings from config/retrieve_config.yaml (issue #184).
+# population, GDP and weather data.
+#
+# retrieve.py reads its settings from a yaml configuration file, which
+# holds the values of a whole run. Each run below passes its own values
+# with --set, which replace the ones of the file, so no file is written
+# and removed around the runs.
+
+set -euo pipefail
+
+# Run retrieve.py with the given "key=value" pairs, which are applied
+# over the values of the configuration file.
+run_retrieve() {
+    uv run retrieve.py "$@"
+}
 
 # Data sources whose files are downloaded automatically.
 automated_data_sources="adme \
@@ -43,7 +55,9 @@ xm"
 
 for source in $automated_data_sources; do
     printf "Retrieving data for source: %s\n" "$source"
-    uv run retrieve.py electricity_demand -d "$source"
+    run_retrieve \
+        --set variable=electricity_demand \
+        --set electricity_data_source="$source"
 done
 
 # Data sources whose files are downloaded manually, then harmonized here.
@@ -55,12 +69,16 @@ ntdc"
 
 for source in $manual_data_sources; do
     printf "Harmonizing data for source: %s\n" "$source"
-    uv run retrieve.py electricity_demand -d "$source"
+    run_retrieve \
+        --set variable=electricity_demand \
+        --set electricity_data_source="$source"
 done
 
-uv run retrieve.py population
-uv run retrieve.py gridded_population
-uv run retrieve.py gdp_ppp_per_capita
-uv run retrieve.py gridded_gdp_ppp
-uv run retrieve.py gridded_weather -wv temperature
-uv run retrieve.py temperature
+run_retrieve --set variable=population
+run_retrieve --set variable=gridded_population
+run_retrieve --set variable=gdp_ppp_per_capita
+run_retrieve --set variable=gridded_gdp_ppp
+run_retrieve \
+        --set variable=gridded_weather \
+        --set weather_variable=temperature
+run_retrieve --set variable=temperature
