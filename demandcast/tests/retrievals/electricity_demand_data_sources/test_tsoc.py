@@ -89,6 +89,9 @@ def test_download_and_extract_data_for_request(
 
     time_series = tsoc.download_and_extract_data_for_request(2019, "CYP")
 
+    # The file is downloaded with requests, which has a timeout: the
+    # website rejects the downloads of pandas, made with urllib.
+    assert fake_downloads.requests[0][2]["timeout"] == 10
     # The files of 2019 are 30 minutes early, and the intervals that
     # start at 00:00 in Cyprus end at 22:15 in UTC.
     times = pd.date_range("2019-01-09 22:15", periods=10 * 96, freq="15min")

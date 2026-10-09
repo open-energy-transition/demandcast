@@ -315,10 +315,12 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
 
     # Read the start of each interval, the total demand and the
     # estimated distributed generation, below the four rows of the
-    # header.
+    # header. The file is downloaded with requests, because the website
+    # rejects the downloads of pandas, made with urllib.
     dataset = utils.fetcher.fetch_data(
         get_url(year),
-        "excel",
+        "html",
+        read_as="excel_table",
         excel_kwargs={"header": None, "skiprows": 4, "usecols": [0, 6, 8]},
     )
 
