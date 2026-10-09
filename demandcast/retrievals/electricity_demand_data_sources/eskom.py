@@ -103,9 +103,22 @@ def download_and_extract_data() -> pd.Series:
         [pd.read_csv(file_path) for file_path in downloaded_file_paths]
     )
 
+    # Read the values as numbers. A value that is not a number, such as
+    # the text "ast" in the data of 2025-07-11, becomes a missing value,
+    # which the cleaning of the data then removes.
+    load = pd.to_numeric(dataset["RSA Contracted Demand"], errors="coerce")
+    not_numbers = dataset["RSA Contracted Demand"][
+        load.isna() & dataset["RSA Contracted Demand"].notna()
+    ]
+    if not not_numbers.empty:
+        logging.warning(
+            f"{len(not_numbers)} values of Eskom are not numbers and are "
+            f"left out, such as {not_numbers.iloc[0]!r}."
+        )
+
     # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
-        dataset["RSA Contracted Demand"].values,
+        load.to_numpy(),
         index=pd.to_datetime(
             dataset["Date Time Hour Beginning"], format="%Y-%m-%d %I:%M:%S %p"
         ),
