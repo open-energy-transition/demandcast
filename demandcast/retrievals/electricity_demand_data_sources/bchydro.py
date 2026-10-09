@@ -116,7 +116,7 @@ def get_url(year: int) -> str:
         url += f"{year}controlareaload.xls"
     elif year >= 2009 and year <= 2012:
         url += f"jandec{year}controlareaload.xls"
-    elif year in {2024, 2025}:
+    elif year >= 2024:
         url += f"BalancingAuthorityLoad%20{year}.xls"
     else:
         raise ValueError(f"The year {year} is not implemented yet.")
@@ -124,22 +124,23 @@ def get_url(year: int) -> str:
     return url
 
 
-# Format of the Excel files by period: the number of rows to skip, the
+# Format of the Excel files from each year until the next one, and the
+# last one also for the later years: the number of rows to skip, the
 # header, the index columns, and the column of the electricity demand
 # data.
 _EXCEL_FORMATS: dict[
-    range, tuple[int, int | None, tuple[str | int, ...], tuple[str | int, ...]]
+    int, tuple[int, int | None, tuple[str | int, ...], tuple[str | int, ...]]
 ] = {
-    range(2001, 2007): (1, 0, ("Date", "HE"), ("Balancing Authority Load",)),
-    range(2007, 2008): (2, None, (0, 1), (2,)),
-    range(2008, 2012): (2, 0, ("Date", "HE"), ("MWh",)),
-    range(2012, 2014): (3, 0, ("Date ▲", "HE"), ("Control Area Load",)),
-    range(2014, 2015): (1, 0, ("Date ▲", "HE"), ("Control Area Load",)),
-    range(2015, 2016): (1, 0, ("Date ▲", "HE"), ("Balancing Authority Load",)),
-    range(2016, 2021): (1, 0, ("Date", "HE"), ("Balancing Authority Load",)),
-    range(2021, 2022): (1, 0, ("Date ?", "HE"), ("Control Area Load",)),
-    range(2022, 2025): (3, 0, ("Date ?", "HE"), ("Control Area Load",)),
-    range(2025, 2026): (3, 0, ("Date ", "HE"), ("Control Area Load",)),
+    2001: (1, 0, ("Date", "HE"), ("Balancing Authority Load",)),
+    2007: (2, None, (0, 1), (2,)),
+    2008: (2, 0, ("Date", "HE"), ("MWh",)),
+    2012: (3, 0, ("Date ▲", "HE"), ("Control Area Load",)),
+    2014: (1, 0, ("Date ▲", "HE"), ("Control Area Load",)),
+    2015: (1, 0, ("Date ▲", "HE"), ("Balancing Authority Load",)),
+    2016: (1, 0, ("Date", "HE"), ("Balancing Authority Load",)),
+    2021: (1, 0, ("Date ?", "HE"), ("Control Area Load",)),
+    2022: (3, 0, ("Date ?", "HE"), ("Control Area Load",)),
+    2025: (3, 0, ("Date ", "HE"), ("Control Area Load",)),
 }
 
 
@@ -164,22 +165,18 @@ def _get_excel_information(
         The number of rows to skip, the header of the Excel file,
         the index columns of the Excel file, and the column of the
         electricity demand data.
-
-    Raises
-    ------
-    ValueError
-        If the year is not implemented.
     """
     # Check if the input parameters are valid.
     _check_input_parameters(year)
 
-    # Return the format of the period that contains the year.
-    for years, excel_format in _EXCEL_FORMATS.items():
-        if year in years:
-            rows_to_skip, header, index_columns, load_column = excel_format
-            return rows_to_skip, header, list(index_columns), list(load_column)
-
-    raise ValueError(f"The year {year} is not implemented yet.")
+    # Return the format of the latest period that starts by the year.
+    first_year = max(
+        first_year for first_year in _EXCEL_FORMATS if first_year <= year
+    )
+    rows_to_skip, header, index_columns, load_column = _EXCEL_FORMATS[
+        first_year
+    ]
+    return rows_to_skip, header, list(index_columns), list(load_column)
 
 
 def download_and_extract_data_for_request(year: int) -> pd.Series:
