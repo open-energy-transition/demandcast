@@ -154,17 +154,16 @@ def download_and_extract_data_for_request(year: int, month: int) -> pd.Series:
             "expected a pandas DataFrame."
         )
 
-    # Extract the electricity demand time series.
-    # It is unclear whether the time values represent the start or
-    # end of the hour. Most likely, they represent the start of the
-    # hour but this is not confirmed.
+    # Extract the electricity demand time series. The times mark the
+    # end of each hour: each value is the average of the hour before its
+    # time, as the 5-minute data of New Brunswick from CCEI show.
     electricity_demand_time_series = pd.Series(
         dataset["NB_LOAD"].values,
         index=pd.to_datetime(dataset["HOUR"].values, format="%Y-%m-%d %H:%M"),
     )
 
-    # Convert the time zone of the electricity demand time series to
-    # UTC.
+    # Localize the times, which follow daylight saving time: when it
+    # ends, 01:00 comes twice.
     electricity_demand_time_series = (
         electricity_demand_time_series.tz_localize(
             "America/Moncton", ambiguous="infer"
