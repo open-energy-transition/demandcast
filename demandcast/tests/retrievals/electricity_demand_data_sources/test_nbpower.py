@@ -13,6 +13,19 @@ URL = "https://tso.nbpower.com/Public/en/system_information_archive.aspx"
 
 
 @pytest.mark.usefixtures("frozen_now")
+def test_get_available_requests():
+    """Test that the requests are the months of the archive."""
+    requests = nbpower.get_available_requests()
+
+    # The archive starts in 2019: the form rejects earlier years. The
+    # last month is November 2025, since the data ends five days before
+    # today.
+    assert requests[0] == (2019, 1)
+    assert requests[-1] == (2025, 11)
+    assert len(requests) == 83
+
+
+@pytest.mark.usefixtures("frozen_now")
 def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
     """Test that the file of a month is posted for and read."""
     # The form of the page is posted back with the month and the year.
