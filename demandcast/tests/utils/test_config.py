@@ -140,6 +140,63 @@ def test_read_configuration_with_existing_file(tmp_path, monkeypatch):
         utils.config.read_configuration("my_script", "Test script")
 
 
+def test_read_configuration_with_overrides(tmp_path, monkeypatch):
+    """
+    Test that command line overrides replace the file values.
+
+    This is what run_all.sh relies on: it writes a configuration file
+    holding only the values of the run it is about to make, so the
+    overrides must win over whatever the file contains.
+    """
+    # Create a temporary configuration file.
+    config_content = textwrap.dedent(
+        """
+        variable: population
+        electricity_data_source: entsoe
+        """
+    )
+    config_file = tmp_path / "my_script_config.yaml"
+    config_file.write_text(config_content, encoding="utf-8")
+
+    # Make argparse see the temporary config file path.
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["pytest", "--config", str(config_file)],
+    )
+
+    # Read the configuration, overriding two of its values.
+    config = utils.config.read_configuration(
+        "my_script",
+        "Test script",
+        {
+            "variable": "electricity_demand",
+            "electricity_data_source": "ieso",
+        },
+    )
+
+    # The overridden values win, the other ones are left alone.
+    assert config == {
+        "variable": "electricity_demand",
+        "electricity_data_source": "ieso",
+    }
+
+    # Without overrides the file is read as it is.
+    config = utils.config.read_configuration("my_script", "Test script")
+    assert config == {
+        "variable": "population",
+        "electricity_data_source": "entsoe",
+    }
+
+    # An empty mapping of overrides changes nothing either, so a caller
+    # can pass one unconditionally.
+    config = utils.config.read_configuration("my_script", "Test script", {})
+    assert config == {
+        "variable": "population",
+        "electricity_data_source": "entsoe",
+    }
+
+
 def test_set_up_logging(tmp_path, monkeypatch):
     """
     Test the set_up_logging function.

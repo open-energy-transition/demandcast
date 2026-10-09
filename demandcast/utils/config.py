@@ -11,6 +11,7 @@ import argparse
 import logging
 import os
 from datetime import datetime
+from typing import Any
 
 import yaml
 
@@ -65,6 +66,7 @@ def read_folders_structure() -> dict[str, str]:
 def read_configuration(
     script_name: str,
     script_description: str,
+    config_overrides: dict[str, Any] | None = None,
 ) -> dict:
     """
     Read a configuration file in yaml format.
@@ -75,6 +77,13 @@ def read_configuration(
         The name of the script for which the configuration is read.
     script_description : str
         A brief description of the script.
+    config_overrides : dict[str, Any] or None, optional
+        Configuration values that replace the ones read from the file.
+        This lets a caller such as run_all.sh drive the script without
+        writing a configuration file of its own. Keys that are not
+        configuration fields of the script are left to the validation of
+        the caller to reject, so that a typo fails loudly there rather
+        than being silently ignored here.
 
     Returns
     -------
@@ -113,6 +122,10 @@ def read_configuration(
     # Read the configuration file.
     with open(config_file_path, encoding="utf-8") as file:
         config = yaml.safe_load(file)
+
+    # Apply the overrides last, so that they win over the file.
+    if config_overrides:
+        config.update(config_overrides)
 
     return config
 
