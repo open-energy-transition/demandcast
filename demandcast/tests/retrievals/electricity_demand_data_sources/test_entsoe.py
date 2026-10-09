@@ -73,6 +73,44 @@ def test_download_and_extract_data_for_request(
     )
 
 
+@pytest.mark.filterwarnings("ignore::bs4.XMLParsedAsHTMLWarning")
+def test_download_and_extract_data_for_request_with_change_of_time_step(
+    fake_downloads, assert_demand, monkeypatch
+):
+    """Test that each time moves to the end of its own time step."""
+    monkeypatch.setenv("ENTSOE_API_KEY", "test-key")
+    # Ignore a local .env file with a real key.
+    monkeypatch.setattr(entsoe, "load_dotenv", lambda **_: None)
+    # Poland changed from hourly to 15-minute data on 13 June 2024. The
+    # 15-minute period has a single point, which holds for the whole
+    # period, since its curve leaves out the repeated values.
+    fake_downloads.serve(
+        "https://web-api.tp.entsoe.eu/api", "entsoe_change_of_time_step.xml"
+    )
+
+    time_series = entsoe.download_and_extract_data_for_request(
+        pd.Timestamp("2024-06-12 21:00"),
+        pd.Timestamp("2024-06-13 01:00"),
+        "POL",
+    )
+
+    # The hours end one hour after their starts, and the 15 minutes 15
+    # minutes after theirs.
+    assert_demand(
+        time_series,
+        "Europe/Warsaw",
+        {
+            "2024-06-12 22:00": 17700.5,
+            "2024-06-12 23:00": 16600.25,
+            "2024-06-13 00:00": 15900.75,
+            "2024-06-13 00:15": 15500.5,
+            "2024-06-13 00:30": 15500.5,
+            "2024-06-13 00:45": 15500.5,
+            "2024-06-13 01:00": 15500.5,
+        },
+    )
+
+
 def test_download_and_extract_data_for_request_without_api_key(monkeypatch):
     """Test that the error says how to set the API key."""
     monkeypatch.delenv("ENTSOE_API_KEY", raising=False)
