@@ -22,6 +22,7 @@ import logging
 
 import pandas as pd
 import utils.fetcher
+import utils.time_series
 
 
 def get_available_requests(
@@ -189,20 +190,23 @@ def download_and_extract_data_for_request(
     # Reshape the dataset from wide to long format.
     dataset = dataset.melt(id_vars="Hour", var_name="Date", value_name="Value")
 
-    # Define the new index. The rows of the files are the ends of the
-    # half hours ("Period Ending Time"), 30 minutes after their starts.
-    index = pd.to_datetime(
-        dataset["Date"] + " " + dataset["Hour"], format="%Y-%m-%d %H:%M"
-    ) + pd.Timedelta(minutes=30)
-
-    # Define the electricity demand time series.
+    # Define the electricity demand time series, at the starts of the
+    # half hours.
     electricity_demand_time_series = pd.Series(
-        dataset["Value"].values, index=index
+        dataset["Value"].values,
+        index=pd.to_datetime(
+            dataset["Date"] + " " + dataset["Hour"], format="%Y-%m-%d %H:%M"
+        ),
     )
 
-    # Add the timezone information.
+    # The rows of the files are the ends of the half hours ("Period
+    # Ending Time"), 30 minutes after their starts.
     electricity_demand_time_series = (
-        electricity_demand_time_series.tz_localize("Asia/Singapore")
+        utils.time_series.localize_interval_starts(
+            electricity_demand_time_series,
+            "Asia/Singapore",
+            pd.Timedelta(minutes=30),
+        )
     )
 
     return electricity_demand_time_series

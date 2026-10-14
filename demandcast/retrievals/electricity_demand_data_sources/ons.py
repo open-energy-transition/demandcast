@@ -17,6 +17,7 @@ import logging
 
 import pandas as pd
 import utils.fetcher
+import utils.time_series
 
 
 def get_available_requests(
@@ -105,10 +106,18 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     electricity_demand_time_series = pd.Series(
         dataset["val_cargaenergiahomwmed"].values,
         index=pd.to_datetime(dataset["din_instante"]),
-    ).tz_localize("America/Sao_Paulo", ambiguous="NaT", nonexistent="NaT")
+    )
 
-    # Add one hour to the time index because the time values appear
-    # to be provided at the beginning of the time interval.
-    electricity_demand_time_series.index += pd.Timedelta(hours=1)
+    # Move the times to the ends of the hours, because they appear to be
+    # provided at the beginning of the time interval.
+    electricity_demand_time_series = (
+        utils.time_series.localize_interval_starts(
+            electricity_demand_time_series,
+            "America/Sao_Paulo",
+            pd.Timedelta(hours=1),
+            ambiguous="NaT",
+            nonexistent="NaT",
+        )
+    )
 
     return electricity_demand_time_series

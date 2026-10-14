@@ -19,6 +19,7 @@ import logging
 
 import pandas as pd
 import utils.fetcher
+import utils.time_series
 
 
 def get_available_requests(
@@ -168,13 +169,14 @@ def download_and_extract_data_for_request(
     # Values are in kWh with a frequency of 1 hour. Convert to MW.
     electricity_demand_time_series = electricity_demand_time_series / 1000
 
-    # Add the timezone to the index.
+    # Move the times to the ends of the hours, because they are given at
+    # the beginning of the hour.
     electricity_demand_time_series = (
-        electricity_demand_time_series.tz_localize("America/Bogota")
+        utils.time_series.localize_interval_starts(
+            electricity_demand_time_series,
+            "America/Bogota",
+            pd.Timedelta(hours=1),
+        )
     )
-
-    # Add 1 hour to the index to account for the fact that the time
-    # is given at the beginning of the hour.
-    electricity_demand_time_series.index += pd.Timedelta(hours=1)
 
     return electricity_demand_time_series

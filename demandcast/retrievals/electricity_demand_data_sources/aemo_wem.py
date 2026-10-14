@@ -19,6 +19,7 @@ import logging
 
 import pandas as pd
 import utils.fetcher
+import utils.time_series
 
 
 def get_available_requests(
@@ -159,19 +160,16 @@ def download_and_extract_data_for_request(
             index=pd.to_datetime(dataset["Trading Interval"]),
         )
 
-        # Add the time zone information to the index. The timestamps are
-        # in AWST, which is UTC+8 all year, also during the daylight
-        # saving that Perth trialled from 2006 to 2009.
+        # The timestamps are in AWST, which is UTC+8 all year, also
+        # during the daylight saving that Perth trialled from 2006 to
+        # 2009. Move them to the ends of the trading intervals, because
+        # the demand data seems to be reported at their beginning.
         electricity_demand_time_series = (
-            electricity_demand_time_series.tz_localize(
-                datetime.timezone(datetime.timedelta(hours=8))
+            utils.time_series.localize_interval_starts(
+                electricity_demand_time_series,
+                datetime.timezone(datetime.timedelta(hours=8)),
+                pd.Timedelta(minutes=30),
             ).tz_convert("UTC")
-        )
-
-        # Add 30 minutes to the index because the demand data seems
-        # to be reported at the beginning of the trading interval.
-        electricity_demand_time_series.index = (
-            electricity_demand_time_series.index + pd.Timedelta(minutes=30)
         )
 
     else:
