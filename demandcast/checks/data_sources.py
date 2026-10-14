@@ -10,7 +10,9 @@ Description:
     file, and checks the values: they are numbers, at times with a time
     zone at most one hour apart, they are not negative, and they are
     recent, or within the dates of the YAML file. The results are saved
-    to a JSON file and a Markdown file in the folder of the checks.
+    to a JSON file and a Markdown file in the folder of the checks,
+    with the number of checks that each data source has failed in a
+    row, counted from the report of the previous check in that folder.
 """
 
 import dataclasses
@@ -49,7 +51,8 @@ class Result:
     Result of the check of a data source.
 
     The status is passed, failed or skipped, and the messages are the
-    problems of a failed check or the reason of a skipped one.
+    problems of a failed check or the reason of a skipped one. The
+    failures in a row include this check.
     """
 
     data_source: str
@@ -61,6 +64,7 @@ class Result:
     last_time: str | None = None
     messages: list[str] = dataclasses.field(default_factory=list)
     seconds: float = 0.0
+    failures_in_a_row: int = 0
 
 
 def _hide_api_keys(text: str) -> str:
@@ -330,8 +334,8 @@ def _format_report(
             "",
             "### Failed",
             "",
-            "| Data source | Entity | Request | Problem |",
-            "| --- | --- | --- | --- |",
+            "| Data source | Entity | Request | Problem | Failures in a row |",
+            "| --- | --- | --- | --- | --- |",
         ]
         lines += [
             f"| `{result.data_source}` | {result.code or ''} | "
@@ -339,7 +343,7 @@ def _format_report(
             + "<br>".join(
                 message.replace("|", "\\|") for message in result.messages
             )
-            + " |"
+            + f" | {result.failures_in_a_row} |"
             for result in by_status["failed"]
         ]
 
@@ -365,6 +369,33 @@ def _format_report(
         ]
 
     return "\n".join(lines) + "\n"
+
+
+def _read_previous_failures() -> dict[str, int]:
+    """
+    Read the failures in a row of the report of the previous check.
+
+    Returns
+    -------
+    dict[str, int]
+        The number of checks that each data source that failed the
+        previous check had failed in a row, which is empty if there is
+        no report that can be read.
+    """
+    file_path = os.path.join(
+        utils.config.read_folders_structure()["checks_folder"],
+        REPORT_NAME + ".json",
+    )
+    try:
+        with open(file_path, encoding="utf-8") as file:
+            return {
+                result["data_source"]: result.get("failures_in_a_row", 1)
+                for result in json.load(file)["results"]
+                if result["status"] == "failed"
+            }
+    except (OSError, ValueError, KeyError, TypeError):
+        logging.info("No report of a previous check to count failures from.")
+        return {}
 
 
 def _write_report(
@@ -412,7 +443,8 @@ def run_check(
 
     The data sources are checked at the same time, each with one
     request, and the results are saved to a JSON file and a Markdown
-    file in the folder of the checks.
+    file in the folder of the checks, which replace those of the
+    previous check.
 
     Parameters
     ----------
@@ -486,8 +518,15 @@ def run_check(
                 seconds=time_limit_minutes * 60,
             )
 
+    # Count the checks that each data source has failed in a row, since
+    # a website can be out of reach for a while.
+    previous_failures = _read_previous_failures()
     ordered_results = [results[data_source] for data_source in data_sources]
     for result in ordered_results:
+        if result.status == "failed":
+            result.failures_in_a_row = (
+                previous_failures.get(result.data_source, 0) + 1
+            )
         logging.info(
             f"{result.data_source}: {result.status}"
             + (f" ({' '.join(result.messages)})" if result.messages else "")

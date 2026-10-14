@@ -114,8 +114,9 @@ def get_url(
     # Get the API key.
     api_key = os.getenv("EIA_API_KEY")
 
-    # Check if the API key is set.
-    if api_key is None:
+    # Check if the API key is set: a secret that is not set on GitHub
+    # gives an empty key.
+    if not api_key:
         raise ValueError(
             "The EIA API key is not set. Please set the EIA_API_KEY "
             "environment variable."
