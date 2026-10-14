@@ -17,9 +17,12 @@ maximum_age_days: 60
 
 # OPTIONAL.
 # The days of the data sources that publish their data later. CAISO
-# publishes a month one to four months after its end.
+# publishes a month one to four months after its end. TSOC publishes a
+# file per year once the year has ended, from five weeks to about nine
+# months later, so its latest value can be almost two years old.
 maximum_age_days_by_source:
   caiso: 180
+  tsoc: 700
 
 # OPTIONAL.
 # The minutes after which the data sources that have not answered fail (15
