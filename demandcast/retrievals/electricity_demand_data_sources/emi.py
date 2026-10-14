@@ -110,11 +110,6 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
-
-    Raises
-    ------
-    TypeError
-        If the extracted data is not a pandas DataFrame.
     """
     start_date, end_date = period
 
@@ -126,18 +121,11 @@ def download_and_extract_data_for_request(
     url = get_url(start_date, end_date)
 
     # Fetch the electricity demand data from the URL.
-    dataset = utils.fetcher.fetch_data(
+    dataset = utils.fetcher.fetch_dataframe(
         url,
         content_type="csv",
         csv_kwargs={"skiprows": 11},
     )
-
-    # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pd.DataFrame):
-        raise TypeError(
-            f"The extracted data is a {type(dataset)} object, "
-            "expected a pandas DataFrame."
-        )
 
     # Extract the electricity demand time series. Convert GWh to MW
     # considering a 0.5-hour time step.

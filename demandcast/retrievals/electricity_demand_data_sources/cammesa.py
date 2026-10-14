@@ -113,11 +113,6 @@ def download_and_extract_data_for_request(date: str, code: str) -> pd.Series:
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
 
-    Raises
-    ------
-    TypeError
-        If the extracted data is not a pandas DataFrame.
-
     """
     logging.info(f"Retrieving electricity demand data for {date}.")
 
@@ -125,16 +120,9 @@ def download_and_extract_data_for_request(date: str, code: str) -> pd.Series:
     url = get_url(date)
 
     # Fetch the data from the URL.
-    dataset = utils.fetcher.fetch_data(
+    dataset = utils.fetcher.fetch_dataframe(
         url, "html", read_with="requests.get", read_as="json"
     )
-
-    # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pd.DataFrame):
-        raise TypeError(
-            f"The extracted data is a {type(dataset)} object, "
-            "expected a pandas DataFrame."
-        )
 
     # Remove rows with NaN values for demand.
     dataset = dataset.dropna(subset=["dem"])

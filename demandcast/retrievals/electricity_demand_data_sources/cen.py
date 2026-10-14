@@ -110,11 +110,6 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
-
-    Raises
-    ------
-    TypeError
-        If the extracted data is not a pandas DataFrame.
     """
     start_date, end_date = period
 
@@ -136,7 +131,7 @@ def download_and_extract_data_for_request(
     }
 
     # Fetch the data from the URL.
-    dataset = utils.fetcher.fetch_data(
+    dataset = utils.fetcher.fetch_dataframe(
         url,
         "html",
         read_with="requests.get",
@@ -144,13 +139,6 @@ def download_and_extract_data_for_request(
         read_as="json",
         json_keys=["data"],
     )
-
-    # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pd.DataFrame):
-        raise TypeError(
-            f"The extracted data is a {type(dataset)} object, "
-            "expected a pandas DataFrame."
-        )
 
     # Merge the date and time columns into a single column. Consider
     # that the time is given at the end of the hour. In some years

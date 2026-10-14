@@ -117,11 +117,6 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
-
-    Raises
-    ------
-    TypeError
-        If the extracted data is not a pandas DataFrame.
     """
     year, month = year_and_month
 
@@ -132,7 +127,7 @@ def download_and_extract_data_for_request(
     skip_rows = 3 if year == 2021 else 1
 
     # Fetch CSV content from the URL with proper encoding.
-    dataset = utils.fetcher.fetch_data(
+    dataset = utils.fetcher.fetch_dataframe(
         url,
         "csv",
         csv_kwargs={
@@ -140,13 +135,6 @@ def download_and_extract_data_for_request(
             "encoding": "cp932",
         },  # Japanese encoding
     )
-
-    # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pd.DataFrame):
-        raise TypeError(
-            f"The extracted data is a {type(dataset)} object, "
-            "expected a pandas DataFrame."
-        )
 
     if month is None:
         logging.info(

@@ -115,24 +115,12 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
-
-    Raises
-    ------
-    TypeError
-        If the extracted data is not a pandas DataFrame.
     """
     # Get the URL of the electricity demand data.
     url = get_url(code)
 
     # Fetch HTML content from the URL.
-    dataset = utils.fetcher.fetch_data(url, "csv")
-
-    # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pd.DataFrame):
-        raise TypeError(
-            f"The extracted data is a {type(dataset)} object, "
-            "expected a pandas DataFrame."
-        )
+    dataset = utils.fetcher.fetch_dataframe(url, "csv")
 
     if code == "CAN_NB":
         # Remove unknown code from the time step values.

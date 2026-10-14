@@ -121,11 +121,6 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
-
-    Raises
-    ------
-    TypeError
-        If the extracted data is not a pandas DataFrame.
     """
     year, before_apr_2002 = year_and_old_file
 
@@ -138,16 +133,9 @@ def download_and_extract_data_for_request(
         )
 
         # Fetch HTML content from the URL.
-        dataset = utils.fetcher.fetch_data(
+        dataset = utils.fetcher.fetch_dataframe(
             url, "html", read_with="requests.get"
         )
-
-        # Make sure the dataset is a pandas DataFrame.
-        if not isinstance(dataset, pd.DataFrame):
-            raise TypeError(
-                f"The extracted data is a {type(dataset)} object, "
-                "expected a pandas DataFrame."
-            )
 
         # Extract the electricity demand time series. The times of 1996
         # have a different format from the other years.
@@ -166,14 +154,9 @@ def download_and_extract_data_for_request(
     logging.info(f"Retrieving electricity demand data for the year {year}.")
 
     # Fetch HTML content from the URL.
-    dataset = utils.fetcher.fetch_data(url, "csv", csv_kwargs={"skiprows": 3})
-
-    # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pd.DataFrame):
-        raise TypeError(
-            f"The extracted data is a {type(dataset)} object, "
-            "expected a pandas DataFrame."
-        )
+    dataset = utils.fetcher.fetch_dataframe(
+        url, "csv", csv_kwargs={"skiprows": 3}
+    )
 
     # The hours of each day are numbered from 1 to 24 by their ends, so
     # the hour 24 ends at midnight of the next day.
