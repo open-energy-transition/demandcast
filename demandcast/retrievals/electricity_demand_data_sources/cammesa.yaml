@@ -1,3 +1,7 @@
+licence:
+  redistribute: false
+  terms: Reproduction, modification, distribution and / or transmission of the information is strictly prohibited.
+  url: https://cammesaweb.cammesa.com/politicas-de-acceso/
 entities:
   - country_name: Argentina
     country_code: ARG

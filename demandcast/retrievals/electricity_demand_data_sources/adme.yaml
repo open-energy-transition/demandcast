@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: Open data.
+  url: https://adme.com.uy/datosabiertos.html
 entities:
   - country_name: Uruguay
     country_code: URY

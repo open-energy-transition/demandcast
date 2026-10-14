@@ -1,3 +1,7 @@
+licence:
+  redistribute: false
+  terms: Reproducing, copying, or distributing this data is not allowed.
+  url: https://www.xm.com.co/legales/terminos-legales-del-sitio-web
 entities:
   - country_name: Colombia
     country_code: COL

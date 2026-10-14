@@ -32,20 +32,6 @@ DATASET_BS_YEAR = 2074
 MIDNIGHT_HOUR = 24
 
 
-def redistribute() -> bool:
-    """
-    Return a boolean indicating if the data can be redistributed.
-
-    Returns
-    -------
-    bool
-        True if the data can be redistributed, False otherwise.
-    """
-    logging.debug("CC BY-SA 4.0")
-    logging.debug("Source: https://opendatanepal.com")
-    return True
-
-
 def get_available_requests(
     code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[int]:

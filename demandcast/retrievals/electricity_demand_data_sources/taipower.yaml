@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: CC-BY 4.0 license. Use for any purpose with attribution.
+  url: https://zenodo.org/records/7537890
 entities:
   - country_name: Taiwan
     country_code: TWN

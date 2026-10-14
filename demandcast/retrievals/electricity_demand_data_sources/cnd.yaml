@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: CC-BY 4.0 license. Use for any purpose with attribution.
+  url: https://creativecommons.org/licenses/by/4.0/
 entities:
   - country_name: Panama
     country_code: PAN

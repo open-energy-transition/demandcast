@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: Use for any purpose with attribution to AEMO.
+  url: https://aemo.com.au/privacy-and-legal-notices/copyright-permissions
 entities:
   - subdivision_name: Western Australia
     subdivision_code: WA

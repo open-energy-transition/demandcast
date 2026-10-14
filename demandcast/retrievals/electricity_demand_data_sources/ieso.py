@@ -28,23 +28,6 @@ import utils.fetcher
 EASTERN_STANDARD_TIME = datetime.timezone(datetime.timedelta(hours=-5))
 
 
-def redistribute() -> bool:
-    """
-    Return a boolean indicating if the data can be redistributed.
-
-    Returns
-    -------
-    bool
-        True if the data can be redistributed, False otherwise.
-    """
-    logging.debug(
-        "Limited, non-exclusive, non-sublicensable, non-transferrable licence "
-        "to use and reproduce."
-    )
-    logging.debug("Source: https://www.ieso.ca/Terms-of-Use")
-    return False
-
-
 def get_available_requests(
     code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[tuple[int | None, bool]]:

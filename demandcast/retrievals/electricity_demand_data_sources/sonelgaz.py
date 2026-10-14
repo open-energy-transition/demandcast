@@ -14,24 +14,9 @@ Description:
 """
 
 import datetime
-import logging
 
 import pandas as pd
 import utils.fetcher
-
-
-def redistribute() -> bool:
-    """
-    Return a boolean indicating if the data can be redistributed.
-
-    Returns
-    -------
-    bool
-        True if the data can be redistributed, False otherwise.
-    """
-    logging.debug("CC-BY 4.0 license. Use for any purpose with attribution.")
-    logging.debug("Source: https://data.mendeley.com/datasets/z5x2d3mhw7/1")
-    return True
 
 
 def get_available_requests(

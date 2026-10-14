@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: CC BY-SA 4.0
+  url: https://opendatanepal.com
 entities:
   - country_name: Nepal
     country_code: NPL

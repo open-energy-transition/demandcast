@@ -21,23 +21,6 @@ import pandas as pd
 import utils.fetcher
 
 
-def redistribute() -> bool:
-    """
-    Return a boolean indicating if the data can be redistributed.
-
-    Returns
-    -------
-    bool
-        True if the data can be redistributed, False otherwise.
-    """
-    logging.debug("Use for any purpose with attribution to AEMO.")
-    logging.debug(
-        "Source: "
-        "https://aemo.com.au/privacy-and-legal-notices/copyright-permissions"
-    )
-    return True
-
-
 def get_available_requests(
     code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[tuple[bool, int, int | None, int | None]]:

@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: Use for any purpose with attribution to CAISO.
+  url: https://www.caiso.com/privacy-terms-of-use
 entities:
   - subdivision_name: California
     subdivision_code: CAL

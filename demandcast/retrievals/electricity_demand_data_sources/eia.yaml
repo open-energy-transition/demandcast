@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: Use for any purpose with attribution to EIA.
+  url: https://www.eia.gov/about/copyrights_reuse.php
 entities:
   - subdivision_name: California
     subdivision_code: CAL

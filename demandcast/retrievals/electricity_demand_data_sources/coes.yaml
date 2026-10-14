@@ -1,3 +1,7 @@
+licence:
+  redistribute: false
+  terms: Prohibited any use for commercial or distribution purposes.
+  url: https://www.coes.org.pe/Portal/Organizacion/TerminosyCondiciones
 entities:
   - country_name: Peru
     country_code: PER

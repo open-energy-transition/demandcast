@@ -725,7 +725,13 @@ def test_date_ranges_errors():
         )
 
 
-# A country and a subdivision, as in the yaml file of a data source.
+# The licence, a country and a subdivision, as in the yaml file of a
+# data source.
+LICENCE = {
+    "redistribute": True,
+    "terms": "CC-BY 4.0 license. Use for any purpose with attribution.",
+    "url": "https://creativecommons.org/licenses/by/4.0/",
+}
 FRANCE = {
     "country_name": "France",
     "country_code": "FRA",
@@ -765,49 +771,85 @@ def write_data_source(tmp_folders, tmp_path):
     return write
 
 
-def test_read_entities_of_data_source(write_data_source):
+def test_read_data_source(write_data_source):
     """Test that a valid yaml file of a data source is read as is."""
-    write_data_source({"entities": [FRANCE, TEXAS]})
+    write_data_source({"licence": LICENCE, "entities": [FRANCE, TEXAS]})
 
     entities = utils.entities._read_entities_info(data_source="test_source")
+    licence = utils.entities.read_licence("test_source")
 
     assert entities == [FRANCE, TEXAS]
+    assert licence == utils.entities.DataSourceLicence.model_validate(LICENCE)
 
 
 @pytest.mark.parametrize(
     ("content", "error"),
     [
         (None, "valid dictionary"),
-        ({"entities": [FRANCE], "licence": "CC-BY-4.0"}, "licence"),
-        ({"entities": [FRANCE | {"start_dat": "2014"}]}, "start_dat"),
+        ({"entities": [FRANCE]}, "licence\n  Field required"),
+        (
+            {"licence": LICENCE, "entities": [FRANCE], "notes": "None."},
+            "notes",
+        ),
+        (
+            {"licence": LICENCE | {"redistribute": "maybe"}, "entities": []},
+            "redistribute",
+        ),
         (
             {
+                "licence": {k: v for k, v in LICENCE.items() if k != "url"},
+                "entities": [FRANCE],
+            },
+            "url",
+        ),
+        (
+            {"licence": LICENCE, "entities": [FRANCE | {"start_dat": "2014"}]},
+            "start_dat",
+        ),
+        (
+            {
+                "licence": LICENCE,
                 "entities": [
                     {k: v for k, v in FRANCE.items() if k != "end_date"}
-                ]
+                ],
             },
             "end_date",
         ),
         # An unquoted subdivision code such as ON is read as a boolean.
-        ({"entities": [TEXAS | {"subdivision_code": True}]}, "valid string"),
         (
-            {"entities": [TEXAS | {"time_zone": None}]},
+            {
+                "licence": LICENCE,
+                "entities": [TEXAS | {"subdivision_code": True}],
+            },
+            "valid string",
+        ),
+        (
+            {"licence": LICENCE, "entities": [TEXAS | {"time_zone": None}]},
             "USA_TEX: a subdivision needs a name, a code and a time zone",
         ),
         (
-            {"entities": [TEXAS | {"time_zone": "America/Atlantis"}]},
+            {
+                "licence": LICENCE,
+                "entities": [TEXAS | {"time_zone": "America/Atlantis"}],
+            },
             "USA_TEX: unknown time zone America/Atlantis",
         ),
         (
-            {"entities": [TEXAS | {"end_date": datetime.date(2019, 12, 31)}]},
+            {
+                "licence": LICENCE,
+                "entities": [
+                    TEXAS | {"end_date": datetime.date(2019, 12, 31)}
+                ],
+            },
             "USA_TEX: the start date is after the end date",
         ),
-        ({"entities": [FRANCE, TEXAS, FRANCE]}, r"\['FRA'\] come more than"),
+        (
+            {"licence": LICENCE, "entities": [FRANCE, TEXAS, FRANCE]},
+            r"\['FRA'\] come more than",
+        ),
     ],
 )
-def test_read_entities_of_invalid_data_source(
-    write_data_source, content, error
-):
+def test_read_invalid_data_source(write_data_source, content, error):
     """Test that a yaml file of a data source with an error fails."""
     write_data_source(content)
 
@@ -815,6 +857,8 @@ def test_read_entities_of_invalid_data_source(
         ValueError, match=f"(?s)data source test_source is not valid.*{error}"
     ):
         utils.entities._read_entities_info(data_source="test_source")
+    with pytest.raises(ValueError, match="data source test_source is not"):
+        utils.entities.read_licence("test_source")
 
 
 def test_years():

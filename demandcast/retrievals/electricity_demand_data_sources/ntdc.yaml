@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: CC0.
+  url: https://www.kaggle.com/datasets/tentative/ntdc-dataset
 entities:
   - country_name: Pakistan
     country_code: PAK

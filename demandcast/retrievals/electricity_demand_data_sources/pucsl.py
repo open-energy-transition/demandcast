@@ -25,20 +25,6 @@ import pandas as pd
 import utils.fetcher
 
 
-def redistribute() -> bool:
-    """
-    Return a boolean indicating if the data can be redistributed.
-
-    Returns
-    -------
-    bool
-        True if the data can be redistributed, False otherwise.
-    """
-    logging.debug("All rights reserved by PUCSL.")
-    logging.debug("Source: https://www.pucsl.gov.lk")
-    return False
-
-
 def get_available_requests(
     code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:

@@ -58,20 +58,6 @@ SOLAR_DELAY = 0.2
 MINIMUM_CLEAR_DAYS = 5
 
 
-def redistribute() -> bool:
-    """
-    Return a boolean indicating if the data can be redistributed.
-
-    Returns
-    -------
-    bool
-        True if the data can be redistributed, False otherwise.
-    """
-    logging.debug("All rights reserved by TSOC.")
-    logging.debug("Source: https://tsoc.org.cy")
-    return False
-
-
 def get_available_requests(
     code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[int]:

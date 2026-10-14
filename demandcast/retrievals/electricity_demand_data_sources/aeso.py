@@ -19,23 +19,6 @@ import pandas as pd
 import utils.fetcher
 
 
-def redistribute() -> bool:
-    """
-    Return a boolean indicating if the data can be redistributed.
-
-    Returns
-    -------
-    bool
-        True if the data can be redistributed, False otherwise.
-    """
-    logging.debug(
-        "Use for non-commercial, personal or educational purposes with "
-        "attribution to AESO."
-    )
-    logging.debug("Source: https://www.aeso.ca/legal")
-    return True
-
-
 def get_available_requests(
     code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[int]:

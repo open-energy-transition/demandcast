@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: Open data.
+  url: https://www.data.go.kr/ugs/selectPublicDataUseGuideView.do
 entities:
   - country_name: South Korea
     country_code: KOR

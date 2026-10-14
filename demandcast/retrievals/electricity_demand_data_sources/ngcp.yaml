@@ -1,3 +1,7 @@
+licence:
+  redistribute: false
+  terms: All rights reserved by NGCP.
+  url: https://ngcp.ph
 entities:
   - country_name: Philippines
     country_code: PHL

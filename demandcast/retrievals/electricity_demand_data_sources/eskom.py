@@ -20,24 +20,6 @@ import pandas as pd
 import utils.config
 
 
-def redistribute() -> bool:
-    """
-    Return a boolean indicating if the data can be redistributed.
-
-    Returns
-    -------
-    bool
-        True if the data can be redistributed, False otherwise.
-    """
-    logging.debug(
-        "Content may not be used for any commercial and non-private purposes."
-    )
-    logging.debug(
-        "Source: https://www.eskom.co.za/wp-content/uploads/2021/10/WEBSITE-TERMS-AND-CONDITIONS_Sep2021.pdf"
-    )
-    return False
-
-
 def get_available_requests(
     code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[None]:

@@ -30,20 +30,6 @@ LAST_YEARLY_FILE = 2024
 HOURLY_HEADER = "DATE,TIME,当日実績(万kW)"
 
 
-def redistribute() -> bool:
-    """
-    Return a boolean indicating if the data can be redistributed.
-
-    Returns
-    -------
-    bool
-        True if the data can be redistributed, False otherwise.
-    """
-    logging.debug("Personal use only. Redistribution is not allowed.")
-    logging.debug("Source: https://www4.tepco.co.jp/en/pg/legal/index-e.html")
-    return False
-
-
 def get_available_requests(
     code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[tuple[int, int | None]]:

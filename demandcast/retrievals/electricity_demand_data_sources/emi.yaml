@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: CC-BY 4.0 license. Use for any purpose with attribution.
+  url: https://www.emi.ea.govt.nz/LegalInformation
 entities:
   - country_name: New Zealand
     country_code: NZL

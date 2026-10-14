@@ -104,7 +104,6 @@ def test_module(data_source):
         f"retrievals.electricity_demand_data_sources.{data_source}"
     )
 
-    assert isinstance(module.redistribute(), bool)
     assert callable(module.get_url)
 
     # The retrieval code passes the code and the dates of the data of

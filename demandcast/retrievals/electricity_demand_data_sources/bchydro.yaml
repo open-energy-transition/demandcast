@@ -1,3 +1,7 @@
+licence:
+  redistribute: false
+  terms: Informational and noncommercial uses offline only.
+  url: https://www.bchydro.com/siteinfo/legal.html
 entities:
   - subdivision_name: British Columbia
     subdivision_code: BC

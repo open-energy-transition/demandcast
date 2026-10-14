@@ -64,14 +64,13 @@ The script will store electricity demand data in `data/electricity_demand/YYYY-M
 
 Each retrieval module in the `demandcast/retrievals/electricity_demand_data_sources/` folder is designed to fetch electricity demand data from a specific data source. The main functions in each module typically include:
 
-- **Redistribution rights (`redistribute`)**: Information about the redistribution rights of the data source.
 - **Data request construction (`get_available_requests`)**: Builds the requests of a country or subdivision from its code and the dates of its data in the YAML file, which the retrieval code passes, in chronological order. A source that downloads all its data at once returns a single request, `None`.
 - **URL construction (`get_url`)**: Generates the appropriate web request URL.
 - **Data download and processing (`download_and_extract_data_for_request`)**: Fetches the data of a request, which the retrieval code passes with the code, using `utils.fetcher` functions, and transforms it into a `pandas.Series` of the demand in MW, with time-zone-aware times that mark the end of each interval.
 
 #### Names, codes, time zones, and data time ranges for countries and subdivisions
 
-For each retrieval module in the `demandcast/retrievals/electricity_demand_data_sources/` folder, a corresponding YAML file must be created. The YAML file should contain a list of dictionaries, each representing a country or subdivision from the respective data source. The following rules apply:
+For each retrieval module in the `demandcast/retrievals/electricity_demand_data_sources/` folder, a corresponding YAML file must be created. It gives the `licence` of the data (`redistribute`, whether the data can be published on Zenodo, `terms`, a summary of the licence, and `url`, its link), and its `entities`, a list of dictionaries, each representing a country or subdivision from the respective data source. The following rules apply:
 
 - Names and codes should adhere to the ISO 3166 standard.
 - For countries and standard subdivisions, use Alpha-3 codes.

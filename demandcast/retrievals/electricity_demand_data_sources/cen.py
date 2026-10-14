@@ -18,20 +18,6 @@ import pandas as pd
 import utils.fetcher
 
 
-def redistribute() -> bool:
-    """
-    Return a boolean indicating if the data can be redistributed.
-
-    Returns
-    -------
-    bool
-        True if the data can be redistributed, False otherwise.
-    """
-    logging.debug("Open data.")
-    logging.debug("Source: http://energiaabierta.cl")
-    return True
-
-
 def get_available_requests(
     code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:

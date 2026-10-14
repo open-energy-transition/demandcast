@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: Use for any purpose with attribution to EPIAS.
+  url: https://seffaflik.epias.com.tr/about/about
 entities:
   - country_name: Turkey
     country_code: TUR
