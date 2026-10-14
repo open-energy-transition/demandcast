@@ -50,3 +50,15 @@ def test_get_available_requests(fake_downloads, caplog, tmp_path):
         ("4200", "xls", "2023-09-22"),
     ]
     assert "Skipping the report 'pentest_probe' on page 1" in caplog.text
+    # The certificate of the website is verified, with the intermediate
+    # certificate that its server does not send.
+    assert all(
+        kwargs["verify"] == pgcb.CERTIFICATES
+        for _, _, kwargs in fake_downloads.requests
+    )
+
+
+def test_certificates():
+    """Test that the intermediate and root certificates are saved."""
+    with open(pgcb.CERTIFICATES, encoding="utf-8") as file:
+        assert file.read().count("-----BEGIN CERTIFICATE-----") == 2

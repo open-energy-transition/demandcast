@@ -165,7 +165,7 @@ def fetch_data(  # noqa: C901
     read_as: str = "csv_table",
     csv_kwargs: dict[str, Any] | None = None,
     excel_kwargs: dict[str, Any] | None = None,
-    verify_ssl: bool = True,
+    verify_ssl: bool | str = True,
     request_params: Mapping[str, str] | None = None,
     post_data_params: Mapping[str, str | int] | None = None,
     header_params: Mapping[str, str] | None = None,
@@ -204,8 +204,9 @@ def fetch_data(  # noqa: C901
         The keyword arguments for reading CSV files.
     excel_kwargs : dict[str, Any], optional
         The keyword arguments for reading Excel files.
-    verify_ssl : bool, optional
-        Verify the SSL certificate.
+    verify_ssl : bool | str, optional
+        Verify the SSL certificate, with the default certificates or
+        with those in the file at this path.
     header_params : Mapping[str, str], optional
         The headers for the request.
     request_params : Mapping[str, str], optional

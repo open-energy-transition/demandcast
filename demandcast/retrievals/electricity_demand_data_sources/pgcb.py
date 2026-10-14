@@ -17,12 +17,17 @@ Description:
 
 import datetime
 import logging
+import os
 import re
 
 import pandas as pd
 import requests
 import utils.fetcher
 import utils.time_series
+
+# The certificates to verify the website with: its server does not send
+# the intermediate certificate of its chain.
+CERTIFICATES = os.path.join(os.path.dirname(__file__), "pgcb_certificates.pem")
 
 
 def _clean_and_format(date: str) -> str:
@@ -169,14 +174,12 @@ def get_available_requests(
             f"show_report?page={page_number}"
         )
 
-        # Fetch the HTML content of the page. The server does not send
-        # its intermediate certificate, so the certificate of the
-        # website cannot be checked.
+        # Fetch the HTML content of the page.
         html_content = utils.fetcher.fetch_data(
             url=page_url,
             content_type="html",
             read_as="plain",
-            verify_ssl=False,
+            verify_ssl=CERTIFICATES,
         )
 
         # Make sure the response is a requests.Response object.
@@ -291,10 +294,9 @@ def download_and_extract_data_for_request(
     # Get the URL of the electricity demand data.
     url = get_url(file_number, extension)
 
-    # Fetch the data from the URL, without checking the certificate of
-    # the website, whose server does not send its intermediate one.
+    # Fetch the data from the URL.
     excel_file = utils.fetcher.fetch_data(
-        url, "html", read_as="excel_file", verify_ssl=False
+        url, "html", read_as="excel_file", verify_ssl=CERTIFICATES
     )
 
     # Make sure the data is an Excel file.
