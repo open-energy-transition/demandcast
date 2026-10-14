@@ -73,26 +73,14 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
-
-    Raises
-    ------
-    TypeError
-        If the extracted data is not a pandas DataFrame.
     """
     url = get_url()
 
     # Fetch the data from the URL.
-    dataset = utils.fetcher.fetch_data(
+    dataset = utils.fetcher.fetch_dataframe(
         url,
         "csv",
     )
-
-    # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pd.DataFrame):
-        raise TypeError(
-            f"The extracted data is a {type(dataset)} object, "
-            "expected a pandas DataFrame."
-        )
 
     # Split semicolon-delimited columns (original CSV is single-column).
     dataset = dataset.iloc[:, 0].str.split(";", expand=True)

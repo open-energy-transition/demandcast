@@ -84,11 +84,6 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
-
-    Raises
-    ------
-    TypeError
-        If the extracted data is not a pandas DataFrame.
     """
     logging.info(f"Retrieving electricity demand data for the year {year}.")
 
@@ -99,14 +94,9 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     url = get_url(year)
 
     # Fetch the data from the URL.
-    dataset = utils.fetcher.fetch_data(url, "csv", csv_kwargs={"sep": ";"})
-
-    # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pd.DataFrame):
-        raise TypeError(
-            f"The extracted data is a {type(dataset)} object, "
-            "expected a pandas DataFrame."
-        )
+    dataset = utils.fetcher.fetch_dataframe(
+        url, "csv", csv_kwargs={"sep": ";"}
+    )
 
     # Filter the dataset for the subdivision of interest.
     dataset = dataset[dataset["id_subsistema"] == subdivision_code]

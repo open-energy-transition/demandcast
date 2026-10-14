@@ -260,6 +260,29 @@ def test_fetch_data_invalid_arguments():
         )
 
 
+def test_fetch_dataframe():
+    """Test that a table is fetched with the arguments of fetch_data."""
+    table = pd.DataFrame({"Load": [1000.5]})
+    with patch("utils.fetcher.fetch_data", return_value=table) as fetch_data:
+        result = utils.fetcher.fetch_dataframe(
+            "https://example.com/data.csv", "csv", csv_kwargs={"sep": ";"}
+        )
+
+    assert result is table
+    fetch_data.assert_called_once_with(
+        "https://example.com/data.csv", "csv", csv_kwargs={"sep": ";"}
+    )
+
+
+def test_fetch_dataframe_of_another_type():
+    """Test that data that is not a table is an error."""
+    with (
+        patch("utils.fetcher.fetch_data", return_value="<html></html>"),
+        pytest.raises(TypeError, match="expected a pandas DataFrame"),
+    ):
+        utils.fetcher.fetch_dataframe("https://example.com", "html")
+
+
 def test_fetch_entsoe_demand():
     """
     Test fetching demand data from ENTSOE.

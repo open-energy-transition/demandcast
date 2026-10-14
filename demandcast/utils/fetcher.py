@@ -360,6 +360,43 @@ def fetch_data(  # noqa: C901
     )
 
 
+def fetch_dataframe(
+    url: str, content_type: str, **kwargs: Any
+) -> pd.DataFrame:
+    """
+    Fetch data that is read as a table.
+
+    This function fetches the data with fetch_data and checks that it is
+    a table, as the data sources expect.
+
+    Parameters
+    ----------
+    url : str
+        The URL of the data.
+    content_type : str
+        The type of content, as for fetch_data.
+    **kwargs : Any
+        The other arguments of fetch_data.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The data.
+
+    Raises
+    ------
+    TypeError
+        If the data is not a pandas DataFrame.
+    """
+    dataset = fetch_data(url, content_type, **kwargs)
+    if not isinstance(dataset, pd.DataFrame):
+        raise TypeError(
+            f"The extracted data is a {type(dataset)} object, "
+            "expected a pandas DataFrame."
+        )
+    return dataset
+
+
 def fetch_entsoe_demand(
     api_key: str,
     iso_alpha_3_code: str,

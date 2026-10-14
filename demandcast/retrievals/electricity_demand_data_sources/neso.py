@@ -66,13 +66,11 @@ def get_url(year: int) -> str:
 
     Raises
     ------
-    TypeError
-        If the extracted catalogue is not a pandas DataFrame.
     ValueError
         If the catalogue has no dataset for the year.
     """
     # Fetch the datasets in the catalogue, one for each year.
-    datasets = utils.fetcher.fetch_data(
+    datasets = utils.fetcher.fetch_dataframe(
         "https://api.neso.energy/api/3/action/package_show?"
         "id=historic-demand-data",
         "html",
@@ -80,13 +78,6 @@ def get_url(year: int) -> str:
         read_as="json",
         json_keys=["result", "resources"],
     )
-
-    # Make sure the datasets are in a pandas DataFrame.
-    if not isinstance(datasets, pd.DataFrame):
-        raise TypeError(
-            f"The extracted catalogue is a {type(datasets)} object, "
-            "expected a pandas DataFrame."
-        )
 
     # Get the identifier of the dataset of the year.
     dataset_ids = datasets.loc[
@@ -121,11 +112,6 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
-
-    Raises
-    ------
-    TypeError
-        If the extracted data is not a pandas DataFrame.
     """
     logging.info(f"Retrieving electricity demand data for the year {year}.")
 
@@ -133,20 +119,13 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     url = get_url(year)
 
     # Fetch the electricity demand data from the URL.
-    dataset = utils.fetcher.fetch_data(
+    dataset = utils.fetcher.fetch_dataframe(
         url,
         "html",
         read_with="requests.get",
         read_as="json",
         json_keys=["result", "records"],
     )
-
-    # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pd.DataFrame):
-        raise TypeError(
-            f"The extracted data is a {type(dataset)} object, "
-            "expected a pandas DataFrame."
-        )
 
     # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(

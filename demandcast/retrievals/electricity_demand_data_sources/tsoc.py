@@ -291,11 +291,6 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     -------
     pandas.Series
         The electricity demand time series in MW.
-
-    Raises
-    ------
-    TypeError
-        If the extracted data is not a pandas DataFrame.
     """
     logging.info(f"Retrieving electricity demand data for the year {year}.")
 
@@ -303,19 +298,12 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     # estimated distributed generation, below the four rows of the
     # header. The file is downloaded with requests, because the website
     # rejects the downloads of pandas, made with urllib.
-    dataset = utils.fetcher.fetch_data(
+    dataset = utils.fetcher.fetch_dataframe(
         get_url(year),
         "html",
         read_as="excel_table",
         excel_kwargs={"header": None, "skiprows": 4, "usecols": [0, 6, 8]},
     )
-
-    # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pd.DataFrame):
-        raise TypeError(
-            f"The extracted data is a {type(dataset)} object, "
-            "expected a pandas DataFrame."
-        )
 
     dataset.columns = ["start", "demand", "distributed"]
     # The times are stored with rounding errors of up to a second.

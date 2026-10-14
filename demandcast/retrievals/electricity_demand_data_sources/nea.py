@@ -119,11 +119,6 @@ def download_and_extract_data_for_request(
     -------
     pandas.Series
         The electricity demand data for the given month.
-
-    Raises
-    ------
-    TypeError
-        If the extracted data is not a pandas DataFrame.
     """
     logging.info(
         f"Retrieving electricity demand data for the Bikram Sambat month "
@@ -134,19 +129,12 @@ def download_and_extract_data_for_request(
     url = get_url(bs_month)
 
     # Fetch the electricity demand data from the URL.
-    dataset = utils.fetcher.fetch_data(
+    dataset = utils.fetcher.fetch_dataframe(
         url,
         "html",
         read_as="json",
         json_keys=["result", "records"],
     )
-
-    # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pd.DataFrame):
-        raise TypeError(
-            f"The extracted data is a {type(dataset)} object, "
-            "expected a pandas DataFrame."
-        )
 
     if "Day" not in dataset.columns:
         # Reset the column names with the first row.
