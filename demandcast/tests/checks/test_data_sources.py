@@ -19,6 +19,7 @@ import pandas as pd
 import pytest
 import utils.config
 import utils.entities
+import utils.fetcher
 from retrievals.electricity_demand_data_sources import hydroquebec, ons
 
 
@@ -151,6 +152,30 @@ def test_check_data_source_with_an_empty_latest_request(ons_downloads):
     assert ons_downloads["requests"] == [(2025, "BRA_N"), (2024, "BRA_N")]
     assert result.status == "passed"
     assert result.request == "2024"
+
+
+def test_check_data_source_without_the_latest_data(ons_downloads):
+    """Test that the request before an unpublished one is checked."""
+    ons_downloads[2025] = utils.fetcher.DataNotFoundError("HTTP error 404")
+    ons_downloads[2024] = _hourly_demand("2025-12-20 00:00")
+
+    result = checks.data_sources.check_data_source("ons", 60)
+
+    assert ons_downloads["requests"] == [(2025, "BRA_N"), (2024, "BRA_N")]
+    assert result.status == "passed"
+    assert result.request == "2024"
+
+
+def test_check_data_source_without_earlier_data(ons_downloads):
+    """Test that only the data of the latest request can be missing."""
+    ons_downloads[2025] = pd.Series(dtype=float)
+    ons_downloads[2024] = utils.fetcher.DataNotFoundError("HTTP error 404")
+
+    result = checks.data_sources.check_data_source("ons", 60)
+
+    assert result.status == "failed"
+    assert result.request == "2024"
+    assert result.messages == ["DataNotFoundError: HTTP error 404"]
 
 
 def test_check_data_source_with_an_error(ons_downloads, monkeypatch):

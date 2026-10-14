@@ -324,16 +324,17 @@ def test_fetch_entsoe_demand_errors():
     """
     Test fetching demand data from ENTSOE with errors.
 
-    This test mocks the EntsoePandasClient to raise ConnectionError
+    This test mocks the EntsoePandasClient to raise a connection error
     and NoMatchingDataError, and checks that the fetch_entsoe_demand
-    function handles these errors correctly.
+    function lets the client retry the first and skips the second.
     """
     with patch("utils.fetcher.EntsoePandasClient") as mock_client:
-        # Test the EntsoePandasClient to raise ConnectionError.
-        mock_client.return_value.query_load.side_effect = ConnectionError(
-            "Connection failed"
+        # Test the EntsoePandasClient to raise a connection error after
+        # its retries.
+        mock_client.return_value.query_load.side_effect = (
+            requests.exceptions.ConnectionError("Connection failed")
         )
-        with pytest.raises(ConnectionError):
+        with pytest.raises(requests.exceptions.ConnectionError):
             utils.fetcher.fetch_entsoe_demand(
                 "dummy",
                 "FRA",
@@ -342,6 +343,9 @@ def test_fetch_entsoe_demand_errors():
                 retries=2,
                 retry_delay=0,
             )
+        mock_client.assert_called_once_with(
+            api_key="dummy", retry_count=2, retry_delay=0
+        )
 
         # Test the EntsoePandasClient to raise NoMatchingDataError.
         mock_client.return_value.query_load.side_effect = NoMatchingDataError(
@@ -357,79 +361,183 @@ def test_fetch_entsoe_demand_errors():
         assert result.empty
 
 
-def test_fetch_entsoe_demand_retry_log_attempt_is_one_indexed(caplog):
-    """Test ENTSO-E retry logging uses one-indexed attempt counters."""
-    with patch("utils.fetcher.EntsoePandasClient") as mock_client:
-        mock_client.return_value.query_load.side_effect = ConnectionError(
-            "Connection failed"
+def _http_error(status_code: int) -> requests.exceptions.HTTPError:
+    """
+    Make the HTTP error that requests raises for a status code.
+
+    Parameters
+    ----------
+    status_code : int
+        The HTTP status code.
+
+    Returns
+    -------
+    requests.exceptions.HTTPError
+        The HTTP error, with its response.
+    """
+    response = requests.Response()
+    response.status_code = status_code
+    return requests.exceptions.HTTPError(response=response)
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        requests.exceptions.SSLError(),
+        requests.exceptions.ConnectionError(),
+        requests.exceptions.Timeout(),
+        requests.exceptions.HTTPError(),
+        _http_error(429),
+        _http_error(503),
+    ],
+)
+def test_fetch_data_retries_temporary_errors(error, caplog):
+    """Test that the errors that can be temporary are retried."""
+    with (
+        patch("requests.get", side_effect=error) as mock_get,
+        pytest.raises(ConnectionError, match="after 2 attempts"),
+    ):
+        utils.fetcher.fetch_data(
+            "http://example.com", "html", retries=2, retry_delay=0
         )
-        with caplog.at_level("WARNING"), pytest.raises(ConnectionError):
-            utils.fetcher.fetch_entsoe_demand(
-                "dummy",
-                "FRA",
-                pd.Timestamp("2023-01-01"),
-                pd.Timestamp("2023-01-02"),
-                retries=2,
-                retry_delay=0,
-            )
 
-    assert "Retrying (1/2)" in caplog.text
-    assert "Retrying (0/2)" not in caplog.text
+    assert mock_get.call_count == 2
+    assert "Attempt 1/2" in caplog.text
+    assert "Attempt 2/2" in caplog.text
 
 
-def test_fetch_data_requests_get_errors():
-    """
-    Test fetch_data with different errors.
-
-    This test mocks the requests.get function to raise various
-    exceptions, including ConnectionError, Timeout, HTTPError,
-    RequestException, and SSLError. It checks that the fetch_data
-    function handles these errors correctly.
-    """
-    # Define the errors to test.
-    errors = [
-        requests.exceptions.SSLError(),  # Subclass of ConnectionError
-        requests.exceptions.ConnectionError(),  # Subclass of RequestException
-        requests.exceptions.Timeout(),  # Subclass of RequestException
-        requests.exceptions.HTTPError(),  # Subclass of RequestException
-        requests.exceptions.RequestException(),
-    ]
-
-    # Iterate through the errors and test each one.
-    for error in errors:
-        with patch("requests.get") as mock_get:
-            mock_get.side_effect = error
-            with pytest.raises(ConnectionError, match="remote data"):
-                utils.fetcher.fetch_data(
-                    "http://example.com", "html", retries=1, retry_delay=0
-                )
-
-
-def test_fetch_data_urlopen_errors():
-    """
-    Test fetch_data with different errors.
-
-    This test mocks the urllib.request.urlopen function to raise
-    various exceptions, including HTTPError and URLError. It checks
-    that the fetch_data function handles these errors correctly.
-    """
-    # Define the errors to test.
-    errors = [
-        urllib.error.HTTPError(
-            url="", code=0, msg="", hdrs=email.message.Message(), fp=None
+@pytest.mark.parametrize("status_code", [404, 410])
+def test_fetch_data_without_the_data(status_code):
+    """Test that data that does not exist is an error at once."""
+    with (
+        patch("requests.get", side_effect=_http_error(status_code)) as get,
+        pytest.raises(
+            utils.fetcher.DataNotFoundError,
+            match=f"HTTP error {status_code} while fetching "
+            "http://example.com",
         ),
-        urllib.error.URLError(reason=""),
-    ]
+    ):
+        utils.fetcher.fetch_data(
+            "http://example.com", "html", retries=3, retry_delay=0
+        )
 
-    # Iterate through the errors and test each one.
-    for error in errors:
-        with patch("urllib.request.urlopen") as mock_urlopen:
-            mock_urlopen.side_effect = error
-            with pytest.raises(ConnectionError, match="remote data"):
-                utils.fetcher.fetch_data(
-                    "http://example.com",
-                    "html",
-                    retries=1,
-                    retry_delay=0,
-                    read_with="urllib.request",
-                )
+    assert get.call_count == 1
+
+
+def test_fetch_data_with_a_client_error():
+    """Test that a client error is an error at once, with its code."""
+    with (
+        patch("requests.get", side_effect=_http_error(403)) as mock_get,
+        pytest.raises(ConnectionError, match="HTTP error 403") as error,
+    ):
+        utils.fetcher.fetch_data(
+            "http://example.com", "html", retries=3, retry_delay=0
+        )
+
+    assert not isinstance(error.value, utils.fetcher.DataNotFoundError)
+    assert mock_get.call_count == 1
+
+
+def test_fetch_data_with_other_errors():
+    """Test that the errors of the request or the data are raised."""
+    with (
+        patch(
+            "requests.get", side_effect=requests.exceptions.InvalidURL()
+        ) as mock_get,
+        pytest.raises(requests.exceptions.InvalidURL),
+    ):
+        utils.fetcher.fetch_data(
+            "http://example.com", "html", retries=3, retry_delay=0
+        )
+    assert mock_get.call_count == 1
+
+    # A response that is not JSON.
+    response = requests.Response()
+    response.status_code = 200
+    response._content = b"<html></html>"
+    with (
+        patch("requests.get", return_value=response),
+        pytest.raises(requests.exceptions.JSONDecodeError),
+    ):
+        utils.fetcher.fetch_data(
+            "http://example.com", "html", read_as="json", retry_delay=0
+        )
+
+
+def test_fetch_data_hides_the_api_keys(monkeypatch, caplog):
+    """Test that the API keys are not in the errors and the logs."""
+    monkeypatch.setenv("EIA_API_KEY", "secret-value")
+    url = "http://example.com/?api_key=secret-value"
+
+    with (
+        patch(
+            "requests.get",
+            side_effect=requests.exceptions.ConnectionError(f"Failed: {url}"),
+        ),
+        pytest.raises(ConnectionError) as error,
+    ):
+        utils.fetcher.fetch_data(url, "html", retries=1, retry_delay=0)
+    assert "secret-value" not in str(error.value)
+    assert "api_key=***" in str(error.value)
+
+    with (
+        patch("requests.get", side_effect=_http_error(404)),
+        pytest.raises(utils.fetcher.DataNotFoundError) as error,
+    ):
+        utils.fetcher.fetch_data(url, "html", retry_delay=0)
+    assert "secret-value" not in str(error.value)
+
+    assert "secret-value" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("error", "expected_error", "expected_calls"),
+    [
+        (
+            urllib.error.HTTPError(
+                url="", code=404, msg="", hdrs=email.message.Message(), fp=None
+            ),
+            utils.fetcher.DataNotFoundError,
+            1,
+        ),
+        (
+            urllib.error.HTTPError(
+                url="", code=503, msg="", hdrs=email.message.Message(), fp=None
+            ),
+            ConnectionError,
+            2,
+        ),
+        (urllib.error.URLError(reason="DNS"), ConnectionError, 2),
+        (TimeoutError(), ConnectionError, 2),
+    ],
+)
+def test_fetch_data_urlopen_errors(error, expected_error, expected_calls):
+    """Test that the errors of urllib are handled like the others."""
+    with (
+        patch("urllib.request.urlopen", side_effect=error) as mock_urlopen,
+        pytest.raises(expected_error),
+    ):
+        utils.fetcher.fetch_data(
+            "http://example.com",
+            "html",
+            retries=2,
+            retry_delay=0,
+            read_with="urllib.request",
+        )
+
+    assert mock_urlopen.call_count == expected_calls
+
+
+def test_fetch_data_csv_with_a_connection_error():
+    """Test that a CSV file read from a URL is retried as well."""
+    with (
+        patch(
+            "pandas.read_csv", side_effect=urllib.error.URLError(reason="DNS")
+        ) as mock_read_csv,
+        pytest.raises(ConnectionError, match="after 3 attempts"),
+    ):
+        utils.fetcher.fetch_data(
+            "http://example.com/data.csv", "csv", retry_delay=0, retries=3
+        )
+
+    assert mock_read_csv.call_count == 3
