@@ -466,5 +466,5 @@ def test_configuration_of_the_live_check(monkeypatch):
     assert config.check == "data_sources"
     assert config.data_sources is None
     assert config.maximum_age_days == 60
-    assert config.maximum_age_days_by_source == {"caiso": 180}
+    assert config.maximum_age_days_by_source == {"caiso": 180, "tsoc": 700}
     assert config.time_limit_minutes == 15
