@@ -11,6 +11,7 @@ Description:
     Source: https://zenodo.org/records/8322210
 """
 
+import datetime
 import logging
 
 import pandas as pd
@@ -31,14 +32,30 @@ def redistribute() -> bool:
     return True
 
 
-def get_available_requests() -> None:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[None]:
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data for China.
+    The data is retrieved all at once, so there is a single request,
+    without parameters.
+
+    Parameters
+    ----------
+    code : str
+        The code of China.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
+
+    Returns
+    -------
+    list[None]
+        The single request.
     """
-    logging.debug("The data is retrieved all at once.")
+    return [None]
 
 
 def get_url() -> str:
@@ -54,9 +71,18 @@ def get_url() -> str:
     return "https://zenodo.org/records/8322210/files/Appendix%201_Hourly%20electric%20power%20load%20final.csv?download=1"
 
 
-def download_and_extract_data() -> pd.Series:
+def download_and_extract_data_for_request(
+    request: None, code: str
+) -> pd.Series:
     """
     Download and extract electricity demand data for China.
+
+    Parameters
+    ----------
+    request : None
+        The single request of the data, without parameters.
+    code : str
+        The code of China.
 
     Returns
     -------

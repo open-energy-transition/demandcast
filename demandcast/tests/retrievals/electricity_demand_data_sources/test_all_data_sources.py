@@ -16,7 +16,6 @@ import os
 import socket
 
 import pytest
-import retrievals.electricity_demand
 import utils.config
 import utils.entities
 import utils.fetcher
@@ -108,31 +107,14 @@ def test_module(data_source):
     assert isinstance(module.redistribute(), bool)
     assert callable(module.get_url)
 
+    # The retrieval code passes the code and the dates of the data of
+    # each entity, and then each request with the code.
     codes = utils.entities.read_codes_in(data_source=data_source)
-    if retrievals.electricity_demand._takes_code_and_dates(module):
-        # The retrieval code passes the code and the dates of the data
-        # of each entity, and then each request with the code.
-        dates = [datetime.date(2020, 1, 1), datetime.date(2020, 12, 31)]
-        inspect.signature(module.get_available_requests).bind(codes[0], *dates)
-        inspect.signature(module.download_and_extract_data_for_request).bind(
-            None, codes[0]
-        )
-        assert not hasattr(module, "download_and_extract_data")
-    else:
-        # The retrieval code passes the code of the entity only to the
-        # data sources with several entities.
-        code_arguments = [] if len(codes) == 1 else [codes[0]]
-        inspect.signature(module.get_available_requests).bind(*code_arguments)
-
-        # The data are downloaded either at once or by request.
-        download_at_once = hasattr(module, "download_and_extract_data")
-        assert download_at_once != hasattr(
-            module, "download_and_extract_data_for_request"
-        )
-        if download_at_once:
-            inspect.signature(module.download_and_extract_data).bind(
-                *code_arguments
-            )
+    dates = [datetime.date(2020, 1, 1), datetime.date(2020, 12, 31)]
+    inspect.signature(module.get_available_requests).bind(codes[0], *dates)
+    inspect.signature(module.download_and_extract_data_for_request).bind(
+        None, codes[0]
+    )
 
 
 @pytest.mark.parametrize(
@@ -156,37 +138,16 @@ def test_requests(data_source, monkeypatch):
     )
     codes = utils.entities.read_codes_in(data_source=data_source)
 
-    if retrievals.electricity_demand._takes_code_and_dates(module):
-        # The requests cover the dates of the data in the YAML file, and
-        # each one is passed whole, with the code. A source that
-        # downloads its data at once has a single request.
-        start_date, end_date = (
-            utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-                data_source
-            )[codes[0]]
-        )
-        requests = module.get_available_requests(
-            codes[0], start_date, end_date
-        )
-        assert requests
-        inspect.signature(module.download_and_extract_data_for_request).bind(
-            requests[0], codes[0]
-        )
-        return
-
-    code_arguments = [] if len(codes) == 1 else [codes[0]]
-    requests = module.get_available_requests(*code_arguments)
-
-    # No requests means that the data are downloaded at once.
-    if hasattr(module, "download_and_extract_data"):
-        assert requests is None
-    else:
-        assert requests
-        request_arguments = (
-            list(requests[0])
-            if isinstance(requests[0], tuple)
-            else [requests[0]]
-        )
-        inspect.signature(module.download_and_extract_data_for_request).bind(
-            *request_arguments, *code_arguments
-        )
+    # The requests cover the dates of the data in the YAML file, and
+    # each one is passed whole, with the code. A source that downloads
+    # its data at once has a single request.
+    start_date, end_date = (
+        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+            data_source
+        )[codes[0]]
+    )
+    requests = module.get_available_requests(codes[0], start_date, end_date)
+    assert requests
+    inspect.signature(module.download_and_extract_data_for_request).bind(
+        requests[0], codes[0]
+    )

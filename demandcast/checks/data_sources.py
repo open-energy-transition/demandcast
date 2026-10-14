@@ -146,15 +146,6 @@ def _download_sample(data_source: str, code: str, result: Result) -> pd.Series:
         f"retrievals.electricity_demand_data_sources.{data_source}"
     )
 
-    if hasattr(module, "download_and_extract_data"):
-        # CCEI and Wu et al. still download their data at once with the
-        # old call shape, which takes the code only if there are
-        # several.
-        codes = utils.entities.read_codes_in(data_source=data_source)
-        arguments = [] if len(codes) == 1 else [code]
-        result.request = _describe_request(None)
-        return module.download_and_extract_data(*arguments)
-
     start_date, end_date = (
         utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
             data_source

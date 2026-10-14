@@ -20,7 +20,7 @@ def test_download_and_extract_data_of_alberta(fake_downloads, assert_demand):
         URL.format("AB,1.0/N...INTERNAL_LOAD") + QUERY, "ccei_ab.csv"
     )
 
-    time_series = ccei.download_and_extract_data("CAN_AB")
+    time_series = ccei.download_and_extract_data_for_request(None, "CAN_AB")
 
     # The times in UTC (TIME_PERIOD) are read as they are.
     assert_demand(
@@ -41,7 +41,7 @@ def test_download_and_extract_data_of_new_brunswick(
     """Test that the times of New Brunswick are read in all formats."""
     fake_downloads.serve(URL.format("NB,1.0/N...LOAD") + QUERY, "ccei_nb.csv")
 
-    time_series = ccei.download_and_extract_data("CAN_NB")
+    time_series = ccei.download_and_extract_data_for_request(None, "CAN_NB")
 
     # In 2021, hourly times are mixed with 5-minute times that end with
     # ".000Z", which is removed so that pandas can read them together.
@@ -69,7 +69,7 @@ def test_download_and_extract_data_of_ontario(fake_downloads, assert_demand):
         "ccei_on.csv",
     )
 
-    time_series = ccei.download_and_extract_data("CAN_ON")
+    time_series = ccei.download_and_extract_data_for_request(None, "CAN_ON")
 
     # The local times (DATETIME_LOCAL) are the ends of IESO's hours in
     # Eastern Standard Time all year, with the hour 24 at 00:00 of the

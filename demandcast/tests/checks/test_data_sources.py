@@ -19,12 +19,7 @@ import pandas as pd
 import pytest
 import utils.config
 import utils.entities
-from retrievals.electricity_demand_data_sources import (
-    ccei,
-    hydroquebec,
-    ons,
-    wu_et_al,
-)
+from retrievals.electricity_demand_data_sources import hydroquebec, ons
 
 
 def _hourly_demand(end: str, periods: int = 48) -> pd.Series:
@@ -212,31 +207,6 @@ def test_check_data_source_with_an_end_date(monkeypatch, end, messages):
     assert result.code == "CAN_QC"
     assert result.request == "all the data"
     assert result.messages == messages
-
-
-@pytest.mark.usefixtures("frozen_now")
-def test_check_data_source_with_the_old_call_shape(monkeypatch):
-    """Test the data sources that still download their data at once."""
-    # The code is passed only to the data sources with several entities.
-    monkeypatch.setattr(
-        wu_et_al,
-        "download_and_extract_data",
-        lambda: _hourly_demand("2018-12-31 16:00"),
-    )
-    codes = []
-
-    def download_ccei(code: str) -> pd.Series:
-        codes.append(code)
-        return _hourly_demand("2026-01-01 00:00")
-
-    monkeypatch.setattr(ccei, "download_and_extract_data", download_ccei)
-
-    for data_source in ["wu_et_al", "ccei"]:
-        result = checks.data_sources.check_data_source(data_source, 60)
-
-        assert result.status == "passed"
-        assert result.request == "all the data"
-    assert codes == ["CAN_AB"]
 
 
 @pytest.mark.parametrize(

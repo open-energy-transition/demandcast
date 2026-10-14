@@ -50,7 +50,7 @@ def test_download_and_extract_data(fake_downloads, assert_demand, tmp_path):
 
     fake_downloads.serve(wu_et_al.get_url(), file_path)
 
-    result = wu_et_al.download_and_extract_data()
+    result = wu_et_al.download_and_extract_data_for_request(None, "CHN")
 
     assert len(result) == 8760
 
