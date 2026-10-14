@@ -99,7 +99,6 @@ demandcast/
 │   ├── plot.py                     # Script to generate plots for the data
 │   ├── pyproject.toml              # Project configuration and dependencies
 │   ├── retrieve.py                 # Main script to download and process data
-│   ├── run_all.sh                  # Shell script to run all processes sequentially
 │   ├── train.py                    # Script to train models
 │   ├── upload.py                   # Script to upload data
 │   ├── uv.lock                     # Locked dependencies for the project

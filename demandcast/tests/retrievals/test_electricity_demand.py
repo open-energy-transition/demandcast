@@ -202,29 +202,17 @@ def test_several_entities_with_the_code_and_the_dates(
         "2024-01-01 08:00": 100.0,
         "2024-02-01 08:00": 200.0,
     }
-
-
-def test_one_entity_in_one_download(tmp_folders, add_data_source):
-    """Test a data source with one entity, downloaded at once."""
-    get_available_requests = Mock(return_value=None)
-    download_and_extract_data = Mock(
-        return_value=_demand("2024-01-01 01:00", [100.0, 200.0])
-    )
-    add_data_source(
-        "single",
-        ["FRA"],
-        get_available_requests=get_available_requests,
-        download_and_extract_data=download_and_extract_data,
+    # The other subdivision is not retrieved.
+    assert not os.path.exists(
+        os.path.join(
+            tmp_folders["electricity_demand_folder"],
+            "2026-01-02",
+            "USA_NY_subdivisions.parquet",
+        )
     )
 
-    retrievals.electricity_demand.run_data_retrieval("single", None, None)
 
-    get_available_requests.assert_called_once_with()
-    download_and_extract_data.assert_called_once_with()
-    assert _read_saved_data(tmp_folders, "FRA", "single") == {
-        "2024-01-01 00:00": 100.0,
-        "2024-01-01 01:00": 200.0,
-    }
+DATES = (datetime.date(2020, 1, 1), datetime.date(2025, 12, 28))
 
 
 def test_values_that_are_not_numbers(add_data_source):
@@ -232,8 +220,8 @@ def test_values_that_are_not_numbers(add_data_source):
     add_data_source(
         "text",
         ["FRA"],
-        get_available_requests=Mock(return_value=None),
-        download_and_extract_data=Mock(
+        get_available_requests=Mock(return_value=[None]),
+        download_and_extract_data_for_request=Mock(
             return_value=_demand("2024-01-01 01:00", [100.0, 200.0]).astype(
                 str
             )
@@ -244,8 +232,8 @@ def test_values_that_are_not_numbers(add_data_source):
         retrievals.electricity_demand.run_data_retrieval("text", None, None)
 
 
-def test_one_entity_with_requests(tmp_folders, add_data_source):
-    """Test a data source with one entity, downloaded by request."""
+def test_cleaning_of_the_requests(tmp_folders, add_data_source):
+    """Test that the data of the requests are joined and cleaned."""
     downloads = {
         2023: _demand("2023-12-31 23:00", [100.0, 200.0]),
         # The first time repeats the last one of 2023, and the zero and
@@ -255,7 +243,9 @@ def test_one_entity_with_requests(tmp_folders, add_data_source):
         2025: pd.Series(dtype=float),
     }
     get_available_requests = Mock(return_value=list(downloads))
-    download_and_extract_data_for_request = Mock(side_effect=downloads.get)
+    download_and_extract_data_for_request = Mock(
+        side_effect=lambda request, _code: downloads[request]
+    )
     add_data_source(
         "single",
         ["FRA"],
@@ -267,11 +257,11 @@ def test_one_entity_with_requests(tmp_folders, add_data_source):
 
     retrievals.electricity_demand.run_data_retrieval("single", None, None)
 
-    get_available_requests.assert_called_once_with()
+    get_available_requests.assert_called_once_with("FRA", *DATES)
     assert download_and_extract_data_for_request.call_args_list == [
-        call(2023),
-        call(2024),
-        call(2025),
+        call(2023, "FRA"),
+        call(2024, "FRA"),
+        call(2025, "FRA"),
     ]
     assert _read_saved_data(tmp_folders, "FRA", "single") == {
         "2023-12-31 22:00": 100.0,
@@ -280,27 +270,34 @@ def test_one_entity_with_requests(tmp_folders, add_data_source):
     }
 
 
-def test_several_entities_in_one_download(tmp_folders, add_data_source):
-    """Test a data source with several entities, each at once."""
+def test_all_the_entities_of_a_data_source(tmp_folders, add_data_source):
+    """Test that all the entities are retrieved without a code."""
     downloads = {
         "AUT": _demand("2024-01-01 01:00", [100.0]),
         "DNK": _demand("2024-01-01 01:00", [200.0]),
     }
-    get_available_requests = Mock(return_value=None)
-    download_and_extract_data = Mock(side_effect=downloads.get)
+    get_available_requests = Mock(return_value=[None])
+    download_and_extract_data_for_request = Mock(
+        side_effect=lambda _request, code: downloads[code]
+    )
     add_data_source(
         "several",
         ["AUT", "DNK"],
         get_available_requests=get_available_requests,
-        download_and_extract_data=download_and_extract_data,
+        download_and_extract_data_for_request=(
+            download_and_extract_data_for_request
+        ),
     )
 
     retrievals.electricity_demand.run_data_retrieval("several", None, None)
 
-    assert get_available_requests.call_args_list == [call("AUT"), call("DNK")]
-    assert download_and_extract_data.call_args_list == [
-        call("AUT"),
-        call("DNK"),
+    assert get_available_requests.call_args_list == [
+        call("AUT", *DATES),
+        call("DNK", *DATES),
+    ]
+    assert download_and_extract_data_for_request.call_args_list == [
+        call(None, "AUT"),
+        call(None, "DNK"),
     ]
     assert _read_saved_data(tmp_folders, "AUT", "several") == {
         "2024-01-01 00:00": 100.0
@@ -308,45 +305,3 @@ def test_several_entities_in_one_download(tmp_folders, add_data_source):
     assert _read_saved_data(tmp_folders, "DNK", "several") == {
         "2024-01-01 00:00": 200.0
     }
-
-
-def test_several_entities_with_tuple_requests(tmp_folders, add_data_source):
-    """Test a source of subdivisions, downloaded by tuple requests."""
-    get_available_requests = Mock(return_value=[(2024, 1), (2024, 2)])
-    download_and_extract_data_for_request = Mock(
-        side_effect=lambda year, month, _code: _demand(
-            f"{year}-{month:02d}-01 00:00",
-            [100.0 * month],
-            "America/Los_Angeles",
-        )
-    )
-    add_data_source(
-        "subdivisions",
-        ["USA_CAL", "USA_NY"],
-        get_available_requests=get_available_requests,
-        download_and_extract_data_for_request=(
-            download_and_extract_data_for_request
-        ),
-    )
-
-    # Retrieve only one of the subdivisions.
-    retrievals.electricity_demand.run_data_retrieval(
-        "subdivisions", "USA_CAL", None
-    )
-
-    get_available_requests.assert_called_once_with("USA_CAL")
-    assert download_and_extract_data_for_request.call_args_list == [
-        call(2024, 1, "USA_CAL"),
-        call(2024, 2, "USA_CAL"),
-    ]
-    assert _read_saved_data(tmp_folders, "USA_CAL", "subdivisions") == {
-        "2024-01-01 08:00": 100.0,
-        "2024-02-01 08:00": 200.0,
-    }
-    assert not os.path.exists(
-        os.path.join(
-            tmp_folders["electricity_demand_folder"],
-            "2026-01-02",
-            "USA_NY_subdivisions.parquet",
-        )
-    )

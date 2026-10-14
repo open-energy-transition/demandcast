@@ -12,10 +12,10 @@ Description:
     Source: https://energy-information.canada.ca/en/resources/high-frequency-electricity-data
 """
 
+import datetime
 import logging
 
 import pandas as pd
-import utils.entities
 import utils.fetcher
 
 
@@ -33,22 +33,30 @@ def redistribute() -> bool:
     return True
 
 
-def get_available_requests(code: str) -> None:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[None]:
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the CCEI website.
+    The data is retrieved all at once, so there is a single request,
+    without parameters.
 
     Parameters
     ----------
     code : str
         The code of the subdivision.
-    """
-    # Check if the code is valid.
-    utils.entities.check_code_in_data_source(code, "ccei")
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
 
-    logging.debug("The data is retrieved all at once.")
+    Returns
+    -------
+    list[None]
+        The single request.
+    """
+    return [None]
 
 
 def get_url(code: str) -> str:
@@ -70,9 +78,6 @@ def get_url(code: str) -> str:
     ValueError
         If the subdivision code is not supported.
     """
-    # Check if the code is valid.
-    utils.entities.check_code_in_data_source(code, "ccei")
-
     # Extract the subdivision code.
     subdivision_code = code.split("_")[1]
 
@@ -105,7 +110,9 @@ def get_url(code: str) -> str:
     )
 
 
-def download_and_extract_data(code: str) -> pd.Series:
+def download_and_extract_data_for_request(
+    request: None, code: str
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -114,8 +121,10 @@ def download_and_extract_data(code: str) -> pd.Series:
 
     Parameters
     ----------
+    request : None
+        The single request of the data, without parameters.
     code : str
-        The code of the subdivision of interest.
+        The code of the subdivision.
 
     Returns
     -------
@@ -127,9 +136,6 @@ def download_and_extract_data(code: str) -> pd.Series:
     TypeError
         If the extracted data is not a pandas DataFrame.
     """
-    # Check if the code is valid.
-    utils.entities.check_code_in_data_source(code, "ccei")
-
     # Get the URL of the electricity demand data.
     url = get_url(code)
 
