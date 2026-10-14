@@ -19,22 +19,6 @@ import pandas as pd
 import utils.fetcher
 
 
-def redistribute() -> bool:
-    """
-    Return a boolean indicating if the data can be redistributed.
-
-    Returns
-    -------
-    bool
-        True if the data can be redistributed, False otherwise.
-    """
-    logging.debug("Non-commercial use with attribution to Hydro-Québec.")
-    logging.debug(
-        "Source: https://donnees.hydroquebec.com/explore/dataset/historique-demande-electricite-quebec/information/"
-    )
-    return True
-
-
 def get_available_requests(
     code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[None]:

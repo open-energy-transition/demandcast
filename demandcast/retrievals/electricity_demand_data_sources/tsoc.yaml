@@ -1,3 +1,7 @@
+licence:
+  redistribute: false
+  terms: All rights reserved by TSOC.
+  url: https://tsoc.org.cy
 entities:
   - country_name: Cyprus
     country_code: CYP

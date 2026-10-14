@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: CC-BY license. Use for any purpose with attribution.
+  url: https://dados.ons.org.br/dataset/curva-carga
 entities:
   - subdivision_name: North
     subdivision_code: N

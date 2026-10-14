@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: Open data.
+  url: https://iced.niti.gov.in/about-us
 entities:
   - country_name: India
     country_code: IND

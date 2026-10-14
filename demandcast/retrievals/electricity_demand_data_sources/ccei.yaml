@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: Non-commercial reproduction with attribution to CCEI.
+  url: https://www.canada.ca/en/transparency/terms.html
 entities:
   - subdivision_name: Alberta
     subdivision_code: AB

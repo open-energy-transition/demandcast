@@ -110,11 +110,27 @@ class DataSourceEntity(BaseModel):
         return self
 
 
+class DataSourceLicence(BaseModel):
+    """
+    The licence of the data of a data source.
+
+    The terms summarise the licence, which is at the URL. The data is
+    uploaded to Zenodo only if it can be redistributed.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    redistribute: bool
+    terms: str
+    url: str
+
+
 class _DataSourceFile(BaseModel):
     """The content of the yaml file of a data source."""
 
     model_config = ConfigDict(extra="forbid")
 
+    licence: DataSourceLicence
     entities: list[DataSourceEntity]
 
     @model_validator(mode="after")
@@ -320,6 +336,72 @@ def read_data_sources() -> list[str]:
     return data_sources
 
 
+def _read_data_source_file(data_source: str) -> dict:
+    """
+    Read the yaml file of a data source, and check its content.
+
+    Parameters
+    ----------
+    data_source : str
+        The name of the data source.
+
+    Returns
+    -------
+    dict
+        The content of the file: the licence and the entities.
+
+    Raises
+    ------
+    ValueError
+        If the data source is not valid, or if its yaml file is not
+        valid.
+    """
+    # Check if the data source is valid.
+    if data_source not in read_data_sources():
+        raise ValueError(
+            f"Invalid data source: {data_source}. Available data "
+            f"sources are: {', '.join(read_data_sources())}"
+        )
+
+    # Read the yaml file of the data source.
+    file_path = os.path.join(
+        utils.config.read_folders_structure()[
+            "electricity_demand_data_sources_folder"
+        ],
+        f"{data_source.lower()}.yaml",
+    )
+    with open(file_path, encoding="utf-8") as file:
+        content = yaml.safe_load(file)
+
+    # Check its content.
+    try:
+        _DataSourceFile.model_validate(content)
+    except ValidationError as error:
+        raise ValueError(
+            f"The yaml file of the data source {data_source} is not "
+            f"valid: {error}"
+        ) from error
+
+    return content
+
+
+def read_licence(data_source: str) -> DataSourceLicence:
+    """
+    Read the licence of the data of a data source.
+
+    Parameters
+    ----------
+    data_source : str
+        The name of the data source.
+
+    Returns
+    -------
+    DataSourceLicence
+        The licence, from the yaml file of the data source.
+    """
+    return DataSourceLicence(**_read_data_source_file(data_source)["licence"])
+
+
 def _read_entities_info(
     file_path: str = "", data_source: str = ""
 ) -> list[dict]:
@@ -355,24 +437,12 @@ def _read_entities_info(
         provided, or if neither is provided.
     """
     if file_path == "" and data_source != "":
-        # Check if the data source is valid.
-        if data_source not in read_data_sources():
-            raise ValueError(
-                f"Invalid data source: {data_source}. Available data "
-                f"sources are: {', '.join(read_data_sources())}"
-            )
-
-        # Get the path to the yaml file of the data source.
-        file_path = os.path.join(
-            utils.config.read_folders_structure()[
-                "electricity_demand_data_sources_folder"
-            ],
-            f"{data_source.lower()}.yaml",
-        )
-    elif file_path == "" and data_source == "":
+        # Read and check the yaml file of the data source.
+        return _read_data_source_file(data_source)["entities"]
+    if file_path == "" and data_source == "":
         # If no file path or data source is provided, raise an error.
         raise ValueError("Either file_path or data_source must be provided.")
-    elif file_path != "" and data_source != "":
+    if file_path != "" and data_source != "":
         # If both data source and data source file path are provided,
         # raise an error.
         raise ValueError(
@@ -382,16 +452,6 @@ def _read_entities_info(
     # Read the content from the file.
     with open(file_path, encoding="utf-8") as file:
         content = yaml.safe_load(file)
-
-    # Check the content of the yaml file of a data source.
-    if data_source != "":
-        try:
-            _DataSourceFile.model_validate(content)
-        except ValidationError as error:
-            raise ValueError(
-                f"The yaml file of the data source {data_source} is not "
-                f"valid: {error}"
-            ) from error
 
     # Return the information of the countries and subdivisions.
     return content["entities"]

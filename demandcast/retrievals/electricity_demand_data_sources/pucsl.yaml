@@ -1,3 +1,7 @@
+licence:
+  redistribute: false
+  terms: All rights reserved by PUCSL.
+  url: https://www.pucsl.gov.lk
 entities:
   - country_name: Sri Lanka
     country_code: LKA

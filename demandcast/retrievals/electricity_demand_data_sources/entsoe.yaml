@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: CC-BY 4.0 license. Use for any purpose with attribution.
+  url: https://transparency.entsoe.eu/content/static_content/download?path=/Static%20content/terms%20and%20conditions/230309_ENTSOE_Transparency_Terms_Conditions_MC_APPROVED.pdf
 entities:
   - country_name: Albania
     country_code: ALB

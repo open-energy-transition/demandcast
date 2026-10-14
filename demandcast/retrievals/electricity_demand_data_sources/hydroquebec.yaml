@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: Non-commercial use with attribution to Hydro-Québec.
+  url: https://donnees.hydroquebec.com/explore/dataset/historique-demande-electricite-quebec/information/
 entities:
   - subdivision_name: Quebec
     subdivision_code: QC

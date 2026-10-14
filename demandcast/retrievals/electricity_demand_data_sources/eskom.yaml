@@ -1,3 +1,7 @@
+licence:
+  redistribute: false
+  terms: Content may not be used for any commercial and non-private purposes.
+  url: https://www.eskom.co.za/wp-content/uploads/2021/10/WEBSITE-TERMS-AND-CONDITIONS_Sep2021.pdf
 entities:
   - country_name: South Africa
     country_code: ZAF

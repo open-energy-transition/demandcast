@@ -1,3 +1,7 @@
+licence:
+  redistribute: false
+  terms: User must not modify, reproduce or publicly or commercially display the material.
+  url: https://www.gob.mx/terminos
 entities:
   - subdivision_name: Baja California
     subdivision_code: BCA

@@ -39,23 +39,6 @@ import utils.fetcher
 CENTRAL_MEXICO_TIME = zoneinfo.ZoneInfo("America/Mexico_City")
 
 
-def redistribute() -> bool:
-    """
-    Return a boolean indicating if the data can be redistributed.
-
-    Returns
-    -------
-    bool
-        True if the data can be redistributed, False otherwise.
-    """
-    logging.debug(
-        "User must not modify, reproduce or publicly or commercially display "
-        "the material."
-    )
-    logging.debug("Source: https://www.gob.mx/terminos")
-    return False
-
-
 def get_available_requests(
     code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:

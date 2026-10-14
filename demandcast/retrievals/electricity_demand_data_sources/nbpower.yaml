@@ -1,3 +1,7 @@
+licence:
+  redistribute: false
+  terms: All rights reserved by NB Power.
+  url: https://www.nbpower.com/en/terms-of-use
 entities:
   - subdivision_name: New Brunswick
     subdivision_code: NB

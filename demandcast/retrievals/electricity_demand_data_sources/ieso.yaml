@@ -1,3 +1,7 @@
+licence:
+  redistribute: false
+  terms: Limited, non-exclusive, non-sublicensable, non-transferrable licence to use and reproduce.
+  url: https://www.ieso.ca/Terms-of-Use
 entities:
   - subdivision_name: Ontario
     subdivision_code: "ON"

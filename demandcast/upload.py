@@ -7,7 +7,6 @@ Description:
     destination, such as Google Cloud Storage or Zenodo.
 """
 
-import importlib
 import logging
 import os
 
@@ -154,14 +153,10 @@ if __name__ == "__main__":
                 # Get the data source from the file name.
                 data_source = _get_data_source(file_name)
 
-                # Import the retrieval module for the data source.
-                retrieval_module = importlib.import_module(
-                    f"retrievals.electricity_demand_data_sources.{data_source}"
-                )
-
                 # Upload the parquet file of the electricity demand time
-                # series to Zenodo.
-                if retrieval_module.redistribute():
+                # series to Zenodo, if the licence of the data source
+                # allows it.
+                if utils.entities.read_licence(data_source).redistribute:
                     utils.uploader.upload_to_zenodo(
                         file_path,
                         data_type="actual",

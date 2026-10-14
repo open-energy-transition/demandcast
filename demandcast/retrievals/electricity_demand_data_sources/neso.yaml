@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: Use for any purpose with attribution.
+  url: https://www.neso.energy/data-portal/neso-open-licence
 entities:
   - subdivision_name: Great Britain
     subdivision_code: GB

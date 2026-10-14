@@ -1,3 +1,7 @@
+licence:
+  redistribute: false
+  terms: All rights reserved by KansaiTD.
+  url: https://www.kansai-td.co.jp/english/siteinfo/
 entities:
   - subdivision_name: Kansai
     subdivision_code: Kansai

@@ -24,20 +24,6 @@ import requests
 import utils.fetcher
 
 
-def redistribute() -> bool:
-    """
-    Return a boolean indicating if the data can be redistributed.
-
-    Returns
-    -------
-    bool
-        True if the data can be redistributed, False otherwise.
-    """
-    logging.debug("All rights reserved by PGCB.")
-    logging.debug("Source: https://pgcb.gov.bd/l")
-    return False
-
-
 def _clean_and_format(date: str) -> str:
     """
     Clean and format the date string to YYYY-MM-DD.

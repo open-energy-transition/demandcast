@@ -66,7 +66,17 @@ def add_data_source(tmp_folders, tmp_path, monkeypatch):
         with open(
             data_sources_folder / f"{name}.yaml", "w", encoding="utf-8"
         ) as file:
-            yaml.safe_dump({"entities": entities}, file)
+            yaml.safe_dump(
+                {
+                    "licence": {
+                        "redistribute": True,
+                        "terms": "Open data.",
+                        "url": "https://example.org/terms",
+                    },
+                    "entities": entities,
+                },
+                file,
+            )
 
         module = types.ModuleType(
             f"retrievals.electricity_demand_data_sources.{name}"

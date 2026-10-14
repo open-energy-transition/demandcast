@@ -21,20 +21,6 @@ import utils.fetcher
 from dotenv import load_dotenv
 
 
-def redistribute() -> bool:
-    """
-    Return a boolean indicating if the data can be redistributed.
-
-    Returns
-    -------
-    bool
-        True if the data can be redistributed, False otherwise.
-    """
-    logging.debug("Use for any purpose with attribution to EIA.")
-    logging.debug("Source: https://www.eia.gov/about/copyrights_reuse.php")
-    return True
-
-
 def get_available_requests(
     code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:

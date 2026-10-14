@@ -1,3 +1,7 @@
+licence:
+  redistribute: true
+  terms: Open data.
+  url: https://www.ema.gov.sg/terms-of-use
 entities:
   - country_name: Singapore
     country_code: SGP
