@@ -1,7 +1,8 @@
 # Checks the electricity demand data sources over the network every week,
 # and keeps one issue open with the data sources that fail two checks in a
 # row. The API keys are secrets of the environment live-checks, which only
-# the main branch can use.
+# the main branch can use. Both keys belong to the account
+# esmtools@openenergytransition.org.
 
 name: Live check
 
