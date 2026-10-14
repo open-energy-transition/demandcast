@@ -16,6 +16,7 @@ import os
 
 import pandas as pd
 import utils.config
+import utils.time_series
 
 
 def get_available_requests(
@@ -122,7 +123,7 @@ def download_and_extract_data_for_request(
         id_vars=dataset.columns[0], var_name="Hour", value_name="Value"
     )
 
-    # Define the new index.
+    # Define the new index, at the starts of the hours.
     index = pd.to_datetime(
         dataset.iloc[:, 0].astype(str)
         + " "
@@ -131,7 +132,7 @@ def download_and_extract_data_for_request(
             - 1
         ).astype(str),
         format="%Y-%m-%d %H",
-    ) + pd.Timedelta(hours=1)
+    )
 
     # Define the electricity demand time series.
     electricity_demand_time_series = pd.Series(
@@ -139,9 +140,11 @@ def download_and_extract_data_for_request(
         index=index,
     )
 
-    # Add the timezone information.
+    # Move the times to the ends of the hours, in local time.
     electricity_demand_time_series = (
-        electricity_demand_time_series.tz_localize("Asia/Seoul")
+        utils.time_series.localize_interval_starts(
+            electricity_demand_time_series, "Asia/Seoul", pd.Timedelta(hours=1)
+        )
     )
 
     return electricity_demand_time_series

@@ -11,8 +11,54 @@ Description:
 
 import datetime
 import logging
+from typing import Any
 
 import pandas as pd
+
+
+def localize_interval_starts(
+    time_series: pd.Series,
+    time_zone: str | datetime.tzinfo,
+    interval: pd.Timedelta,
+    ambiguous: Any = "raise",
+    nonexistent: str = "raise",
+) -> pd.Series:
+    """
+    Localize the starts of intervals and mark their ends.
+
+    Many data sources give the value of each interval at its start, in
+    local time, while DemandCast marks each value with the end of its
+    interval. The starts are localized first and the interval is then
+    added in absolute time, so that the ends are right also when
+    daylight saving time starts or ends.
+
+    Parameters
+    ----------
+    time_series : pandas.Series
+        The time series, with the starts of the intervals in local time
+        and without time zone.
+    time_zone : str | datetime.tzinfo
+        The time zone of the starts.
+    interval : pandas.Timedelta
+        The length of the intervals.
+    ambiguous : Any, optional
+        How to localize the ambiguous starts, as in
+        pandas.Series.tz_localize.
+    nonexistent : str, optional
+        How to localize the nonexistent starts, as in
+        pandas.Series.tz_localize.
+
+    Returns
+    -------
+    pandas.Series
+        The time series, with the ends of the intervals in the time
+        zone.
+    """
+    localized_time_series = time_series.tz_localize(
+        time_zone, ambiguous=ambiguous, nonexistent=nonexistent
+    )
+    localized_time_series.index = localized_time_series.index + interval
+    return localized_time_series
 
 
 def add_missing_time_steps(

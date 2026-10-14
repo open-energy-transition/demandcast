@@ -19,6 +19,7 @@ import os
 
 import pandas as pd
 import utils.config
+import utils.time_series
 
 
 def get_available_requests(
@@ -121,13 +122,13 @@ def download_and_extract_data_for_request(
             "expected a pandas DataFrame."
         )
 
-    # Define the new index.
+    # Define the new index, at the starts of the hours.
     index = pd.to_datetime(
         dataset.iloc[:, 0].astype(str)
         + " "
         + (dataset.iloc[:, 1].astype(str).astype(int) - 1).astype(str),
         format="%d/%m/%Y %H",
-    ) + pd.Timedelta(hours=1)
+    )
 
     # Remove commas and convert SYSLOAD to numeric.
     dataset["SYSLOAD"] = pd.to_numeric(
@@ -141,9 +142,13 @@ def download_and_extract_data_for_request(
         index=index,
     )
 
-    # Add the timezone information.
+    # Move the times to the ends of the hours, in local time.
     electricity_demand_time_series = (
-        electricity_demand_time_series.tz_localize("Asia/Karachi")
+        utils.time_series.localize_interval_starts(
+            electricity_demand_time_series,
+            "Asia/Karachi",
+            pd.Timedelta(hours=1),
+        )
     )
 
     return electricity_demand_time_series

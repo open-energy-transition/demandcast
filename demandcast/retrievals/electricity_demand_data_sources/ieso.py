@@ -23,6 +23,7 @@ import logging
 
 import pandas as pd
 import utils.fetcher
+import utils.time_series
 
 # Eastern Standard Time, the time of IESO all year.
 EASTERN_STANDARD_TIME = datetime.timezone(datetime.timedelta(hours=-5))
@@ -142,12 +143,18 @@ def download_and_extract_data_for_request(
         electricity_demand_time_series = pd.Series(
             dataset["OntarioDemand"].values,
             index=pd.to_datetime(dataset["DateTime"], format="mixed"),
-        ).tz_localize(EASTERN_STANDARD_TIME)
+        )
 
         # The times are the starts of the hours: the file ends at 23:00
         # on 30 April 2002, the hour before the first one of the yearly
         # files. Move them to the ends of the hours.
-        electricity_demand_time_series.index += pd.Timedelta(hours=1)
+        electricity_demand_time_series = (
+            utils.time_series.localize_interval_starts(
+                electricity_demand_time_series,
+                EASTERN_STANDARD_TIME,
+                pd.Timedelta(hours=1),
+            )
+        )
 
         return electricity_demand_time_series
 

@@ -17,6 +17,7 @@ import os
 
 import pandas as pd
 import utils.config
+import utils.time_series
 
 
 def get_available_requests(
@@ -121,13 +122,12 @@ def download_and_extract_data_for_request(
 
     # Add one hour to the index because the electricity demand seems to
     # be provided at the beginning of the hour.
-    electricity_demand_time_series.index = (
-        electricity_demand_time_series.index + pd.Timedelta(hours=1)
-    )
-
-    # Add the timezone information to the index.
     electricity_demand_time_series = (
-        electricity_demand_time_series.tz_localize("Asia/Kolkata")
+        utils.time_series.localize_interval_starts(
+            electricity_demand_time_series,
+            "Asia/Kolkata",
+            pd.Timedelta(hours=1),
+        )
     )
 
     return electricity_demand_time_series

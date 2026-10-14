@@ -22,6 +22,7 @@ import re
 import pandas as pd
 import requests
 import utils.fetcher
+import utils.time_series
 
 
 def _clean_and_format(date: str) -> str:
@@ -354,13 +355,12 @@ def download_and_extract_data_for_request(
 
     # Add 30 minutes to each timestamp to represent the end of
     # the half-hour period.
-    electricity_demand_time_series.index = (
-        electricity_demand_time_series.index + pd.Timedelta(minutes=30)
-    )
-
-    # Add the timezone information.
     electricity_demand_time_series = (
-        electricity_demand_time_series.tz_localize("Asia/Dhaka")
+        utils.time_series.localize_interval_starts(
+            electricity_demand_time_series,
+            "Asia/Dhaka",
+            pd.Timedelta(minutes=30),
+        )
     )
 
     return electricity_demand_time_series

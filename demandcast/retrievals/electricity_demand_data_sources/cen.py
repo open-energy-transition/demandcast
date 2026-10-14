@@ -16,6 +16,7 @@ import logging
 
 import pandas as pd
 import utils.fetcher
+import utils.time_series
 
 
 def get_available_requests(
@@ -159,18 +160,18 @@ def download_and_extract_data_for_request(
         index=pd.to_datetime(dataset["date and time"]),
     )
 
-    # Add the timezone to the index. When daylight saving time ends, the
-    # 24th and the 25th hours both start at 23:00: the 24th in daylight
-    # saving time, and the 25th in standard time.
+    # Localize the starts of the hours and move them to their ends. When
+    # daylight saving time ends, the 24th and the 25th hours both start
+    # at 23:00: the 24th in daylight saving time, and the 25th in
+    # standard time.
     electricity_demand_time_series = (
-        electricity_demand_time_series.tz_localize(
+        utils.time_series.localize_interval_starts(
+            electricity_demand_time_series,
             "America/Santiago",
+            pd.Timedelta(hours=1),
             ambiguous=(dataset["hora"] <= 24).to_numpy(),
             nonexistent="NaT",
         )
     )
-
-    # Add 1 hour to the index to match the original dataset.
-    electricity_demand_time_series.index += pd.Timedelta(hours=1)
 
     return electricity_demand_time_series

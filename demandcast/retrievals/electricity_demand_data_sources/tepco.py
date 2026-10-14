@@ -21,6 +21,7 @@ import zipfile
 import pandas as pd
 import requests
 import utils.fetcher
+import utils.time_series
 
 # The last year with a yearly file.
 LAST_YEARLY_FILE = 2024
@@ -234,7 +235,6 @@ def download_and_extract_data_for_request(
         values = _read_monthly_file(response.content)
 
     # Convert from 10 MW to MW, and mark the end of each hour.
-    electricity_demand_time_series = values * 10
-    electricity_demand_time_series.index += pd.Timedelta(hours=1)
-
-    return electricity_demand_time_series.tz_localize("Asia/Tokyo")
+    return utils.time_series.localize_interval_starts(
+        values * 10, "Asia/Tokyo", pd.Timedelta(hours=1)
+    )

@@ -17,6 +17,7 @@ import logging
 
 import pandas as pd
 import utils.fetcher
+import utils.time_series
 
 
 def get_available_requests(
@@ -147,10 +148,9 @@ def download_and_extract_data_for_request(
             index=pd.to_datetime(dataset["DATE_TIME"]),
         )
 
-        # Add one hour to the time index because the time values
-        # appear to be provided at the beginning of the time
-        # interval.
-        electricity_demand_time_series.index += pd.Timedelta(hours=1)
+        # The time values appear to be provided at the beginning of
+        # the hours.
+        interval = pd.Timedelta(hours=1)
 
     else:
         logging.info(
@@ -169,15 +169,15 @@ def download_and_extract_data_for_request(
             index=index,
         )
 
-        # Add 30 minutes to the time index because the time values
-        # appear to be provided at the beginning of the time
-        # interval.
-        electricity_demand_time_series.index += pd.Timedelta(minutes=30)
+        # The time values appear to be provided at the beginning of
+        # the half hours.
+        interval = pd.Timedelta(minutes=30)
 
-    # Convert the time zone of the electricity demand time
-    # series to UTC.
+    # Move the times to the ends of the intervals, in Japan time.
     electricity_demand_time_series = (
-        electricity_demand_time_series.tz_localize("Asia/Tokyo")
+        utils.time_series.localize_interval_starts(
+            electricity_demand_time_series, "Asia/Tokyo", interval
+        )
     )
 
     return electricity_demand_time_series

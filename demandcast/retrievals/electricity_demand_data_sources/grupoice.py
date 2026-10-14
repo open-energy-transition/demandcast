@@ -16,6 +16,7 @@ import logging
 
 import pandas as pd
 import utils.fetcher
+import utils.time_series
 
 
 def get_available_requests(
@@ -105,13 +106,12 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
 
     # Add 15 minutes to each timestamp to represent the end of the time
     # period.
-    electricity_demand_time_series.index = (
-        electricity_demand_time_series.index + pd.Timedelta(minutes=15)
-    )
-
-    # Add the timezone information.
     electricity_demand_time_series = (
-        electricity_demand_time_series.tz_localize("America/Costa_Rica")
+        utils.time_series.localize_interval_starts(
+            electricity_demand_time_series,
+            "America/Costa_Rica",
+            pd.Timedelta(minutes=15),
+        )
     )
 
     return electricity_demand_time_series

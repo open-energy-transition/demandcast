@@ -49,6 +49,49 @@ def sample_time_series():
     return pd.Series(data, index=dates)
 
 
+def test_localize_interval_starts():
+    """Test that the ends are the starts plus the interval."""
+    time_series = pd.Series(
+        [1.0, 2.0, 3.0],
+        index=pd.to_datetime(
+            ["2024-03-31 01:00", "2024-03-31 01:30", "2024-03-31 03:00"]
+        ),
+    )
+
+    result = utils.time_series.localize_interval_starts(
+        time_series, "Europe/Paris", pd.Timedelta(minutes=30)
+    )
+
+    # Daylight saving time starts at 02:00, so the half hour that
+    # starts at 01:30 ends at 03:00 in summer time.
+    index = pd.DatetimeIndex(result.index)
+    assert str(index.tz) == "Europe/Paris"
+    assert index.tz_convert("UTC").strftime("%H:%M").tolist() == [
+        "00:30",
+        "01:00",
+        "01:30",
+    ]
+    assert result.tolist() == [1.0, 2.0, 3.0]
+
+
+def test_localize_interval_starts_with_ambiguous_starts():
+    """Test that the ambiguous and nonexistent starts are passed on."""
+    time_series = pd.Series(
+        [1.0, 2.0],
+        index=pd.to_datetime(["2024-10-27 02:00", "2024-03-31 02:00"]),
+    )
+
+    result = utils.time_series.localize_interval_starts(
+        time_series,
+        "Europe/Paris",
+        pd.Timedelta(hours=1),
+        ambiguous="NaT",
+        nonexistent="NaT",
+    )
+
+    assert pd.isna(result.index).all()
+
+
 def test_add_missing_time_steps(sample_time_series):
     """
     Test if the function adds missing time steps to the time series.
