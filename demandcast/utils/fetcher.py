@@ -46,7 +46,7 @@ class DataNotFoundError(ConnectionError):
     """
 
 
-def hide_api_keys(text: str) -> str:
+def redact(text: str) -> str:
     """
     Hide the API keys in a text.
 
@@ -408,8 +408,7 @@ def fetch_data(  # noqa: C901
             status_code = _get_status_code(e)
             if not _is_temporary(status_code):
                 message = (
-                    f"HTTP error {status_code} while fetching "
-                    f"{hide_api_keys(url)}."
+                    f"HTTP error {status_code} while fetching {redact(url)}."
                 )
                 if status_code in NOT_FOUND_STATUS_CODES:
                     raise DataNotFoundError(message) from e
@@ -427,14 +426,14 @@ def fetch_data(  # noqa: C901
 
         logging.warning(
             f"Attempt {attempt}/{retries} to fetch remote data failed: "
-            f"{hide_api_keys(str(error))}"
+            f"{redact(str(error))}"
         )
         if attempt < retries:
             time.sleep(retry_delay)
 
     raise ConnectionError(
-        f"Failed to fetch {hide_api_keys(url)} after {retries} attempts: "
-        f"{hide_api_keys(str(error))}"
+        f"Failed to fetch {redact(url)} after {retries} attempts: "
+        f"{redact(str(error))}"
     ) from error
 
 

@@ -265,9 +265,7 @@ def check_data_source(data_source: str, maximum_age_days: int) -> Result:
         )
     except Exception as error:  # noqa: BLE001
         # Any error of a data source is a result of the check.
-        message = utils.fetcher.hide_api_keys(
-            f"{type(error).__name__}: {error}"
-        )
+        message = utils.fetcher.redact(f"{type(error).__name__}: {error}")
         result.messages.append(" ".join(message.split())[:300])
 
     if not result.messages:
