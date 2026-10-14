@@ -5,16 +5,17 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the New Brunswick Power Corporation
-    (NB Power) in Canada. The data is retrieved for the years from 2018
-    to current year. The data is retrieved in one-month intervals.
+    (NB Power) in Canada. The data is retrieved for the years from 2019,
+    the first year of the archive, to current year. The data is
+    retrieved in one-month intervals.
 
     Source: https://tso.nbpower.com/Public/en/system_information_archive.aspx
 """
 
+import datetime
 import logging
 
 import pandas as pd
-import utils.entities
 import utils.fetcher
 
 
@@ -32,46 +33,29 @@ def redistribute() -> bool:
     return False
 
 
-def _check_input_parameters(year: int, month: int) -> None:
-    """
-    Check if the input parameters are valid.
-
-    Parameters
-    ----------
-    year : int
-        The year of the electricity demand data.
-    month : int
-        The month of the electricity demand data.
-
-    Raises
-    ------
-    ValueError
-        If the input parameters are not valid.
-    """
-    # Check if the year and month are supported.
-    if (year, month) not in get_available_requests():
-        raise ValueError(f"Year {year} and month {month} are not available.")
-
-
-def get_available_requests() -> list[tuple[int, int]]:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[tuple[int, int]]:
     """
     Get the available requests.
 
     This function retrieves the available requests for the electricity
     demand data from the NB Power website.
 
+    Parameters
+    ----------
+    code : str
+        The code of New Brunswick.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
+
     Returns
     -------
     list[tuple[int, int]]
         The list of available requests.
     """
-    # Read the start and end date of the available data.
-    start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            "nbpower"
-        )["CAN_NB"]
-    )
-
     # Get the list of available requests, which are the years and
     # months.
     values_list = (
@@ -99,7 +83,9 @@ def get_url() -> str:
     return "https://tso.nbpower.com/Public/en/system_information_archive.aspx"
 
 
-def download_and_extract_data_for_request(year: int, month: int) -> pd.Series:
+def download_and_extract_data_for_request(
+    year_and_month: tuple[int, int], code: str
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -108,10 +94,10 @@ def download_and_extract_data_for_request(year: int, month: int) -> pd.Series:
 
     Parameters
     ----------
-    year : int
-        The year of the electricity demand data.
-    month : int
-        The month of the electricity demand data.
+    year_and_month : tuple[int, int]
+        The year and month of the electricity demand data.
+    code : str
+        The code of New Brunswick.
 
     Returns
     -------
@@ -123,8 +109,7 @@ def download_and_extract_data_for_request(year: int, month: int) -> pd.Series:
     TypeError
         If the extracted data is not a pandas DataFrame.
     """
-    # Check if input parameters are valid.
-    _check_input_parameters(year, month)
+    year, month = year_and_month
 
     logging.info(
         "Retrieving electricity demand data for the "
@@ -154,17 +139,16 @@ def download_and_extract_data_for_request(year: int, month: int) -> pd.Series:
             "expected a pandas DataFrame."
         )
 
-    # Extract the electricity demand time series.
-    # It is unclear whether the time values represent the start or
-    # end of the hour. Most likely, they represent the start of the
-    # hour but this is not confirmed.
+    # Extract the electricity demand time series. The times mark the
+    # end of each hour: each value is the average of the hour before its
+    # time, as the 5-minute data of New Brunswick from CCEI show.
     electricity_demand_time_series = pd.Series(
         dataset["NB_LOAD"].values,
         index=pd.to_datetime(dataset["HOUR"].values, format="%Y-%m-%d %H:%M"),
     )
 
-    # Convert the time zone of the electricity demand time series to
-    # UTC.
+    # Localize the times, which follow daylight saving time: when it
+    # ends, 01:00 comes twice.
     electricity_demand_time_series = (
         electricity_demand_time_series.tz_localize(
             "America/Moncton", ambiguous="infer"

@@ -8,54 +8,32 @@ Description:
 
 from retrievals.electricity_demand_data_sources import ccei
 
-_BASE = "https://api.statcan.gc.ca/hfed-dehf/sdmx/rest/data/"
-_QUERY = "?&dimensionAtObservation=AllDimensions&format=csv"
 
-
-def test_download_and_extract_data(fake_downloads, assert_demand):
-    """Test that the demand is read from the SDMX CSV files."""
+def test_download_and_extract_data_of_ontario(fake_downloads, assert_demand):
+    """Test that the hours of IESO are read in Eastern Standard Time."""
     fake_downloads.serve(
-        f"{_BASE}CCEI,DF_HFED_AB,1.0/N...INTERNAL_LOAD{_QUERY}",
-        "ccei_ab.csv",
-    )
-    fake_downloads.serve(
-        f"{_BASE}CCEI,DF_HFED_NB,1.0/N...LOAD{_QUERY}",
-        "ccei_nb.csv",
-    )
-    fake_downloads.serve(
-        f"{_BASE}CCEI,DF_HFED_ON,1.0/N...ONTARIO_DEMAND{_QUERY}",
+        "https://api.statcan.gc.ca/hfed-dehf/sdmx/rest/data/"
+        "CCEI,DF_HFED_ON,1.0/N...ONTARIO_DEMAND?"
+        "&dimensionAtObservation=AllDimensions&format=csv",
         "ccei_on.csv",
     )
 
-    alberta = ccei.download_and_extract_data("CAN_AB")
-    new_brunswick = ccei.download_and_extract_data("CAN_NB")
-    ontario = ccei.download_and_extract_data("CAN_ON")
+    time_series = ccei.download_and_extract_data("CAN_ON")
 
-    # The files already use UTC. New Brunswick appends ".000Z", which
-    # is removed before the time is localized. Ontario drops the dummy
-    # 06:59:59 step before the daylight saving time change.
+    # The local times (DATETIME_LOCAL) are the ends of IESO's hours in
+    # Eastern Standard Time all year, with the hour 24 at 00:00 of the
+    # same day. The times in UTC (TIME_PERIOD) follow daylight saving
+    # time instead, with the hour 2 of 10 March at 06:59:59.
     assert_demand(
-        alberta,
+        time_series,
         "UTC",
         {
-            "2024-01-01 05:00": 1501.5,
-            "2024-01-01 06:00": 1460.75,
-            "2024-03-10 08:00": 1720.125,
+            "2024-01-02 06:00": 14700,
+            "2024-01-03 05:00": 15400,
+            "2024-03-10 06:00": 13400,
+            "2024-03-10 07:00": 13200,
+            "2024-03-10 08:00": 13000,
+            "2024-07-14 19:00": 19600,
         },
-    )
-    assert_demand(
-        new_brunswick,
-        "UTC",
-        {
-            "2024-01-01 05:00": 2100.5,
-            "2024-01-01 06:00": 1980.0,
-        },
-    )
-    assert_demand(
-        ontario,
-        "UTC",
-        {
-            "2024-03-10 06:00": 18010.0,
-            "2024-03-10 07:00": 17640.5,
-        },
+        dtype="int64",
     )

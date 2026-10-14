@@ -5,14 +5,16 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of Hydro-Québec in Canada. The data is
-    retrieved for the years from 2019 to 2023. The data is retrieved all
-    at once.
+    retrieved for the years from 2019 to 2024. The data is retrieved all
+    at once. Each time marks the end of its hour.
 
     Source: https://donnees.hydroquebec.com/explore/dataset/historique-demande-electricite-quebec/information/
 """
 
+import datetime
 import logging
 
+import numpy as np
 import pandas as pd
 import utils.fetcher
 
@@ -33,14 +35,30 @@ def redistribute() -> bool:
     return True
 
 
-def get_available_requests() -> None:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[None]:
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the Hydro-Québec website.
+    The data is retrieved all at once, so there is a single request,
+    without parameters.
+
+    Parameters
+    ----------
+    code : str
+        The code of Quebec.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
+
+    Returns
+    -------
+    list[None]
+        The single request.
     """
-    logging.debug("The data is retrieved all at once.")
+    return [None]
 
 
 def get_url() -> str:
@@ -60,12 +78,21 @@ def get_url() -> str:
     )
 
 
-def download_and_extract_data() -> pd.Series:
+def download_and_extract_data_for_request(
+    request: None, code: str
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
     This function downloads and extracts the electricity demand data
     from the Hydro-Québec website.
+
+    Parameters
+    ----------
+    request : None
+        The single request of the data, without parameters.
+    code : str
+        The code of Quebec.
 
     Returns
     -------
@@ -100,9 +127,44 @@ def download_and_extract_data() -> pd.Series:
         utc=True,
     )
 
-    # Sort the index.
-    electricity_demand_time_series = (
-        electricity_demand_time_series.sort_index()
+    # Sort the index, keeping the order of the export for equal times,
+    # which follows the order of the measurements.
+    electricity_demand_time_series = electricity_demand_time_series.sort_index(
+        kind="stable"
     )
+
+    # When daylight saving time ends, the export gives both hours that
+    # end at 01:00 the offset of standard time, so they come at the same
+    # time and the hour before has no value. Move the first one there.
+    one_hour = pd.Timedelta(hours=1)
+    times = pd.DatetimeIndex(electricity_demand_time_series.index)
+    without_previous_hour = ~(times - one_hour).isin(times)
+    first_of_pairs = times.duplicated(keep="last") & without_previous_hour
+    electricity_demand_time_series.index = times.where(
+        ~first_of_pairs, times - one_hour
+    )
+
+    # Of the other times that come twice, keep the value closest to the
+    # average of the hours before and after: the export has two values
+    # at 00:00 on 1 January 2023, and one of them does not fit.
+    duplicated = electricity_demand_time_series.index.duplicated(keep=False)
+    if duplicated.any():
+        unique = electricity_demand_time_series[~duplicated]
+        keep = ~duplicated
+        for time in electricity_demand_time_series.index[duplicated].unique():
+            positions = np.flatnonzero(
+                electricity_demand_time_series.index == time
+            )
+            values = electricity_demand_time_series.iloc[positions].to_numpy()
+            around = unique.reindex([time - one_hour, time + one_hour]).mean()
+            if not np.isnan(around):
+                positions = positions[[np.abs(values - around).argmin()]]
+            keep[positions[0]] = True
+            logging.warning(
+                f"Hydro-Québec gives the values {values.tolist()} at {time}. "
+                f"The value {electricity_demand_time_series.iloc[positions[0]]}"
+                " is kept."
+            )
+        electricity_demand_time_series = electricity_demand_time_series[keep]
 
     return electricity_demand_time_series

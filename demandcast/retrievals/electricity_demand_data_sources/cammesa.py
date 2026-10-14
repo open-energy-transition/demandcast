@@ -14,10 +14,10 @@ Description:
     Source: https://microfe.cammesa.com/demandaregionchart/assets/data/regionesCammesa.geojson.json
 """
 
+import datetime
 import logging
 
 import pandas as pd
-import utils.entities
 import utils.fetcher
 
 province_id = {
@@ -50,54 +50,38 @@ def redistribute() -> bool:
     return False
 
 
-def _check_input_parameters(date: str) -> None:
-    """
-    Check if the input parameters are valid.
-
-    Parameters
-    ----------
-    date : str
-        The date of the electricity demand data in the format
-        YYYY-MM-DD.
-
-    Raises
-    ------
-    ValueError
-        If the input parameters are not valid.
-    """
-    # Check if the date is supported.
-    if date not in get_available_requests():
-        raise ValueError(f"The date {date} is not in the supported range.")
-
-
-def get_available_requests() -> list[str]:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[str]:
     """
     Get the available requests.
 
     This function retrieves the available requests for the electricity
     demand data from the CAMMESA website.
 
+    Parameters
+    ----------
+    code : str
+        The code of Argentina.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
+
     Returns
     -------
     list[str]
         The list of available requests.
     """
-    # Read the start and end date of the available data.
-    __, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            "cammesa"
-        )["ARG"]
-    )
-
     # CAMMESA only provides data for the last 9 months.
-    start_date = pd.Timestamp(
+    first_day = pd.Timestamp(
         f"{end_date.year}-{end_date.month}-01"
     ) - pd.DateOffset(months=8)
 
     # Return the available requests, which are the dates in the format
     # YYYY-MM-DD.
     return (
-        pd.date_range(start=start_date, end=end_date, freq="D")
+        pd.date_range(start=first_day, end=end_date, freq="D")
         .strftime("%Y-%m-%d")
         .to_list()
     )
@@ -118,9 +102,6 @@ def get_url(date: str) -> str:
     str
         The URL of the electricity demand data.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(date)
-
     # Return the URL of the electricity demand data.
     return (
         "https://api.cammesa.com/demanda-svc/demanda/"
@@ -129,7 +110,7 @@ def get_url(date: str) -> str:
     )
 
 
-def download_and_extract_data_for_request(date: str) -> pd.Series:
+def download_and_extract_data_for_request(date: str, code: str) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -141,6 +122,8 @@ def download_and_extract_data_for_request(date: str) -> pd.Series:
     date : str
         The date of the electricity demand data in the format
         YYYY-MM-DD.
+    code : str
+        The code of Argentina.
 
     Returns
     -------
@@ -153,9 +136,6 @@ def download_and_extract_data_for_request(date: str) -> pd.Series:
         If the extracted data is not a pandas DataFrame.
 
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(date)
-
     logging.info(f"Retrieving electricity demand data for {date}.")
 
     # Get the URL of the electricity demand data.

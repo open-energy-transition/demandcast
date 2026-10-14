@@ -17,10 +17,10 @@ Description:
 """
 
 import calendar
+import datetime
 import logging
 
 import pandas as pd
-import utils.entities
 import utils.fetcher
 
 
@@ -38,50 +38,29 @@ def redistribute() -> bool:
     return True
 
 
-def _check_input_parameters(year: int, month: int, day: int) -> None:
-    """
-    Check if the input parameters are valid.
-
-    Parameters
-    ----------
-    year : int
-        The year of the data.
-    month : int
-        The month of the data.
-    day : int
-        The day of the data.
-
-    Raises
-    ------
-    ValueError
-        If the input parameters are not valid.
-    """
-    # Check if the input parameters are valid.
-    if (year, month, day) not in get_available_requests():
-        raise ValueError(
-            f"The {year}-{month:02d}-{day:02d} request is not available."
-        )
-
-
-def get_available_requests() -> list[tuple[int, int, int]]:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[tuple[int, int, int]]:
     """
     Get the available requests.
 
     This function retrieves the available requests for the electricity
     demand data from the EMA website.
 
+    Parameters
+    ----------
+    code : str
+        The code of Singapore.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
+
     Returns
     -------
     requests : list[tuple[int, int, int]]
         List of tuples in the format (year, month, day).
     """
-    # Get the start and end dates for Singapore.
-    start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            "ema"
-        )["SGP"]
-    )
-
     # Subtract one week from the end date to ensure that the last
     # request is within the available data range.
     end_date = end_date - pd.Timedelta("7days")
@@ -131,9 +110,6 @@ def get_url(year: int, month: int, day: int) -> str:
     str
         The URL of the electricity demand data.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(year, month, day)
-
     # Construct the request date.
     request_date = pd.Timestamp(year=year, month=month, day=day)
 
@@ -155,19 +131,17 @@ def get_url(year: int, month: int, day: int) -> str:
 
 
 def download_and_extract_data_for_request(
-    year: int, month: int, day: int
+    year_month_and_day: tuple[int, int, int], code: str
 ) -> pd.Series:
     """
     Download and extract electricity demand data from EMA website.
 
     Parameters
     ----------
-    year : int
-        The year of the data.
-    month : int
-        The month of the data.
-    day : int
-        The day of the data.
+    year_month_and_day : tuple[int, int, int]
+        The year, month and day of the data.
+    code : str
+        The code of Singapore.
 
     Returns
     -------
@@ -179,8 +153,7 @@ def download_and_extract_data_for_request(
     TypeError
         If the extracted data is not a pandas DataFrame.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(year, month, day)
+    year, month, day = year_month_and_day
 
     logging.info(
         f"Retrieving electricity demand data for {year}-{month:02d}-{day:02d}."

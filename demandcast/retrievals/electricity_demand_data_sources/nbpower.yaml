@@ -3,6 +3,6 @@ entities:
     subdivision_code: NB
     country_name: Canada
     country_code: CAN
-    start_date: 2018-01-01
+    start_date: 2019-01-01
     end_date: today
     time_zone: America/Moncton

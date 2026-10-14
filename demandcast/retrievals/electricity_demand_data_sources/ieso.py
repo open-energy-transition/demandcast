@@ -9,15 +9,23 @@ Description:
     1994 to current year. The data is retrieved from the available CSV
     files on the IESO website.
 
+    The times of IESO are in Eastern Standard Time all year, without
+    daylight saving time, as on the Power Data page below ("Hour Ending
+    (EST)").
+
     Source: https://www.ieso.ca/Power-Data/Data-Directory
     Source: https://reports-public.ieso.ca/public/Demand/
+    Source: https://www.ieso.ca/power-data
 """
 
+import datetime
 import logging
 
 import pandas as pd
-import utils.entities
 import utils.fetcher
+
+# Eastern Standard Time, the time of IESO all year.
+EASTERN_STANDARD_TIME = datetime.timezone(datetime.timedelta(hours=-5))
 
 
 def redistribute() -> bool:
@@ -37,46 +45,29 @@ def redistribute() -> bool:
     return False
 
 
-def _check_input_parameters(year: int | None, before_apr_2002: bool) -> None:
-    """
-    Check if the input parameters are valid.
-
-    Parameters
-    ----------
-    year : int
-        The year of the data to retrieve.
-    before_apr_2002 : bool
-        Whether the url is for the time period before April 2002.
-
-    Raises
-    ------
-    ValueError
-        If the input parameters are not valid.
-    """
-    # Check if the request is supported.
-    if (year, before_apr_2002) not in get_available_requests():
-        raise ValueError("The request is not available.")
-
-
-def get_available_requests() -> list[tuple[int | None, bool]]:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[tuple[int | None, bool]]:
     """
     Get the available requests.
 
     This function retrieves the available requests for the electricity
     demand data from the IESO website.
 
+    Parameters
+    ----------
+    code : str
+        The code of Ontario.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
+
     Returns
     -------
     list[tuple[int | None, bool]]
         The list of available requests.
     """
-    # Read the start and end date of the available data.
-    __, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            "ieso"
-        )["CAN_ON"]
-    )
-
     # Define the date that separates the two periods of data.
     date_after_apr_2002 = pd.Timestamp("2002-04-01")
 
@@ -110,9 +101,6 @@ def get_url(year: int | None, before_apr_2002: bool) -> str:
     url : str
         The URL of the electricity demand data.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(year=year, before_apr_2002=before_apr_2002)
-
     # Define the URL of the electricity demand data.
     if before_apr_2002:
         url = (
@@ -129,7 +117,7 @@ def get_url(year: int | None, before_apr_2002: bool) -> str:
 
 
 def download_and_extract_data_for_request(
-    year: int | None, before_apr_2002: bool
+    year_and_old_file: tuple[int | None, bool], code: str
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
@@ -139,10 +127,12 @@ def download_and_extract_data_for_request(
 
     Parameters
     ----------
-    year : int
-        The year of the electricity demand data.
-    before_apr_2002 : bool
-        Whether the url is for the time period before April 2002.
+    year_and_old_file : tuple[int | None, bool]
+        The year of the electricity demand data, and whether the data
+        is in the file of the time period before April 2002, whose year
+        is None.
+    code : str
+        The code of Ontario.
 
     Returns
     -------
@@ -154,8 +144,7 @@ def download_and_extract_data_for_request(
     TypeError
         If the extracted data is not a pandas DataFrame.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(year=year, before_apr_2002=before_apr_2002)
+    year, before_apr_2002 = year_and_old_file
 
     # Get the URL of the electricity demand data.
     url = get_url(year=year, before_apr_2002=before_apr_2002)
@@ -167,10 +156,7 @@ def download_and_extract_data_for_request(
 
         # Fetch HTML content from the URL.
         dataset = utils.fetcher.fetch_data(
-            url,
-            "html",
-            read_with="requests.get",
-            verify_ssl=False,
+            url, "html", read_with="requests.get"
         )
 
         # Make sure the dataset is a pandas DataFrame.
@@ -180,23 +166,16 @@ def download_and_extract_data_for_request(
                 "expected a pandas DataFrame."
             )
 
-        # Extract the electricity demand time series.
+        # Extract the electricity demand time series. The times of 1996
+        # have a different format from the other years.
         electricity_demand_time_series = pd.Series(
             dataset["OntarioDemand"].values,
-            index=pd.to_datetime(dataset["DateTime"]),
-        )
+            index=pd.to_datetime(dataset["DateTime"], format="mixed"),
+        ).tz_localize(EASTERN_STANDARD_TIME)
 
-        # Convert the time zone of the electricity demand time
-        # series to UTC.
-        electricity_demand_time_series = (
-            electricity_demand_time_series.tz_localize(
-                "America/Toronto", ambiguous="NaT", nonexistent="NaT"
-            )
-        )
-
-        # Add one hour to the time index because the time values
-        # appear to be provided at the beginning of the time
-        # interval.
+        # The times are the starts of the hours: the file ends at 23:00
+        # on 30 April 2002, the hour before the first one of the yearly
+        # files. Move them to the ends of the hours.
         electricity_demand_time_series.index += pd.Timedelta(hours=1)
 
         return electricity_demand_time_series
@@ -213,15 +192,12 @@ def download_and_extract_data_for_request(
             "expected a pandas DataFrame."
         )
 
-    # Extract the index of the electricity demand time series.
-    index = pd.to_datetime(
-        [
-            date + " " + str(time - 1) + ":00"
-            for date, time in zip(
-                dataset["Date"], dataset["Hour"], strict=True
-            )
-        ]
-    ).tz_localize("America/Toronto", ambiguous="NaT", nonexistent="NaT")
+    # The hours of each day are numbered from 1 to 24 by their ends, so
+    # the hour 24 ends at midnight of the next day.
+    index = pd.DatetimeIndex(
+        pd.to_datetime(dataset["Date"])
+        + pd.to_timedelta(dataset["Hour"], unit="h")
+    ).tz_localize(EASTERN_STANDARD_TIME)
 
     # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(

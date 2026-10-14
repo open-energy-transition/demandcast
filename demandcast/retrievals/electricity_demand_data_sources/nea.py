@@ -18,6 +18,7 @@ Description:
     Source: https://opendatanepal.com/datasets/electricity-load-profile-of-nepal-in-2073-nepal-electricity-authority
 """
 
+import datetime
 import logging
 
 import nepali_datetime
@@ -45,33 +46,23 @@ def redistribute() -> bool:
     return True
 
 
-def _check_input_parameters(bs_month: int) -> None:
-    """
-    Check if the input parameters are valid.
-
-    Parameters
-    ----------
-    bs_month : int
-        The Bikram Sambat month number.
-
-    Raises
-    ------
-    ValueError
-        If the input parameters are not valid.
-    """
-    # Check if the month is supported.
-    if bs_month not in get_available_requests():
-        raise ValueError(
-            f"The month {bs_month} is not available for retrieval."
-        )
-
-
-def get_available_requests() -> list[int]:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[int]:
     """
     Get the available requests.
 
     This function retrieves the available requests for the electricity
     demand data provided by NEA.
+
+    Parameters
+    ----------
+    code : str
+        The code of Nepal.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
 
     Returns
     -------
@@ -99,9 +90,6 @@ def get_url(bs_month: int) -> str:
     str
         The URL for the given month.
     """
-    # Check if input parameters are valid.
-    _check_input_parameters(bs_month)
-
     # Mapping of Bikram Sambat month numbers to file ID numbers.
     file_id_number = {
         1: "0c8d8aa5-ccbe-434b-86f9-d94c3bc0e045",  # Baisakh
@@ -125,7 +113,9 @@ def get_url(bs_month: int) -> str:
     )
 
 
-def download_and_extract_data_for_request(bs_month: int) -> pd.Series:
+def download_and_extract_data_for_request(
+    bs_month: int, code: str
+) -> pd.Series:
     """
     Download and extract electricity demand data.
 
@@ -136,6 +126,8 @@ def download_and_extract_data_for_request(bs_month: int) -> pd.Series:
     ----------
     bs_month : int
         The Bikram Sambat month number.
+    code : str
+        The code of Nepal.
 
     Returns
     -------
@@ -147,9 +139,6 @@ def download_and_extract_data_for_request(bs_month: int) -> pd.Series:
     TypeError
         If the extracted data is not a pandas DataFrame.
     """
-    # Check if input parameters are valid.
-    _check_input_parameters(bs_month)
-
     logging.info(
         f"Retrieving electricity demand data for the Bikram Sambat month "
         f"{bs_month} of the year {DATASET_BS_YEAR}."

@@ -18,7 +18,6 @@ import datetime
 import logging
 
 import pandas as pd
-import utils.entities
 import utils.fetcher
 
 
@@ -39,53 +38,29 @@ def redistribute() -> bool:
     return True
 
 
-def _check_input_parameters(
-    pre_reform: bool, year: int, month: int | None, day: int | None
-) -> None:
-    """
-    Check if the input parameters are valid.
-
-    Parameters
-    ----------
-    pre_reform : bool
-        A boolean flag to indicate if the request is for the pre-reform
-        period (until 2023).
-    year : int
-        The year of the data to retrieve.
-    month : int, optional
-        The month of the data to retrieve.
-    day : int, optional
-        The day of the data to retrieve.
-
-    Raises
-    ------
-    ValueError
-        If the input parameters are not valid.
-    """
-    # Check if the input parameters are valid.
-    if (pre_reform, year, month, day) not in get_available_requests():
-        raise ValueError("The request is not supported.")
-
-
-def get_available_requests() -> list[tuple[bool, int, int | None, int | None]]:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[tuple[bool, int, int | None, int | None]]:
     """
     Get the available requests.
 
     This function retrieves the available requests for the electricity
     demand data from the AEMO website.
 
+    Parameters
+    ----------
+    code : str
+        The code of Western Australia.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
+
     Returns
     -------
     list[tuple[bool, int, int | None, int | None]]
         List of tuples in the format (year, month, day).
     """
-    # Read the start and end date of the available data.
-    start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            "aemo_wem"
-        )["AUS_WA"]
-    )
-
     # Define the date that marks the beginning of the post-reform
     # period.
     post_reform_start_date = pd.Timestamp("2023-10-01")
@@ -141,9 +116,6 @@ def get_url(
     str
         The URL of the electricity demand data.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(pre_reform, year, month, day)
-
     if pre_reform:
         # If the request is for the pre-reform period, set the URL to
         # fetch .csv files for data from 2006 to 2023.
@@ -162,7 +134,7 @@ def get_url(
 
 
 def download_and_extract_data_for_request(
-    pre_reform: bool, year: int, month: int | None, day: int | None
+    pre_reform_and_date: tuple[bool, int, int | None, int | None], code: str
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
@@ -172,15 +144,13 @@ def download_and_extract_data_for_request(
 
     Parameters
     ----------
-    pre_reform : bool
+    pre_reform_and_date : tuple[bool, int, int | None, int | None]
         A boolean flag to indicate if the request is for the pre-reform
-        period (until 2023).
-    year : int
-        The year of the electricity demand data.
-    month : int, optional
-        The month of the electricity demand data.
-    day : int, optional
-        The day of the electricity demand data.
+        period (until 2023), and the year, month and day of the
+        electricity demand data. The month and the day are None for
+        the pre-reform period.
+    code : str
+        The code of Western Australia.
 
     Returns
     -------
@@ -192,8 +162,7 @@ def download_and_extract_data_for_request(
     TypeError
         If the extracted data is not a pandas DataFrame.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(pre_reform, year, month, day)
+    pre_reform, year, month, day = pre_reform_and_date
 
     if pre_reform:
         logging.info(

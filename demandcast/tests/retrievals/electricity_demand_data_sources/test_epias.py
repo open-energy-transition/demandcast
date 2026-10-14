@@ -21,7 +21,7 @@ def test_download_and_extract_data(manual_downloads_folder, assert_demand):
         }
     ).to_excel(manual_downloads_folder / "EPIAS_2024.xlsx", index=False)
 
-    time_series = epias.download_and_extract_data()
+    time_series = epias.download_and_extract_data_for_request(None, "TUR")
 
     # The times mark the end of each hour.
     assert_demand(
@@ -35,4 +35,4 @@ def test_download_and_extract_data(manual_downloads_folder, assert_demand):
 def test_download_and_extract_data_without_files():
     """Test that the error says where to put the downloaded files."""
     with pytest.raises(FileNotFoundError, match="named starting with 'EPI'"):
-        epias.download_and_extract_data()
+        epias.download_and_extract_data_for_request(None, "TUR")

@@ -6,15 +6,17 @@ Description:
     Tests for the retrieval of electricity demand data from PUCSL.
 """
 
+import datetime
+
 import pandas as pd
-import pytest
 from retrievals.electricity_demand_data_sources import pucsl
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the weeks of the data."""
-    requests = pucsl.get_available_requests()
+    requests = pucsl.get_available_requests(
+        "LKA", datetime.date(2023, 1, 1), datetime.date(2025, 12, 28)
+    )
 
     assert requests[0] == (
         pd.Timestamp("2023-01-01"),
@@ -37,7 +39,7 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
     )
 
     time_series = pucsl.download_and_extract_data_for_request(
-        pd.Timestamp("2025-12-21"), pd.Timestamp("2025-12-28")
+        (pd.Timestamp("2025-12-21"), pd.Timestamp("2025-12-28")), "LKA"
     )
 
     # The times mark the end of each quarter of an hour.

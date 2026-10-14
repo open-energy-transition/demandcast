@@ -12,10 +12,10 @@ Description:
     Source: https://www.kansai-td.co.jp/english/home/denkiyoho/area-performance/index.html
 """
 
+import datetime
 import logging
 
 import pandas as pd
-import utils.entities
 import utils.fetcher
 
 
@@ -33,46 +33,29 @@ def redistribute() -> bool:
     return False
 
 
-def _check_input_parameters(year: int, month: int | None) -> None:
-    """
-    Check if the input parameters are valid.
-
-    Parameters
-    ----------
-    year : int
-        The year of the data to retrieve.
-    month : int | None
-        The month of the data to retrieve.
-
-    Raises
-    ------
-    ValueError
-        If the input parameters are not valid.
-    """
-    # Check if the request is supported.
-    if (year, month) not in get_available_requests():
-        raise ValueError("The request is not available.")
-
-
-def get_available_requests() -> list[tuple[int, int | None]]:
+def get_available_requests(
+    code: str, start_date: datetime.date, end_date: datetime.date
+) -> list[tuple[int, int | None]]:
     """
     Get the available requests.
 
     This function retrieves the available requests for the electricity
     demand data from the KansaiTD website.
 
+    Parameters
+    ----------
+    code : str
+        The code of the Kansai region.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
+
     Returns
     -------
     list[tuple[int, int | None]]
         The list of available requests.
     """
-    # Read the start and end date of the available data.
-    start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            "kansaitd"
-        )["JPN_Kansai"]
-    )
-
     # Define the date that separates the two types of requests.
     march_2024 = pd.Timestamp("2024-03-01")
 
@@ -110,9 +93,6 @@ def get_url(year: int, month: int | None) -> str:
     url : str
         The URL of the electricity demand data.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(year, month)
-
     # Define the URL of the electricity demand data.
     if month is None:
         url = (
@@ -131,7 +111,7 @@ def get_url(year: int, month: int | None) -> str:
 
 
 def download_and_extract_data_for_request(
-    year: int, month: int | None
+    year_and_month: tuple[int, int | None], code: str
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
@@ -141,10 +121,11 @@ def download_and_extract_data_for_request(
 
     Parameters
     ----------
-    year : int
-        The year of the data to retrieve.
-    month : int | None
-        The month of the data to retrieve.
+    year_and_month : tuple[int, int | None]
+        The year and month of the data to retrieve, without a month
+        before March 2024.
+    code : str
+        The code of the Kansai region.
 
     Returns
     -------
@@ -156,8 +137,7 @@ def download_and_extract_data_for_request(
     TypeError
         If the extracted data is not a pandas DataFrame.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(year, month)
+    year, month = year_and_month
 
     # Get the URL of the electricity demand data.
     url = get_url(year, month)

@@ -8,17 +8,35 @@ Description:
     (CENACE) in Mexico. The data is retrieved for the period from 2016
     to today. The data is retrieved in one-year intervals.
 
+    The national system (SIN) runs on one clock for all its areas, the
+    time of central Mexico: CENACE's notices give one date for its
+    changes of daylight saving time, when the days of all its areas have
+    23 or 25 hours, also in Noroeste and Norte, whose local clocks
+    differ, and its exchanges with ERCOT match the hourly interchange
+    data of the EIA in that time. Baja California (BCA) follows its own
+    time zone, with the daylight saving time of the United States, as
+    its exchanges with California show. Baja California Sur (BCS) is
+    read in its own time zone too, which its data cannot confirm, since
+    it has no exchanges.
+
     Source: https://www.cenace.gob.mx/Paginas/SIM/Reportes/EstimacionDemandaReal.aspx
+    Source: https://www.cenace.gob.mx/Docs/MercadoOperacion/Horario%20de%20Invierno%20MDA%202017%20V2.2%20Kasusky%202017-08-30.pdf
+    Source: https://www.eia.gov/opendata/browser/electricity/rto/interchange-data
 """
 
+import datetime
 import logging
 import zipfile
+import zoneinfo
 from io import BytesIO, StringIO
 
 import pandas as pd
 import requests
 import utils.entities
 import utils.fetcher
+
+# The time of central Mexico, the clock of all areas of the SIN.
+CENTRAL_MEXICO_TIME = zoneinfo.ZoneInfo("America/Mexico_City")
 
 
 def redistribute() -> bool:
@@ -38,57 +56,8 @@ def redistribute() -> bool:
     return False
 
 
-def _check_input_parameters(
-    code: str,
-    start_date: pd.Timestamp | None = None,
-    end_date: pd.Timestamp | None = None,
-) -> None:
-    """
-    Check if the input parameters are valid.
-
-    Parameters
-    ----------
-    code : str
-        The code of the subdivision of interest.
-    start_date : pandas.Timestamp, optional
-        The start date of the data retrieval.
-    end_date : pandas.Timestamp, optional
-        The end date of the data retrieval.
-
-    Raises
-    ------
-    ValueError
-        If the input parameters are not valid.
-    """
-    # Check if the code is valid.
-    utils.entities.check_code_in_data_source(code, "cenace")
-
-    if start_date is not None and end_date is not None:
-        # Check if the retrieval period is less than 1 year.
-        if end_date - start_date > pd.Timedelta("366days"):
-            raise ValueError(
-                "The retrieval period must be less than or equal to 1 year. "
-                f"start_date: {start_date}, end_date: {end_date}"
-            )
-
-        # Read the start date of the available data.
-        start_date_of_data_availability = pd.to_datetime(
-            utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-                "cenace"
-            )[code][0]
-        )
-
-        # Check that the start date is greater than or equal to the
-        # beginning of the data availability.
-        if start_date < start_date_of_data_availability:
-            raise ValueError(
-                "The beginning of the data availability is "
-                f"{start_date_of_data_availability}."
-            )
-
-
 def get_available_requests(
-    code: str,
+    code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """
     Get the available requests.
@@ -100,22 +69,16 @@ def get_available_requests(
     ----------
     code : str
         The code of the subdivision of interest.
+    start_date : datetime.date
+        The first day of the data.
+    end_date : datetime.date
+        The last day of the data.
 
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
         The list of available requests.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(code)
-
-    # Read the start and end date of the available data.
-    start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-            "cenace"
-        )[code]
-    )
-
     # Mexico has data until 15 days before the current date. Subtract
     # 10 days to the end date on top of the 5 days already considered.
     end_date = pd.to_datetime(end_date) - pd.Timedelta("10days")
@@ -150,9 +113,7 @@ def get_url() -> str:
 
 
 def download_and_extract_data_for_request(
-    start_date: pd.Timestamp,
-    end_date: pd.Timestamp,
-    code: str,
+    period: tuple[pd.Timestamp, pd.Timestamp], code: str
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
@@ -162,10 +123,8 @@ def download_and_extract_data_for_request(
 
     Parameters
     ----------
-    start_date : pandas.Timestamp
-        The start date of the data retrieval.
-    end_date : pandas.Timestamp
-        The end date of the data retrieval.
+    period : tuple[pandas.Timestamp, pandas.Timestamp]
+        The start and end date of the data retrieval.
     code : str
         The code of the subdivision of interest.
 
@@ -179,10 +138,17 @@ def download_and_extract_data_for_request(
     TypeError
         If the response is not a requests.Response object.
     ValueError
-        If no data is found for a date.
+        If the retrieval period is longer than 1 year, or if a file of
+        the archive has no header.
     """
-    # Check if the input parameters are valid.
-    _check_input_parameters(code, start_date=start_date, end_date=end_date)
+    start_date, end_date = period
+
+    # Check if the retrieval period is less than 1 year.
+    if end_date - start_date > pd.Timedelta("366days"):
+        raise ValueError(
+            "The retrieval period must be less than or equal to 1 year. "
+            f"start_date: {start_date}, end_date: {end_date}"
+        )
 
     logging.info(
         "Retrieving electricity demand data from "
@@ -255,36 +221,28 @@ def download_and_extract_data_for_request(
     # Get the subdivision code.
     subdivision_code = code.split("_")[1]
 
-    # Get the time zone of the country or subdivision.
-    time_zone = utils.entities.get_time_zone(code)
+    # Get the time zone of the hours of the files: the time of central
+    # Mexico for the areas of the SIN, and the time zone of the area for
+    # the systems of Baja California.
+    if subdivision_code in {"BCA", "BCS"}:
+        time_zone = utils.entities.get_time_zone(code)
+    else:
+        time_zone = CENTRAL_MEXICO_TIME
 
     # Initialize the list to store the daily values.
     daily_values_list = []
 
     # Iterate over the dates and extract the corresponding files.
     for date in dates:
-        # Define the file version to be extracted. Start with the
-        # latest version and go backwards.
-        file_version = -1
-
-        # Define a flag to indicate if the data for the date was
-        # found.
-        found_data = False
-
-        # Loop until the data for the date is found or all file
-        # versions are exhausted.
-        while not found_data:
-            # Get the file name corresponding to the date.
-            file_name = [name for name in file_names if date in name][
-                file_version
-            ]
-
-            # Extract the file content from the archive.
-            file_content = archive.open(file_name).read().decode("utf-8")
-
-            # Find the line that contains the header of the CSV
-            # file.
-            lines = file_content.split("\n")
+        # Read the latest settlement of the day with data, going back to
+        # the earlier ones while the later ones are still empty.
+        file_content = None
+        for file_name in reversed(
+            [name for name in file_names if date in name]
+        ):
+            # Find the line that contains the header of the CSV file.
+            content = archive.open(file_name).read().decode("utf-8")
+            lines = content.split("\n")
             skip_rows = next(
                 (
                     i
@@ -298,19 +256,14 @@ def download_and_extract_data_for_request(
 
             # Check if the line after the header has some data.
             if lines[skip_rows + 1] != "":
-                found_data = True
-            else:
-                # If the line after the header is empty, try the
-                # previous version of the file.
-                file_version -= 1
+                file_content = content
+                break
 
-                if file_version < -len(file_names):
-                    # If there are no more versions of the file,
-                    # raise an error.
-                    raise ValueError(
-                        f"No data found for the date {date} "
-                        f"in the file {file_name}."
-                    )
+        # Skip a day without data in any settlement, like the other
+        # gaps of the data.
+        if file_content is None:
+            logging.warning(f"No data found for the date {date}, skipped.")
+            continue
 
         # Read the file content into a pandas DataFrame.
         dataset = pd.read_csv(
@@ -327,12 +280,6 @@ def download_and_extract_data_for_request(
             " Estimacion de Demanda por Balance (MWh) "
         ].reset_index(drop=True)
 
-        # For the Norte subdivision on 2022-10-30, there seems to be
-        # an extra hour in the data.
-        if subdivision_code == "NTE" and date == "2022-10-30":
-            # Remove the third value from the list.
-            daily_values = daily_values.drop(2)
-
         # Set a new index with the date and time for each hour of
         # the day.
         daily_values.index = pd.date_range(
@@ -344,6 +291,10 @@ def download_and_extract_data_for_request(
 
         # Append the daily values to the list.
         daily_values_list.append(daily_values)
+
+    # Return an empty series if no day has data.
+    if not daily_values_list:
+        return pd.Series(dtype="float64")
 
     # Concatenate the daily values into a single pandas Series.
     electricity_demand_time_series = pd.concat(daily_values_list)

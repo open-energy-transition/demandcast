@@ -65,10 +65,9 @@ The script will store electricity demand data in `data/electricity_demand/YYYY-M
 Each retrieval module in the `demandcast/retrievals/electricity_demand_data_sources/` folder is designed to fetch electricity demand data from a specific data source. The main functions in each module typically include:
 
 - **Redistribution rights (`redistribute`)**: Information about the redistribution rights of the data source.
-- **Check input parameters (`_check_input_parameters`)**: Checks that the input parameters are valid.
-- **Data request construction (`get_available_requests`)**: Builds all data requests based on the availability of the data source.
+- **Data request construction (`get_available_requests`)**: Builds the requests of a country or subdivision from its code and the dates of its data in the YAML file, which the retrieval code passes, in chronological order. A source that downloads all its data at once returns a single request, `None`.
 - **URL construction (`get_url`)**: Generates the appropriate web request URL.
-- **Data download and processing (`download_and_extract_data_for_request`)**: Fetches the data using `utils.fetcher` functions and transforms it into a `pandas.Series`.
+- **Data download and processing (`download_and_extract_data_for_request`)**: Fetches the data of a request, which the retrieval code passes with the code, using `utils.fetcher` functions, and transforms it into a `pandas.Series` of the demand in MW, with time-zone-aware times that mark the end of each interval.
 
 #### Names, codes, time zones, and data time ranges for countries and subdivisions
 
@@ -83,6 +82,25 @@ For each retrieval module in the `demandcast/retrievals/electricity_demand_data_
 #### Non-standard subdivisions
 
 Some countries have subdivisions that are not standard ISO subdivisions. For these cases, the `demandcast/shapes/` folder contains scripts to generate the shapes of these subdivisions. The scripts are named after the data source (e.g., `eia.py`, `ons.py`) and contain functions to generate the shapes. The generated shapes are then used in the retrieval modules and for plotting.
+
+#### Live check of the data sources
+
+The websites of the data sources change their addresses, formats and access rules, and some stop publishing. The tests cannot notice it, because they read synthetic files. The live check downloads one request per data source over the network and checks the result. To run it, in the `demandcast` folder:
+
+```bash
+uv run check.py --config config/check_data_sources_config.yaml
+```
+
+For each data source that is downloaded automatically, the check downloads the latest request of the first country or subdivision of its YAML file. A data source fails if the download or the parsing fails, or if:
+
+- the values are not numbers, or some are negative;
+- the times have no time zone, or are mostly more than one hour apart;
+- the latest value is more than `maximum_age_days` old (60 by default), for a data source whose `end_date` is `today`;
+- there are data after the `end_date` of the YAML file, which is then out of date.
+
+The data sources read from manually downloaded files are skipped, and ENTSO-E and EIA need their API keys. The results are saved to `checks/data_sources_report.md` and `checks/data_sources_report.json`. In the configuration file, `data_sources` limits the check to some data sources, `maximum_age_days_by_source` gives more days to the data sources that publish later, and `time_limit_minutes` is the time after which the data sources that have not answered fail.
+
+The report also counts the checks that each data source has failed in a row, from the report of the previous check in the same folder. On GitHub, the `Live check` workflow runs the check every Monday, with the API keys of the `live-checks` environment, and writes the report to the summary of its run. It keeps one issue open, labelled `live-check`, with the data sources that fail two checks in a row, since a website can be out of reach for a while, and closes it when no data source does.
 
 ### Annual electricity demand per capita
 

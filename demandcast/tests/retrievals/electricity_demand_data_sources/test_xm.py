@@ -6,15 +6,17 @@ Description:
     Tests for the retrieval of electricity demand data from XM.
 """
 
+import datetime
+
 import pandas as pd
-import pytest
 from retrievals.electricity_demand_data_sources import xm
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the months of the data."""
-    requests = xm.get_available_requests()
+    requests = xm.get_available_requests(
+        "COL", datetime.date(2000, 1, 1), datetime.date(2025, 12, 28)
+    )
 
     assert requests[0] == (
         pd.Timestamp("2000-01-01"),
@@ -37,7 +39,7 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
     )
 
     time_series = xm.download_and_extract_data_for_request(
-        pd.Timestamp("2025-12-01"), pd.Timestamp("2026-01-01")
+        (pd.Timestamp("2025-12-01"), pd.Timestamp("2026-01-01")), "COL"
     )
 
     # Hour01 is the hour that ends at 01:00 in Bogota, 06:00 in UTC,

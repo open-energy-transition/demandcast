@@ -19,7 +19,7 @@ def test_download_and_extract_data(manual_downloads_folder, assert_demand):
         encoding="euc-kr",
     )
 
-    time_series = krogd.download_and_extract_data()
+    time_series = krogd.download_and_extract_data_for_request(None, "KOR")
 
     # The times mark the end of each hour.
     assert_demand(
@@ -37,4 +37,4 @@ def test_download_and_extract_data(manual_downloads_folder, assert_demand):
 def test_download_and_extract_data_without_files():
     """Test that the error says where to put the downloaded files."""
     with pytest.raises(FileNotFoundError, match="named starting with 'KRO'"):
-        krogd.download_and_extract_data()
+        krogd.download_and_extract_data_for_request(None, "KOR")

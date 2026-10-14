@@ -6,6 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from TEPCO.
 """
 
+import datetime
 import zipfile
 
 import pandas as pd
@@ -47,10 +48,11 @@ def _daily_file(day: str, values: list[int]) -> bytes:
     return "\r\n".join(lines).encode("cp932")
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the years until 2024, then months."""
-    requests = tepco.get_available_requests()
+    requests = tepco.get_available_requests(
+        "JPN_Kantō", datetime.date(2016, 4, 1), datetime.date(2025, 12, 28)
+    )
 
     assert requests[:2] == [(2016, None), (2017, None)]
     assert requests[8:10] == [(2024, None), (2025, 1)]
@@ -58,7 +60,6 @@ def test_get_available_requests():
     assert len(requests) == 21
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_download_and_extract_data_for_request_of_a_year(
     fake_downloads, assert_demand, tmp_path
 ):
@@ -73,7 +74,9 @@ def test_download_and_extract_data_for_request_of_a_year(
         file_path,
     )
 
-    time_series = tepco.download_and_extract_data_for_request(2024, None)
+    time_series = tepco.download_and_extract_data_for_request(
+        (2024, None), "JPN_Kantō"
+    )
 
     # The times mark the start of each hour in the file.
     assert_demand(
@@ -84,7 +87,6 @@ def test_download_and_extract_data_for_request_of_a_year(
     )
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_download_and_extract_data_for_request_of_a_month(
     fake_downloads, assert_demand, tmp_path
 ):
@@ -101,7 +103,9 @@ def test_download_and_extract_data_for_request_of_a_month(
         )
     fake_downloads.serve(MONTHLY_URL, file_path)
 
-    time_series = tepco.download_and_extract_data_for_request(2025, 12)
+    time_series = tepco.download_and_extract_data_for_request(
+        (2025, 12), "JPN_Kantō"
+    )
 
     # The website rejects the user agent of requests.
     assert fake_downloads.requests[0][2]["headers"] == {
@@ -120,7 +124,6 @@ def test_download_and_extract_data_for_request_of_a_month(
     )
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_download_and_extract_data_for_request_without_hourly_values(
     fake_downloads, tmp_path
 ):
@@ -133,4 +136,4 @@ def test_download_and_extract_data_for_request_without_hourly_values(
     fake_downloads.serve(MONTHLY_URL, file_path)
 
     with pytest.raises(ValueError, match="No hourly values"):
-        tepco.download_and_extract_data_for_request(2025, 12)
+        tepco.download_and_extract_data_for_request((2025, 12), "JPN_Kantō")

@@ -52,6 +52,25 @@ def test_fetch_text_with_urllib(fake_downloads):
     assert text.startswith("REGION,SETTLEMENTDATE,TOTALDEMAND")
 
 
+def test_fetch_excel_with_storage_options(fake_downloads, tmp_path):
+    """Test that the storage options of pandas are the headers."""
+    file_path = tmp_path / "data.xlsx"
+    pd.DataFrame({"TOTALDEMAND": [6000.5]}).to_excel(file_path, index=False)
+    fake_downloads.serve(URL, file_path)
+
+    table = utils.fetcher.fetch_data(
+        URL,
+        "excel",
+        excel_kwargs={"storage_options": {"User-Agent": "Mozilla/5.0"}},
+    )
+
+    assert isinstance(table, pd.DataFrame)
+    assert table["TOTALDEMAND"].tolist() == [6000.5]
+    assert fake_downloads.requests == [
+        ("GET", URL, {"headers": {"User-Agent": "Mozilla/5.0"}})
+    ]
+
+
 @pytest.mark.usefixtures("fake_downloads")
 def test_unexpected_download():
     """Test that a download of a URL without a file fails at once."""

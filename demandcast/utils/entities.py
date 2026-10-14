@@ -11,12 +11,15 @@ import datetime
 import functools
 import logging
 import os
+import zoneinfo
+from typing import Literal, Self
 
 import pandas as pd
 import pycountry
 import pytz
 import yaml
 from countryinfo import CountryInfo, CountryNotFoundError
+from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 from timezonefinder import TimezoneFinder
 
 import utils.config
@@ -38,6 +41,102 @@ extra_entities = {
 capital_time_zones = {
     "BRA": "America/Sao_Paulo",
 }
+
+
+class DataSourceEntity(BaseModel):
+    """
+    A country or subdivision in the yaml file of a data source.
+
+    A subdivision has a name, a code and a time zone, and a country none
+    of them. The data is available from the start date to the end date,
+    which can be "today".
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    country_name: str
+    country_code: str
+    subdivision_name: str | None = None
+    subdivision_code: str | None = None
+    time_zone: str | None = None
+    start_date: datetime.date
+    end_date: datetime.date | Literal["today"]
+
+    @property
+    def code(self) -> str:
+        """The code of the country, or of the subdivision."""
+        if self.subdivision_code is None:
+            return self.country_code
+        return f"{self.country_code}_{self.subdivision_code}"
+
+    @model_validator(mode="after")
+    def check_entity(self) -> Self:
+        """
+        Check the fields of the subdivision and the dates.
+
+        Returns
+        -------
+        Self
+            The entity.
+
+        Raises
+        ------
+        ValueError
+            If only some of the fields of a subdivision are given, if
+            the time zone does not exist, or if the start date is after
+            the end date.
+        """
+        subdivision_fields = [
+            self.subdivision_name,
+            self.subdivision_code,
+            self.time_zone,
+        ]
+        if None in subdivision_fields and subdivision_fields != [None] * 3:
+            raise ValueError(
+                f"{self.code}: a subdivision needs a name, a code and a "
+                "time zone, and a country none of them."
+            )
+        if self.time_zone is not None:
+            try:
+                zoneinfo.ZoneInfo(self.time_zone)
+            except (zoneinfo.ZoneInfoNotFoundError, ValueError) as error:
+                raise ValueError(
+                    f"{self.code}: unknown time zone {self.time_zone}."
+                ) from error
+        if self.end_date != "today" and self.start_date > self.end_date:
+            raise ValueError(
+                f"{self.code}: the start date is after the end date."
+            )
+        return self
+
+
+class _DataSourceFile(BaseModel):
+    """The content of the yaml file of a data source."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    entities: list[DataSourceEntity]
+
+    @model_validator(mode="after")
+    def check_codes(self) -> Self:
+        """
+        Check that each country or subdivision comes once.
+
+        Returns
+        -------
+        Self
+            The content of the file.
+
+        Raises
+        ------
+        ValueError
+            If a code comes more than once.
+        """
+        codes = [entity.code for entity in self.entities]
+        duplicates = sorted({code for code in codes if codes.count(code) > 1})
+        if duplicates:
+            raise ValueError(f"The codes {duplicates} come more than once.")
+        return self
 
 
 def get_iso_alpha_2_code(iso_alpha_3_code: str) -> str:
@@ -240,7 +339,7 @@ def _read_entities_info(
     data_source : str, optional
         The name of the data source. If provided, the function will look
         for a yaml file with the same name in the retrieval scripts
-        folder.
+        folder, and check its content with `DataSourceEntity`.
 
     Returns
     -------
@@ -251,9 +350,9 @@ def _read_entities_info(
     Raises
     ------
     ValueError
-        If the data source is provided but not valid, or if both
-        file_path and data_source are provided, or if neither is
-        provided.
+        If the data source is provided but not valid or its yaml file
+        is not valid, or if both file_path and data_source are
+        provided, or if neither is provided.
     """
     if file_path == "" and data_source != "":
         # Check if the data source is valid.
@@ -283,6 +382,16 @@ def _read_entities_info(
     # Read the content from the file.
     with open(file_path, encoding="utf-8") as file:
         content = yaml.safe_load(file)
+
+    # Check the content of the yaml file of a data source.
+    if data_source != "":
+        try:
+            _DataSourceFile.model_validate(content)
+        except ValidationError as error:
+            raise ValueError(
+                f"The yaml file of the data source {data_source} is not "
+                f"valid: {error}"
+            ) from error
 
     # Return the information of the countries and subdivisions.
     return content["entities"]

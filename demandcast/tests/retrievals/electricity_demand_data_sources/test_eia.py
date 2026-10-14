@@ -6,15 +6,18 @@ Description:
     Tests for the retrieval of electricity demand data from EIA.
 """
 
+import datetime
+
 import pandas as pd
 import pytest
 from retrievals.electricity_demand_data_sources import eia
 
 
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the half years of the data."""
-    requests = eia.get_available_requests("USA_CAL")
+    requests = eia.get_available_requests(
+        "USA_CAL", datetime.date(2020, 1, 1), datetime.date(2025, 12, 28)
+    )
 
     assert requests[0] == (
         pd.Timestamp("2020-01-01"),
@@ -42,7 +45,7 @@ def test_download_and_extract_data_for_request(
     )
 
     time_series = eia.download_and_extract_data_for_request(
-        pd.Timestamp("2025-07-01"), pd.Timestamp("2025-12-28"), "USA_CAL"
+        (pd.Timestamp("2025-07-01"), pd.Timestamp("2025-12-28")), "USA_CAL"
     )
 
     # The API gives the values as text.
@@ -58,9 +61,12 @@ def test_download_and_extract_data_for_request(
     )
 
 
-def test_get_url_without_api_key(monkeypatch):
-    """Test that the error says how to set the API key."""
+@pytest.mark.parametrize("api_key", [None, ""])
+def test_get_url_without_api_key(monkeypatch, api_key):
+    """Test that the error says how to set a missing or empty key."""
     monkeypatch.delenv("EIA_API_KEY", raising=False)
+    if api_key is not None:
+        monkeypatch.setenv("EIA_API_KEY", api_key)
     # Ignore a local .env file with a real key.
     monkeypatch.setattr(eia, "load_dotenv", lambda **_: None)
 

@@ -6,6 +6,8 @@ Description:
     Tests for the retrieval of electricity demand data from BC Hydro.
 """
 
+import datetime
+
 import pandas as pd
 import pytest
 from retrievals.electricity_demand_data_sources import bchydro
@@ -17,21 +19,15 @@ URL_FOLDER = (
 )
 
 
-@pytest.fixture
-def now_in_2027(monkeypatch):
-    """Freeze the current time of pandas on 2027-06-01."""
-    now = pd.Timestamp("2027-06-01")
-    for function_name in ["now", "today"]:
-        monkeypatch.setattr(pd.Timestamp, function_name, lambda *_, **__: now)
-
-
-@pytest.mark.usefixtures("frozen_now")
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
-    assert bchydro.get_available_requests() == list(range(2001, 2026))
+    requests = bchydro.get_available_requests(
+        "CAN_BC", datetime.date(2001, 4, 1), datetime.date(2025, 12, 28)
+    )
+
+    assert requests == list(range(2001, 2026))
 
 
-@pytest.mark.usefixtures("now_in_2027")
 @pytest.mark.parametrize(
     ("year", "file_name"),
     [
@@ -48,7 +44,6 @@ def test_get_url(year, file_name):
     assert bchydro.get_url(year) == URL_FOLDER + file_name
 
 
-@pytest.mark.usefixtures("now_in_2027")
 def test_download_and_extract_data_for_request(
     fake_downloads, assert_demand, tmp_path
 ):
@@ -74,7 +69,7 @@ def test_download_and_extract_data_for_request(
         URL_FOLDER + "BalancingAuthorityLoad%202026.xls", file_path
     )
 
-    time_series = bchydro.download_and_extract_data_for_request(2026)
+    time_series = bchydro.download_and_extract_data_for_request(2026, "CAN_BC")
 
     # The hour ending at 01:00 in Vancouver ends at 09:00 in UTC.
     assert_demand(

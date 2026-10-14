@@ -21,7 +21,7 @@ def test_download_and_extract_data(manual_downloads_folder, assert_demand):
         encoding="utf-8",
     )
 
-    time_series = eskom.download_and_extract_data()
+    time_series = eskom.download_and_extract_data_for_request(None, "ZAF")
 
     # The times mark the end of each hour.
     assert_demand(
@@ -35,8 +35,29 @@ def test_download_and_extract_data(manual_downloads_folder, assert_demand):
     )
 
 
+def test_download_and_extract_data_with_text(
+    manual_downloads_folder, assert_demand, caplog
+):
+    """Test that a value that is not a number is left out."""
+    (manual_downloads_folder / "ESKOM_2025.csv").write_text(
+        "Date Time Hour Beginning,Residual Demand,RSA Contracted Demand\n"
+        "2025-07-11 12:00:00 PM,20000,25000.5\n"
+        "2025-07-11 01:00:00 PM,20000,ast\n",
+        encoding="utf-8",
+    )
+
+    time_series = eskom.download_and_extract_data_for_request(None, "ZAF")
+
+    assert_demand(
+        time_series,
+        "Africa/Johannesburg",
+        {"2025-07-11 11:00": 25000.5, "2025-07-11 12:00": float("nan")},
+    )
+    assert "such as 'ast'" in caplog.text
+
+
 @pytest.mark.usefixtures("manual_downloads_folder")
 def test_download_and_extract_data_without_files():
     """Test that the error says where to put the downloaded files."""
     with pytest.raises(FileNotFoundError, match="named starting with 'ESK'"):
-        eskom.download_and_extract_data()
+        eskom.download_and_extract_data_for_request(None, "ZAF")

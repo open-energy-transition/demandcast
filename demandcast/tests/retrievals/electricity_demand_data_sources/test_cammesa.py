@@ -6,15 +6,16 @@ Description:
     Tests for the retrieval of electricity demand data from CAMMESA.
 """
 
-import pytest
-from retrievals.electricity_demand_data_sources import cammesa
+import datetime
 
-pytestmark = pytest.mark.usefixtures("frozen_now")
+from retrievals.electricity_demand_data_sources import cammesa
 
 
 def test_get_available_requests():
     """Test that the requests are the days of the last nine months."""
-    requests = cammesa.get_available_requests()
+    requests = cammesa.get_available_requests(
+        "ARG", datetime.date(2025, 1, 1), datetime.date(2025, 12, 28)
+    )
 
     assert requests[0] == "2025-04-01"
     assert requests[-1] == "2025-12-28"
@@ -30,7 +31,9 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
         "cammesa.json",
     )
 
-    time_series = cammesa.download_and_extract_data_for_request("2025-12-01")
+    time_series = cammesa.download_and_extract_data_for_request(
+        "2025-12-01", "ARG"
+    )
 
     assert_demand(
         time_series,
