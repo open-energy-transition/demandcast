@@ -27,6 +27,7 @@ import time
 import pandas as pd
 import utils.config
 import utils.entities
+import utils.fetcher
 import utils.time_series
 
 # The data sources whose files are downloaded manually, and so cannot
@@ -67,29 +68,6 @@ class Result:
     failures_in_a_row: int = 0
 
 
-def _hide_api_keys(text: str) -> str:
-    """
-    Hide the API keys in a text.
-
-    The error of a download can include its URL, and the report of the
-    check is public.
-
-    Parameters
-    ----------
-    text : str
-        The text.
-
-    Returns
-    -------
-    str
-        The text without the values of the API keys.
-    """
-    for name, value in os.environ.items():
-        if name.endswith("_API_KEY") and value:
-            text = text.replace(value, "***")
-    return text
-
-
 def _describe_request(request: object) -> str:
     """
     Describe a request of a data source in a few words.
@@ -121,7 +99,8 @@ def _download_sample(data_source: str, code: str, result: Result) -> pd.Series:
 
     The requests of a data source are in chronological order, so the
     last one is the latest. If it has no values, the one before is
-    downloaded.
+    downloaded, and also if its data is not found, because the file of
+    the latest period can be not published yet.
 
     Parameters
     ----------
@@ -141,6 +120,9 @@ def _download_sample(data_source: str, code: str, result: Result) -> pd.Series:
     ------
     ValueError
         If the data source has no requests.
+    utils.fetcher.DataNotFoundError
+        If the data of an earlier request, or of the only one, is not
+        found.
     """
     module = importlib.import_module(
         f"retrievals.electricity_demand_data_sources.{data_source}"
@@ -155,11 +137,20 @@ def _download_sample(data_source: str, code: str, result: Result) -> pd.Series:
     if not requests:
         raise ValueError("The data source has no requests.")
 
-    for request in reversed(requests[-REQUESTS_TO_TRY:]):
+    for index, request in enumerate(reversed(requests[-REQUESTS_TO_TRY:])):
         result.request = _describe_request(request)
-        time_series = module.download_and_extract_data_for_request(
-            request, code
-        )
+        try:
+            time_series = module.download_and_extract_data_for_request(
+                request, code
+            )
+        except utils.fetcher.DataNotFoundError:
+            if index > 0 or len(requests) == 1:
+                raise
+            logging.warning(
+                f"The data of the latest request ({result.request}) is "
+                "not found, maybe not published yet."
+            )
+            continue
         if not time_series.empty:
             break
 
@@ -274,7 +265,7 @@ def check_data_source(data_source: str, maximum_age_days: int) -> Result:
         )
     except Exception as error:  # noqa: BLE001
         # Any error of a data source is a result of the check.
-        message = _hide_api_keys(f"{type(error).__name__}: {error}")
+        message = utils.fetcher.redact(f"{type(error).__name__}: {error}")
         result.messages.append(" ".join(message.split())[:300])
 
     if not result.messages:

@@ -18,6 +18,7 @@ from unittest.mock import Mock, call, create_autospec
 import pandas as pd
 import pytest
 import retrievals.electricity_demand
+import utils.fetcher
 import yaml
 
 # Save the files in the folder of the frozen date.
@@ -278,6 +279,48 @@ def test_cleaning_of_the_requests(tmp_folders, add_data_source):
         "2023-12-31 23:00": 200.0,
         "2024-01-01 00:00": 300.0,
     }
+
+
+def test_unpublished_latest_request(tmp_folders, add_data_source):
+    """Test that the data of the latest request can be missing."""
+
+    def download(request, _code):
+        if request == 2024:
+            raise utils.fetcher.DataNotFoundError("HTTP error 404")
+        return _demand("2023-01-01 01:00", [100.0])
+
+    add_data_source(
+        "yearly",
+        ["FRA"],
+        get_available_requests=Mock(return_value=[2023, 2024]),
+        download_and_extract_data_for_request=download,
+    )
+
+    retrievals.electricity_demand.run_data_retrieval("yearly", None, None)
+
+    assert _read_saved_data(tmp_folders, "FRA", "yearly") == {
+        "2023-01-01 00:00": 100.0
+    }
+
+
+@pytest.mark.parametrize("requests", [[None], [2023, 2024]])
+def test_missing_data_of_other_requests(add_data_source, requests):
+    """Test that the data of another or the only request must exist."""
+
+    def download(request, _code):
+        if request in {None, 2023}:
+            raise utils.fetcher.DataNotFoundError("HTTP error 404")
+        return _demand("2024-01-01 01:00", [100.0])
+
+    add_data_source(
+        "missing",
+        ["FRA"],
+        get_available_requests=Mock(return_value=requests),
+        download_and_extract_data_for_request=download,
+    )
+
+    with pytest.raises(utils.fetcher.DataNotFoundError):
+        retrievals.electricity_demand.run_data_retrieval("missing", None, None)
 
 
 def test_all_the_entities_of_a_data_source(tmp_folders, add_data_source):

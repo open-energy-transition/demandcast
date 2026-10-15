@@ -18,6 +18,7 @@ import os
 import pandas as pd
 import utils.config
 import utils.entities
+import utils.fetcher
 import utils.time_series
 from tqdm import tqdm
 
@@ -27,7 +28,9 @@ def _retrieve_data(data_source: str, code: str) -> pd.Series:
     Retrieve the electricity demand data.
 
     This function retrieves the electricity demand time series from the
-    specified data source.
+    specified data source. If the data of the latest of several requests
+    is not found, it is skipped, because the file of the latest period
+    can be not published yet.
 
     Parameters
     ----------
@@ -45,6 +48,9 @@ def _retrieve_data(data_source: str, code: str) -> pd.Series:
     ------
     TypeError
         If the values of the time series are not numbers.
+    utils.fetcher.DataNotFoundError
+        If the data of an earlier request, or of the only one, is not
+        found.
     """
     # Import the retrieval module for the data source.
     retrieval_module = importlib.import_module(
@@ -58,12 +64,25 @@ def _retrieve_data(data_source: str, code: str) -> pd.Series:
             data_source
         )[code]
     )
-    electricity_demand_time_series_list = [
-        retrieval_module.download_and_extract_data_for_request(request, code)
-        for request in retrieval_module.get_available_requests(
-            code, start_date, end_date
-        )
-    ]
+    requests = retrieval_module.get_available_requests(
+        code, start_date, end_date
+    )
+    electricity_demand_time_series_list = []
+    for index, request in enumerate(requests):
+        try:
+            electricity_demand_time_series_list.append(
+                retrieval_module.download_and_extract_data_for_request(
+                    request, code
+                )
+            )
+        except utils.fetcher.DataNotFoundError:
+            # The file of the latest period can be not published yet.
+            if index < len(requests) - 1 or len(requests) == 1:
+                raise
+            logging.warning(
+                f"The data of the latest request ({request}) of "
+                f"{data_source} is not found, maybe not published yet."
+            )
 
     # Concatenate the electricity demand time series of the requests
     # with data.
