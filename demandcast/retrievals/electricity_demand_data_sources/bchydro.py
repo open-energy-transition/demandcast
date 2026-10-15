@@ -6,7 +6,14 @@ Description:
     This module provides functions to retrieve the electricity demand
     data from the website of the British Columbia Hydro and Power
     Authority (BC Hydro) in Canada. The data is retrieved from the
-    available Excel files on the BC Hydro website.
+    yearly Excel files on the BC Hydro website, the file of the current
+    year running until the end of a recent month.
+
+    The files give the load of the balancing authority in MWh for each
+    hour, the average load in MW, by date and hour ending in local time.
+    The rows follow each other in time: the day when daylight saving
+    time starts has 23 hours, or 24 with a value of 0 for the hour that
+    does not exist, and the day when it ends has 25 hours.
 
     Source: https://www.bchydro.com/energy-in-bc/operations/transmission/transmission-system/balancing-authority-load-data/historical-transmission-data.html
 """
@@ -148,7 +155,7 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     Download and extract electricity demand data.
 
     This function downloads and extracts the electricity demand data
-    from the BC  Hydro website.
+    from the BC Hydro website.
 
     Parameters
     ----------
@@ -172,7 +179,7 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         year
     )
 
-    # Fetch HTML content from the URL.
+    # Fetch the Excel file of the year.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "excel",
@@ -198,8 +205,9 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         + ":00"
     ) + pd.Timedelta("1h")
 
-    # Remove NaN and zero values where daylight saving time switch
-    # occurs. The other data points are typically nice and clean.
+    # Remove the value of 0 of the hour that does not exist when
+    # daylight saving time starts. Another missing value would leave
+    # fewer values than hours, which is an error below.
     available_data = dataset[load_column[0]][
         (
             np.logical_and(
