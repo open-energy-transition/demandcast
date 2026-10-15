@@ -8,6 +8,7 @@ Description:
 
 import datetime
 
+import pytest
 from retrievals.electricity_demand_data_sources import ieso
 
 
@@ -79,3 +80,10 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
         },
         dtype="int64",
     )
+
+
+@pytest.mark.parametrize("year", [None, 2001, 2100])
+def test_url_of_a_year_without_data(year):
+    """Test that a year without a yearly file is an error."""
+    with pytest.raises(ValueError, match="yearly files start in 2002"):
+        ieso.get_url(year=year, before_apr_2002=False)
