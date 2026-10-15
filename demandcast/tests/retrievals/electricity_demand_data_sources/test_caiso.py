@@ -9,6 +9,7 @@ Description:
 import datetime
 
 import pandas as pd
+import pytest
 from retrievals.electricity_demand_data_sources import caiso
 
 
@@ -70,3 +71,11 @@ def test_download_and_extract_data_for_request(
             "2025-12-01 11:00": 23500.25,
         },
     )
+
+
+def test_url_of_a_period_without_a_file():
+    """Test that a period without a file of its length is an error."""
+    with pytest.raises(ValueError, match="2024 is in monthly files"):
+        caiso.get_url(2024, None)
+    with pytest.raises(ValueError, match="2023 is in a yearly file"):
+        caiso.get_url(2023, 5)

@@ -114,6 +114,11 @@ def get_url(year: int, month: int | None) -> str:
     -------
     url : str
         The URL of the electricity demand data.
+
+    Raises
+    ------
+    ValueError
+        If the data is yearly from 2024, or monthly before 2024.
     """
     # Define the base URL of the electricity demand data.
     base_url = "https://www.caiso.com/documents/"
@@ -125,6 +130,8 @@ def get_url(year: int, month: int | None) -> str:
             url = f"{base_url}historicalemshourlyload-{year}.xlsx"
         elif year == 2023:
             url = f"{base_url}historicalemshourlyloadfor{year}.xlsx"
+        else:
+            raise ValueError(f"The CAISO data of {year} is in monthly files.")
     else:
         # Monthly data from 2024 onward.
         month_name = calendar.month_name[month]
@@ -134,6 +141,8 @@ def get_url(year: int, month: int | None) -> str:
             )
         elif year >= 2024:  # April 2024 onwards
             url = f"{base_url}historical-ems-hourly-load-for-{month_name}-{year}.xlsx"
+        else:
+            raise ValueError(f"The CAISO data of {year} is in a yearly file.")
 
     return url
 

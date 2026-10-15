@@ -255,14 +255,12 @@ def check_data_source(data_source: str, maximum_age_days: int) -> Result:
 
     try:
         # Check the first country or subdivision of the data source.
-        entity = utils.entities._read_entities_info(data_source=data_source)[0]
-        code = utils.entities.read_codes_in(data_source=data_source)[0]
+        entity = utils.entities.read_entities(data_source)[0]
+        code = entity.code
         result.code = code
 
         time_series = _download_sample(data_source, code, result)
-        _check_sample(
-            time_series, entity["end_date"], maximum_age_days, result
-        )
+        _check_sample(time_series, entity.end_date, maximum_age_days, result)
     except Exception as error:  # noqa: BLE001
         # Any error of a data source is a result of the check.
         message = utils.fetcher.redact(f"{type(error).__name__}: {error}")

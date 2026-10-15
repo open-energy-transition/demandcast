@@ -82,22 +82,28 @@ def get_url(year: int | None, before_apr_2002: bool) -> str:
 
     Returns
     -------
-    url : str
+    str
         The URL of the electricity demand data.
+
+    Raises
+    ------
+    ValueError
+        If the year is not between 2002 and the current year.
     """
     # Define the URL of the electricity demand data.
     if before_apr_2002:
-        url = (
+        return (
             "https://www.ieso.ca/-/media/Files/IESO/Power-Data/data-directory/"
             "HourlyDemands_1994-2002.csv"
         )
-    elif year is not None and year >= 2002 and year <= pd.Timestamp.now().year:
-        url = (
-            "https://reports-public.ieso.ca/public/Demand/"
-            f"PUB_Demand_{year}.csv"
+    if year is None or not 2002 <= year <= pd.Timestamp.now().year:
+        raise ValueError(
+            f"The IESO data of {year} is not available: the yearly files "
+            "start in 2002."
         )
-
-    return url
+    return (
+        f"https://reports-public.ieso.ca/public/Demand/PUB_Demand_{year}.csv"
+    )
 
 
 def download_and_extract_data_for_request(
