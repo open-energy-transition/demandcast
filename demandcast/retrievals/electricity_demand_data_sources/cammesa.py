@@ -12,7 +12,10 @@ Description:
     5 minutes, at times with their offset from UTC, from 00:00 to 00:00
     of the next day, for about the last 8 months only. The same request
     gives the demand of the regions, provinces and distributors of the
-    regions file below, by their identifier.
+    regions file below, by their identifier. The module retrieves
+    Argentina and 21 of its provinces: Buenos Aires and its autonomous
+    city are split differently, into Greater Buenos Aires and the rest
+    of the province, and Tierra del Fuego is not connected.
 
     Source: https://api.cammesa.com/demanda-svc/swagger-ui.html#/demanda-ws
     Source: https://api.cammesa.com/demanda-svc/demanda/RegionesDemanda
@@ -24,6 +27,35 @@ import logging
 
 import pandas as pd
 import utils.fetcher
+
+# The identifiers of the regions of CAMMESA, by code: the national
+# system (SADI) for Argentina, and the provinces. The other regions of
+# the regions file of the sources above, such as 422 for Centro or 426
+# for Greater Buenos Aires, are not countries or provinces.
+REGION_IDS = {
+    "ARG": 1002,
+    "ARG_A": 1933,  # Salta
+    "ARG_D": 1944,  # San Luis
+    "ARG_E": 2541,  # Entre Ríos
+    "ARG_F": 1910,  # La Rioja
+    "ARG_G": 1905,  # Santiago del Estero
+    "ARG_H": 1892,  # Chaco
+    "ARG_J": 1922,  # San Juan
+    "ARG_K": 1938,  # Catamarca
+    "ARG_L": 427,  # La Pampa
+    "ARG_M": 1946,  # Mendoza
+    "ARG_N": 2426,  # Misiones
+    "ARG_P": 1886,  # Formosa
+    "ARG_Q": 2528,  # Neuquén
+    "ARG_R": 2525,  # Río Negro
+    "ARG_S": 2540,  # Santa Fe
+    "ARG_T": 1936,  # Tucumán
+    "ARG_U": 2543,  # Chubut
+    "ARG_W": 1893,  # Corrientes
+    "ARG_X": 1945,  # Córdoba
+    "ARG_Y": 1937,  # Jujuy
+    "ARG_Z": 2542,  # Santa Cruz
+}
 
 
 def get_available_requests(
@@ -38,7 +70,7 @@ def get_available_requests(
     Parameters
     ----------
     code : str
-        The code of Argentina.
+        The code of Argentina or of the province.
     start_date : datetime.date
         The first day of the data.
     end_date : datetime.date
@@ -67,7 +99,7 @@ def get_available_requests(
     )
 
 
-def get_url(date: str) -> str:
+def get_url(date: str, code: str) -> str:
     """
     Get the URL of the electricity demand data on the CAMMESA website.
 
@@ -76,19 +108,18 @@ def get_url(date: str) -> str:
     date : str
         The date of the electricity demand data in the format
         YYYY-MM-DD.
+    code : str
+        The code of Argentina or of the province.
 
     Returns
     -------
     str
         The URL of the electricity demand data.
     """
-    # Return the URL of the electricity demand data of the region 1002,
-    # Argentina. The other regions are listed in the regions file of the
-    # sources above, such as 422 for Centro or 111 for Patagonia.
     return (
         "https://api.cammesa.com/demanda-svc/demanda/"
         "ObtieneDemandaYTemperaturaRegionByFecha?"
-        f"id_region=1002&fecha={date}"
+        f"id_region={REGION_IDS[code]}&fecha={date}"
     )
 
 
@@ -105,7 +136,7 @@ def download_and_extract_data_for_request(date: str, code: str) -> pd.Series:
         The date of the electricity demand data in the format
         YYYY-MM-DD.
     code : str
-        The code of Argentina.
+        The code of Argentina or of the province.
 
     Returns
     -------
@@ -116,7 +147,7 @@ def download_and_extract_data_for_request(date: str, code: str) -> pd.Series:
     logging.info(f"Retrieving electricity demand data for {date}.")
 
     # Get the URL of the electricity demand data.
-    url = get_url(date)
+    url = get_url(date, code)
 
     # Fetch the data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
