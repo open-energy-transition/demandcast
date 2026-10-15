@@ -8,6 +8,12 @@ Description:
     Mayorista Eléctrico S.A. (CAMMESA) in Argentina. The data is
     retrieved in one-day intervals.
 
+    The API gives the demand of the national system (SADI) in MW every
+    5 minutes, at times with their offset from UTC, from 00:00 to 00:00
+    of the next day, for about the last 8 months only. The same request
+    gives the demand of the regions, provinces and distributors of the
+    regions file below, by their identifier.
+
     Source: https://api.cammesa.com/demanda-svc/swagger-ui.html#/demanda-ws
     Source: https://api.cammesa.com/demanda-svc/demanda/RegionesDemanda
     Source: https://microfe.cammesa.com/demandaregionchart/assets/data/regionesCammesa.geojson.json
@@ -43,10 +49,14 @@ def get_available_requests(
     list[str]
         The list of available requests.
     """
-    # CAMMESA only provides data for the last 9 months.
-    first_day = pd.Timestamp(
-        f"{end_date.year}-{end_date.month}-01"
-    ) - pd.DateOffset(months=8)
+    # CAMMESA only provides the data of about the last 8 months, so the
+    # requests start at the start date or 8 months before the month of
+    # the end date, whichever is later.
+    first_day = max(
+        pd.Timestamp(start_date),
+        pd.Timestamp(end_date.year, end_date.month, 1)
+        - pd.DateOffset(months=8),
+    )
 
     # Return the available requests, which are the dates in the format
     # YYYY-MM-DD.
