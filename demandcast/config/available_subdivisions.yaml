@@ -5,6 +5,10 @@ entities:
     subdivision_name: Salta
   - country_code: ARG
     country_name: Argentina
+    subdivision_code: BA
+    subdivision_name: Buenos Aires and Ciudad Autónoma de Buenos Aires
+  - country_code: ARG
+    country_name: Argentina
     subdivision_code: D
     subdivision_name: San Luis
   - country_code: ARG

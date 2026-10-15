@@ -7,6 +7,8 @@ extend-exclude = ["demandcast/archive/", "*.ipynb", "*.csv"]
 extend-ignore-re = [
   # ISO 3166 country codes, such as BA or THA.
   "\\b[A-Z]{2,3}\\b",
+  # Codes of subdivisions, such as ARG_BA.
+  "\\b[A-Z]{3}_[A-Z0-9]{1,4}\\b",
 ]
 
 [default.extend-words]

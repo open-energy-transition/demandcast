@@ -81,3 +81,31 @@ def test_region_identifiers_of_the_entities():
     codes = utils.entities.read_codes_in(data_source="cammesa")
 
     assert sorted(codes) == sorted(cammesa.REGION_IDS)
+
+
+def test_download_and_extract_data_of_buenos_aires(
+    fake_downloads, assert_demand
+):
+    """Test that Buenos Aires adds up its two regions of CAMMESA."""
+    for region_id, file_name in (
+        (426, "cammesa_gba.json"),
+        (425, "cammesa_provincia_de_buenos_aires.json"),
+    ):
+        fake_downloads.serve(
+            "https://api.cammesa.com/demanda-svc/demanda/"
+            "ObtieneDemandaYTemperaturaRegionByFecha?"
+            f"id_region={region_id}&fecha=2026-09-15",
+            file_name,
+        )
+
+    time_series = cammesa.download_and_extract_data_for_request(
+        "2026-09-15", "ARG_BA"
+    )
+
+    # Greater Buenos Aires and the rest of the province are added up,
+    # and the time without a value of the province has no sum.
+    assert_demand(
+        time_series,
+        "UTC-03:00",
+        {"2026-09-15 03:00": 8000.0, "2026-09-15 03:05": 7940.75},
+    )
