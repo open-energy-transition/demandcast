@@ -5,8 +5,7 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the Centro Nacional de Control de Energía
-    (CENACE) in Mexico. The data is retrieved for the period from 2016
-    to today. The data is retrieved in one-year intervals.
+    (CENACE) in Mexico. The data is retrieved in one-year intervals.
 
     The national system (SIN) runs on one clock for all its areas, the
     time of central Mexico: CENACE's notices give one date for its

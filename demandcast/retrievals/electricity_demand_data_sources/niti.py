@@ -3,7 +3,7 @@ License: AGPL-3.0.
 
 Description:
 
-    This script provides functions to retrieve the electricity demand
+    This module provides functions to retrieve the electricity demand
     data from the website of National Institution for Transforming India
     (NITI) Aayog in India. The data is retrieved by submitting a request
     to the NITI Aayog website. The user is then able to download the

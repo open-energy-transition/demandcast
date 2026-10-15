@@ -65,8 +65,10 @@ The script will store electricity demand data in `data/electricity_demand/YYYY-M
 Each retrieval module in the `demandcast/retrievals/electricity_demand_data_sources/` folder is designed to fetch electricity demand data from a specific data source. The main functions in each module typically include:
 
 - **Data request construction (`get_available_requests`)**: Builds the requests of a country or subdivision from its code and the dates of its data in the YAML file, which the retrieval code passes, in chronological order. A source that downloads all its data at once returns a single request, `None`.
-- **URL construction (`get_url`)**: Generates the appropriate web request URL.
-- **Data download and processing (`download_and_extract_data_for_request`)**: Fetches the data of a request, which the retrieval code passes with the code, using `utils.fetcher` functions, and transforms it into a `pandas.Series` of the demand in MW, with time-zone-aware times that mark the end of each interval.
+- **URL construction (`get_url`)**: An optional helper that builds the URL of a request, with the parameters that fit the source.
+- **Data download and processing (`download_and_extract_data_for_request`)**: Fetches the data of a request, which the retrieval code passes with the code, using the helpers of `utils.fetcher` such as `fetch_dataframe` and `read_manual_files`, and transforms it into a `pandas.Series` of the demand in MW, with time-zone-aware times that mark the end of each interval. `utils.time_series.localize_interval_starts` moves the starts of intervals in local time to their ends.
+
+The periods of the requests come from `utils.time_series.split_period`, and API keys from `utils.config.read_api_key`.
 
 #### Names, codes, time zones, and data time ranges for countries and subdivisions
 

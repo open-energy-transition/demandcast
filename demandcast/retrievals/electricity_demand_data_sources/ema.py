@@ -5,8 +5,7 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the Energy Market Authority (EMA) in
-    Singapore. The data is downloaded from Jan 06, 2014 up to the
-    current date. The data is retrieved in one-week intervals.
+    Singapore. The data is retrieved in one-week intervals.
 
     Note:
     Although data is retrieved in 7-day intervals, retrieving data

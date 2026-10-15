@@ -5,10 +5,9 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the Tokyo Electric Power Company (TEPCO) in
-    Japan. The data is retrieved for the years from 2016 to the current
-    year: until 2024 from one CSV file per year, and from 2025 from one
-    ZIP file per month, with one CSV file per day, since the yearly file
-    of 2025 stops in July.
+    Japan. The data is retrieved from one CSV file per year until 2024,
+    and from 2025 from one ZIP file per month, with one CSV file per
+    day, since the yearly file of 2025 stops in July.
 
     Source: https://www.tepco.co.jp/en/forecast/html/download-e.html
 """

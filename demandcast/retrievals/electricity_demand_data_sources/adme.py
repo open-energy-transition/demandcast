@@ -5,9 +5,8 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of Administrador del Mercado Eléctrico (ADME)
-    in  Uruguay. The data is retrieved for the years from 2019 to the
-    current date. The data is retrieved from the available CSV files
-    on the ADME website.
+    in Uruguay. The data is retrieved from the available CSV files on
+    the ADME website.
 
     Source: https://adme.com.uy/controlpanel.php
 """

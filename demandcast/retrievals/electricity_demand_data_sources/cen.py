@@ -5,8 +5,7 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the Coordinador Eléctrico Nacional (CEN)
-    in Chile. The data is retrieved for the years from 1999 to the
-    current year. The data is retrieved in one-year intervals.
+    in Chile. The data is retrieved in one-year intervals.
 
     Source: https://www.coordinador.cl/operacion/graficos/operacion-real/demanda-real/
 """

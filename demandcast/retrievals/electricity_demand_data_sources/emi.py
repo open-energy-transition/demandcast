@@ -5,8 +5,7 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the Electricity Market Information (EMI)
-    in New Zealand. The data is downloaded from Jan 1, 2005 up to the
-    current date. The data is retrieved all at once.
+    in New Zealand. The data is retrieved in one-year intervals.
 
     Source: https://www.emi.ea.govt.nz/Wholesale/Reports/W_GD_C
 """

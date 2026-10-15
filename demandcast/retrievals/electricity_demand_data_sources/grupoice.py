@@ -5,7 +5,6 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the Grupo ICE (GRUPOICE) in Costa Rica.
-    The data is downloaded from Mar 01, 2012 up to the current date.
     The data is retrieved in one-year intervals.
 
     Source: https://apps.grupoice.com/CenceWeb

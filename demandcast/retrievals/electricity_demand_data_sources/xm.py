@@ -7,8 +7,7 @@ Description:
     data from the website of the XM Adminstradores del mercado electrico
     in Colombia. The data is actually made available through the website
     of "Energia de Colombia" (https://www.energiadecolombia.com). The
-    data is retrieved from 2000-01-01 to today. The data is retrieved in
-    one-month intervals.
+    data is retrieved in one-month intervals.
 
     Source: https://xm.com.co
     Source: https://www.energiadecolombia.com/consulta

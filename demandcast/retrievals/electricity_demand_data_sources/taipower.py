@@ -5,8 +5,7 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data for Taiwan from a publicly available repository with data
-    provided by Taipower. The data is available from Jan 1, 2017 to
-    July 1, 2022. The data is retrieved all at once.
+    provided by Taipower. The data is retrieved all at once.
 
     Note:
     There are missing data from 2018-02-03 to 2018-02-07 and

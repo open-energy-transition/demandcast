@@ -111,8 +111,8 @@ def download_and_extract_data_for_request(
         ),
     )
 
-    # Add one hour to the index because the electricity demand seems to
-    # be provided at the beginning of the hour.
+    # The times are the starts of the hours, as the name of their column
+    # says. Move them to the ends of the hours, in local time.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

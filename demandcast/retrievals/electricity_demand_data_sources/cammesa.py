@@ -6,8 +6,7 @@ Description:
     This module provides functions to retrieve the electricity demand
     data from the website of the Compañía Administradora del Mercado
     Mayorista Eléctrico S.A. (CAMMESA) in Argentina. The data is
-    retrieved from 2024-12-01 to current date. The data is retrieved in
-    one-day intervals.
+    retrieved in one-day intervals.
 
     Source: https://api.cammesa.com/demanda-svc/swagger-ui.html#/demanda-ws
     Source: https://api.cammesa.com/demanda-svc/demanda/RegionesDemanda
@@ -19,18 +18,6 @@ import logging
 
 import pandas as pd
 import utils.fetcher
-
-province_id = {
-    "AR": 1002,  # Argentina
-    "BAS": [425, 426],  # Provincia de Buenos Aires
-    "CEN": 422,  # Centro
-    "COM": 420,  # Comahue
-    "CUY": 429,  # Cuyo
-    "LIT": 417,  # Litoral
-    "NEA": 418,  # Nordeste Argentino
-    "NOA": 419,  # Noroeste Argentino
-    "PAT": 111,  # Patagonia
-}
 
 
 def get_available_requests(
@@ -85,7 +72,9 @@ def get_url(date: str) -> str:
     str
         The URL of the electricity demand data.
     """
-    # Return the URL of the electricity demand data.
+    # Return the URL of the electricity demand data of the region 1002,
+    # Argentina. The other regions are listed in the regions file of the
+    # sources above, such as 422 for Centro or 111 for Patagonia.
     return (
         "https://api.cammesa.com/demanda-svc/demanda/"
         "ObtieneDemandaYTemperaturaRegionByFecha?"

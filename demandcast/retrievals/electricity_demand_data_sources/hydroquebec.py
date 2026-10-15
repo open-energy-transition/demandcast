@@ -5,8 +5,7 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of Hydro-Québec in Canada. The data is
-    retrieved for the years from 2019 to 2024. The data is retrieved all
-    at once. Each time marks the end of its hour.
+    retrieved all at once. Each time marks the end of its hour.
 
     Source: https://donnees.hydroquebec.com/explore/dataset/historique-demande-electricite-quebec/information/
 """

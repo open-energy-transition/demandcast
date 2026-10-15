@@ -29,6 +29,19 @@ def test_download_and_extract_data(manual_downloads_folder, assert_demand):
     )
 
 
+def test_download_and_extract_data_with_text(manual_downloads_folder, caplog):
+    """Test that a value that is not a number is left out."""
+    (manual_downloads_folder / "NTDC_2024.csv").write_text(
+        'DATE,HOUR,SYSLOAD\n01/01/2024,1,"15,000"\n01/01/2024,2,meter\n',
+        encoding="utf-8",
+    )
+
+    time_series = ntdc.download_and_extract_data_for_request(None, "PAK")
+
+    assert "such as 'meter'" in caplog.text
+    assert time_series.isna().tolist() == [False, True]
+
+
 @pytest.mark.usefixtures("manual_downloads_folder")
 def test_download_and_extract_data_without_files():
     """Test that the error says where to put the downloaded files."""

@@ -6,9 +6,9 @@ Description:
     This module provides functions to retrieve the electricity demand
     data from the website of the Australian Energy Market Operator
     (AEMO) for the Wholesale Electricity Market (WEM) in Western
-    Australia. The data is retrieved from 2006 to 2023 in one-year
-    intervals in CSV format, and from October 1, 2023, to today in daily
-    intervals in JSON format.
+    Australia. The data is retrieved in one-year intervals in CSV format
+    until September 2023, and from October 2023 in daily intervals in
+    JSON format.
 
     Source: https://data.wa.aemo.com.au/#operational-demand
     Source: https://data.wa.aemo.com.au/public/market-data/wemde/operationalDemandWithdrawal/dailyFiles/
@@ -43,7 +43,8 @@ def get_available_requests(
     Returns
     -------
     list[tuple[bool, int, int | None, int | None]]
-        List of tuples in the format (year, month, day).
+        The requests, as tuples in the format (pre_reform, year, month,
+        day), where the month and day are None for the yearly files.
     """
     # Define the date that marks the beginning of the post-reform
     # period.
@@ -139,7 +140,7 @@ def download_and_extract_data_for_request(
     Returns
     -------
     electricity_demand_time_series : pandas.Series
-        The electricity generation time series in MW.
+        The electricity demand time series in MW.
     """
     pre_reform, year, month, day = pre_reform_and_date
 

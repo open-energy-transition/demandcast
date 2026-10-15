@@ -5,15 +5,14 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of Open Data Nepal where data from Nepal
-    Electricity Authority is published. The data is available from
-    April 2017 to April 2018. The data is retrieved in one-month
-    intervals. Even thought the year specified in the dataset is 2073
-    in the Bikram Sambat calendar, the length of the months seems to
-    suggest that the data corresponds to the year 2074 BS (April 2017
-    to April 2018). Checking the demand profiles on weekdays and
-    weekends does not show any consistent pattern that would help to
-    identify the correct year. Therefore, we assume that the data
-    corresponds to the year 2074 BS.
+    Electricity Authority is published. The data is retrieved in
+    one-month intervals. Even though the year specified in the dataset
+    is 2073 in the Bikram Sambat calendar, the length of the months
+    seems to suggest that the data corresponds to the year 2074 BS
+    (April 2017 to April 2018). Checking the demand profiles on
+    weekdays and weekends does not show any consistent pattern that
+    would help to identify the correct year. Therefore, we assume that
+    the data corresponds to the year 2074 BS.
 
     Source: https://opendatanepal.com/datasets/electricity-load-profile-of-nepal-in-2073-nepal-electricity-authority
 """
@@ -118,7 +117,7 @@ def download_and_extract_data_for_request(
     Returns
     -------
     pandas.Series
-        The electricity demand data for the given month.
+        The electricity demand time series in MW for the given month.
     """
     logging.info(
         f"Retrieving electricity demand data for the Bikram Sambat month "
