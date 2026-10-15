@@ -7,6 +7,14 @@ Description:
     data from the website of the Canadian Centre for Energy Information
     (CCEI). The data has various time resolutions.
 
+    CCEI gathers the data of the utilities and system operators of the
+    provinces and territories, in MW at times in UTC. The values are
+    readings at the times or averages of the intervals that end at
+    them: the hourly averages of Alberta, Ontario and Quebec match those
+    of AESO, IESO and Hydro-Québec. The readings of some provinces come
+    at irregular times, and the data has a few spikes, such as about
+    20,000 MW in Alberta or 80,000 MW in Quebec.
+
     Source: https://energy-information.canada.ca/en/resources/high-frequency-electricity-data
 """
 
@@ -117,7 +125,7 @@ def download_and_extract_data_for_request(
     # Get the URL of the electricity demand data.
     url = get_url(code)
 
-    # Fetch HTML content from the URL.
+    # Fetch the CSV file of the subdivision.
     dataset = utils.fetcher.fetch_dataframe(url, "csv")
 
     if code == "CAN_NB":

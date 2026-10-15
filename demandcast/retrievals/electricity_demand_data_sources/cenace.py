@@ -7,6 +7,11 @@ Description:
     data from the website of the Centro Nacional de Control de Energía
     (CENACE) in Mexico. The data is retrieved in one-year intervals.
 
+    The daily files give the demand of each area in MWh for each hour,
+    the average demand in MW, by hour ending from 1 in local time, with
+    23 or 25 hours on the days when daylight saving time starts or ends.
+    The module reads the latest settlement of each day.
+
     The national system (SIN) runs on one clock for all its areas, the
     time of central Mexico: CENACE's notices give one date for its
     changes of daylight saving time, when the days of all its areas have
@@ -15,8 +20,9 @@ Description:
     data of the EIA in that time. Baja California (BCA) follows its own
     time zone, with the daylight saving time of the United States, as
     its exchanges with California show. Baja California Sur (BCS) is
-    read in its own time zone too, which its data cannot confirm, since
-    it has no exchanges.
+    read in its own time zone too: it has no exchanges, but its days
+    have 23 or 25 hours on the dates of central Mexico, until daylight
+    saving time ended in Mexico in 2022.
 
     Source: https://www.cenace.gob.mx/Paginas/SIM/Reportes/EstimacionDemandaReal.aspx
     Source: https://www.cenace.gob.mx/Docs/MercadoOperacion/Horario%20de%20Invierno%20MDA%202017%20V2.2%20Kasusky%202017-08-30.pdf

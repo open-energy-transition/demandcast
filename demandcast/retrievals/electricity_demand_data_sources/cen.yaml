@@ -1,9 +1,11 @@
 licence:
   redistribute: true
-  terms: Open data.
-  url: http://energiaabierta.cl
+  terms: Reproduction citing the source and without altering the meaning. Commercial distribution needs prior authorisation.
+  url: https://www.coordinador.cl/terminos-y-condiciones/
 entities:
+  # Until 2015 the data covers only the central system (SIC), about
+  # 30% less than the national system, whose data starts in 2016.
   - country_name: Chile
     country_code: CHL
-    start_date: 1999-01-01
+    start_date: 2016-01-01
     end_date: today
