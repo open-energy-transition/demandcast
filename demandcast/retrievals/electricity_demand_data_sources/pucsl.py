@@ -23,6 +23,7 @@ import logging
 
 import pandas as pd
 import utils.fetcher
+import utils.time_series
 
 
 def get_available_requests(
@@ -48,20 +49,8 @@ def get_available_requests(
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
         The list of available requests.
     """
-    # Define intervals for the retrieval periods.
-    intervals = pd.date_range(start_date, end_date, freq="7D")
-    intervals = intervals.union(
-        pd.to_datetime([start_date, end_date])
-    ).drop_duplicates()
-    intervals = intervals.sort_values()
-
-    # Define start and end dates of the retrieval periods.
-    start_dates_and_times = intervals[:-1]
-    end_dates_and_times = intervals[1:]
-
-    # Return the available requests, which are the beginning and end of
-    # each one-year period.
-    return list(zip(start_dates_and_times, end_dates_and_times, strict=True))
+    # Split the period of the data into seven-day periods.
+    return utils.time_series.split_period(start_date, end_date, "7D")
 
 
 def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:

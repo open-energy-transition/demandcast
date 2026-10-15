@@ -15,7 +15,7 @@ import re
 import time
 import urllib.error
 import urllib.request
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from io import BytesIO, StringIO
 from typing import Any
 
@@ -25,6 +25,7 @@ import requests.exceptions
 from entsoe import EntsoePandasClient
 from entsoe.exceptions import NoMatchingDataError
 
+import utils.config
 import utils.entities
 
 # The HTTP status codes of the data that does not exist, for example a
@@ -473,6 +474,62 @@ def fetch_dataframe(
             "expected a pandas DataFrame."
         )
     return dataset
+
+
+def read_manual_files(
+    data_source_name: str,
+    url: str,
+    prefix: str,
+    read_file: Callable[[str], pd.DataFrame],
+    access: str = "",
+) -> pd.DataFrame:
+    """
+    Read the data files that were downloaded manually.
+
+    Some data sources have no download that can be automated. Their
+    files are downloaded manually into the folder of manually downloaded
+    electricity demand data, with names that start with a prefix.
+
+    Parameters
+    ----------
+    data_source_name : str
+        The name of the data source, for the error message.
+    url : str
+        The URL to download the files from, for the error message.
+    prefix : str
+        The start of the names of the files.
+    read_file : Callable[[str], pandas.DataFrame]
+        The function that reads a file from its path.
+    access : str, optional
+        How to get access to the files, such as " after registering on
+        the website", for the error message.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The data of all the files.
+
+    Raises
+    ------
+    FileNotFoundError
+        If no file starts with the prefix.
+    """
+    data_directory = utils.config.read_folders_structure()[
+        "manually_downloaded_electricity_demand_folder"
+    ]
+    file_paths = [
+        os.path.join(data_directory, file)
+        for file in sorted(os.listdir(data_directory))
+        if file.startswith(prefix)
+    ]
+    if not file_paths:
+        raise FileNotFoundError(
+            f"The data for {data_source_name} has not been found in the "
+            f"folder {data_directory}. Please download the data manually "
+            f"from {url}{access}. The data files must be named starting "
+            f"with '{prefix}'."
+        )
+    return pd.concat([read_file(file_path) for file_path in file_paths])
 
 
 def fetch_entsoe_demand(

@@ -10,10 +10,45 @@ Description:
 """
 
 import datetime
+import itertools
 import logging
 from typing import Any
 
 import pandas as pd
+
+
+def split_period(
+    start_date: datetime.date,
+    end_date: datetime.date,
+    frequency: str,
+) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
+    """
+    Split a period into shorter periods.
+
+    The periods start at the start date and at each start of a period
+    of the frequency, and end at the start of the next one or at the end
+    date. A period without duration has no shorter periods.
+
+    Parameters
+    ----------
+    start_date : datetime.date
+        The start of the period.
+    end_date : datetime.date
+        The end of the period.
+    frequency : str
+        The frequency of the starts of the shorter periods, as in
+        pandas.date_range.
+
+    Returns
+    -------
+    list[tuple[pandas.Timestamp, pandas.Timestamp]]
+        The start and end of each shorter period.
+    """
+    boundaries = pd.date_range(start_date, end_date, freq=frequency)
+    boundaries = boundaries.union(
+        pd.to_datetime([start_date, end_date])
+    ).drop_duplicates()
+    return list(itertools.pairwise(boundaries))
 
 
 def localize_interval_starts(

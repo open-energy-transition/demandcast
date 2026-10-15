@@ -13,6 +13,7 @@ import os
 from datetime import datetime
 
 import yaml
+from dotenv import load_dotenv
 
 
 def read_folders_structure() -> dict[str, str]:
@@ -60,6 +61,43 @@ def read_folders_structure() -> dict[str, str]:
                 folders_structure[key] = os.path.join(root_folder, value)
 
     return folders_structure
+
+
+def read_api_key(variable: str, service: str) -> str:
+    """
+    Read an API key from the environment or the .env file.
+
+    The environment variables are loaded first from the .env file in
+    the root folder, if any, without overriding those already set.
+
+    Parameters
+    ----------
+    variable : str
+        The name of the environment variable of the key.
+    service : str
+        The name of the service of the key, for the error message.
+
+    Returns
+    -------
+    str
+        The API key.
+
+    Raises
+    ------
+    ValueError
+        If the key is not set or is empty.
+    """
+    root_directory = read_folders_structure()["root_folder"]
+    load_dotenv(dotenv_path=os.path.join(root_directory, ".env"))
+
+    # A secret that is not set on GitHub gives an empty key.
+    api_key = os.getenv(variable)
+    if not api_key:
+        raise ValueError(
+            f"The {service} API key is not set. Please set the {variable} "
+            "environment variable."
+        )
+    return api_key
 
 
 def read_configuration(

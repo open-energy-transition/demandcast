@@ -262,7 +262,7 @@ def test_manual_downloads():
     for data_source in utils.entities.read_data_sources():
         file_path = os.path.join(folder, f"{data_source}.py")
         with open(file_path, encoding="utf-8") as file:
-            if "manually_downloaded_electricity_demand_folder" in file.read():
+            if "utils.fetcher.read_manual_files(" in file.read():
                 manual_downloads.append(data_source)
 
     assert sorted(manual_downloads) == checks.data_sources.MANUAL_DOWNLOADS

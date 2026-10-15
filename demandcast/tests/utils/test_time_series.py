@@ -6,6 +6,8 @@ Description:
     This file contains unit tests for the time_series module.
 """
 
+import datetime
+import itertools
 import logging
 
 import numpy as np
@@ -47,6 +49,37 @@ def sample_time_series():
     data[10] = None
 
     return pd.Series(data, index=dates)
+
+
+@pytest.mark.parametrize(
+    ("start_date", "end_date", "frequency", "boundaries"),
+    [
+        (
+            datetime.date(2023, 3, 17),
+            datetime.date(2025, 1, 1),
+            "YS",
+            ["2023-03-17", "2024-01-01", "2025-01-01"],
+        ),
+        (
+            datetime.date(2024, 1, 1),
+            datetime.date(2024, 2, 20),
+            "MS",
+            ["2024-01-01", "2024-02-01", "2024-02-20"],
+        ),
+        (
+            datetime.date(2024, 1, 1),
+            datetime.date(2024, 1, 10),
+            "7D",
+            ["2024-01-01", "2024-01-08", "2024-01-10"],
+        ),
+        (datetime.date(2024, 1, 1), datetime.date(2024, 1, 1), "YS", []),
+    ],
+)
+def test_split_period(start_date, end_date, frequency, boundaries):
+    """Test that the periods start at the frequency and at the dates."""
+    periods = utils.time_series.split_period(start_date, end_date, frequency)
+
+    assert periods == list(itertools.pairwise(pd.to_datetime(boundaries)))
 
 
 def test_localize_interval_starts():
