@@ -6,7 +6,12 @@ Description:
     This module provides functions to retrieve the electricity demand
     data from the website of the Australian Energy Market Operator
     (AEMO) for the National Electricity Market (NEM) in Australia. The
-    data is retrieved from the available CSV files on the AEMO website.
+    data is retrieved from the monthly CSV files on the AEMO website,
+    the file of the current month running until the current day.
+
+    The files give the total demand of the region in MW at the end of
+    each interval, of 30 minutes until September 2021 and 5 minutes
+    since, in NEM time, which is UTC+10 all year.
 
     Source: https://aemo.com.au/energy-systems/electricity/national-electricity-market-nem/data-nem/aggregated-data
 """
@@ -41,17 +46,13 @@ def get_available_requests(
     available_requests : list[tuple[int, int]]
         The list of available requests.
     """
-    # Get the list of available requests (year, month).
-    values_list = (
-        pd.date_range(start=start_date, end=end_date, freq="ME")
-        .strftime("%Y-%m")
-        .str.split("-")
-        .tolist()
-    )
-
-    # Return the available requests, which are tuples in the format
-    # (year, month).
-    return [(int(year), int(month)) for year, month in values_list]
+    # Return the available requests, which are the year and month of
+    # each month of the data, including the current one, whose file
+    # runs until the current day.
+    return [
+        (period.year, period.month)
+        for period in pd.period_range(start=start_date, end=end_date, freq="M")
+    ]
 
 
 def get_url(year: int, month: int, code: str) -> str:
@@ -77,7 +78,7 @@ def get_url(year: int, month: int, code: str) -> str:
 
     # Define the URL of the electricity demand data.
     url = (
-        "https://aemo.com.au/aemo/data/nem/priceanddemand/"
+        "https://www.aemo.com.au/aemo/data/nem/priceanddemand/"
         f"PRICE_AND_DEMAND_{year}{month:02d}_{subdivision_code}1.csv"
     )
 

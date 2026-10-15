@@ -1,12 +1,12 @@
 licence:
-  redistribute: true
-  terms: Use for non-commercial, personal or educational purposes with attribution to AESO.
+  redistribute: false
+  terms: Use and copy for non-commercial, personal or educational purposes, without modification.
   url: https://www.aeso.ca/legal
 entities:
   - subdivision_name: Alberta
     subdivision_code: AB
     country_name: Canada
     country_code: CAN
-    start_date: 2011-01-01
-    end_date: 2024-12-31
+    start_date: 2001-01-01
+    end_date: 2025-07-31
     time_zone: America/Edmonton
