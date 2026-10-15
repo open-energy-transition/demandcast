@@ -7,6 +7,12 @@ Description:
     data from the website of the Coordinador Eléctrico Nacional (CEN)
     in Chile. The data is retrieved in one-year intervals.
 
+    The API gives the hourly demand of the national system in MW, by
+    date and hour ending from 1 in local time: the day when daylight
+    saving time ends has an hour 25, and the day when it starts has no
+    hour 1. Until 2015 the demand is the one of the central system (SIC)
+    only, about 30% less, so the data starts in 2016.
+
     Source: https://www.coordinador.cl/operacion/graficos/operacion-real/demanda-real/
 """
 
