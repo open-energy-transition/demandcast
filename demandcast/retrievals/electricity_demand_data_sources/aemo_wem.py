@@ -10,6 +10,10 @@ Description:
     until September 2023, and from October 2023 in daily intervals in
     JSON format.
 
+    The files give the operational demand in MW of each interval, of 30
+    minutes until September 2023 and 5 minutes since, at its start, in
+    AWST, which is UTC+8 all year. The trading days start at 08:00.
+
     Source: https://data.wa.aemo.com.au/#operational-demand
     Source: https://data.wa.aemo.com.au/public/market-data/wemde/operationalDemandWithdrawal/dailyFiles/
 """
@@ -191,10 +195,13 @@ def download_and_extract_data_for_request(
             json_keys=["data", "data"],
         )
 
-        # Extract the electricity demand data from the dataset.
+        # Extract the electricity demand data from the dataset. The
+        # times are the starts of the 5-minute dispatch intervals, with
+        # their offset from UTC: move them to the ends of the intervals.
         electricity_demand_time_series = pd.Series(
             dataset["operationalDemand"].values,
-            index=pd.to_datetime(dataset["asAtTimeStamp"], utc=True),
+            index=pd.to_datetime(dataset["dispatchInterval"], utc=True)
+            + pd.Timedelta(minutes=5),
         )
 
     return electricity_demand_time_series
