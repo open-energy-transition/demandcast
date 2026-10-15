@@ -358,3 +358,33 @@ def test_all_the_entities_of_a_data_source(tmp_folders, add_data_source):
     assert _read_saved_data(tmp_folders, "DNK", "several") == {
         "2024-01-01 00:00": 200.0
     }
+
+
+def test_entity_without_data(tmp_folders, add_data_source, caplog):
+    """Test that an entity without data is skipped, not the others."""
+    downloads = {
+        "AUT": pd.Series(dtype=float),
+        "DNK": _demand("2024-01-01 01:00", [200.0]),
+    }
+    add_data_source(
+        "several",
+        ["AUT", "DNK"],
+        get_available_requests=Mock(return_value=[None]),
+        download_and_extract_data_for_request=Mock(
+            side_effect=lambda _request, code: downloads[code]
+        ),
+    )
+
+    retrievals.electricity_demand.run_data_retrieval("several", None, None)
+
+    assert "The data source several has no data for AUT" in caplog.text
+    assert not os.path.exists(
+        os.path.join(
+            tmp_folders["electricity_demand_folder"],
+            "2026-01-02",
+            "AUT_several.parquet",
+        )
+    )
+    assert _read_saved_data(tmp_folders, "DNK", "several") == {
+        "2024-01-01 00:00": 200.0
+    }

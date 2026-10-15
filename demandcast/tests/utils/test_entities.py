@@ -780,6 +780,26 @@ def test_read_data_source(write_data_source):
 
     assert entities == [FRANCE, TEXAS]
     assert licence == utils.entities.DataSourceLicence.model_validate(LICENCE)
+    assert utils.entities.read_entities("test_source") == [
+        utils.entities.DataSourceEntity.model_validate(FRANCE),
+        utils.entities.DataSourceEntity.model_validate(TEXAS),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("entity", "code"),
+    [
+        (FRANCE, "FRA"),
+        (FRANCE | {"subdivision_code": None}, "FRA"),
+        (TEXAS, "USA_TEX"),
+    ],
+)
+def test_codes_of_entities(write_data_source, entity, code):
+    """Test the code of a country and of a subdivision."""
+    write_data_source({"licence": LICENCE, "entities": [entity]})
+
+    assert utils.entities.read_codes_in(data_source="test_source") == [code]
+    assert utils.entities.read_entities("test_source")[0].code == code
 
 
 @pytest.mark.parametrize(

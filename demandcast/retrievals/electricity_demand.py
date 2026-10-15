@@ -23,7 +23,7 @@ import utils.time_series
 from tqdm import tqdm
 
 
-def _retrieve_data(data_source: str, code: str) -> pd.Series:
+def _retrieve_data(data_source: str, code: str) -> pd.Series | None:
     """
     Retrieve the electricity demand data.
 
@@ -41,8 +41,9 @@ def _retrieve_data(data_source: str, code: str) -> pd.Series:
 
     Returns
     -------
-    electricity_demand_time_series : pandas.Series
-        The electricity demand time series in MW.
+    electricity_demand_time_series : pandas.Series | None
+        The electricity demand time series in MW, or None if no request
+        has data.
 
     Raises
     ------
@@ -86,12 +87,15 @@ def _retrieve_data(data_source: str, code: str) -> pd.Series:
 
     # Concatenate the electricity demand time series of the requests
     # with data.
+    electricity_demand_time_series_list = [
+        time_series
+        for time_series in electricity_demand_time_series_list
+        if not time_series.empty
+    ]
+    if not electricity_demand_time_series_list:
+        return None
     electricity_demand_time_series = pd.concat(
-        [
-            time_series
-            for time_series in electricity_demand_time_series_list
-            if not time_series.empty
-        ]
+        electricity_demand_time_series_list
     )
 
     # Check that the values are numbers, so that the data of a source
@@ -196,10 +200,17 @@ def run_data_retrieval(
     for entity_code in tqdm(codes, desc="Countries and subdivisions"):
         logging.info(f"Retrieving electricity data for {entity_code}.")
 
-        # Retrieve the electricity demand time series.
+        # Retrieve the electricity demand time series, and go on with
+        # the next country or subdivision if there is none.
         electricity_demand_time_series = _retrieve_data(
             data_source, entity_code
         )
+        if electricity_demand_time_series is None:
+            logging.warning(
+                f"The data source {data_source} has no data for "
+                f"{entity_code}, which is not saved."
+            )
+            continue
 
         # Save the electricity demand time series to a file and upload
         # it to GCS.
