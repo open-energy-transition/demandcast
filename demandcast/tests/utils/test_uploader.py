@@ -6,6 +6,7 @@ Description:
     This file contains unit tests for the uploader module.
 """
 
+import json
 from unittest.mock import Mock, mock_open, patch
 
 import pytest
@@ -224,6 +225,10 @@ def test_upload_file_to_new_deposition_on_zenodo():
             testing=True,
             made_by_oet=False,
         )
+
+    # The actual data is published for non-commercial purposes only.
+    metadata = json.loads(mock_post.call_args_list[0].kwargs["data"])
+    assert metadata["metadata"]["license"] == "cc-by-nc-4.0"
 
 
 def test_upload_file_to_draft_version_on_zenodo():

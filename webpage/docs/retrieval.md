@@ -72,7 +72,7 @@ The periods of the requests come from `utils.time_series.split_period`, and API 
 
 #### Names, codes, time zones, and data time ranges for countries and subdivisions
 
-For each retrieval module in the `demandcast/retrievals/electricity_demand_data_sources/` folder, a corresponding YAML file must be created. It gives the `licence` of the data (`redistribute`, whether the data can be published on Zenodo, `terms`, a summary of the licence, and `url`, its link), and its `entities`, a list of dictionaries, each representing a country or subdivision from the respective data source. The following rules apply:
+For each retrieval module in the `demandcast/retrievals/electricity_demand_data_sources/` folder, a corresponding YAML file must be created. It gives the `licence` of the data (`redistribute`, whether the data can be published on Zenodo, whose dataset of actual data has the CC BY-NC 4.0 licence, `terms`, a summary of the licence, and `url`, its link), and its `entities`, a list of dictionaries, each representing a country or subdivision from the respective data source. The following rules apply:
 
 - Names and codes should adhere to the ISO 3166 standard.
 - For countries and standard subdivisions, use Alpha-3 codes.
