@@ -11,7 +11,8 @@ Description:
     The files give the hourly load in MW of each utility and of CAISO,
     by date and hour ending in local time, with 23 hours on the day when
     daylight saving time starts and 25 on the day when it ends. The file
-    of 2019 has 24 hours every day instead, as its notes say.
+    of 2019 has 24 hours every day instead, as its notes say, and in its
+    January the hour ending at midnight comes first in the next day.
 
     Source: https://www.caiso.com/library/historical-ems-hourly-load
 """

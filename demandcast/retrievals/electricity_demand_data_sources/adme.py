@@ -8,6 +8,13 @@ Description:
     in Uruguay. The data is retrieved from the available CSV files on
     the ADME website.
 
+    The files give the hourly generation of each source, the imports
+    and the exports in MW, and the demand ("Demanda"), which is the
+    generation plus the imports minus the exports, at the end of each
+    hour in local time. Uruguay has no daylight saving time since 2015.
+    A request to the end of a month also gives that month, so the month
+    after each one-year period is downloaded twice and kept once.
+
     Source: https://adme.com.uy/controlpanel.php
 """
 
