@@ -57,7 +57,7 @@ def test_download_and_extract_data_for_request_before_reform(
 def test_download_and_extract_data_for_request_after_reform(
     fake_downloads, assert_demand
 ):
-    """Test the daily files of the five-minute intervals."""
+    """Test that the starts of the 5-minute intervals move to ends."""
     fake_downloads.serve(
         "https://data.wa.aemo.com.au/public/market-data/wemde/"
         "operationalDemandWithdrawal/dailyFiles/"
