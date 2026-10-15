@@ -145,9 +145,14 @@ def upload_to_zenodo(  # noqa: C901
             "list of original data sources and their associated license terms "
             "is available in the GitHub repository "
             '<a href="https://github.com/open-energy-transition/Awesome-Electric-Demand">'
-            "https://github.com/open-energy-transition/Awesome-Electric-Demand</a>.</p>"
+            "https://github.com/open-energy-transition/Awesome-Electric-Demand</a>.</p>\n"
+            "<p>The dataset is therefore published under the Creative "
+            "Commons Attribution Non Commercial 4.0 International "
+            "license.</p>"
         )
-        license_id = "other-pd"
+        # The data of some sources may be redistributed only for
+        # non-commercial purposes, so the dataset keeps that condition.
+        license_id = "cc-by-nc-4.0"
     elif data_type == "synthetic":
         # Define the deposition title, description and license for the
         # synthetic dataset.
