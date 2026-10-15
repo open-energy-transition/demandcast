@@ -7,6 +7,13 @@ Description:
     data from the website of the Energy Market Authority (EMA) in
     Singapore. The data is retrieved in one-week intervals.
 
+    The weekly files give the system demand in MW of each half hour, at
+    its end ("Period Ending Time") in the time of Singapore, which has
+    no daylight saving time, from 00:30 to 00:00 of the next day. The
+    system demand includes the demand of the consumers with their own
+    embedded generators. The file of the week of 2014-11-03 gives only
+    the NEM demand, which leaves them out and is about 3% lower.
+
     Note:
     Although data is retrieved in 7-day intervals, retrieving data
     over a longer historical range (e.g., multiple years) may take
