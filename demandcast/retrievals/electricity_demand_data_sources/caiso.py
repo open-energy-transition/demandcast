@@ -8,6 +8,11 @@ Description:
     USA. The data is retrieved from the available Excel files on the
     CAISO website.
 
+    The files give the hourly load in MW of each utility and of CAISO,
+    by date and hour ending in local time, with 23 hours on the day when
+    daylight saving time starts and 25 on the day when it ends. The file
+    of 2019 has 24 hours every day instead, as its notes say.
+
     Source: https://www.caiso.com/library/historical-ems-hourly-load
 """
 
@@ -200,14 +205,28 @@ def download_and_extract_data_for_request(
         hourly_column = "HR"
         demand_column = "CAISO"
 
-    # Define the new index.
-    index = pd.to_datetime(dataset["Date"]) + pd.to_timedelta(
-        dataset[hourly_column], unit="h"
+    # Read the dates and the hours ending in local time. In January
+    # 2019, the hour that ends at midnight starts each day instead of
+    # ending it, so it belongs to the day before.
+    dates = pd.to_datetime(dataset["Date"])
+    hours = dataset[hourly_column].astype(int)
+    first_of_day = dates != dates.shift()
+    dates = dates.where(
+        ~(first_of_day & (hours == 24)), dates - pd.Timedelta(days=1)
     )
+    index = pd.DatetimeIndex(dates + pd.to_timedelta(hours, unit="h"))
 
-    # Define the electricity demand time series.
+    # When daylight saving time ends, the hour ending at 01:00 comes
+    # twice, first in daylight saving time. When it starts, the hour
+    # that does not exist is missing, except in 2019, whose files give
+    # an hour ending at 02:00, which does not exist, and an average of
+    # the hours around it at 03:00.
     electricity_demand_time_series = pd.Series(
         dataset[demand_column].values, index=index
-    ).tz_localize("America/Los_Angeles", nonexistent="NaT", ambiguous="NaT")
+    ).tz_localize(
+        "America/Los_Angeles",
+        nonexistent="NaT",
+        ambiguous=~index.duplicated(),
+    )
 
     return electricity_demand_time_series
