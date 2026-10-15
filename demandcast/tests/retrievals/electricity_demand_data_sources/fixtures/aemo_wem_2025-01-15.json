@@ -2,12 +2,16 @@
   "data": {
     "data": [
       {
+        "dispatchInterval": "2025-01-15T08:00:00+08:00",
         "asAtTimeStamp": "2025-01-15T08:05:00+08:00",
-        "operationalDemand": 2800.5
+        "operationalDemand": 2800.5,
+        "operationalWithdrawal": -10.5
       },
       {
+        "dispatchInterval": "2025-01-15T08:05:00+08:00",
         "asAtTimeStamp": "2025-01-15T08:10:00+08:00",
-        "operationalDemand": 2810
+        "operationalDemand": 2810,
+        "operationalWithdrawal": -10.25
       }
     ]
   }

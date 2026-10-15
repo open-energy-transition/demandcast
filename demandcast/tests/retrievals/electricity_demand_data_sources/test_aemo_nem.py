@@ -13,20 +13,20 @@ from retrievals.electricity_demand_data_sources import aemo_nem
 
 
 def test_get_available_requests():
-    """Test that the requests are the months of the data."""
+    """Test that the requests are the months of the data, to the end."""
     requests = aemo_nem.get_available_requests(
         "AUS_NSW", datetime.date(1998, 12, 7), datetime.date(2025, 12, 28)
     )
 
     assert requests[0] == (1998, 12)
-    assert requests[-1] == (2025, 11)
-    assert len(requests) == 324
+    assert requests[-1] == (2025, 12)
+    assert len(requests) == 325
 
 
 def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
     """Test that the timestamps are in NEM time, UTC+10 all year."""
     url = (
-        "https://aemo.com.au/aemo/data/nem/priceanddemand/"
+        "https://www.aemo.com.au/aemo/data/nem/priceanddemand/"
         "PRICE_AND_DEMAND_202510_NSW1.csv"
     )
     # Daylight saving starts in Sydney on 5 October 2025 at 02:00.
