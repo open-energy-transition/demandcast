@@ -7,3 +7,157 @@ entities:
     country_code: ARG
     start_date: 2025-01-01
     end_date: today
+  - subdivision_name: Salta
+    subdivision_code: A
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Salta
+  - subdivision_name: Buenos Aires and Ciudad Autónoma de Buenos Aires
+    subdivision_code: BA
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Buenos_Aires
+  - subdivision_name: San Luis
+    subdivision_code: D
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/San_Luis
+  - subdivision_name: Entre Ríos
+    subdivision_code: E
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Cordoba
+  - subdivision_name: La Rioja
+    subdivision_code: F
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/La_Rioja
+  - subdivision_name: Santiago del Estero
+    subdivision_code: G
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Cordoba
+  - subdivision_name: Chaco
+    subdivision_code: H
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Cordoba
+  - subdivision_name: San Juan
+    subdivision_code: J
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/San_Juan
+  - subdivision_name: Catamarca
+    subdivision_code: K
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Catamarca
+  - subdivision_name: La Pampa
+    subdivision_code: L
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Salta
+  - subdivision_name: Mendoza
+    subdivision_code: M
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Mendoza
+  - subdivision_name: Misiones
+    subdivision_code: N
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Cordoba
+  - subdivision_name: Formosa
+    subdivision_code: P
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Cordoba
+  - subdivision_name: Neuquén
+    subdivision_code: Q
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Salta
+  - subdivision_name: Río Negro
+    subdivision_code: R
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Salta
+  - subdivision_name: Santa Fe
+    subdivision_code: S
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Cordoba
+  - subdivision_name: Tucumán
+    subdivision_code: T
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Tucuman
+  - subdivision_name: Chubut
+    subdivision_code: U
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Catamarca
+  - subdivision_name: Corrientes
+    subdivision_code: W
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Cordoba
+  - subdivision_name: Córdoba
+    subdivision_code: X
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Cordoba
+  - subdivision_name: Jujuy
+    subdivision_code: Y
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Jujuy
+  - subdivision_name: Santa Cruz
+    subdivision_code: Z
+    country_name: Argentina
+    country_code: ARG
+    start_date: 2026-02-17
+    end_date: today
+    time_zone: America/Argentina/Rio_Gallegos

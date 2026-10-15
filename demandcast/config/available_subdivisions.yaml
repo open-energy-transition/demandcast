@@ -1,4 +1,92 @@
 entities:
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: A
+    subdivision_name: Salta
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: BA
+    subdivision_name: Buenos Aires and Ciudad Autónoma de Buenos Aires
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: D
+    subdivision_name: San Luis
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: E
+    subdivision_name: Entre Ríos
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: F
+    subdivision_name: La Rioja
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: G
+    subdivision_name: Santiago del Estero
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: H
+    subdivision_name: Chaco
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: J
+    subdivision_name: San Juan
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: K
+    subdivision_name: Catamarca
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: L
+    subdivision_name: La Pampa
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: M
+    subdivision_name: Mendoza
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: N
+    subdivision_name: Misiones
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: P
+    subdivision_name: Formosa
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: Q
+    subdivision_name: Neuquén
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: R
+    subdivision_name: Río Negro
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: S
+    subdivision_name: Santa Fe
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: T
+    subdivision_name: Tucumán
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: U
+    subdivision_name: Chubut
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: W
+    subdivision_name: Corrientes
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: X
+    subdivision_name: Córdoba
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: Y
+    subdivision_name: Jujuy
+  - country_code: ARG
+    country_name: Argentina
+    subdivision_code: Z
+    subdivision_name: Santa Cruz
   - country_code: AUS
     country_name: Australia
     subdivision_code: ACT
