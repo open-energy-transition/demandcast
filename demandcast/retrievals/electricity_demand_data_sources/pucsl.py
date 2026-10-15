@@ -5,8 +5,8 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the Public Utilities Commission of Sri
-    Lanka (PUCSL) in Sri Lanka. The data is downloaded from Jan 1, 2023
-    up to the current date. The data is retrieved in one-week intervals.
+    Lanka (PUCSL) in Sri Lanka. The data is retrieved in one-week
+    intervals.
 
     Note:
     Although data is retrieved in 7-day intervals,

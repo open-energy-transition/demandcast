@@ -5,9 +5,8 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of Kansai Transmission and Distribution
-    (KansaiTD) in Japan. The data is retrieved for the years from
-    2016 to the current date. The data is retrieved from the available
-    CSV files on the KansaiTD website.
+    (KansaiTD) in Japan. The data is retrieved from the available CSV
+    files on the KansaiTD website.
 
     Source: https://www.kansai-td.co.jp/english/home/denkiyoho/area-performance/index.html
 """
@@ -121,6 +120,16 @@ def download_and_extract_data_for_request(
     """
     year, month = year_and_month
 
+    if month is None:
+        logging.info(
+            f"Retrieving electricity demand data for the year {year}."
+        )
+    else:
+        logging.info(
+            f"Retrieving electricity demand data for the year {year} and "
+            f"month {month}."
+        )
+
     # Get the URL of the electricity demand data.
     url = get_url(year, month)
 
@@ -138,10 +147,6 @@ def download_and_extract_data_for_request(
     )
 
     if month is None:
-        logging.info(
-            f"Retrieving electricity demand data for the year {year}."
-        )
-
         # Extract the electricity demand time series.
         electricity_demand_time_series = pd.Series(
             dataset["エリア需要〔MWh〕"].values,
@@ -153,11 +158,6 @@ def download_and_extract_data_for_request(
         interval = pd.Timedelta(hours=1)
 
     else:
-        logging.info(
-            f"Retrieving electricity demand data for the year {year} and "
-            f"{month}."
-        )
-
         # Convert date and hour columns into hourly timestamps.
         index = pd.to_datetime(dataset["DATE"]) + pd.to_timedelta(
             dataset["TIME"].astype(str) + ":00"

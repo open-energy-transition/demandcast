@@ -5,9 +5,8 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the European Network of Transmission System
-    Operators for Electricity (ENTSO-E). The data is retrieved for the
-    years from 2014 (end of year) to the current year. The data is
-    retrieved in one-year intervals.
+    Operators for Electricity (ENTSO-E). The data is retrieved in
+    one-year intervals.
 
     Source: https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html
     Source: https://github.com/EnergieID/entsoe-py
@@ -48,52 +47,6 @@ def get_available_requests(
     # Split the period of the data into one-year periods, the maximum
     # available on the platform.
     return utils.time_series.split_period(start_date, end_date, "YS")
-
-
-def get_url(
-    start_date: pd.Timestamp,
-    end_date: pd.Timestamp,
-    code: str = "",
-) -> str:
-    """
-    Get the URL of the electricity demand data on the ENTSO-E website.
-
-    Used only to check if the platform is available.
-
-    Parameters
-    ----------
-    start_date : pandas.Timestamp
-        The start date of the data retrieval.
-    end_date : pandas.Timestamp
-        The end date of the data retrieval.
-    code : str
-        The ISO Alpha-3 code of the country.
-
-    Returns
-    -------
-    str
-        The URL of the electricity demand data.
-    """
-    # Convert the start and end dates and times to the required format.
-    start = start_date.strftime("%Y%m%d%H00")
-    end = end_date.strftime("%Y%m%d%H00")
-
-    # Define the domain of the country.
-    domain = "10YBE----------2"  # Belgium
-
-    # Get the API key.
-    api_key = utils.config.read_api_key("ENTSOE_API_KEY", "ENTSO-E")
-
-    # Set some parameters for the API request.
-    document_type = "A65"  # System total load
-    process_type = "A16"  # Realised
-
-    # Return the URL of the electricity demand data.
-    return (
-        f"https://web-api.tp.entsoe.eu/api?securityToken={api_key}&"
-        f"documentType={document_type}&processType={process_type}&"
-        f"outBiddingZone_Domain={domain}&periodStart={start}&periodEnd={end}"
-    )
 
 
 def download_and_extract_data_for_request(

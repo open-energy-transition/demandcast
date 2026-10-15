@@ -5,9 +5,8 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of Ontario's Independent Electricity System
-    Operator (IESO) in Canada. The data is retrieved for the years from
-    1994 to current year. The data is retrieved from the available CSV
-    files on the IESO website.
+    Operator (IESO) in Canada. The data is retrieved from the available
+    CSV files on the IESO website.
 
     The times of IESO are in Eastern Standard Time all year, without
     daylight saving time, as on the Power Data page below ("Hour Ending
@@ -52,24 +51,20 @@ def get_available_requests(
     list[tuple[int | None, bool]]
         The list of available requests.
     """
-    # Define the date that separates the two periods of data.
-    date_after_apr_2002 = pd.Timestamp("2002-04-01")
-
     # Return the available requests, which are a combination of a year
-    # number and a boolean indicating whether the data is before April
-    # 2002.
-    # available_requests = [(year = None, before_apr_2002 = True)
-    #                       (year = 2002, before_apr_2002 = False),
-    #                       (year = 2003, before_apr_2002 = False),
+    # number and a boolean indicating whether the data is before May
+    # 2002, when the yearly files start.
+    # available_requests = [(year = None, before_may_2002 = True)
+    #                       (year = 2002, before_may_2002 = False),
+    #                       (year = 2003, before_may_2002 = False),
     #                       ...
-    #                       (year = last year, before_apr_2002 = False)]
+    #                       (year = last year, before_may_2002 = False)]
     return [(None, True)] + [
-        (year, False)
-        for year in range(date_after_apr_2002.year, end_date.year + 1)
+        (year, False) for year in range(2002, end_date.year + 1)
     ]
 
 
-def get_url(year: int | None, before_apr_2002: bool) -> str:
+def get_url(year: int | None, before_may_2002: bool) -> str:
     """
     Get the URL of the electricity demand data on the IESO website.
 
@@ -77,8 +72,8 @@ def get_url(year: int | None, before_apr_2002: bool) -> str:
     ----------
     year : int
         The year of the electricity demand data.
-    before_apr_2002 : bool
-        Whether the url is for the time period before April 2002.
+    before_may_2002 : bool
+        Whether the url is for the time period before May 2002.
 
     Returns
     -------
@@ -91,7 +86,7 @@ def get_url(year: int | None, before_apr_2002: bool) -> str:
         If the year is not between 2002 and the current year.
     """
     # Define the URL of the electricity demand data.
-    if before_apr_2002:
+    if before_may_2002:
         return (
             "https://www.ieso.ca/-/media/Files/IESO/Power-Data/data-directory/"
             "HourlyDemands_1994-2002.csv"
@@ -119,7 +114,7 @@ def download_and_extract_data_for_request(
     ----------
     year_and_old_file : tuple[int | None, bool]
         The year of the electricity demand data, and whether the data
-        is in the file of the time period before April 2002, whose year
+        is in the file of the time period before May 2002, whose year
         is None.
     code : str
         The code of Ontario.
@@ -129,17 +124,17 @@ def download_and_extract_data_for_request(
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
     """
-    year, before_apr_2002 = year_and_old_file
+    year, before_may_2002 = year_and_old_file
 
     # Get the URL of the electricity demand data.
-    url = get_url(year=year, before_apr_2002=before_apr_2002)
+    url = get_url(year=year, before_may_2002=before_may_2002)
 
-    if before_apr_2002:
+    if before_may_2002:
         logging.info(
             "Retrieving electricity demand data for the years 1994 to 2002."
         )
 
-        # Fetch HTML content from the URL.
+        # Fetch the file of the years before May 2002.
         dataset = utils.fetcher.fetch_dataframe(
             url, "html", read_with="requests.get"
         )
@@ -166,7 +161,7 @@ def download_and_extract_data_for_request(
 
     logging.info(f"Retrieving electricity demand data for the year {year}.")
 
-    # Fetch HTML content from the URL.
+    # Fetch the file of the year.
     dataset = utils.fetcher.fetch_dataframe(
         url, "csv", csv_kwargs={"skiprows": 3}
     )

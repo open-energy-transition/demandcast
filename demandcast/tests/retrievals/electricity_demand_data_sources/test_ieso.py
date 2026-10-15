@@ -86,4 +86,4 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
 def test_url_of_a_year_without_data(year):
     """Test that a year without a yearly file is an error."""
     with pytest.raises(ValueError, match="yearly files start in 2002"):
-        ieso.get_url(year=year, before_apr_2002=False)
+        ieso.get_url(year=year, before_may_2002=False)

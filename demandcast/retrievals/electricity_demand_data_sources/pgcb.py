@@ -4,9 +4,8 @@ License: AGPL-3.0.
 Description:
     This module provides functions to retrieve electricity demand data
     from the website of the Power Grid Company of Bangladesh (PGCB),
-    now Power Grid Bangladesh PLC. The data spans from 2014 to the
-    present and is obtained from the Excel files available on the PGCB
-    website.
+    now Power Grid Bangladesh PLC. The data is obtained from the Excel
+    files available on the PGCB website.
 
     Note:
     Retrieving all the data takes a few hours due to the large

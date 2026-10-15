@@ -3,10 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This script provides functions to retrieve the electricity demand
+    This module provides functions to retrieve the electricity demand
     data from the website of Korean Open Government Data (KROGD) portal
-    in South Korea. The data is retrieved manually for the years from
-    2013-01-01 to 2024-12-31.
+    in South Korea. The data is downloaded manually from the portal.
 
     Source: https://www.data.go.kr/
 """

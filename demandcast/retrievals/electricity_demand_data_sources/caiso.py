@@ -5,9 +5,8 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the California ISO (CAISO) in California
-    USA. The data is retrieved for the years from 2019 to the current
-    date. The data is retrieved from the available Excel files on the
-    Caiso website.
+    USA. The data is retrieved from the available Excel files on the
+    CAISO website.
 
     Source: https://www.caiso.com/library/historical-ems-hourly-load
 """

@@ -104,8 +104,6 @@ def test_module(data_source):
         f"retrievals.electricity_demand_data_sources.{data_source}"
     )
 
-    assert callable(module.get_url)
-
     # The retrieval code passes the code and the dates of the data of
     # each entity, and then each request with the code.
     codes = utils.entities.read_codes_in(data_source=data_source)

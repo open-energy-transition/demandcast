@@ -5,9 +5,7 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the National Energy System Operator (NESO)
-    in the UK. The data is retrieved for the years from 2009 to the
-    current year.
-    The data is retrieved in one-year intervals.
+    in the UK. The data is retrieved in one-year intervals.
 
     Source: https://www.neso.energy/data-portal/historic-demand-data
 """

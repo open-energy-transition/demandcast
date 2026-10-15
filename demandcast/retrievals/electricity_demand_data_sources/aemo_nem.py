@@ -6,9 +6,7 @@ Description:
     This module provides functions to retrieve the electricity demand
     data from the website of the Australian Energy Market Operator
     (AEMO) for the National Electricity Market (NEM) in Australia. The
-    data is retrieved for the years from December of 1998 to the current
-    month. The data is retrieved from the available CSV files on the
-    AEMO website.
+    data is retrieved from the available CSV files on the AEMO website.
 
     Source: https://aemo.com.au/energy-systems/electricity/national-electricity-market-nem/data-nem/aggregated-data
 """
@@ -62,10 +60,10 @@ def get_url(year: int, month: int, code: str) -> str:
 
     Parameters
     ----------
-    month : int
-        The month of the data to retrieve.
     year : int
         The year of the data to retrieve.
+    month : int
+        The month of the data to retrieve.
     code : str
         The code of the subdivision.
 
@@ -105,7 +103,7 @@ def download_and_extract_data_for_request(
     Returns
     -------
     electricity_demand_time_series : pandas.Series
-        The electricity generation time series in MW.
+        The electricity demand time series in MW.
     """
     year, month = year_and_month
 

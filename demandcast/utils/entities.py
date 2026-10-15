@@ -318,7 +318,7 @@ def get_name_from_code(code: str) -> str:  # noqa: C901
 
 def read_data_sources() -> list[str]:
     """
-    Read the the names of the data sources.
+    Read the names of the data sources.
 
     This function reads the names of the data sources from the yaml
     files in the folder containing the modules for electricity demand

@@ -6,8 +6,7 @@ Description:
     This module provides functions to retrieve the electricity demand
     data for Thailand from a publicly available repository containing
     data from the Electricity Generating Authority of Thailand (EGAT).
-    The data is available from Jan 1, 2023 to Jan 1, 2025. The data is
-    retrieved all at once.
+    The data is retrieved all at once.
 
     Source: https://zenodo.org/records/17109911
 """

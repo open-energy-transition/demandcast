@@ -6,8 +6,7 @@ Description:
     This module provides functions to retrieve the electricity demand
     data for Panama from a publicly available repository containing
     data from the Centro Nacional de Despacho (CND). The data is
-    available from Jan 2, 2016 to July 31, 2020. The data is retrieved
-    all at once.
+    retrieved all at once.
 
     Source: https://data.mendeley.com/datasets/tcmmj4t6f4/1
 """

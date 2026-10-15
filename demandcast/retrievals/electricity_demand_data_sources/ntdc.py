@@ -15,6 +15,7 @@ Description:
 """
 
 import datetime
+import logging
 
 import pandas as pd
 import utils.fetcher
@@ -99,17 +100,22 @@ def download_and_extract_data_for_request(
         format="%d/%m/%Y %H",
     )
 
-    # Remove commas and convert SYSLOAD to numeric.
-    dataset["SYSLOAD"] = pd.to_numeric(
+    # Remove the thousands separators and read the values as numbers.
+    # A value that is not a number becomes a missing value, which the
+    # cleaning of the data then removes.
+    load = pd.to_numeric(
         dataset["SYSLOAD"].astype(str).str.replace(",", ""),
         errors="coerce",
     )
+    not_numbers = dataset["SYSLOAD"][load.isna() & dataset["SYSLOAD"].notna()]
+    if not not_numbers.empty:
+        logging.warning(
+            f"{len(not_numbers)} values of NTDC are not numbers and are "
+            f"left out, such as {not_numbers.iloc[0]!r}."
+        )
 
     # Define the electricity demand time series.
-    electricity_demand_time_series = pd.Series(
-        dataset["SYSLOAD"].values,
-        index=index,
-    )
+    electricity_demand_time_series = pd.Series(load.to_numpy(), index=index)
 
     # Move the times to the ends of the hours, in local time.
     electricity_demand_time_series = (

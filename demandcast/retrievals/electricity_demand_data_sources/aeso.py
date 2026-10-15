@@ -5,9 +5,8 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the Alberta Electric System Operator (AESO)
-    in Canada. The data is retrieved for the years from 2011 to 2024.
-    The data is retrieved from the available Excel files on the AESO
-    website.
+    in Canada. The data is retrieved from the available Excel files on
+    the AESO website.
 
     Source: https://www.aeso.ca/market/market-and-system-reporting/data-requests/hourly-load-by-area-and-region
 """
