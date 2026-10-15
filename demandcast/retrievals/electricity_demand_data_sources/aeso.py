@@ -60,6 +60,11 @@ def get_url(file_number: int) -> str:
     -------
     url : str
         The URL of the electricity demand data.
+
+    Raises
+    ------
+    ValueError
+        If the file number is not between 1 and 4.
     """
     # Define the base URL.
     url = "https://www.aeso.ca/assets/Uploads/"
@@ -79,6 +84,8 @@ def get_url(file_number: int) -> str:
             "data-requests/"
             "Hourly-load-by-area-and-region-Nov-2023-to-Dec-2024.xlsx"
         )
+    else:
+        raise ValueError(f"The AESO file {file_number} does not exist.")
 
     return url
 
@@ -103,6 +110,11 @@ def _get_excel_information(
     tuple[str, int, list[str], list[str]]
         The sheet name, number of rows to skip, index columns, and load
         columns for the Excel file.
+
+    Raises
+    ------
+    ValueError
+        If the file number is not between 1 and 4.
     """
     # Define the excel information.
     if file_number == 1:
@@ -141,6 +153,8 @@ def _get_excel_information(
             "Northwest",
             "South",
         ]
+    else:
+        raise ValueError(f"The AESO file {file_number} does not exist.")
 
     return sheet_name, rows_to_skip, index_columns, load_columns
 

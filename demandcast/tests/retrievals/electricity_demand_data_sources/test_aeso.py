@@ -7,6 +7,7 @@ Description:
 """
 
 import pandas as pd
+import pytest
 from retrievals.electricity_demand_data_sources import aeso
 
 URL_FOLDER = "https://www.aeso.ca/assets/Uploads/"
@@ -165,3 +166,11 @@ def test_download_and_extract_data_for_request_of_2023_to_2024(
             "2023-11-01 10:00": 5081.0,
         },
     )
+
+
+def test_unknown_file():
+    """Test that a file number without a file is an error."""
+    with pytest.raises(ValueError, match="AESO file 5 does not exist"):
+        aeso.get_url(5)
+    with pytest.raises(ValueError, match="AESO file 5 does not exist"):
+        aeso._get_excel_information(5)

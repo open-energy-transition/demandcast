@@ -12,7 +12,8 @@ import functools
 import logging
 import os
 import zoneinfo
-from typing import Literal, Self
+from collections.abc import Mapping
+from typing import Any, Literal, Self
 
 import pandas as pd
 import pycountry
@@ -43,6 +44,26 @@ capital_time_zones = {
 }
 
 
+def _code_of(entity: Mapping[str, Any]) -> str:
+    """
+    Get the code of a country or subdivision from its fields.
+
+    Parameters
+    ----------
+    entity : Mapping[str, Any]
+        The fields of the country or subdivision, as in a yaml file.
+
+    Returns
+    -------
+    str
+        The code of the country, or of the subdivision, which joins the
+        codes of its country and of itself with an underscore.
+    """
+    if entity.get("subdivision_code") is None:
+        return entity["country_code"]
+    return f"{entity['country_code']}_{entity['subdivision_code']}"
+
+
 class DataSourceEntity(BaseModel):
     """
     A country or subdivision in the yaml file of a data source.
@@ -65,9 +86,7 @@ class DataSourceEntity(BaseModel):
     @property
     def code(self) -> str:
         """The code of the country, or of the subdivision."""
-        if self.subdivision_code is None:
-            return self.country_code
-        return f"{self.country_code}_{self.subdivision_code}"
+        return _code_of(self.model_dump())
 
     @model_validator(mode="after")
     def check_entity(self) -> Self:
@@ -265,9 +284,7 @@ def get_name_from_code(code: str) -> str:  # noqa: C901
 
             # Find the subdivision name from the data source file.
             for entity in entities:
-                if entity["country_code"] + "_" + entity[
-                    "subdivision_code"
-                ] == code.replace("-", "_"):
+                if _code_of(entity) == code.replace("-", "_"):
                     name = entity["subdivision_name"]
                     break
 
@@ -385,6 +402,27 @@ def _read_data_source_file(data_source: str) -> dict:
     return content
 
 
+def read_entities(data_source: str) -> list[DataSourceEntity]:
+    """
+    Read the countries and subdivisions of a data source.
+
+    Parameters
+    ----------
+    data_source : str
+        The name of the data source.
+
+    Returns
+    -------
+    list[DataSourceEntity]
+        The countries and subdivisions, from the yaml file of the data
+        source.
+    """
+    return [
+        DataSourceEntity.model_validate(entity)
+        for entity in _read_data_source_file(data_source)["entities"]
+    ]
+
+
 def read_licence(data_source: str) -> DataSourceLicence:
     """
     Read the licence of the data of a data source.
@@ -491,11 +529,7 @@ def get_electricity_demand_data_sources_containing_code(
         # Iterate over the entities in the file.
         for entity in entities:
             # Extract the code of the country or subdivision.
-            entity_code = (
-                entity["country_code"] + "_" + entity["subdivision_code"]
-                if "subdivision_code" in entity
-                else entity["country_code"]
-            )
+            entity_code = _code_of(entity)
 
             # Check if the provided code matches the entity code.
             if entity_code == code:
@@ -537,12 +571,7 @@ def read_codes_in(file_path: str = "", data_source: str = "") -> list[str]:
     )
 
     # Extract and return codes.
-    return [
-        entity["country_code"] + "_" + entity["subdivision_code"]
-        if "subdivision_code" in entity
-        else entity["country_code"]
-        for entity in entities
-    ]
+    return [_code_of(entity) for entity in entities]
 
 
 def read_all_codes_with_electricity_demand_data() -> list[str]:
@@ -885,11 +914,7 @@ def _get_time_zones_in_data_source(
     # Iterate over the entities and extract the time zones.
     for entity in entities:
         # Extract the code of the country or subdivision.
-        entity_code = (
-            entity["country_code"] + "_" + entity["subdivision_code"]
-            if "subdivision_code" in entity
-            else entity["country_code"]
-        )
+        entity_code = _code_of(entity)
 
         # If the code specifies a subdivision, extract the time zone
         # from the file.
@@ -1137,11 +1162,7 @@ def read_date_ranges_of_electricity_demand_in_data_source(
     # Iterate over the entities and extract the start and end dates.
     for entity in entities:
         # Extract the code of the country or subdivision.
-        code = (
-            entity["country_code"] + "_" + entity["subdivision_code"]
-            if "subdivision_code" in entity
-            else entity["country_code"]
-        )
+        code = _code_of(entity)
 
         # Extract the start and end dates of the available data.
         start_date = entity["start_date"]
