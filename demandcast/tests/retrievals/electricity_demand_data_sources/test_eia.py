@@ -10,6 +10,7 @@ import datetime
 
 import pandas as pd
 import pytest
+import utils.config
 from retrievals.electricity_demand_data_sources import eia
 
 
@@ -68,7 +69,7 @@ def test_get_url_without_api_key(monkeypatch, api_key):
     if api_key is not None:
         monkeypatch.setenv("EIA_API_KEY", api_key)
     # Ignore a local .env file with a real key.
-    monkeypatch.setattr(eia, "load_dotenv", lambda **_: None)
+    monkeypatch.setattr(utils.config, "load_dotenv", lambda **_: None)
 
     with pytest.raises(ValueError, match="EIA_API_KEY"):
         eia.get_url(

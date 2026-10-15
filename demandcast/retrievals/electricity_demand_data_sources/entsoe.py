@@ -15,12 +15,11 @@ Description:
 
 import datetime
 import logging
-import os
 
 import pandas as pd
 import utils.config
 import utils.fetcher
-from dotenv import load_dotenv
+import utils.time_series
 
 
 def get_available_requests(
@@ -46,18 +45,9 @@ def get_available_requests(
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
         The list of available requests.
     """
-    # Define intervals for the retrieval periods. A one-year period is
-    # the maximum available on the platform.
-    intervals = pd.date_range(start_date, end_date, freq="YS")
-    intervals = intervals.union(pd.to_datetime([start_date, end_date]))
-
-    # Define start and end dates of the retrieval periods.
-    start_dates_and_times = intervals[:-1]
-    end_dates_and_times = intervals[1:]
-
-    # Return the available requests, which are the beginning and end of
-    # each one-year period.
-    return list(zip(start_dates_and_times, end_dates_and_times, strict=True))
+    # Split the period of the data into one-year periods, the maximum
+    # available on the platform.
+    return utils.time_series.split_period(start_date, end_date, "YS")
 
 
 def get_url(
@@ -83,11 +73,6 @@ def get_url(
     -------
     str
         The URL of the electricity demand data.
-
-    Raises
-    ------
-    ValueError
-        If the ENTSO-E API key is not set in the environment variables.
     """
     # Convert the start and end dates and times to the required format.
     start = start_date.strftime("%Y%m%d%H00")
@@ -96,22 +81,8 @@ def get_url(
     # Define the domain of the country.
     domain = "10YBE----------2"  # Belgium
 
-    # Get the root directory of the project.
-    root_directory = utils.config.read_folders_structure()["root_folder"]
-
-    # Load the environment variables.
-    load_dotenv(dotenv_path=os.path.join(root_directory, ".env"))
-
-    # Get the ENTSO-E API client.
-    api_key = os.getenv("ENTSOE_API_KEY")
-
-    # Check if the API key is set: a secret that is not set on GitHub
-    # gives an empty key.
-    if not api_key:
-        raise ValueError(
-            "The ENTSOE API key is not set. Please set the ENTSOE_API_KEY "
-            "environment variable."
-        )
+    # Get the API key.
+    api_key = utils.config.read_api_key("ENTSOE_API_KEY", "ENTSO-E")
 
     # Set some parameters for the API request.
     document_type = "A65"  # System total load
@@ -166,24 +137,12 @@ def download_and_extract_data_for_request(
         f"Retrieving electricity demand data from {start_date.date()} to {end_date.date()}."
     )
 
-    # Get the root directory of the project.
-    root_directory = utils.config.read_folders_structure()["root_folder"]
-
-    # Load the environment variables.
-    load_dotenv(dotenv_path=os.path.join(root_directory, ".env"))
-
-    # Get the ENTSO-E API client.
-    api_key = os.getenv("ENTSOE_API_KEY")
+    # Get the API key.
+    api_key = utils.config.read_api_key("ENTSOE_API_KEY", "ENTSO-E")
 
     # Add the time zone to the start date.
     start_date = start_date.tz_localize("UTC")
     end_date = end_date.tz_localize("UTC")
-
-    if not api_key:
-        raise ValueError(
-            "The ENTSO-E API key is not set. Please set the ENTSOE_API_KEY "
-            "environment variable."
-        )
 
     # Download the electricity demand time series from the ENTSO-E
     # API.

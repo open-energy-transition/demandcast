@@ -8,6 +8,7 @@ Description:
 
 import logging
 import os
+import re
 import sys
 import textwrap
 
@@ -183,3 +184,35 @@ def test_set_up_logging(tmp_path, monkeypatch):
     log_content = log_files[0].read_text()
     assert "Test log message" in log_content
     assert "INFO" in log_content
+
+
+def test_read_api_key(tmp_folders, tmp_path, monkeypatch):
+    """Test that a key is read from the .env file of the root folder."""
+    tmp_folders["root_folder"] = str(tmp_path)
+    (tmp_path / ".env").write_text("TEST_SERVICE_API_KEY=secret-value\n")
+    # Remove the key that the .env file sets at the end of the test.
+    monkeypatch.setenv("TEST_SERVICE_API_KEY", "")
+    monkeypatch.delenv("TEST_SERVICE_API_KEY")
+
+    api_key = utils.config.read_api_key("TEST_SERVICE_API_KEY", "Test")
+
+    assert api_key == "secret-value"
+
+
+@pytest.mark.parametrize("api_key", [None, ""])
+def test_read_api_key_without_the_key(
+    tmp_folders, tmp_path, monkeypatch, api_key
+):
+    """Test that the error says how to set a missing or empty key."""
+    tmp_folders["root_folder"] = str(tmp_path)
+    monkeypatch.setenv("TEST_SERVICE_API_KEY", "")
+    if api_key is None:
+        monkeypatch.delenv("TEST_SERVICE_API_KEY")
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "The Test API key is not set. Please set the TEST_SERVICE_API_KEY"
+        ),
+    ):
+        utils.config.read_api_key("TEST_SERVICE_API_KEY", "Test")

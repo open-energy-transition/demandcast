@@ -7,6 +7,7 @@ Description:
 """
 
 import email.message
+import re
 import urllib.error
 from io import BytesIO
 from unittest.mock import patch
@@ -281,6 +282,47 @@ def test_fetch_dataframe_of_another_type():
         pytest.raises(TypeError, match="expected a pandas DataFrame"),
     ):
         utils.fetcher.fetch_dataframe("https://example.com", "html")
+
+
+def test_read_manual_files(tmp_folders, tmp_path):
+    """Test that the files with the prefix are read and joined."""
+    folder = tmp_path / "manual"
+    folder.mkdir()
+    tmp_folders["manually_downloaded_electricity_demand_folder"] = str(folder)
+    (folder / "ABC_2.csv").write_text("load\n2\n")
+    (folder / "ABC_1.csv").write_text("load\n1\n")
+    (folder / "XYZ.csv").write_text("load\n9\n")
+
+    dataset = utils.fetcher.read_manual_files(
+        data_source_name="ABC",
+        url="https://example.org",
+        prefix="ABC",
+        read_file=pd.read_csv,
+    )
+
+    assert dataset["load"].tolist() == [1, 2]
+
+
+def test_read_manual_files_without_files(tmp_folders, tmp_path):
+    """Test that the error says where and how to download the files."""
+    tmp_folders["manually_downloaded_electricity_demand_folder"] = str(
+        tmp_path
+    )
+
+    with pytest.raises(
+        FileNotFoundError,
+        match=re.escape(
+            "manually from https://example.org after registering on the "
+            "website. The data files must be named starting with 'ABC'."
+        ),
+    ):
+        utils.fetcher.read_manual_files(
+            data_source_name="ABC",
+            url="https://example.org",
+            prefix="ABC",
+            read_file=pd.read_csv,
+            access=" after registering on the website",
+        )
 
 
 def test_fetch_entsoe_demand():

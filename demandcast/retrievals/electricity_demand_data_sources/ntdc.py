@@ -15,10 +15,9 @@ Description:
 """
 
 import datetime
-import os
 
 import pandas as pd
-import utils.config
+import utils.fetcher
 import utils.time_series
 
 
@@ -82,45 +81,15 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
-
-    Raises
-    ------
-    TypeError
-        If the extracted data is not a pandas DataFrame.
-    FileNotFoundError
-        If the data file is not found in the specified folder.
     """
-    # Get the data folder.
-    data_directory = utils.config.read_folders_structure()[
-        "manually_downloaded_electricity_demand_folder"
-    ]
-
-    # Get the paths of the downloaded files that start with "NTD".
-    downloaded_file_paths = [
-        os.path.join(data_directory, file)
-        for file in os.listdir(data_directory)
-        if file.startswith("NTD")
-    ]
-
-    if not downloaded_file_paths:
-        raise FileNotFoundError(
-            f"The data for NTDC has not been found in the folder "
-            f"{data_directory}. Please download the data manually from "
-            f"{get_url()} after registering on the website. The data "
-            f"files must be named starting with 'NTD'."
-        )
-
-    # Load the data from the downloaded files into a pandas DataFrame.
-    dataset = pd.concat(
-        [pd.read_csv(file_path) for file_path in downloaded_file_paths]
+    # Read the downloaded files.
+    dataset = utils.fetcher.read_manual_files(
+        data_source_name="NTDC",
+        url=get_url(),
+        prefix="NTD",
+        read_file=pd.read_csv,
+        access=" after registering on the website",
     )
-
-    # Make sure the dataset is a pandas DataFrame.
-    if not isinstance(dataset, pd.DataFrame):
-        raise TypeError(
-            f"The extracted data is a {type(dataset)} object, "
-            "expected a pandas DataFrame."
-        )
 
     # Define the new index, at the starts of the hours.
     index = pd.to_datetime(

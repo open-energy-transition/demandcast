@@ -34,6 +34,7 @@ import pandas as pd
 import requests
 import utils.entities
 import utils.fetcher
+import utils.time_series
 
 # The time of central Mexico, the clock of all areas of the SIN.
 CENTRAL_MEXICO_TIME = zoneinfo.ZoneInfo("America/Mexico_City")
@@ -66,17 +67,8 @@ def get_available_requests(
     # 10 days to the end date on top of the 5 days already considered.
     end_date = pd.to_datetime(end_date) - pd.Timedelta("10days")
 
-    # Define intervals for the retrieval periods.
-    intervals = pd.date_range(start_date, end_date, freq="YS")
-    intervals = intervals.union(pd.to_datetime([start_date, end_date]))
-
-    # Define start and end dates of the retrieval periods.
-    start_dates_and_times = intervals[:-1]
-    end_dates_and_times = intervals[1:]
-
-    # Return the available requests, which are the beginning and end of
-    # each one-year period.
-    return list(zip(start_dates_and_times, end_dates_and_times, strict=True))
+    # Split the period of the data into one-year periods.
+    return utils.time_series.split_period(start_date, end_date, "YS")
 
 
 def get_url() -> str:

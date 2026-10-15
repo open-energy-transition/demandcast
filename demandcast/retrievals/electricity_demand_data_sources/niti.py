@@ -13,10 +13,9 @@ Description:
 """
 
 import datetime
-import os
 
 import pandas as pd
-import utils.config
+import utils.fetcher
 import utils.time_series
 
 
@@ -80,35 +79,14 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the data file is not found in the specified folder.
     """
-    # Get the data folder.
-    data_directory = utils.config.read_folders_structure()[
-        "manually_downloaded_electricity_demand_folder"
-    ]
-
-    # Get the paths of the downloaded files that start with "NIT".
-    downloaded_file_paths = [
-        os.path.join(data_directory, file)
-        for file in os.listdir(data_directory)
-        if file.startswith("NIT")
-    ]
-
-    if not downloaded_file_paths:
-        raise FileNotFoundError(
-            f"The data for NITI Aayog has not been found in the folder "
-            f"{data_directory}. Please download the data manually from "
-            f"{get_url()} after submitting a request via the form on the "
-            f"website. The data files must be named starting with 'NIT'."
-        )
-
-    # Load the data from the downloaded files into a pandas DataFrame.
-    dataset = pd.concat(
-        [pd.read_excel(file_path) for file_path in downloaded_file_paths]
+    # Read the downloaded files.
+    dataset = utils.fetcher.read_manual_files(
+        data_source_name="NITI Aayog",
+        url=get_url(),
+        prefix="NIT",
+        read_file=pd.read_excel,
+        access=" after submitting a request via the form on the website",
     )
 
     # Extract the electricity demand time series.

@@ -13,12 +13,11 @@ Description:
 
 import datetime
 import logging
-import os
 
 import pandas as pd
 import utils.config
 import utils.fetcher
-from dotenv import load_dotenv
+import utils.time_series
 
 
 def get_available_requests(
@@ -44,19 +43,10 @@ def get_available_requests(
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
         The list of available requests.
     """
-    # Define intervals for the retrieval periods. A six-month period
-    # avoids the limitation of the API to retrieve a maximum of 5000
-    # data points.
-    intervals = pd.date_range(start_date, end_date, freq="6MS")
-    intervals = intervals.union(pd.to_datetime([start_date, end_date]))
-
-    # Define start and end dates of the retrieval periods.
-    start_dates_and_times = intervals[:-1]
-    end_dates_and_times = intervals[1:]
-
-    # Return the available requests, which are the beginning and end of
-    # each six-month period.
-    return list(zip(start_dates_and_times, end_dates_and_times, strict=True))
+    # Split the period of the data into six-month periods, which avoids
+    # the limitation of the API to retrieve a maximum of 5000 data
+    # points.
+    return utils.time_series.split_period(start_date, end_date, "6MS")
 
 
 def get_url(
@@ -91,22 +81,8 @@ def get_url(
     if (end_date - start_date).days * 24 >= 5000:
         raise ValueError("The number of time points is greater than 5000.")
 
-    # Get the root directory of the project.
-    root_directory = utils.config.read_folders_structure()["root_folder"]
-
-    # Load the environment variables.
-    load_dotenv(dotenv_path=os.path.join(root_directory, ".env"))
-
     # Get the API key.
-    api_key = os.getenv("EIA_API_KEY")
-
-    # Check if the API key is set: a secret that is not set on GitHub
-    # gives an empty key.
-    if not api_key:
-        raise ValueError(
-            "The EIA API key is not set. Please set the EIA_API_KEY "
-            "environment variable."
-        )
+    api_key = utils.config.read_api_key("EIA_API_KEY", "EIA")
 
     # Convert the start and end dates and times to the required format.
     start = start_date.strftime("%Y-%m-%dT%H")

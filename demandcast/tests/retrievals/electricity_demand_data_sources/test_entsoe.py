@@ -10,6 +10,7 @@ import datetime
 
 import pandas as pd
 import pytest
+import utils.config
 from retrievals.electricity_demand_data_sources import entsoe
 
 
@@ -38,7 +39,7 @@ def test_download_and_extract_data_for_request(
     """Test that the actual load is read and marks the ends of steps."""
     monkeypatch.setenv("ENTSOE_API_KEY", "test-key")
     # Ignore a local .env file with a real key.
-    monkeypatch.setattr(entsoe, "load_dotenv", lambda **_: None)
+    monkeypatch.setattr(utils.config, "load_dotenv", lambda **_: None)
     fake_downloads.serve("https://web-api.tp.entsoe.eu/api", "entsoe.xml")
 
     time_series = entsoe.download_and_extract_data_for_request(
@@ -82,7 +83,7 @@ def test_download_and_extract_data_for_request_with_change_of_time_step(
     """Test that each time moves to the end of its own time step."""
     monkeypatch.setenv("ENTSOE_API_KEY", "test-key")
     # Ignore a local .env file with a real key.
-    monkeypatch.setattr(entsoe, "load_dotenv", lambda **_: None)
+    monkeypatch.setattr(utils.config, "load_dotenv", lambda **_: None)
     # Poland changed from hourly to 15-minute data on 13 June 2024. The
     # 15-minute period has a single point, which holds for the whole
     # period, since its curve leaves out the repeated values.
@@ -121,7 +122,7 @@ def test_download_and_extract_data_for_request_without_api_key(
     if api_key is not None:
         monkeypatch.setenv("ENTSOE_API_KEY", api_key)
     # Ignore a local .env file with a real key.
-    monkeypatch.setattr(entsoe, "load_dotenv", lambda **_: None)
+    monkeypatch.setattr(utils.config, "load_dotenv", lambda **_: None)
 
     with pytest.raises(ValueError, match="ENTSOE_API_KEY"):
         entsoe.download_and_extract_data_for_request(
