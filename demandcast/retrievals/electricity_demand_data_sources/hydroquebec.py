@@ -5,7 +5,9 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of Hydro-Québec in Canada. The data is
-    retrieved all at once. Each time marks the end of its hour.
+    retrieved all at once. Each time marks the end of its hour: the
+    value is the average demand in MW of the hour, computed in real time
+    by the control centre of Hydro-Québec and not the official data.
 
     Source: https://donnees.hydroquebec.com/explore/dataset/historique-demande-electricite-quebec/information/
 """
