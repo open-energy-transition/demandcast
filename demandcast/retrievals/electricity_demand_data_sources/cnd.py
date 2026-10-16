@@ -6,7 +6,13 @@ Description:
     This module provides functions to retrieve the electricity demand
     data for Panama from a publicly available repository containing
     data from the Centro Nacional de Despacho (CND). The data is
-    retrieved all at once.
+    retrieved all at once, from the file of the daily post-dispatch
+    reports.
+
+    The file gives the hourly load ("Carga Real"), generation, imports
+    and exports in MW, at the start of each hour in the time of Panama,
+    which has no daylight saving time: the hours of each week are
+    numbered from 1, at 00:00.
 
     Source: https://data.mendeley.com/datasets/tcmmj4t6f4/1
 """
@@ -90,8 +96,8 @@ def download_and_extract_data_for_request(
         index=pd.to_datetime(dataset["Fecha Hora"]),
     )
 
-    # Add one hour to the index because the electricity demand seems
-    # to be provided at the beginning of the hour.
+    # The times are the starts of the hours, the first of each week
+    # numbered 1. Move them to the ends of the hours.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

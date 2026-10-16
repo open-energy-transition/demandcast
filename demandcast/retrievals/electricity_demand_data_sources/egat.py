@@ -6,7 +6,14 @@ Description:
     This module provides functions to retrieve the electricity demand
     data for Thailand from a publicly available repository containing
     data from the Electricity Generating Authority of Thailand (EGAT).
-    The data is retrieved all at once.
+    The data is retrieved one year at a time.
+
+    The files give the hourly generation and demand of the five regions
+    of Thailand, and the exchanges with the neighbouring countries, in
+    MW, in the time of Thailand, which has no daylight saving time. The
+    demand is the sum of the regions. Each file starts at 00:05 of its
+    first day and ends with the first day of the next year, which is
+    the same in both files.
 
     Source: https://zenodo.org/records/17109911
 """
@@ -109,8 +116,10 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         index=pd.to_datetime(dataset["datetime"], format="%d/%m/%Y %H:%M"),
     )
 
-    # Add one hour to the index because the electricity demand seems
-    # to be provided at the beginning of the hour.
+    # The file does not say if its times are the starts or the ends of
+    # the hours. The dip of the lunch break, from 12:00 to 13:00 in
+    # Thailand, falls on the times of 12:00, which fits starts. Move
+    # them to the ends of the hours.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

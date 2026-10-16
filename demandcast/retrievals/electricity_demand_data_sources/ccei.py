@@ -15,6 +15,11 @@ Description:
     at irregular times, and the data has a few spikes, such as about
     20,000 MW in Alberta or 80,000 MW in Quebec.
 
+    British Columbia is retrieved from BC Hydro instead: CCEI gives its
+    data one or two hours early until 2015, from the starts of the hours
+    converted with UTC-7 all year, and about 0.5% higher since 2016.
+    Saskatchewan is left out, since its data is daily.
+
     Source: https://energy-information.canada.ca/en/resources/high-frequency-electricity-data
 """
 

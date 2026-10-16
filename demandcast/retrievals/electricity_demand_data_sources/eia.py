@@ -7,6 +7,13 @@ Description:
     data from the website of the US Energy Information Administration
     (EIA). The data is retrieved in six-month intervals.
 
+    The API gives the hourly demand of each region in MW at the end of
+    each hour in UTC. From 2022-06-16 to 2025-12-02, the times of the
+    balancing authority of CAISO (CISO), which is most of the region of
+    California (CAL), are one hour late: its values match the files of
+    CAISO and its OASIS API an hour earlier. The module moves them back
+    by an hour in the demand of California.
+
     Source: https://www.eia.gov/opendata/browser/electricity/rto/region-data
 """
 
@@ -17,6 +24,13 @@ import pandas as pd
 import utils.config
 import utils.fetcher
 import utils.time_series
+
+# The period in which the times of CISO are one hour late in the data of
+# the EIA, from its first day to the day after its last one, in UTC.
+CISO_LATE_PERIOD = (
+    pd.Timestamp("2022-06-16", tz="UTC"),
+    pd.Timestamp("2025-12-03", tz="UTC"),
+)
 
 
 def get_available_requests(
@@ -128,12 +142,57 @@ def download_and_extract_data_for_request(
         f"{start_date.date()} to {end_date.date()}."
     )
 
-    # Get the URL of the electricity demand data.
-    url = get_url(start_date, end_date, code)
+    electricity_demand_time_series = _download(start_date, end_date, code)
 
+    # In the period in which the times of CISO are one hour late,
+    # replace its values in the demand of California with the ones of
+    # an hour later, which belong to the times.
+    late_start, late_end = CISO_LATE_PERIOD
+    if (
+        code == "USA_CAL"
+        and start_date.tz_localize("UTC") < late_end
+        and end_date.tz_localize("UTC") >= late_start
+    ):
+        ciso = _download(
+            start_date, end_date + pd.Timedelta(hours=1), "USA_CISO"
+        )
+        electricity_demand_time_series = electricity_demand_time_series.astype(
+            float
+        )
+        times = electricity_demand_time_series.index
+        late = (times >= late_start) & (times < late_end)
+        correction = ciso.shift(-1, freq="h").reindex(times) - ciso.reindex(
+            times
+        )
+        electricity_demand_time_series[late] += correction[late]
+
+    return electricity_demand_time_series.dropna()
+
+
+def _download(
+    start_date: pd.Timestamp, end_date: pd.Timestamp, code: str
+) -> pd.Series:
+    """
+    Download the hourly demand of a region or balancing authority.
+
+    Parameters
+    ----------
+    start_date : pandas.Timestamp
+        The start date of the data retrieval.
+    end_date : pandas.Timestamp
+        The end date of the data retrieval.
+    code : str
+        The code of the region or of the balancing authority, such as
+        USA_CAL or USA_CISO.
+
+    Returns
+    -------
+    pandas.Series
+        The electricity demand time series in MW, at times in UTC.
+    """
     # Fetch the electricity demand data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
-        url,
+        get_url(start_date, end_date, code),
         "html",
         read_with="requests.get",
         read_as="json",
@@ -142,9 +201,7 @@ def download_and_extract_data_for_request(
 
     # Create the electricity demand time series. The API gives the
     # values as text.
-    electricity_demand_time_series = pd.Series(
+    return pd.Series(
         pd.to_numeric(dataset["value"]).to_numpy(),
         index=pd.to_datetime(dataset["period"]),
     ).tz_localize("UTC")
-
-    return electricity_demand_time_series

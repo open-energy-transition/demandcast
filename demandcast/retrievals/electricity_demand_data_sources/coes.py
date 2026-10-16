@@ -7,6 +7,14 @@ Description:
     data from the website of the Comité de Operación Económica (COES)
     of Peru. The data is retrieved in one-year intervals.
 
+    The portal gives the executed demand of the national system in MW
+    every 30 minutes, at the end of each interval in the time of Peru,
+    which has no daylight saving time: a year runs from 00:30 of its
+    first day to 00:00 of the next year. Until 1999 the values are
+    hourly, each given for both half hours, and about 20% lower, as the
+    demand jumps from 1,651 MW to 1,929 MW at 00:30 of 1 January 2000,
+    so the data starts in 2000.
+
     Source: https://www.coes.org.pe/Portal/portalinformacion/demanda
 """
 

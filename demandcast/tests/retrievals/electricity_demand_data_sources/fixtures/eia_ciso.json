@@ -1,0 +1,45 @@
+{
+  "response": {
+    "total": "4",
+    "dateFormat": "YYYY-MM-DD\"T\"HH24",
+    "frequency": "hourly",
+    "data": [
+      {
+        "period": "2025-07-01T00",
+        "respondent": "CISO",
+        "respondent-name": "California Independent System Operator",
+        "type": "D",
+        "type-name": "Demand",
+        "value": "24000",
+        "value-units": "megawatthours"
+      },
+      {
+        "period": "2025-07-01T01",
+        "respondent": "CISO",
+        "respondent-name": "California Independent System Operator",
+        "type": "D",
+        "type-name": "Demand",
+        "value": "23600",
+        "value-units": "megawatthours"
+      },
+      {
+        "period": "2025-07-01T02",
+        "respondent": "CISO",
+        "respondent-name": "California Independent System Operator",
+        "type": "D",
+        "type-name": "Demand",
+        "value": "23200",
+        "value-units": "megawatthours"
+      },
+      {
+        "period": "2025-07-01T03",
+        "respondent": "CISO",
+        "respondent-name": "California Independent System Operator",
+        "type": "D",
+        "type-name": "Demand",
+        "value": "22800",
+        "value-units": "megawatthours"
+      }
+    ]
+  }
+}

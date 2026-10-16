@@ -11,7 +11,9 @@ Description:
     date and hour ending from 1 in local time: the day when daylight
     saving time ends has an hour 25, and the day when it starts has no
     hour 1. Until 2015 the demand is the one of the central system (SIC)
-    only, about 30% less, so the data starts in 2016.
+    only, about 30% less, so the data starts in 2016. The API has no
+    data after 2026-05-13: the data of CEN is now published on another
+    platform (issue #262).
 
     Source: https://www.coordinador.cl/operacion/graficos/operacion-real/demanda-real/
 """
