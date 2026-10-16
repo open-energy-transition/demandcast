@@ -8,6 +8,14 @@ Description:
     (KansaiTD) in Japan. The data is retrieved from the available CSV
     files on the KansaiTD website.
 
+    The files of the years until 2023 are fiscal years, from April to
+    March, the first one from April 2016, and give the area demand in
+    MWh of each hour. The last one ends in February 2024, and the
+    monthly files from March 2024 give the average area demand in MW of
+    each half hour. The days of both start at 00:00, so the times are
+    the starts of the intervals, in the time of Japan, which has no
+    daylight saving time.
+
     Source: https://www.kansai-td.co.jp/english/home/denkiyoho/area-performance/index.html
 """
 
@@ -153,8 +161,7 @@ def download_and_extract_data_for_request(
             index=pd.to_datetime(dataset["DATE_TIME"]),
         )
 
-        # The time values appear to be provided at the beginning of
-        # the hours.
+        # The times are the starts of the hours.
         interval = pd.Timedelta(hours=1)
 
     else:
@@ -169,8 +176,7 @@ def download_and_extract_data_for_request(
             index=index,
         )
 
-        # The time values appear to be provided at the beginning of
-        # the half hours.
+        # The times are the starts of the half hours.
         interval = pd.Timedelta(minutes=30)
 
     # Move the times to the ends of the intervals, in Japan time.

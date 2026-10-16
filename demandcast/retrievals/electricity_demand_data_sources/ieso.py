@@ -10,7 +10,10 @@ Description:
 
     The times of IESO are in Eastern Standard Time all year, without
     daylight saving time, as on the Power Data page below ("Hour Ending
-    (EST)").
+    (EST)"): the days have 24 hours, also those of daylight saving time.
+    The demand is the Ontario demand in MW, without the exports of the
+    market demand. The file of 1994 to April 2002 has no data for
+    December 2001.
 
     Source: https://www.ieso.ca/Power-Data/Data-Directory
     Source: https://reports-public.ieso.ca/public/Demand/
