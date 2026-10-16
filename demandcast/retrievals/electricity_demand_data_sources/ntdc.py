@@ -11,6 +11,12 @@ Description:
     Kaggle website, which is free of charge. After registration,
     the user can log in to the website and download the data.
 
+    The dataset is no longer on Kaggle, since October 2026 at the
+    latest, so only the files downloaded before can be read. They give
+    the hourly system load (SYSLOAD) in MW, with thousands separators,
+    by date and hour ending from 1 to 24 in the time of Pakistan, which
+    has no daylight saving time.
+
     Source: https://www.kaggle.com/datasets/tentative/ntdc-dataset
 """
 

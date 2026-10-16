@@ -9,6 +9,11 @@ Description:
     to the NITI Aayog website. The user is then able to download the
     data.
 
+    The files give the hourly demand met in MW of India, by date and
+    hour, from the data of Grid-India. The India Climate and Energy
+    Dashboard shows the same data, but its API encrypts its responses
+    for its own pages.
+
     Source: https://iced.niti.gov.in
 """
 
