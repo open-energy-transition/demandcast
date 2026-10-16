@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Define the name of the scripts that generate the shapefiles.
-scripts="cenace \
+scripts="cammesa \
+cenace \
 eia \
 kansaitd \
 neso \
