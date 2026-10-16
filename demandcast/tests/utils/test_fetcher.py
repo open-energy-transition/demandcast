@@ -205,6 +205,32 @@ def test_fetch_data_html_requests_post_json():
         assert isinstance(dataset, pd.DataFrame)
 
 
+def test_fetch_data_html_requests_post_with_a_json_body():
+    """Test that a JSON body is sent instead of the data."""
+    with patch("requests.post") as mock_post:
+        mock_post.return_value.json = lambda: {"items": [{"a": 1}]}
+        utils.fetcher.fetch_data(
+            "http://example.com",
+            "html",
+            read_with="requests.post",
+            read_as="json",
+            post_json={"startDate": "2024-01-01T00:00:00+03:00"},
+            json_keys=["items"],
+        )
+    assert mock_post.call_args.kwargs["json"] == {
+        "startDate": "2024-01-01T00:00:00+03:00"
+    }
+
+
+def test_redact_hides_the_passwords(monkeypatch):
+    """Test that the values of the passwords are hidden too."""
+    monkeypatch.setenv("EPIAS_PASSWORD", "password-value")
+
+    assert utils.fetcher.redact("Failed with password-value.") == (
+        "Failed with ***."
+    )
+
+
 def test_fetch_data_html_requests_post_aspx():
     """
     Test fetching HTML data from an ASPX page using requests.post.
