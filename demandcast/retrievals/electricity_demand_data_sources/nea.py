@@ -7,12 +7,16 @@ Description:
     data from the website of Open Data Nepal where data from Nepal
     Electricity Authority is published. The data is retrieved in
     one-month intervals. Even though the year specified in the dataset
-    is 2073 in the Bikram Sambat calendar, the length of the months
-    seems to suggest that the data corresponds to the year 2074 BS
-    (April 2017 to April 2018). Checking the demand profiles on
-    weekdays and weekends does not show any consistent pattern that
-    would help to identify the correct year. Therefore, we assume that
-    the data corresponds to the year 2074 BS.
+    is 2073 in the Bikram Sambat calendar, the numbers of days of its
+    twelve months are those of the year 2074 BS (April 2017 to April
+    2018), and five of them differ from those of 2073, so the data is
+    read in 2074 BS.
+
+    The files give the load in MW at clock times in the time of Nepal,
+    which has no daylight saving time: every hour, and also every half
+    hour around the peaks of the morning and the evening. The time 0:00
+    is the end of the day. The file of Shrawan gives the times as
+    fractions of a day.
 
     Source: https://opendatanepal.com/datasets/electricity-load-profile-of-nepal-in-2073-nepal-electricity-authority
 """
@@ -57,8 +61,7 @@ def get_available_requests(
     # Return the available requests, which are the month numbers from 1
     # to 12 in the Bikram Sambat calendar year defined by
     # DATASET_BS_YEAR.
-    # Month 4 (Shrawan) is excluded due to missing data.
-    return [1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12]
+    return list(range(1, 13))
 
 
 def get_url(bs_month: int) -> str:
@@ -80,7 +83,7 @@ def get_url(bs_month: int) -> str:
         1: "0c8d8aa5-ccbe-434b-86f9-d94c3bc0e045",  # Baisakh
         2: "c7c75530-1dbb-4aae-a83e-795391f1766f",  # Jestha
         3: "fee50cff-506d-4ad3-b34e-4f175c92387f",  # Ashadh
-        # 4: "0a9a3631-0249-4f48-8627-ce82691e2c79",  # Shrawan
+        4: "0a9a3631-0249-4f48-8627-ce82691e2c79",  # Shrawan
         5: "21977d9c-5c14-498b-90e0-9018e85098da",  # Bhadra
         6: "12b1493b-06c9-4dfc-851b-d9e62c4db39b",  # Ashoj
         7: "7b63130f-9ebd-4aea-8d11-7ec76fb00be5",  # Kartik
@@ -144,6 +147,20 @@ def download_and_extract_data_for_request(
     dataset = dataset[dataset.columns[1:]]
     dataset = dataset.set_index(dataset.columns[0])
 
+    # The file of Shrawan gives the times as fractions of a day, such as
+    # 0.04 for 1:00 or 0.23 for 5:30, rounded to two decimals. Round
+    # them to the nearest half hour, which gives the times of the other
+    # months.
+    dataset.columns = [
+        column
+        if ":" in str(column)
+        else (
+            f"{int(round(float(column) * 48) // 2)}:"
+            f"{30 * (round(float(column) * 48) % 2):02d}"
+        )
+        for column in dataset.columns
+    ]
+
     # Melt the dataset to have 'Hour' and 'Demand' columns.
     dataset = dataset.melt(
         ignore_index=False,
@@ -165,7 +182,7 @@ def download_and_extract_data_for_request(
         (
             DATASET_BS_YEAR,
             bs_month,
-            int(row["Day"]),
+            int(float(row["Day"])),
             *parse_time_string(row["Time"]),
         )
         for _, row in dataset.iterrows()
