@@ -20,6 +20,8 @@ Some modules require API keys to access data from external services. These keys 
 CDS_API_KEY=<your_key>             # For data retrieval from Copernicus CDS
 ENTSOE_API_KEY=<your_key>          # For data retrieval from ENTSO-E
 EIA_API_KEY=<your_key>             # For data retrieval from EIA
+EPIAS_USERNAME=<your_username>     # For data retrieval from EPIAS, with a free account
+EPIAS_PASSWORD=<your_password>     # For data retrieval from EPIAS
 ZENODO_API_KEY=<your_key>          # For data upload to Zenodo
 SANDBOX_ZENODO_API_KEY=<your_key>  # For data upload to Zenodo Sandbox
 ```

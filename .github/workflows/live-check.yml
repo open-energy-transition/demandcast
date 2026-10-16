@@ -1,8 +1,8 @@
 # Checks the electricity demand data sources over the network every week,
 # and keeps one issue open with the data sources that fail two checks in a
-# row. The API keys are secrets of the environment live-checks, which only
-# the main branch can use. Both keys belong to the account
-# esmtools@openenergytransition.org.
+# row. The API keys and the account of EPIAS are secrets of the environment
+# live-checks, which only the main branch can use. The keys belong to the
+# account esmtools@openenergytransition.org.
 
 name: Live check
 
@@ -58,6 +58,8 @@ jobs:
         env:
           ENTSOE_API_KEY: ${{ secrets.ENTSOE_API_KEY }}
           EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
+          EPIAS_USERNAME: ${{ secrets.EPIAS_USERNAME }}
+          EPIAS_PASSWORD: ${{ secrets.EPIAS_PASSWORD }}
         run: uv run --locked check.py --config config/check_data_sources_config.yaml
 
       - name: "Write the summary"

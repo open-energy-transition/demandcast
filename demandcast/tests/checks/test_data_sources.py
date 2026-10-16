@@ -313,7 +313,7 @@ def fake_checks(monkeypatch, tmp_folders, tmp_path):
 def test_run_check(fake_checks, tmp_path):
     """Test that the results are saved, without the manual downloads."""
     results = checks.data_sources.run_check(
-        ["ons", "epias", "cen"],
+        ["ons", "eskom", "cen"],
         maximum_age_days=45,
         maximum_age_days_by_source={"cen": 200},
     )
@@ -330,7 +330,7 @@ def test_run_check(fake_checks, tmp_path):
         report = json.load(file)
     assert pd.Timestamp(report["checked_at"]).tz is not None
     assert report["results"][1] == {
-        "data_source": "epias",
+        "data_source": "eskom",
         "status": "skipped",
         "code": None,
         "request": None,
@@ -361,7 +361,7 @@ def test_run_check(fake_checks, tmp_path):
         "",
         "### Skipped",
         "",
-        "- `epias`: Its files are downloaded manually.",
+        "- `eskom`: Its files are downloaded manually.",
     ]
 
 
