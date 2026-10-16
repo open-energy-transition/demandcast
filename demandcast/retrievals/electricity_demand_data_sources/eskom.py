@@ -9,6 +9,11 @@ Description:
     then receives a link on the provided email address to download the
     data.
 
+    The files give the hourly RSA contracted demand in MW, the larger of
+    the two demands of the data portal, by the start of each hour
+    ("Date Time Hour Beginning") in South African time, which has no
+    daylight saving time.
+
     Source: https://www.eskom.co.za/dataportal/data-request-form/
 """
 

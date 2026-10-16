@@ -49,10 +49,10 @@ class DataNotFoundError(ConnectionError):
 
 def redact(text: str) -> str:
     """
-    Hide the API keys in a text.
+    Hide the API keys and passwords in a text.
 
     The URL of a download, and so its errors, can include an API key,
-    which must not end up in logs and reports.
+    which must not end up in logs and reports, and so must passwords.
 
     Parameters
     ----------
@@ -62,10 +62,10 @@ def redact(text: str) -> str:
     Returns
     -------
     str
-        The text without the values of the API keys.
+        The text without the values of the API keys and passwords.
     """
     for name, value in os.environ.items():
-        if name.endswith("_API_KEY") and value:
+        if name.endswith(("_API_KEY", "_PASSWORD")) and value:
             text = text.replace(value, "***")
     return text
 
@@ -169,6 +169,7 @@ def fetch_data(  # noqa: C901
     verify_ssl: bool | str = True,
     request_params: Mapping[str, str] | None = None,
     post_data_params: Mapping[str, str | int] | None = None,
+    post_json: Mapping[str, Any] | None = None,
     header_params: Mapping[str, str] | None = None,
     json_keys: list[str] | None = None,
     query_aspx_webpage: bool = False,
@@ -214,6 +215,8 @@ def fetch_data(  # noqa: C901
         The parameters for the request.
     post_data_params : Mapping[str, str | int], optional
         The data for the POST request.
+    post_json : Mapping[str, Any], optional
+        The JSON body for the POST request, instead of the data.
     json_keys : list[str], optional
         The keys to extract from the JSON response.
     query_aspx_webpage : bool, optional
@@ -354,6 +357,7 @@ def fetch_data(  # noqa: C901
                             headers=header_params,
                             params=request_params,
                             data=post_data_params,
+                            json=post_json,
                         )
 
                     # Check if the request was successful.

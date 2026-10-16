@@ -7,6 +7,11 @@ Description:
     data from the website of the Grupo ICE (GRUPOICE) in Costa Rica.
     The data is retrieved in one-year intervals.
 
+    The API gives the demand of the national system in MW every 15
+    minutes, at the start of each interval in the time of Costa Rica,
+    which has no daylight saving time. The data of the current day also
+    has empty hourly times until its end, which the cleaning removes.
+
     Source: https://apps.grupoice.com/CenceWeb
 """
 
@@ -103,8 +108,7 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         index=pd.to_datetime(dataset["fechaHora"]),
     )
 
-    # Add 15 minutes to each timestamp to represent the end of the time
-    # period.
+    # Move the starts of the 15 minutes to their ends.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,
