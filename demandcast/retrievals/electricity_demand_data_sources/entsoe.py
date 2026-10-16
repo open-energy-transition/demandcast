@@ -8,6 +8,13 @@ Description:
     Operators for Electricity (ENTSO-E). The data is retrieved in
     one-year intervals.
 
+    The API gives the actual total load of each country in MW, at the
+    start of each interval in UTC: hourly, 30 or 15 minutes depending on
+    the country, which can change within a year. The data can have
+    gaps, such as two hours in Ireland on the night of 2024-10-27, when
+    daylight saving time ended. The actual total load is not on the list
+    of data that ENTSO-E opens under CC BY 4.0.
+
     Source: https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html
     Source: https://github.com/EnergieID/entsoe-py
 """
