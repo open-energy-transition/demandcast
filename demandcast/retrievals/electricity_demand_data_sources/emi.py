@@ -7,6 +7,14 @@ Description:
     data from the website of the Electricity Market Information (EMI)
     in New Zealand. The data is retrieved in one-year intervals.
 
+    The files give the demand in GWh of each half hour, by its start and
+    end in the time of New Zealand. When daylight saving time starts,
+    the day has 46 half hours, and the one before the change ends at
+    02:00, which does not exist. When it ends, the day has 50, and the
+    second half hours that start at 02:00 and 02:30 are labelled as
+    starting at 02:40 and 02:50. The module reads the starts, which
+    always exist, and puts the repeated ones in standard time.
+
     Source: https://www.emi.ea.govt.nz/Wholesale/Reports/W_GD_C
 """
 
@@ -118,19 +126,35 @@ def download_and_extract_data_for_request(
         csv_kwargs={"skiprows": 11},
     )
 
+    # Read the starts of the half hours, which exist on the days of
+    # daylight saving time, unlike some of their ends. When daylight
+    # saving time ends, the second half hours that start at 02:00 and
+    # 02:30 are labelled as starting at 02:40 and 02:50: move them back,
+    # in standard time, after the first ones in daylight saving time.
+    starts = pd.to_datetime(
+        dataset["Period start"], format="%d/%m/%Y %H:%M:%S"
+    )
+    repeated = starts.dt.minute % 30 != 0
+    starts = starts.where(
+        ~repeated,
+        starts.dt.floor("h")
+        + pd.to_timedelta(starts.dt.minute.map({40: 0, 50: 30}), unit="min"),
+    )
+
     # Extract the electricity demand time series. Convert GWh to MW
     # considering a 0.5-hour time step.
     electricity_demand_time_series = pd.Series(
         dataset["Demand (GWh)"].to_numpy() * 1000 / 0.5,
-        index=pd.to_datetime(
-            dataset["Period end"], format="%d/%m/%Y %H:%M:%S"
-        ),
+        index=pd.DatetimeIndex(starts),
     )
 
-    # Add the time zone information to the time series.
+    # Move the starts to the ends of the half hours, in absolute time.
     electricity_demand_time_series = (
-        electricity_demand_time_series.tz_localize(
-            "Pacific/Auckland", ambiguous="NaT", nonexistent="NaT"
+        utils.time_series.localize_interval_starts(
+            electricity_demand_time_series,
+            "Pacific/Auckland",
+            pd.Timedelta(minutes=30),
+            ambiguous=~repeated.to_numpy(),
         )
     )
 
