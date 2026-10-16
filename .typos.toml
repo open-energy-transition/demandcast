@@ -25,3 +25,6 @@ informacion = "informacion"
 inicial = "inicial"
 # Spelling used in the licence terms quoted from a data source.
 transferrable = "transferrable"
+# File name and SCADA name of the data of Grid-India.
+novemeber = "novemeber"
+thm = "thm"

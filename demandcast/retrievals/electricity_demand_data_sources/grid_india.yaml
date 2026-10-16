@@ -1,0 +1,9 @@
+licence:
+  redistribute: true
+  terms: CC BY 4.0 license, as the dataset on Mendeley Data. Use for any purpose with attribution.
+  url: https://data.mendeley.com/datasets/y58jknpgs8/2
+entities:
+  - country_name: India
+    country_code: IND
+    start_date: 2021-09-01
+    end_date: 2025-06-24
