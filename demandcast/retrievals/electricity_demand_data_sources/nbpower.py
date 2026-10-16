@@ -7,6 +7,11 @@ Description:
     data from the website of the New Brunswick Power Corporation
     (NB Power) in Canada. The data is retrieved in one-month intervals.
 
+    The archive gives the hourly load in MW of each month that has
+    ended, by hour ending in Atlantic time with daylight saving time, so
+    the file of a month runs from 00:00 of its first day to 23:00 of its
+    last day. The current month is not in the archive yet.
+
     Source: https://tso.nbpower.com/Public/en/system_information_archive.aspx
 """
 
@@ -98,7 +103,7 @@ def download_and_extract_data_for_request(
     # Get the URL of the electricity demand data.
     url = get_url()
 
-    # Fetch HTML content from the URL.
+    # Fetch the CSV file of the month.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "html",
