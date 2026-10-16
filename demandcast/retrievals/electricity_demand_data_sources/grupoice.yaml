@@ -1,7 +1,7 @@
 licence:
   redistribute: true
-  terms: Open data.
-  url: https://www.grupoice.com/wps/wcm/connect/328d1cc7-6796-44cb-a981-8dca6043c983/Reglamento_funcionamiento_CENCE.pdf?MOD=AJPERES&CACHEID=ROOTWORKSPACE-328d1cc7-6796-44cb-a981-8dca6043c983-nWcNMD.
+  terms: CC-BY 4.0 license, as the open data of ICE. Use for any purpose with attribution.
+  url: https://www.grupoice.com/wps/portal/ICE/Transparencia/datos-abiertos
 entities:
   - country_name: Costa Rica
     country_code: CRI
