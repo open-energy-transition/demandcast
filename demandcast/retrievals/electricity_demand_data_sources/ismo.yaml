@@ -1,0 +1,9 @@
+licence:
+  redistribute: false
+  terms: All rights reserved. Access for personal use only, without republishing, reproducing or redistributing the material of the website.
+  url: https://www.ismo.gov.pk/terms-and-conditions
+entities:
+  - country_name: Pakistan
+    country_code: PAK
+    start_date: 2024-07-01
+    end_date: 2025-06-30
