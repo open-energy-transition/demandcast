@@ -3,8 +3,6 @@ licence:
   terms: Prohibited any use for commercial or distribution purposes.
   url: https://www.coes.org.pe/Portal/Organizacion/TerminosyCondiciones
 entities:
-  # Until 1999 the data is hourly and about 20% lower, as it covers part
-  # of the national system only: it jumps at the start of 2000.
   - country_name: Peru
     country_code: PER
     start_date: 2000-01-01

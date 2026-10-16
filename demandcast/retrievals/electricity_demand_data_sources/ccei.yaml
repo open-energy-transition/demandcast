@@ -10,15 +10,6 @@ entities:
     start_date: 2023-02-07
     end_date: today
     time_zone: America/Edmonton
-  # British Columbia is retrieved from BC Hydro, whose data CCEI gives
-  # one or two hours early until 2015 and about 0.5% higher since 2016.
-  # - subdivision_name: British Columbia
-  #   subdivision_code: BC
-  #   country_name: Canada
-  #   country_code: CAN
-  #   start_date: 2001-04-01
-  #   end_date: 2024-08-11
-  #   time_zone: America/Vancouver
   - subdivision_name: New Brunswick
     subdivision_code: NB
     country_name: Canada
@@ -61,13 +52,6 @@ entities:
     start_date: 2021-10-05
     end_date: today
     time_zone: America/Montreal
-  # - subdivision_name: Saskatchewan  # Data is at daily resolution
-  #   subdivision_code: SK
-  #   country_name: Canada
-  #   country_code: CAN
-  #   start_date: 2024-09-29
-  #   end_date: today
-  #   time_zone: America/Regina
   - subdivision_name: Yukon
     subdivision_code: YT
     country_name: Canada
