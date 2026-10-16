@@ -1,9 +1,9 @@
 licence:
   redistribute: true
-  terms: Open data.
-  url: https://www.data.go.kr/ugs/selectPublicDataUseGuideView.do
+  terms: Open data, without restriction of use, from the public data portal of Korea.
+  url: https://www.data.go.kr/data/15065266/fileData.do
 entities:
   - country_name: South Korea
     country_code: KOR
     start_date: 2013-01-01
-    end_date: 2024-12-31
+    end_date: 2025-12-31

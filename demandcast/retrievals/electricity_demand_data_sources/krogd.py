@@ -7,6 +7,14 @@ Description:
     data from the website of Korean Open Government Data (KROGD) portal
     in South Korea. The data is downloaded manually from the portal.
 
+    The files of the hourly national demand of the Korea Power Exchange
+    (KPX) give the demand in MWh of each hour, at the generation side
+    and provisional, by date and hour ending from 1시 to 24시 in the
+    time of Korea, which has no daylight saving time. The portal offers
+    only the file of the latest year, such as the one that ends on
+    2025-12-31, without login, so the files of the earlier years must
+    be kept.
+
     Source: https://www.data.go.kr/
 """
 
