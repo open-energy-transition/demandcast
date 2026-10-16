@@ -47,17 +47,27 @@ def test_get_url_without_dataset(fake_downloads):
 
 
 def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
-    """Test that the records are numbered from the start of the year."""
+    """Test that the settlement periods end after the local midnight."""
     fake_downloads.serve(CATALOGUE_URL, "neso_catalogue.json")
     fake_downloads.serve(URL_2025, "neso.json")
 
     time_series = neso.download_and_extract_data_for_request(2025, "GBR_GB")
 
-    # The times come from the order of the records, every 30 minutes,
-    # not from their settlement dates and periods.
+    # Each settlement period ends 30 minutes times its number after the
+    # local midnight, in absolute time: when daylight saving time ends
+    # on 26 October, the periods 3 to 6 end every 30 minutes from 00:30
+    # in UTC, across the change of the clocks at 01:00 in UTC. The
+    # forecasts are left out.
     assert_demand(
         time_series,
         "Europe/London",
-        {"2025-01-01 00:30": 25000, "2025-01-01 01:00": 24500},
+        {
+            "2025-01-01 00:30": 25000,
+            "2025-01-01 01:00": 24500,
+            "2025-10-26 00:30": 21000,
+            "2025-10-26 01:00": 20800,
+            "2025-10-26 01:30": 20600,
+            "2025-10-26 02:00": 20400,
+        },
         dtype="int64",
     )
