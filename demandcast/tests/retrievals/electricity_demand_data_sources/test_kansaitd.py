@@ -16,11 +16,11 @@ from retrievals.electricity_demand_data_sources import kansaitd
 def test_get_available_requests():
     """Test that the requests are years, then months from March 2024."""
     requests = kansaitd.get_available_requests(
-        "JPN_Kansai", datetime.date(2016, 1, 1), datetime.date(2025, 12, 28)
+        "JPN_Kansai", datetime.date(2016, 4, 1), datetime.date(2025, 12, 28)
     )
 
-    # The years are fiscal years, from April to March, so the data start
-    # in April 2016, not in January as the YAML file says.
+    # The years are fiscal years, from April to March, the first one
+    # from April 2016.
     assert requests[0] == (2016, None)
     assert requests[7:9] == [(2023, None), (2024, 3)]
     assert requests[-1] == (2025, 12)
