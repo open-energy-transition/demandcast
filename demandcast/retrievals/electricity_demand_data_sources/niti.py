@@ -14,6 +14,13 @@ Description:
     Dashboard shows the same data, but its API encrypts its responses
     for its own pages.
 
+    The files end in April 2024. From September 2021 to March 2024, the
+    demand is within 1% of the data of Grid-India on Mendeley Data (see
+    grid_india.py), but in April 2024 it is about 7% lower: 134.2 TWh,
+    against 144.3 TWh for Grid-India and about 144.3 TWh in the official
+    figures reported for India. The files downloaded in October 2026
+    have the same values, which are kept for the later cleaning.
+
     Source: https://iced.niti.gov.in
 """
 

@@ -17,6 +17,11 @@ Description:
     by date and hour ending from 1 to 24 in the time of Pakistan, which
     has no daylight saving time.
 
+    Some days have 23 or 25 rows, so that 51 dates and hours appear
+    twice, 48 of them with different values, of which the cleaning
+    keeps the first. ISMO, which took over the system operation of NTDC,
+    publishes the hourly demand from July 2024 (see ismo.py).
+
     Source: https://www.kaggle.com/datasets/tentative/ntdc-dataset
 """
 
