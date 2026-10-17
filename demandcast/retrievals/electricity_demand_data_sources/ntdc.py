@@ -17,10 +17,18 @@ Description:
     by date and hour ending from 1 to 24 in the time of Pakistan, which
     has no daylight saving time.
 
-    Some days have 23 or 25 rows, so that 51 dates and hours appear
-    twice, 48 of them with different values, of which the cleaning
-    keeps the first. ISMO, which took over the system operation of NTDC,
-    publishes the hourly demand from July 2024 (see ismo.py).
+    About 170 rows around midnight have the date of the day before or
+    after, such as the hour 24 of 06/01/2015 between the hours 23 of
+    07/01/2015 and 2 of 08/01/2015, so that 51 dates and hours appear
+    twice. The module moves each of them by that day, which leaves every
+    day with 24 hours, except for 9 days with gaps, and the values in
+    line with their new neighbours.
+
+    Some days have the same values as the same days of the year before:
+    2 days of 2016, about 20 days of February and March 2018, and about
+    20 days of May and September to November 2019. They are kept for
+    the later cleaning. ISMO, which took over the system operation of
+    NTDC, publishes the hourly demand from July 2024 (see ismo.py).
 
     Source: https://www.kaggle.com/datasets/tentative/ntdc-dataset
 """
@@ -31,6 +39,39 @@ import logging
 import pandas as pd
 import utils.fetcher
 import utils.time_series
+
+
+def _correct_days(starts: pd.Series) -> pd.Series:
+    """
+    Correct the times of the rows with the date of another day.
+
+    A row whose time is out of order with the rows before or after it
+    moves by the day, before or after, that brings it closest to the
+    times that the three rows on each side give for it. The rows next to
+    gaps in the data are in order, so they do not move.
+
+    Parameters
+    ----------
+    starts : pandas.Series
+        The starts of the hours of the rows, in the order of the file.
+
+    Returns
+    -------
+    pandas.Series
+        The starts of the hours, with the days corrected.
+    """
+    hours = pd.Series(
+        ((starts - starts.iloc[0]) / pd.Timedelta(hours=1)).to_numpy()
+    )
+    out_of_order = (hours <= hours.cummax().shift(1)) | (
+        hours >= hours[::-1].cummin()[::-1].shift(-1)
+    )
+    expected_hours = pd.concat(
+        [hours.shift(rows) + rows for rows in (-3, -2, -1, 1, 2, 3)], axis=1
+    ).median(axis=1)
+    days = ((expected_hours - hours) / 24).round()
+    days = days.where(out_of_order & days.abs().eq(1), 0)
+    return starts + pd.to_timedelta(days.to_numpy(), unit="D")
 
 
 def get_available_requests(
@@ -103,17 +144,8 @@ def download_and_extract_data_for_request(
         access=" after registering on the website",
     )
 
-    # Define the new index, at the starts of the hours.
-    index = pd.to_datetime(
-        dataset.iloc[:, 0].astype(str)
-        + " "
-        + (dataset.iloc[:, 1].astype(str).astype(int) - 1).astype(str),
-        format="%d/%m/%Y %H",
-    )
-
     # Remove the thousands separators and read the values as numbers.
-    # A value that is not a number becomes a missing value, which the
-    # cleaning of the data then removes.
+    # The rows without a number are left out.
     load = pd.to_numeric(
         dataset["SYSLOAD"].astype(str).str.replace(",", ""),
         errors="coerce",
@@ -125,8 +157,23 @@ def download_and_extract_data_for_request(
             f"left out, such as {not_numbers.iloc[0]!r}."
         )
 
+    has_number = load.notna().to_numpy()
+    dataset, load = dataset[has_number], load[has_number]
+
+    # Define the starts of the hours, with the days of the rows
+    # labelled with another day corrected.
+    starts = pd.to_datetime(
+        dataset.iloc[:, 0].astype(str)
+        + " "
+        + (dataset.iloc[:, 1].astype(str).astype(int) - 1).astype(str),
+        format="%d/%m/%Y %H",
+    )
+    starts = _correct_days(starts)
+
     # Define the electricity demand time series.
-    electricity_demand_time_series = pd.Series(load.to_numpy(), index=index)
+    electricity_demand_time_series = pd.Series(
+        load.to_numpy(dtype="float64"), index=pd.DatetimeIndex(starts)
+    )
 
     # Move the times to the ends of the hours, in local time.
     electricity_demand_time_series = (

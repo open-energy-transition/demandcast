@@ -10,9 +10,13 @@ Description:
     data.
 
     The files give the hourly demand met in MW of India, by date and
-    hour, from the data of Grid-India. The India Climate and Energy
-    Dashboard shows the same data, but its API encrypts its responses
-    for its own pages.
+    hour, from the data of Grid-India. The hours are their starts: in
+    2022, the demand is closest to the average of the readings of
+    Grid-India every 5 minutes in the hour that starts at its time
+    (median difference of 0.4%), rather than in the hour that ends at
+    its time (1.6%) or the reading at its time (0.9%). The India Climate
+    and Energy Dashboard shows the same data, but its API encrypts its
+    responses for its own pages.
 
     The files end in April 2024. From September 2021 to March 2024, the
     demand is within 1% of the data of Grid-India on Mendeley Data (see
@@ -110,8 +114,7 @@ def download_and_extract_data_for_request(
         ),
     )
 
-    # Add one hour to the index because the electricity demand seems to
-    # be provided at the beginning of the hour.
+    # Move the starts of the hours to their ends.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,
