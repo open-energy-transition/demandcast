@@ -7,7 +7,9 @@ Description:
     data from the website of National Institution for Transforming India
     (NITI) Aayog in India. The data is retrieved by submitting a request
     to the NITI Aayog website. The user is then able to download the
-    data.
+    data of the yearly demand profile of the selected years, as a file
+    named "Yearly Demand Profile.xlsx", which needs a name that starts
+    with "NIT", such as "NITI_2025-2026.xlsx".
 
     The files give the hourly demand met in MW of India, by date and
     hour, from the data of Grid-India. The hours are their starts: in
@@ -18,12 +20,13 @@ Description:
     and Energy Dashboard shows the same data, but its API encrypts its
     responses for its own pages.
 
-    The files end in April 2024. From September 2021 to March 2024, the
-    demand is within 1% of the data of Grid-India on Mendeley Data (see
-    grid_india.py), but in April 2024 it is about 7% lower: 134.2 TWh,
-    against 144.3 TWh for Grid-India and about 144.3 TWh in the official
-    figures reported for India. The files downloaded in October 2026
-    have the same values, which are kept for the later cleaning.
+    The files of the dashboard, downloaded by year, have the data from
+    2017 to March 2026 without gaps. From September 2021 to June 2025,
+    the monthly demand is 0.5% to 1% below the data of Grid-India on
+    Mendeley Data (see grid_india.py), except in April 2024, when it is
+    about 7% lower: 134.2 TWh, against 144.3 TWh for Grid-India and
+    about 144.3 TWh in the official figures reported for India. The
+    values of April 2024 are kept for the later cleaning.
 
     Source: https://iced.niti.gov.in
 """
