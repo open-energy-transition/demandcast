@@ -7,6 +7,12 @@ Description:
     data from the website of the National Grid Corporation of the
     Philippines (NGCP). The data is retrieved all at once.
 
+    The Excel file gives the hourly demand in MW of the grids of Luzon,
+    Visayas and Mindanao, by date and hour ending from 1 to 24 in the
+    time of the Philippines, which has no daylight saving time. The
+    demand of the country is their sum, for the hours with the demand
+    of all three; the other sheets are parts of Visayas.
+
     Source: https://www.ngcp.ph/operations#operations
 """
 

@@ -7,7 +7,26 @@ Description:
     data from the website of National Institution for Transforming India
     (NITI) Aayog in India. The data is retrieved by submitting a request
     to the NITI Aayog website. The user is then able to download the
-    data.
+    data of the yearly demand profile of the selected years, as a file
+    named "Yearly Demand Profile.xlsx", which needs a name that starts
+    with "NIT", such as "NITI_2025-2026.xlsx".
+
+    The files give the hourly demand met in MW of India, by date and
+    hour, from the data of Grid-India. The hours are their starts: in
+    2022, the demand is closest to the average of the readings of
+    Grid-India every 5 minutes in the hour that starts at its time
+    (median difference of 0.4%), rather than in the hour that ends at
+    its time (1.6%) or the reading at its time (0.9%). The India Climate
+    and Energy Dashboard shows the same data, but its API encrypts its
+    responses for its own pages.
+
+    The files of the dashboard, downloaded by year, have the data from
+    2017 to March 2026 without gaps. From September 2021 to June 2025,
+    the monthly demand is 0.5% to 1% below the data of Grid-India on
+    Mendeley Data (see grid_india.py), except in April 2024, when it is
+    about 7% lower: 134.2 TWh, against 144.3 TWh for Grid-India and
+    about 144.3 TWh in the official figures reported for India. The
+    values of April 2024 are kept for the later cleaning.
 
     Source: https://iced.niti.gov.in
 """
@@ -98,8 +117,7 @@ def download_and_extract_data_for_request(
         ),
     )
 
-    # Add one hour to the index because the electricity demand seems to
-    # be provided at the beginning of the hour.
+    # Move the starts of the hours to their ends.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,
