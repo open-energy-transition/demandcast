@@ -151,7 +151,17 @@ entities:
     country_code: UKR
     start_date: 2017-09-24
     end_date: 2022-02-25
-  - country_name: United Kingdom
+  - subdivision_name: Great Britain
+    subdivision_code: GB
+    country_name: United Kingdom
     country_code: GBR
     start_date: 2014-12-22
     end_date: 2021-06-14
+    time_zone: Europe/London
+  - subdivision_name: Northern Ireland
+    subdivision_code: NIR
+    country_name: United Kingdom
+    country_code: GBR
+    start_date: 2015-01-01
+    end_date: 2025-10-23
+    time_zone: Europe/London

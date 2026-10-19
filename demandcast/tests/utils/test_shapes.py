@@ -214,6 +214,7 @@ def test_read_non_standard_shape_codes():
     assert "eia" in codes
     assert "tepco" in codes
     assert "neso" in codes
+    assert codes["soni"] == ["GBR_NIR"]
     assert "BRA_N" in codes["ons"]
     assert "MEX_PEN" in codes["cenace"]
 

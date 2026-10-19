@@ -396,6 +396,18 @@ def test_fetch_entsoe_demand():
         )
         assert isinstance(result, pd.Series)
 
+        # Test with an area of ENTSO-E in place of the country.
+        utils.fetcher.fetch_entsoe_demand(
+            "dummy",
+            "GBR_NIR",
+            pd.Timestamp("2023-01-01"),
+            pd.Timestamp("2023-01-02"),
+            area="GB_NIR",
+        )
+        assert mock_client.return_value.query_load.call_args.args[0] == (
+            "GB_NIR"
+        )
+
 
 def test_fetch_entsoe_demand_errors():
     """
