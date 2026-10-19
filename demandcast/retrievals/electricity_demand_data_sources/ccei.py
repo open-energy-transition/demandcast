@@ -15,6 +15,31 @@ Description:
     at irregular times, and the data has a few spikes, such as about
     20,000 MW in Alberta or 80,000 MW in Quebec.
 
+    Each row also gives the local time (DATETIME_LOCAL), and for some
+    provinces only one of the two times is right, as their daily
+    profile shows across the changes of the clocks:
+
+    - Newfoundland and Labrador and Prince Edward Island: the times in
+      UTC keep daylight saving time all winter since November 2024
+      (UTC-2:30 and UTC-3), and the local times are right. They are
+      read in local time, with the time zone of the province. The local
+      times of Newfoundland and Labrador are an hour late too in the
+      summer of 2023, from 2023-03-12 to 2023-11-05, and are moved an
+      hour earlier.
+    - Quebec: the times in UTC of the readings every 15 minutes from
+      2021-10-05 to 2022-04-13 are 6 to 9 hours off, next to hourly
+      readings at the right times, and the local times are right, as
+      the hourly data of Hydro-Québec shows. They are read in local
+      time.
+    - New Brunswick: the local times are wrong in 2021 and 2022, and the
+      times in UTC are right, so they are read in UTC, as the other
+      provinces, whose two times agree.
+
+    The offset of the local times (DATETIME_LOCAL_OFFSET) is wrong at
+    most changes of the clocks, so it is not used. The hour repeated
+    when daylight saving time ends is ambiguous in local time, and is
+    left out.
+
     British Columbia is retrieved from BC Hydro instead: CCEI gives its
     data one or two hours early until 2015, from the starts of the hours
     converted with UTC-7 all year, and about 0.5% higher since 2016.
@@ -26,7 +51,16 @@ Description:
 import datetime
 
 import pandas as pd
+import utils.entities
 import utils.fetcher
+
+# The provinces whose data is read in local time, whose times in UTC are
+# wrong.
+LOCAL_TIME_CODES = ["CAN_NL", "CAN_PE", "CAN_QC"]
+
+# The period of the summer of 2023 in which the local times of
+# Newfoundland and Labrador are an hour late.
+LATE_PERIOD_OF_NL = (pd.Timestamp("2023-03-12"), pd.Timestamp("2023-11-05"))
 
 
 def get_available_requests(
@@ -152,12 +186,36 @@ def download_and_extract_data_for_request(
             (local_times.dt.hour == 0).astype(int), unit="D"
         )
         times = pd.DatetimeIndex(local_times + pd.Timedelta(hours=5))
+    elif code in LOCAL_TIME_CODES:
+        # Read the local times in the time zone of the province, without
+        # the hour repeated when daylight saving time ends.
+        local_times = pd.to_datetime(dataset["DATETIME_LOCAL"])
+        if code == "CAN_NL":
+            late = (local_times >= LATE_PERIOD_OF_NL[0]) & (
+                local_times < LATE_PERIOD_OF_NL[1]
+            )
+            local_times[late] -= pd.Timedelta(hours=1)
+        times = (
+            pd.DatetimeIndex(local_times)
+            .tz_localize(
+                str(utils.entities.get_time_zone(code)),
+                ambiguous="NaT",
+                nonexistent="NaT",
+            )
+            .tz_convert("UTC")
+            .tz_localize(None)
+        )
     else:
         times = pd.DatetimeIndex(pd.to_datetime(dataset["TIME_PERIOD"]))
 
     # Extract the electricity demand time series with UTC time zone.
+    electricity_demand_time_series = pd.Series(
+        data=dataset["OBS_VALUE"].values, index=times
+    )
     electricity_demand_time_series = (
-        pd.Series(data=dataset["OBS_VALUE"].values, index=times)
+        electricity_demand_time_series[
+            electricity_demand_time_series.index.notna()
+        ]
         .tz_localize("UTC")
         .sort_index()
     )
