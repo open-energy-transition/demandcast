@@ -2,31 +2,40 @@
 License: AGPL-3.0.
 
 Description:
+
     This module provides functions to retrieve electricity demand data
     from the website of the Power Grid Company of Bangladesh (PGCB),
-    now Power Grid Bangladesh PLC. The data is obtained from the Excel
-    files available on the PGCB website.
+    now Power Grid Bangladesh PLC. The data is obtained from the daily
+    reports on the website, one Excel file a day from 2014, which the
+    website lists on about 150 pages. Retrieving all the data takes a
+    few hours.
 
-    Note:
-    Retrieving all the data takes a few hours due to the large
-    number of Excel files that need to be processed.
+    The report of a day has the data of the day before. Its load curve
+    gives the total demand of the East and West grids in MW at the
+    times of the day in Bangladesh, which has no daylight saving time.
+    The readings are at the full hours: the half hours in between are
+    the averages of the hours around them, except for one or two in
+    the evening peak, so the module keeps the full hours only. The
+    midnight at the end of the day is "24:00" until 2024, whose value
+    the reports of 2018 to 2024 also give at "00:00" of the same day,
+    and "00:00" of the next day from 2025, when the reports end at
+    "23:00". The module takes midnight from "24:00" when the report has
+    it, and from "00:00" otherwise.
+
+    The server of the website sent its certificate without the
+    intermediate one until 2026, but it now sends its whole chain, so
+    the certificate is verified as for any other website.
 
     Source: https://erp.powergrid.gov.bd/w/report/eyJpdiI6IldsU2ZQTGkvbkRnQU9FMjZ5UHhmeGc9PSIsInZhbHVlIjoiQzhONVl5ZGxRY3E3T3ZVNCtLZGt1Zz09IiwibWFjIjoiN2JiNTI5MzNhOWIxZDVjY2NkMmFlZWU4ZDU1N2I4OWZlYjNlZWM1ZGU4NzRiNWU4ZjQ3ZDc1ODRlMTk3MDc0YyIsInRhZyI6IiJ9/show_report
 """
 
 import datetime
 import logging
-import os
 import re
 
 import pandas as pd
 import requests
 import utils.fetcher
-import utils.time_series
-
-# The certificates to verify the website with: its server does not send
-# the intermediate certificate of its chain.
-CERTIFICATES = os.path.join(os.path.dirname(__file__), "pgcb_certificates.pem")
 
 
 def _clean_and_format(date: str) -> str:
@@ -160,10 +169,9 @@ def get_available_requests(
     # Initialize an empty list to store available requests.
     available_requests = []
 
-    # Iterate through a reasonable range of pages to find all available
-    # files. The maximum page number is currently 142, but we use 200
-    # to include any future additions.
-    for page_number in range(1, 200):
+    # Read the pages until the first one without reports. The website
+    # has about 150 pages, and adds one every month.
+    for page_number in range(1, 1000):
         # Construct the URL for the current page.
         page_url = (
             "https://erp.powergrid.gov.bd/w/report/eyJpdiI6IldsU2ZQTGkvbkRnQU9"
@@ -178,7 +186,6 @@ def get_available_requests(
             url=page_url,
             content_type="html",
             read_as="plain",
-            verify_ssl=CERTIFICATES,
         )
 
         # Make sure the response is a requests.Response object.
@@ -190,6 +197,7 @@ def get_available_requests(
 
         # Read each row of the table on its own: the report name gives
         # the date, and the link the number and extension of the file.
+        page_has_reports = False
         for row in re.findall(r"<tr>.*?</tr>", html_content.text, re.DOTALL):
             report_name = re.search(
                 r'<td style="text-align: left; font-size: 14px;">(.+?)</td>',
@@ -198,6 +206,7 @@ def get_available_requests(
             if report_name is None:
                 # The row is the header of the table.
                 continue
+            page_has_reports = True
 
             file_info = re.search(
                 r"https://erp\.powergrid\.gov\.bd/web/files/download\?location=erp%2Fweb%2Freport_docs%2F(\d+)\.(xlsm|xlsx|xls)",
@@ -229,6 +238,9 @@ def get_available_requests(
                 available_requests.append(
                     (file_info.group(1), file_info.group(2), date)
                 )
+
+        if not page_has_reports:
+            break
 
     # Return the requests in chronological order, as the other data
     # sources do: the website lists the reports from the newest.
@@ -294,9 +306,7 @@ def download_and_extract_data_for_request(
     url = get_url(file_number, extension)
 
     # Fetch the data from the URL.
-    excel_file = utils.fetcher.fetch_data(
-        url, "html", read_as="excel_file", verify_ssl=CERTIFICATES
-    )
+    excel_file = utils.fetcher.fetch_data(url, "html", read_as="excel_file")
 
     # Make sure the data is an Excel file.
     if not isinstance(excel_file, pd.ExcelFile):
@@ -305,7 +315,7 @@ def download_and_extract_data_for_request(
             "expected a pandas ExcelFile."
         )
 
-    # Extract the name of the sheet containing the demand data.
+    # Read the sheet of the load curve.
     if "L-Curve" in excel_file.sheet_names:
         demand_sheet = "L-Curve"
     elif "L.curve" in excel_file.sheet_names:
@@ -313,55 +323,54 @@ def download_and_extract_data_for_request(
     else:
         logging.error("No valid sheet found. Skipping this file.")
         return pd.Series(dtype=float)
+    dataset = pd.read_excel(excel_file, sheet_name=demand_sheet, header=None)
 
-    # Read the sheet containing the demand data.
-    dataset = pd.read_excel(excel_file, sheet_name=demand_sheet)
-
-    # Find the row that contains both "TIME" and "TOTAL".
+    # Find the row of the column names, with "TIME" and "TOTAL".
     header_row = None
-    time_col = None
-    total_col = None
     for row_index in range(len(dataset)):
-        row = dataset.iloc[row_index].astype(str).str.upper()
+        row = dataset.iloc[row_index].astype(str).str.strip().str.upper()
         if "TIME" in row.to_list() and "TOTAL" in row.to_list():
             header_row = row_index
-            time_col = dataset.iloc[row_index][row == "TIME"].iloc[0]
-            total_col = dataset.iloc[row_index][row == "TOTAL"].iloc[0]
+            time_column = row.to_list().index("TIME")
+            total_column = row.to_list().index("TOTAL")
             break
-
-    if header_row is None or time_col is None or total_col is None:
+    if header_row is None:
         logging.error("No valid header/row found. Skipping this file.")
         return pd.Series(dtype=float)
 
-    # Extract the following 48 rows containing the time and demand data.
-    dataset = pd.read_excel(
-        excel_file,
-        sheet_name=demand_sheet,
-        header=header_row + 1,
-        nrows=48,
-        usecols=[time_col, total_col],
+    # Read the hours and minutes of the times, such as "00:30", "24:00"
+    # or time objects. The summary rows below the times have none.
+    table = dataset.iloc[header_row + 1 :, [time_column, total_column]]
+    hours_and_minutes = (
+        table.iloc[:, 0]
+        .astype(str)
+        .str.strip()
+        .str[:5]
+        .str.extract(r"^(\d{1,2}):(\d{2})$")
+        .astype(float)
     )
+    hours, minutes = hours_and_minutes[0], hours_and_minutes[1]
 
-    # Define the new index.
-    index = pd.to_datetime([f"{date} {t}" for t in dataset[time_col]])
+    # Keep the readings at the full hours, with midnight from "24:00"
+    # when the report has it, and from "00:00" otherwise.
+    is_reading = minutes.eq(0)
+    if hours[is_reading].eq(24).any():
+        is_reading &= hours.ne(0)
 
-    # Subtract 1 day from the index because the data in the file refers
-    # to the day before the date in the file name.
-    index = index - pd.Timedelta(days=1)
-
-    # Define the electricity demand time series.
+    # The report has the data of the day before its date.
+    day = pd.Timestamp(date) - pd.Timedelta(days=1)
     electricity_demand_time_series = pd.Series(
-        dataset["TOTAL"].values, index=index
+        pd.to_numeric(table.iloc[:, 1][is_reading], errors="coerce").to_numpy(
+            dtype="float64"
+        ),
+        index=pd.DatetimeIndex(
+            day + pd.to_timedelta(hours[is_reading], unit="h")
+        ),
     )
 
-    # Add 30 minutes to each timestamp to represent the end of
-    # the half-hour period.
+    # The readings are at their times in Bangladesh.
     electricity_demand_time_series = (
-        utils.time_series.localize_interval_starts(
-            electricity_demand_time_series,
-            "Asia/Dhaka",
-            pd.Timedelta(minutes=30),
-        )
+        electricity_demand_time_series.tz_localize("Asia/Dhaka")
     )
 
     return electricity_demand_time_series
