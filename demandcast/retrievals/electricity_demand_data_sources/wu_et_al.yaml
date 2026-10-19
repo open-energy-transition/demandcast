@@ -3,7 +3,220 @@ licence:
   terms: CC-BY 4.0 license. Use for any purpose with attribution.
   url: https://zenodo.org/records/8322210
 entities:
-  - country_name: China
+  - subdivision_name: Beijing
+    subdivision_code: BJ
+    country_name: China
     country_code: CHN
     start_date: 2018-01-01
     end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Tianjin
+    subdivision_code: TJ
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Hebei
+    subdivision_code: HE
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Shanxi
+    subdivision_code: SX
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Inner Mongolia
+    subdivision_code: NM
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Liaoning
+    subdivision_code: LN
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Jilin
+    subdivision_code: JL
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Heilongjiang
+    subdivision_code: HL
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Shanghai
+    subdivision_code: SH
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Jiangsu
+    subdivision_code: JS
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Zhejiang
+    subdivision_code: ZJ
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Anhui
+    subdivision_code: AH
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Fujian
+    subdivision_code: FJ
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Jiangxi
+    subdivision_code: JX
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Shandong
+    subdivision_code: SD
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Henan
+    subdivision_code: HA
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Hubei
+    subdivision_code: HB
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Hunan
+    subdivision_code: HN
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Guangdong
+    subdivision_code: GD
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Guangxi
+    subdivision_code: GX
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Hainan
+    subdivision_code: HI
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Chongqing
+    subdivision_code: CQ
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Sichuan
+    subdivision_code: SC
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Guizhou
+    subdivision_code: GZ
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Yunnan
+    subdivision_code: YN
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Tibet
+    subdivision_code: XZ
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Shaanxi
+    subdivision_code: SN
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Gansu
+    subdivision_code: GS
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Qinghai
+    subdivision_code: QH
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Ningxia
+    subdivision_code: NX
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
+  - subdivision_name: Xinjiang
+    subdivision_code: XJ
+    country_name: China
+    country_code: CHN
+    start_date: 2018-01-01
+    end_date: 2018-12-31
+    time_zone: Asia/Shanghai
