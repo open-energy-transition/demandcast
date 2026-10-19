@@ -10,6 +10,7 @@ import datetime
 
 import numpy as np
 import pandas as pd
+import pytest
 from retrievals.electricity_demand_data_sources import tsoc
 
 URL_2019 = (
@@ -65,13 +66,23 @@ def _write_yearly_file(file_path, first_day, minutes_early):
     pd.DataFrame(rows).to_excel(file_path, header=False, index=False)
 
 
-def test_get_available_requests():
+@pytest.mark.usefixtures("frozen_now")
+@pytest.mark.parametrize(
+    ("end_date", "last_year"),
+    [
+        # The year of today, 2026-01-02, has not ended.
+        (datetime.date(2026, 1, 2), 2025),
+        (datetime.date(2025, 12, 28), 2025),
+        (datetime.date(2024, 6, 30), 2024),
+    ],
+)
+def test_get_available_requests(end_date, last_year):
     """Test that the requests are the years that have ended."""
     requests = tsoc.get_available_requests(
-        "CYP", datetime.date(2018, 1, 1), datetime.date(2025, 12, 28)
+        "CYP", datetime.date(2018, 1, 1), end_date
     )
 
-    assert requests == list(range(2018, 2025))
+    assert requests == list(range(2018, last_year + 1))
 
 
 def test_get_url():

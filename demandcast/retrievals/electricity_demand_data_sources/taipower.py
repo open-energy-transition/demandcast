@@ -4,12 +4,20 @@ License: AGPL-3.0.
 Description:
 
     This module provides functions to retrieve the electricity demand
-    data for Taiwan from a publicly available repository with data
-    provided by Taipower. The data is retrieved all at once.
+    data for Taiwan from a dataset on Zenodo, under the CC BY 4.0
+    license, with the data of Taipower on the open data platform of the
+    government of Taiwan (data.gov.tw), under the Open Government Data
+    License. The data is retrieved all at once, from a single CSV file.
 
-    Note:
-    There are missing data from 2018-02-03 to 2018-02-07 and
-    2019-04-11 to 2019-06-06.
+    The file gives the load of the four areas of Taiwan (north, central,
+    south and east) in MW every 10 minutes, from 2017-01-01 to
+    2022-07-01, in the time of Taiwan, which has no daylight saving
+    time. The module sums them. The values are the readings that
+    Taipower publishes every 10 minutes, so they are kept at their
+    times, including about 300 times that are not on the 10 minutes,
+    such as 14:14. The data is missing from 2018-02-02 20:20 to
+    2018-02-07 and from 2019-04-10 16:10 to 2019-06-06, and on parts of
+    a few other days, such as 2021-05-04.
 
     Source: https://zenodo.org/records/7537890
 """
@@ -18,7 +26,6 @@ import datetime
 
 import pandas as pd
 import utils.fetcher
-import utils.time_series
 
 
 def get_available_requests(
@@ -104,14 +111,9 @@ def download_and_extract_data_for_request(
         index=pd.to_datetime(dataset["datetime"]),
     )
 
-    # Add 10 minutes to the index because the electricity demand
-    # seems to be provided at the beginning of the time-interval
+    # The readings are at their times in Taiwan.
     electricity_demand_time_series = (
-        utils.time_series.localize_interval_starts(
-            electricity_demand_time_series,
-            "Asia/Taipei",
-            pd.Timedelta(minutes=10),
-        )
+        electricity_demand_time_series.tz_localize("Asia/Taipei")
     )
 
     return electricity_demand_time_series
