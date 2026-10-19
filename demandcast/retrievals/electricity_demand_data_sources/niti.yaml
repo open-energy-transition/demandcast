@@ -3,7 +3,227 @@ licence:
   terms: Open data.
   url: https://iced.niti.gov.in/about-us
 entities:
-  - country_name: India
+  - subdivision_name: Andhra Pradesh
+    subdivision_code: AP
+    country_name: India
     country_code: IND
     start_date: 2017-01-01
     end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Arunachal Pradesh
+    subdivision_code: AR
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Assam
+    subdivision_code: AS
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Bihar
+    subdivision_code: BR
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Chandigarh
+    subdivision_code: CH
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Chhattisgarh
+    subdivision_code: CT
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Dadra and Nagar Haveli and Daman and Diu
+    subdivision_code: DH
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Delhi
+    subdivision_code: DL
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Goa
+    subdivision_code: GA
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Gujarat
+    subdivision_code: GJ
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Himachal Pradesh
+    subdivision_code: HP
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Haryana
+    subdivision_code: HR
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Jharkhand and West Bengal
+    subdivision_code: JHWB
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Jammu and Kashmir and Ladakh
+    subdivision_code: JKLA
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Karnataka
+    subdivision_code: KA
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Kerala
+    subdivision_code: KL
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Maharashtra
+    subdivision_code: MH
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Meghalaya
+    subdivision_code: ML
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Manipur
+    subdivision_code: MN
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Madhya Pradesh
+    subdivision_code: MP
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Mizoram
+    subdivision_code: MZ
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Nagaland
+    subdivision_code: NL
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Odisha
+    subdivision_code: OR
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Punjab
+    subdivision_code: PB
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Puducherry
+    subdivision_code: PY
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Rajasthan
+    subdivision_code: RJ
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Sikkim
+    subdivision_code: SK
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Telangana
+    subdivision_code: TG
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Tamil Nadu
+    subdivision_code: TN
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Tripura
+    subdivision_code: TR
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Uttar Pradesh
+    subdivision_code: UP
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
+  - subdivision_name: Uttarakhand
+    subdivision_code: UT
+    country_name: India
+    country_code: IND
+    start_date: 2017-01-01
+    end_date: 2026-03-31
+    time_zone: Asia/Kolkata
