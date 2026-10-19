@@ -10,6 +10,7 @@ Description:
 """
 
 import datetime
+import io
 import os
 import sys
 import types
@@ -17,6 +18,7 @@ from unittest.mock import Mock, call, create_autospec
 
 import pandas as pd
 import pytest
+import requests
 import retrievals.electricity_demand
 import utils.fetcher
 import yaml
@@ -131,7 +133,9 @@ def _read_saved_data(
             f"{code}_{data_source}.parquet",
         )
     )
-    assert data.columns.tolist() == ["Load (MW)"]
+    # Each value has the date when its version was first retrieved.
+    assert data.columns.tolist() == ["Load (MW)", "Retrieved"]
+    assert set(data["Retrieved"]) == {"2026-01-02T03:04:05Z"}
     assert data.index.name == "Time (UTC)"
     return {
         f"{time:%Y-%m-%d %H:%M}": value
@@ -392,3 +396,78 @@ def test_entity_without_data(tmp_folders, add_data_source, caplog):
     assert _read_saved_data(tmp_folders, "DNK", "several") == {
         "2024-01-01 00:00": 200.0
     }
+
+
+def test_versions_of_the_raw_data(tmp_folders, add_data_source, monkeypatch):
+    """Test that the versions of the raw data are combined offline."""
+    # A website whose file changes between two retrievals.
+    url = "https://example.org/demand.csv"
+    contents: dict[str, bytes] = {}
+
+    def send(_adapter, request, **_kwargs):
+        response = requests.Response()
+        response.status_code = 200
+        response._content = contents[request.url]
+        response.request = request
+        return response
+
+    monkeypatch.setattr(requests.adapters.HTTPAdapter, "send", send)
+
+    def download_and_extract_data_for_request(_request, _code):
+        text = requests.get(url, timeout=10).text
+        values = pd.read_csv(io.StringIO(text), index_col=0, parse_dates=True)
+        return values["value"].astype(float).tz_localize("UTC")
+
+    add_data_source(
+        "versions",
+        ["FRA"],
+        get_available_requests=Mock(return_value=[None]),
+        download_and_extract_data_for_request=(
+            download_and_extract_data_for_request
+        ),
+    )
+
+    contents[url] = b"time,value\n2024-01-01 00:00,1\n2024-01-01 01:00,2\n"
+    monkeypatch.setattr(
+        pd.Timestamp, "now", lambda *_, **__: pd.Timestamp("2026-01-01")
+    )
+    retrievals.electricity_demand.run_data_retrieval("versions", None, None)
+    contents[url] = b"time,value\n2024-01-01 01:00,20\n2024-01-01 02:00,30\n"
+    monkeypatch.setattr(
+        pd.Timestamp, "now", lambda *_, **__: pd.Timestamp("2026-01-02")
+    )
+    retrievals.electricity_demand.run_data_retrieval("versions", None, None)
+
+    # The newest version gives the values, and the older one fills the
+    # time that the newest one does not have any more.
+    file_path = os.path.join(
+        tmp_folders["processed_electricity_demand_folder"],
+        "FRA_versions.parquet",
+    )
+    expected = pd.DataFrame(
+        {
+            "Load (MW)": [1.0, 20.0, 30.0],
+            "Retrieved": [
+                "2026-01-01T00:00:00Z",
+                "2026-01-02T00:00:00Z",
+                "2026-01-02T00:00:00Z",
+            ],
+        },
+        index=pd.DatetimeIndex(
+            ["2024-01-01 00:00", "2024-01-01 01:00", "2024-01-01 02:00"],
+            name="Time (UTC)",
+        ),
+    )
+    pd.testing.assert_frame_equal(
+        pd.read_parquet(file_path), expected, check_freq=False
+    )
+
+    # The raw data is processed again without the network.
+    os.remove(file_path)
+    contents.clear()
+    retrievals.electricity_demand.run_data_retrieval(
+        "versions", None, None, offline=True
+    )
+    pd.testing.assert_frame_equal(
+        pd.read_parquet(file_path), expected, check_freq=False
+    )

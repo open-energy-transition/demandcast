@@ -58,14 +58,19 @@ electricity_data_source:           # Acronym of data source (entsoe, eia, ccei, 
 code:                              # ISO Alpha-3 code (e.g., FRA) or subdivision (e.g., USA_CAL) for which to retrieve data
 
 file:                              # Path to YAML file with list of codes for which to retrieve data
+
+offline:                           # If true, process the raw data already downloaded again, without downloading it
 ```
 
-The script stores the electricity demand data in `data/electricity_demand/`, in one file per country or subdivision and data source, named `<code>_<data source>.parquet`, which a later retrieval replaces:
+The script stores the electricity demand data in `data/electricity_demand/`:
 
-- `processed/`: the demand in MW, at the ends of the intervals of the data source in UTC, without missing or zero values or duplicated times, at the resolution of the data source.
+- `raw/<data source>/`: the responses of the website of the data source, as they are downloaded. The content of each response is kept once, under its checksum, in `files/`, and `manifest.json` lists the requests of each country or subdivision with the versions of their responses: each set of responses that a request gets, with the dates of the first and last retrievals that downloaded it. API keys and passwords are hidden, and the responses to the requests that send them in their body, such as login tickets, are not kept.
+- `processed/`: the demand in MW, at the ends of the intervals of the data source in UTC, without missing or zero values or duplicated times, at the resolution of the data source, in one file per country or subdivision and data source, named `<code>_<data source>.parquet`. The versions of each request are combined: the newest gives the values, and the older ones fill the times that it does not have any more, so data that a data source removes is kept. The column `Retrieved` gives the date when the version of each value was first retrieved.
 - `cleaned/`: the processed demand cleaned and resampled to hourly values, the average of the values of each hour at its end, which `assemble.py` reads. For now, the cleaning only resamples the data.
 
 The files that some data sources need to be downloaded manually go in `data/electricity_demand/raw/manual_downloads/`.
+
+With `offline: true`, the script processes the raw data of the data source again, without downloading it, for example after a change of the code that processes it.
 
 #### Data source specific retrieval modules
 

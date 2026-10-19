@@ -14,6 +14,7 @@ import os
 import re
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Callable, Mapping
 from io import BytesIO, StringIO
@@ -53,6 +54,8 @@ def redact(text: str) -> str:
 
     The URL of a download, and so its errors, can include an API key,
     which must not end up in logs and reports, and so must passwords.
+    Their values are also hidden as they appear in URLs and forms, with
+    their special characters encoded.
 
     Parameters
     ----------
@@ -66,7 +69,12 @@ def redact(text: str) -> str:
     """
     for name, value in os.environ.items():
         if name.endswith(("_API_KEY", "_PASSWORD")) and value:
-            text = text.replace(value, "***")
+            for form in (
+                value,
+                urllib.parse.quote(value, safe=""),
+                urllib.parse.quote_plus(value),
+            ):
+                text = text.replace(form, "***")
     return text
 
 
