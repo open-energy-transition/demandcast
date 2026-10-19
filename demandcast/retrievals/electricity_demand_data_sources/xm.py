@@ -4,10 +4,16 @@ License: AGPL-3.0.
 Description:
 
     This module provides functions to retrieve the electricity demand
-    data from the website of the XM Adminstradores del mercado electrico
-    in Colombia. The data is actually made available through the website
-    of "Energia de Colombia" (https://www.energiadecolombia.com). The
-    data is retrieved in one-month intervals.
+    data of XM, the operator of the electricity system and market of
+    Colombia. The data is retrieved in one-month intervals, through the
+    proxy of the API of XM that the website of Energía de Colombia uses:
+    the API of XM itself (servapibi.xm.com.co) does not answer from
+    outside Colombia.
+
+    The data is the real demand of the system (DemaReal) in kWh of each
+    hour, which the module converts to MW, from 2000, by date and hour
+    from "Hour01" to "Hour24", the hours that end at 01:00 to 24:00 in
+    the time of Colombia, which has no daylight saving time.
 
     Source: https://xm.com.co
     Source: https://www.energiadecolombia.com/consulta

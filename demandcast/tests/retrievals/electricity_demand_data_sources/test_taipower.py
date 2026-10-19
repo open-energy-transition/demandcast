@@ -19,13 +19,13 @@ def test_download_and_extract_data(fake_downloads, assert_demand):
 
     time_series = taipower.download_and_extract_data_for_request(None, "TWN")
 
-    # The times move ten minutes later, to the end of each interval.
+    # The readings stay at their times in Taiwan (UTC+8).
     assert_demand(
         time_series,
         "Asia/Taipei",
         {
-            "2016-12-31 16:10": 19730.0,
-            "2016-12-31 16:20": 19575.0,
-            "2022-07-01 16:00": 30920.0,
+            "2016-12-31 16:00": 19730.0,
+            "2016-12-31 16:10": 19575.0,
+            "2022-07-01 15:50": 30920.0,
         },
     )
