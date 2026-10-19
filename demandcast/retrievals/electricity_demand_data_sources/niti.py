@@ -7,9 +7,10 @@ Description:
     data from the website of National Institution for Transforming India
     (NITI) Aayog in India. The data is retrieved by submitting a request
     to the NITI Aayog website. The user is then able to download the
-    data of the yearly demand profile of the selected years, as a file
-    named "Yearly Demand Profile.xlsx", which needs a name that starts
-    with "NIT", such as "NITI_2025-2026.xlsx".
+    data of the yearly demand profile of the selected years, or of a
+    year of the selected states (two at a time), as a file named "Yearly
+    Demand Profile.xlsx", which needs a name that starts with "NIT",
+    such as "NITI_2025-2026.xlsx" or "NITI_2024_Assam_Bihar.xlsx".
 
     The files give the hourly demand met in MW of India, by date and
     hour, from the data of Grid-India. The hours are their starts: in
@@ -19,6 +20,16 @@ Description:
     its time (1.6%) or the reading at its time (0.9%). The India Climate
     and Energy Dashboard shows the same data, but its API encrypts its
     responses for its own pages.
+
+    The files of the states have the same hourly demand of 28 states, 5
+    union territories and the Damodar Valley Corporation (DVC), whose
+    sum is the demand of India, at the same hours: in 2024 they differ
+    by less than 0.01%. The DVC supplies parts of Jharkhand and West
+    Bengal, so the three make one subdivision, in the shape of the two
+    states (see shapes/niti.py). The data of Jammu and Kashmir includes
+    Ladakh, which it does not list, so it is in the shape of the two
+    union territories. Andaman and Nicobar and Lakshadweep, which are
+    not connected to the grid, have no data.
 
     The files of the dashboard, downloaded by year, have the data from
     2017 to March 2026 without gaps. From September 2021 to June 2025,
@@ -40,6 +51,43 @@ import pandas as pd
 import utils.fetcher
 import utils.time_series
 
+# The states, union territories and utilities of the data, by the code
+# of the subdivision that they make.
+SUBDIVISIONS = {
+    "IND_AP": ["Andhra Pradesh"],
+    "IND_AR": ["Arunachal Pradesh"],
+    "IND_AS": ["Assam"],
+    "IND_BR": ["Bihar"],
+    "IND_CH": ["Chandigarh"],
+    "IND_CT": ["Chhattisgarh"],
+    "IND_DH": ["Dadra and Nagar Haveli and Daman and Diu"],
+    "IND_DL": ["Delhi"],
+    "IND_GA": ["Goa"],
+    "IND_GJ": ["Gujarat"],
+    "IND_HP": ["Himachal Pradesh"],
+    "IND_HR": ["Haryana"],
+    "IND_JHWB": ["Jharkhand", "West Bengal", "DVC"],
+    "IND_JKLA": ["Jammu and Kashmir"],
+    "IND_KA": ["Karnataka"],
+    "IND_KL": ["Kerala"],
+    "IND_MH": ["Maharashtra"],
+    "IND_ML": ["Meghalaya"],
+    "IND_MN": ["Manipur"],
+    "IND_MP": ["Madhya Pradesh"],
+    "IND_MZ": ["Mizoram"],
+    "IND_NL": ["Nagaland"],
+    "IND_OR": ["Odisha"],
+    "IND_PB": ["Punjab"],
+    "IND_PY": ["Puducherry"],
+    "IND_RJ": ["Rajasthan"],
+    "IND_SK": ["Sikkim"],
+    "IND_TG": ["Telangana"],
+    "IND_TN": ["Tamil Nadu"],
+    "IND_TR": ["Tripura"],
+    "IND_UP": ["Uttar Pradesh"],
+    "IND_UT": ["Uttarakhand"],
+}
+
 
 def get_available_requests(
     code: str, start_date: datetime.date, end_date: datetime.date
@@ -53,7 +101,7 @@ def get_available_requests(
     Parameters
     ----------
     code : str
-        The code of India.
+        The code of India or of its subdivision.
     start_date : datetime.date
         The first day of the data.
     end_date : datetime.date
@@ -95,7 +143,7 @@ def download_and_extract_data_for_request(
     request : None
         The single request of the data, without parameters.
     code : str
-        The code of India.
+        The code of India or of its subdivision.
 
     Returns
     -------
@@ -111,14 +159,51 @@ def download_and_extract_data_for_request(
         access=" after submitting a request via the form on the website",
     )
 
-    # Extract the electricity demand time series.
-    electricity_demand_time_series = pd.Series(
-        dataset["Hourly Demand Met (in MW)"].values,
-        index=pd.to_datetime(
-            dataset["Year"].astype(str) + " " + dataset["Date"],
-            format="%Y %d-%b %I%p",
-        ),
+    # The files of India have the year in their first column, and those
+    # of the states the state and the year, such as "Assam - 2024".
+    dataset = dataset.reindex(
+        columns=["Year", "State", "Date", "Hourly Demand Met (in MW)"]
     )
+    if code == "IND":
+        # Leave out the disclaimer below the data, without a year.
+        years = pd.to_numeric(dataset["Year"], errors="coerce")
+        national = dataset[years.notna()]
+        electricity_demand_time_series = pd.Series(
+            national["Hourly Demand Met (in MW)"].to_numpy(),
+            index=pd.to_datetime(
+                years[years.notna()].astype(int).astype(str)
+                + " "
+                + national["Date"],
+                format="%Y %d-%b %I%p",
+            ),
+        )
+    else:
+        # Leave out the disclaimer below the data.
+        states = dataset[
+            dataset["State"]
+            .astype("string")
+            .str.contains(r" - \d{4}$", na=False)
+        ]
+        names = states["State"].str.rsplit(" - ", n=1).str[0]
+        years = states["State"].str.rsplit(" - ", n=1).str[1]
+        states = states.assign(
+            name=names.to_numpy(),
+            time=pd.to_datetime(
+                years + " " + states["Date"], format="%Y %d-%b %I%p"
+            ).to_numpy(),
+        )
+        states = states[states["name"].isin(SUBDIVISIONS[code])]
+        states = states.drop_duplicates(["name", "time"])
+
+        # Sum the demand of the states of the subdivision, at the hours
+        # where all of them have data.
+        demand = states.groupby("time")["Hourly Demand Met (in MW)"]
+        electricity_demand_time_series = demand.sum()[
+            demand.count() == len(SUBDIVISIONS[code])
+        ]
+        electricity_demand_time_series.index = pd.DatetimeIndex(
+            electricity_demand_time_series.index
+        )
 
     # Move the starts of the hours to their ends.
     electricity_demand_time_series = (
