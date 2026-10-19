@@ -38,6 +38,7 @@ class ConfigModel(BaseModel):
     scenario: str | None = None
     weather_variable: str | None = None
     climate_model: str | None = None
+    offline: bool = False
 
 
 def _read_and_check_configuration() -> ConfigModel:
@@ -109,6 +110,7 @@ if __name__ == "__main__":
             config.electricity_data_source,
             config.code,
             config.file,
+            offline=config.offline,
         )
     elif config.variable == "annual_electricity_demand_per_capita":
         # Run the data retrieval for annual electricity demand per

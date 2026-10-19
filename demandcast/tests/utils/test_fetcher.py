@@ -231,6 +231,15 @@ def test_redact_hides_the_passwords(monkeypatch):
     )
 
 
+def test_redact_hides_the_encoded_passwords(monkeypatch):
+    """Test that the passwords are hidden also when encoded."""
+    monkeypatch.setenv("EPIAS_PASSWORD", "pass word&1")
+
+    assert utils.fetcher.redact(
+        "username=user&password=pass+word%261 or pass%20word%261"
+    ) == ("username=user&password=*** or ***")
+
+
 def test_fetch_data_html_requests_post_aspx():
     """
     Test fetching HTML data from an ASPX page using requests.post.

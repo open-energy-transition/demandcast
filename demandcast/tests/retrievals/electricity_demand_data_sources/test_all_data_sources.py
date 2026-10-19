@@ -19,6 +19,7 @@ import pytest
 import utils.config
 import utils.entities
 import utils.fetcher
+import utils.raw_data
 import yaml
 
 DATA_SOURCES = sorted(utils.entities.read_data_sources())
@@ -148,3 +149,7 @@ def test_requests(data_source, monkeypatch):
     inspect.signature(module.download_and_extract_data_for_request).bind(
         requests[0], codes[0]
     )
+    # The requests are kept with the raw data, encoded as JSON.
+    for request in requests:
+        encoded = utils.raw_data.encode_request(request)
+        assert utils.raw_data.decode_request(encoded) == request

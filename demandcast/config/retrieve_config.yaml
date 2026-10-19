@@ -17,6 +17,11 @@ variable: electricity_demand
 # modules (example: "entsoe").
 electricity_data_source:
 
+# OPTIONAL - only for the electricity_demand variable.
+# If true, process the raw data of the data source already downloaded
+# again, without downloading it (default: false).
+offline: false
+
 # OPTIONAL.
 # The ISO Alpha-3 code (example: "FRA") or a combination of ISO
 # Alpha-3 code and subdivision code (example: "USA_CAL").
