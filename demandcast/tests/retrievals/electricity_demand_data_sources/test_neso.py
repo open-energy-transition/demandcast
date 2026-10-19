@@ -8,6 +8,7 @@ Description:
 
 import datetime
 
+import pandas as pd
 import pytest
 from retrievals.electricity_demand_data_sources import neso
 
@@ -71,3 +72,26 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
         },
         dtype="int64",
     )
+
+
+@pytest.mark.parametrize(
+    "dates",
+    [
+        ["2024-01-01", "2024-12-31"],
+        ["2024-01-01T00:00:00", "2024-12-31T00:00:00"],
+        ["01-JAN-2024", "31-DEC-2024"],
+        ["01-Jan-24", "31-Dec-24"],
+    ],
+)
+def test_read_dates(dates):
+    """Test that the settlement dates are read in each format."""
+    assert neso._read_dates(pd.Series(dates)).tolist() == [
+        pd.Timestamp("2024-01-01"),
+        pd.Timestamp("2024-12-31"),
+    ]
+
+
+def test_read_dates_in_another_format():
+    """Test that dates in another format are rejected."""
+    with pytest.raises(ValueError, match="not in one of the formats"):
+        neso._read_dates(pd.Series(["2024/01/01"]))

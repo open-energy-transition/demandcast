@@ -13,6 +13,9 @@ Description:
     the embedded wind and solar generation, which have grown since about
     2010, and the datasets of 2001 to 2008 have no other demand.
 
+    The settlement dates have three formats: "2024-01-01" in most years,
+    "01-JAN-2019" from 2019 to 2022, and "01-Jan-23" in 2023.
+
     Source: https://www.neso.energy/data-portal/historic-demand-data
 """
 
@@ -21,6 +24,39 @@ import logging
 
 import pandas as pd
 import utils.fetcher
+
+# The formats of the settlement dates in the datasets of the years.
+DATE_FORMATS = ["%Y-%m-%d", "%d-%b-%Y", "%d-%b-%y"]
+
+
+def _read_dates(dates: pd.Series) -> pd.DatetimeIndex:
+    """
+    Read the settlement dates, in the format of their dataset.
+
+    Parameters
+    ----------
+    dates : pandas.Series
+        The settlement dates, maybe with a time after a "T".
+
+    Returns
+    -------
+    pandas.DatetimeIndex
+        The dates.
+
+    Raises
+    ------
+    ValueError
+        If the dates are not all in one of the formats.
+    """
+    dates = dates.astype(str).str.split("T").str[0]
+    for date_format in DATE_FORMATS:
+        parsed = pd.to_datetime(dates, format=date_format, errors="coerce")
+        if parsed.notna().all():
+            return pd.DatetimeIndex(parsed)
+    raise ValueError(
+        f"The settlement dates of NESO, such as {dates.iloc[0]}, are not in "
+        f"one of the formats {DATE_FORMATS}."
+    )
 
 
 def get_available_requests(
@@ -138,9 +174,9 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     # The settlement periods of a day are the half hours from its local
     # midnight, 46 or 50 on the days of daylight saving time. Each one
     # ends 30 minutes times its number after midnight, in absolute time.
-    midnights = pd.DatetimeIndex(
-        pd.to_datetime(dataset["SETTLEMENT_DATE"].astype(str).str[:10])
-    ).tz_localize("Europe/London")
+    midnights = _read_dates(dataset["SETTLEMENT_DATE"]).tz_localize(
+        "Europe/London"
+    )
     periods = pd.to_timedelta(
         dataset["SETTLEMENT_PERIOD"].astype(int).to_numpy() * 30, unit="min"
     )
