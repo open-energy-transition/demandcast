@@ -1,0 +1,7 @@
+# Configuration read by the check.py script for the report of the flags
+# of the cleaned electricity demand:
+# uv run check.py --config config/check_flags_config.yaml
+
+# REQUIRED.
+# The check to perform.
+check: flags
