@@ -88,3 +88,31 @@ def test_download_and_extract_data_of_ontario(fake_downloads, assert_demand):
         },
         dtype="int64",
     )
+
+
+def test_download_and_extract_data_of_newfoundland(
+    fake_downloads, assert_demand
+):
+    """Test that the times of Newfoundland are read in local time."""
+    fake_downloads.serve(
+        URL.format("NL,1.0/N...DEMAND") + QUERY, "ccei_nl.csv"
+    )
+
+    time_series = ccei.download_and_extract_data_for_request(None, "CAN_NL")
+
+    # The local times (DATETIME_LOCAL) are read in the time of
+    # Newfoundland (UTC-3:30, UTC-2:30 in summer). Those of the summer
+    # of 2023 are an hour late, and the hour repeated when daylight
+    # saving time ends, at 01:30 of 3 November 2024, is left out. The
+    # times in UTC (TIME_PERIOD) keep daylight saving time in the winter
+    # of 2025, an hour early.
+    assert_demand(
+        time_series,
+        "UTC",
+        {
+            "2023-01-10 11:30": 1500,
+            "2023-07-01 13:30": 900,
+            "2025-01-15 11:30": 1600,
+        },
+        dtype="int64",
+    )

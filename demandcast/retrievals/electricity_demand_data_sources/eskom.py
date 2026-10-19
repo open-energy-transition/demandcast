@@ -14,6 +14,15 @@ Description:
     ("Date Time Hour Beginning") in South African time, which has no
     daylight saving time.
 
+    The demand leaves out the demand that the rooftop solar of the
+    consumers supplies, which Eskom estimates at about 1 GW in March
+    2022, 4.4 GW in June 2023 and 7.3 GW in August 2025, so it is not
+    the gross demand of DemandCast: its demand at midday falls compared
+    with the morning and afternoon, and the cleaning flags it
+    (midday_dip). Eskom does not publish this generation hourly.
+
+    The files have data from 2022-04-01.
+
     Source: https://www.eskom.co.za/dataportal/data-request-form/
 """
 

@@ -27,7 +27,18 @@ Description:
     Some days have the same values as the same days of the year before:
     2 days of 2016, about 20 days of February and March 2018, and about
     20 days of May and September to November 2019. They are kept for
-    the later cleaning. ISMO, which took over the system operation of
+    the later cleaning.
+
+    The values of 2019 slip against their hours, as their daily profile
+    against that of the same month of the other years shows: most days
+    from January to March are an hour early, and most days of August
+    and September, and some of October to December, an hour late, from
+    31 July, whose hour 24 has the same value as the hour 1 of 1 August
+    (19,741 MW). The days in between are at their hours, and the shifts
+    change from day to day, so they are not corrected, and the cleaning
+    flags them (time_lag).
+
+    ISMO, which took over the system operation of
     NTDC, publishes the hourly demand from July 2024 (see ismo.py).
 
     Source: https://www.kaggle.com/datasets/tentative/ntdc-dataset
