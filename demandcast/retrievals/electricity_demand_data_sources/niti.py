@@ -23,7 +23,7 @@ Description:
     The files of the dashboard, downloaded by year, have the data from
     2017 to March 2026 without gaps. From September 2021 to June 2025,
     the monthly demand is 0.5% to 1% below the data of Grid-India on
-    Mendeley Data (see grid_india.py), except in April 2024, when it is
+    Mendeley Data (y58jknpgs8), except in April 2024, when it is
     about 7% lower: 134.2 TWh, against 144.3 TWh for Grid-India and
     about 144.3 TWh in the official figures reported for India. April
     2024 is a copy of March 2024, and March 2026 of January 2026: the
