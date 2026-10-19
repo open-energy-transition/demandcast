@@ -5,5 +5,5 @@ licence:
 entities:
   - country_name: South Africa
     country_code: ZAF
-    start_date: 2021-04-01
+    start_date: 2022-04-01
     end_date: today
