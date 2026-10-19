@@ -63,6 +63,31 @@ def read_folders_structure() -> dict[str, str]:
     return folders_structure
 
 
+def get_electricity_demand_file_path(
+    stage: str, code: str, data_source: str
+) -> str:
+    """
+    Get the path of the file of the electricity demand of a stage.
+
+    Parameters
+    ----------
+    stage : str
+        The stage of the data, "processed" or "cleaned".
+    code : str
+        The code of the country or subdivision.
+    data_source : str
+        The data source.
+
+    Returns
+    -------
+    str
+        The path of the parquet file, named after the code and the data
+        source, in the folder of the stage.
+    """
+    folder = read_folders_structure()[f"{stage}_electricity_demand_folder"]
+    return os.path.join(folder, f"{code}_{data_source}.parquet")
+
+
 def read_api_key(variable: str, service: str) -> str:
     """
     Read an API key from the environment or the .env file.

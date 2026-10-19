@@ -60,7 +60,12 @@ code:                              # ISO Alpha-3 code (e.g., FRA) or subdivision
 file:                              # Path to YAML file with list of codes for which to retrieve data
 ```
 
-The script will store electricity demand data in `data/electricity_demand/YYYY-MM-DD/`, where `YYYY-MM-DD` is the date of retrieval.
+The script stores the electricity demand data in `data/electricity_demand/`, in one file per country or subdivision and data source, named `<code>_<data source>.parquet`, which a later retrieval replaces:
+
+- `processed/`: the demand in MW, at the ends of the intervals of the data source in UTC, without missing or zero values or duplicated times, at the resolution of the data source.
+- `cleaned/`: the processed demand cleaned and resampled to hourly values, the average of the values of each hour at its end, which `assemble.py` reads. For now, the cleaning only resamples the data.
+
+The files that some data sources need to be downloaded manually go in `data/electricity_demand/raw/manual_downloads/`.
 
 #### Data source specific retrieval modules
 

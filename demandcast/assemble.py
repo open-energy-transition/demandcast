@@ -11,7 +11,6 @@ import datetime
 import glob
 import logging
 import os
-import time
 from collections.abc import Callable
 from functools import reduce
 
@@ -73,27 +72,6 @@ def _read_and_check_configuration() -> ConfigModel:
         logging.info(f" - {field}: {value}")
 
     return config
-
-
-def _is_date(string: str) -> bool:
-    """
-    Check if a string is a valid date in YYYY-MM-DD format.
-
-    Parameters
-    ----------
-    string : str
-        The string to check.
-
-    Returns
-    -------
-    bool
-        True if the string is a valid date, False otherwise.
-    """
-    try:
-        time.strptime(string, "%Y-%m-%d")
-    except ValueError:
-        return False
-    return True
 
 
 def _validate(
@@ -255,14 +233,10 @@ def _get_files_to_load(
     ]
 
     if variable == "electricity demand":
-        # For electricity demand, find the folder with the most recent
-        # date as name.
-        data_folder = max(
-            os.path.join(data_folder, subfolder)
-            for subfolder in os.listdir(data_folder)
-            if os.path.isdir(os.path.join(data_folder, subfolder))
-            and _is_date(subfolder)
-        )
+        # For electricity demand, read the hourly cleaned data.
+        data_folder = utils.config.read_folders_structure()[
+            "cleaned_electricity_demand_folder"
+        ]
 
         # For electricity demand, get the data source with the longest
         # date range for each entity code.

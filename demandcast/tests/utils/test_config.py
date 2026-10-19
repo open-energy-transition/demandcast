@@ -49,7 +49,13 @@ def test_load_paths():
     assert structure[
         "manually_downloaded_electricity_demand_folder"
     ] == os.path.join(
-        absolute_path, "data", "electricity_demand", "manual_downloads"
+        absolute_path, "data", "electricity_demand", "raw", "manual_downloads"
+    )
+    assert structure["processed_electricity_demand_folder"] == os.path.join(
+        absolute_path, "data", "electricity_demand", "processed"
+    )
+    assert structure["cleaned_electricity_demand_folder"] == os.path.join(
+        absolute_path, "data", "electricity_demand", "cleaned"
     )
     assert structure["electricity_demand_folder"] == os.path.join(
         absolute_path, "data", "electricity_demand"

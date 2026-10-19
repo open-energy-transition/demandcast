@@ -5,16 +5,18 @@ Description:
 
     This module includes functions to download hourly or sub-hourly
     electricity demand data from various data sources. The retrieved
-    data is cleaned and saved in a structured format for further
-    analysis. The module also supports uploading the data to Google
-    Cloud Storage (GCS) if a bucket name is provided and to Zenodo for
-    open access sharing.
+    data is processed to MW, at the ends of the intervals in UTC,
+    without missing or zero values or duplicated times, and saved in
+    the folder of processed electricity demand. It is then cleaned and
+    saved in the folder of cleaned electricity demand, which the
+    assembly of the data reads.
 """
 
 import importlib
 import logging
 import os
 
+import cleaning.electricity_demand
 import pandas as pd
 import utils.config
 import utils.entities
@@ -120,12 +122,13 @@ def _save_data(
     data_source: str,
 ) -> None:
     """
-    Save the electricity demand time series.
+    Save the processed electricity demand time series.
 
-    This function saves the electricity demand time series to a file in
-    the parquet and csv formats. If a Google Cloud Storage (GCS) bucket
-    name is provided, it uploads the parquet file to the specified GCS
-    bucket.
+    This function saves the electricity demand time series, processed
+    to MW and UTC at the resolution of the data source, to a parquet
+    file named after the code and the data source in the folder of
+    processed electricity demand, which replaces the file of an earlier
+    retrieval.
 
     Parameters
     ----------
@@ -136,27 +139,11 @@ def _save_data(
     data_source : str
         The data source.
     """
-    # Get the date of retrieval.
-    date_of_retrieval = pd.Timestamp.today().strftime("%Y-%m-%d")
-
-    # Get the directory to store the electricity demand time series.
-    result_directory = utils.config.read_folders_structure()[
-        "electricity_demand_folder"
-    ]
-    result_directory = os.path.join(result_directory, date_of_retrieval)
-    os.makedirs(result_directory, exist_ok=True)
-
-    # Define the identifier of the file to be saved.
-    identifier = code + "_" + data_source
-
-    # Define the path to the file to be saved without the extension.
-    file_path = os.path.join(result_directory, identifier)
-
-    # Save the time series to both parquet and csv files.
-    electricity_demand_time_series.to_frame().to_parquet(
-        file_path + ".parquet"
+    file_path = utils.config.get_electricity_demand_file_path(
+        "processed", code, data_source
     )
-    electricity_demand_time_series.to_csv(file_path + ".csv")
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    electricity_demand_time_series.to_frame().to_parquet(file_path)
 
 
 def run_data_retrieval(
@@ -212,13 +199,14 @@ def run_data_retrieval(
             )
             continue
 
-        # Save the electricity demand time series to a file and upload
-        # it to GCS.
+        # Save the processed electricity demand time series, and clean
+        # it.
         _save_data(
             electricity_demand_time_series,
             entity_code,
             data_source,
         )
+        cleaning.electricity_demand.clean_data(entity_code, data_source)
 
     logging.info(
         f"Electricity data from the {data_source} website has been "
