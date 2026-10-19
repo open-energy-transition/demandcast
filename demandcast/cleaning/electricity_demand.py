@@ -9,16 +9,307 @@ Description:
     intervals of the data source in UTC, without missing or zero values
     or duplicated times, at the resolution of the data source.
 
-    For now, the cleaning only resamples the data to hourly values: the
-    average of the values in each hour, at its end. The removal of
-    spikes and of duplicated or unreasonable values will come before it.
+    The cleaning removes the values that cannot be demand, by general
+    rules of what errors look like rather than by the errors of
+    particular data sources, at the resolution of the data source, in
+    this order:
+
+    - future: the times after the cleaning, which cannot have data.
+    - non_positive: values of zero or less.
+    - implausible: values above 3 times the median of the 30 days
+      around them, such as errors of units.
+    - frozen: the same value for 6 hours or more, which the demand of a
+      system never keeps: a stuck reading or filled data.
+    - copied_day: the days, in local time, whose values repeat those of
+      an earlier day exactly, which the demand never does: copied data.
+    - spike: a run of values that leaves the level of the values around
+      it and comes back to it within 30 minutes. The values change by
+      more than 20% below a resolution of 30 minutes, which the demand
+      of a system does not do and come back, and by more than 50% at 30
+      minutes or more, since the demand of a small system can change
+      by 20% within an hour.
+
+    The values left are then averaged in each hour, at its end, if they
+    cover at least half of the hour (low_coverage otherwise). The
+    removed values are saved next to the cleaned data, as the periods
+    of each rule.
 """
 
 import logging
 import os
 
+import numpy as np
 import pandas as pd
 import utils.config
+import utils.entities
+
+# The rules, in the order in which they are applied.
+RULES = [
+    "future",
+    "non_positive",
+    "implausible",
+    "frozen",
+    "copied_day",
+    "spike",
+    "low_coverage",
+]
+
+# The factor above the median of the days around a value that makes it
+# implausible, and the days of the median.
+IMPLAUSIBLE_FACTOR = 3
+IMPLAUSIBLE_WINDOW = "30D"
+
+# The duration of the same value that makes it frozen.
+FROZEN_DURATION = pd.Timedelta(hours=6)
+
+# The values that a day needs to be compared with the other days.
+MIN_VALUES_OF_DAY = 12
+
+# The longest duration of a spike, and the changes of a spike below and
+# from a resolution of 30 minutes.
+SPIKE_DURATION = pd.Timedelta(minutes=30)
+SPIKE_CHANGE_SUBHOURLY = 0.2
+SPIKE_CHANGE_HOURLY = 0.5
+
+# The share of the values of an hour that its average needs.
+MIN_COVERAGE = 0.5
+
+
+def _step(values: pd.Series) -> pd.Timedelta:
+    """
+    Get the resolution of a time series.
+
+    Parameters
+    ----------
+    values : pandas.Series
+        The time series.
+
+    Returns
+    -------
+    pandas.Timedelta
+        The median time between its values, or one hour if it has less
+        than two values.
+    """
+    if len(values) < 2:
+        return pd.Timedelta(hours=1)
+    return pd.Timedelta(values.index.to_series().diff().median())
+
+
+def _find_implausible(values: pd.Series) -> pd.Series:
+    """
+    Find the values far above the median of the days around them.
+
+    Parameters
+    ----------
+    values : pandas.Series
+        The demand, with positive values.
+
+    Returns
+    -------
+    pandas.Series
+        True for the implausible values.
+    """
+    median = values.rolling(
+        IMPLAUSIBLE_WINDOW, center=True, min_periods=1
+    ).median()
+    return values > IMPLAUSIBLE_FACTOR * median
+
+
+def _find_frozen(values: pd.Series) -> pd.Series:
+    """
+    Find the runs of the same value that last too long.
+
+    Parameters
+    ----------
+    values : pandas.Series
+        The demand.
+
+    Returns
+    -------
+    pandas.Series
+        True for the values of the runs.
+    """
+    runs = (values != values.shift()).cumsum().to_numpy()
+    times = values.index.to_series()
+    duration = (
+        times.groupby(runs).transform("max")
+        - times.groupby(runs).transform("min")
+        + _step(values)
+    )
+    return pd.Series(
+        (duration >= FROZEN_DURATION).to_numpy(), index=values.index
+    )
+
+
+def _find_copied_days(values: pd.Series, time_zone: str) -> pd.Series:
+    """
+    Find the days whose values repeat those of an earlier day.
+
+    Parameters
+    ----------
+    values : pandas.Series
+        The demand, at times in UTC.
+    time_zone : str
+        The time zone of the days.
+
+    Returns
+    -------
+    pandas.Series
+        True for the values of the copied days.
+    """
+    days = (
+        pd.DatetimeIndex(values.index)
+        .tz_localize("UTC")
+        .tz_convert(time_zone)
+        .date
+    )
+    seen = set()
+    copied = set()
+    for day, day_values in values.round(2).groupby(days):
+        if len(day_values) < MIN_VALUES_OF_DAY:
+            continue
+        fingerprint = tuple(day_values.to_numpy())
+        if fingerprint in seen:
+            copied.add(day)
+        else:
+            seen.add(fingerprint)
+    return pd.Series(pd.Index(days).isin(list(copied)), index=values.index)
+
+
+def _find_spikes(values: pd.Series) -> pd.Series:
+    """
+    Find the short runs of values that leave the level around them.
+
+    Parameters
+    ----------
+    values : pandas.Series
+        The demand, without the values of the other rules.
+
+    Returns
+    -------
+    pandas.Series
+        True for the values of the spikes.
+    """
+    step = _step(values)
+    change = (
+        SPIKE_CHANGE_SUBHOURLY
+        if step < pd.Timedelta(minutes=30)
+        else SPIKE_CHANGE_HOURLY
+    )
+    longest = max(1, min(3, int(SPIKE_DURATION / step)))
+    x = values.to_numpy()
+    spikes = np.zeros(len(x), dtype=bool)
+    for length in range(1, longest + 1):
+        if len(x) < length + 2:
+            break
+        # The values before and after the run, which must be at the same
+        # level, and the run, which must leave it in one direction.
+        before = x[: len(x) - length - 1]
+        after = x[length + 1 :]
+        level = (before + after) / 2
+        same_level = np.abs(before - after) < change / 2 * level
+        up = np.ones(len(before), dtype=bool)
+        down = np.ones(len(before), dtype=bool)
+        for position in range(length):
+            run = x[1 + position : len(x) - length + position]
+            up &= (run > before * (1 + change)) & (run > after * (1 + change))
+            down &= (run < before * (1 - change)) & (
+                run < after * (1 - change)
+            )
+        found = same_level & (up | down)
+        for position in range(length):
+            spikes[1 + position : len(x) - length + position] |= found
+    return pd.Series(spikes, index=values.index)
+
+
+def _find_removed(values: pd.Series, time_zone: str) -> pd.Series:
+    """
+    Find the rule that removes each value, if any.
+
+    Parameters
+    ----------
+    values : pandas.Series
+        The processed demand, at times in UTC.
+    time_zone : str
+        The time zone of the country or subdivision.
+
+    Returns
+    -------
+    pandas.Series
+        The first rule that removes each value, or an empty string.
+    """
+    removed = pd.Series("", index=values.index)
+
+    def remove(rule: str, found: pd.Series) -> None:
+        found = found.reindex(removed.index, fill_value=False)
+        removed[found & (removed == "")] = rule
+
+    now = pd.Timestamp.now(tz="UTC").tz_localize(None)
+    remove("future", pd.Series(values.index > now, index=values.index))
+    remove("non_positive", values <= 0)
+    remove("implausible", _find_implausible(values[removed == ""]))
+    remove("frozen", _find_frozen(values[removed == ""]))
+    remove("copied_day", _find_copied_days(values[removed == ""], time_zone))
+    remove("spike", _find_spikes(values[removed == ""]))
+    return removed
+
+
+def _resample_hourly(values: pd.Series, step: pd.Timedelta) -> pd.DataFrame:
+    """
+    Average the values of each hour, at its end.
+
+    Parameters
+    ----------
+    values : pandas.Series
+        The demand, at the resolution of the data source.
+    step : pandas.Timedelta
+        The resolution of the data source.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The average ("Load (MW)"), the number of values ("count") and
+        whether they cover enough of the hour ("covered"), for each hour
+        with values.
+    """
+    hours = values.resample("1h", label="right", closed="right")
+    hourly = pd.DataFrame({"Load (MW)": hours.mean(), "count": hours.count()})
+    expected = max(1.0, pd.Timedelta(hours=1) / step)
+    hourly["covered"] = hourly["count"] >= MIN_COVERAGE * expected
+    return hourly[hourly["count"] > 0]
+
+
+def _periods(times: pd.Series, rule: str, step: pd.Timedelta) -> pd.DataFrame:
+    """
+    Group the removed times of a rule into periods.
+
+    Parameters
+    ----------
+    times : pandas.Series
+        The removed times, in order.
+    rule : str
+        The rule.
+    step : pandas.Timedelta
+        The resolution of the times, within which they are consecutive.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The first and last time ("start" and "end"), the rule ("rule")
+        and the number of values ("values") of each period.
+    """
+    new_period = times.diff() > step
+    periods = times.groupby(new_period.cumsum().to_numpy()).agg(
+        ["min", "max", "count"]
+    )
+    return pd.DataFrame(
+        {
+            "start": pd.to_datetime(periods["min"].to_numpy()),
+            "end": pd.to_datetime(periods["max"].to_numpy()),
+            "rule": rule,
+            "values": periods["count"].to_numpy(dtype="int64"),
+        }
+    )
 
 
 def clean_data(code: str, data_source: str) -> pd.Series:
@@ -42,20 +333,44 @@ def clean_data(code: str, data_source: str) -> pd.Series:
         utils.config.get_electricity_demand_file_path(
             "processed", code, data_source
         )
-    )["Load (MW)"]
+    )["Load (MW)"].sort_index()
+    step = _step(processed)
 
-    # Average the values of each hour, at its end.
-    cleaned = (
-        processed.resample("1h", label="right", closed="right").mean().dropna()
-    )
+    # Remove the values of the rules, at the resolution of the data
+    # source, and average the others in each hour.
+    removed = _find_removed(processed, str(utils.entities.get_time_zone(code)))
+    hourly = _resample_hourly(processed[removed == ""], step)
+    cleaned = hourly.loc[hourly["covered"], "Load (MW)"]
     cleaned.index.name = processed.index.name
     cleaned.name = processed.name
+
+    # Save the periods of the removed values, with the hours without
+    # enough values.
+    periods = [
+        _periods(processed.index[removed == rule].to_series(), rule, step)
+        for rule in RULES[:-1]
+    ]
+    periods.append(
+        _periods(
+            hourly.index[~hourly["covered"]].to_series(),
+            "low_coverage",
+            pd.Timedelta(hours=1),
+        )
+    )
+    removed_periods = pd.concat(periods, ignore_index=True)
 
     file_path = utils.config.get_electricity_demand_file_path(
         "cleaned", code, data_source
     )
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     cleaned.to_frame().to_parquet(file_path)
-    logging.info(f"Saved the cleaned electricity demand to {file_path}.")
+    removed_periods.to_parquet(
+        file_path.removesuffix(".parquet") + "_removed.parquet"
+    )
+    logging.info(
+        f"Saved the cleaned electricity demand to {file_path}, without "
+        f"{int((removed != '').sum())} values of the data source and "
+        f"{int((~hourly['covered']).sum())} hours with too few values."
+    )
 
     return cleaned
