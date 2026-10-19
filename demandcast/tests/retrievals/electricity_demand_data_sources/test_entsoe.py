@@ -128,3 +128,27 @@ def test_download_and_extract_data_for_request_without_api_key(
         entsoe.download_and_extract_data_for_request(
             (pd.Timestamp("2024-03-31"), pd.Timestamp("2024-04-01")), "BEL"
         )
+
+
+@pytest.mark.parametrize(
+    ("code", "domain"),
+    [("GBR_GB", "10YGB----------A"), ("GBR_NIR", "10Y1001A1001A016")],
+)
+@pytest.mark.filterwarnings("ignore::bs4.XMLParsedAsHTMLWarning")
+def test_download_and_extract_data_for_request_of_area(
+    fake_downloads, monkeypatch, code, domain
+):
+    """Test that the subdivisions of the UK ask for their own areas."""
+    monkeypatch.setenv("ENTSOE_API_KEY", "test-key")
+    # Ignore a local .env file with a real key.
+    monkeypatch.setattr(utils.config, "load_dotenv", lambda **_: None)
+    fake_downloads.serve("https://web-api.tp.entsoe.eu/api", "entsoe.xml")
+
+    time_series = entsoe.download_and_extract_data_for_request(
+        (pd.Timestamp("2024-03-31 00:00"), pd.Timestamp("2024-03-31 02:00")),
+        code,
+    )
+
+    params = fake_downloads.requests[0][2]["params"]
+    assert params["outBiddingZone_Domain"] == domain
+    assert not time_series.empty

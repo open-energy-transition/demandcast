@@ -8,6 +8,7 @@ kansaitd \
 neso \
 niti \
 ons \
+soni \
 tepco"
 
 # Iterate over each script and run it.
