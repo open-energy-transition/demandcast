@@ -7,6 +7,6 @@ entities:
     subdivision_code: GB
     country_name: United Kingdom
     country_code: GBR
-    start_date: 2009-01-01
+    start_date: 2001-01-01
     end_date: today
     time_zone: Europe/London

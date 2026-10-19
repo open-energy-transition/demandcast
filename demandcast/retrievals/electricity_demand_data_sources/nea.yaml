@@ -1,7 +1,7 @@
 licence:
   redistribute: true
-  terms: CC BY-SA 4.0
-  url: https://opendatanepal.com
+  terms: CC-BY license. Use for any purpose with attribution.
+  url: https://opendatanepal.com/dataset/electricity-load-profile-of-nepal-in-2073-nepal-electricity-authority
 entities:
   - country_name: Nepal
     country_code: NPL
