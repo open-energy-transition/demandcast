@@ -4,50 +4,53 @@ License: AGPL-3.0.
 Description:
 
     This module provides functions to retrieve the electricity demand
-    data from the website of National Institution for Transforming India
-    (NITI) Aayog in India. The data is retrieved by submitting a request
-    to the NITI Aayog website. The user is then able to download the
-    data of the yearly demand profile of the selected years, or of a
-    year of the selected states (two at a time), as a file named "Yearly
-    Demand Profile.xlsx", which needs a name that starts with "NIT",
-    such as "NITI_2025-2026.xlsx" or "NITI_2024_Assam_Bihar.xlsx".
-
-    The files give the hourly demand met in MW of India, by date and
-    hour, from the data of Grid-India. The hours are their starts: in
-    2022, the demand is closest to the average of the readings of
-    Grid-India every 5 minutes in the hour that starts at its time
-    (median difference of 0.4%), rather than in the hour that ends at
-    its time (1.6%) or the reading at its time (0.9%). The India Climate
-    and Energy Dashboard shows the same data, but its API encrypts its
+    data of the Indian states from the India Climate and Energy
+    Dashboard (ICED) of National Institution for Transforming India
+    (NITI) Aayog. The data is retrieved by submitting a request on the
+    website, with a reCAPTCHA, for a year and two states at a time,
+    which downloads a file named "Yearly Demand Profile.xlsx". The file
+    needs a name that starts with "NIT", such as
+    "NITI_2024_Assam_Bihar.xlsx". The API of the dashboard encrypts its
     responses for its own pages.
 
-    The files of the states have the same hourly demand of 28 states, 5
-    union territories and the Damodar Valley Corporation (DVC), whose
-    sum is the demand of India, at the same hours: in 2024 they differ
-    by less than 0.01%. The DVC supplies parts of Jharkhand and West
-    Bengal, so the three make one subdivision, in the shape of the two
-    states (see shapes/niti.py). The data of Jammu and Kashmir includes
-    Ladakh, which it does not list, so it is in the shape of the two
-    union territories. Andaman and Nicobar and Lakshadweep, which are
-    not connected to the grid, have no data.
+    The files give the hourly demand met in MW of 28 states, 5 union
+    territories and the Damodar Valley Corporation (DVC), from the data
+    of Grid-India, by state and year, such as "Assam - 2024", date and
+    hour. Their sum is the demand of India of the dashboard, which is
+    not retrieved, at the same hours: in 2024 they differ by less than
+    0.01%. The hours are their starts: in 2022, the demand of India is
+    closest to the average of the readings of Grid-India every 5 minutes
+    on Mendeley Data in the hour that starts at its time (median
+    difference of 0.4%), rather than in the hour that ends at its time
+    (1.6%) or the reading at its time (0.9%).
 
-    The files of the dashboard, downloaded by year, have the data from
-    2017 to March 2026 without gaps. From September 2021 to June 2025,
-    the monthly demand is 0.5% to 1% below the data of Grid-India on
-    Mendeley Data (see grid_india.py), except in April 2024, when it is
-    about 7% lower: 134.2 TWh, against 144.3 TWh for Grid-India and
-    about 144.3 TWh in the official figures reported for India. April
-    2024 is a copy of March 2024, and March 2026 of January 2026: the
-    demand of almost every state is the same as on the same day and hour
-    of that month, and the national demand is their sum. The values of
-    the two months are kept for the later cleaning.
+    The DVC supplies parts of Jharkhand and West Bengal, so the three
+    make one subdivision, in the shape of the two states (see
+    shapes/niti.py). The data of Jammu and Kashmir includes Ladakh,
+    which it does not list, so it is in the shape of the two union
+    territories. Andaman and Nicobar and Lakshadweep, which are not
+    connected to the grid, have no data.
 
-    Source: https://iced.niti.gov.in
+    The dashboard has the data from 2017 to March 2026. From September
+    2021 to June 2025, the monthly demand of India is 0.5% to 1% below
+    the data of Grid-India on Mendeley Data, except in April 2024, when
+    it is about 7% lower: 134.2 TWh, against 144.3 TWh for Grid-India
+    and about 144.3 TWh in the official figures reported for India.
+    April 2024 is a copy of March 2024, and March 2026 of January 2026:
+    the demand of almost every state is the same as on the same day and
+    hour of that month. The values of the two months are kept for the
+    later cleaning.
+
+    Source: https://iced.niti.gov.in/energy/electricity/distribution/national-level-consumption/load-curve
+    Source: https://data.mendeley.com/datasets/y58jknpgs8/2
 """
 
 import datetime
+import functools
+import os
 
 import pandas as pd
+import utils.config
 import utils.fetcher
 import utils.time_series
 
@@ -89,6 +92,95 @@ SUBDIVISIONS = {
 }
 
 
+def _list_files() -> tuple[tuple[str, float], ...]:
+    """
+    List the downloaded files with the time of their last change.
+
+    Returns
+    -------
+    tuple[tuple[str, float], ...]
+        The paths of the files that start with "NIT", with the time of
+        their last change, or nothing if the folder does not exist.
+    """
+    folder = utils.config.read_folders_structure()[
+        "manually_downloaded_electricity_demand_folder"
+    ]
+    if not os.path.isdir(folder):
+        return ()
+    paths = [
+        os.path.join(folder, name)
+        for name in sorted(os.listdir(folder))
+        if name.startswith("NIT")
+    ]
+    return tuple((path, os.path.getmtime(path)) for path in paths)
+
+
+@functools.lru_cache(maxsize=1)
+def _read_states_of_files(
+    files: tuple[tuple[str, float], ...],
+) -> pd.DataFrame:
+    """
+    Read the demand of the states from the downloaded files.
+
+    The files are read once for all the subdivisions, as long as they do
+    not change.
+
+    Parameters
+    ----------
+    files : tuple[tuple[str, float], ...]
+        The paths of the files with the time of their last change, which
+        only identify the files that are read.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The name of the state, the start of the hour and the demand,
+        once for each state and hour.
+    """
+    dataset = utils.fetcher.read_manual_files(
+        data_source_name="NITI Aayog",
+        url=get_url(),
+        prefix="NIT",
+        read_file=pd.read_excel,
+        access=" after submitting a request via the form on the website",
+    )
+
+    # Leave out the disclaimer below the data, and the files of the
+    # demand of India, which have the year in their first column.
+    states = dataset[
+        dataset.reindex(columns=["State"])["State"]
+        .astype("string")
+        .str.contains(r" - \d{4}$", na=False)
+    ]
+    names = states["State"].str.rsplit(" - ", n=1).str[0]
+    years = states["State"].str.rsplit(" - ", n=1).str[1]
+    states = pd.DataFrame(
+        {
+            "name": names.to_numpy(),
+            "time": pd.to_datetime(
+                years + " " + states["Date"], format="%Y %d-%b %I%p"
+            ).to_numpy(),
+            "Hourly Demand Met (in MW)": states[
+                "Hourly Demand Met (in MW)"
+            ].to_numpy(),
+        }
+    )
+    return states.drop_duplicates(["name", "time"])
+
+
+def _read_states() -> pd.DataFrame:
+    """
+    Read the demand of the states from the downloaded files.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The name of the state, the start of the hour and the demand,
+        once for each state and hour.
+    """
+    return _read_states_of_files(_list_files()).copy()
+
+
 def get_available_requests(
     code: str, start_date: datetime.date, end_date: datetime.date
 ) -> list[None]:
@@ -101,7 +193,7 @@ def get_available_requests(
     Parameters
     ----------
     code : str
-        The code of India or of its subdivision.
+        The code of the subdivision of India.
     start_date : datetime.date
         The first day of the data.
     end_date : datetime.date
@@ -143,67 +235,26 @@ def download_and_extract_data_for_request(
     request : None
         The single request of the data, without parameters.
     code : str
-        The code of India or of its subdivision.
+        The code of the subdivision of India.
 
     Returns
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
     """
-    # Read the downloaded files.
-    dataset = utils.fetcher.read_manual_files(
-        data_source_name="NITI Aayog",
-        url=get_url(),
-        prefix="NIT",
-        read_file=pd.read_excel,
-        access=" after submitting a request via the form on the website",
-    )
+    # Read the demand of the states of the subdivision.
+    states = _read_states()
+    states = states[states["name"].isin(SUBDIVISIONS[code])]
 
-    # The files of India have the year in their first column, and those
-    # of the states the state and the year, such as "Assam - 2024".
-    dataset = dataset.reindex(
-        columns=["Year", "State", "Date", "Hourly Demand Met (in MW)"]
+    # Sum the demand of the states of the subdivision, at the hours
+    # where all of them have data.
+    demand = states.groupby("time")["Hourly Demand Met (in MW)"]
+    electricity_demand_time_series = demand.sum()[
+        demand.count() == len(SUBDIVISIONS[code])
+    ]
+    electricity_demand_time_series.index = pd.DatetimeIndex(
+        electricity_demand_time_series.index
     )
-    if code == "IND":
-        # Leave out the disclaimer below the data, without a year.
-        years = pd.to_numeric(dataset["Year"], errors="coerce")
-        national = dataset[years.notna()]
-        electricity_demand_time_series = pd.Series(
-            national["Hourly Demand Met (in MW)"].to_numpy(),
-            index=pd.to_datetime(
-                years[years.notna()].astype(int).astype(str)
-                + " "
-                + national["Date"],
-                format="%Y %d-%b %I%p",
-            ),
-        )
-    else:
-        # Leave out the disclaimer below the data.
-        states = dataset[
-            dataset["State"]
-            .astype("string")
-            .str.contains(r" - \d{4}$", na=False)
-        ]
-        names = states["State"].str.rsplit(" - ", n=1).str[0]
-        years = states["State"].str.rsplit(" - ", n=1).str[1]
-        states = states.assign(
-            name=names.to_numpy(),
-            time=pd.to_datetime(
-                years + " " + states["Date"], format="%Y %d-%b %I%p"
-            ).to_numpy(),
-        )
-        states = states[states["name"].isin(SUBDIVISIONS[code])]
-        states = states.drop_duplicates(["name", "time"])
-
-        # Sum the demand of the states of the subdivision, at the hours
-        # where all of them have data.
-        demand = states.groupby("time")["Hourly Demand Met (in MW)"]
-        electricity_demand_time_series = demand.sum()[
-            demand.count() == len(SUBDIVISIONS[code])
-        ]
-        electricity_demand_time_series.index = pd.DatetimeIndex(
-            electricity_demand_time_series.index
-        )
 
     # Move the starts of the hours to their ends.
     electricity_demand_time_series = (

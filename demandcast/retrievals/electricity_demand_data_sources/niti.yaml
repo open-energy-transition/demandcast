@@ -3,10 +3,6 @@ licence:
   terms: Open data.
   url: https://iced.niti.gov.in/about-us
 entities:
-  - country_name: India
-    country_code: IND
-    start_date: 2017-01-01
-    end_date: 2026-03-31
   - subdivision_name: Andhra Pradesh
     subdivision_code: AP
     country_name: India
