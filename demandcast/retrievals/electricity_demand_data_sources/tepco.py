@@ -9,6 +9,10 @@ Description:
     and from 2025 from one ZIP file per month, with one CSV file per
     day, since the yearly file of 2025 stops in July.
 
+    The files give the actual demand of the service area of TEPCO, the
+    Kantō region, in units of 10 MW ("万kW") for each hour, at its start
+    in the time of Japan, which has no daylight saving time.
+
     Source: https://www.tepco.co.jp/en/forecast/html/download-e.html
 """
 
