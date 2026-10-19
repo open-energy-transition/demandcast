@@ -9,14 +9,14 @@ entities:
     country_code: BRA
     start_date: 2000-01-01
     end_date: today
-    time_zone: America/Sao_Paulo
+    time_zone: America/Belem
   - subdivision_name: North-East
     subdivision_code: NE
     country_name: Brazil
     country_code: BRA
     start_date: 2000-01-01
     end_date: today
-    time_zone: America/Sao_Paulo
+    time_zone: America/Fortaleza
   - subdivision_name: South-East
     subdivision_code: SE
     country_name: Brazil

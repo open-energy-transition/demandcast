@@ -11,8 +11,8 @@ import pandas as pd
 from retrievals.electricity_demand_data_sources import oluwole_et_al
 
 URL = (
-    "https://prod-dcd-datasets-public-files-eu-west-1.s3.eu-west-1."
-    "amazonaws.com/0766cdca-14a5-4522-9380-a15094e0c4c6"
+    "https://data.mendeley.com/public-files/datasets/pxvdm26rn7/files/"
+    "140d6dcc-90fb-4fa6-8e98-a91379b1ad60/file_downloaded"
 )
 
 

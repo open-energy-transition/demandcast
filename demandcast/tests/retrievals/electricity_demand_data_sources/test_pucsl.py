@@ -48,3 +48,40 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
         "Asia/Colombo",
         {"2025-12-21 00:15": 300.75, "2025-12-21 00:30": 110.0},
     )
+
+
+def test_download_and_extract_data_without_dispatch(
+    fake_downloads, assert_demand, tmp_path
+):
+    """Test that a time without any dispatch has no demand."""
+    # The rooftop solar has no dispatch at night, and the latest time is
+    # not published yet, without the dispatch of any plant.
+    file_path = tmp_path / "pucsl.json"
+    file_path.write_text(
+        '{"data": ['
+        '{"reportTimestamp": "2025-12-21T00:00:00.000Z", '
+        '"powerPlantId": 1, "dispatchValueInMW": 300.5},'
+        '{"reportTimestamp": "2025-12-21T00:00:00.000Z", '
+        '"powerPlantId": 68, "dispatchValueInMW": null},'
+        '{"reportTimestamp": "2025-12-21T00:15:00.000Z", '
+        '"powerPlantId": 1, "dispatchValueInMW": null},'
+        '{"reportTimestamp": "2025-12-21T00:15:00.000Z", '
+        '"powerPlantId": 68, "dispatchValueInMW": null}'
+        '], "message": "ok"}',
+        encoding="utf-8",
+    )
+    fake_downloads.serve(
+        "https://gendata.pucsl.gov.lk/api/actual-system-dispatch?"
+        "dateAggregation=15min&from=2025-12-21T00:00:00.000Z"
+        "&to=2025-12-28T00:00:00.000Z",
+        file_path,
+    )
+
+    time_series = pucsl.download_and_extract_data_for_request(
+        (pd.Timestamp("2025-12-21"), pd.Timestamp("2025-12-28")), "LKA"
+    )
+
+    assert_demand(
+        time_series.dropna(), "Asia/Colombo", {"2025-12-21 00:15": 300.5}
+    )
+    assert time_series.isna().sum() == 1

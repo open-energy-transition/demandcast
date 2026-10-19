@@ -5,8 +5,28 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the website of the Operador Nacional do Sistema Elétrico
-    (ONS) in Brazil. The data is retrieved from the available CSV files
-    on the ONS website.
+    (ONS) in Brazil. The data is retrieved from the CSV files of the
+    hourly load curve on the open data portal of ONS, one a year from
+    2000, under the CC BY license.
+
+    The files give the load of each subsystem (North, North-East,
+    South-East and South) as the average power of each hour in MW
+    ("MWmed"), at the start of the hour in the time of Brasília, with
+    its daylight saving time until 2019: the hour skipped when it
+    started has a row without data, and the hour repeated when it ended
+    a single row, which the module leaves out. The hours are their
+    starts: the load of an hour equals the average of the two half
+    hours that follow its time in the load verified every half hour
+    (carga-energia-verificada), within 1%.
+
+    The load changed its definition twice, as the daily load of ONS,
+    which equals the average of the hourly load of each day: until
+    February 2021, it is the load supplied by the plants that ONS
+    dispatches or schedules; from March 2021, it adds the forecast
+    generation of the other plants; and from 2023-04-29, it adds the
+    estimated micro and mini distributed generation, which raises the
+    growth from the year before by about 7 percentage points in May
+    2023. The data is kept as it is, for the later cleaning.
 
     Source: https://dados.ons.org.br/dataset/curva-carga
 """
@@ -107,8 +127,8 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         index=pd.to_datetime(dataset["din_instante"]),
     )
 
-    # Move the times to the ends of the hours, because they appear to be
-    # provided at the beginning of the time interval.
+    # Move the starts of the hours to their ends, and leave out the
+    # hours skipped and repeated by the daylight saving time.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,
