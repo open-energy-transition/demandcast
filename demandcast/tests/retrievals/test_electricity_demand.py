@@ -21,7 +21,7 @@ import retrievals.electricity_demand
 import utils.fetcher
 import yaml
 
-# Save the files in the folder of the frozen date.
+# Freeze today, the end date of the entities of the data sources.
 pytestmark = pytest.mark.usefixtures("frozen_now")
 
 
@@ -119,12 +119,18 @@ def _read_saved_data(
     dict[str, float]
         The electricity demand in MW, by time in UTC.
     """
-    folder = os.path.join(
-        tmp_folders["electricity_demand_folder"], "2026-01-02"
+    # The processed data is saved in a file named after the code and
+    # the data source, and the cleaned data next to it.
+    folder = tmp_folders["processed_electricity_demand_folder"]
+    data = pd.read_parquet(
+        os.path.join(folder, f"{code}_{data_source}.parquet")
     )
-    file_path = os.path.join(folder, f"{code}_{data_source}")
-    assert os.path.isfile(f"{file_path}.csv")
-    data = pd.read_parquet(f"{file_path}.parquet")
+    assert os.path.isfile(
+        os.path.join(
+            tmp_folders["cleaned_electricity_demand_folder"],
+            f"{code}_{data_source}.parquet",
+        )
+    )
     assert data.columns.tolist() == ["Load (MW)"]
     assert data.index.name == "Time (UTC)"
     return {
@@ -216,8 +222,7 @@ def test_several_entities_with_the_code_and_the_dates(
     # The other subdivision is not retrieved.
     assert not os.path.exists(
         os.path.join(
-            tmp_folders["electricity_demand_folder"],
-            "2026-01-02",
+            tmp_folders["processed_electricity_demand_folder"],
             "USA_NY_subdivisions.parquet",
         )
     )
@@ -380,8 +385,7 @@ def test_entity_without_data(tmp_folders, add_data_source, caplog):
     assert "The data source several has no data for AUT" in caplog.text
     assert not os.path.exists(
         os.path.join(
-            tmp_folders["electricity_demand_folder"],
-            "2026-01-02",
+            tmp_folders["processed_electricity_demand_folder"],
             "AUT_several.parquet",
         )
     )
