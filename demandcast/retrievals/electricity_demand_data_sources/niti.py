@@ -31,15 +31,21 @@ Description:
     territories. Andaman and Nicobar and Lakshadweep, which are not
     connected to the grid, have no data.
 
-    The dashboard has the data from 2017 to March 2026. From September
-    2021 to June 2025, the monthly demand of India is 0.5% to 1% below
-    the data of Grid-India on Mendeley Data, except in April 2024, when
-    it is about 7% lower: 134.2 TWh, against 144.3 TWh for Grid-India
-    and about 144.3 TWh in the official figures reported for India.
-    April 2024 is a copy of March 2024, and March 2026 of January 2026:
-    the demand of almost every state is the same as on the same day and
-    hour of that month. The values of the two months are kept for the
-    later cleaning.
+    The dashboard has the data of every state from 2017 to March 2026
+    without gaps, and in every year their sum is the demand of India of
+    the dashboard. From September 2021 to June 2025, the monthly demand
+    of India is 0.5% to 1% below the data of Grid-India on Mendeley
+    Data, except in April 2024, when it is about 7% lower: 134.2 TWh,
+    against 144.3 TWh for Grid-India and about 144.3 TWh in the official
+    figures reported for India.
+
+    Some months are copies of an earlier month, with the same demand on
+    the same day and hour: April 2024 of March 2024 in 33 of the 34
+    states, March 2026 of January 2026 in 28, May 2022 of April 2022 in
+    Assam, and November 2023 and February 2024 of the month before in
+    Meghalaya. Tripura has 29 hours without demand, one of them
+    negative, between 15 January and 27 March 2018. These values are
+    kept for the later cleaning.
 
     Source: https://iced.niti.gov.in/energy/electricity/distribution/national-level-consumption/load-curve
     Source: https://data.mendeley.com/datasets/y58jknpgs8/2
