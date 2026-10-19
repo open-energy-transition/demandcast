@@ -82,8 +82,9 @@ def get_available_requests(
     list[int]
         The list of available requests.
     """
-    # Return the available requests, which are the years.
-    return list(range(start_date.year, end_date.year))
+    # Return the years of the dates that have ended.
+    last_year = min(end_date.year, pd.Timestamp.today().year - 1)
+    return list(range(start_date.year, last_year + 1))
 
 
 def get_url(year: int) -> str:
