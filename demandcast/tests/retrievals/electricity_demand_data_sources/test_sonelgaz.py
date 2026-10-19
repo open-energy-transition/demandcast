@@ -10,8 +10,8 @@ import pandas as pd
 from retrievals.electricity_demand_data_sources import sonelgaz
 
 URL = (
-    "https://prod-dcd-datasets-public-files-eu-west-1.s3.eu-west-1."
-    "amazonaws.com/028bbb1d-0e1a-4318-ba22-f4bf1ff5fec5"
+    "https://data.mendeley.com/public-files/datasets/z5x2d3mhw7/files/"
+    "049d33a5-6d4f-465a-8a65-b613487eb1c9/file_downloaded"
 )
 
 
@@ -19,7 +19,7 @@ def test_download_and_extract_data(fake_downloads, assert_demand, tmp_path):
     """Test that the hours of each day are read from the first sheet."""
     # Each row is a day, with the load of the hours "1h" to "24h". The
     # file repeats some days of 2019 with the same values, such as 10
-    # February here. The second sheet has the loads in whole MW.
+    # February here. The second sheet has the loads in whole numbers.
     days = pd.to_datetime(["2019-02-10", "2019-02-11", "2019-02-10"])
     loads = pd.DataFrame(
         [
@@ -43,7 +43,8 @@ def test_download_and_extract_data(fake_downloads, assert_demand, tmp_path):
     # The repeated day is kept, and removed later with the other
     # duplicated times by the cleaning of the data.
     assert time_series.index.duplicated().sum() == 24
-    # The hour "1h" ends at 01:00 in Algiers (UTC+1), at 00:00 in UTC.
+    # The hour "1h" ends at 01:00 in Algiers (UTC+1), at 00:00 in UTC,
+    # and the loads are divided by 125/148 to be in MW.
     times = pd.date_range("2019-02-10 00:00", periods=48, freq="h")
     assert_demand(
         time_series[~time_series.index.duplicated()],
@@ -52,7 +53,7 @@ def test_download_and_extract_data(fake_downloads, assert_demand, tmp_path):
             zip(
                 times.strftime("%Y-%m-%d %H:%M"),
                 [
-                    3500.5 + 100 * day + hour
+                    (3500.5 + 100 * day + hour) * 148 / 125
                     for day in (10, 11)
                     for hour in range(1, 25)
                 ],

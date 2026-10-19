@@ -5,8 +5,19 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from a publicly available repository with data provided by the
-    Société Nationale de l'Electricité et du Gaz (Sonelgaz) in Algeria.
-    The data is retrieved all at once.
+    Société Nationale de l'Electricité et du Gaz (Sonelgaz) in Algeria,
+    on Mendeley Data under the CC BY 4.0 license. The data is retrieved
+    all at once, from a single Excel file.
+
+    The file gives the hourly demand from 2008-01-01 to 2020-02-01, one
+    row a day, with the hours ending from "1h" to "24h" in the time of
+    Algeria, which has no daylight saving time. Its values are the
+    demand in MW multiplied by 125/148: all of them are whole numbers of
+    MW times 125/148, and divided by it they give the peak demand of
+    Sonelgaz, such as 10,464 MW on 2013-08-07 at 21:00 and 7% above the
+    peak of 2012. The module divides them by 125/148. In 2019, the rows
+    from 2019-02-10 come three times, with the same values, and the
+    cleaning keeps one of each.
 
     Source: https://data.mendeley.com/datasets/z5x2d3mhw7/1
     Source: https://doi.org/10.1016/j.dib.2023.109854
@@ -54,11 +65,10 @@ def get_url() -> str:
     str
         The URL of the electricity demand data
     """
-    # Return the URL of the electricity demand data.
+    # Return the URL of the file of the dataset.
     return (
-        "https://"
-        "prod-dcd-datasets-public-files-eu-west-1.s3.eu-west-1.amazonaws.com/"
-        "028bbb1d-0e1a-4318-ba22-f4bf1ff5fec5"
+        "https://data.mendeley.com/public-files/datasets/z5x2d3mhw7/files/"
+        "049d33a5-6d4f-465a-8a65-b613487eb1c9/file_downloaded"
     )
 
 
@@ -86,8 +96,9 @@ def download_and_extract_data_for_request(
     # Get the URL of the electricity demand data.
     url = get_url()
 
-    # Fetch the data from the URL.
-    dataset = utils.fetcher.fetch_dataframe(url, "excel")
+    # Fetch the data from the URL, with requests: Mendeley Data refuses
+    # the downloads of pandas.
+    dataset = utils.fetcher.fetch_dataframe(url, "html", read_as="excel_table")
 
     # The column names have the time information. Rearrange the
     # columns to have the time information on another column.
@@ -105,9 +116,10 @@ def download_and_extract_data_for_request(
         format="%Y-%m-%d %H",
     )
 
-    # Define the electricity demand time series.
+    # Define the electricity demand time series, in MW: the values are
+    # the demand multiplied by 125/148.
     electricity_demand_time_series = pd.Series(
-        dataset["Value"].values,
+        dataset["Value"].to_numpy(dtype="float64") * 148 / 125,
         index=index,
     )
 
