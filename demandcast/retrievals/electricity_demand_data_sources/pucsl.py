@@ -6,14 +6,24 @@ Description:
     This module provides functions to retrieve the electricity demand
     data from the website of the Public Utilities Commission of Sri
     Lanka (PUCSL) in Sri Lanka. The data is retrieved in one-week
-    intervals.
+    intervals from the API of the website, which takes up to an hour
+    for all the data, from 2023.
 
-    Note:
-    Although data is retrieved in 7-day intervals,
-    retrieving data over a longer historical range
-    (e.g., multiple years) may take considerable time —
-    up to 60 minutes in total, due to the number of API
-    calls required.
+    The API gives the dispatch in MW of each power plant every 15
+    minutes, at times in UTC, which include the end of the request, so
+    the time between two requests comes twice and the cleaning keeps
+    one. The demand is the sum of the dispatch of the plants, which the
+    module takes at the start of each 15 minutes: the API gives no
+    finer data to check it. Sri Lanka has no daylight saving time.
+
+    The plants change over time: from 2025-07-11, they include an
+    estimate of the rooftop solar generation, which adds about 1 GW at
+    midday, and from September 2026 a battery, whose dispatch is
+    negative when it charges. Before, the demand left out the rooftop
+    solar generation.
+    The dispatch of the rooftop solar is missing at night and counts as
+    zero, and the times not published yet have no dispatch of any plant
+    and no demand.
 
     Source: https://gendata.pucsl.gov.lk/generation-profile
 """
@@ -136,11 +146,11 @@ def download_and_extract_data_for_request(
     # Convert timestamps to datetime
     dataset["reportTimestamp"] = pd.to_datetime(dataset["reportTimestamp"])
 
-    # Aggregate total generation (in MW) across all
-    # power plants for each timestamp
+    # Sum the dispatch of the plants at each time, without demand at the
+    # times when no plant has a dispatch.
     dataset_grouped = dataset.groupby("reportTimestamp", as_index=False)[
         "dispatchValueInMW"
-    ].sum()
+    ].sum(min_count=1)
 
     # Extract the electricity demand time series
     electricity_demand_time_series = pd.Series(
@@ -148,8 +158,7 @@ def download_and_extract_data_for_request(
         index=dataset_grouped["reportTimestamp"],
     )
 
-    # Add 15 minutes to the index because the electricity demand
-    # seems to be provided at the beginning of the time-interval
+    # Move the starts of the 15 minutes to their ends.
     electricity_demand_time_series.index += pd.Timedelta(minutes=15)
 
     # Add the time zone information to the time series.
