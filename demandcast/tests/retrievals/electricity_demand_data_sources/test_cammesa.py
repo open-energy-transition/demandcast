@@ -109,3 +109,19 @@ def test_download_and_extract_data_of_buenos_aires(
         "UTC-03:00",
         {"2026-09-15 03:00": 8000.0, "2026-09-15 03:05": 7940.75},
     )
+
+
+def test_download_and_extract_data_of_a_day_without_data(fake_downloads):
+    """Test that a day out of the data of the API has no demand."""
+    fake_downloads.serve(
+        "https://api.cammesa.com/demanda-svc/demanda/"
+        "ObtieneDemandaYTemperaturaRegionByFecha?"
+        "id_region=1002&fecha=2026-02-01",
+        "cammesa_empty.json",
+    )
+
+    time_series = cammesa.download_and_extract_data_for_request(
+        "2026-02-01", "ARG"
+    )
+
+    assert time_series.empty

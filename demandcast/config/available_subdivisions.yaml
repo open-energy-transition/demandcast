@@ -423,6 +423,10 @@ entities:
     country_name: United Kingdom
     subdivision_code: GB
     subdivision_name: Great Britain
+  - country_code: GBR
+    country_name: United Kingdom
+    subdivision_code: NIR
+    subdivision_name: Northern Ireland
   - country_code: IDN
     country_name: Indonesia
     subdivision_code: AC

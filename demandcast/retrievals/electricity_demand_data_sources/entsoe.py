@@ -15,6 +15,16 @@ Description:
     daylight saving time ended. The actual total load is not on the list
     of data that ENTSO-E opens under CC BY 4.0.
 
+    The United Kingdom has two areas: Great Britain (GB), the area of
+    National Grid, from 2014-12-22 to 2021-06-14, when its data ends
+    after the United Kingdom left the market of the European Union, and
+    Northern Ireland (GB_NIR), the area of SONI, from 2015-01-01 to
+    2025-10-23. The area of the United Kingdom (UK) gives their sum
+    until 2021 and only Northern Ireland after, so it is not used. The
+    load of Great Britain is close to the transmission demand of NESO
+    with the embedded wind and solar generation, and about 3 to 6 GW
+    above its national demand (see neso.py).
+
     Source: https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html
     Source: https://github.com/EnergieID/entsoe-py
 """
@@ -26,6 +36,10 @@ import pandas as pd
 import utils.config
 import utils.fetcher
 import utils.time_series
+
+# The areas of ENTSO-E of the subdivisions, by their code. The areas of
+# the countries are their ISO Alpha-2 codes.
+AREAS = {"GBR_GB": "GB", "GBR_NIR": "GB_NIR"}
 
 
 def get_available_requests(
@@ -107,7 +121,7 @@ def download_and_extract_data_for_request(
     # Download the electricity demand time series from the ENTSO-E
     # API.
     electricity_demand_time_series = utils.fetcher.fetch_entsoe_demand(
-        api_key, code, start_date, end_date
+        api_key, code, start_date, end_date, area=AREAS.get(code)
     )
 
     if not electricity_demand_time_series.empty:

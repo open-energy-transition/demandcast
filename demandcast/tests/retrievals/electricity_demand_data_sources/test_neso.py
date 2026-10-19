@@ -8,6 +8,7 @@ Description:
 
 import datetime
 
+import pandas as pd
 import pytest
 from retrievals.electricity_demand_data_sources import neso
 
@@ -57,17 +58,41 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
     # local midnight, in absolute time: when daylight saving time ends
     # on 26 October, the periods 3 to 6 end every 30 minutes from 00:30
     # in UTC, across the change of the clocks at 01:00 in UTC. The
+    # demand is the national demand with the embedded wind and solar
+    # generation, whose missing values ("NA") count as zero. The
     # forecasts are left out.
     assert_demand(
         time_series,
         "Europe/London",
         {
-            "2025-01-01 00:30": 25000,
-            "2025-01-01 01:00": 24500,
-            "2025-10-26 00:30": 21000,
-            "2025-10-26 01:00": 20800,
-            "2025-10-26 01:30": 20600,
-            "2025-10-26 02:00": 20400,
+            "2025-01-01 00:30": 26040,
+            "2025-01-01 01:00": 25400,
+            "2025-10-26 00:30": 21500,
+            "2025-10-26 01:00": 21300,
+            "2025-10-26 01:30": 21200,
+            "2025-10-26 02:00": 21000,
         },
-        dtype="int64",
     )
+
+
+@pytest.mark.parametrize(
+    "dates",
+    [
+        ["2024-01-01", "2024-10-01"],
+        ["2024-01-01T00:00:00", "2024-10-01T00:00:00"],
+        ["01-JAN-2024", "01-OCT-2024"],
+        ["01-Jan-24", "01-Oct-24"],
+    ],
+)
+def test_read_dates(dates):
+    """Test that the settlement dates are read in each format."""
+    assert neso._read_dates(pd.Series(dates)).tolist() == [
+        pd.Timestamp("2024-01-01"),
+        pd.Timestamp("2024-10-01"),
+    ]
+
+
+def test_read_dates_in_another_format():
+    """Test that dates in another format are rejected."""
+    with pytest.raises(ValueError, match="not in one of the formats"):
+        neso._read_dates(pd.Series(["2024/01/01"]))

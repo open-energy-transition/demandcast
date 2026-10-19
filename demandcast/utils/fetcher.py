@@ -551,6 +551,7 @@ def fetch_entsoe_demand(
     end_date_and_time: pd.Timestamp,
     retries: int = 3,
     retry_delay: int = 5,
+    area: str | None = None,
 ) -> pd.Series:
     """
     Fetch the electricity demand time series from the ENTSO-E API.
@@ -575,14 +576,19 @@ def fetch_entsoe_demand(
         The number of attempts, in case of connection errors.
     retry_delay : int, optional
         The delay between attempts in seconds.
+    area : str | None, optional
+        The area of ENTSO-E, such as GB_NIR for Northern Ireland,
+        instead of the country of the code.
 
     Returns
     -------
     pandas.Series
         The electricity demand time series in MW.
     """
-    # Get the ISO Alpha-2 code of the country.
-    iso_alpha_2_code = utils.entities.get_iso_alpha_2_code(iso_alpha_3_code)
+    # Get the area of ENTSO-E: the ISO Alpha-2 code of the country, if
+    # no other area is given.
+    if area is None:
+        area = utils.entities.get_iso_alpha_2_code(iso_alpha_3_code)
 
     # Define the ENTSO-E API client, which retries after connection
     # errors.
@@ -592,7 +598,7 @@ def fetch_entsoe_demand(
 
     try:
         return client.query_load(
-            iso_alpha_2_code,
+            area,
             start=start_date_and_time,
             end=end_date_and_time,
         )["Actual Load"]
