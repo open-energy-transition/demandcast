@@ -63,7 +63,9 @@ def _flag(demand: pd.Series, monkeypatch) -> pd.DataFrame:
         geometry=[shapely.box(LONGITUDE - 1, 10, LONGITUDE + 1, 12)],
         crs=4326,
     )
-    monkeypatch.setattr(utils.shapes, "get_entity_shape", lambda _: shape)
+    monkeypatch.setattr(
+        utils.shapes, "get_entity_shape", lambda *_, **__: shape
+    )
     file_path = utils.config.get_electricity_demand_file_path(
         "cleaned", "IND", "test"
     )

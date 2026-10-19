@@ -70,7 +70,7 @@ def _get_longitude(code: str) -> float:
     float
         The longitude of a point inside its shape, in degrees.
     """
-    shape = utils.shapes.get_entity_shape(code)
+    shape = utils.shapes.get_entity_shape(code, make_plot=False)
     return float(shape.union_all().representative_point().x)
 
 
