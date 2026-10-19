@@ -25,8 +25,11 @@ Description:
     the monthly demand is 0.5% to 1% below the data of Grid-India on
     Mendeley Data (see grid_india.py), except in April 2024, when it is
     about 7% lower: 134.2 TWh, against 144.3 TWh for Grid-India and
-    about 144.3 TWh in the official figures reported for India. The
-    values of April 2024 are kept for the later cleaning.
+    about 144.3 TWh in the official figures reported for India. April
+    2024 is a copy of March 2024, and March 2026 of January 2026: the
+    demand of almost every state is the same as on the same day and hour
+    of that month, and the national demand is their sum. The values of
+    the two months are kept for the later cleaning.
 
     Source: https://iced.niti.gov.in
 """
