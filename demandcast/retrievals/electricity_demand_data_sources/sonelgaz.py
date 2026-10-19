@@ -13,11 +13,12 @@ Description:
     row a day, with the hours ending from "1h" to "24h" in the time of
     Algeria, which has no daylight saving time. Its values are the
     demand in MW multiplied by 125/148: all of them are whole numbers of
-    MW times 125/148, and divided by it they give the peak demand of
-    Sonelgaz, such as 10,464 MW on 2013-08-07 at 21:00 and 7% above the
-    peak of 2012. The module divides them by 125/148. In 2019, the rows
-    from 2019-02-10 come three times, with the same values, and the
-    cleaning keeps one of each.
+    MW times 125/148, and divided by it they give the peak demand that
+    Sonelgaz reported for the northern interconnected grid, 9,777 MW in
+    2012, 13.6% above 2011, and 10,464 MW on 2013-08-07 at 21:00, while
+    the values as they are give none of them. The module divides them by
+    125/148. In 2019, the rows from 2019-02-10 come three times, with
+    the same values, and the cleaning keeps one of each.
 
     Source: https://data.mendeley.com/datasets/z5x2d3mhw7/1
     Source: https://doi.org/10.1016/j.dib.2023.109854
