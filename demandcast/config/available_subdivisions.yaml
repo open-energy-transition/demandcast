@@ -582,7 +582,7 @@ entities:
   - country_code: IND
     country_name: India
     subdivision_code: CT
-    subdivision_name: Subdivision of India
+    subdivision_name: Chhattīsgarh
   - country_code: IND
     country_name: India
     subdivision_code: DH
@@ -613,8 +613,16 @@ entities:
     subdivision_name: Jhārkhand
   - country_code: IND
     country_name: India
+    subdivision_code: JHWB
+    subdivision_name: Jharkhand and West Bengal
+  - country_code: IND
+    country_name: India
     subdivision_code: JK
     subdivision_name: Jammu and Kashmīr
+  - country_code: IND
+    country_name: India
+    subdivision_code: JKLA
+    subdivision_name: Jammu and Kashmir and Ladakh
   - country_code: IND
     country_name: India
     subdivision_code: KA
@@ -658,7 +666,7 @@ entities:
   - country_code: IND
     country_name: India
     subdivision_code: OR
-    subdivision_name: Subdivision of India
+    subdivision_name: Odisha
   - country_code: IND
     country_name: India
     subdivision_code: PB
@@ -678,7 +686,7 @@ entities:
   - country_code: IND
     country_name: India
     subdivision_code: TG
-    subdivision_name: Subdivision of India
+    subdivision_name: Telangāna
   - country_code: IND
     country_name: India
     subdivision_code: TN
@@ -694,7 +702,7 @@ entities:
   - country_code: IND
     country_name: India
     subdivision_code: UT
-    subdivision_name: Subdivision of India
+    subdivision_name: Uttarākhand
   - country_code: IND
     country_name: India
     subdivision_code: WB
