@@ -52,6 +52,4 @@ ni_shape["geometry"] = ni_shape["geometry"].set_precision(0.005)
 # Save the shape to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "soni")
 os.makedirs(shapes_dir, exist_ok=True)
-ni_shape.to_file(
-    os.path.join(shapes_dir, "soni.shp"), driver="ESRI Shapefile"
-)
+ni_shape.to_file(os.path.join(shapes_dir, "soni.shp"), driver="ESRI Shapefile")
