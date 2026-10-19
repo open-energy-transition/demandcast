@@ -104,6 +104,22 @@ def test_midday_dip(monkeypatch):
     assert (flags["reference"] - flags["value"] > 0.05).all()
 
 
+def test_midday_rise(monkeypatch):
+    """Test that the quarters that add the solar are flagged."""
+    # The solar is left out until 2022, and added in 2023, such as when
+    # a system operator starts to estimate it.
+    demand = _demand({2020: 200, 2021: 200, 2022: 200, 2023: 0})
+
+    flags = _flag(demand, monkeypatch)
+
+    assert flags[["flag", "period"]].to_numpy().tolist() == [
+        ["midday_rise", "DJF 2023"],
+        ["midday_rise", "MAM 2023"],
+        ["midday_rise", "JJA 2023"],
+        ["midday_rise", "SON 2023"],
+    ]
+
+
 def test_no_midday_dip(monkeypatch):
     """Test that a demand with all its solar is not flagged."""
     demand = _demand({2020: 0, 2021: 0, 2022: 0, 2023: 0})
@@ -216,16 +232,21 @@ def test_daylight_saving(monkeypatch, time_zone, gap, expected):
 
 
 def _save_annual_values(
-    code: str, per_capita: float, population: float
+    code: str, per_capita: float | dict[int, float], population: float
 ) -> None:
     """Save an annual demand per capita and population for 2020-2023."""
     times = pd.date_range("2020-01-01", "2023-12-31 23:00", freq="1h")
+    per_capita_values = (
+        pd.Series(times.year).map(per_capita).to_numpy()
+        if isinstance(per_capita, dict)
+        else per_capita
+    )
     folders = utils.config.read_folders_structure()
     for folder, column, value in [
         (
             "annual_electricity_demand_per_capita_folder",
             "Annual electricity demand per capita (kWh)",
-            per_capita,
+            per_capita_values,
         ),
         ("population_folder", "Population", population),
     ]:
@@ -262,6 +283,36 @@ def test_annual_errors(monkeypatch, code):
     if code == "IND":
         assert total["value"].iloc[0] == pytest.approx(13.14)
         assert total["reference"].iloc[0] == pytest.approx(8.76)
+
+
+@pytest.mark.parametrize(
+    ("code", "factor", "per_capita", "flagged"),
+    [
+        # A change of 15% of the demand is flagged for a country, not
+        # for a subdivision, whose demand changes more.
+        ("IND", 1.15, 8760, True),
+        ("IND_KL", 1.15, 8760, False),
+        # A change of 15% of the annual demand per capita alone is not.
+        ("IND", 1.0, {2020: 8760, 2021: 8760, 2022: 10074, 2023: 8760}, False),
+    ],
+)
+def test_annual_change(monkeypatch, code, factor, per_capita, flagged):
+    """Test that a change of the demand and of its ratio is flagged."""
+    demand = _demand_by_clock(
+        "Asia/Kolkata", "2020-01-01 01:00", "2024-01-01 00:00"
+    )
+    demand[:] = 1000.0
+    starts = pd.DatetimeIndex(demand.index) - pd.Timedelta(hours=1)
+    demand[starts.year == 2022] *= factor
+    _save_annual_values(code, per_capita=per_capita, population=1e6)
+
+    flags = _flag(demand, monkeypatch, code=code)
+
+    assert flags[["flag", "period"]].to_numpy().tolist() == (
+        [["annual_change", "2022"], ["annual_change", "2023"]]
+        if flagged
+        else []
+    )
 
 
 def test_annual_errors_without_annual_values(monkeypatch):

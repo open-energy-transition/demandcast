@@ -10,6 +10,8 @@ Description:
     - midday_dip: the demand around solar noon falls, compared with the
       morning and afternoon, below what it was in the same quarter of
       earlier years.
+    - midday_rise: the same, when it rises above, and above the year
+      before.
     - time_lag: the daily profile of a quarter, in local time, is
       shifted by whole hours from that of the same quarter of the other
       years.
@@ -17,47 +19,67 @@ Description:
       a change of the clocks.
     - annual_total: the demand of a year of a country is more than a
       third away from its annual demand per capita times its population.
-    - annual_change: the ratio of the demand of a year to its annual
-      demand per capita times its population changes by more than 10%
-      from the year before.
+    - annual_change: the demand of a year, and its ratio to its annual
+      demand per capita times its population, change by more than 10%
+      (20% for a subdivision) from the year before.
 
     The midday dip is the sign of a demand that leaves out the
     generation embedded in the distribution networks, such as rooftop
     solar, whose growth over the years hides more and more of the
     demand at midday. DemandCast models the gross demand, with the
     demand that this generation supplies, so the flag marks the series
-    that do not have it, or a change of what a series has. The midday
-    index of a day is the mean demand of the three hours around solar
-    noon (10:30 to 13:30 in solar time, from the longitude of the
-    country or subdivision), divided by the mean of the two hours from
-    7:00 and the two hours from 15:00. Its median over the days of a
-    quarter (December to February, March to May, June to August and
-    September to November) is compared with the highest median of the
-    same quarter in the earlier years, since the sunny season is not
-    the same everywhere. A drop of more than 0.05 is flagged: the demand
-    of a system without solar keeps its midday index within about 0.02
-    from year to year, while the national demand of Great Britain,
-    without the embedded solar, drops from about 1.02 in 2011 to 0.87
-    in 2026 in summer. The flag does not prove that solar is missing:
-    the index also drops when the demand changes at midday, such as
-    during the lockdowns of 2020, and it cannot see the solar that was
-    already there when the series starts.
+    that do not have it. A midday rise marks a change of what a series
+    has, such as when a system operator starts to add the embedded
+    generation, as EPIAS from 2020-12-30 and ONS from 2023-04-29, or
+    the charging of batteries. The midday index of a day is the mean
+    demand of the three hours around solar noon (10:30 to 13:30 in
+    solar time, from the longitude of the country or subdivision),
+    divided by the mean of the two hours from 7:00 and the two hours
+    from 15:00. Its median over the days of a quarter (December to
+    February, March to May, June to August and September to November)
+    is compared with the median of the same quarter in the earlier
+    years, since the sunny season is not the same everywhere, and a
+    change of more than 0.05 is flagged. The demand of a system without
+    solar keeps its midday index within about 0.02 from year to year,
+    while the national demand of Great Britain, without the embedded
+    solar, drops from about 1.02 in 2011 to 0.87 in 2026 in summer. The
+    median of the earlier years, rather than their highest index, keeps
+    a single unusual year, such as a drought, from flagging all the
+    years after it. The flags do not prove that solar is missing: the
+    index also changes when the demand changes at midday, such as
+    during the lockdowns of 2020 or with the agricultural supply moved
+    to the day in India, and it cannot see the solar that was already
+    there when the series starts, as in California. A rise has to be
+    above the year before too, since a change of what a series has is
+    sudden, while the midday demand of some states of India grows
+    slowly over the years as their agricultural supply moves to the
+    day.
 
     The demand follows the clocks, so its daily profile in local time
     stays at the same hours from year to year and across the changes of
     the clocks, even when a country changes its rules of daylight
     saving time. A profile that has to move by whole hours to match the
     others shows times that are read in the wrong time zone, without or
-    with a wrong daylight saving time, or at the wrong end of the
-    intervals. The profiles are the mean demand of each hour, divided
-    by their mean, and the move of up to 3 hours that gives the
-    smallest squared difference is flagged if it halves the squared
-    difference without a move. The profile of a quarter with at least
-    60 days is compared with the median profile of the same quarter
-    over the years, if there are at least 3, and the profile of the 14
-    days after a change of the clocks with that of the 14 days before
-    it, without the day of the change. The flags give the hours by
-    which the profile has to move later.
+    with a wrong daylight saving time, at the wrong end of the
+    intervals, or values that slip against their times. The profiles
+    are the mean demand of each hour, divided by their mean, and the
+    move of up to 3 hours that gives the smallest squared difference is
+    flagged if it leaves less than 40% of the squared difference without
+    a move. The real errors leave from 5% to 31%, while a change of the
+    shape of the profile, such as a growing midday dip, can leave about
+    half. The profile of a quarter with at least 60 days is compared
+    with the median profile of the same quarter over the years, if
+    there are at least 3, and the profile of the 14 days after a change
+    of the clocks with that of the 14 days before it, without the day
+    of the change, with the median demand of each hour, so that a few
+    holidays, such as the carnival in Brazil, do not shift it. The
+    flags give the hours by which the profile has to move later. Some
+    demand follows the clocks less, so its flags are not errors: the
+    demand of the north-east of Brazil does not shift with the changes
+    of 2000 to 2002, the demand on the network of South Australia
+    follows the sun with its rooftop solar, and a sudden change of the
+    weather after a change of the clocks, such as in New Brunswick on
+    2026-03-08, can shift the profile of the heating.
 
     The annual demand per capita and the population are those that
     DemandCast retrieves, and the annual flags are skipped if they have
@@ -71,11 +93,15 @@ Description:
     units, of a series that covers only part of a country, or of the
     wrong country. The subdivisions have the annual demand per capita of
     their country, which can be from 0.2 to 3 times theirs, so only
-    their changes are flagged. A change of more than 10% is not the
-    growth of the demand, which the annual demand per capita and the
+    their changes are flagged. A change of the ratio is not the growth
+    of the demand, which the annual demand per capita and the
     population follow, but a change of what the series covers or of its
     definition: the ratio of the countries changes by at most about 7%
-    from a year to the next.
+    from a year to the next. The demand itself has to change as much,
+    since the annual demand per capita jumps when one of its sources is
+    missing for a year. The demand of a small subdivision changes more,
+    such as with the national shocks that hit the regions unequally, so
+    their changes are flagged from 20%.
 """
 
 import logging
@@ -98,18 +124,18 @@ QUARTERS = ["DJF", "MAM", "JJA", "SON"]
 MIN_DAYS_OF_QUARTER = 60
 
 # The hours of the midday and of the morning and afternoon around it,
-# from and to, in solar time, and the drop of the midday index that is
+# from and to, in solar time, and the change of the midday index that is
 # flagged.
 MIDDAY_HOURS = (10.5, 13.5)
 MORNING_HOURS = (7.0, 9.0)
 AFTERNOON_HOURS = (15.0, 17.0)
-MIDDAY_DIP_DROP = 0.05
+MIDDAY_CHANGE = 0.05
 
 # The largest move of a profile, the share of the squared difference
 # without a move that the move needs to be flagged, and the years that
 # a quarter is compared with.
 MAX_LAG = 3
-LAG_SHARE = 0.5
+LAG_SHARE = 0.4
 MIN_YEARS_OF_QUARTER = 3
 
 # The days before and after a change of the clocks, and the days that
@@ -119,10 +145,12 @@ MIN_DAYS_AROUND_CHANGE = 12
 
 # The share of the hours that a year needs, the factor away from the
 # annual demand per capita times the population that is flagged, and
-# the change of the ratio to it from a year to the next.
+# the change from a year to the next of the demand and of its ratio to
+# it that is flagged, for the countries and for the subdivisions.
 MIN_HOURS_OF_YEAR = 0.9
 ANNUAL_TOTAL_FACTOR = 4 / 3
-ANNUAL_CHANGE = 0.1
+ANNUAL_CHANGE_OF_COUNTRY = 0.1
+ANNUAL_CHANGE_OF_SUBDIVISION = 0.2
 
 
 def _get_years_and_quarters(
@@ -255,9 +283,9 @@ def _get_quarterly_index(daily: pd.Series) -> pd.DataFrame:
     return medians.reindex(columns=range(4))
 
 
-def _find_midday_dips(cleaned: pd.Series, longitude: float) -> pd.DataFrame:
+def _find_midday_changes(cleaned: pd.Series, longitude: float) -> pd.DataFrame:
     """
-    Find the quarters whose midday index drops below earlier years.
+    Find the quarters whose midday index moves away from earlier years.
 
     Parameters
     ----------
@@ -270,25 +298,33 @@ def _find_midday_dips(cleaned: pd.Series, longitude: float) -> pd.DataFrame:
     -------
     pandas.DataFrame
         The flagged quarters, with their midday index ("value") and the
-        highest one of earlier years ("reference").
+        median of earlier years ("reference").
     """
     quarterly = _get_quarterly_index(_get_midday_index(cleaned, longitude))
     rows = []
     for quarter in range(4):
         index = quarterly[quarter].dropna()
-        reference = index.cummax().shift()
-        for year in index.index[index < reference - MIDDAY_DIP_DROP]:
-            start, end = _get_quarter_days(int(year), quarter)
-            rows.append(
-                {
-                    "start": start,
-                    "end": end,
-                    "flag": "midday_dip",
-                    "period": f"{QUARTERS[quarter]} {year}",
-                    "value": index[year],
-                    "reference": reference[year],
-                }
-            )
+        reference = index.expanding().median().shift()
+        change = index - reference
+        rise = (change > MIDDAY_CHANGE) & (
+            index - index.shift() > MIDDAY_CHANGE
+        )
+        for flag, years in [
+            ("midday_dip", index.index[change < -MIDDAY_CHANGE]),
+            ("midday_rise", index.index[rise]),
+        ]:
+            for year in years:
+                start, end = _get_quarter_days(int(year), quarter)
+                rows.append(
+                    {
+                        "start": start,
+                        "end": end,
+                        "flag": flag,
+                        "period": f"{QUARTERS[quarter]} {year}",
+                        "value": index[year],
+                        "reference": reference[year],
+                    }
+                )
     return pd.DataFrame(rows, columns=COLUMNS)
 
 
@@ -313,7 +349,9 @@ def _to_local_time(values: pd.Series, time_zone: str) -> pd.Series:
     return pd.Series(values.to_numpy(), index=local)
 
 
-def _get_profile(values: pd.Series) -> np.ndarray | None:
+def _get_profile(
+    values: pd.Series, statistic: str = "mean"
+) -> np.ndarray | None:
     """
     Get the daily profile of the demand.
 
@@ -322,15 +360,17 @@ def _get_profile(values: pd.Series) -> np.ndarray | None:
     values : pandas.Series
         The hourly demand, at the local times of the starts of the
         hours.
+    statistic : str, optional
+        The statistic of the demand of each hour, "mean" or "median".
 
     Returns
     -------
     numpy.ndarray | None
-        The mean demand of each hour of the day divided by their mean,
-        or None if an hour has no value.
+        The statistic of the demand of each hour of the day divided by
+        their mean, or None if an hour has no value.
     """
     hours = pd.DatetimeIndex(values.index).hour
-    profile = values.groupby(hours).mean().reindex(range(24))
+    profile = values.groupby(hours).agg(statistic).reindex(range(24))
     if profile.isna().any():
         return None
     return (profile / profile.mean()).to_numpy()
@@ -448,8 +488,12 @@ def _find_daylight_saving_errors(
             (times > change + pd.Timedelta(days=1))
             & (times <= change + pd.Timedelta(days=1) + period)
         ]
-        profile_before = _get_profile(_to_local_time(before, time_zone))
-        profile_after = _get_profile(_to_local_time(after, time_zone))
+        profile_before = _get_profile(
+            _to_local_time(before, time_zone), "median"
+        )
+        profile_after = _get_profile(
+            _to_local_time(after, time_zone), "median"
+        )
         if (
             min(len(before), len(after)) < 24 * MIN_DAYS_AROUND_CHANGE
             or profile_before is None
@@ -561,7 +605,13 @@ def _find_annual_errors(cleaned: pd.Series, code: str) -> pd.DataFrame:
     annual["ratio"] = annual["total"] / annual["expected"]
 
     annual_years = annual.index.to_numpy(dtype=int).tolist()
+    totals = dict(zip(annual_years, annual["total"].tolist(), strict=True))
     ratios = dict(zip(annual_years, annual["ratio"].tolist(), strict=True))
+    change = (
+        ANNUAL_CHANGE_OF_SUBDIVISION
+        if "_" in code
+        else ANNUAL_CHANGE_OF_COUNTRY
+    )
     rows = []
     for year, total, expected in zip(
         annual_years,
@@ -583,8 +633,11 @@ def _find_annual_errors(cleaned: pd.Series, code: str) -> pd.DataFrame:
                     "reference": expected,
                 }
             )
-        before = ratios.get(year - 1)
-        if before and abs(ratios[year] / before - 1) > ANNUAL_CHANGE:
+        if (
+            year - 1 in ratios
+            and abs(ratios[year] / ratios[year - 1] - 1) > change
+            and abs(total / totals[year - 1] - 1) > change
+        ):
             rows.append(
                 {
                     "start": days[0],
@@ -592,7 +645,7 @@ def _find_annual_errors(cleaned: pd.Series, code: str) -> pd.DataFrame:
                     "flag": "annual_change",
                     "period": str(year),
                     "value": ratios[year],
-                    "reference": before,
+                    "reference": ratios[year - 1],
                 }
             )
     return pd.DataFrame(rows, columns=COLUMNS)
@@ -623,7 +676,7 @@ def flag_data(code: str, data_source: str) -> pd.DataFrame:
     time_zone = str(utils.entities.get_time_zone(code))
 
     found = [
-        _find_midday_dips(cleaned, _get_longitude(code)),
+        _find_midday_changes(cleaned, _get_longitude(code)),
         _find_time_lags(cleaned, time_zone),
         _find_daylight_saving_errors(cleaned, time_zone),
         _find_annual_errors(cleaned, code),
