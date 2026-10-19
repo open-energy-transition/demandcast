@@ -7,6 +7,12 @@ Description:
     data from the website of the National Energy System Operator (NESO)
     in the UK. The data is retrieved in one-year intervals.
 
+    The datasets give the national demand (ND) in MW of each settlement
+    period, the half hours from the local midnight of each day, 46 or 50
+    on the days of daylight saving time. The national demand leaves out
+    the embedded wind and solar generation, which have grown since about
+    2010, and the datasets of 2001 to 2008 have no other demand.
+
     Source: https://www.neso.energy/data-portal/historic-demand-data
 """
 
@@ -125,15 +131,23 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         json_keys=["result", "records"],
     )
 
+    # Keep the actual values, if the dataset also has forecasts.
+    if "FORECAST_ACTUAL_INDICATOR" in dataset.columns:
+        dataset = dataset[dataset["FORECAST_ACTUAL_INDICATOR"] != "F"]
+
+    # The settlement periods of a day are the half hours from its local
+    # midnight, 46 or 50 on the days of daylight saving time. Each one
+    # ends 30 minutes times its number after midnight, in absolute time.
+    midnights = pd.DatetimeIndex(
+        pd.to_datetime(dataset["SETTLEMENT_DATE"].astype(str).str[:10])
+    ).tz_localize("Europe/London")
+    periods = pd.to_timedelta(
+        dataset["SETTLEMENT_PERIOD"].astype(int).to_numpy() * 30, unit="min"
+    )
+
     # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
-        dataset["ND"].values,
-        index=pd.date_range(
-            start=f"{year}-01-01 00:30",
-            periods=len(dataset),
-            freq="30min",
-            tz="Europe/London",
-        ),
+        dataset["ND"].to_numpy(), index=midnights + periods
     )
 
     return electricity_demand_time_series
