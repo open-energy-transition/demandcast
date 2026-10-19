@@ -77,17 +77,17 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
 @pytest.mark.parametrize(
     "dates",
     [
-        ["2024-01-01", "2024-12-31"],
-        ["2024-01-01T00:00:00", "2024-12-31T00:00:00"],
-        ["01-JAN-2024", "31-DEC-2024"],
-        ["01-Jan-24", "31-Dec-24"],
+        ["2024-01-01", "2024-10-01"],
+        ["2024-01-01T00:00:00", "2024-10-01T00:00:00"],
+        ["01-JAN-2024", "01-OCT-2024"],
+        ["01-Jan-24", "01-Oct-24"],
     ],
 )
 def test_read_dates(dates):
     """Test that the settlement dates are read in each format."""
     assert neso._read_dates(pd.Series(dates)).tolist() == [
         pd.Timestamp("2024-01-01"),
-        pd.Timestamp("2024-12-31"),
+        pd.Timestamp("2024-10-01"),
     ]
 
 

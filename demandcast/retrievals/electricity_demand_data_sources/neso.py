@@ -36,7 +36,8 @@ def _read_dates(dates: pd.Series) -> pd.DatetimeIndex:
     Parameters
     ----------
     dates : pandas.Series
-        The settlement dates, maybe with a time after a "T".
+        The settlement dates, maybe with a time after "T" when they are
+        in the format "2024-01-01".
 
     Returns
     -------
@@ -48,7 +49,9 @@ def _read_dates(dates: pd.Series) -> pd.DatetimeIndex:
     ValueError
         If the dates are not all in one of the formats.
     """
-    dates = dates.astype(str).str.split("T").str[0]
+    dates = dates.astype(str).str.replace(
+        r"^(\d{4}-\d{2}-\d{2})T.*$", r"\1", regex=True
+    )
     for date_format in DATE_FORMATS:
         parsed = pd.to_datetime(dates, format=date_format, errors="coerce")
         if parsed.notna().all():
