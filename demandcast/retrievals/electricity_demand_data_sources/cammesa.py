@@ -10,7 +10,9 @@ Description:
 
     The API gives the demand of the national system (SADI) in MW every
     5 minutes, at times with their offset from UTC, from 00:00 to 00:00
-    of the next day, for about the last 8 months only. The same request
+    of the next day, for about the last 7 to 8 months only: on
+    2026-10-19, from 2026-03-01. The earlier days give an empty list,
+    which the module reads as a day without data. The same request
     gives the demand of the regions, provinces and distributors of the
     regions file below, by their identifier. The module retrieves
     Argentina, 21 of its provinces, and Buenos Aires with its autonomous
@@ -151,6 +153,10 @@ def _download_region(date: str, region_id: int) -> pd.Series:
         read_with="requests.get",
         read_as="json",
     )
+
+    # A day out of the data of the API gives an empty list.
+    if "dem" not in dataset.columns:
+        return pd.Series(dtype="float64")
 
     # Remove rows with NaN values for demand.
     dataset = dataset.dropna(subset=["dem"])
