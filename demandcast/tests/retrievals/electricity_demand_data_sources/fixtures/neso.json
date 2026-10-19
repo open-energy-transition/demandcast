@@ -9,7 +9,9 @@
         "SETTLEMENT_PERIOD": 1,
         "ND": 25000,
         "TSD": 27000,
-        "FORECAST_ACTUAL_INDICATOR": "A"
+        "FORECAST_ACTUAL_INDICATOR": "A",
+        "EMBEDDED_WIND_GENERATION": 1000,
+        "EMBEDDED_SOLAR_GENERATION": 40
       },
       {
         "_id": 2,
@@ -17,7 +19,9 @@
         "SETTLEMENT_PERIOD": 2,
         "ND": 24500,
         "TSD": 26600,
-        "FORECAST_ACTUAL_INDICATOR": "A"
+        "FORECAST_ACTUAL_INDICATOR": "A",
+        "EMBEDDED_WIND_GENERATION": 900,
+        "EMBEDDED_SOLAR_GENERATION": "NA"
       },
       {
         "_id": 3,
@@ -25,7 +29,9 @@
         "SETTLEMENT_PERIOD": 3,
         "ND": 21000,
         "TSD": 23000,
-        "FORECAST_ACTUAL_INDICATOR": "A"
+        "FORECAST_ACTUAL_INDICATOR": "A",
+        "EMBEDDED_WIND_GENERATION": 500,
+        "EMBEDDED_SOLAR_GENERATION": 0
       },
       {
         "_id": 4,
@@ -33,7 +39,9 @@
         "SETTLEMENT_PERIOD": 4,
         "ND": 20800,
         "TSD": 22800,
-        "FORECAST_ACTUAL_INDICATOR": "A"
+        "FORECAST_ACTUAL_INDICATOR": "A",
+        "EMBEDDED_WIND_GENERATION": 500,
+        "EMBEDDED_SOLAR_GENERATION": 0
       },
       {
         "_id": 5,
@@ -41,7 +49,9 @@
         "SETTLEMENT_PERIOD": 5,
         "ND": 20600,
         "TSD": 22600,
-        "FORECAST_ACTUAL_INDICATOR": "A"
+        "FORECAST_ACTUAL_INDICATOR": "A",
+        "EMBEDDED_WIND_GENERATION": 600,
+        "EMBEDDED_SOLAR_GENERATION": 0
       },
       {
         "_id": 6,
@@ -49,7 +59,9 @@
         "SETTLEMENT_PERIOD": 6,
         "ND": 20400,
         "TSD": 22400,
-        "FORECAST_ACTUAL_INDICATOR": "A"
+        "FORECAST_ACTUAL_INDICATOR": "A",
+        "EMBEDDED_WIND_GENERATION": 600,
+        "EMBEDDED_SOLAR_GENERATION": 0
       },
       {
         "_id": 7,
@@ -57,7 +69,9 @@
         "SETTLEMENT_PERIOD": 48,
         "ND": 30000,
         "TSD": 32000,
-        "FORECAST_ACTUAL_INDICATOR": "F"
+        "FORECAST_ACTUAL_INDICATOR": "F",
+        "EMBEDDED_WIND_GENERATION": 700,
+        "EMBEDDED_SOLAR_GENERATION": 0
       }
     ],
     "fields": [
