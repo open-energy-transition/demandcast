@@ -15,7 +15,7 @@ Description:
     processed electricity demand, with the date when the version of each
     value was first retrieved. It is then cleaned and saved in the
     folder of cleaned electricity demand, which the assembly of the data
-    reads.
+    reads, with the flags of the changes that need a review.
 
     The data can also be processed again from the raw data, without
     downloading it.
@@ -28,6 +28,7 @@ import os
 from typing import Any
 
 import cleaning.electricity_demand
+import cleaning.flags
 import pandas as pd
 import utils.config
 import utils.entities
@@ -322,9 +323,11 @@ def run_data_retrieval(
             )
             continue
 
-        # Save the processed electricity demand, and clean it.
+        # Save the processed electricity demand, clean it, and flag the
+        # changes of the cleaned demand that need a review.
         _save_data(processed, entity_code, data_source)
         cleaning.electricity_demand.clean_data(entity_code, data_source)
+        cleaning.flags.flag_data(entity_code, data_source)
 
     logging.info(
         f"Electricity data of {data_source} has been successfully "
