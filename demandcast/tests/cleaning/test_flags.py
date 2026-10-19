@@ -4,7 +4,8 @@ License: AGPL-3.0.
 Description:
 
     Tests for the flags of the cleaned electricity demand, with
-    synthetic demand that leaves out a solar generation that grows.
+    synthetic demand that leaves out a solar generation that grows,
+    that is shifted in time, or whose annual demand is too large.
 """
 
 import os
@@ -50,9 +51,9 @@ def _demand(solar_capacity: dict[int, float]) -> pd.Series:
     return pd.Series(np.asarray(values), index=times, name="Load (MW)")
 
 
-def _flag(demand: pd.Series, monkeypatch) -> pd.DataFrame:
+def _flag(demand: pd.Series, monkeypatch, code: str = "IND") -> pd.DataFrame:
     """
-    Save a cleaned demand of a country at 45 degrees east and flag it.
+    Save a cleaned demand of a place at 45 degrees east and flag it.
 
     Returns
     -------
@@ -67,13 +68,13 @@ def _flag(demand: pd.Series, monkeypatch) -> pd.DataFrame:
         utils.shapes, "get_entity_shape", lambda *_, **__: shape
     )
     file_path = utils.config.get_electricity_demand_file_path(
-        "cleaned", "IND", "test"
+        "cleaned", code, "test"
     )
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     demand.index.name = "Time (UTC)"
     demand.to_frame().to_parquet(file_path)
 
-    flags = cleaning.flags.flag_data("IND", "test")
+    flags = cleaning.flags.flag_data(code, "test")
 
     saved = pd.read_parquet(
         file_path.removesuffix(".parquet") + "_flags.parquet"
@@ -131,3 +132,145 @@ def test_midday_dip_without_enough_days(monkeypatch):
     flags = _flag(demand, monkeypatch)
 
     assert flags["period"].tolist() == ["DJF 2023", "MAM 2023", "JJA 2023"]
+
+
+def _demand_by_clock(time_zone: str, start: str, end: str) -> pd.Series:
+    """
+    Make an hourly demand that follows the clocks of a time zone.
+
+    The demand has a peak in the morning and a higher one in the
+    evening, at the same local hours every day.
+
+    Returns
+    -------
+    pandas.Series
+        The demand, at the ends of the hours in UTC.
+    """
+    times = pd.date_range(start, end, freq="1h")
+    local = (
+        (times - pd.Timedelta(minutes=30))
+        .tz_localize("UTC")
+        .tz_convert(time_zone)
+    )
+    hours = np.asarray(local.hour + local.minute / 60)
+    values = (
+        1000
+        + 150 * np.exp(-((hours - 9) ** 2) / 4)
+        + 300 * np.exp(-((hours - 19) ** 2) / 8)
+    )
+    return pd.Series(values, index=times, name="Load (MW)")
+
+
+def test_time_lag(monkeypatch):
+    """Test that a quarter read an hour early is flagged."""
+    demand = _demand_by_clock(
+        "Asia/Kolkata", "2019-12-01 01:00", "2023-12-01 00:00"
+    )
+    # The values of June to August 2022 are those of an hour later.
+    summer = (demand.index >= "2022-06-01") & (demand.index < "2022-09-01")
+    demand[summer] = demand.shift(-1)[summer]
+
+    flags = _flag(demand, monkeypatch)
+
+    assert flags[["flag", "period", "value"]].to_numpy().tolist() == [
+        ["time_lag", "JJA 2022", 1.0]
+    ]
+
+
+@pytest.mark.parametrize(
+    ("time_zone", "gap", "expected"),
+    [
+        ("Europe/London", None, []),
+        # Without daylight saving time, the profile in the local time of
+        # London is an hour late after the change of March, and an hour
+        # early after that of October.
+        (
+            "UTC",
+            None,
+            [
+                ["daylight_saving", "2021-03-28", -1.0],
+                ["daylight_saving", "2021-10-31", 1.0],
+            ],
+        ),
+        # The change of March is not checked without the days after it.
+        (
+            "UTC",
+            ("2021-03-29", "2021-04-20"),
+            [["daylight_saving", "2021-10-31", 1.0]],
+        ),
+    ],
+)
+def test_daylight_saving(monkeypatch, time_zone, gap, expected):
+    """Test that a demand without daylight saving time is flagged."""
+    # A demand that follows the clocks of London, or those of UTC,
+    # without daylight saving time.
+    demand = _demand_by_clock(
+        time_zone, "2021-01-01 01:00", "2022-01-01 00:00"
+    )
+    if gap:
+        demand = demand.drop(demand[gap[0] : gap[1]].index)
+
+    flags = _flag(demand, monkeypatch, code="GBR_GB")
+
+    assert flags[["flag", "period", "value"]].to_numpy().tolist() == expected
+
+
+def _save_annual_values(
+    code: str, per_capita: float, population: float
+) -> None:
+    """Save an annual demand per capita and population for 2020-2023."""
+    times = pd.date_range("2020-01-01", "2023-12-31 23:00", freq="1h")
+    folders = utils.config.read_folders_structure()
+    for folder, column, value in [
+        (
+            "annual_electricity_demand_per_capita_folder",
+            "Annual electricity demand per capita (kWh)",
+            per_capita,
+        ),
+        ("population_folder", "Population", population),
+    ]:
+        os.makedirs(folders[folder], exist_ok=True)
+        pd.DataFrame(
+            {column: value}, index=pd.Index(times, name="Time (UTC)")
+        ).to_parquet(os.path.join(folders[folder], f"{code}.parquet"))
+
+
+@pytest.mark.parametrize("code", ["IND", "IND_KL"])
+def test_annual_errors(monkeypatch, code):
+    """Test that a year with too much demand is flagged."""
+    # A demand of 1000 MW, of about 8.8 TWh a year, which is 1.5 times
+    # more in 2022.
+    demand = _demand_by_clock(
+        "Asia/Kolkata", "2020-01-01 01:00", "2024-01-01 00:00"
+    )
+    demand[:] = 1000.0
+    starts = pd.DatetimeIndex(demand.index) - pd.Timedelta(hours=1)
+    demand[starts.year == 2022] *= 1.5
+    _save_annual_values(code, per_capita=8760, population=1e6)
+
+    flags = _flag(demand, monkeypatch, code=code)
+
+    # The demand of 2022 is too far from that expected only for the
+    # country, and the ratio changes in 2022 and 2023.
+    rows = flags[["flag", "period"]].to_numpy().tolist()
+    assert rows == (
+        [["annual_change", "2022"], ["annual_total", "2022"]]
+        if code == "IND"
+        else [["annual_change", "2022"]]
+    ) + [["annual_change", "2023"]]
+    total = flags[flags["flag"] == "annual_total"]
+    if code == "IND":
+        assert total["value"].iloc[0] == pytest.approx(13.14)
+        assert total["reference"].iloc[0] == pytest.approx(8.76)
+
+
+def test_annual_errors_without_annual_values(monkeypatch):
+    """Test that the annual demand is not checked without its data."""
+    demand = _demand_by_clock(
+        "Asia/Kolkata", "2020-01-01 01:00", "2024-01-01 00:00"
+    )
+    demand[pd.DatetimeIndex(demand.index).year == 2022] *= 1.5
+
+    flags = _flag(demand, monkeypatch)
+
+    assert flags.empty
