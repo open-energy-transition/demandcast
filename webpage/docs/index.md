@@ -131,7 +131,7 @@ The table below provides an overview of the data sources currently used in Deman
 |National population|[World Bank](https://data.worldbank.org/indicator/SP.POP.TOTL)|[IIASA SSP Database](https://data.ece.iiasa.ac.at/ssp)|
 |Gridded GDP, PPP|[Wang T. et al. (2022)](https://zenodo.org/records/7898409)|[Wang T. et al. (2022)](https://zenodo.org/records/7898409)|
 |National GDP per capita, PPP|[World Bank](https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD), [IMF](https://data.imf.org/en/Data-Explorer?datasetUrn=IMF.RES:WEO(6.0.0)&INDICATOR=NGDPRPPPPC)|[IIASA SSP Database](https://data.ece.iiasa.ac.at/ssp)|
-|National annual electricity<br>demand per capita|[Ember](https://ember-energy.org/data/yearly-electricity-data/), [World Bank](https://data.worldbank.org/indicator/EG.USE.ELEC.KH.PC)|[IIASA SSP Database](https://tntcat.iiasa.ac.at/SspDb)|
+|National annual electricity<br>demand per capita|[Ember](https://ember-energy.org/data/yearly-electricity-data/), completed by the [World Bank](https://data.worldbank.org/indicator/EG.USE.ELEC.KH.PC) scaled to Ember|[IIASA SSP Database](https://tntcat.iiasa.ac.at/SspDb)|
 
 The map below shows the countries and subdivisions for which retrieval modules of electricity demand data are currently available in DemandCast.
 
