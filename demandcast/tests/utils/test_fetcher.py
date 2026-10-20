@@ -10,6 +10,7 @@ import email.message
 import re
 import traceback
 import urllib.error
+import zoneinfo
 from io import BytesIO
 from unittest.mock import patch
 
@@ -18,6 +19,7 @@ import pytest
 import requests
 import utils.fetcher
 from entsoe.exceptions import NoMatchingDataError
+from entsoe.mappings import Area
 
 
 def test_fetch_data_csv():
@@ -704,6 +706,24 @@ def test_fetch_entsoe_demand_with_other_errors():
                 pd.Timestamp("2025-09-01", tz="UTC"),
                 pd.Timestamp("2025-11-01", tz="UTC"),
             )
+
+
+def test_time_zones_of_entsoe_areas():
+    """
+    Test that the time zones of the areas of ENTSO-E can be read.
+
+    The client of ENTSO-E gives old names, such as Europe/Kiev, which
+    the time zones of some systems leave out, so they are read from the
+    package tzdata.
+    """
+    unknown = []
+    for area in Area:
+        try:
+            zoneinfo.ZoneInfo(area.tz)
+        except zoneinfo.ZoneInfoNotFoundError:
+            unknown.append(area.tz)
+
+    assert unknown == []
 
 
 def test_fetch_entsoe_demand_errors_without_api_key():

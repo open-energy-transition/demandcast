@@ -15,6 +15,10 @@ Description:
     from "Hour01" to "Hour24", the hours that end at 01:00 to 24:00 in
     the time of Colombia, which has no daylight saving time.
 
+    The proxy takes 22 to 26 seconds to answer the request of a month,
+    longer than the usual time limit of the requests (10 seconds), so
+    the requests wait for up to 120 seconds.
+
     Source: https://xm.com.co
     Source: https://www.energiadecolombia.com/consulta
 """
@@ -25,6 +29,9 @@ import logging
 import pandas as pd
 import utils.fetcher
 import utils.time_series
+
+# The seconds that a request waits for the answer of the proxy.
+TIMEOUT = 120
 
 
 def get_available_requests(
@@ -125,6 +132,7 @@ def download_and_extract_data_for_request(
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "html",
+        timeout=TIMEOUT,
         read_with="requests.post",
         read_as="json",
     )
