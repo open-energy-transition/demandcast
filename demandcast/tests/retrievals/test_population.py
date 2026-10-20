@@ -33,7 +33,7 @@ def _gridded_population(_variable, _code, selected_years, _available_years):
 
 def _retrieve(code: str, tmp_folders) -> pd.Series:
     """
-    Retrieve the population of 2019 to 2025 and read it by local year.
+    Retrieve the population of 2019 to 2025 and read it by year.
 
     Returns
     -------
@@ -86,7 +86,7 @@ def test_population_of_country(tmp_folders):
 
 
 def test_population_of_subdivision(tmp_folders):
-    """Test that a subdivision has the population of the gridded data."""
+    """Test that a subdivision has the population of gridded data."""
     yearly = _retrieve("IND_KL", tmp_folders)
 
     # The gridded data ends in 2020, whose population the years after it
