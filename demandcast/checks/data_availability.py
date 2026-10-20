@@ -89,10 +89,12 @@ def _add_first_and_last_years(
             entity_data = data_source.loc[code]
             available_years = entity_data.dropna().index.tolist()
 
-            # Add the first and last available years.
+            # Add the first and last available years, which are not in
+            # order when the years of a second source are appended, as
+            # those of the World Bank after those of Ember.
             if available_years:
-                first_years.append(available_years[0])
-                last_years.append(available_years[-1])
+                first_years.append(min(available_years))
+                last_years.append(max(available_years))
             else:
                 first_years.append(None)
                 last_years.append(None)

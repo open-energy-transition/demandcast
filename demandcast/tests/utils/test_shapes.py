@@ -353,3 +353,4 @@ def test_get_all_codes_with_shapes():
     assert "USA_TEX" in shape_codes
     assert "RUS_AD" in shape_codes
     assert "UKR_40" in shape_codes
+    assert "XKX" in shape_codes
