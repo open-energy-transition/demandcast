@@ -12,6 +12,15 @@ Description:
     23 or 25 hours on the days when daylight saving time starts or ends.
     The module reads the latest settlement of each day.
 
+    Until 2019, the files give for each area its generation, its
+    scheduled exports and their difference as the demand, without the
+    exchanges between the areas of the national system (SIN). Its areas
+    then give their generation rather than their demand: Noreste about
+    90 TWh a year and Peninsular about 6 TWh, against about 55 and 12
+    TWh from 2020, when the files add the net exchanges between the
+    areas. The sum of the areas is not affected, nor Baja California
+    and Baja California Sur, which have no such exchanges.
+
     The national system (SIN) runs on one clock for all its areas, the
     time of central Mexico: CENACE's notices give one date for its
     changes of daylight saving time, when the days of all its areas have

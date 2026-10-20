@@ -4,6 +4,13 @@ licence:
   url: https://www.gob.mx/terminos
 definition:
   - start_date: 2016-01-27
+    quantity: generation of each area minus its exports
+    embedded_generation: excluded
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The files leave out the exchanges between the areas of the national system, so its areas give their generation rather than their demand; Baja California and Baja California Sur, which have no such exchanges, give their demand.
+  - start_date: 2020-01-01
     quantity: demand of each area
     embedded_generation: excluded
     network_losses: unknown
