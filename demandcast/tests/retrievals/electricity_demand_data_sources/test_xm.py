@@ -42,6 +42,9 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
         (pd.Timestamp("2025-12-01"), pd.Timestamp("2026-01-01")), "COL"
     )
 
+    # The request waits for the slow answer of the proxy.
+    assert fake_downloads.requests[0][2]["timeout"] == xm.TIMEOUT
+
     # Hour01 is the hour that ends at 01:00 in Bogota, 06:00 in UTC,
     # and the values of the fixture grow by 1 MW every hour.
     times = pd.date_range("2025-12-01 06:00", periods=48, freq="h")
