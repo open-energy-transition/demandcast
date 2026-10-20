@@ -10,12 +10,16 @@ Description:
     for the countries and subdivisions of interest at a 0.25-degree
     resolution, and saves it into NetCDF files.
 
+    The archives of Figshare are downloaded from its download server,
+    which the API of Figshare gives as their download URL: the links of
+    its website, under figshare.com, now answer scripts with a challenge
+    for bots instead of the file.
+
     Source: https://data.ghg.center/sedac-popdensity-yeargrid5yr-v4.11/browseui/#sedac-popdensity-yeargrid5yr-v4.11/
     Source: https://doi.org/10.6084/m9.figshare.19608594
     Source: https://doi.org/10.1038/s41597-022-01675-x
 """
 
-import io
 import logging
 import os
 import zipfile
@@ -130,25 +134,34 @@ def _download_future_gridded_population(  # noqa: C901
         # Define the URL of the population data.
         match scenario:
             case "SSP1":
-                url = "https://figshare.com/ndownloader/files/34829160"
+                url = "https://ndownloader.figshare.com/files/34829160"
             case "SSP2":
-                url = "https://figshare.com/ndownloader/files/34829370"
+                url = "https://ndownloader.figshare.com/files/34829370"
             case "SSP3":
-                url = "https://figshare.com/ndownloader/files/45894312"
+                url = "https://ndownloader.figshare.com/files/45894312"
             case "SSP4":
-                url = "https://figshare.com/ndownloader/files/34829385"
+                url = "https://ndownloader.figshare.com/files/34829385"
             case "SSP5":
-                url = "https://figshare.com/ndownloader/files/34829391"
+                url = "https://ndownloader.figshare.com/files/34829391"
 
-        # Fetch the data from the URL.
-        response = requests.get(url, timeout=60)
-
-        # Check if the request was successful.
-        response.raise_for_status()
-
-        # Extract all population data from the response.
-        with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
-            archive.extractall(path=downloaded_data_directory)
+        # Download the archive of about 2.5 GB into a file, in chunks,
+        # and extract all population data from it.
+        os.makedirs(downloaded_data_directory, exist_ok=True)
+        archive_path = os.path.join(
+            downloaded_data_directory, f"{scenario}.zip"
+        )
+        try:
+            with requests.get(url, stream=True, timeout=60) as response:
+                response.raise_for_status()
+                with open(archive_path, "wb") as archive_file:
+                    archive_file.writelines(
+                        response.iter_content(chunk_size=1 << 20)
+                    )
+            with zipfile.ZipFile(archive_path) as archive:
+                archive.extractall(path=downloaded_data_directory)
+        finally:
+            if os.path.exists(archive_path):
+                os.remove(archive_path)
 
         # Fix the folder name if necessary.
         if scenario == "SSP1":
