@@ -40,7 +40,7 @@ def _retrieve(code: str, tmp_folders) -> pd.Series:
     pandas.Series
         The population of each year.
     """
-    # The World Bank gives India until 2024, 2% more each year from 2018.
+    # The World Bank gives India until 2024, 2% more a year from 2018.
     national = pd.DataFrame(
         {year: [1300e6 * 1.02 ** (year - 2018)] for year in range(2018, 2025)},
         index=["IND"],
