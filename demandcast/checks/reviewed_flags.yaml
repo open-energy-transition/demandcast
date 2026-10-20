@@ -1,0 +1,158 @@
+reviews:
+  - data_source: aemo_nem
+    code: AUS_NSW
+    flag: midday_dip
+    verdict: net_demand
+    note: The operational demand of AEMO leaves out the rooftop solar.
+  - data_source: aemo_nem
+    code: AUS_SA
+    flag: midday_dip
+    verdict: net_demand
+    note: The operational demand of AEMO leaves out the rooftop solar.
+  - data_source: aemo_nem
+    code: AUS_VIC
+    flag: midday_dip
+    verdict: net_demand
+    note: The operational demand of AEMO leaves out the rooftop solar.
+  - data_source: aemo_nem
+    code: AUS_TAS
+    flag: midday_dip
+    verdict: net_demand
+    note: The operational demand of AEMO leaves out the rooftop solar.
+  - data_source: aemo_nem
+    code: AUS_SA
+    flag: daylight_saving
+    verdict: false_positive
+    note: The times are right (NEM time, UTC+10), but the demand on the network follows the sun with the rooftop solar, not the clocks.
+  - data_source: ccei
+    code: CAN_NL
+    flag: daylight_saving
+    verdict: source_error
+    note: The times in UTC of CCEI keep daylight saving time all winter since November 2024; the local times are right (fixed in #284).
+  - data_source: ccei
+    code: CAN_NL
+    flag: time_lag
+    periods: [DJF 2023, MAM 2023, JJA 2023, SON 2023]
+    verdict: source_error
+    note: The local times are an hour late from 2023-03-12 to 2023-11-05 (fixed in #284).
+  - data_source: ccei
+    code: CAN_PE
+    flag: daylight_saving
+    verdict: source_error
+    note: The times in UTC of CCEI keep daylight saving time all winter since November 2024; the local times are right (fixed in #284).
+  - data_source: ccei
+    code: CAN_QC
+    flag: daylight_saving
+    periods: ["2022-03-13"]
+    verdict: source_error
+    note: The times in UTC of the readings every 15 minutes are 6 to 9 hours off from 2021-10-05 to 2022-04-13 (fixed in #284).
+  - data_source: ccei
+    code: CAN_QC
+    flag: daylight_saving
+    periods: ["2023-11-05"]
+    verdict: false_positive
+    note: The weather after the change shifts the heating; the data of Hydro-Québec has the same flag.
+  - data_source: hydroquebec
+    code: CAN_QC
+    flag: daylight_saving
+    periods: ["2023-11-05"]
+    verdict: false_positive
+    note: The weather after the change shifts the heating.
+  - data_source: ccei
+    code: CAN_NB
+    flag: daylight_saving
+    periods: ["2026-03-08"]
+    verdict: false_positive
+    note: The weather after the change shifts the heating; the data of NB Power has the same flag.
+  - data_source: nbpower
+    code: CAN_NB
+    flag: daylight_saving
+    periods: ["2026-03-08"]
+    verdict: false_positive
+    note: The weather after the change shifts the heating.
+  - data_source: ons
+    code: BRA_NE
+    flag: daylight_saving
+    verdict: false_positive
+    note: The times follow those of Brasília, but the demand of the North-East does not shift with the changes of 2000 to 2002.
+  - data_source: ons
+    code: BRA_NE
+    flag: midday_dip
+    periods:
+      [SON 2021, DJF 2022, MAM 2022, JJA 2022, SON 2022, DJF 2023, MAM 2023]
+    verdict: net_demand
+    note: The load of ONS leaves out the distributed generation until 2023-04-29.
+  - data_source: ons
+    code: BRA_SE
+    flag: midday_dip
+    periods: [JJA 2022, SON 2022, MAM 2023]
+    verdict: net_demand
+    note: The load of ONS leaves out the distributed generation until 2023-04-29.
+  - data_source: ons
+    code: BRA_S
+    flag: midday_dip
+    periods: [MAM 2022, JJA 2022, SON 2022, DJF 2023, MAM 2023]
+    verdict: net_demand
+    note: The load of ONS leaves out the distributed generation until 2023-04-29.
+  - data_source: ntdc
+    code: PAK
+    flag: time_lag
+    periods: [MAM 2019, SON 2019]
+    verdict: source_error
+    note: The values slip by an hour against their hours in 2019, by different amounts from day to day, so they are not corrected.
+  - data_source: epias
+    code: TUR
+    flag: midday_dip
+    verdict: net_demand
+    note: The consumption of EPIAS leaves out the licence-exempt generation until 2020-12-29 (fixed in #286).
+  - data_source: epias
+    code: TUR
+    flag: midday_rise
+    periods: [MAM 2021]
+    verdict: definition_change
+    note: The consumption of EPIAS includes the licence-exempt generation from 2020-12-30 (fixed in #286).
+  - data_source: caiso
+    code: USA_CAL
+    flag: midday_rise
+    verdict: definition_change
+    note: The load at midday rises by about 4 GW from 2023, probably with the charging of batteries counted as load.
+  - data_source: niti
+    code: IND_TR
+    flag: midday_dip
+    periods: [DJF 2019, DJF 2020, DJF 2021]
+    verdict: definition_change
+    note: The demand of Tripura probably includes its exports to Bangladesh until October 2017, which raise the index of the winter of 2018.
+  - data_source: niti
+    code: IND_KL
+    flag: midday_dip
+    verdict: net_demand
+    note: The rooftop solar of Kerala grows from 2023.
+  - data_source: niti
+    code: IND_UT
+    flag: midday_dip
+    verdict: net_demand
+    note: The rooftop solar of Uttarakhand grows from 2024.
+  - data_source: niti
+    code: IND_OR
+    flag: annual_change
+    periods: ["2021"]
+    verdict: real_event
+    note: The demand of Odisha steps up by about 30% from March 2021, probably with industrial or open-access load.
+  - data_source: niti
+    code: IND_CH
+    flag: midday_dip
+    periods: [MAM 2020]
+    verdict: real_event
+    note: The lockdown of 2020.
+  - data_source: niti
+    code: IND_DL
+    flag: midday_dip
+    periods: [MAM 2020]
+    verdict: real_event
+    note: The lockdown of 2020.
+  - data_source: cnd
+    code: PAN
+    flag: midday_dip
+    periods: [MAM 2020]
+    verdict: real_event
+    note: The lockdown of 2020, from 25 March.

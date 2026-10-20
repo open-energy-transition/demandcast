@@ -113,6 +113,16 @@ For each data source that is downloaded automatically, the check downloads the l
 
 The data sources read from manually downloaded files are skipped, and ENTSO-E and EIA need their API keys. The results are saved to `checks/data_sources_report.md` and `checks/data_sources_report.json`. In the configuration file, `data_sources` limits the check to some data sources, `maximum_age_days_by_source` gives more days to the data sources that publish later, and `time_limit_minutes` is the time after which the data sources that have not answered fail.
 
+#### Report of the flags
+
+The cleaning flags the changes of the cleaned demand that need a review, in `<code>_<data source>_flags.parquet` next to the cleaned data. The report gathers the flags of all the countries, subdivisions and data sources, in the `demandcast` folder:
+
+```bash
+uv run check.py --config config/check_flags_config.yaml
+```
+
+It compares them with the reviews in `checks/reviewed_flags.yaml`, which give a data source, a code, a flag, the periods that they review (all of them if not given), a verdict (`source_error`, `reading_error`, `definition_change`, `net_demand`, `real_event` or `false_positive`) and a note. The report, `checks/flags_report.md` and `checks/flags_report.csv`, lists the flags not reviewed, those reviewed with their verdicts, and the reviews that match no flag any more, such as those of errors that have been fixed. After a retrieval, the flags not reviewed are the ones to look at, and their reviews are added to the file.
+
 The report also counts the checks that each data source has failed in a row, from the report of the previous check in the same folder. On GitHub, the `Live check` workflow runs the check every Monday, with the API keys of the `live-checks` environment, and writes the report to the summary of its run. It keeps one issue open, labelled `live-check`, with the data sources that fail two checks in a row, since a website can be out of reach for a while, and closes it when no data source does.
 
 ### Annual electricity demand per capita
