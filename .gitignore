@@ -112,3 +112,4 @@ cython_debug/
 
 # Report of the live check of the data sources.
 demandcast/checks/data_sources_report.*
+demandcast/checks/flags_report.*

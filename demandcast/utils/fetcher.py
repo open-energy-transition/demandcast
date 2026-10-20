@@ -9,6 +9,7 @@ Description:
     series from the ENTSO-E API.
 """
 
+import itertools
 import logging
 import os
 import re
@@ -544,6 +545,87 @@ def read_manual_files(
     return pd.concat([read_file(file_path) for file_path in file_paths])
 
 
+# The periods into which a request to ENTSO-E is split when it answers
+# with an error, from the largest.
+ENTSOE_SPLITS = ["MS", "D"]
+
+
+def _query_entsoe_load(
+    client: EntsoePandasClient,
+    area: str,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    splits: list[str],
+) -> pd.Series:
+    """
+    Query the load of an area of ENTSO-E, around the periods it fails.
+
+    ENTSO-E answers some periods with an error of the server (400,
+    "Unexpected ERROR occurred during processing of use case"), such as
+    the load of Cyprus on 2025-10-09, while it gives the days around
+    them. The period is then split into months, and a month that fails
+    into days, and the days that fail are left out.
+
+    Parameters
+    ----------
+    client : entsoe.EntsoePandasClient
+        The client of the API of ENTSO-E.
+    area : str
+        The area of ENTSO-E.
+    start : pandas.Timestamp
+        The start of the period.
+    end : pandas.Timestamp
+        The end of the period.
+    splits : list[str]
+        The frequencies of the periods into which the period is split if
+        it fails, from the largest.
+
+    Returns
+    -------
+    pandas.Series
+        The actual load in MW, without the days that fail.
+
+    Raises
+    ------
+    requests.exceptions.HTTPError
+        If ENTSO-E answers with another error than 400.
+    """
+    try:
+        return client.query_load(area, start=start, end=end)["Actual Load"]
+    except requests.exceptions.HTTPError as error:
+        if error.response is None or error.response.status_code != 400:
+            raise
+    if not splits:
+        # The error is not logged, since its URL has the API key.
+        logging.warning(
+            f"ENTSO-E answers the load of {area} from {start} to {end} "
+            "with an error, so this period is left out."
+        )
+        return pd.Series(dtype="float64")
+
+    edges = sorted(
+        {
+            start,
+            end,
+            *pd.date_range(start, end, freq=splits[0], inclusive="neither"),
+        }
+    )
+    parts = []
+    for part_start, part_end in itertools.pairwise(edges):
+        try:
+            part = _query_entsoe_load(
+                client, area, part_start, part_end, splits[1:]
+            )
+        except NoMatchingDataError:
+            continue
+        if not part.empty:
+            parts.append(part)
+    if not parts:
+        return pd.Series(dtype="float64")
+    load = pd.concat(parts)
+    return load[~load.index.duplicated()]
+
+
 def fetch_entsoe_demand(
     api_key: str,
     iso_alpha_3_code: str,
@@ -558,7 +640,10 @@ def fetch_entsoe_demand(
 
     This function retrieves the hourly electricity demand time series
     for a specified country using the ENTSO-E API, whose client retries
-    the request after connection errors. The data is returned as a
+    the request after connection errors. The periods that ENTSO-E
+    answers with an error of the server are split into months and days,
+    and the days that still fail are left out (see _query_entsoe_load).
+    The data is returned as a
     pandas Series with the time index in the time zone of the country
     and the values in MW.
 
@@ -597,11 +682,13 @@ def fetch_entsoe_demand(
     )
 
     try:
-        return client.query_load(
+        return _query_entsoe_load(
+            client,
             area,
-            start=start_date_and_time,
-            end=end_date_and_time,
-        )["Actual Load"]
+            start_date_and_time,
+            end_date_and_time,
+            ENTSOE_SPLITS,
+        )
 
     except NoMatchingDataError:
         # If the data is not available, skip to the next country.
