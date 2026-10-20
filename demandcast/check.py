@@ -4,13 +4,15 @@ License: AGPL-3.0.
 Description:
 
     This script performs checks on the data data quality and
-    availability, and on the electricity demand data sources.
+    availability, on the electricity demand data sources, and gathers
+    the flags of the cleaned electricity demand into a report.
 """
 
 import logging
 
 import checks.data_availability
 import checks.data_sources
+import checks.flags
 import utils.config
 from pydantic import BaseModel, ValidationError
 
@@ -75,3 +77,5 @@ if __name__ == "__main__":
             config.maximum_age_days_by_source,
             config.time_limit_minutes,
         )
+    elif config.check == "flags":
+        checks.flags.run_check()

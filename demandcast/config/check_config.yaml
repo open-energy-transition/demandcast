@@ -6,4 +6,6 @@
 #   and subdivision.
 # - data_sources: a live check of the electricity demand data sources, with
 #   the settings of check_data_sources_config.yaml.
+# - flags: a report of the flags of the cleaned electricity demand, with
+#   check_flags_config.yaml.
 check: data_availability
