@@ -6,10 +6,10 @@ definition:
   - start_date: 2016-01-01
     quantity: demand of the national system
     embedded_generation: unknown
-    network_losses: unknown
+    network_losses: included
     storage_charging: unknown
-    power_plant_use: unknown
-    note: Not documented by the data source.
+    power_plant_use: included
+    note: The demand of the Coordinator is its gross generation, which equals the gross demand with the use of the power plants and the losses. Whether it counts the small distributed generation (PMGD), about 3 GW in 2024, is not documented; the Coordinator does not see it in real time, but the midday of the demand does not fall until 2024. The midday rises in 2025 and 2026, probably with the charging of batteries.
 entities:
   - country_name: Chile
     country_code: CHL

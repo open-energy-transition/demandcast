@@ -9,7 +9,7 @@ definition:
     network_losses: unknown
     storage_charging: unknown
     power_plant_use: unknown
-    note: Not documented by the data source.
+    note: The demand of NGCP is not defined in its public documents. Its midday falls steadily compared with the morning and afternoon, from 1.098 in 2013 to 1.058 in 2025, which can be net-metered solar left out.
 entities:
   - country_name: Philippines
     country_code: PHL
