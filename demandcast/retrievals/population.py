@@ -8,6 +8,13 @@ Description:
     IAMC scenarios for the countries of interest. For subdivisions, the
     population data is calculated by aggregating gridded population
     data. The population data is saved into CSV and Parquet files.
+
+    The gridded population of the past (Gridded Population of the World,
+    version 4.11, of SEDAC) ends in 2020, and version 5 is not released
+    yet. The population of a subdivision after 2020 is that of 2020
+    times the growth of the population of its country since 2020, from
+    the World Bank, until its last year: the subdivision is assumed to
+    grow as its country.
 """
 
 import logging
@@ -65,9 +72,31 @@ def _extract_historical_population(
 
     # Map the requested historical years to the used (available)
     # historical years.
-    return (historical_population.reindex(used_historical_years)).set_axis(
-        requested_historical_years,
-    )
+    historical_population = (
+        historical_population.reindex(used_historical_years)
+    ).set_axis(requested_historical_years)
+
+    # Grow the population of a subdivision after the gridded data as its
+    # country, until the last year of the country.
+    country_code = code.split("_", maxsplit=1)[0]
+    if (
+        code not in global_historical_population.index
+        and country_code in global_historical_population.index
+    ):
+        national_population = pd.Series(
+            global_historical_population.loc[country_code]
+        ).dropna()
+        growth = (
+            national_population.reindex(
+                requested_historical_years, method="ffill"
+            ).to_numpy()
+            / national_population.reindex(
+                used_historical_years, method="ffill"
+            ).to_numpy()
+        )
+        historical_population = historical_population * growth
+
+    return historical_population
 
 
 def _extract_future_population(
