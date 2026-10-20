@@ -9,7 +9,7 @@ definition:
     network_losses: unknown
     storage_charging: unknown
     power_plant_use: unknown
-    note: Not documented by the data source.
+    note: The demand of the national system is not defined in the public documents of ICE. Its midday falls slowly compared with the morning and afternoon, from 1.112 in 2012 to 1.088 in 2026, which can be distributed solar left out.
 entities:
   - country_name: Costa Rica
     country_code: CRI
