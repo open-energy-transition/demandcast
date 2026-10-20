@@ -8,6 +8,7 @@ Description:
 
 import email.message
 import re
+import traceback
 import urllib.error
 import zoneinfo
 from io import BytesIO
@@ -723,3 +724,28 @@ def test_time_zones_of_entsoe_areas():
             unknown.append(area.tz)
 
     assert unknown == []
+
+
+def test_fetch_entsoe_demand_errors_without_api_key():
+    """Test that the errors of ENTSO-E do not show the API key."""
+    # The key is made when the test runs, since the tracebacks of recent
+    # versions of Python show the source of the test.
+    api_key = "-".join(["secret", "key"])
+    with patch("utils.fetcher.EntsoePandasClient") as mock_client:
+        mock_client.return_value.query_load.side_effect = (
+            requests.exceptions.ConnectionError(
+                f"Max retries exceeded with url: /api?securityToken={api_key}"
+            )
+        )
+        with pytest.raises(requests.exceptions.ConnectionError) as error:
+            utils.fetcher.fetch_entsoe_demand(
+                api_key,
+                "FRA",
+                pd.Timestamp("2023-01-01"),
+                pd.Timestamp("2023-01-02"),
+            )
+
+    # The error and its traceback do not have the API key.
+    traceback_text = "".join(traceback.format_exception(error.value))
+    assert api_key not in traceback_text
+    assert "securityToken=***" in traceback_text

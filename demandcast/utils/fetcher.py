@@ -643,6 +643,8 @@ def fetch_entsoe_demand(
     the request after connection errors. The periods that ENTSO-E
     answers with an error of the server are split into months and days,
     and the days that still fail are left out (see _query_entsoe_load).
+    The errors of the requests are raised without the API key, which
+    their URL has.
     The data is returned as a
     pandas Series with the time index in the time zone of the country
     and the values in MW.
@@ -698,3 +700,11 @@ def fetch_entsoe_demand(
         )
 
         return pd.Series()
+
+    except requests.exceptions.RequestException as error:
+        # The message of the error has the URL of the request, with the
+        # API key, so the error is raised again without it, and without
+        # the original error, which would show it in the logs.
+        raise type(error)(
+            str(error).replace(api_key, "***"), response=error.response
+        ) from None
