@@ -92,13 +92,6 @@ reviews:
     verdict: net_demand
     note: The rooftop solar of Uttarakhand grows from 2024.
   - data_source: niti
-    code: IND_OR
-    flag: annual_change
-    periods:
-      - "2021"
-    verdict: real_event
-    note: The demand of Odisha steps up by about 30% from March 2021, probably with industrial or open-access load.
-  - data_source: niti
     code: IND_CH
     flag: midday_dip
     periods:
@@ -139,6 +132,14 @@ reviews:
     flag: midday_dip
     verdict: net_demand
     note: The distributed generation of Mexico, mostly rooftop solar, grows from 2024.
+  - data_source: cenace
+    code: MEX_OCC
+    flag: midday_dip
+    periods:
+      - MAM 2017
+      - JJA 2017
+    verdict: definition_change
+    note: Until 2019, CENACE gives for each area of the national system its generation minus its exports, without the exchanges between the areas, so the areas give their generation rather than their demand; the files of 2020 onwards add the net exchanges between the areas. The sum of the areas is not affected.
   - data_source: cenace
     code: MEX_OCC
     flag: midday_dip
@@ -501,8 +502,8 @@ reviews:
     flag: time_lag
     periods:
       - JJA 2023
-    verdict: false_positive
-    note: A single quarter.
+    verdict: source_error
+    note: The load is about 200 MW instead of about 800 MW from 2022-12-11 to 2023-12-04, so its profile is not that of Albania.
   - data_source: cenace
     code: MEX_NES
     flag: daylight_saving
@@ -521,13 +522,13 @@ reviews:
   - data_source: cenace
     code: MEX_NOR
     flag: time_lag
-    verdict: false_positive
-    note: The region includes Sonora, which has no daylight saving time, so its demand follows two clocks.
+    verdict: definition_change
+    note: Until 2019, CENACE gives for each area of the national system its generation minus its exports, without the exchanges between the areas, so the areas give their generation rather than their demand; the files of 2020 onwards add the net exchanges between the areas. The sum of the areas is not affected.
   - data_source: cenace
     code: MEX_PEN
     flag: time_lag
-    verdict: false_positive
-    note: The region includes Quintana Roo, which has had no daylight saving time since 2015, so its demand follows two clocks.
+    verdict: definition_change
+    note: Until 2019, CENACE gives for each area of the national system its generation minus its exports, without the exchanges between the areas, so the areas give their generation rather than their demand; the files of 2020 onwards add the net exchanges between the areas. The sum of the areas is not affected.
   - data_source: aemo_nem
     code: AUS_NSW
     flag: midday_rise
@@ -567,3 +568,87 @@ reviews:
       - JJA 2026
     verdict: definition_change
     note: With the rooftop solar added, the midday rises from 2024, probably with the charging of grid batteries counted as load.
+  - data_source: cenace
+    code: MEX_CEN
+    flag: annual_change
+    periods:
+      - "2020"
+    verdict: definition_change
+    note: Until 2019, CENACE gives for each area of the national system its generation minus its exports, without the exchanges between the areas, so the areas give their generation rather than their demand; the files of 2020 onwards add the net exchanges between the areas. The sum of the areas is not affected.
+  - data_source: cenace
+    code: MEX_NES
+    flag: annual_change
+    periods:
+      - "2020"
+    verdict: definition_change
+    note: Until 2019, CENACE gives for each area of the national system its generation minus its exports, without the exchanges between the areas, so the areas give their generation rather than their demand; the files of 2020 onwards add the net exchanges between the areas. The sum of the areas is not affected.
+  - data_source: cenace
+    code: MEX_OCC
+    flag: annual_change
+    periods:
+      - "2020"
+    verdict: definition_change
+    note: Until 2019, CENACE gives for each area of the national system its generation minus its exports, without the exchanges between the areas, so the areas give their generation rather than their demand; the files of 2020 onwards add the net exchanges between the areas. The sum of the areas is not affected.
+  - data_source: cenace
+    code: MEX_PEN
+    flag: annual_change
+    periods:
+      - "2017"
+      - "2020"
+    verdict: definition_change
+    note: Until 2019, CENACE gives for each area of the national system its generation minus its exports, without the exchanges between the areas, so the areas give their generation rather than their demand; the files of 2020 onwards add the net exchanges between the areas. The sum of the areas is not affected.
+  - data_source: entsoe
+    code: ALB
+    flag: annual_change
+    periods:
+      - "2023"
+      - "2024"
+    verdict: source_error
+    note: The load is about 200 MW instead of about 800 MW from 2022-12-11 to 2023-12-04, as from 2021-08-31 to 2021-12-30.
+  - data_source: entsoe
+    code: ALB
+    flag: annual_total
+    periods:
+      - "2023"
+    verdict: source_error
+    note: The load is about 200 MW instead of about 800 MW from 2022-12-11 to 2023-12-04, as from 2021-08-31 to 2021-12-30.
+  - data_source: entsoe
+    code: LUX
+    flag: annual_total
+    verdict: definition_change
+    note: The load is about 1.5 TWh a year below the national consumption of ILR, 6.2 TWh in 2023, and about 2.7 TWh below until 2018, which is about what the industrial network of Sotel takes, connected to the Belgian and French networks rather than to that of Creos.
+  - data_source: entsoe
+    code: LUX
+    flag: annual_change
+    periods:
+      - "2019"
+    verdict: definition_change
+    note: In 2017 and 2018 the profiles of many days are 2 to 3 hours off those of the other years, among days that match them, and the load rises by about 24% from 2019, which looks like a change of large industrial loads rather than of the times.
+  - data_source: entsoe
+    code: MKD
+    flag: annual_total
+    periods:
+      - "2025"
+    verdict: net_demand
+    note: The load falls every year from 2021, from 7.3 to 5.1 TWh, while its midday dips from 2023 with the solar of the prosumers, and the expected demand per capita rises by 22% in 2025.
+  - data_source: entsoe
+    code: NLD
+    flag: annual_change
+    periods:
+      - "2016"
+    verdict: definition_change
+    note: The load steps up by about 17% on 2016-01-01, while the consumption of the Netherlands does not.
+  - data_source: entsoe
+    code: SRB
+    flag: annual_change
+    periods:
+      - "2021"
+    verdict: definition_change
+    note: The load drops by about 13% on 2020-12-14, after the agreement that made KOSTT run Kosovo as its own control area came into force in October 2020, so the load probably leaves out Kosovo from then.
+  - data_source: oluwole_et_al
+    code: NGA
+    flag: annual_total
+    periods:
+      - "2016"
+    verdict: definition_change
+    note: The demand is modelled as the demand without the load shedding, so it is higher than the consumption that was supplied.
