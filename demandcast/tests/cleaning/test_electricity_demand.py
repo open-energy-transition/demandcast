@@ -227,3 +227,23 @@ def test_hours_with_too_few_values():
     assert _removed_times(removed, "low_coverage") == [
         "2024-01-02 06:00/2024-01-02 06:00"
     ]
+
+
+def test_change_of_resolution():
+    """Test that each part of a demand is cleaned at its resolution."""
+    # Every 30 minutes for 3 days, then every 5 minutes for 3 days.
+    half_hours = _demand("2024-01-01 00:30", 2 * 24 * 3, "30min")
+    five_minutes = _demand("2024-01-04 00:05", 12 * 24 * 3, "5min")
+    # A value 30% above the half hours around it is not a spike, and a
+    # value 25% above the 5 minutes around it is.
+    half_hours.iloc[50] *= 1.3
+    five_minutes.iloc[500] *= 1.25
+    demand = pd.concat([half_hours, five_minutes])
+
+    cleaned, removed = _clean(demand)
+
+    # Every hour is kept, also those with two values of 30 minutes.
+    assert len(cleaned) == 24 * 6
+    assert _removed_times(removed, "low_coverage") == []
+    expected = f"{five_minutes.index[500]:%Y-%m-%d %H:%M}"
+    assert _removed_times(removed, "spike") == [f"{expected}/{expected}"]
