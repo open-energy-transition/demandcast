@@ -159,7 +159,7 @@ The script will store annual electricity demand per capita data in `data/annual_
 
 ### Population
 
-The module `demandcast/retrievals/population.py` retrieves total population count from the World Bank for the historical period and from the Integrated Assessment Modeling Consortium (IAMC) database for different future scenarios. For subdivisions, the population data is calculated by aggregating gridded population data.
+The module `demandcast/retrievals/population.py` retrieves total population count from the World Bank for the historical period and from the Integrated Assessment Modeling Consortium (IAMC) database for different future scenarios. For subdivisions, the population data is calculated by aggregating gridded population data. The gridded data of the past (Gridded Population of the World, version 4.11) ends in 2020, so a subdivision grows after 2020 as its country does in the data of the World Bank, until the last year of the country.
 
 ```bash
 cd demandcast

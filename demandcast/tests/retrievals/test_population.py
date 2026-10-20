@@ -89,9 +89,10 @@ def test_population_of_subdivision(tmp_folders):
     """Test that a subdivision has the population of gridded data."""
     yearly = _retrieve("IND_KL", tmp_folders)
 
-    # The gridded data ends in 2020, whose population the years after it
-    # have.
+    # The gridded data ends in 2020, after which the subdivision grows
+    # as its country, 2% a year, until 2024, the last year of the
+    # country.
     assert yearly[2019] == pytest.approx(49e6)
     assert yearly[2020] == pytest.approx(50e6)
-    assert yearly[2023] == pytest.approx(50e6)
-    assert yearly[2025] == pytest.approx(50e6)
+    assert yearly[2023] == pytest.approx(50e6 * 1.02**3)
+    assert yearly[2025] == pytest.approx(50e6 * 1.02**4)
