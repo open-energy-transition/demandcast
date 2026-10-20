@@ -168,7 +168,9 @@ def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:
     data, and processes them with those of the earlier retrievals. If
     the data of the latest of several requests is not found, it is
     skipped, because the file of the latest period can be not published
-    yet.
+    yet. If a request fails, the responses of the requests before it
+    are kept in the raw data, so that a long retrieval that fails does
+    not lose them: they can be processed without the network.
 
     Parameters
     ----------
@@ -208,29 +210,37 @@ def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:
     retrieved = pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%dT%H:%M:%SZ")
     downloads: list[tuple[Any, list[dict[str, Any]]]] = []
     downloaded: dict[str, pd.Series] = {}
-    for index, request in enumerate(requests):
-        try:
-            with utils.raw_data.recording(data_source) as responses:
-                time_series = (
-                    retrieval_module.download_and_extract_data_for_request(
-                        request, code
+    try:
+        for index, request in enumerate(requests):
+            try:
+                with utils.raw_data.recording(data_source) as responses:
+                    time_series = (
+                        retrieval_module.download_and_extract_data_for_request(
+                            request, code
+                        )
                     )
+            except utils.fetcher.DataNotFoundError:
+                # The file of the latest period can be not published
+                # yet.
+                if index < len(requests) - 1 or len(requests) == 1:
+                    raise
+                logging.warning(
+                    f"The data of the latest request ({request}) of "
+                    f"{data_source} is not found, maybe not published yet."
                 )
-        except utils.fetcher.DataNotFoundError:
-            # The file of the latest period can be not published yet.
-            if index < len(requests) - 1 or len(requests) == 1:
-                raise
-            logging.warning(
-                f"The data of the latest request ({request}) of "
-                f"{data_source} is not found, maybe not published yet."
-            )
-            continue
-        downloads.append((request, responses))
-        downloaded[
-            json.dumps(utils.raw_data.encode_request(request), sort_keys=True)
-        ] = time_series
+                continue
+            downloads.append((request, responses))
+            downloaded[
+                json.dumps(
+                    utils.raw_data.encode_request(request), sort_keys=True
+                )
+            ] = time_series
+    finally:
+        # Keep the responses of the requests downloaded so far, also
+        # when a later request fails, so that they can be processed
+        # again without the network.
+        utils.raw_data.save_versions(data_source, code, downloads, retrieved)
 
-    utils.raw_data.save_versions(data_source, code, downloads, retrieved)
     return _process_data(data_source, code, downloaded)
 
 
