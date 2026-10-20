@@ -52,14 +52,6 @@ reviews:
       - MAM 2023
     verdict: net_demand
     note: The load of ONS leaves out the distributed generation until 2023-04-29.
-  - data_source: ntdc
-    code: PAK
-    flag: time_lag
-    periods:
-      - MAM 2019
-      - SON 2019
-    verdict: source_error
-    note: The values slip by an hour against their hours in 2019, by different amounts from day to day, so they are not corrected.
   - data_source: epias
     code: TUR
     flag: midday_dip

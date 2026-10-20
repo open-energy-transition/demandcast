@@ -28,6 +28,17 @@ Description:
       of a system does not do and come back, and by more than 50% at 30
       minutes or more, since the demand of a small system can change
       by 20% within an hour.
+    - level_drop: a run of 14 days or more, in local time, whose mean is
+      less than half the level of the same days of the two years before
+      and after, the median of the 31 days around them in each year and
+      then of the years: a part of the system left out, as in Albania
+      from 2022-12-11 to 2023-12-04 and in the Netherlands from
+      2014-10-20 to 2014-12-19, at about a quarter of their level.
+      The level is computed again without the days found, so that an
+      error of a year does not hide that of another. The lockdowns of
+      2020, from 2020-03-15 to 2020-06-30, are left, since they halved
+      the demand of some places, such as Dadra and Nagar Haveli and
+      Daman and Diu.
 
     The values left are then averaged in each hour, at its end, if they
     cover at least half of the hour (low_coverage otherwise): each value
@@ -55,6 +66,7 @@ RULES = [
     "frozen",
     "copied_day",
     "spike",
+    "level_drop",
     "low_coverage",
 ]
 
@@ -74,6 +86,16 @@ MIN_VALUES_OF_DAY = 12
 SPIKE_DURATION = pd.Timedelta(minutes=30)
 SPIKE_CHANGE_SUBHOURLY = 0.2
 SPIKE_CHANGE_HOURLY = 0.5
+
+# The share of the level of the same days of the neighbouring years
+# below which a run of days drops, the days of the run, the days around
+# each day and the years around each year of the level, and the
+# lockdowns of 2020, whose drops are real.
+LEVEL_DROP_SHARE = 0.5
+LEVEL_DROP_DAYS = 14
+LEVEL_DAYS = 15
+LEVEL_YEARS = (-2, -1, 1, 2)
+LOCKDOWNS = (pd.Timestamp("2020-03-15"), pd.Timestamp("2020-06-30"))
 
 # The share of an hour that its values need to cover for its average.
 MIN_COVERAGE = 0.5
@@ -244,6 +266,90 @@ def _find_spikes(values: pd.Series) -> pd.Series:
     return pd.Series(spikes, index=values.index)
 
 
+def _get_daily_ratios(daily: pd.Series, reference: pd.Series) -> pd.Series:
+    """
+    Get the ratio of each day to the level of the neighbouring years.
+
+    Parameters
+    ----------
+    daily : pandas.Series
+        The mean demand of each day.
+    reference : pandas.Series
+        The mean demand of the days that give the level.
+
+    Returns
+    -------
+    pandas.Series
+        The ratio of each day to the median, over the neighbouring
+        years, of the median of the same days in each year.
+    """
+    days = reference.asfreq("D")
+    levels = [
+        days.shift(round(365.25 * years), freq="D")
+        .rolling(2 * LEVEL_DAYS + 1, center=True, min_periods=LEVEL_DAYS)
+        .median()
+        for years in LEVEL_YEARS
+    ]
+    level = pd.concat(levels, axis=1).median(axis=1)
+    return daily / level.reindex(daily.index)
+
+
+def _find_drop_days(daily: pd.Series, reference: pd.Series) -> pd.Index:
+    """
+    Find the runs of days far below the level of the neighbouring years.
+
+    Parameters
+    ----------
+    daily : pandas.Series
+        The mean demand of each day.
+    reference : pandas.Series
+        The mean demand of the days that give the level.
+
+    Returns
+    -------
+    pandas.Index
+        The days of the runs.
+    """
+    ratios = _get_daily_ratios(daily, reference)
+    in_lockdowns = (daily.index >= LOCKDOWNS[0]) & (
+        daily.index <= LOCKDOWNS[1]
+    )
+    low = (ratios < LEVEL_DROP_SHARE) & ~in_lockdowns
+    runs = (low != low.shift()).cumsum()
+    lengths = low.groupby(runs).transform("size")
+    return daily.index[low & (lengths >= LEVEL_DROP_DAYS)]
+
+
+def _find_level_drops(values: pd.Series, time_zone: str) -> pd.Series:
+    """
+    Find the runs of days whose level drops far below the usual one.
+
+    Parameters
+    ----------
+    values : pandas.Series
+        The demand, without the values of the other rules, at times in
+        UTC.
+    time_zone : str
+        The time zone of the days.
+
+    Returns
+    -------
+    pandas.Series
+        True for the values of the days of the drops.
+    """
+    days = (
+        pd.DatetimeIndex(values.index)
+        .tz_localize("UTC")
+        .tz_convert(time_zone)
+        .tz_localize(None)
+        .normalize()
+    )
+    daily = values.groupby(days).mean()
+    dropped = _find_drop_days(daily, daily)
+    dropped = dropped.union(_find_drop_days(daily, daily.drop(dropped)))
+    return pd.Series(days.isin(dropped), index=values.index)
+
+
 def _find_removed(values: pd.Series, time_zone: str) -> pd.Series:
     """
     Find the rule that removes each value, if any.
@@ -273,6 +379,7 @@ def _find_removed(values: pd.Series, time_zone: str) -> pd.Series:
     remove("frozen", _find_frozen(values[removed == ""]))
     remove("copied_day", _find_copied_days(values[removed == ""], time_zone))
     remove("spike", _find_spikes(values[removed == ""]))
+    remove("level_drop", _find_level_drops(values[removed == ""], time_zone))
     return removed
 
 
