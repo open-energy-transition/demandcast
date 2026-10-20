@@ -128,7 +128,7 @@ reviews:
     code: AUS_WA
     flag: midday_dip
     verdict: net_demand
-    note: The operational demand of AEMO leaves out the rooftop solar.
+    note: The operational demand of AEMO leaves out the rooftop solar, whose estimate is added from 2020-11-03 (#303); before, AEMO has none.
   - data_source: ccei
     code: CAN_PE
     flag: midday_dip
@@ -548,3 +548,22 @@ reviews:
     flag: midday_rise
     verdict: definition_change
     note: With the rooftop solar added, the midday rises from 2023 and most in 2026, probably with the charging of grid batteries counted as load.
+  - data_source: aemo_wem
+    code: AUS_WA
+    flag: midday_rise
+    periods:
+      - DJF 2021
+      - MAM 2021
+      - JJA 2021
+      - SON 2021
+    verdict: definition_change
+    note: The estimate of the rooftop solar is added from 2020-11-03 (#303).
+  - data_source: aemo_wem
+    code: AUS_WA
+    flag: midday_rise
+    periods:
+      - SON 2024
+      - MAM 2026
+      - JJA 2026
+    verdict: definition_change
+    note: With the rooftop solar added, the midday rises from 2024, probably with the charging of grid batteries counted as load.
