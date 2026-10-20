@@ -14,6 +14,16 @@ Description:
     of 2019 has 24 hours every day instead, as its notes say, and in its
     January the hour ending at midnight comes first in the next day.
 
+    The load is that on the network of CAISO, without the demand that
+    the solar behind the meters of the consumers supplies, about 10 GW
+    in 2019 and more than 16 GW in 2025, so it is not the gross demand
+    of DemandCast: its demand at midday is already low compared with
+    the morning and afternoon when the data starts, in 2019. CAISO does
+    not publish this generation hourly; the California Energy Commission
+    estimates it. From 2023, the load at midday in April rises by about
+    4 GW, while the load in the evening and at night stays the same,
+    probably because the charging of batteries is counted as load.
+
     Source: https://www.caiso.com/library/historical-ems-hourly-load
 """
 

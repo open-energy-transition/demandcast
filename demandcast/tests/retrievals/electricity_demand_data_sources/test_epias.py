@@ -40,14 +40,20 @@ def test_download_and_extract_data_for_request(
     monkeypatch.setattr(utils.config, "load_dotenv", lambda **_: None)
     fake_downloads.serve(epias.TICKET_URL, "epias_ticket.txt", method="POST")
     fake_downloads.serve(epias.get_url(), "epias.json", method="POST")
+    fake_downloads.serve(
+        epias.get_licence_exempt_url(),
+        "epias_licence_exempt.json",
+        method="POST",
+    )
 
     time_series = epias.download_and_extract_data_for_request(
         (pd.Timestamp("2016-03-27"), pd.Timestamp("2016-03-28")), "TUR"
     )
 
-    # The account gets a ticket, which the request of the data sends,
-    # with the dates in the time of Turkey.
-    ticket_request, data_request = fake_downloads.requests
+    # The account gets a ticket, which the requests of the data send,
+    # with the dates in the time of Turkey. The licence-exempt
+    # generation of 2016 is zero.
+    ticket_request, data_request, exempt_request = fake_downloads.requests
     assert ticket_request[2]["data"] == {
         "username": "user@example.org",
         "password": "test-password",
@@ -57,6 +63,7 @@ def test_download_and_extract_data_for_request(
         "startDate": "2016-03-27T00:00:00+02:00",
         "endDate": "2016-03-28T00:00:00+03:00",
     }
+    assert exempt_request[2]["json"] == data_request[2]["json"]
     # When daylight saving time starts, the hour that starts at 02:00
     # has no consumption, which the cleaning removes.
     assert_demand(
@@ -68,6 +75,40 @@ def test_download_and_extract_data_for_request(
             "2016-03-27 02:00": 24776.94,
             "2016-03-27 03:00": 24098.97,
         },
+    )
+
+
+def test_download_and_extract_data_with_licence_exempt_generation(
+    fake_downloads, assert_demand, monkeypatch
+):
+    """Test that the licence-exempt generation is added until 2020."""
+    monkeypatch.setenv("EPIAS_USERNAME", "user@example.org")
+    monkeypatch.setenv("EPIAS_PASSWORD", "test-password")
+    monkeypatch.setattr(utils.config, "load_dotenv", lambda **_: None)
+    fake_downloads.serve(epias.TICKET_URL, "epias_ticket.txt", method="POST")
+    fake_downloads.serve(epias.get_url(), "epias_2020.json", method="POST")
+    fake_downloads.serve(
+        epias.get_licence_exempt_url(),
+        "epias_licence_exempt_2020.json",
+        method="POST",
+    )
+
+    time_series = epias.download_and_extract_data_for_request(
+        (pd.Timestamp("2020-12-29"), pd.Timestamp("2020-12-30")), "TUR"
+    )
+
+    # The licence-exempt generation is asked until 2020-12-29 and added
+    # to the hour that starts at 22:00 in Turkey (19:00 in UTC). The
+    # hour that starts at 23:00 has none and is left out, and the
+    # consumption includes it from 2020-12-30.
+    assert fake_downloads.requests[2][2]["json"] == {
+        "startDate": "2020-12-29T00:00:00+03:00",
+        "endDate": "2020-12-29T00:00:00+03:00",
+    }
+    assert_demand(
+        time_series,
+        "Europe/Istanbul",
+        {"2020-12-29 20:00": 33061.0, "2020-12-29 22:00": 31000.75},
     )
 
 

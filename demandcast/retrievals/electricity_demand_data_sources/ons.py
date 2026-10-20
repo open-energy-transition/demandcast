@@ -26,7 +26,19 @@ Description:
     generation of the other plants; and from 2023-04-29, it adds the
     estimated micro and mini distributed generation, which raises the
     growth from the year before by about 7 percentage points in May
-    2023. The data is kept as it is, for the later cleaning.
+    2023. The data is kept as it is, for the later cleaning. Before
+    2023-04-29, the load leaves out the demand that the distributed
+    generation supplies, which DemandCast includes in the gross demand,
+    so the demand at midday falls compared with the morning and
+    afternoon from 2021 to 2023 as this generation grows, and the
+    cleaning flags it (midday_dip). The ratio of the demand at midday to
+    that of the morning and afternoon rises by 0.06 to 0.10 in the four
+    weeks after the change.
+
+    The demand of the North-East does not shift with the changes of
+    daylight saving time in the time of Fortaleza from 2000 to 2002, so
+    the cleaning flags them (daylight_saving), but the times follow
+    those of Brasília, as in the other subsystems.
 
     Source: https://dados.ons.org.br/dataset/curva-carga
 """

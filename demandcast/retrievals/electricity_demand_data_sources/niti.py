@@ -47,6 +47,13 @@ Description:
     negative, between 15 January and 27 March 2018. These values are
     kept for the later cleaning.
 
+    The demand of Tripura falls from 115 to 208 GWh a month from
+    January to October 2017 to 75 to 94 GWh from November 2017, and
+    from about 2,600 GWh in 2017-18 to 1,860 GWh in 2018-19 in the
+    official requirement of the state, which leaves out the exports to
+    Bangladesh (about 160 MW) from 2018-19, so its demand probably
+    includes these exports until October 2017.
+
     Source: https://iced.niti.gov.in/energy/electricity/distribution/national-level-consumption/load-curve
     Source: https://data.mendeley.com/datasets/y58jknpgs8/2
 """
