@@ -6,10 +6,10 @@ definition:
   - start_date: 2018-01-01
     quantity: modelled load of each province
     embedded_generation: unknown
-    network_losses: unknown
+    network_losses: included
     storage_charging: unknown
-    power_plant_use: unknown
-    note: The load is modelled by the authors from the data of the National Development and Reform Commission.
+    power_plant_use: included
+    note: The load is modelled by the authors from the data of the National Development and Reform Commission. Its annual totals are the total consumption of China, which includes the use of the power plants and the losses of the networks, as it is only about 4% below the generation of 2018 while the losses alone are 6.2%.
 entities:
   - subdivision_name: Beijing
     subdivision_code: BJ

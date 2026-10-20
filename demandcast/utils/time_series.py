@@ -351,11 +351,17 @@ def convert_from_yearly_to_hourly(
         The hourly time series.
     """
     # Define a new index with hourly frequency in the local time zone.
+    # A year can start at a midnight that does not exist, when daylight
+    # saving time starts then, as in Peru on 1990-01-01, so its first
+    # hour is shifted forward.
     index = pd.date_range(
-        start=(f"{time_series.index.min()!s}-01-01"),
-        end=(f"{time_series.index.max()!s}-12-31 23:00:00"),
+        start=pd.Timestamp(f"{time_series.index.min()!s}-01-01").tz_localize(
+            time_zone, nonexistent="shift_forward"
+        ),
+        end=pd.Timestamp(
+            f"{time_series.index.max()!s}-12-31 23:00:00"
+        ).tz_localize(time_zone, ambiguous=False, nonexistent="shift_forward"),
         freq="h",
-        tz=time_zone,
     )
 
     return pd.Series(index.year.map(time_series.to_dict()), index=index)

@@ -9,7 +9,7 @@ definition:
     network_losses: unknown
     storage_charging: unknown
     power_plant_use: unknown
-    note: The variable differs by province, such as the internal load of Alberta and the Ontario demand of IESO.
+    note: The variable differs by province. Alberta gives the internal load of AESO, with the generation behind the fence; Ontario the Ontario demand of IESO, without the embedded generation, whose midday falls from 0.997 in 2010 to 0.966 in 2015 with the solar of the distribution networks; Quebec the demand of Hydro-Québec; New Brunswick the NB load of NB Power, without the transmission losses; Prince Edward Island a load whose midday falls from 2022 with the rooftop solar. The other provinces are not documented.
 entities:
   - subdivision_name: Alberta
     subdivision_code: AB
