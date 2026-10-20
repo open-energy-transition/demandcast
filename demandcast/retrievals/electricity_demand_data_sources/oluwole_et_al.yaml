@@ -9,7 +9,7 @@ definition:
     network_losses: unknown
     storage_charging: unknown
     power_plant_use: unknown
-    note: The demand is modelled by the authors, as if it were not suppressed by the shortages of supply.
+    note: The demand is modelled by the authors, as if it were not suppressed by the shortages of supply. It covers a single year.
 entities:
   - country_name: Nigeria
     country_code: NGA

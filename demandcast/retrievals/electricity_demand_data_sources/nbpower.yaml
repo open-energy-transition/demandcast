@@ -6,10 +6,10 @@ definition:
   - start_date: 2019-01-01
     quantity: load of the balancing authority
     embedded_generation: unknown
-    network_losses: unknown
+    network_losses: excluded
     storage_charging: unknown
     power_plant_use: unknown
-    note: Not documented by the data source.
+    note: The NB load is the NB demand minus the estimated transmission losses, so it keeps the distribution losses. The archive also gives the NB demand, about 3 to 4% higher.
 entities:
   - subdivision_name: New Brunswick
     subdivision_code: NB
