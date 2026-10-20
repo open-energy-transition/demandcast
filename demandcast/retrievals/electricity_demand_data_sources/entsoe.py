@@ -25,6 +25,32 @@ Description:
     with the embedded wind and solar generation, and about 3 to 6 GW
     above its national demand (see neso.py).
 
+    The times of some periods are wrong on ENTSO-E, as the daily profile
+    in local time shows against the same days of the other years, and
+    the module corrects them:
+
+    - Northern Ireland: the times are an hour late when the United
+      Kingdom is on winter time (GMT), in every year. The values equal
+      the system demand of NI of EirGrid's Smart Grid Dashboard within
+      1 MW, 30 minutes from its local times in summer and 90 minutes in
+      winter (2019, 2022 and 2024), and the morning rise of the demand
+      is at about 7:00 in summer as in Ireland, but at about 7:50 in
+      winter.
+    - Ukraine: the times are an hour late in the summer of 2018, from
+      2018-03-25 to 2018-10-28, an hour early in the winter of 2018 to
+      2019, until 2019-03-31, as if daylight saving time were reversed,
+      and an hour early after daylight saving time ended in 2019, until
+      2019-11-09, and in 2021, until 2021-11-30.
+    - Bulgaria: the times are an hour early from 2016-10-30, when
+      daylight saving time ended, to 2016-11-17.
+
+    The hours that two corrected periods give twice are kept once. The
+    load of Luxembourg changes in 2017 and 2018, when the profiles of
+    many days are 2 to 3 hours off those of the other years among days
+    that match them, and rises by about 24% from 2019. It looks like a
+    change of large industrial loads rather than of the times, so it is
+    not corrected.
+
     Source: https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html
     Source: https://github.com/EnergieID/entsoe-py
 """
@@ -32,6 +58,7 @@ Description:
 import datetime
 import logging
 
+import numpy as np
 import pandas as pd
 import utils.config
 import utils.fetcher
@@ -40,6 +67,22 @@ import utils.time_series
 # The areas of ENTSO-E of the subdivisions, by their code. The areas of
 # the countries are their ISO Alpha-2 codes.
 AREAS = {"GBR_GB": "GB", "GBR_NIR": "GB_NIR"}
+
+# The periods whose times are wrong on ENTSO-E, by code, from and to in
+# UTC, with the hours to add to them.
+TIME_CORRECTIONS = {
+    "BGR": [("2016-10-30 01:00", "2016-11-17 22:00", 1)],
+    "UKR": [
+        ("2018-03-25 01:00", "2018-10-28 01:00", -1),
+        ("2018-10-28 01:00", "2019-03-31 01:00", 1),
+        ("2019-10-27 01:00", "2019-11-09 22:00", 1),
+        ("2021-10-31 01:00", "2021-11-30 22:00", 1),
+    ],
+}
+
+# The codes whose times are an hour late in winter, with the time zone
+# of the winter.
+LATE_IN_WINTER = {"GBR_NIR": "Europe/London"}
 
 
 def get_available_requests(
@@ -68,6 +111,42 @@ def get_available_requests(
     # Split the period of the data into one-year periods, the maximum
     # available on the platform.
     return utils.time_series.split_period(start_date, end_date, "YS")
+
+
+def _correct_times(time_series: pd.Series, code: str) -> pd.Series:
+    """
+    Correct the times of the periods that are wrong on ENTSO-E.
+
+    Parameters
+    ----------
+    time_series : pandas.Series
+        The electricity demand, at times with a time zone.
+    code : str
+        The code of the country or subdivision.
+
+    Returns
+    -------
+    pandas.Series
+        The electricity demand, at the corrected times, with the times
+        that two periods give twice kept once.
+    """
+    times = pd.DatetimeIndex(time_series.index).tz_convert("UTC")
+    hours = np.zeros(len(times))
+    for start, end, shift in TIME_CORRECTIONS.get(code, []):
+        hours[
+            (times >= pd.Timestamp(start, tz="UTC"))
+            & (times < pd.Timestamp(end, tz="UTC"))
+        ] = shift
+    if code in LATE_IN_WINTER:
+        local = times.tz_convert(LATE_IN_WINTER[code]).tz_localize(None)
+        winter = local - times.tz_localize(None) == pd.Timedelta(0)
+        hours[np.asarray(winter)] = -1
+    corrected = pd.Series(
+        time_series.to_numpy(),
+        index=pd.DatetimeIndex(time_series.index)
+        + pd.to_timedelta(hours, unit="h"),
+    )
+    return corrected[~corrected.index.duplicated()].sort_index()
 
 
 def download_and_extract_data_for_request(
@@ -138,6 +217,11 @@ def download_and_extract_data_for_request(
         )
         electricity_demand_time_series.index = (
             electricity_demand_time_series.index + pd.TimedeltaIndex(steps)
+        )
+
+        # Correct the times of the periods that are wrong on ENTSO-E.
+        electricity_demand_time_series = _correct_times(
+            electricity_demand_time_series, code
         )
 
     return electricity_demand_time_series
