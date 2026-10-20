@@ -489,13 +489,6 @@ reviews:
     flag: time_lag
     verdict: false_positive
     note: Single quarters, three years apart.
-  - data_source: entsoe
-    code: ALB
-    flag: time_lag
-    periods:
-      - JJA 2023
-    verdict: source_error
-    note: The load is about 200 MW instead of about 800 MW from 2022-12-11 to 2023-12-04, so its profile is not that of Albania.
   - data_source: cenace
     code: MEX_NES
     flag: daylight_saving
@@ -589,21 +582,6 @@ reviews:
       - "2020"
     verdict: definition_change
     note: Until 2019, CENACE gives for each area of the national system its generation minus its exports, without the exchanges between the areas, so the areas give their generation rather than their demand; the files of 2020 onwards add the net exchanges between the areas. The sum of the areas is not affected.
-  - data_source: entsoe
-    code: ALB
-    flag: annual_change
-    periods:
-      - "2023"
-      - "2024"
-    verdict: source_error
-    note: The load is about 200 MW instead of about 800 MW from 2022-12-11 to 2023-12-04, as from 2021-08-31 to 2021-12-30.
-  - data_source: entsoe
-    code: ALB
-    flag: annual_total
-    periods:
-      - "2023"
-    verdict: source_error
-    note: The load is about 200 MW instead of about 800 MW from 2022-12-11 to 2023-12-04, as from 2021-08-31 to 2021-12-30.
   - data_source: entsoe
     code: LUX
     flag: annual_total
