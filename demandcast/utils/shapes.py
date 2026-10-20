@@ -474,18 +474,28 @@ def get_all_codes_with_shapes() -> list[str]:
     # the Natural Earth shapefile database contains some countries not
     # internationally recognized and without an ISO Alpha-3 code.
     # These are Somaliland and Northern Cyprus. Another country not
-    # internationally recognized but with an ISO Alpha-3 code is Kosovo.
+    # internationally recognized but with an ISO Alpha-3 code is Kosovo,
+    # whose shape has no ISO Alpha-3 code either, so it is found by its
+    # name among the entities that pycountry does not list.
     # There are also some territories controlled by other countries or
     # under dispute, which are the Australian Indian Ocean Territories
     # (AU), Ashmore and Cartier Islands (AU), and the Siachen Glacier.
     # Taiwan is included as a separate country with its own code, which
     # is TWN.
+    codes_of_extra_entities = {
+        info["name"]: code
+        for code, info in utils.entities.extra_entities.items()
+    }
     codes_of_all_countries = []
     for shape in list(reader.records()):
         if shape.attributes["ISO_A3"] != "-99":
             codes_of_all_countries.append(shape.attributes["ISO_A3"])
         elif shape.attributes["ISO_A3_EH"] != "-99":
             codes_of_all_countries.append(shape.attributes["ISO_A3_EH"])
+        elif shape.attributes["NAME"] in codes_of_extra_entities:
+            codes_of_all_countries.append(
+                codes_of_extra_entities[shape.attributes["NAME"]]
+            )
 
     # Get the shape of standard subdivisions from the Natural Earth
     # shapefile database.
