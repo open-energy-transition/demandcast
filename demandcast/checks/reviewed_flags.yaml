@@ -502,8 +502,8 @@ reviews:
     flag: time_lag
     periods:
       - JJA 2023
-    verdict: false_positive
-    note: A single quarter.
+    verdict: source_error
+    note: The load is about 200 MW instead of about 800 MW from 2022-12-11 to 2023-12-04, so its profile is not that of Albania.
   - data_source: cenace
     code: MEX_NES
     flag: daylight_saving
