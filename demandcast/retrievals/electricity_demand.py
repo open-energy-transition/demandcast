@@ -86,8 +86,10 @@ def _process_data(
 
     For each request of the code in the raw data, the newest version
     gives the values, and the older versions fill the times that it does
-    not have. The versions that were not just downloaded are processed
-    again from their saved responses, without the network.
+    not have. Where requests overlap, such as when a data source changes
+    its requests from days to months, the newest version of any of them
+    gives the values. The versions that were not just downloaded are
+    processed again from their saved responses, without the network.
 
     Parameters
     ----------
@@ -153,7 +155,11 @@ def _process_data(
 
     if not frames:
         return None
-    processed = pd.concat(frames)
+    # Where the requests overlap, such as when a data source changes its
+    # requests, the newest version of them gives the values.
+    processed = pd.concat(frames).sort_values(
+        "Retrieved", ascending=False, kind="stable"
+    )
     processed = processed[~processed.index.duplicated()].sort_index()
     processed.index.name = "Time (UTC)"
     return processed

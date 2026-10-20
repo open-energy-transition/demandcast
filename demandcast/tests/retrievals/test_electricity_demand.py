@@ -518,3 +518,56 @@ def test_raw_data_kept_when_a_request_fails(
     assert _read_saved_data(tmp_folders, "FRA", "failing") == {
         "2023-01-01 00:00": 1.0
     }
+
+
+def test_newest_of_overlapping_requests(
+    tmp_folders, add_data_source, monkeypatch
+):
+    """Test that the newest of overlapping requests gives the values."""
+
+    def download_and_extract_data_for_request(request, _code):
+        # The daily requests give about 1 MW, and the monthly one about
+        # 2 MW for the first day only, all changing every hour.
+        hours = [0.001 * hour for hour in range(24)]
+        if request == "month":
+            return _demand("2024-01-01 01:00", [2.0 + h for h in hours])
+        day = {"day 1": "2024-01-01 01:00", "day 2": "2024-01-02 01:00"}
+        return _demand(day[request], [1.0 + h for h in hours])
+
+    requests = Mock(return_value=["day 1", "day 2"])
+    add_data_source(
+        "changing",
+        ["FRA"],
+        get_available_requests=requests,
+        download_and_extract_data_for_request=(
+            download_and_extract_data_for_request
+        ),
+    )
+    monkeypatch.setattr(
+        pd.Timestamp, "now", lambda *_, **__: pd.Timestamp("2026-01-01")
+    )
+    retrievals.electricity_demand.run_data_retrieval("changing", None, None)
+
+    # The data source then asks for a month instead of days.
+    requests.return_value = ["month"]
+    monkeypatch.setattr(
+        pd.Timestamp, "now", lambda *_, **__: pd.Timestamp("2026-01-02")
+    )
+    retrievals.electricity_demand.run_data_retrieval("changing", None, None)
+
+    # The month gives the first day, and the older second day fills the
+    # day that the month does not have.
+    saved = pd.read_parquet(
+        os.path.join(
+            tmp_folders["processed_electricity_demand_folder"],
+            "FRA_changing.parquet",
+        )
+    )
+    first_hours = saved.loc[
+        pd.to_datetime(["2024-01-01 00:00", "2024-01-02 00:00"])
+    ]
+    assert first_hours["Load (MW)"].tolist() == [2.0, 1.0]
+    assert first_hours["Retrieved"].tolist() == [
+        "2026-01-02T00:00:00Z",
+        "2026-01-01T00:00:00Z",
+    ]
