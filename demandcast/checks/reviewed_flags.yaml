@@ -283,11 +283,6 @@ reviews:
     verdict: net_demand
     note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
   - data_source: entsoe
-    code: GBR_NIR
-    flag: midday_dip
-    verdict: net_demand
-    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
-  - data_source: entsoe
     code: HRV
     flag: midday_dip
     verdict: net_demand
@@ -494,40 +489,27 @@ reviews:
     verdict: false_positive
     note: Single quarters or a small state, whose midday index is noisy.
   - data_source: entsoe
-    code: GBR_NIR
-    flag: daylight_saving
-    verdict: source_error
-    note: The profile moves an hour later after each change in spring and earlier after each change in autumn, the opposite of a demand that does not follow the clocks, so the hours of summer of SONI are an hour early on ENTSO-E.
-  - data_source: entsoe
-    code: UKR
-    flag: daylight_saving
-    verdict: source_error
-    note: The demand does not shift with the clocks in 2018 and 2019, so the times of Ukrenergo leave out daylight saving time.
-  - data_source: entsoe
-    code: UKR
-    flag: time_lag
-    verdict: source_error
-    note: The times of Ukrenergo leave out daylight saving time in 2018 and 2019.
-  - data_source: entsoe
     code: LUX
     flag: daylight_saving
-    verdict: source_error
-    note: The times of 2017 and 2018 are 2 to 3 hours off.
+    verdict: definition_change
+    note: In 2017 and 2018 the profiles of many days are 2 to 3 hours off those of the other years, among days that match them, and the load rises by about 24% from 2019, which looks like a change of large industrial loads rather than of the times.
   - data_source: entsoe
     code: LUX
     flag: time_lag
-    verdict: source_error
-    note: The times of 2017 and 2018 are 2 to 3 hours off.
+    verdict: definition_change
+    note: In 2017 and 2018 the profiles of many days are 2 to 3 hours off those of the other years, among days that match them, and the load rises by about 24% from 2019, which looks like a change of large industrial loads rather than of the times.
   - data_source: entsoe
     code: LUX
     flag: midday_rise
-    verdict: source_error
-    note: The times of 2017 and 2018 are 2 to 3 hours off, which moves the midday.
+    verdict: definition_change
+    note: In 2017 and 2018 the profiles of many days are 2 to 3 hours off those of the other years, among days that match them, and the load rises by about 24% from 2019, which looks like a change of large industrial loads rather than of the times.
   - data_source: entsoe
     code: BGR
     flag: daylight_saving
-    verdict: source_error
-    note: "The winter of 2016 to 2017 is an hour off: the profile shifts at its start and back at its end."
+    periods:
+      - "2017-03-26"
+    verdict: false_positive
+    note: A few days before the change; the times of 2016-10-30 to 2016-11-17, an hour early, are corrected.
   - data_source: entsoe
     code: SWE
     flag: daylight_saving

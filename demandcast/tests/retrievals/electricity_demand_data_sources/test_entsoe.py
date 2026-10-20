@@ -152,3 +152,43 @@ def test_download_and_extract_data_for_request_of_area(
     params = fake_downloads.requests[0][2]["params"]
     assert params["outBiddingZone_Domain"] == domain
     assert not time_series.empty
+
+
+@pytest.mark.parametrize(
+    ("code", "times", "expected"),
+    [
+        # The winter times of Northern Ireland are an hour late, not
+        # those of its summer.
+        (
+            "GBR_NIR",
+            ["2024-01-15 12:00", "2024-07-15 12:00"],
+            ["2024-01-15 11:00", "2024-07-15 12:00"],
+        ),
+        # The summer of 2018 of Ukraine is an hour late, and its winter
+        # of 2018 to 2019 an hour early.
+        (
+            "UKR",
+            ["2018-07-01 12:00", "2018-10-28 00:30", "2018-10-28 01:00"],
+            ["2018-07-01 11:00", "2018-10-27 23:30", "2018-10-28 02:00"],
+        ),
+        # When the summer of 2018 starts, its first hour moves onto the
+        # hour before it, which is kept once.
+        (
+            "UKR",
+            ["2018-03-25 00:30", "2018-03-25 01:30", "2018-03-25 02:30"],
+            ["2018-03-25 00:30", "2018-03-25 01:30"],
+        ),
+        # The times of other countries stay as they are.
+        ("FRA", ["2024-01-15 12:00"], ["2024-01-15 12:00"]),
+    ],
+)
+def test_correct_times(code, times, expected):
+    """Test that the times that are wrong on ENTSO-E are corrected."""
+    time_series = pd.Series(
+        range(len(times)), index=pd.DatetimeIndex(times, tz="UTC")
+    )
+
+    corrected = entsoe._correct_times(time_series, code)
+
+    times = pd.DatetimeIndex(corrected.index).tz_convert("UTC")
+    assert times.strftime("%Y-%m-%d %H:%M").tolist() == expected
