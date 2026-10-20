@@ -5,11 +5,11 @@ licence:
 definition:
   - start_date: 2014-01-06
     quantity: system demand
-    embedded_generation: unknown
+    embedded_generation: included
     network_losses: unknown
     storage_charging: unknown
     power_plant_use: unknown
-    note: Not documented by the data source.
+    note: The system demand includes the demand of the consumers with their own embedded generators, while the demand of the market (NEM demand) leaves it out and is about 3% lower.
 entities:
   - country_name: Singapore
     country_code: SGP

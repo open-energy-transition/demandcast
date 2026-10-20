@@ -5,11 +5,11 @@ licence:
 definition:
   - start_date: 2018-01-01
     quantity: total demand
-    embedded_generation: unknown
-    network_losses: unknown
+    embedded_generation: included
+    network_losses: included
     storage_charging: unknown
     power_plant_use: unknown
-    note: The rooftop solar of Cyprus grows faster than the demand of TSOC shows (see the flags).
+    note: The total demand is the total generation of the system, made of the conventional and wind generation and the estimate of TSOC of the distributed generation on the distribution network. Its midday falls compared with the morning and afternoon, from 1.089 in 2018 to 1.038 in 2025, so the estimate probably lags the growth of rooftop solar.
 entities:
   - country_name: Cyprus
     country_code: CYP

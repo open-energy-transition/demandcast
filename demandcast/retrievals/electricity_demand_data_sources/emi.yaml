@@ -6,10 +6,10 @@ definition:
   - start_date: 2005-01-01
     quantity: demand
     embedded_generation: unknown
-    network_losses: unknown
+    network_losses: included
     storage_charging: unknown
     power_plant_use: unknown
-    note: Not documented by the data source.
+    note: The grid demand of the Electricity Authority is reconciled from the consumption of the retailers and grossed up for the losses of the distribution networks. How it counts the embedded generation is not documented.
 entities:
   - country_name: New Zealand
     country_code: NZL
