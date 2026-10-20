@@ -25,49 +25,31 @@ reviews:
     verdict: false_positive
     note: The times are right (NEM time, UTC+10), but the demand on the network follows the sun with the rooftop solar, not the clocks.
   - data_source: ccei
-    code: CAN_NL
-    flag: daylight_saving
-    verdict: source_error
-    note: The times in UTC of CCEI keep daylight saving time all winter since November 2024; the local times are right (fixed in #284).
-  - data_source: ccei
-    code: CAN_NL
-    flag: time_lag
-    periods: [DJF 2023, MAM 2023, JJA 2023, SON 2023]
-    verdict: source_error
-    note: The local times are an hour late from 2023-03-12 to 2023-11-05 (fixed in #284).
-  - data_source: ccei
-    code: CAN_PE
-    flag: daylight_saving
-    verdict: source_error
-    note: The times in UTC of CCEI keep daylight saving time all winter since November 2024; the local times are right (fixed in #284).
-  - data_source: ccei
     code: CAN_QC
     flag: daylight_saving
-    periods: ["2022-03-13"]
-    verdict: source_error
-    note: The times in UTC of the readings every 15 minutes are 6 to 9 hours off from 2021-10-05 to 2022-04-13 (fixed in #284).
-  - data_source: ccei
-    code: CAN_QC
-    flag: daylight_saving
-    periods: ["2023-11-05"]
+    periods:
+      - "2023-11-05"
     verdict: false_positive
     note: The weather after the change shifts the heating; the data of Hydro-Québec has the same flag.
   - data_source: hydroquebec
     code: CAN_QC
     flag: daylight_saving
-    periods: ["2023-11-05"]
+    periods:
+      - "2023-11-05"
     verdict: false_positive
     note: The weather after the change shifts the heating.
   - data_source: ccei
     code: CAN_NB
     flag: daylight_saving
-    periods: ["2026-03-08"]
+    periods:
+      - "2026-03-08"
     verdict: false_positive
     note: The weather after the change shifts the heating; the data of NB Power has the same flag.
   - data_source: nbpower
     code: CAN_NB
     flag: daylight_saving
-    periods: ["2026-03-08"]
+    periods:
+      - "2026-03-08"
     verdict: false_positive
     note: The weather after the change shifts the heating.
   - data_source: ons
@@ -79,38 +61,50 @@ reviews:
     code: BRA_NE
     flag: midday_dip
     periods:
-      [SON 2021, DJF 2022, MAM 2022, JJA 2022, SON 2022, DJF 2023, MAM 2023]
+      - SON 2021
+      - DJF 2022
+      - MAM 2022
+      - JJA 2022
+      - SON 2022
+      - DJF 2023
+      - MAM 2023
     verdict: net_demand
     note: The load of ONS leaves out the distributed generation until 2023-04-29.
   - data_source: ons
     code: BRA_SE
     flag: midday_dip
-    periods: [JJA 2022, SON 2022, MAM 2023]
+    periods:
+      - JJA 2022
+      - SON 2022
+      - MAM 2023
     verdict: net_demand
     note: The load of ONS leaves out the distributed generation until 2023-04-29.
   - data_source: ons
     code: BRA_S
     flag: midday_dip
-    periods: [MAM 2022, JJA 2022, SON 2022, DJF 2023, MAM 2023]
+    periods:
+      - MAM 2022
+      - JJA 2022
+      - SON 2022
+      - DJF 2023
+      - MAM 2023
     verdict: net_demand
     note: The load of ONS leaves out the distributed generation until 2023-04-29.
   - data_source: ntdc
     code: PAK
     flag: time_lag
-    periods: [MAM 2019, SON 2019]
+    periods:
+      - MAM 2019
+      - SON 2019
     verdict: source_error
     note: The values slip by an hour against their hours in 2019, by different amounts from day to day, so they are not corrected.
   - data_source: epias
     code: TUR
     flag: midday_dip
-    verdict: net_demand
-    note: The consumption of EPIAS leaves out the licence-exempt generation until 2020-12-29 (fixed in #286).
-  - data_source: epias
-    code: TUR
-    flag: midday_rise
-    periods: [MAM 2021]
-    verdict: definition_change
-    note: The consumption of EPIAS includes the licence-exempt generation from 2020-12-30 (fixed in #286).
+    verdict: false_positive
+    note: The licence-exempt generation is added until 2020-12-29 (#286); the winter of 2017 is compared with that of 2016, which has mostly January and February.
+    periods:
+      - DJF 2017
   - data_source: caiso
     code: USA_CAL
     flag: midday_rise
@@ -119,7 +113,10 @@ reviews:
   - data_source: niti
     code: IND_TR
     flag: midday_dip
-    periods: [DJF 2019, DJF 2020, DJF 2021]
+    periods:
+      - DJF 2019
+      - DJF 2020
+      - DJF 2021
     verdict: definition_change
     note: The demand of Tripura probably includes its exports to Bangladesh until October 2017, which raise the index of the winter of 2018.
   - data_source: niti
@@ -135,24 +132,496 @@ reviews:
   - data_source: niti
     code: IND_OR
     flag: annual_change
-    periods: ["2021"]
+    periods:
+      - "2021"
     verdict: real_event
     note: The demand of Odisha steps up by about 30% from March 2021, probably with industrial or open-access load.
   - data_source: niti
     code: IND_CH
     flag: midday_dip
-    periods: [MAM 2020]
+    periods:
+      - MAM 2020
     verdict: real_event
     note: The lockdown of 2020.
   - data_source: niti
     code: IND_DL
     flag: midday_dip
-    periods: [MAM 2020]
+    periods:
+      - MAM 2020
     verdict: real_event
     note: The lockdown of 2020.
   - data_source: cnd
     code: PAN
     flag: midday_dip
-    periods: [MAM 2020]
+    periods:
+      - MAM 2020
     verdict: real_event
     note: The lockdown of 2020, from 25 March.
+  - data_source: aemo_nem
+    code: AUS_QLD
+    flag: midday_dip
+    verdict: net_demand
+    note: The operational demand of AEMO leaves out the rooftop solar.
+  - data_source: aemo_wem
+    code: AUS_WA
+    flag: midday_dip
+    verdict: net_demand
+    note: The operational demand of AEMO leaves out the rooftop solar.
+  - data_source: ccei
+    code: CAN_PE
+    flag: midday_dip
+    verdict: net_demand
+    note: The rooftop solar of Prince Edward Island grows from 2023.
+  - data_source: cenace
+    code: MEX_NTE
+    flag: midday_dip
+    verdict: net_demand
+    note: The distributed generation of Mexico, mostly rooftop solar, grows from 2024.
+  - data_source: cenace
+    code: MEX_OCC
+    flag: midday_dip
+    verdict: net_demand
+    note: The distributed generation of Mexico, mostly rooftop solar, grows from 2024.
+  - data_source: cenace
+    code: MEX_PEN
+    flag: midday_dip
+    verdict: net_demand
+    note: The distributed generation of Mexico, mostly rooftop solar, grows from 2024.
+  - data_source: eia
+    code: USA_NE
+    flag: midday_dip
+    verdict: net_demand
+    note: The load of ISO New England leaves out the solar behind the meters.
+  - data_source: krogd
+    code: KOR
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand of KPX leaves out the solar behind the meters and of power purchase agreements.
+  - data_source: niti
+    code: IND_MH
+    flag: midday_dip
+    periods:
+      - SON 2025
+    verdict: net_demand
+    note: The rooftop solar of Maharashtra grows from 2024.
+  - data_source: ons
+    code: BRA_NE
+    flag: midday_dip
+    periods:
+      - JJA 2025
+      - SON 2025
+      - DJF 2026
+      - MAM 2026
+      - JJA 2026
+    verdict: net_demand
+    note: The estimate of the distributed generation that ONS adds from 2023-04-29 probably lags its growth.
+  - data_source: ons
+    code: BRA_S
+    flag: midday_dip
+    periods:
+      - MAM 2026
+    verdict: net_demand
+    note: The estimate of the distributed generation that ONS adds from 2023-04-29 probably lags its growth.
+  - data_source: pucsl
+    code: LKA
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop solar until PUCSL adds its estimate on 2025-07-11.
+  - data_source: tsoc
+    code: CYP
+    flag: midday_dip
+    verdict: net_demand
+    note: The rooftop solar of Cyprus grows faster than the generation that TSOC counts.
+  - data_source: entsoe
+    code: NLD
+    flag: midday_dip
+    verdict: net_demand
+    note: The midday index falls from 1.0 in 2015 to 0.80 in the spring of 2022 and is back to 0.97 in 2023, so the load leaves out the embedded solar until 2022 and probably includes it from 2023.
+  - data_source: entsoe
+    code: CYP
+    flag: midday_dip
+    verdict: net_demand
+    note: The midday index falls to 0.84 by 2022 as rooftop solar grows.
+  - data_source: entsoe
+    code: HUN
+    flag: midday_dip
+    verdict: net_demand
+    note: The midday index falls from 1.02 in 2020 to 0.85 in 2026 with the household solar of Hungary.
+  - data_source: entsoe
+    code: ALB
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: AUT
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: BIH
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: CHE
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: DEU
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: ESP
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: EST
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: GBR_NIR
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: HRV
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: IRL
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: LTU
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: MDA
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: MKD
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: MNE
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: POL
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: PRT
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: ROU
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: entsoe
+    code: SVN
+    flag: midday_dip
+    verdict: net_demand
+    note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
+  - data_source: niti
+    code: IND_ML
+    flag: midday_dip
+    periods:
+      - MAM 2018
+    verdict: false_positive
+    note: A single quarter of a small state, whose midday index is noisy.
+  - data_source: niti
+    code: IND_MN
+    flag: midday_dip
+    periods:
+      - DJF 2020
+    verdict: false_positive
+    note: A single quarter of a small state, whose midday index is noisy.
+  - data_source: niti
+    code: IND_MZ
+    flag: midday_dip
+    periods:
+      - SON 2024
+    verdict: false_positive
+    note: A single quarter of a small state, whose midday index is noisy.
+  - data_source: niti
+    code: IND_NL
+    flag: midday_dip
+    periods:
+      - SON 2025
+    verdict: false_positive
+    note: A single quarter of a small state, whose midday index is noisy.
+  - data_source: eia
+    code: USA_SW
+    flag: midday_dip
+    periods:
+      - SON 2021
+    verdict: false_positive
+    note: A single quarter; the index is back in 2022.
+  - data_source: entsoe
+    code: CYP
+    flag: midday_rise
+    verdict: definition_change
+    note: The midday index is back from 0.84 in 2022 to about 1.06 in 2025, close to that of TSOC, so the load probably includes the rooftop solar from 2025.
+  - data_source: pucsl
+    code: LKA
+    flag: midday_rise
+    verdict: definition_change
+    note: PUCSL adds its estimate of the rooftop solar from 2025-07-11.
+  - data_source: eia
+    code: USA_CAL
+    flag: midday_rise
+    verdict: definition_change
+    note: As in the data of CAISO, the load at midday rises from 2023, probably with the charging of batteries counted as load.
+  - data_source: cen
+    code: CHL
+    flag: midday_rise
+    verdict: definition_change
+    note: The load at midday rises in 2026, probably with the charging of the batteries that Chile builds counted as load.
+  - data_source: entsoe
+    code: ESP
+    flag: midday_rise
+    periods:
+      - MAM 2020
+    verdict: real_event
+    note: The lockdown of 2020.
+  - data_source: entsoe
+    code: GRC
+    flag: midday_rise
+    periods:
+      - MAM 2020
+    verdict: real_event
+    note: The lockdown of 2020.
+  - data_source: entsoe
+    code: SVN
+    flag: midday_rise
+    periods:
+      - JJA 2026
+    verdict: false_positive
+    note: A single quarter after years of dips; to check whether it continues.
+  - data_source: niti
+    code: IND_AP
+    flag: midday_rise
+    verdict: real_event
+    note: The agricultural supply of the state moves to the day, partly with solar feeders.
+  - data_source: niti
+    code: IND_HR
+    flag: midday_rise
+    verdict: real_event
+    note: The agricultural supply of the state moves to the day, partly with solar feeders.
+  - data_source: niti
+    code: IND_KA
+    flag: midday_rise
+    verdict: real_event
+    note: The agricultural supply of the state moves to the day, partly with solar feeders.
+  - data_source: niti
+    code: IND_PB
+    flag: midday_rise
+    verdict: real_event
+    note: The agricultural supply of the state moves to the day, partly with solar feeders.
+  - data_source: niti
+    code: IND_RJ
+    flag: midday_rise
+    verdict: real_event
+    note: The agricultural supply of the state moves to the day, partly with solar feeders.
+  - data_source: niti
+    code: IND_UP
+    flag: midday_rise
+    verdict: real_event
+    note: The agricultural supply of the state moves to the day, partly with solar feeders.
+  - data_source: niti
+    code: IND_AR
+    flag: midday_rise
+    verdict: false_positive
+    note: Single quarters or a small state, whose midday index is noisy.
+  - data_source: niti
+    code: IND_HP
+    flag: midday_rise
+    verdict: false_positive
+    note: Single quarters or a small state, whose midday index is noisy.
+  - data_source: niti
+    code: IND_ML
+    flag: midday_rise
+    verdict: false_positive
+    note: Single quarters or a small state, whose midday index is noisy.
+  - data_source: niti
+    code: IND_MN
+    flag: midday_rise
+    verdict: false_positive
+    note: Single quarters or a small state, whose midday index is noisy.
+  - data_source: niti
+    code: IND_MZ
+    flag: midday_rise
+    verdict: false_positive
+    note: Single quarters or a small state, whose midday index is noisy.
+  - data_source: niti
+    code: IND_NL
+    flag: midday_rise
+    verdict: false_positive
+    note: Single quarters or a small state, whose midday index is noisy.
+  - data_source: niti
+    code: IND_OR
+    flag: midday_rise
+    verdict: false_positive
+    note: Single quarters or a small state, whose midday index is noisy.
+  - data_source: niti
+    code: IND_SK
+    flag: midday_rise
+    verdict: false_positive
+    note: Single quarters or a small state, whose midday index is noisy.
+  - data_source: niti
+    code: IND_TN
+    flag: midday_rise
+    verdict: false_positive
+    note: Single quarters or a small state, whose midday index is noisy.
+  - data_source: niti
+    code: IND_TR
+    flag: midday_rise
+    verdict: false_positive
+    note: Single quarters or a small state, whose midday index is noisy.
+  - data_source: entsoe
+    code: GBR_NIR
+    flag: daylight_saving
+    verdict: source_error
+    note: The profile moves an hour later after each change in spring and earlier after each change in autumn, the opposite of a demand that does not follow the clocks, so the hours of summer of SONI are an hour early on ENTSO-E.
+  - data_source: entsoe
+    code: UKR
+    flag: daylight_saving
+    verdict: source_error
+    note: The demand does not shift with the clocks in 2018 and 2019, so the times of Ukrenergo leave out daylight saving time.
+  - data_source: entsoe
+    code: UKR
+    flag: time_lag
+    verdict: source_error
+    note: The times of Ukrenergo leave out daylight saving time in 2018 and 2019.
+  - data_source: entsoe
+    code: LUX
+    flag: daylight_saving
+    verdict: source_error
+    note: The times of 2017 and 2018 are 2 to 3 hours off.
+  - data_source: entsoe
+    code: LUX
+    flag: time_lag
+    verdict: source_error
+    note: The times of 2017 and 2018 are 2 to 3 hours off.
+  - data_source: entsoe
+    code: LUX
+    flag: midday_rise
+    verdict: source_error
+    note: The times of 2017 and 2018 are 2 to 3 hours off, which moves the midday.
+  - data_source: entsoe
+    code: BGR
+    flag: daylight_saving
+    verdict: source_error
+    note: "The winter of 2016 to 2017 is an hour off: the profile shifts at its start and back at its end."
+  - data_source: entsoe
+    code: SWE
+    flag: daylight_saving
+    periods:
+      - "2022-03-27"
+    verdict: false_positive
+    note: A single change of the clocks.
+  - data_source: entsoe
+    code: FRA
+    flag: daylight_saving
+    periods:
+      - "2024-03-31"
+    verdict: false_positive
+    note: Easter Sunday, 31 March 2024, is in the days after the change.
+  - data_source: eia
+    code: USA_TEX
+    flag: daylight_saving
+    periods:
+      - "2026-03-08"
+    verdict: false_positive
+    note: A single change of the clocks.
+  - data_source: aemo_nem
+    code: AUS_NSW
+    flag: daylight_saving
+    periods:
+      - "2026-10-04"
+    verdict: false_positive
+    note: The data ends two weeks after the change.
+  - data_source: entsoe
+    code: MKD
+    flag: daylight_saving
+    verdict: false_positive
+    note: Only the changes of autumn, with the start of the heating, while the changes of spring are not flagged.
+  - data_source: entsoe
+    code: FRA
+    flag: time_lag
+    periods:
+      - SON 2023
+    verdict: false_positive
+    note: A single quarter.
+  - data_source: entsoe
+    code: CHE
+    flag: time_lag
+    verdict: false_positive
+    note: Single quarters, three years apart.
+  - data_source: entsoe
+    code: ALB
+    flag: time_lag
+    periods:
+      - JJA 2023
+    verdict: false_positive
+    note: A single quarter.
+  - data_source: cenace
+    code: MEX_BCS
+    flag: daylight_saving
+    verdict: false_positive
+    note: The times are read in the time of central Mexico, as for the Centre, which is never flagged, but the demand of the hot regions follows the sun more than the clocks.
+  - data_source: cenace
+    code: MEX_NES
+    flag: daylight_saving
+    verdict: false_positive
+    note: The times are read in the time of central Mexico, as for the Centre, which is never flagged, but the demand of the hot regions follows the sun more than the clocks.
+  - data_source: cenace
+    code: MEX_NTE
+    flag: daylight_saving
+    verdict: false_positive
+    note: The times are read in the time of central Mexico, as for the Centre, which is never flagged, but the demand of the hot regions follows the sun more than the clocks.
+  - data_source: cenace
+    code: MEX_OCC
+    flag: daylight_saving
+    verdict: false_positive
+    note: The times are read in the time of central Mexico, as for the Centre, which is never flagged, but the demand of the hot regions follows the sun more than the clocks.
+  - data_source: cenace
+    code: MEX_ORI
+    flag: daylight_saving
+    verdict: false_positive
+    note: The times are read in the time of central Mexico, as for the Centre, which is never flagged, but the demand of the hot regions follows the sun more than the clocks.
+  - data_source: cenace
+    code: MEX_NOR
+    flag: daylight_saving
+    verdict: false_positive
+    note: The region includes Sonora, which has no daylight saving time, so its demand follows two clocks.
+  - data_source: cenace
+    code: MEX_NOR
+    flag: time_lag
+    verdict: false_positive
+    note: The region includes Sonora, which has no daylight saving time, so its demand follows two clocks.
+  - data_source: cenace
+    code: MEX_PEN
+    flag: daylight_saving
+    verdict: false_positive
+    note: The region includes Quintana Roo, which has had no daylight saving time since 2015, so its demand follows two clocks.
+  - data_source: cenace
+    code: MEX_PEN
+    flag: time_lag
+    verdict: false_positive
+    note: The region includes Quintana Roo, which has had no daylight saving time since 2015, so its demand follows two clocks.
