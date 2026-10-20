@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: CC-BY 4.0 license. Use for any purpose with attribution.
   url: https://zenodo.org/records/7537890
+definition:
+  - start_date: 2017-01-01
+    quantity: load of the four areas
+    embedded_generation: unknown
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: Not documented by the data source.
 entities:
   - country_name: Taiwan
     country_code: TWN

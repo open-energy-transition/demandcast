@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: CC-BY 4.0 license. Use for any purpose with attribution.
   url: https://creativecommons.org/licenses/by/4.0/
+definition:
+  - start_date: 2016-01-02
+    quantity: load (Carga Real)
+    embedded_generation: unknown
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: Not documented by the data source.
 entities:
   - country_name: Panama
     country_code: PAN

@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: CC-BY 4.0 license. Use for any purpose with attribution.
   url: https://zenodo.org/records/8322210
+definition:
+  - start_date: 2018-01-01
+    quantity: modelled load of each province
+    embedded_generation: unknown
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The load is modelled by the authors from the data of the National Development and Reform Commission.
 entities:
   - subdivision_name: Beijing
     subdivision_code: BJ

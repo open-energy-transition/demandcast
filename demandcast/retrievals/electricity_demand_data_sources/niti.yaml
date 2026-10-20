@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: Open data.
   url: https://iced.niti.gov.in/about-us
+definition:
+  - start_date: 2017-01-01
+    quantity: demand met of each state
+    embedded_generation: excluded
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The demand met is that of the grid, without the generation of the consumers for their own use, such as rooftop solar (see the flags of Kerala and Uttarakhand).
 entities:
   - subdivision_name: Andhra Pradesh
     subdivision_code: AP

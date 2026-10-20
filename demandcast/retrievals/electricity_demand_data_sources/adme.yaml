@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: Open data under article 82 of Uruguay's Law 19355 and Decree 54/2017.
   url: https://adme.com.uy/datosabiertos.html
+definition:
+  - start_date: 2019-01-01
+    quantity: demand (generation plus imports minus exports)
+    embedded_generation: unknown
+    network_losses: included
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The demand is the generation plus the imports minus the exports, so it has the losses of the networks.
 entities:
   - country_name: Uruguay
     country_code: URY

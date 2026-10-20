@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: Use for any purpose with attribution to CAISO.
   url: https://www.caiso.com/privacy-terms-of-use
+definition:
+  - start_date: 2019-01-01
+    quantity: load of CAISO
+    embedded_generation: excluded
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The load leaves out the solar behind the meters of the consumers, about 10 GW in 2019 and 16 GW in 2025, and probably counts the charging of batteries from 2023.
 entities:
   - subdivision_name: California
     subdivision_code: CAL

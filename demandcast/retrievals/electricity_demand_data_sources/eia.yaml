@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: Use for any purpose with attribution to EIA.
   url: https://www.eia.gov/about/copyrights_reuse.php
+definition:
+  - start_date: 2020-01-01
+    quantity: demand of the balancing authority (EIA-930)
+    embedded_generation: excluded
+    network_losses: included
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The demand of the EIA-930 is the net generation plus the imports minus the exports of the balancing authority, so it leaves out the solar behind the meters and has the losses of the networks.
 entities:
   - subdivision_name: California
     subdivision_code: CAL

@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: Non-commercial reproduction with attribution to CCEI. Commercial redistribution needs written permission.
   url: https://www.canada.ca/en/transparency/terms.html
+definition:
+  - start_date: 2002-05-01
+    quantity: load or demand of the province, as each utility or system operator reports it
+    embedded_generation: unknown
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The variable differs by province, such as the internal load of Alberta and the Ontario demand of IESO.
 entities:
   - subdivision_name: Alberta
     subdivision_code: AB

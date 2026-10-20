@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: CC-BY 4.0 license. Use for any purpose with attribution.
   url: https://data.mendeley.com/datasets/z5x2d3mhw7/1
+definition:
+  - start_date: 2008-01-01
+    quantity: demand
+    embedded_generation: unknown
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: Not documented by the data source.
 entities:
   - country_name: Algeria
     country_code: DZA

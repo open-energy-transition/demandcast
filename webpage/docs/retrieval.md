@@ -84,7 +84,9 @@ The periods of the requests come from `utils.time_series.split_period`, and API 
 
 #### Names, codes, time zones, and data time ranges for countries and subdivisions
 
-For each retrieval module in the `demandcast/retrievals/electricity_demand_data_sources/` folder, a corresponding YAML file must be created. It gives the `licence` of the data (`redistribute`, whether the data can be published on Zenodo, whose dataset of actual data has the CC BY-NC 4.0 licence, `terms`, a summary of the licence, and `url`, its link), and its `entities`, a list of dictionaries, each representing a country or subdivision from the respective data source. The following rules apply:
+For each retrieval module in the `demandcast/retrievals/electricity_demand_data_sources/` folder, a corresponding YAML file must be created. It gives the `licence` of the data (`redistribute`, whether the data can be published on Zenodo, whose dataset of actual data has the CC BY-NC 4.0 licence, `terms`, a summary of the licence, and `url`, its link), its `definition`, and its `entities`, a list of dictionaries, each representing a country or subdivision from the respective data source. The following rules apply:
+
+The `definition` says what the demand of the data source counts, since DemandCast models the gross demand, with the demand that the generation embedded in the distribution networks supplies. It is a list of periods, in the order of their `start_date`, the first one from the start of the data, each with the `quantity` that the source gives, and whether the `embedded_generation` (such as rooftop solar), the `network_losses`, the `storage_charging` and the `power_plant_use` are `included` by the source, `added` by DemandCast from an estimate, `excluded`, or `unknown`, with a `note` on the reasons. For example, the total demand of AEMO for the NEM leaves out the rooftop solar until 2016, and has AEMO's estimate of it added from 2017. `utils.entities.get_definition(data_source, date)` gives the period of a date.
 
 - Names and codes should adhere to the ISO 3166 standard.
 - For countries and standard subdivisions, use Alpha-3 codes.

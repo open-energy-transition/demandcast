@@ -2,6 +2,14 @@ licence:
   redistribute: false
   terms: Reproducing, copying, or distributing this data is not allowed.
   url: https://www.xm.com.co/legales/terminos-legales-del-sitio-web
+definition:
+  - start_date: 2000-01-01
+    quantity: real demand of the system (DemaReal)
+    embedded_generation: unknown
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: Not documented by the data source.
 entities:
   - country_name: Colombia
     country_code: COL

@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: CC-BY 4.0 license. Use for any purpose with attribution.
   url: https://data.mendeley.com/datasets/pxvdm26rn7/2
+definition:
+  - start_date: 2016-01-01
+    quantity: modelled unsuppressed national demand
+    embedded_generation: unknown
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The demand is modelled by the authors, as if it were not suppressed by the shortages of supply.
 entities:
   - country_name: Nigeria
     country_code: NGA

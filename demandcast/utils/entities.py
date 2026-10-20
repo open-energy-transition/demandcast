@@ -144,13 +144,65 @@ class DataSourceLicence(BaseModel):
     url: str
 
 
+# What a part of the demand can be in the data of a data source:
+# counted by the source, added by DemandCast, left out, or not known.
+DefinitionValue = Literal["included", "added", "excluded", "unknown"]
+
+
+class DataSourceDefinition(BaseModel):
+    """
+    What the demand of a data source counts, from a date.
+
+    The demand that DemandCast models is the gross demand, which counts
+    the demand that the generation embedded in the distribution networks
+    supplies, such as rooftop solar. Each part says whether the source
+    counts it (included), DemandCast adds an estimate of it (added), the
+    demand leaves it out (excluded), or it is not known (unknown).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    start_date: datetime.date
+    quantity: str
+    embedded_generation: DefinitionValue
+    network_losses: DefinitionValue
+    storage_charging: DefinitionValue
+    power_plant_use: DefinitionValue
+    note: str
+
+
 class _DataSourceFile(BaseModel):
     """The content of the yaml file of a data source."""
 
     model_config = ConfigDict(extra="forbid")
 
     licence: DataSourceLicence
+    definition: list[DataSourceDefinition]
     entities: list[DataSourceEntity]
+
+    @model_validator(mode="after")
+    def check_definition(self) -> Self:
+        """
+        Check that the periods of the definition are in order.
+
+        Returns
+        -------
+        Self
+            The content of the file.
+
+        Raises
+        ------
+        ValueError
+            If the definition has no period, or its periods do not start
+            in order.
+        """
+        dates = [period.start_date for period in self.definition]
+        if not dates or dates != sorted(set(dates)):
+            raise ValueError(
+                "The definition needs periods with start dates in order, "
+                f"not {dates}."
+            )
+        return self
 
     @model_validator(mode="after")
     def check_codes(self) -> Self:
@@ -438,6 +490,51 @@ def read_licence(data_source: str) -> DataSourceLicence:
         The licence, from the yaml file of the data source.
     """
     return DataSourceLicence(**_read_data_source_file(data_source)["licence"])
+
+
+def read_definition(data_source: str) -> list[DataSourceDefinition]:
+    """
+    Read what the demand of a data source counts, period by period.
+
+    Parameters
+    ----------
+    data_source : str
+        The name of the data source.
+
+    Returns
+    -------
+    list[DataSourceDefinition]
+        The periods of the definition, from the yaml file of the data
+        source, in the order of their start dates.
+    """
+    return [
+        DataSourceDefinition(**period)
+        for period in _read_data_source_file(data_source)["definition"]
+    ]
+
+
+def get_definition(
+    data_source: str, date: datetime.date
+) -> DataSourceDefinition:
+    """
+    Get what the demand of a data source counts on a date.
+
+    Parameters
+    ----------
+    data_source : str
+        The name of the data source.
+    date : datetime.date
+        The date.
+
+    Returns
+    -------
+    DataSourceDefinition
+        The period of the definition that the date is in, or the first
+        one for a date before it.
+    """
+    periods = read_definition(data_source)
+    started = [period for period in periods if period.start_date <= date]
+    return started[-1] if started else periods[0]
 
 
 def _read_entities_info(

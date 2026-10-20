@@ -2,6 +2,21 @@ licence:
   redistribute: true
   terms: Use for any purpose with attribution to AEMO.
   url: https://aemo.com.au/privacy-and-legal-notices/copyright-permissions
+definition:
+  - start_date: 2006-09-20
+    quantity: operational demand
+    embedded_generation: excluded
+    network_losses: included
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: AEMO has no estimate of the distributed solar before 2020-11-03.
+  - start_date: 2020-11-03
+    quantity: operational demand with the distributed solar
+    embedded_generation: added
+    network_losses: included
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: AEMO's estimate of the distributed solar is added (#303).
 entities:
   - subdivision_name: Western Australia
     subdivision_code: WA

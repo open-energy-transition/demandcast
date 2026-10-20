@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: CC0.
   url: https://www.kaggle.com/datasets/tentative/ntdc-dataset
+definition:
+  - start_date: 2015-01-01
+    quantity: system load without K-Electric
+    embedded_generation: excluded
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The load leaves out K-Electric, which supplies Karachi, and the generation of the consumers for their own use.
 entities:
   - country_name: Pakistan
     country_code: PAK

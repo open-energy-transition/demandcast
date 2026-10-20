@@ -2,6 +2,14 @@ licence:
   redistribute: false
   terms: Limited, non-exclusive, non-sublicensable, non-transferrable licence to use and reproduce.
   url: https://www.ieso.ca/Terms-of-Use
+definition:
+  - start_date: 1994-01-01
+    quantity: Ontario demand
+    embedded_generation: excluded
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The Ontario demand is the demand on the transmission network, without the exports, and leaves out the generation embedded in the distribution networks.
 entities:
   - subdivision_name: Ontario
     subdivision_code: "ON"

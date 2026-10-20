@@ -732,6 +732,15 @@ LICENCE = {
     "terms": "CC-BY 4.0 license. Use for any purpose with attribution.",
     "url": "https://creativecommons.org/licenses/by/4.0/",
 }
+DEFINITION_PERIOD = {
+    "start_date": datetime.date(2015, 1, 1),
+    "quantity": "demand",
+    "embedded_generation": "unknown",
+    "network_losses": "unknown",
+    "storage_charging": "unknown",
+    "power_plant_use": "unknown",
+    "note": "Not documented.",
+}
 FRANCE = {
     "country_name": "France",
     "country_code": "FRA",
@@ -765,6 +774,10 @@ def write_data_source(tmp_folders, tmp_path):
     tmp_folders["electricity_demand_data_sources_folder"] = str(folder)
 
     def write(content: object) -> None:
+        # A file without a definition gets one, so that the tests check
+        # the other parts of the file.
+        if isinstance(content, dict) and "definition" not in content:
+            content = {**content, "definition": [DEFINITION_PERIOD]}
         with open(folder / "test_source.yaml", "w", encoding="utf-8") as file:
             yaml.safe_dump(content, file)
 
@@ -918,3 +931,49 @@ def test_continents():
     # Check if the function catches errors for invalid codes.
     with pytest.raises(ValueError, match="No continent code is available"):
         utils.entities.get_continent_code("INVALID_CODE")
+
+
+def test_read_definition():
+    """Test that the definition of a data source is read by period."""
+    periods = utils.entities.read_definition("aemo_nem")
+
+    assert [period.start_date for period in periods] == [
+        datetime.date(1998, 12, 7),
+        datetime.date(2017, 1, 1),
+    ]
+    assert [period.embedded_generation for period in periods] == [
+        "excluded",
+        "added",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("date", "embedded_generation"),
+    [
+        (datetime.date(1990, 1, 1), "excluded"),
+        (datetime.date(2016, 12, 31), "excluded"),
+        (datetime.date(2017, 1, 1), "added"),
+        (datetime.date(2025, 6, 1), "added"),
+    ],
+)
+def test_get_definition(date, embedded_generation):
+    """Test that a date gets the period of the definition it is in."""
+    definition = utils.entities.get_definition("aemo_nem", date)
+
+    assert definition.embedded_generation == embedded_generation
+
+
+def test_definition_with_periods_out_of_order():
+    """Test that the periods of a definition must start in order."""
+    with pytest.raises(ValueError, match="start dates in order"):
+        utils.entities._DataSourceFile.model_validate(
+            {
+                "licence": LICENCE,
+                "definition": [
+                    DEFINITION_PERIOD,
+                    DEFINITION_PERIOD
+                    | {"start_date": datetime.date(2010, 1, 1)},
+                ],
+                "entities": [],
+            }
+        )

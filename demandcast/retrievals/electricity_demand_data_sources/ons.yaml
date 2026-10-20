@@ -2,6 +2,21 @@ licence:
   redistribute: true
   terms: CC-BY license. Use for any purpose with attribution.
   url: https://dados.ons.org.br/dataset/curva-carga
+definition:
+  - start_date: 2000-01-01
+    quantity: load of the subsystem
+    embedded_generation: excluded
+    network_losses: included
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The load leaves out the micro and mini distributed generation (MMGD) until 2023-04-28.
+  - start_date: 2023-04-29
+    quantity: load of the subsystem with the distributed generation
+    embedded_generation: included
+    network_losses: included
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: ONS adds its estimate of the micro and mini distributed generation (MMGD).
 entities:
   - subdivision_name: North
     subdivision_code: N
