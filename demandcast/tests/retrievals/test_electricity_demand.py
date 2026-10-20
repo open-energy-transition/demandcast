@@ -471,3 +471,50 @@ def test_versions_of_the_raw_data(tmp_folders, add_data_source, monkeypatch):
     pd.testing.assert_frame_equal(
         pd.read_parquet(file_path), expected, check_freq=False
     )
+
+
+def test_raw_data_kept_when_a_request_fails(
+    tmp_folders, add_data_source, monkeypatch
+):
+    """Test that the responses before a failed request are kept."""
+
+    # A website that answers the file of 2023 and fails for 2024.
+    def send(_adapter, request, **_kwargs):
+        if request.url.endswith("2024.csv"):
+            raise requests.exceptions.ConnectionError("Read timed out")
+        response = requests.Response()
+        response.status_code = 200
+        response._content = b"time,value\n2023-01-01 00:00,1\n"
+        response.request = request
+        return response
+
+    monkeypatch.setattr(requests.adapters.HTTPAdapter, "send", send)
+
+    def download_and_extract_data_for_request(request, _code):
+        text = requests.get(
+            f"https://example.org/{request}.csv", timeout=10
+        ).text
+        values = pd.read_csv(io.StringIO(text), index_col=0, parse_dates=True)
+        return values["value"].astype(float).tz_localize("UTC")
+
+    add_data_source(
+        "failing",
+        ["FRA"],
+        get_available_requests=Mock(return_value=[2023, 2024]),
+        download_and_extract_data_for_request=(
+            download_and_extract_data_for_request
+        ),
+    )
+
+    with pytest.raises(requests.exceptions.ConnectionError):
+        retrievals.electricity_demand.run_data_retrieval("failing", None, None)
+
+    # The response of 2023 is kept, and processed without the network.
+    (entry,) = utils.raw_data.read_manifest("failing")["requests"]
+    assert entry["request"] == 2023
+    retrievals.electricity_demand.run_data_retrieval(
+        "failing", None, None, offline=True
+    )
+    assert _read_saved_data(tmp_folders, "FRA", "failing") == {
+        "2023-01-01 00:00": 1.0
+    }
