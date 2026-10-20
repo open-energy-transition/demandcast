@@ -630,3 +630,76 @@ def test_fetch_data_csv_with_a_connection_error():
         )
 
     assert mock_read_csv.call_count == 3
+
+
+def _query_load_failing(status_code: int):
+    """
+    Make a query of the load that fails on 2025-10-09 with an error.
+
+    Returns
+    -------
+    Callable
+        The query, which gives a load of 1 MW a day, and raises the
+        error for the periods with 2025-10-09, and no data in December.
+    """
+
+    def query_load(_area, start, end):
+        if start <= pd.Timestamp("2025-10-09", tz="UTC") < end:
+            response = requests.Response()
+            response.status_code = status_code
+            raise requests.exceptions.HTTPError("Error", response=response)
+        if start >= pd.Timestamp("2025-12-01", tz="UTC"):
+            raise NoMatchingDataError
+        times = pd.date_range(start, end, freq="D", inclusive="left")
+        return pd.DataFrame({"Actual Load": 1.0}, index=times)
+
+    return query_load
+
+
+def test_fetch_entsoe_demand_with_failing_days(caplog):
+    """Test that the days that ENTSO-E fails to give are left out."""
+    with patch("utils.fetcher.EntsoePandasClient") as mock_client:
+        mock_client.return_value.query_load.side_effect = _query_load_failing(
+            400
+        )
+        result = utils.fetcher.fetch_entsoe_demand(
+            "dummy",
+            "CYP",
+            pd.Timestamp("2025-09-01", tz="UTC"),
+            pd.Timestamp("2026-01-01", tz="UTC"),
+        )
+
+    # The period is split into months, and October into days, so only
+    # 2025-10-09 is left out, and December has no data.
+    assert len(result) == 30 + 30 + 30
+    assert pd.Timestamp("2025-10-09", tz="UTC") not in result.index
+    assert "2025-10-09 00:00:00+00:00" in caplog.text
+    assert "left out" in caplog.text
+
+    # A period whose only day fails gives no data.
+    with patch("utils.fetcher.EntsoePandasClient") as mock_client:
+        mock_client.return_value.query_load.side_effect = _query_load_failing(
+            400
+        )
+        result = utils.fetcher.fetch_entsoe_demand(
+            "dummy",
+            "CYP",
+            pd.Timestamp("2025-10-09", tz="UTC"),
+            pd.Timestamp("2025-10-10", tz="UTC"),
+        )
+    assert result.empty
+
+
+def test_fetch_entsoe_demand_with_other_errors():
+    """Test that an error of ENTSO-E other than 400 is raised."""
+    with patch("utils.fetcher.EntsoePandasClient") as mock_client:
+        mock_client.return_value.query_load.side_effect = _query_load_failing(
+            500
+        )
+        with pytest.raises(requests.exceptions.HTTPError):
+            utils.fetcher.fetch_entsoe_demand(
+                "dummy",
+                "CYP",
+                pd.Timestamp("2025-09-01", tz="UTC"),
+                pd.Timestamp("2025-11-01", tz="UTC"),
+            )
