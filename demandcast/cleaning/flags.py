@@ -16,7 +16,8 @@ Description:
       shifted by whole hours from that of the same quarter of the other
       years.
     - daylight_saving: the daily profile, in local time, shifts across
-      a change of the clocks.
+      a change of the clocks with the clocks, or against them unlike
+      the same changes of the other years.
     - annual_total: the demand of a year of a country is more than a
       third away from its annual demand per capita times its population.
     - annual_change: the demand of a year, and its ratio to its annual
@@ -73,13 +74,24 @@ Description:
     of the clocks with that of the 14 days before it, without the day
     of the change, with the median demand of each hour, so that a few
     holidays, such as the carnival in Brazil, do not shift it. The
-    flags give the hours by which the profile has to move later. Some
-    demand follows the clocks less, so its flags are not errors: the
-    demand of the north-east of Brazil does not shift with the changes
-    of 2000 to 2002, the demand on the network of South Australia
-    follows the sun with its rooftop solar, and a sudden change of the
-    weather after a change of the clocks, such as in New Brunswick on
-    2026-03-08, can shift the profile of the heating.
+    flags give the hours by which the profile has to move later.
+
+    Some demand follows the sun more than the clocks, such as in the hot
+    regions of Mexico, in the north-east of Brazil, or on the network
+    of South Australia with its rooftop solar: its profile moves an hour
+    against a change of the clocks, later after the clocks go forward
+    and earlier after they go back, by a part of an hour that is about
+    the same in most years. So a shift against the change is flagged
+    only if it differs by 0.75 hours or more from the median shift of
+    the same changes (forward or back) of the other years, if there are
+    at least 2, such as when the times of a year leave out daylight
+    saving time. These shifts are found in steps of 0.1 hours, between
+    the hours of the profiles. A shift with the change cannot come
+    from the demand, so it is always flagged: the times of that part of
+    the year are wrong, such as the winters of Northern Ireland on
+    ENTSO-E, an hour late in every year. A sudden change of the weather
+    after a change of the clocks, such as in New Brunswick on
+    2026-03-08, can still shift the profile of the heating.
 
     The annual demand per capita and the population are those that
     DemandCast retrieves, and the annual flags are skipped if they have
@@ -138,10 +150,17 @@ MAX_LAG = 3
 LAG_SHARE = 0.4
 MIN_YEARS_OF_QUARTER = 3
 
-# The days before and after a change of the clocks, and the days that
-# each of them needs.
+# The days before and after a change of the clocks, the days that each
+# of them needs, and the changes of the other years that give the usual
+# shift of a change.
 DAYS_AROUND_CHANGE = 14
 MIN_DAYS_AROUND_CHANGE = 12
+MIN_OTHER_CHANGES = 2
+
+# The difference from the usual shift of the same changes of the other
+# years, in hours, that is flagged, and the step of the shifts.
+SHIFT_DIFFERENCE = 0.75
+SHIFT_STEP = 0.1
 
 # The share of the hours that a year needs, the factor away from the
 # annual demand per capita times the population that is flagged, and
@@ -401,6 +420,42 @@ def _get_lag(profile: np.ndarray, reference: np.ndarray) -> int:
     return lag if errors[lag] < LAG_SHARE * errors[0] else 0
 
 
+def _get_shift(profile: np.ndarray, reference: np.ndarray) -> float:
+    """
+    Get the hours, in steps of 0.1, by which a profile moves to match.
+
+    Parameters
+    ----------
+    profile : numpy.ndarray
+        The daily profile.
+    reference : numpy.ndarray
+        The daily profile to match.
+
+    Returns
+    -------
+    float
+        The hours by which the profile, between its hours, has to move
+        later to have the smallest squared difference with the
+        reference.
+    """
+    hours = np.arange(24)
+    closed = np.append(profile, profile[0])
+    shifts = np.arange(-MAX_LAG, MAX_LAG + SHIFT_STEP / 2, SHIFT_STEP)
+    errors = [
+        float(
+            (
+                (
+                    np.interp((hours - shift) % 24, np.arange(25), closed)
+                    - reference
+                )
+                ** 2
+            ).sum()
+        )
+        for shift in shifts
+    ]
+    return round(float(shifts[int(np.argmin(errors))]), 1)
+
+
 def _find_time_lags(cleaned: pd.Series, time_zone: str) -> pd.DataFrame:
     """
     Find the quarters whose profile is shifted from the other years.
@@ -466,7 +521,8 @@ def _find_daylight_saving_errors(
     pandas.DataFrame
         The flagged changes, from the days before to the days after,
         with the hours by which the profile after has to move later
-        ("value") and none ("reference").
+        ("value") and the usual hours of the same changes of the other
+        years ("reference").
     """
     if cleaned.empty:
         return pd.DataFrame(columns=COLUMNS)
@@ -478,11 +534,15 @@ def _find_daylight_saving_errors(
         hours.tz_localize("UTC").tz_convert(time_zone).tz_localize(None)
         - hours
     )
-    changes = hours[1:][offsets[1:] != offsets[:-1]]
+    changed = offsets[1:] != offsets[:-1]
+    changes = hours[1:][changed]
+    # The direction of each change: 1 when the clocks go forward, -1
+    # when they go back.
+    directions = np.sign((offsets[1:] - offsets[:-1])[changed].total_seconds())
 
-    rows = []
+    shifts = []
     period = pd.Timedelta(days=DAYS_AROUND_CHANGE)
-    for change in changes:
+    for change, direction in zip(changes, directions, strict=True):
         before = cleaned[(times > change - period) & (times <= change)]
         after = cleaned[
             (times > change + pd.Timedelta(days=1))
@@ -500,25 +560,51 @@ def _find_daylight_saving_errors(
             or profile_after is None
         ):
             continue
-        lag = _get_lag(profile_after, profile_before)
-        if lag:
-            day = (
-                pd.Timestamp(change)
-                .tz_localize("UTC")
-                .tz_convert(time_zone)
-                .tz_localize(None)
-                .normalize()
+        shifts.append(
+            (
+                change,
+                direction,
+                _get_lag(profile_after, profile_before),
+                _get_shift(profile_after, profile_before),
             )
-            rows.append(
-                {
-                    "start": day - period,
-                    "end": day + period,
-                    "flag": "daylight_saving",
-                    "period": f"{day:%Y-%m-%d}",
-                    "value": float(lag),
-                    "reference": 0.0,
-                }
-            )
+        )
+
+    rows = []
+    for change, direction, lag, shift in shifts:
+        # The usual shift of the same changes of the other years, and
+        # whether the profile moves with the clocks, against a demand
+        # that follows the sun more than the clocks.
+        others = [
+            other_shift
+            for other_change, other_direction, _, other_shift in shifts
+            if other_direction == direction and other_change != change
+        ]
+        usual = (
+            float(np.median(others))
+            if len(others) >= MIN_OTHER_CHANGES
+            else 0.0
+        )
+        if lag == 0 or (
+            lag * direction < 0 and abs(shift - usual) < SHIFT_DIFFERENCE
+        ):
+            continue
+        day = (
+            pd.Timestamp(change)
+            .tz_localize("UTC")
+            .tz_convert(time_zone)
+            .tz_localize(None)
+            .normalize()
+        )
+        rows.append(
+            {
+                "start": day - period,
+                "end": day + period,
+                "flag": "daylight_saving",
+                "period": f"{day:%Y-%m-%d}",
+                "value": float(lag),
+                "reference": round(usual, 1),
+            }
+        )
     return pd.DataFrame(rows, columns=COLUMNS)
 
 

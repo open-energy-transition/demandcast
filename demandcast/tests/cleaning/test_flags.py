@@ -325,3 +325,82 @@ def test_annual_errors_without_annual_values(monkeypatch):
     flags = _flag(demand, monkeypatch)
 
     assert flags.empty
+
+
+def _demand_of_years(time_zone_of_year: dict[int, str]) -> pd.Series:
+    """
+    Make an hourly demand from 2019 to 2022 that follows some clocks.
+
+    Returns
+    -------
+    pandas.Series
+        The demand, at the ends of the hours in UTC, which follows the
+        clocks of the time zone of each year.
+    """
+    parts = [
+        _demand_by_clock(
+            time_zone, f"{year}-01-01 01:00", f"{year + 1}-01-01 00:00"
+        )
+        for year, time_zone in time_zone_of_year.items()
+    ]
+    return pd.concat(parts)
+
+
+@pytest.mark.parametrize(
+    ("time_zones", "late_in_winter", "expected"),
+    [
+        # A demand that follows the sun (UTC) more than the clocks in
+        # every year moves against every change, which is not flagged.
+        (["UTC"] * 4, False, []),
+        # A year whose times leave out daylight saving time moves
+        # against its changes, unlike the other years.
+        (
+            ["Europe/London", "Europe/London", "UTC", "Europe/London"],
+            False,
+            [["2021-03-28", -1.0], ["2021-10-31", 1.0]],
+        ),
+        # Winters an hour late in every year move with every change,
+        # which a demand cannot do.
+        (
+            ["Europe/London"] * 4,
+            True,
+            [
+                [day, value]
+                for year, spring, autumn in [
+                    (2019, "03-31", "10-27"),
+                    (2020, "03-29", "10-25"),
+                    (2021, "03-28", "10-31"),
+                    (2022, "03-27", "10-30"),
+                ]
+                for day, value in [
+                    (f"{year}-{spring}", 1.0),
+                    (f"{year}-{autumn}", -1.0),
+                ]
+            ],
+        ),
+    ],
+)
+def test_daylight_saving_against_other_years(
+    monkeypatch, time_zones, late_in_winter, expected
+):
+    """Test that the changes are compared with those of other years."""
+    demand = _demand_of_years(
+        dict(zip(range(2019, 2023), time_zones, strict=True))
+    )
+    if late_in_winter:
+        times = pd.DatetimeIndex(demand.index)
+        winter = (
+            times.tz_localize("UTC")
+            .tz_convert("Europe/London")
+            .tz_localize(None)
+            == times
+        )
+        demand.index = times + pd.to_timedelta(
+            np.asarray(winter, dtype=int), unit="h"
+        )
+        demand = demand[~demand.index.duplicated()].sort_index()
+
+    flags = _flag(demand, monkeypatch, code="GBR_GB")
+
+    daylight_saving = flags[flags["flag"] == "daylight_saving"]
+    assert daylight_saving[["period", "value"]].to_numpy().tolist() == expected

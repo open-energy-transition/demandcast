@@ -24,34 +24,6 @@ reviews:
     flag: daylight_saving
     verdict: false_positive
     note: The times are right (NEM time, UTC+10), but the demand on the network follows the sun with the rooftop solar, not the clocks.
-  - data_source: ccei
-    code: CAN_QC
-    flag: daylight_saving
-    periods:
-      - "2023-11-05"
-    verdict: false_positive
-    note: The weather after the change shifts the heating; the data of Hydro-Québec has the same flag.
-  - data_source: hydroquebec
-    code: CAN_QC
-    flag: daylight_saving
-    periods:
-      - "2023-11-05"
-    verdict: false_positive
-    note: The weather after the change shifts the heating.
-  - data_source: ccei
-    code: CAN_NB
-    flag: daylight_saving
-    periods:
-      - "2026-03-08"
-    verdict: false_positive
-    note: The weather after the change shifts the heating; the data of NB Power has the same flag.
-  - data_source: nbpower
-    code: CAN_NB
-    flag: daylight_saving
-    periods:
-      - "2026-03-08"
-    verdict: false_positive
-    note: The weather after the change shifts the heating.
   - data_source: ons
     code: BRA_NE
     flag: daylight_saving
@@ -511,26 +483,12 @@ reviews:
     verdict: false_positive
     note: A few days before the change; the times of 2016-10-30 to 2016-11-17, an hour early, are corrected.
   - data_source: entsoe
-    code: SWE
-    flag: daylight_saving
-    periods:
-      - "2022-03-27"
-    verdict: false_positive
-    note: A single change of the clocks.
-  - data_source: entsoe
     code: FRA
     flag: daylight_saving
     periods:
       - "2024-03-31"
     verdict: false_positive
     note: Easter Sunday, 31 March 2024, is in the days after the change.
-  - data_source: eia
-    code: USA_TEX
-    flag: daylight_saving
-    periods:
-      - "2026-03-08"
-    verdict: false_positive
-    note: A single change of the clocks.
   - data_source: aemo_nem
     code: AUS_NSW
     flag: daylight_saving
@@ -563,27 +521,12 @@ reviews:
     verdict: false_positive
     note: A single quarter.
   - data_source: cenace
-    code: MEX_BCS
-    flag: daylight_saving
-    verdict: false_positive
-    note: The times are read in the time of central Mexico, as for the Centre, which is never flagged, but the demand of the hot regions follows the sun more than the clocks.
-  - data_source: cenace
     code: MEX_NES
     flag: daylight_saving
     verdict: false_positive
     note: The times are read in the time of central Mexico, as for the Centre, which is never flagged, but the demand of the hot regions follows the sun more than the clocks.
   - data_source: cenace
-    code: MEX_NTE
-    flag: daylight_saving
-    verdict: false_positive
-    note: The times are read in the time of central Mexico, as for the Centre, which is never flagged, but the demand of the hot regions follows the sun more than the clocks.
-  - data_source: cenace
     code: MEX_OCC
-    flag: daylight_saving
-    verdict: false_positive
-    note: The times are read in the time of central Mexico, as for the Centre, which is never flagged, but the demand of the hot regions follows the sun more than the clocks.
-  - data_source: cenace
-    code: MEX_ORI
     flag: daylight_saving
     verdict: false_positive
     note: The times are read in the time of central Mexico, as for the Centre, which is never flagged, but the demand of the hot regions follows the sun more than the clocks.
@@ -597,11 +540,6 @@ reviews:
     flag: time_lag
     verdict: false_positive
     note: The region includes Sonora, which has no daylight saving time, so its demand follows two clocks.
-  - data_source: cenace
-    code: MEX_PEN
-    flag: daylight_saving
-    verdict: false_positive
-    note: The region includes Quintana Roo, which has had no daylight saving time since 2015, so its demand follows two clocks.
   - data_source: cenace
     code: MEX_PEN
     flag: time_lag
