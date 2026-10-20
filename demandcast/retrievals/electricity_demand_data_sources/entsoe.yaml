@@ -8,8 +8,8 @@ definition:
     embedded_generation: unknown
     network_losses: included
     storage_charging: excluded
-    power_plant_use: excluded
-    note: ENTSO-E defines the actual total load as the generation, with the embedded generation, plus the imports, minus the exports and the energy for storage, with the losses of the networks, but many system operators leave out the solar behind the meters (see the flags).
+    power_plant_use: unknown
+    note: ENTSO-E defines the actual total load as the net generation of the plants on the transmission and distribution networks plus the imports minus the exports and the power absorbed by storage, so with the losses of the networks. Each system operator may use the gross generation instead, with the use of the power plants. Many system operators leave out the solar behind the meters (see the flags).
 entities:
   - country_name: Albania
     country_code: ALB

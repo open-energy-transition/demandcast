@@ -9,7 +9,7 @@ definition:
     network_losses: included
     storage_charging: unknown
     power_plant_use: unknown
-    note: The demand is the generation plus the imports minus the exports, so it has the losses of the networks.
+    note: The demand is the generation plus the imports minus the exports, so it includes the losses of the networks. Whether the generation counts the micro generation of the consumers is not documented.
 entities:
   - country_name: Uruguay
     country_code: URY

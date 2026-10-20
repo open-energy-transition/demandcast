@@ -4,12 +4,12 @@ licence:
   url: https://pgcb.gov.bd/l
 definition:
   - start_date: 2014-01-01
-    quantity: total demand of the East and West grids
-    embedded_generation: unknown
-    network_losses: unknown
+    quantity: total generation of the East and West grids, with the imports
+    embedded_generation: excluded
+    network_losses: included
     storage_charging: unknown
     power_plant_use: unknown
-    note: Not documented by the data source.
+    note: The load curve of the reports is the generation curve, the demand at the generation end, made of the generation of the power stations on the grid and the imports from India and Nepal. It leaves out the load shed in the shortages of supply, which the reports add to the generation for their demand, and the rooftop solar, which is not among the power stations.
 entities:
   - country_name: Bangladesh
     country_code: BGD

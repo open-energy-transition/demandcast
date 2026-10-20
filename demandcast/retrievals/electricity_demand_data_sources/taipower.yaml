@@ -9,7 +9,7 @@ definition:
     network_losses: unknown
     storage_charging: unknown
     power_plant_use: unknown
-    note: Not documented by the data source.
+    note: The dataset on Zenodo does not define the load. Its midday falls slowly compared with the morning and afternoon, from 1.058 in 2017 to 1.026 in 2022, which can be rooftop solar left out.
 entities:
   - country_name: Taiwan
     country_code: TWN
