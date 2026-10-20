@@ -30,9 +30,13 @@ Description:
       by 20% within an hour.
 
     The values left are then averaged in each hour, at its end, if they
-    cover at least half of the hour (low_coverage otherwise). The
-    removed values are saved next to the cleaned data, as the periods
-    of each rule.
+    cover at least half of the hour (low_coverage otherwise): each value
+    covers the time since the value before it, at most its resolution.
+    The resolution is that around each value, the median time between
+    the 25 values around it, since it can change within a data source,
+    such as from 30 to 5 minutes in the NEM of Australia in October
+    2021. The removed values are saved next to the cleaned data, as the
+    periods of each rule.
 """
 
 import logging
@@ -71,13 +75,21 @@ SPIKE_DURATION = pd.Timedelta(minutes=30)
 SPIKE_CHANGE_SUBHOURLY = 0.2
 SPIKE_CHANGE_HOURLY = 0.5
 
-# The share of the values of an hour that its average needs.
+# The share of an hour that its values need to cover for its average.
 MIN_COVERAGE = 0.5
 
+# The values around a value whose median time apart is its resolution.
+RESOLUTION_VALUES = 25
 
-def _step(values: pd.Series) -> pd.Timedelta:
+
+def _get_resolutions(values: pd.Series) -> pd.Series:
     """
-    Get the resolution of a time series.
+    Get the resolution of the time series around each value.
+
+    The resolution of a data source can change, such as from 30 to 5
+    minutes in the NEM of Australia in October 2021, or from an hour to
+    15 minutes in some countries of ENTSO-E, so each value has the
+    resolution of the values around it.
 
     Parameters
     ----------
@@ -86,13 +98,15 @@ def _step(values: pd.Series) -> pd.Timedelta:
 
     Returns
     -------
-    pandas.Timedelta
-        The median time between its values, or one hour if it has less
-        than two values.
+    pandas.Series
+        The median time between the values around each value, or one
+        hour if the time series has less than two values.
     """
-    if len(values) < 2:
-        return pd.Timedelta(hours=1)
-    return pd.Timedelta(values.index.to_series().diff().median())
+    seconds = values.index.to_series().diff().dt.total_seconds()
+    median = seconds.rolling(
+        RESOLUTION_VALUES, center=True, min_periods=1
+    ).median()
+    return pd.to_timedelta(median.fillna(3600), unit="s")
 
 
 def _find_implausible(values: pd.Series) -> pd.Series:
@@ -134,7 +148,7 @@ def _find_frozen(values: pd.Series) -> pd.Series:
     duration = (
         times.groupby(runs).transform("max")
         - times.groupby(runs).transform("min")
-        + _step(values)
+        + _get_resolutions(values).groupby(runs).transform("first")
     )
     return pd.Series(
         (duration >= FROZEN_DURATION).to_numpy(), index=values.index
@@ -190,24 +204,32 @@ def _find_spikes(values: pd.Series) -> pd.Series:
     pandas.Series
         True for the values of the spikes.
     """
-    step = _step(values)
-    change = (
-        SPIKE_CHANGE_SUBHOURLY
-        if step < pd.Timedelta(minutes=30)
-        else SPIKE_CHANGE_HOURLY
+    # The change and the longest run of a spike at the resolution of
+    # each value.
+    resolutions = _get_resolutions(values)
+    changes = np.where(
+        resolutions < pd.Timedelta(minutes=30),
+        SPIKE_CHANGE_SUBHOURLY,
+        SPIKE_CHANGE_HOURLY,
     )
-    longest = max(1, min(3, int(SPIKE_DURATION / step)))
+    longest = np.clip(
+        (SPIKE_DURATION / resolutions).to_numpy().astype(int), 1, 3
+    )
     x = values.to_numpy()
     spikes = np.zeros(len(x), dtype=bool)
-    for length in range(1, longest + 1):
+    for length in range(1, 4):
         if len(x) < length + 2:
             break
         # The values before and after the run, which must be at the same
-        # level, and the run, which must leave it in one direction.
+        # level, and the run, which must leave it in one direction, at
+        # the resolution of its first value.
         before = x[: len(x) - length - 1]
         after = x[length + 1 :]
+        change = changes[1 : len(x) - length]
         level = (before + after) / 2
-        same_level = np.abs(before - after) < change / 2 * level
+        same_level = (np.abs(before - after) < change / 2 * level) & (
+            longest[1 : len(x) - length] >= length
+        )
         up = np.ones(len(before), dtype=bool)
         down = np.ones(len(before), dtype=bool)
         for position in range(length):
@@ -254,16 +276,17 @@ def _find_removed(values: pd.Series, time_zone: str) -> pd.Series:
     return removed
 
 
-def _resample_hourly(values: pd.Series, step: pd.Timedelta) -> pd.DataFrame:
+def _resample_hourly(values: pd.Series) -> pd.DataFrame:
     """
     Average the values of each hour, at its end.
+
+    Each value covers the time since the value before it, at most its
+    resolution, so that a value after a gap does not cover the gap.
 
     Parameters
     ----------
     values : pandas.Series
         The demand, at the resolution of the data source.
-    step : pandas.Timedelta
-        The resolution of the data source.
 
     Returns
     -------
@@ -272,10 +295,13 @@ def _resample_hourly(values: pd.Series, step: pd.Timedelta) -> pd.DataFrame:
         whether they cover enough of the hour ("covered"), for each hour
         with values.
     """
+    resolutions = _get_resolutions(values)
+    gaps = values.index.to_series().diff()
+    covered = gaps.where(gaps < resolutions, resolutions).dt.total_seconds()
     hours = values.resample("1h", label="right", closed="right")
     hourly = pd.DataFrame({"Load (MW)": hours.mean(), "count": hours.count()})
-    expected = max(1.0, pd.Timedelta(hours=1) / step)
-    hourly["covered"] = hourly["count"] >= MIN_COVERAGE * expected
+    seconds = covered.resample("1h", label="right", closed="right").sum()
+    hourly["covered"] = seconds >= MIN_COVERAGE * 3600
     return hourly[hourly["count"] > 0]
 
 
@@ -334,12 +360,16 @@ def clean_data(code: str, data_source: str) -> pd.Series:
             "processed", code, data_source
         )
     )["Load (MW)"].sort_index()
-    step = _step(processed)
+    step = (
+        _get_resolutions(processed).max()
+        if len(processed)
+        else pd.Timedelta(hours=1)
+    )
 
     # Remove the values of the rules, at the resolution of the data
     # source, and average the others in each hour.
     removed = _find_removed(processed, str(utils.entities.get_time_zone(code)))
-    hourly = _resample_hourly(processed[removed == ""], step)
+    hourly = _resample_hourly(processed[removed == ""])
     cleaned = hourly.loc[hourly["covered"], "Load (MW)"]
     cleaned.index.name = processed.index.name
     cleaned.name = processed.name
