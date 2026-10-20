@@ -8,6 +8,7 @@ Description:
 
 import email.message
 import re
+import traceback
 import urllib.error
 from io import BytesIO
 from unittest.mock import patch
@@ -703,3 +704,25 @@ def test_fetch_entsoe_demand_with_other_errors():
                 pd.Timestamp("2025-09-01", tz="UTC"),
                 pd.Timestamp("2025-11-01", tz="UTC"),
             )
+
+
+def test_fetch_entsoe_demand_errors_without_api_key():
+    """Test that the errors of ENTSO-E do not show the API key."""
+    with patch("utils.fetcher.EntsoePandasClient") as mock_client:
+        mock_client.return_value.query_load.side_effect = (
+            requests.exceptions.ConnectionError(
+                "Max retries exceeded with url: /api?securityToken=secret-key"
+            )
+        )
+        with pytest.raises(requests.exceptions.ConnectionError) as error:
+            utils.fetcher.fetch_entsoe_demand(
+                "secret-key",
+                "FRA",
+                pd.Timestamp("2023-01-01"),
+                pd.Timestamp("2023-01-02"),
+            )
+
+    # The error and its traceback do not have the API key.
+    traceback_text = "".join(traceback.format_exception(error.value))
+    assert "secret-key" not in traceback_text
+    assert "securityToken=***" in traceback_text
