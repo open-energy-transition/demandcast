@@ -11,8 +11,15 @@ Description:
     few hours.
 
     The report of a day has the data of the day before. Its load curve
-    gives the total demand of the East and West grids in MW at the
+    gives the total generation of the East and West grids in MW at the
     times of the day in Bangladesh, which has no daylight saving time.
+    It is the generation of the power stations on the grid and the
+    imports from India and Nepal, which the reports call the demand at
+    the generation end: its values at the day and evening peaks are the
+    peak generation of the summary. It leaves out the load shed in the
+    shortages of supply, which the reports add to the generation for
+    their demand, and the rooftop solar, which is not among the power
+    stations.
     The readings are at the full hours: the half hours in between are
     the averages of the hours around them, except for one or two in
     the evening peak, so the module keeps the full hours only. The

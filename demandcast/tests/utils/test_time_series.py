@@ -374,3 +374,34 @@ def test_clean_data(sample_time_series):
         ValueError, match="The time series must be timezone-aware"
     ):
         utils.time_series.clean_data(cleaned_time_series, "TestVariable")
+
+
+def test_convert_from_yearly_to_hourly_with_missing_midnight():
+    """
+    Test the conversion when a year starts at a missing midnight.
+
+    Peru started daylight saving time at 00:00 on 1990-01-01, so that
+    time does not exist, and the year starts an hour later.
+    """
+    time_zone = pytz.timezone("America/Lima")
+    values = pd.Series([100, 200], index=pd.Index([1990, 1991]))
+
+    hourly_series = utils.time_series.convert_from_yearly_to_hourly(
+        values, time_zone
+    )
+
+    assert hourly_series.index[0] == pd.Timestamp(
+        "1990-01-01 05:00:00", tz="UTC"
+    )
+    assert hourly_series.index[-1] == pd.Timestamp(
+        "1992-01-01 04:00:00", tz="UTC"
+    )
+    assert (
+        hourly_series.index.to_series()
+        .diff()
+        .dropna()
+        .eq(pd.Timedelta(hours=1))
+        .all()
+    )
+    assert hourly_series.iloc[0] == 100
+    assert hourly_series.iloc[-1] == 200

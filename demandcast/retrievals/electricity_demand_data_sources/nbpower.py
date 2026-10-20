@@ -12,6 +12,10 @@ Description:
     the file of a month runs from 00:00 of its first day to 23:00 of its
     last day. The current month is not in the archive yet.
 
+    The module reads the NB load (NB_LOAD), which is the NB demand
+    (NB_DEMAND) minus the estimated transmission losses, about 3 to
+    4% lower. The NB load of CCEI is the same.
+
     Source: https://tso.nbpower.com/Public/en/system_information_archive.aspx
 """
 
