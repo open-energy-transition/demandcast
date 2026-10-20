@@ -12,20 +12,29 @@ Description:
 
     The two historical sources define the demand differently. The
     demand of Ember is the electricity generated and imported, less the
-    exports, so it includes the losses of the networks, as the demand
-    that the system operators measure does. The electric power
-    consumption of the World Bank (EG.USE.ELEC.KH.PC, from the IEA) is
-    the production of the power plants less the losses of transmission,
-    distribution and transformation and the own use of the plants, so
-    it is lower: Ember is 12% higher than the World Bank in the median
-    country, and 6% to 18% in half of them. Averaging them gave a value
-    between the two definitions that jumped when one of them was
-    missing, such as by 11% for India in 2024. Ember gives the value,
-    then, and the World Bank fills the countries and years that Ember
-    does not have (before 2000, and about 46 countries), times the
-    ratio of Ember to the World Bank of the country in the years that
-    both have, or the median of these ratios for a country without such
-    years.
+    exports: the electricity supplied, with the losses of the networks,
+    and with the generation that is not on the networks of the system
+    operators, such as rooftop solar and the plants of industries for
+    their own use. The electric power consumption of the World Bank
+    (EG.USE.ELEC.KH.PC, from the IEA) is the production of the power
+    plants less the losses of transmission, distribution and
+    transformation and the own use of the plants: the consumption of
+    the consumers. Ember is 12% higher in the median country, from 1% to
+    5% where the losses are small, such as in Korea or Chile, to 15% to
+    21% where they are large, such as in South Africa, Pakistan or
+    Algeria. The hourly demand of the system operators includes the
+    losses of their networks, but not the generation that is not on
+    them: in the median national series, its yearly demand is 0.94
+    times that of Ember and 1.05 times that of the World Bank, and it
+    gets closer to Ember as the embedded generation is added to it for
+    the gross demand that DemandCast models. Averaging the two sources
+    gave a value between the definitions that jumped when one of them
+    was missing, such as by 8% for India in 2025. Ember, which counts
+    the demand whatever supplies it, gives the value, then, and the
+    World Bank fills the countries and years that Ember does not have
+    (before 2000, and about 46 countries), times the ratio of Ember to
+    the World Bank of the country in the years that both have, or the
+    median of these ratios for a country without enough such years.
 
     The growth rates of the scenarios are those of the final energy of
     electricity per capita (Final Energy|Electricity per capita), which
