@@ -2,6 +2,21 @@ licence:
   redistribute: true
   terms: Use for any purpose with attribution to EPIAS.
   url: https://seffaflik.epias.com.tr/about/about
+definition:
+  - start_date: 2015-12-31
+    quantity: real-time consumption with the licence-exempt generation
+    embedded_generation: added
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The real-time consumption is the real-time generation alone, so DemandCast adds the licence-exempt generation of EPIAS (#286), which is fed into the network; the solar consumed where it is produced is left out.
+  - start_date: 2020-12-30
+    quantity: real-time consumption
+    embedded_generation: included
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The real-time consumption includes the licence-exempt generation fed into the network; the solar consumed where it is produced is left out.
 entities:
   - country_name: Turkey
     country_code: TUR

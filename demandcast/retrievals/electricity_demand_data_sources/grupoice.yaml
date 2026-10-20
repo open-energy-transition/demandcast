@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: CC-BY 4.0 license, as the open data of ICE. Use for any purpose with attribution.
   url: https://www.grupoice.com/wps/portal/ICE/Transparencia/datos-abiertos
+definition:
+  - start_date: 2012-03-01
+    quantity: demand of the national system
+    embedded_generation: unknown
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: Not documented by the data source.
 entities:
   - country_name: Costa Rica
     country_code: CRI

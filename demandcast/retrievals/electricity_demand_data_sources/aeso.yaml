@@ -2,6 +2,14 @@ licence:
   redistribute: false
   terms: Use and copy for non-commercial, personal or educational purposes, without modification.
   url: https://www.aeso.ca/legal
+definition:
+  - start_date: 2001-01-01
+    quantity: Alberta Internal Load (AIL)
+    embedded_generation: included
+    network_losses: included
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The AIL includes the load behind the fence of industrial sites, supplied by their own generation, and the transmission losses.
 entities:
   - subdivision_name: Alberta
     subdivision_code: AB

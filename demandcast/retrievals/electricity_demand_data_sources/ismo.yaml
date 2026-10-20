@@ -2,6 +2,14 @@ licence:
   redistribute: false
   terms: All rights reserved. Access for personal use only, without republishing, reproducing or redistributing the material of the website.
   url: https://www.ismo.gov.pk/terms-and-conditions
+definition:
+  - start_date: 2024-07-01
+    quantity: actual metered demand of the system without K-Electric
+    embedded_generation: excluded
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The demand leaves out K-Electric, which supplies Karachi, and the solar of the consumers, which grows fast from 2023.
 entities:
   - country_name: Pakistan
     country_code: PAK

@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: Use for any purpose with attribution.
   url: https://www.neso.energy/data-portal/neso-open-licence
+definition:
+  - start_date: 2001-01-01
+    quantity: national demand with the embedded wind and solar generation
+    embedded_generation: added
+    network_losses: included
+    storage_charging: excluded
+    power_plant_use: excluded
+    note: The national demand leaves out the station load, the pumping of storage, the exports and the embedded generation, whose estimates of wind and solar DemandCast adds (#279); the other embedded generation is left out.
 entities:
   - subdivision_name: Great Britain
     subdivision_code: GB

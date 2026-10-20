@@ -2,6 +2,21 @@ licence:
   redistribute: false
   terms: All rights reserved by PUCSL.
   url: https://www.pucsl.gov.lk
+definition:
+  - start_date: 2023-01-01
+    quantity: dispatch of the power plants
+    embedded_generation: excluded
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The demand is the sum of the dispatch of the power plants, without the rooftop solar.
+  - start_date: 2025-07-11
+    quantity: dispatch of the power plants with the rooftop solar
+    embedded_generation: included
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: PUCSL adds its estimate of the rooftop solar.
 entities:
   - country_name: Sri Lanka
     country_code: LKA

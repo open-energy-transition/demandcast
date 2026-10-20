@@ -2,6 +2,14 @@ licence:
   redistribute: false
   terms: Reproduction, modification, distribution and / or transmission of the information is strictly prohibited.
   url: https://cammesaweb.cammesa.com/politicas-de-acceso/
+definition:
+  - start_date: 2025-01-01
+    quantity: demand of the national system (SADI)
+    embedded_generation: unknown
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: Not documented by the data source.
 entities:
   - country_name: Argentina
     country_code: ARG

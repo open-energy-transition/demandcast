@@ -76,6 +76,17 @@ def add_data_source(tmp_folders, tmp_path, monkeypatch):
                         "terms": "Open data.",
                         "url": "https://example.org/terms",
                     },
+                    "definition": [
+                        {
+                            "start_date": datetime.date(2000, 1, 1),
+                            "quantity": "demand",
+                            "embedded_generation": "unknown",
+                            "network_losses": "unknown",
+                            "storage_charging": "unknown",
+                            "power_plant_use": "unknown",
+                            "note": "Not documented.",
+                        }
+                    ],
                     "entities": entities,
                 },
                 file,

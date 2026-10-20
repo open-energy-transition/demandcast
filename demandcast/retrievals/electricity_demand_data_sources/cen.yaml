@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: Reproduction citing the source and without altering the meaning. Commercial distribution needs prior authorisation.
   url: https://www.coordinador.cl/terminos-y-condiciones/
+definition:
+  - start_date: 2016-01-01
+    quantity: demand of the national system
+    embedded_generation: unknown
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: Not documented by the data source.
 entities:
   - country_name: Chile
     country_code: CHL

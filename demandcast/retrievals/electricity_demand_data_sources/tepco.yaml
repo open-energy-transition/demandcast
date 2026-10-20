@@ -2,6 +2,14 @@ licence:
   redistribute: false
   terms: Personal use only. Redistribution is not allowed.
   url: https://www4.tepco.co.jp/en/pg/legal/index-e.html
+definition:
+  - start_date: 2016-04-01
+    quantity: actual demand of the service area
+    embedded_generation: unknown
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: Not documented by the data source.
 entities:
   - subdivision_name: Kantō
     subdivision_code: Kantō

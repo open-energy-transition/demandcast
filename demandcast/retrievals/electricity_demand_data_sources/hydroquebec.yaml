@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: CC BY-NC 4.0 license. Non-commercial use with attribution to Hydro-Québec.
   url: https://donnees.hydroquebec.com/explore/dataset/historique-demande-electricite-quebec/information/
+definition:
+  - start_date: 2019-01-01
+    quantity: demand of the control centre of Hydro-Québec, in real time
+    embedded_generation: unknown
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The demand is computed in real time and is not the official data.
 entities:
   - subdivision_name: Quebec
     subdivision_code: QC

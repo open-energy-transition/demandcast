@@ -2,6 +2,14 @@ licence:
   redistribute: true
   terms: Open data, without restriction of use, from the public data portal of Korea.
   url: https://www.data.go.kr/data/15065266/fileData.do
+definition:
+  - start_date: 2013-01-01
+    quantity: national demand of KPX
+    embedded_generation: excluded
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The demand of KPX leaves out the solar behind the meters and that of power purchase agreements (see the flags).
 entities:
   - country_name: South Korea
     country_code: KOR
