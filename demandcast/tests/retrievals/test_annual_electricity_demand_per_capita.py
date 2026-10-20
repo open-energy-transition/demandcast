@@ -123,14 +123,26 @@ def test_download_of_unknown_variable():
 
 
 def test_get_historical_data():
-    """Test how the data of Ember and the World Bank is combined."""
+    """Test that Ember is completed by the World Bank scaled to it."""
+    # Ember is 10% above the World Bank in France, 20% in Spain, and has
+    # no data of Germany, and 2 years of Italy.
     ember_data = pd.DataFrame(
-        {2020: [7000.0, np.nan], 2021: [7100.0, 6700.0]},
-        index=["FRA", "DEU"],
+        {
+            2019: [7700.0, 6000.0, np.nan, np.nan],
+            2020: [7920.0, 6120.0, np.nan, 5000.0],
+            2021: [np.nan, 6240.0, np.nan, 5100.0],
+            2022: [8360.0, np.nan, np.nan, np.nan],
+        },
+        index=["FRA", "ESP", "DEU", "ITA"],
     )
     world_bank_data = pd.DataFrame(
-        {2020: [6400.0, 6200.0], 2021: [np.nan, 6300.0]},
-        index=["FRA", "DEU"],
+        {
+            2019: [7000.0, 5000.0, 6000.0, 4000.0],
+            2020: [7200.0, 5100.0, 6100.0, 4500.0],
+            2021: [7400.0, 5200.0, 6200.0, 4600.0],
+            2022: [7600.0, 5300.0, 6300.0, 4700.0],
+        },
+        index=["FRA", "ESP", "DEU", "ITA"],
     )
 
     with (
@@ -145,9 +157,29 @@ def test_get_historical_data():
     ):
         demand = annual_demand.get_historical_data()
 
-    # The average where both have data, and the one that has otherwise.
-    assert demand.loc["FRA"].to_dict() == {2020: 6700.0, 2021: 7100.0}
-    assert demand.loc["DEU"].to_dict() == {2020: 6200.0, 2021: 6500.0}
+    # Ember gives the value, and the World Bank fills the years that it
+    # does not have, times the ratio of the country (1.1 in France, 1.2
+    # in Spain), or the median of the countries (1.15) for Germany and
+    # for Italy, which has too few years of both.
+    assert demand.loc["FRA"].round(2).to_dict() == {
+        2019: 7700.0,
+        2020: 7920.0,
+        2021: 8140.0,
+        2022: 8360.0,
+    }
+    assert demand.loc["ESP", 2022] == pytest.approx(6360.0)
+    assert demand.loc["DEU"].round(2).to_dict() == {
+        2019: 6900.0,
+        2020: 7015.0,
+        2021: 7130.0,
+        2022: 7245.0,
+    }
+    assert demand.loc["ITA"].round(2).to_dict() == {
+        2019: 4600.0,
+        2020: 5000.0,
+        2021: 5100.0,
+        2022: 5405.0,
+    }
 
 
 @pytest.mark.parametrize("code", ["FRA", "IND_KL"])

@@ -127,7 +127,9 @@ The report also counts the checks that each data source has failed in a row, fro
 
 ### Annual electricity demand per capita
 
-The module `demandcast/retrievals/annual_electricity_demand_per_capita.py` retrieves annual electricity demand per capita data from the World Bank and Ember for the historical period and from the Integrated Assessment Modeling Consortium (IAMC) database for different future scenarios.
+The module `demandcast/retrievals/annual_electricity_demand_per_capita.py` retrieves annual electricity demand per capita data from Ember and the World Bank for the historical period and from the Integrated Assessment Modeling Consortium (IAMC) database for different future scenarios.
+
+The demand of Ember is the electricity generated and imported, less the exports, so it includes the losses of the networks, like the demand that system operators measure. The electric power consumption of the World Bank leaves out these losses and the own use of the power plants, and is about 12% lower in the median country. Ember gives the historical values, and the World Bank fills the countries and years that Ember does not have (before 2000, and about 46 countries), times the ratio of Ember to the World Bank of the country in the years that both have, or the median of these ratios. The future scenarios apply the growth rates of the final energy of electricity per capita of the IAMC database to the last historical value.
 
 ```bash
 cd demandcast

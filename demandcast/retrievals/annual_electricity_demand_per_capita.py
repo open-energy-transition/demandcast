@@ -9,12 +9,36 @@ Description:
     based on growth rates from the IAMC scenarios. The electricity
     demand data is extracted for the countries and subdivisions of
     interest and saved into CSV and Parquet files.
+
+    The two historical sources define the demand differently. The
+    demand of Ember is the electricity generated and imported, less the
+    exports, so it includes the losses of the networks, as the demand
+    that the system operators measure does. The electric power
+    consumption of the World Bank (EG.USE.ELEC.KH.PC, from the IEA) is
+    the production of the power plants less the losses of transmission,
+    distribution and transformation and the own use of the plants, so
+    it is lower: Ember is 12% higher than the World Bank in the median
+    country, and 6% to 18% in half of them. Averaging them gave a value
+    between the two definitions that jumped when one of them was
+    missing, such as by 11% for India in 2024. Ember gives the value,
+    then, and the World Bank fills the countries and years that Ember
+    does not have (before 2000, and about 46 countries), times the
+    ratio of Ember to the World Bank of the country in the years that
+    both have, or the median of these ratios for a country without such
+    years.
+
+    The growth rates of the scenarios are those of the final energy of
+    electricity per capita (Final Energy|Electricity per capita), which
+    leaves out the losses as the World Bank does, so their projections
+    from the demand of Ember assume that the share of the losses stays
+    the same.
 """
 
 import logging
 import os
 from typing import cast
 
+import numpy as np
 import pandas as pd
 import utils.config
 import utils.entities
@@ -23,6 +47,10 @@ import utils.time_series
 from tqdm import tqdm
 
 from retrievals.socio_economic_data_sources import ember, iiasa, world_bank
+
+# The years that Ember and the World Bank both need for the ratio of a
+# country.
+MIN_YEARS_OF_BOTH = 3
 
 
 def get_available_scenarios() -> list[str]:
@@ -68,10 +96,15 @@ def get_historical_data() -> pd.DataFrame:
     """
     Get historical electricity demand per capita data.
 
+    The demand per capita of Ember is completed by that of the World
+    Bank, times the ratio of Ember to the World Bank of each country,
+    since the World Bank leaves out the losses of the networks.
+
     Returns
     -------
     pandas.DataFrame
-        The historical electricity demand per capita data.
+        The historical electricity demand per capita data in kWh, by
+        country code (rows) and year (columns).
     """
     # Download the electricity demand per capita from Ember.
     ember_electricity_demand_per_capita = (
@@ -83,17 +116,25 @@ def get_historical_data() -> pd.DataFrame:
         "electricity_demand_per_capita"
     )
 
-    # Merge the two datasets by averaging them.
-    electricity_demand_per_capita = (
-        world_bank_electricity_demand_per_capita
-        + ember_electricity_demand_per_capita
-    ) / 2
+    # The ratio of Ember to the World Bank of each country, the median
+    # of the years that both have, if there are enough of them, or the
+    # median of the countries.
+    ratios = (
+        ember_electricity_demand_per_capita
+        / world_bank_electricity_demand_per_capita
+    ).replace([np.inf, -np.inf], np.nan)
+    country_ratios = ratios.median(axis=1).where(
+        ratios.count(axis=1) >= MIN_YEARS_OF_BOTH
+    )
+    country_ratios = country_ratios.reindex(
+        world_bank_electricity_demand_per_capita.index
+    ).fillna(country_ratios.median())
 
-    # Where the combined DataFrame is NaN because one of the datasets is
-    # missing, use the other dataset.
-    return electricity_demand_per_capita.fillna(
-        world_bank_electricity_demand_per_capita
-    ).fillna(ember_electricity_demand_per_capita)
+    # Fill the countries and years that Ember does not have with the
+    # World Bank, scaled to Ember.
+    return ember_electricity_demand_per_capita.combine_first(
+        world_bank_electricity_demand_per_capita.mul(country_ratios, axis=0)
+    )
 
 
 def run_data_retrieval(
