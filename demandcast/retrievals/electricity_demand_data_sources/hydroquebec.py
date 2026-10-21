@@ -9,6 +9,10 @@ Description:
     value is the average demand in MW of the hour, computed in real time
     by the control centre of Hydro-Québec and not the official data.
 
+    Hydro-Québec adds the data of a year some months after the year is
+    over: the live check found the data of 2025 in October 2026. The end
+    date of the YAML file is then moved by hand.
+
     Source: https://donnees.hydroquebec.com/explore/dataset/historique-demande-electricite-quebec/information/
 """
 

@@ -204,34 +204,38 @@ def test_check_data_source_without_requests(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("end", "messages"),
+    ("hours_after_end_date", "found"),
     [
         # The file includes the first hours of the next year in UTC.
-        ("2025-01-01 05:00", []),
-        (
-            "2025-03-01 05:00",
-            [
-                (
-                    "The data go until 2025-03-01, after the end date of "
-                    "the YAML file, 2024-12-31."
-                )
-            ],
-        ),
+        (29, False),
+        (60 * 24 + 5, True),
     ],
 )
-def test_check_data_source_with_an_end_date(monkeypatch, end, messages):
+def test_check_data_source_with_an_end_date(
+    monkeypatch, hours_after_end_date, found
+):
     """Test that data after the end date of the YAML file are found."""
+    _, end_date = (
+        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+            "hydroquebec"
+        )["CAN_QC"]
+    )
+    end = pd.Timestamp(end_date) + pd.Timedelta(hours=hours_after_end_date)
     monkeypatch.setattr(
         hydroquebec,
         "download_and_extract_data_for_request",
-        lambda *_: _hourly_demand(end),
+        lambda *_: _hourly_demand(str(end)),
     )
 
     result = checks.data_sources.check_data_source("hydroquebec", 60)
 
     assert result.code == "CAN_QC"
     assert result.request == "all the data"
-    assert result.messages == messages
+    message = (
+        f"The data go until {end:%Y-%m-%d}, after the end date of the "
+        f"YAML file, {end_date}."
+    )
+    assert result.messages == ([message] if found else [])
 
 
 @pytest.mark.parametrize(
