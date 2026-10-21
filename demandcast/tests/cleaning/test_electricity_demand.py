@@ -247,3 +247,82 @@ def test_change_of_resolution():
     assert _removed_times(removed, "low_coverage") == []
     expected = f"{five_minutes.index[500]:%Y-%m-%d %H:%M}"
     assert _removed_times(removed, "spike") == [f"{expected}/{expected}"]
+
+
+def _local_days(removed: pd.DataFrame, rule: str) -> set[str]:
+    """
+    Get the days of India whose values a rule removes.
+
+    Returns
+    -------
+    set[str]
+        The days, in the time of India, of the times of the values.
+    """
+    periods = removed[removed["rule"] == rule]
+    days = set()
+    for start, end in zip(periods["start"], periods["end"], strict=True):
+        times = pd.date_range(start, end, freq="1h", tz="UTC")
+        local = times.tz_convert("Asia/Kolkata")
+        days |= {f"{day:%Y-%m-%d}" for day in local.normalize()}
+    return days
+
+
+def _days(start: str, end: str) -> set[str]:
+    """
+    Get the days from a start to an end, both included.
+
+    Returns
+    -------
+    set[str]
+        The days.
+    """
+    return {f"{day:%Y-%m-%d}" for day in pd.date_range(start, end)}
+
+
+def _scale_days(demand: pd.Series, start: str, end: str, factor: float):
+    """Scale the values of the days of India from a start to an end."""
+    days = (
+        pd.DatetimeIndex(demand.index)
+        .tz_localize("UTC")
+        .tz_convert("Asia/Kolkata")
+        .tz_localize(None)
+        .normalize()
+    )
+    within = (days >= pd.Timestamp(start)) & (days <= pd.Timestamp(end))
+    demand[within] *= factor
+
+
+def test_level_drops():
+    """
+    Test that a month far below the level of other years is removed.
+
+    A drop of 10 days and a drop in the lockdowns of 2020 are kept.
+    """
+    demand = _demand("2019-01-01 01:00", 24 * 365 * 5)
+    _scale_days(demand, "2022-06-01", "2022-06-30", 0.25)
+    _scale_days(demand, "2022-10-01", "2022-10-10", 0.25)
+    _scale_days(demand, "2020-04-01", "2020-04-30", 0.25)
+
+    _, removed = _clean(demand)
+
+    assert _local_days(removed, "level_drop") == _days(
+        "2022-06-01", "2022-06-30"
+    )
+
+
+def test_level_drops_of_neighbouring_years():
+    """
+    Test that the drops of two years do not hide each other.
+
+    The drop of 2023 is far below the level of the other years, and
+    once it is left out of the level, so is that of 2021.
+    """
+    demand = _demand("2021-01-01 01:00", 24 * 365 * 4)
+    _scale_days(demand, "2021-10-01", "2021-10-31", 0.35)
+    _scale_days(demand, "2023-10-01", "2023-10-31", 0.35)
+
+    _, removed = _clean(demand)
+
+    assert _local_days(removed, "level_drop") == _days(
+        "2021-10-01", "2021-10-31"
+    ) | _days("2023-10-01", "2023-10-31")

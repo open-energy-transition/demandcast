@@ -35,8 +35,15 @@ Description:
     and September, and some of October to December, an hour late, from
     31 July, whose hour 24 has the same value as the hour 1 of 1 August
     (19,741 MW). The days in between are at their hours, and the shifts
-    change from day to day, so they are not corrected, and the cleaning
-    flags them (time_lag).
+    change from day to day, as in January 2020, the last month whose
+    days slip. So each day from 2019-01-01 to 2020-01-31 is compared
+    with the usual profile of its time of year, the median of the
+    profiles of the days of the other years within 15 days of it, each
+    divided by its mean. A day moves by the shift of up to 2 hours that
+    makes it closest to the usual profile, if that halves its squared
+    difference from it, over the hours that stay within the day for all
+    shifts. A value that a move brings onto the hour of another value is
+    left out, and the hour that it leaves has no value.
 
     ISMO, which took over the system operation of
     NTDC, publishes the hourly demand from July 2024 (see ismo.py).
@@ -47,6 +54,7 @@ Description:
 import datetime
 import logging
 
+import numpy as np
 import pandas as pd
 import utils.fetcher
 import utils.time_series
@@ -83,6 +91,106 @@ def _correct_days(starts: pd.Series) -> pd.Series:
     days = ((expected_hours - hours) / 24).round()
     days = days.where(out_of_order & days.abs().eq(1), 0)
     return starts + pd.to_timedelta(days.to_numpy(), unit="D")
+
+
+# The days whose values slip against their hours, the largest slip in
+# hours, the share of the squared difference from the usual profile
+# that a slip needs to leave, the days around a day of the year of its
+# usual profile, and the days of the other years that it needs.
+SLIPPED_DAYS = (pd.Timestamp("2019-01-01"), pd.Timestamp("2020-01-31"))
+MAX_SLIP = 2
+SLIP_SHARE = 0.5
+PROFILE_DAYS = 15
+MIN_PROFILE_DAYS = 10
+
+
+def _get_slip(profile: np.ndarray, usual: np.ndarray) -> int:
+    """
+    Get the slip of a daily profile against the usual profile.
+
+    Parameters
+    ----------
+    profile : numpy.ndarray
+        The 24 hourly values of the day, divided by their mean.
+    usual : numpy.ndarray
+        The usual 24 hourly values, divided by their mean.
+
+    Returns
+    -------
+    int
+        The hours by which the day is late, negative if it is early, or
+        0 if no slip halves its squared difference from the usual one.
+    """
+    hours = slice(MAX_SLIP, 24 - MAX_SLIP)
+    differences = {
+        slip: float(
+            ((profile[hours] - np.roll(usual, slip)[hours]) ** 2).sum()
+        )
+        for slip in range(-MAX_SLIP, MAX_SLIP + 1)
+    }
+    slip = min(differences, key=lambda key: differences[key])
+    if slip != 0 and differences[slip] < SLIP_SHARE * differences[0]:
+        return slip
+    return 0
+
+
+def _correct_slipped_days(load: pd.Series) -> pd.Series:
+    """
+    Move the days that slip against their hours back to them.
+
+    Parameters
+    ----------
+    load : pandas.Series
+        The load at the starts of the hours, in local time.
+
+    Returns
+    -------
+    pandas.Series
+        The load with the slipped days moved, without the values that
+        they bring onto the hours of the days that do not move.
+    """
+    starts = pd.DatetimeIndex(load.index)
+    table = pd.DataFrame(
+        {
+            "day": starts.normalize(),
+            "hour": starts.hour,
+            "load": load.to_numpy(),
+        }
+    ).pivot_table(index="day", columns="hour", values="load")
+    table = table.dropna()
+    profiles = table.div(table.mean(axis=1), axis=0)
+    days = pd.DatetimeIndex(profiles.index)
+    slipping = (days >= SLIPPED_DAYS[0]) & (days <= SLIPPED_DAYS[1])
+    others = profiles[~slipping]
+    other_days = pd.DatetimeIndex(others.index)
+    moves: dict[pd.Timestamp, int] = {}
+    for day in days[slipping]:
+        apart = (other_days.dayofyear - day.dayofyear + 182) % 365 - 182
+        usual = others[np.abs(apart) <= PROFILE_DAYS]
+        if len(usual) >= MIN_PROFILE_DAYS:
+            moves[day] = -_get_slip(
+                profiles.loc[day].to_numpy(), usual.median().to_numpy()
+            )
+    hours = (
+        pd.Series(moves, dtype="int64")
+        .reindex(starts.normalize(), fill_value=0)
+        .to_numpy()
+    )
+    moved = pd.Series(
+        load.to_numpy(), index=starts + pd.to_timedelta(hours, unit="h")
+    )
+    kept = moved[hours == 0]
+    brought = moved[hours != 0]
+    brought = brought[
+        ~brought.index.isin(kept.index) & ~brought.index.duplicated(keep=False)
+    ]
+    if (hours != 0).any():
+        logging.info(
+            f"{sum(move != 0 for move in moves.values())} days of NTDC "
+            "slip against their hours "
+            "and are moved back to them."
+        )
+    return pd.concat([kept, brought]).sort_index()
 
 
 def get_available_requests(
@@ -181,9 +289,12 @@ def download_and_extract_data_for_request(
     )
     starts = _correct_days(starts)
 
-    # Define the electricity demand time series.
-    electricity_demand_time_series = pd.Series(
-        load.to_numpy(dtype="float64"), index=pd.DatetimeIndex(starts)
+    # Define the electricity demand time series, with the days that
+    # slip against their hours moved back to them.
+    electricity_demand_time_series = _correct_slipped_days(
+        pd.Series(
+            load.to_numpy(dtype="float64"), index=pd.DatetimeIndex(starts)
+        )
     )
 
     # Move the times to the ends of the hours, in local time.

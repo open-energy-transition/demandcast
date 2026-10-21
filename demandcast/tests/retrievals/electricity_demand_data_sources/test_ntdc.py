@@ -7,6 +7,7 @@ Description:
     manually downloaded files.
 """
 
+import numpy as np
 import pandas as pd
 import pytest
 from retrievals.electricity_demand_data_sources import ntdc
@@ -88,3 +89,37 @@ def test_download_and_extract_data_without_files():
     """Test that the error says where to put the downloaded files."""
     with pytest.raises(FileNotFoundError, match="named starting with 'NTD'"):
         ntdc.download_and_extract_data_for_request(None, "PAK")
+
+
+def test_correct_slipped_days():
+    """
+    Test that a day of 2019 an hour early moves back to its hours.
+
+    The value that it brings onto the first hour of the next day is
+    left out, and the days of the other years stay at their hours.
+    """
+    hours = np.arange(24)
+    profile = 1000 + 400 * np.exp(-((hours - 19) ** 2) / 4) + 100 * hours / 24
+    days = [
+        *pd.date_range("2018-01-01", "2018-01-31"),
+        pd.Timestamp("2019-01-11"),
+        pd.Timestamp("2019-01-12"),
+    ]
+    starts, values = [], []
+    for day in days:
+        day_values = np.roll(profile, -1) if day == days[-2] else profile
+        starts += list(day + pd.to_timedelta(hours, unit="h"))
+        values += list(day_values)
+    load = pd.Series(values, index=pd.DatetimeIndex(starts))
+
+    corrected = ntdc._correct_slipped_days(load)
+
+    early = pd.Timestamp("2019-01-11")
+    for hour in range(1, 24):
+        assert corrected[early + pd.Timedelta(hours=hour)] == profile[hour]
+    assert early not in corrected.index
+    next_day = pd.Timestamp("2019-01-12")
+    assert corrected[next_day] == profile[0]
+    pd.testing.assert_series_equal(
+        corrected[:"2018-12-31"], load[:"2018-12-31"]
+    )
