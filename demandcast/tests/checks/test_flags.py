@@ -19,10 +19,12 @@ import utils.config
 import utils.entities
 
 
-def _save_flags(name: str, periods: list[tuple[str, str]]) -> None:
+def _save_flags(
+    name: str, periods: list[tuple[str, str]], stage: str = "cleaned"
+) -> None:
     """Save the flags of a series, as (flag, period) pairs."""
     folder = utils.config.read_folders_structure()[
-        "cleaned_electricity_demand_folder"
+        f"{stage}_electricity_demand_folder"
     ]
     os.makedirs(folder, exist_ok=True)
     pd.DataFrame(
@@ -70,6 +72,11 @@ def checks_folder(tmp_folders, tmp_path):
             "    flag: time_lag\n"
             "    verdict: source_error\n"
             "    note: Fixed.\n"
+            "  - data_source: combined\n"
+            "    code: AUS_SA\n"
+            "    flag: time_lag\n"
+            "    verdict: net_demand\n"
+            "    note: From the combination.\n"
         )
     return folder
 
@@ -148,9 +155,15 @@ def test_reviews_of_the_repository():
     ]
     for review in reviews:
         assert review.flag in flags
-        assert review.code in utils.entities.read_codes_in(
-            data_source=review.data_source
-        )
+        if review.data_source == checks.flags.COMBINED:
+            codes = (
+                utils.entities.read_all_codes_with_electricity_demand_data()
+            )
+        else:
+            codes = utils.entities.read_codes_in(
+                data_source=review.data_source
+            )
+        assert review.code in codes
 
 
 def test_configuration_of_the_report(monkeypatch):
@@ -164,3 +177,57 @@ def test_configuration_of_the_report(monkeypatch):
     )
 
     assert check._read_and_check_configuration().check == "flags"
+
+
+def test_combined_flags(checks_folder):
+    """
+    Test the reviews of the flags of the combined electricity demand.
+
+    A combined flag takes its own review, or that of the same flag of
+    its main source, the source of most of the hours of its period.
+    """
+    file_path = utils.config.get_electricity_demand_file_path(
+        "combined", "AUS_SA"
+    )
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    hours = pd.date_range("2023-12-01", "2024-03-31 23:00", freq="h")
+    pd.DataFrame(
+        {
+            "Load (MW)": 1000.0,
+            "Source": [
+                "other" if hour.month == 12 else "aemo_nem" for hour in hours
+            ],
+        },
+        index=pd.Index(hours, name="Time (UTC)"),
+    ).to_parquet(file_path)
+    _save_flags(
+        "AUS_SA",
+        [
+            ("midday_dip", "DJF 2024"),
+            ("midday_dip", "MAM 2024"),
+            ("time_lag", "DJF 2024"),
+        ],
+        stage="combined",
+    )
+
+    flags = checks.flags.run_check()
+
+    assert flags[
+        ["data_source", "main_source", "verdict", "review_of"]
+    ].to_numpy().tolist() == [
+        ["combined", "aemo_nem", "net_demand", "aemo_nem"],
+        ["combined", "aemo_nem", "", ""],
+        ["combined", "aemo_nem", "net_demand", "combined"],
+    ]
+    with open(os.path.join(checks_folder, "flags_report.md")) as file:
+        report = file.read()
+    # The flags of the sources have no combined flags in their count.
+    assert "0 flags of 0 series, 0 not reviewed" in report
+    assert (
+        "3 flags of 1 codes: 1 with the review of the same flag of their "
+        "main source, 1 with their own review, and 1 not reviewed."
+    ) in report
+    assert "| AUS_SA | midday_dip | MAM 2024 | aemo_nem |" in report
+    assert (
+        "| AUS_SA | time_lag | DJF 2024 | net_demand | From the combination. |"
+    ) in report

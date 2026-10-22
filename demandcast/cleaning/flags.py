@@ -24,6 +24,10 @@ Description:
       demand per capita times its population, change by more than 10%
       (20% for a subdivision) from the year before.
 
+    The combined electricity demand of a code (see
+    cleaning/combining.py) is flagged in the same way, and its flags are
+    saved next to it.
+
     The midday dip is the sign of a demand that leaves out the
     generation embedded in the distribution networks, such as rooftop
     solar, whose growth over the years hides more and more of the
@@ -737,7 +741,7 @@ def _find_annual_errors(cleaned: pd.Series, code: str) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=COLUMNS)
 
 
-def flag_data(code: str, data_source: str) -> pd.DataFrame:
+def flag_data(code: str, data_source: str | None = None) -> pd.DataFrame:
     """
     Flag and save the changes of the cleaned electricity demand.
 
@@ -745,8 +749,9 @@ def flag_data(code: str, data_source: str) -> pd.DataFrame:
     ----------
     code : str
         The code of the country or subdivision.
-    data_source : str
-        The data source.
+    data_source : str | None, optional
+        The data source, none for the combined electricity demand of all
+        the data sources of the code.
 
     Returns
     -------
@@ -756,7 +761,7 @@ def flag_data(code: str, data_source: str) -> pd.DataFrame:
         of the flag ("value" and "reference") of each flagged period.
     """
     file_path = utils.config.get_electricity_demand_file_path(
-        "cleaned", code, data_source
+        "cleaned" if data_source else "combined", code, data_source
     )
     cleaned = pd.read_parquet(file_path)["Load (MW)"].sort_index()
     time_zone = str(utils.entities.get_time_zone(code))
@@ -777,9 +782,9 @@ def flag_data(code: str, data_source: str) -> pd.DataFrame:
     flags.to_parquet(flags_path)
     for flag, periods in flags.groupby("flag")["period"]:
         logging.warning(
-            f"The electricity demand of {code} from {data_source} is "
-            f"flagged with {flag} in {', '.join(periods)}. See "
-            f"{flags_path}."
+            f"The electricity demand of {code} from "
+            f"{data_source or 'all the data sources'} is flagged with "
+            f"{flag} in {', '.join(periods)}. See {flags_path}."
         )
 
     return flags

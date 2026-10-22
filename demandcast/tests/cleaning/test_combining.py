@@ -195,6 +195,10 @@ def test_ranking_of_the_data_sources(code, data_sources, best):
         file_path.removesuffix(".parquet") + "_sources.parquet"
     )
     assert sources.loc[0, "data_source"] == best
+    # The combined demand is flagged as the cleaned one.
+    assert os.path.exists(
+        file_path.removesuffix(".parquet") + "_flags.parquet"
+    )
 
 
 def test_longer_data_ranks_first():
