@@ -14,6 +14,16 @@ reviews:
     flag: midday_dip
     verdict: net_demand
     note: The operational demand of AEMO leaves out the rooftop solar, whose estimate is added from 2017 (#297); before, AEMO has none.
+  - data_source: combined
+    code: PAK
+    flag: midday_dip
+    verdict: net_demand
+    note: ISMO leaves out the solar of the consumers, which grows fast from 2023, so its midday is lower than that of NTDC before 2020.
+  - data_source: combined
+    code: PAK
+    flag: time_lag
+    verdict: net_demand
+    note: The midday dip of ISMO changes its daily profile against that of NTDC before 2020; the hours of ISMO are right, by its solar generation.
   - data_source: ons
     code: BRA_NE
     flag: daylight_saving

@@ -22,10 +22,18 @@ Description:
     - real_event: the demand itself changes, such as in a lockdown.
     - false_positive: the flag comes from its rule, not from the data.
 
+    The flags of the combined electricity demand of each code (see
+    cleaning/combining.py) have the data source "combined". A combined
+    flag takes the review that has the data source "combined", if there
+    is one, and otherwise that of the same flag and period of its main
+    source, the data source of most of the hours of the flagged period:
+    a flag that comes from the data of a source is reviewed once.
+
     The report, checks/flags_report.csv and checks/flags_report.md,
     lists the flags that have not been reviewed, those that have, with
     their verdicts, and the reviews that match no flag any more, such as
-    those of the errors that have been fixed, which can be removed.
+    those of the errors that have been fixed, which can be removed. The
+    combined flags have their own section.
 """
 
 import datetime
@@ -40,14 +48,19 @@ import utils.entities
 import yaml
 from pydantic import BaseModel
 
+# The data source of the flags of the combined electricity demand.
+COMBINED = "combined"
+
 # The name of the file of the reviews, and of the files of the report,
 # without extension.
 REVIEWS_NAME = "reviewed_flags"
 REPORT_NAME = "flags_report"
 
-# The columns of the report.
-COLUMNS = [
+# The columns of the flags, and of the report, with the verdict and the
+# note of the review of each flag and the data source of the review.
+FLAG_COLUMNS = [
     "data_source",
+    "main_source",
     "code",
     "flag",
     "period",
@@ -55,9 +68,8 @@ COLUMNS = [
     "end",
     "value",
     "reference",
-    "verdict",
-    "note",
 ]
+COLUMNS = [*FLAG_COLUMNS, "verdict", "note", "review_of"]
 
 
 class Review(BaseModel):
@@ -133,32 +145,96 @@ def _split_name(name: str, data_sources: list[str]) -> tuple[str, str]:
     raise ValueError(f"The file {name} is not of a known data source.")
 
 
+def _get_main_source(code: str, start: object, end: object) -> str:
+    """
+    Get the data source of most of the hours of a combined period.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+    start : object
+        The first day of the period.
+    end : object
+        The last day of the period.
+
+    Returns
+    -------
+    str
+        The data source of most of the hours of the combined electricity
+        demand in the period, or of all of them without hours in it.
+    """
+    sources = pd.read_parquet(
+        utils.config.get_electricity_demand_file_path("combined", code),
+        columns=["Source"],
+    )["Source"]
+    days = pd.DatetimeIndex(sources.index).normalize()
+    in_period = (days >= pd.Timestamp(str(start))) & (
+        days <= pd.Timestamp(str(end))
+    )
+    counts = (
+        sources[in_period] if in_period.any() else sources
+    ).value_counts()
+    return str(counts.index[0])
+
+
 def read_flags() -> pd.DataFrame:
     """
-    Read the flags of the cleaned electricity demand.
+    Read the flags of the cleaned and combined electricity demand.
 
     Returns
     -------
     pandas.DataFrame
         The flags of all the countries, subdivisions and data sources,
-        with their data source ("data_source") and code ("code").
+        with their data source ("data_source", "combined" for the
+        combined demand), main source ("main_source", the data source
+        itself, or that of most hours of a combined flag) and code
+        ("code").
     """
-    folder = utils.config.read_folders_structure()[
-        "cleaned_electricity_demand_folder"
-    ]
+    folders = utils.config.read_folders_structure()
     data_sources = utils.entities.read_data_sources()
     frames = []
     for file_path in sorted(
-        glob.glob(os.path.join(folder, "*_flags.parquet"))
+        glob.glob(
+            os.path.join(
+                folders["cleaned_electricity_demand_folder"], "*_flags.parquet"
+            )
+        )
     ):
         name = os.path.basename(file_path).removesuffix("_flags.parquet")
         code, data_source = _split_name(name, data_sources)
         flags = pd.read_parquet(file_path)
         if not flags.empty:
-            frames.append(flags.assign(data_source=data_source, code=code))
+            frames.append(
+                flags.assign(
+                    data_source=data_source, main_source=data_source, code=code
+                )
+            )
+    for file_path in sorted(
+        glob.glob(
+            os.path.join(
+                folders["combined_electricity_demand_folder"],
+                "*_flags.parquet",
+            )
+        )
+    ):
+        code = os.path.basename(file_path).removesuffix("_flags.parquet")
+        flags = pd.read_parquet(file_path)
+        if not flags.empty:
+            main_sources = [
+                _get_main_source(code, start, end)
+                for start, end in zip(
+                    flags["start"].tolist(), flags["end"].tolist(), strict=True
+                )
+            ]
+            frames.append(
+                flags.assign(
+                    data_source=COMBINED, main_source=main_sources, code=code
+                )
+            )
     if not frames:
-        return pd.DataFrame(columns=COLUMNS[:-2])
-    return pd.concat(frames, ignore_index=True)[COLUMNS[:-2]]
+        return pd.DataFrame(columns=FLAG_COLUMNS)
+    return pd.concat(frames, ignore_index=True)[FLAG_COLUMNS]
 
 
 def read_reviews() -> list[Review]:
@@ -194,26 +270,32 @@ def _add_reviews(flags: pd.DataFrame, reviews: list[Review]) -> pd.DataFrame:
     -------
     pandas.DataFrame
         The flags, with the verdict ("verdict") and the note ("note") of
-        their review, empty if they have not been reviewed.
+        their review, empty if they have not been reviewed, and the data
+        source of the review ("review_of"): a combined flag without its
+        own review takes that of its main source.
     """
-    verdicts, notes = [], []
+    verdicts, notes, reviews_of = [], [], []
     for row in flags.itertuples():
+        data_sources = [str(row.data_source)]
+        if row.data_source == COMBINED:
+            data_sources.append(str(row.main_source))
         review = next(
             (
                 review
+                for data_source in data_sources
                 for review in reviews
                 if review.matches(
-                    str(row.data_source),
-                    str(row.code),
-                    str(row.flag),
-                    str(row.period),
+                    data_source, str(row.code), str(row.flag), str(row.period)
                 )
             ),
             None,
         )
         verdicts.append(review.verdict if review else "")
         notes.append(review.note if review else "")
-    return flags.assign(verdict=verdicts, note=notes)[COLUMNS]
+        reviews_of.append(review.data_source if review else "")
+    return flags.assign(verdict=verdicts, note=notes, review_of=reviews_of)[
+        COLUMNS
+    ]
 
 
 def _table(rows: list[list[str]], header: list[str]) -> str:
@@ -261,6 +343,8 @@ def _format_report(
         The report.
     """
     keys = ["data_source", "code", "flag"]
+    combined = flags[flags["data_source"] == COMBINED]
+    flags = flags[flags["data_source"] != COMBINED]
     not_reviewed = flags[flags["verdict"] == ""]
     reviewed = flags[flags["verdict"] != ""]
     summary = [
@@ -304,6 +388,54 @@ def _format_report(
         "These reviews match no flag any more, such as when the error has "
         "been fixed, and can be removed.\n\n"
         + _table(unmatched_rows, ["Data source", "Code", "Flag", "Verdict"])
+        + _format_combined_report(combined)
+    )
+
+
+def _format_combined_report(combined: pd.DataFrame) -> str:
+    """
+    Format the flags of the combined electricity demand.
+
+    Parameters
+    ----------
+    combined : pandas.DataFrame
+        The combined flags, with their reviews.
+
+    Returns
+    -------
+    str
+        The section of the report on the combined flags.
+    """
+    keys = ["code", "flag"]
+    own = combined[combined["review_of"] == COMBINED]
+    not_reviewed = combined[combined["verdict"] == ""]
+    inherited = len(combined) - len(own) - len(not_reviewed)
+    not_reviewed_rows = [
+        [
+            *map(str, key),
+            ", ".join(group["period"]),
+            ", ".join(group["main_source"].unique()),
+        ]
+        for key, group in not_reviewed.groupby(keys)
+    ]
+    own_rows = [
+        [*map(str, key[:2]), ", ".join(group["period"]), *map(str, key[2:])]
+        for key, group in own.groupby([*keys, "verdict", "note"])
+    ]
+    return (
+        "\n## Combined series\n\n"
+        f"{len(combined)} flags of {combined['code'].nunique()} codes: "
+        f"{inherited} with the review of the same flag of their main "
+        f"source, {len(own)} with their own review, and "
+        f"{len(not_reviewed)} not reviewed. The main source of a flag is "
+        "the data source of most of the hours of its period. A flag that "
+        "its main source does not have comes from the combination, such "
+        "as a step where a source fills the hours after another, and is "
+        'reviewed with the data source "combined".\n\n'
+        "### Not reviewed\n\n"
+        + _table(not_reviewed_rows, ["Code", "Flag", "Periods", "Main source"])
+        + "\n### With their own review\n\n"
+        + _table(own_rows, ["Code", "Flag", "Periods", "Verdict", "Note"])
     )
 
 

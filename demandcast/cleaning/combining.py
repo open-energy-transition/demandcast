@@ -6,7 +6,8 @@ Description:
     This module combines the cleaned electricity demand of all the data
     sources of a country or subdivision into one hourly series, with the
     data source of each hour, and saves it with a table of the sources
-    and of what was done with each of them.
+    and of what was done with each of them, and with its flags (see
+    cleaning/flags.py).
 
     The sources are ranked, from the best:
 
@@ -46,6 +47,8 @@ import numpy as np
 import pandas as pd
 import utils.config
 import utils.entities
+
+import cleaning.flags
 
 # The rank of the definitions of the embedded generation.
 EMBEDDED_GENERATION_RANKS = {
@@ -420,6 +423,7 @@ def combine_data(code: str) -> pd.DataFrame | None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     combined.to_parquet(file_path)
     sources.to_parquet(file_path.removesuffix(".parquet") + "_sources.parquet")
+    cleaning.flags.flag_data(code)
     for row in sources.itertuples():
         logging.info(
             f"Combined electricity demand of {code}: {row.data_source} "
