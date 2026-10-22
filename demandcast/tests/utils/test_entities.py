@@ -13,6 +13,7 @@ import pandas as pd
 import pytest
 import pytz
 import utils.entities
+import utils.paths
 import yaml
 from countryinfo import CountryNotFoundError
 
@@ -158,10 +159,7 @@ def test_get_all_codes_with_all_data():
     with (
         patch("pandas.read_csv") as mock_read_csv,
         patch("os.path.join") as mock_path_join,
-        patch("utils.config.read_folders_structure") as mock_read_folders,
     ):
-        # Mock folder structure
-        mock_read_folders.return_value = {"checks_folder": "/checks"}
         mock_path_join.return_value = "/checks/available_data_summary.csv"
 
         # Mock the return value of pandas.read_csv to return a sample
@@ -759,7 +757,7 @@ TEXAS = {
 
 
 @pytest.fixture
-def write_data_source(tmp_folders, tmp_path):
+def write_data_source(monkeypatch, tmp_path):
     """
     Get a function that writes the yaml file of a data source.
 
@@ -771,7 +769,7 @@ def write_data_source(tmp_folders, tmp_path):
     """
     folder = tmp_path / "electricity_demand_data_sources"
     folder.mkdir()
-    tmp_folders["electricity_demand_data_sources_folder"] = str(folder)
+    monkeypatch.setattr(utils.paths, "DATA_SOURCES_FOLDER", str(folder))
 
     def write(content: object) -> None:
         # A file without a definition gets one, so that the tests check

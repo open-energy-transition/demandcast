@@ -16,7 +16,7 @@ Each step is a script in `demandcast/`, configured by `config/<script>_config.ya
 4. `forecast.py` predicts hourly demand in MW with a trained model.
 5. `plot.py`, `check.py` and `upload.py` draw figures, check data availability and the data sources over the network, and upload data to Google Cloud Storage and Zenodo.
 
-Folder locations are defined in `config/directories_config.yaml`; use `utils.config.read_folders_structure()` instead of hard-coding paths.
+Paths come from `utils/paths.py`; use its functions instead of hard-coding paths. The inputs that come with the code (configuration, shapes, data source YAMLs, flag reviews) stay in the code folder, and everything the scripts write goes under the data folder: `data/`, or the folder named by `DEMANDCAST_DATA_FOLDER`. Each dataset has its own folder there, with its stages (`raw/`, `processed/`, ...), next to `assembled/`, `models/<algorithm>/`, `results/` (validation, cross-validation, forecasts, figures, check reports) and `logs/`.
 
 ## Layout
 

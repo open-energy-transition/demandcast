@@ -14,93 +14,7 @@ import textwrap
 
 import pytest
 import utils.config
-
-
-def test_load_paths():
-    """
-    Test if the folders structure is read correctly.
-
-    This test checks if the keys and values in the yaml file are read
-    correctly and if the absolute paths are constructed as expected.
-    """
-    # Read the folders structure from the sample yaml file.
-    structure = utils.config.read_folders_structure()
-
-    # Get the root path of DemandCast.
-    absolute_path = os.path.abspath(
-        os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    )
-
-    # Check if the folders are read correctly.
-    assert structure["config_folder"] == os.path.join(absolute_path, "config")
-    assert structure["log_files_folder"] == os.path.join(absolute_path, "logs")
-    assert structure["figures_folder"] == os.path.join(
-        absolute_path, "figures"
-    )
-    assert structure["shapes_folder"] == os.path.join(absolute_path, "shapes")
-    assert structure["checks_folder"] == os.path.join(absolute_path, "checks")
-    assert structure["retrievals_folder"] == os.path.join(
-        absolute_path, "retrievals"
-    )
-    assert structure["electricity_demand_data_sources_folder"] == os.path.join(
-        absolute_path, "retrievals", "electricity_demand_data_sources"
-    )
-    assert structure["data_folder"] == os.path.join(absolute_path, "data")
-    assert structure[
-        "manually_downloaded_electricity_demand_folder"
-    ] == os.path.join(
-        absolute_path, "data", "electricity_demand", "raw", "manual_downloads"
-    )
-    assert structure["processed_electricity_demand_folder"] == os.path.join(
-        absolute_path, "data", "electricity_demand", "processed"
-    )
-    assert structure["cleaned_electricity_demand_folder"] == os.path.join(
-        absolute_path, "data", "electricity_demand", "cleaned"
-    )
-    assert structure["combined_electricity_demand_folder"] == os.path.join(
-        absolute_path, "data", "electricity_demand", "combined"
-    )
-    assert structure["electricity_demand_folder"] == os.path.join(
-        absolute_path, "data", "electricity_demand"
-    )
-    assert structure[
-        "annual_electricity_demand_per_capita_folder"
-    ] == os.path.join(
-        absolute_path, "data", "annual_electricity_demand_per_capita"
-    )
-    assert structure["population_folder"] == os.path.join(
-        absolute_path, "data", "population"
-    )
-    assert structure["gridded_population_folder"] == os.path.join(
-        absolute_path, "data", "gridded_population"
-    )
-    assert structure["gdp_ppp_per_capita_folder"] == os.path.join(
-        absolute_path, "data", "gdp_ppp_per_capita"
-    )
-    assert structure["gridded_gdp_ppp_folder"] == os.path.join(
-        absolute_path, "data", "gridded_gdp_ppp"
-    )
-    assert structure["gridded_weather_folder"] == os.path.join(
-        absolute_path, "data", "gridded_weather"
-    )
-    assert structure["temperature_folder"] == os.path.join(
-        absolute_path, "data", "temperature"
-    )
-    assert structure["ml_models_folder"] == os.path.join(
-        absolute_path, "ml_models"
-    )
-    assert structure["trained_ml_models_folder"] == os.path.join(
-        absolute_path, "ml_models", "trained"
-    )
-    assert structure["ml_validation_folder"] == os.path.join(
-        absolute_path, "ml_models", "results", "validation"
-    )
-    assert structure["ml_cross_validation_folder"] == os.path.join(
-        absolute_path, "ml_models", "results", "cross_validation"
-    )
-    assert structure["ml_forecasts_folder"] == os.path.join(
-        absolute_path, "ml_models", "results", "forecasts"
-    )
+import utils.paths
 
 
 def test_read_configuration_with_existing_file(tmp_path, monkeypatch):
@@ -161,21 +75,16 @@ def test_set_up_logging(tmp_path, monkeypatch):
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
 
-    # Mock the read_folders_structure to return a temporary log folder.
-    mock_structure = {"log_files_folder": str(tmp_path / "logs")}
-
-    def mock_read_folders_structure():
-        return mock_structure
-
-    monkeypatch.setattr(
-        utils.config, "read_folders_structure", mock_read_folders_structure
+    # Write the logs in the temporary data folder.
+    monkeypatch.setenv(
+        utils.paths.DATA_FOLDER_VARIABLE, str(tmp_path / "data")
     )
 
     # Call the set_up_logging function.
     utils.config.set_up_logging("test_process")
 
     # Check if the log directory was created.
-    log_dir = tmp_path / "logs"
+    log_dir = tmp_path / "data" / "logs"
     assert log_dir.exists()
 
     # Check if a log file was created.
@@ -195,9 +104,11 @@ def test_set_up_logging(tmp_path, monkeypatch):
     assert "INFO" in log_content
 
 
-def test_read_api_key(tmp_folders, tmp_path, monkeypatch):
+def test_read_api_key(tmp_path, monkeypatch):
     """Test that a key is read from the .env file of the root folder."""
-    tmp_folders["root_folder"] = str(tmp_path)
+    monkeypatch.setattr(
+        utils.paths, "ENV_FILE", os.path.join(str(tmp_path), ".env")
+    )
     (tmp_path / ".env").write_text("TEST_SERVICE_API_KEY=secret-value\n")
     # Remove the key that the .env file sets at the end of the test.
     monkeypatch.setenv("TEST_SERVICE_API_KEY", "")
@@ -209,11 +120,11 @@ def test_read_api_key(tmp_folders, tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("api_key", [None, ""])
-def test_read_api_key_without_the_key(
-    tmp_folders, tmp_path, monkeypatch, api_key
-):
+def test_read_api_key_without_the_key(tmp_path, monkeypatch, api_key):
     """Test that the error says how to set a missing or empty key."""
-    tmp_folders["root_folder"] = str(tmp_path)
+    monkeypatch.setattr(
+        utils.paths, "ENV_FILE", os.path.join(str(tmp_path), ".env")
+    )
     monkeypatch.setenv("TEST_SERVICE_API_KEY", "")
     if api_key is None:
         monkeypatch.delenv("TEST_SERVICE_API_KEY")

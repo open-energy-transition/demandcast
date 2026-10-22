@@ -133,7 +133,7 @@ For each data source that is downloaded automatically, the check downloads the l
 - the latest value is more than `maximum_age_days` old (60 by default), for a data source whose `end_date` is `today`;
 - there are data after the `end_date` of the YAML file, which is then out of date.
 
-The data sources read from manually downloaded files are skipped, ENTSO-E and EIA need their API keys, and EPIAS and ISO New England their accounts. The results are saved to `checks/data_sources_report.md` and `checks/data_sources_report.json`. In the configuration file, `data_sources` limits the check to some data sources, `maximum_age_days_by_source` gives more days to the data sources that publish later, and `time_limit_minutes` is the time after which the data sources that have not answered fail.
+The data sources read from manually downloaded files are skipped, ENTSO-E and EIA need their API keys, and EPIAS and ISO New England their accounts. The results are saved to `data/results/checks/data_sources_report.md` and `data/results/checks/data_sources_report.json`. In the configuration file, `data_sources` limits the check to some data sources, `maximum_age_days_by_source` gives more days to the data sources that publish later, and `time_limit_minutes` is the time after which the data sources that have not answered fail.
 
 #### Report of the flags
 
@@ -143,7 +143,7 @@ The cleaning flags the changes of the cleaned demand that need a review, in `<co
 uv run check.py --config config/check_flags_config.yaml
 ```
 
-It compares them with the reviews in `checks/reviewed_flags.yaml`, which give a data source, a code, a flag, the periods that they review (all of them if not given), a verdict (`source_error`, `reading_error`, `definition_change`, `net_demand`, `real_event` or `false_positive`) and a note. The report, `checks/flags_report.md` and `checks/flags_report.csv`, lists the flags not reviewed, those reviewed with their verdicts, and the reviews that match no flag any more, such as those of errors that have been fixed. After a retrieval, the flags not reviewed are the ones to look at, and their reviews are added to the file.
+It compares them with the reviews in `checks/reviewed_flags.yaml`, which give a data source, a code, a flag, the periods that they review (all of them if not given), a verdict (`source_error`, `reading_error`, `definition_change`, `net_demand`, `real_event` or `false_positive`) and a note. The report, `data/results/checks/flags_report.md` and `data/results/checks/flags_report.csv`, lists the flags not reviewed, those reviewed with their verdicts, and the reviews that match no flag any more, such as those of errors that have been fixed. After a retrieval, the flags not reviewed are the ones to look at, and their reviews are added to the file.
 
 The flags of the combined demand have the data source `combined`, and their own section in the report. A combined flag takes the review with the data source `combined`, if there is one, and otherwise, if its main source, the data source of most of the hours of the flagged period, has the same flag in the same period, the review of that flag: a flag that comes from the data of a source is reviewed once. Only the flags that come from the combination, which the main source does not have, such as a step where a data source fills the hours after another, need a review of their own.
 
@@ -237,7 +237,7 @@ end_year:                          # End year of a range (inclusive)
 scenario:                          # SSP scenario (e.g., SSP2) for which to retrieve projected data
 ```
 
-The script will store gridded population data in `data/gridded_population/`.
+The script will store gridded population data in `data/gridded_population/`: the global grids, as downloaded, in `raw/`, and the grids of each country and subdivision in `processed/`.
 
 ### Gross Domestic Product (GDP), Purchasing Power Parity (PPP) per capita
 
@@ -295,6 +295,8 @@ end_year:                          # End year of a range (inclusive)
 scenario:                          # SSP scenario (e.g., SSP2) for which to retrieve projected data
 ```
 
+The script will store gridded GDP, PPP data in `data/gridded_gdp_ppp/`: the global grids, as downloaded, in `raw/`, and the grids of each country and subdivision in `processed/`.
+
 ### Gridded weather
 
 The module `demandcast/retrievals/gridded_weather.py` retrieves gridded weather data from the Copernicus Climate Data Store (CDS). The weather data is stored in NetCDF format for each country and subdivision of interest.
@@ -328,7 +330,7 @@ weather_variable: temperature      # Weather variable (currently only temperatur
 climate_model:                     # Climate model (e.g., CESM2)
 ```
 
-The script will store weather data in `data/gridded_weather/`. Note that the size of weather data files is on the order of 100 MB per country per year, so ensure you have sufficient storage space.
+The script will store weather data in `data/gridded_weather/`: the global grids, downloaded when more than five countries and subdivisions are retrieved, in `raw/`, and the grids of each country and subdivision in `processed/`. Note that the size of weather data files is on the order of 100 MB per country per year, so ensure you have sufficient storage space.
 
 ### Temperature
 

@@ -16,9 +16,9 @@ import pandas as pd
 import pycountry
 from shapely import Polygon
 
-import utils.config
 import utils.entities
 import utils.figures
+import utils.paths
 
 
 def _remove_islands_and_clip_to_180(  # noqa: C901
@@ -242,7 +242,7 @@ def _read_non_standard_shape_codes() -> dict[str, list[str]]:
         respective codes.
     """
     # Get the path to the shapes directory.
-    shapes_directory = utils.config.read_folders_structure()["shapes_folder"]
+    shapes_directory = utils.paths.SHAPES_FOLDER
 
     # Create a dictionary to store the non-standard shapes and their
     # respective codes.
@@ -294,7 +294,7 @@ def _get_non_standard_shape(
         GeoDataFrame containing the shape of the subdivision.
     """
     # Get the path to the shapes directory.
-    shapes_directory = utils.config.read_folders_structure()["shapes_folder"]
+    shapes_directory = utils.paths.SHAPES_FOLDER
 
     # Define the path to the shapefile based on the data source.
     shapefile_path = os.path.join(

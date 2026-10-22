@@ -31,9 +31,9 @@ import cleaning.combining
 import cleaning.electricity_demand
 import cleaning.flags
 import pandas as pd
-import utils.config
 import utils.entities
 import utils.fetcher
+import utils.paths
 import utils.raw_data
 import utils.time_series
 from tqdm import tqdm
@@ -340,7 +340,7 @@ def _save_data(
     data_source : str
         The data source.
     """
-    file_path = utils.config.get_electricity_demand_file_path(
+    file_path = utils.paths.get_electricity_demand_file(
         "processed", code, data_source
     )
     os.makedirs(os.path.dirname(file_path), exist_ok=True)

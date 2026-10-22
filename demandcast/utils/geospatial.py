@@ -8,6 +8,7 @@ Description:
 
 import importlib
 import os
+from typing import cast
 
 import geopandas
 import numpy as np
@@ -15,8 +16,8 @@ import pandas as pd
 import xarray
 from shapely import box
 
-import utils.config
 import utils.figures
+import utils.paths
 import utils.shapes
 
 
@@ -532,7 +533,9 @@ def _aggregate_gridded_data(
     """
     # Define the path to the gridded data.
     gridded_data_path = os.path.join(
-        utils.config.read_folders_structure()[f"gridded_{variable}_folder"],
+        utils.paths.get_gridded_folder(
+            cast(utils.paths.GriddedVariable, variable), "processed"
+        ),
         f"{code}_0.25_deg_{year}"
         + (f"_{scenario}" if scenario else "")
         + ".nc",

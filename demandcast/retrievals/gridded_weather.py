@@ -17,9 +17,9 @@ import zipfile
 
 import cdsapi
 import pandas as pd
-import utils.config
 import utils.entities
 import utils.geospatial
+import utils.paths
 import utils.scenarios
 import utils.shapes
 import xarray
@@ -284,10 +284,9 @@ def _download_data(
     )
 
     # Get the root directory of the project.
-    root_directory = utils.config.read_folders_structure()["root_folder"]
 
     # Load the environment variables.
-    load_dotenv(dotenv_path=os.path.join(root_directory, ".env"))
+    load_dotenv(dotenv_path=utils.paths.ENV_FILE)
 
     # Get the API key.
     cds_key = os.getenv("CDS_API_KEY")
@@ -401,9 +400,7 @@ def run_data_retrieval(
         If the variable is not supported.
     """
     # Get the directory to store the population density data.
-    result_directory = utils.config.read_folders_structure()[
-        "gridded_weather_folder"
-    ]
+    result_directory = utils.paths.get_gridded_folder("weather", "processed")
     os.makedirs(result_directory, exist_ok=True)
 
     # Get the list of codes of the countries and subdivisions of
@@ -457,7 +454,9 @@ def run_data_retrieval(
     # the data for each country and subdivision.
     if len(codes) > 5:
         # Create a directory to store the downloaded global data.
-        downloaded_data_directory = os.path.join(result_directory, "downloads")
+        downloaded_data_directory = utils.paths.get_gridded_folder(
+            "weather", "raw"
+        )
         os.makedirs(downloaded_data_directory, exist_ok=True)
 
         # Loop over the year, model, and scenario combinations.

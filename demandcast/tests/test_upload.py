@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import pytest
 import upload
+import utils.paths
 
 
 def _write_files(folder, names):
@@ -27,7 +28,6 @@ def _write_files(folder, names):
         (folder / name).write_bytes(b"")
 
 
-@pytest.mark.usefixtures("tmp_folders")
 def test_upload_to_gcs(tmp_path, frozen_now):
     """Test that the parquet files are uploaded to the bucket."""
     _write_files(tmp_path, ["FRA_entsoe.parquet", "notes.txt"])
@@ -47,7 +47,6 @@ def test_upload_to_gcs(tmp_path, frozen_now):
     )
 
 
-@pytest.mark.usefixtures("tmp_folders")
 def test_upload_to_zenodo(tmp_path):
     """Test that only the redistributable data goes to Zenodo."""
     _write_files(tmp_path, ["CHL_cen.parquet", "MEX_cenace.parquet"])
@@ -70,10 +69,10 @@ def test_upload_to_zenodo(tmp_path):
     )
 
 
-def test_upload_to_zenodo_needs_metadata(tmp_folders, tmp_path):
+def test_upload_to_zenodo_needs_metadata(monkeypatch, tmp_path):
     """Test that data not made by OET needs its Zenodo metadata."""
     _write_files(tmp_path, ["CHL_cen.parquet"])
-    tmp_folders["config_folder"] = str(tmp_path)
+    monkeypatch.setattr(utils.paths, "CONFIG_FOLDER", str(tmp_path))
     config = upload.ConfigModel(
         target_platform="zenodo",
         data_directory=str(tmp_path),

@@ -23,7 +23,7 @@ from countryinfo import CountryInfo, CountryNotFoundError
 from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 from timezonefinder import TimezoneFinder
 
-import utils.config
+import utils.paths
 import utils.shapes
 
 # Define information for entities not fully recognized in pycountry or
@@ -278,7 +278,7 @@ def _read_continent_codes() -> dict[str, str]:
         The continent code of each country, by ISO Alpha-3 code.
     """
     file_path = os.path.join(
-        utils.config.read_folders_structure()["config_folder"],
+        utils.paths.CONFIG_FOLDER,
         "continents.yaml",
     )
     with open(file_path, encoding="utf-8") as file:
@@ -392,9 +392,7 @@ def read_data_sources() -> list[str]:
     """
     # Get the path to folder containing the yaml files of the data
     # sources.
-    data_sources_directory = utils.config.read_folders_structure()[
-        "electricity_demand_data_sources_folder"
-    ]
+    data_sources_directory = utils.paths.DATA_SOURCES_FOLDER
 
     # Get the path of all yaml files in the specified folder.
     file_paths = [
@@ -445,9 +443,7 @@ def _read_data_source_file(data_source: str) -> _DataSourceFile:
 
     # Read the yaml file of the data source.
     file_path = os.path.join(
-        utils.config.read_folders_structure()[
-            "electricity_demand_data_sources_folder"
-        ],
+        utils.paths.DATA_SOURCES_FOLDER,
         f"{data_source.lower()}.yaml",
     )
     with open(file_path, encoding="utf-8") as file:
@@ -775,7 +771,7 @@ def _get_all_codes_with_all_data() -> list[str]:
     # Read the CSV file containing the available data information.
     data = pd.read_csv(
         os.path.join(
-            utils.config.read_folders_structure()["checks_folder"],
+            utils.paths.CHECKS_FOLDER,
             "data_availability_summary.csv",
         ),
         index_col=0,

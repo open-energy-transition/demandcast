@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
+import utils.paths
 from retrievals import gridded_weather
 
 pytestmark = pytest.mark.usefixtures("frozen_now")
@@ -61,13 +62,13 @@ def test_is_outdated(tmp_path, year, written, model, outdated):
     )
 
 
-def test_few_codes_complete_the_last_year(tmp_folders):
+def test_few_codes_complete_the_last_year():
     """
     Test that a year retrieved while in progress is completed.
 
     With few codes, the data of each code is downloaded on its own.
     """
-    folder = tmp_folders["gridded_weather_folder"]
+    folder = utils.paths.get_gridded_folder("weather", "processed")
     os.makedirs(folder)
     _write(os.path.join(folder, "DEU_temperature_2024.nc"), "2025-01-10")
     _write(os.path.join(folder, "DEU_temperature_2025.nc"), "2025-12-20")

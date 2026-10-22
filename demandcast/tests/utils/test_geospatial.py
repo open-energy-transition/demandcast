@@ -14,8 +14,8 @@ import geopandas
 import numpy as np
 import pandas as pd
 import pytest
-import utils.config
 import utils.geospatial
+import utils.paths
 import xarray
 from shapely import box
 
@@ -112,17 +112,15 @@ def test_get_fraction_of_grid_cells_in_shape(monkeypatch):
     ----------
     monkeypatch : pytest.MonkeyPatch
         A pytest fixture that allows us to modify the behavior of the
-        utils.config.read_folders_structure function to return a
-        temporary directory.
+        folder of the figures to return a temporary directory.
     """
     # Create a temporary directory for figure output.
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Patch the utils.config.read_folders_structure to return
-        # the temp path.
+        # Save the figures in the temporary directory.
         monkeypatch.setattr(
-            utils.config,
-            "read_folders_structure",
-            lambda: {"figures_folder": tmpdir},
+            utils.paths,
+            "get_results_folder",
+            lambda _kind: tmpdir,
         )
 
         # Create a simple xarray.DataArray with made-up data.
@@ -335,7 +333,7 @@ def test_aggregate_gridded_data():
         patch("xarray.open_dataarray") as mock_xarray,
         patch("importlib.import_module"),
         patch("os.path.exists") as mock_exists,
-        patch("utils.config.read_folders_structure") as mock_dirs,
+        patch("utils.paths.get_gridded_folder", return_value="/fake/path"),
     ):
         # Setup test parameters.
         variable = "population"
@@ -344,7 +342,6 @@ def test_aggregate_gridded_data():
         scenario = "SSP2"
 
         # Mock the folder structure to return a temporary directory.
-        mock_dirs.return_value = {"gridded_population_folder": "/fake/path"}
 
         # Mock the existence of the data file, initially True.
         mock_exists.return_value = False

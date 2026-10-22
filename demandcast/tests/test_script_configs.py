@@ -19,6 +19,7 @@ import plot
 import pytest
 import retrieve
 import utils.config
+import utils.paths
 
 SCRIPTS = [
     "assemble",
@@ -58,7 +59,7 @@ def _use_configuration(monkeypatch, tmp_path, script, content):
 def test_default_configuration_is_valid(script, monkeypatch):
     """Test that the script reads its default configuration."""
     config_file_path = os.path.join(
-        utils.config.read_folders_structure()["config_folder"],
+        utils.paths.CONFIG_FOLDER,
         f"{script}_config.yaml",
     )
     monkeypatch.setattr(
@@ -75,7 +76,7 @@ def test_default_configuration_is_valid(script, monkeypatch):
 def test_upload_configuration_needs_a_bucket(monkeypatch):
     """Test that the default upload.py configuration names no bucket."""
     config_file_path = os.path.join(
-        utils.config.read_folders_structure()["config_folder"],
+        utils.paths.CONFIG_FOLDER,
         "upload_config.yaml",
     )
     monkeypatch.setattr(
@@ -181,7 +182,6 @@ def test_missing_configuration_file(monkeypatch, tmp_path):
         ),
     ],
 )
-@pytest.mark.usefixtures("tmp_folders")
 def test_retrieve_dispatch(monkeypatch, settings, function, arguments):
     """Test that retrieve.py runs the retrieval of its variable."""
     calls = []
@@ -215,7 +215,6 @@ def test_retrieve_dispatch(monkeypatch, settings, function, arguments):
         "gridded_gdp_ppp",
     ],
 )
-@pytest.mark.usefixtures("tmp_folders")
 def test_retrieve_dispatch_by_scenario(monkeypatch, variable):
     """Test the variables given by years and scenarios."""
     calls = []
@@ -235,7 +234,6 @@ def test_retrieve_dispatch_by_scenario(monkeypatch, variable):
 @pytest.mark.parametrize(
     "name", ["data_availability", "data_sources", "flags"]
 )
-@pytest.mark.usefixtures("tmp_folders")
 def test_check_dispatch(monkeypatch, caplog, name):
     """Test that check.py runs its check and logs its settings."""
     calls = []
@@ -268,7 +266,7 @@ def test_check_dispatch(monkeypatch, caplog, name):
         ),
     ],
 )
-def test_plot_dispatch(tmp_folders, monkeypatch, settings, module, arguments):
+def test_plot_dispatch(monkeypatch, settings, module, arguments):
     """Test that plot.py draws its figure in the folder of figures."""
     calls = []
     monkeypatch.setattr(
@@ -279,8 +277,8 @@ def test_plot_dispatch(tmp_folders, monkeypatch, settings, module, arguments):
 
     plot.main(plot.ConfigModel(**settings))
 
-    assert calls == [(tmp_folders["figures_folder"], *arguments)]
-    assert os.path.isdir(tmp_folders["figures_folder"])
+    assert calls == [(utils.paths.get_results_folder("figures"), *arguments)]
+    assert os.path.isdir(utils.paths.get_results_folder("figures"))
 
 
 @pytest.mark.parametrize(
@@ -318,7 +316,6 @@ def test_plot_dispatch(tmp_folders, monkeypatch, settings, module, arguments):
         ),
     ],
 )
-@pytest.mark.usefixtures("tmp_folders")
 def test_main_of_the_scripts(
     monkeypatch, script, function, settings, arguments
 ):

@@ -14,7 +14,7 @@ import subprocess
 import sys
 
 import pytest
-import utils.config
+import utils.paths
 
 SCRIPTS = ["train", "validate", "cross_validate", "forecast"]
 
@@ -46,7 +46,7 @@ def test_script_imports_torch_before_pandas(script):
         [sys.executable, "-X", "importtime", "-c", f"import {script}"],
         capture_output=True,
         check=True,
-        cwd=utils.config.read_folders_structure()["root_folder"],
+        cwd=utils.paths.CODE_FOLDER,
         text=True,
     )
     modules = [

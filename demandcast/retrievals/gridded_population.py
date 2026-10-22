@@ -25,10 +25,10 @@ import os
 import zipfile
 
 import requests
-import utils.config
 import utils.entities
 import utils.figures
 import utils.geospatial
+import utils.paths
 import utils.scenarios
 import utils.shapes
 import xarray
@@ -301,13 +301,15 @@ def run_data_retrieval(
         The scenario of the population data to be retrieved.
     """
     # Get the directory to store the population data.
-    result_directory = utils.config.read_folders_structure()[
-        "gridded_population_folder"
-    ]
+    result_directory = utils.paths.get_gridded_folder(
+        "population", "processed"
+    )
     os.makedirs(result_directory, exist_ok=True)
 
     # Get the directory to store the downloaded population data.
-    downloaded_data_directory = os.path.join(result_directory, "downloads")
+    downloaded_data_directory = utils.paths.get_gridded_folder(
+        "population", "raw"
+    )
     os.makedirs(downloaded_data_directory, exist_ok=True)
 
     # Define the available years for the historical population data.

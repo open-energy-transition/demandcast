@@ -53,8 +53,8 @@ import os
 import checks.flags
 import numpy as np
 import pandas as pd
-import utils.config
 import utils.entities
+import utils.paths
 
 import cleaning.flags
 
@@ -118,7 +118,7 @@ def _read_cleaned_data(code: str) -> dict[str, pd.Series]:
     ) in utils.entities.get_electricity_demand_data_sources_containing_code(
         code
     ):
-        file_path = utils.config.get_electricity_demand_file_path(
+        file_path = utils.paths.get_electricity_demand_file(
             "cleaned", code, data_source
         )
         if os.path.exists(file_path):
@@ -162,7 +162,7 @@ def _get_definition_ranks(
 
     # The seasons of the flags that the reviews find to be net demand,
     # or errors.
-    flags_path = utils.config.get_electricity_demand_file_path(
+    flags_path = utils.paths.get_electricity_demand_file(
         "cleaned", code, data_source
     ).removesuffix(".parquet")
     flags_path += "_flags.parquet"
@@ -460,7 +460,7 @@ def combine_data(code: str) -> pd.DataFrame | None:
     )
     combined, sources = _combine(sound, ranked, errors)
 
-    file_path = utils.config.get_electricity_demand_file_path("combined", code)
+    file_path = utils.paths.get_electricity_demand_file("combined", code)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     combined.to_parquet(file_path)
     sources.to_parquet(file_path.removesuffix(".parquet") + "_sources.parquet")

@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
+import utils.paths
 from retrievals import population
 
 pytestmark = pytest.mark.usefixtures("frozen_now")
@@ -31,7 +32,7 @@ def _gridded_population(_variable, _code, selected_years, _available_years):
     )
 
 
-def _retrieve(code: str, tmp_folders) -> pd.Series:
+def _retrieve(code: str) -> pd.Series:
     """
     Retrieve the population of 2019 to 2025 and read it by year.
 
@@ -64,7 +65,9 @@ def _retrieve(code: str, tmp_folders) -> pd.Series:
         )
 
     values = pd.read_parquet(
-        os.path.join(tmp_folders["population_folder"], f"{code}.parquet")
+        os.path.join(
+            utils.paths.get_indicator_folder("population"), f"{code}.parquet"
+        )
     )["Population"]
     local_years = (
         pd.DatetimeIndex(values.index)
@@ -75,9 +78,9 @@ def _retrieve(code: str, tmp_folders) -> pd.Series:
     return values.groupby(local_years).median()
 
 
-def test_population_of_country(tmp_folders):
+def test_population_of_country():
     """Test that a country has the population of the World Bank."""
-    yearly = _retrieve("IND", tmp_folders)
+    yearly = _retrieve("IND")
 
     # 2025, after the last year of the World Bank, has that of 2024.
     assert yearly[2019] == pytest.approx(1300e6 * 1.02)
@@ -85,9 +88,9 @@ def test_population_of_country(tmp_folders):
     assert yearly[2025] == pytest.approx(1300e6 * 1.02**6)
 
 
-def test_population_of_subdivision(tmp_folders):
+def test_population_of_subdivision():
     """Test that a subdivision has the population of gridded data."""
-    yearly = _retrieve("IND_KL", tmp_folders)
+    yearly = _retrieve("IND_KL")
 
     # The gridded data ends in 2020, after which the subdivision grows
     # as its country, 2% a year, until 2024, the last year of the

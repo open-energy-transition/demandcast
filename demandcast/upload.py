@@ -14,6 +14,7 @@ from typing import Literal
 import pandas as pd
 import utils.config
 import utils.entities
+import utils.paths
 import utils.uploader
 from pydantic import BaseModel, model_validator
 
@@ -126,7 +127,7 @@ def main(config: ConfigModel) -> None:
                     # Check if a metadata file other than the default
                     # one for OET-created content has been provided.
                     metadata_file_path = os.path.join(
-                        utils.config.read_folders_structure()["config_folder"],
+                        utils.paths.CONFIG_FOLDER,
                         "zenodo_metadata.yaml",
                     )
                     if not os.path.exists(metadata_file_path):

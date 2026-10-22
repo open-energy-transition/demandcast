@@ -27,7 +27,7 @@ import logging
 import os
 from collections.abc import Callable
 from functools import reduce
-from typing import Literal
+from typing import Literal, cast
 
 import dask
 import dask.dataframe
@@ -39,6 +39,7 @@ import retrievals.gridded_weather
 import retrievals.population
 import utils.config
 import utils.entities
+import utils.paths
 from pydantic import BaseModel
 from tqdm import tqdm
 
@@ -156,16 +157,14 @@ def _get_files_to_load(
         Dictionary mapping entity codes to list of file paths to load.
     """
     # Get the folder containing the data.
-    data_folder = utils.config.read_folders_structure()[
-        f"{variable.replace(' ', '_').lower()}_folder"
-    ]
-
     if variable == "electricity demand":
         # For electricity demand, read the hourly demand that combines
         # all the data sources of each code (see cleaning/combining.py).
-        data_folder = utils.config.read_folders_structure()[
-            "combined_electricity_demand_folder"
-        ]
+        data_folder = utils.paths.get_electricity_demand_folder("combined")
+    else:
+        data_folder = utils.paths.get_indicator_folder(
+            cast(utils.paths.Indicator, variable.replace(" ", "_").lower())
+        )
 
     # Initialize an empty dictionary to hold the files to load.
     files_to_load = {}
@@ -865,9 +864,7 @@ def run_data_assemply(
         assembled_data = _calculate_load_fraction(assembled_data)
 
     # Get the assembled data folder path.
-    assembled_data_folder = utils.config.read_folders_structure()[
-        "assembled_data_folder"
-    ]
+    assembled_data_folder = utils.paths.get_assembled_folder()
     os.makedirs(assembled_data_folder, exist_ok=True)
 
     # Construct the output file path.

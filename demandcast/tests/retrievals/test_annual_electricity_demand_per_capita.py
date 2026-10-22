@@ -16,10 +16,11 @@ import numpy as np
 import pandas as pd
 import pytest
 import retrievals.annual_electricity_demand_per_capita as annual_demand
+import utils.paths
 from retrievals.socio_economic_data_sources import ember, world_bank
 
 
-def test_run_data_retrieval_of_future_scenario(tmp_folders):
+def test_run_data_retrieval_of_future_scenario():
     """Test that future data is saved where assemble.py reads it."""
     historical_data = pd.DataFrame(
         {2020: [7000.0], 2021: [7100.0]}, index=["FRA"]
@@ -48,14 +49,20 @@ def test_run_data_retrieval_of_future_scenario(tmp_folders):
             )
 
     assert sorted(
-        os.listdir(tmp_folders["annual_electricity_demand_per_capita_folder"])
+        os.listdir(
+            utils.paths.get_indicator_folder(
+                "annual_electricity_demand_per_capita"
+            )
+        )
     ) == [
         "FRA_SSP2_45.csv",
         "FRA_SSP2_45.parquet",
     ]
     saved = pd.read_parquet(
         os.path.join(
-            tmp_folders["annual_electricity_demand_per_capita_folder"],
+            utils.paths.get_indicator_folder(
+                "annual_electricity_demand_per_capita"
+            ),
             "FRA_SSP2_45.parquet",
         )
     )["Annual electricity demand per capita (kWh)"]
@@ -190,7 +197,7 @@ def test_get_historical_data():
 
 
 @pytest.mark.parametrize("code", ["FRA", "IND_KL"])
-def test_run_data_retrieval_of_historical_years(tmp_folders, code):
+def test_run_data_retrieval_of_historical_years(code):
     """Test that the historical data is saved hourly in local years."""
     historical_data = pd.DataFrame(
         {2020: [7000.0, 1100.0], 2021: [7100.0, 1200.0]}, index=["FRA", "IND"]
@@ -213,7 +220,9 @@ def test_run_data_retrieval_of_historical_years(tmp_folders, code):
 
     saved = pd.read_parquet(
         os.path.join(
-            tmp_folders["annual_electricity_demand_per_capita_folder"],
+            utils.paths.get_indicator_folder(
+                "annual_electricity_demand_per_capita"
+            ),
             f"{code}.parquet",
         )
     )["Annual electricity demand per capita (kWh)"]

@@ -21,9 +21,9 @@ import logging
 import os
 
 import pandas as pd
-import utils.config
 import utils.entities
 import utils.geospatial
+import utils.paths
 import utils.scenarios
 import utils.time_series
 from tqdm import tqdm
@@ -192,9 +192,7 @@ def run_data_retrieval(
         retrieved.
     """
     # Get the directory to store the population data.
-    result_directory = utils.config.read_folders_structure()[
-        "population_folder"
-    ]
+    result_directory = utils.paths.get_indicator_folder("population")
     os.makedirs(result_directory, exist_ok=True)
 
     # Download the historical population data.

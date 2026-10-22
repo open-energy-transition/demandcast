@@ -4,7 +4,8 @@ License: AGPL-3.0.
 Description:
 
     This module provides utility functions to read the configuration
-    files of various scripts.
+    files of the scripts, the API keys and to set up the logging. The
+    paths of the folders and files are in utils/paths.py.
 """
 
 import argparse
@@ -16,78 +17,7 @@ import yaml
 from dotenv import load_dotenv
 from pydantic import BaseModel, ValidationError
 
-
-def read_folders_structure() -> dict[str, str]:
-    """
-    Read the folders structure.
-
-    This function reads the folders structure from a yaml file located
-    in the 'utils' directory. The yaml file should contain a dictionary
-    where keys are folder names and values are their paths relative to
-    the root folder. The root folder is determined as the parent
-    directory of the current file's directory.
-
-    Returns
-    -------
-    folders_structure : dict[str, str]
-        A dictionary containing the folders structure, where keys are
-        folder names and values are their paths.
-    """
-    # Get the absolute path to the root folder.
-    root_folder = os.path.normpath(
-        os.path.join(os.path.abspath(os.path.dirname(__file__)), "..")
-    )
-
-    # Define the default path to the yaml file.
-    folders_structure_file_path = os.path.join(
-        root_folder, "config", "directories_config.yaml"
-    )
-
-    # Read the folders structure from the file.
-    with open(folders_structure_file_path, encoding="utf-8") as file:
-        folders_structure = yaml.safe_load(file)
-
-    # Add the root folder to the folders structure.
-    folders_structure["root_folder"] = root_folder
-
-    # Iterate over the folders structure, concatenate the paths if
-    # multiple folders are defined, and normalize the paths.
-    for key, value in folders_structure.items():
-        # Add the root folder to the path but skip the root folder key.
-        if key != "root_folder":
-            if isinstance(value, list):
-                # If the value is a list, unpack the list.
-                folders_structure[key] = os.path.join(root_folder, *value)
-            else:
-                folders_structure[key] = os.path.join(root_folder, value)
-
-    return folders_structure
-
-
-def get_electricity_demand_file_path(
-    stage: str, code: str, data_source: str | None = None
-) -> str:
-    """
-    Get the path of the file of the electricity demand of a stage.
-
-    Parameters
-    ----------
-    stage : str
-        The stage of the data, "processed", "cleaned" or "combined".
-    code : str
-        The code of the country or subdivision.
-    data_source : str | None, optional
-        The data source, none for the combined data of all of them.
-
-    Returns
-    -------
-    str
-        The path of the parquet file, named after the code and the data
-        source, in the folder of the stage.
-    """
-    folder = read_folders_structure()[f"{stage}_electricity_demand_folder"]
-    name = code if data_source is None else f"{code}_{data_source}"
-    return os.path.join(folder, f"{name}.parquet")
+import utils.paths
 
 
 def read_api_key(variable: str, service: str) -> str:
@@ -114,8 +44,7 @@ def read_api_key(variable: str, service: str) -> str:
     ValueError
         If the key is not set or is empty.
     """
-    root_directory = read_folders_structure()["root_folder"]
-    load_dotenv(dotenv_path=os.path.join(root_directory, ".env"))
+    load_dotenv(dotenv_path=utils.paths.ENV_FILE)
 
     # A secret that is not set on GitHub gives an empty key.
     api_key = os.getenv(variable)
@@ -250,7 +179,7 @@ def set_up_logging(process: str) -> None:
     )
 
     # Get the log files directory and create it if it does not exist.
-    log_files_directory = read_folders_structure()["log_files_folder"]
+    log_files_directory = utils.paths.get_logs_folder()
     os.makedirs(log_files_directory, exist_ok=True)
 
     # Set up the logging configuration.

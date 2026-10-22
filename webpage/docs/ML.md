@@ -245,7 +245,7 @@ use_validation_set: false          # Use validation set during training
 data_path:                         # Path to assembled data file
 ```
 
-The trained model is saved to `ml_models/trained/{algorithm_name}_model_YYYYMMDD_HHMMSS.json`. Model configuration is specified in `ml_config.yaml` and `xgboost_config.yaml`.
+The trained model is saved to `data/models/{algorithm_name}/{algorithm_name}_model_YYYYMMDD_HHMMSS.json`, with the name of the algorithm in lower case. Model configuration is specified in `ml_config.yaml` and `xgboost_config.yaml`.
 
 ### Model Validation
 

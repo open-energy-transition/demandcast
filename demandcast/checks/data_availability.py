@@ -27,7 +27,7 @@ import pandas as pd
 import pycountry
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
-import utils.config
+import utils.paths
 import utils.shapes
 import yaml
 from retrievals.socio_economic_data_sources import iiasa, world_bank
@@ -266,9 +266,7 @@ def run_check() -> None:
     ].isin(iiasa_future_gdp_ppp_per_capita.index)
 
     # Define the retreivals directory.
-    retrievals_directory = utils.config.read_folders_structure()[
-        "retrievals_folder"
-    ]
+    retrievals_directory = utils.paths.RETRIEVALS_FOLDER
 
     # Read codes available for future electricity demand per capita
     # projections from the IIASA SSP database.

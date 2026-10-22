@@ -49,8 +49,8 @@ from typing import cast
 
 import numpy as np
 import pandas as pd
-import utils.config
 import utils.entities
+import utils.paths
 import utils.scenarios
 import utils.time_series
 from tqdm import tqdm
@@ -185,9 +185,9 @@ def run_data_retrieval(
     """
     # Get the directory to store the annual electricity demand per
     # capita data.
-    result_directory = utils.config.read_folders_structure()[
-        "annual_electricity_demand_per_capita_folder"
-    ]
+    result_directory = utils.paths.get_indicator_folder(
+        "annual_electricity_demand_per_capita"
+    )
     os.makedirs(result_directory, exist_ok=True)
 
     # Download the historical electricity demand per capita data.

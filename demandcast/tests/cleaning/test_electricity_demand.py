@@ -13,9 +13,9 @@ import cleaning.electricity_demand
 import numpy as np
 import pandas as pd
 import pytest
-import utils.config
+import utils.paths
 
-pytestmark = pytest.mark.usefixtures("tmp_folders", "frozen_now")
+pytestmark = pytest.mark.usefixtures("frozen_now")
 
 
 def _demand(start: str, periods: int, freq: str = "1h") -> pd.Series:
@@ -45,7 +45,7 @@ def _clean(demand: pd.Series) -> tuple[pd.Series, pd.DataFrame]:
     tuple[pandas.Series, pandas.DataFrame]
         The cleaned demand and the periods of the removed values.
     """
-    file_path = utils.config.get_electricity_demand_file_path(
+    file_path = utils.paths.get_electricity_demand_file(
         "processed", "IND", "test"
     )
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -56,7 +56,7 @@ def _clean(demand: pd.Series) -> tuple[pd.Series, pd.DataFrame]:
     cleaned = cleaning.electricity_demand.clean_data("IND", "test")
 
     removed = pd.read_parquet(
-        utils.config.get_electricity_demand_file_path(
+        utils.paths.get_electricity_demand_file(
             "cleaned", "IND", "test"
         ).removesuffix(".parquet")
         + "_removed.parquet"

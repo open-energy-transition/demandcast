@@ -23,9 +23,9 @@ import os
 
 import numpy as np
 import pandas as pd
-import utils.config
 import utils.entities
 import utils.geospatial
+import utils.paths
 import utils.scenarios
 import utils.shapes
 import utils.time_series
@@ -77,9 +77,9 @@ def _load_gridded_temperature_data(
         If the temperature variable is not found in the dataset.
     """
     # Define the directory where the temperature data is stored.
-    temperature_data_directory = utils.config.read_folders_structure()[
-        "gridded_weather_folder"
-    ]
+    temperature_data_directory = utils.paths.get_gridded_folder(
+        "weather", "processed"
+    )
 
     # Define the years of interest (the given year, the previous
     # year, and the next year).
@@ -212,9 +212,9 @@ def _load_gridded_population_data(
         population_scenario = None
 
     # # Define the directory where the population data is stored.
-    population_data_directory = utils.config.read_folders_structure()[
-        "gridded_population_folder"
-    ]
+    population_data_directory = utils.paths.get_gridded_folder(
+        "population", "processed"
+    )
 
     # Define the file path of the population data.
     population_data_file_path = os.path.join(
@@ -600,9 +600,7 @@ def run_data_retrieval(
         The scenario of the weather data.
     """
     # Create a directory to store the weather data.
-    result_directory = utils.config.read_folders_structure()[
-        "temperature_folder"
-    ]
+    result_directory = utils.paths.get_indicator_folder("temperature")
     os.makedirs(result_directory, exist_ok=True)
 
     # Get the list of codes of the countries and subdivisions of

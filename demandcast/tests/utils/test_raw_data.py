@@ -9,12 +9,14 @@ Description:
 
 import datetime
 import os
+import pathlib
 import urllib.request
 
 import pandas as pd
 import pytest
 import requests
 import utils.fetcher
+import utils.paths
 import utils.raw_data
 
 
@@ -67,7 +69,6 @@ def test_encode_unknown_request():
         utils.raw_data.encode_request({1, 2})
 
 
-@pytest.mark.usefixtures("tmp_folders")
 def test_record_and_replay(server, monkeypatch):
     """Test that the responses are kept without secrets and replayed."""
     monkeypatch.setenv("TEST_API_KEY", "key123")
@@ -117,7 +118,6 @@ def test_record_and_replay(server, monkeypatch):
     assert ticket.text == ""
 
 
-@pytest.mark.usefixtures("tmp_folders")
 def test_record_and_replay_urllib(tmp_path):
     """Test that the responses of urllib are saved and replayed."""
     file_path = tmp_path / "data.csv"
@@ -138,11 +138,12 @@ def test_record_and_replay_urllib(tmp_path):
         assert response.read() == b"time,value\n"
 
 
-def test_record_and_replay_manual_files(tmp_folders, tmp_path):
+def test_record_and_replay_manual_files():
     """Test that the files downloaded manually are kept and replayed."""
-    folder = tmp_path / "manual"
-    folder.mkdir()
-    tmp_folders["manually_downloaded_electricity_demand_folder"] = str(folder)
+    folder = pathlib.Path(
+        utils.paths.get_electricity_demand_folder("manual_downloads")
+    )
+    folder.mkdir(parents=True)
     (folder / "ABC_1.csv").write_text("load\n1\n")
 
     def read():
@@ -172,7 +173,6 @@ def test_record_and_replay_manual_files(tmp_folders, tmp_path):
     assert utils.fetcher.find_manual_files("ABC") == []
 
 
-@pytest.mark.usefixtures("tmp_folders")
 def test_save_versions(server):
     """Test that a version is added only when the responses change."""
     server["https://example.org/data"] = b"1"

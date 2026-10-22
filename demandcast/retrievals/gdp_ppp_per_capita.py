@@ -17,9 +17,9 @@ from typing import cast
 
 import cpi
 import pandas as pd
-import utils.config
 import utils.entities
 import utils.geospatial
+import utils.paths
 import utils.scenarios
 import utils.time_series
 from tqdm import tqdm
@@ -309,9 +309,7 @@ def run_data_retrieval(
         The scenario of the GDP PPP per capita data to be retrieved.
     """
     # Get the directory to store the GDP PPP per capita data.
-    result_directory = utils.config.read_folders_structure()[
-        "gdp_ppp_per_capita_folder"
-    ]
+    result_directory = utils.paths.get_indicator_folder("gdp_ppp_per_capita")
     os.makedirs(result_directory, exist_ok=True)
 
     # Get the historical GDP PPP per capita.

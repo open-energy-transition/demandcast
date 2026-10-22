@@ -51,8 +51,8 @@ from typing import Any
 import pandas as pd
 import requests
 
-import utils.config
 import utils.fetcher
+import utils.paths
 
 # The method of the requests of the files downloaded manually.
 MANUAL_FILE = "FILE"
@@ -77,7 +77,7 @@ def _folder(data_source: str) -> str:
         The folder.
     """
     return os.path.join(
-        utils.config.read_folders_structure()["raw_electricity_demand_folder"],
+        utils.paths.get_electricity_demand_folder("raw"),
         data_source,
     )
 

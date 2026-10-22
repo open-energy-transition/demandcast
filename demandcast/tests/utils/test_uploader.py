@@ -7,6 +7,7 @@ Description:
 """
 
 import json
+import os
 from unittest.mock import Mock, mock_open, patch
 
 import pytest
@@ -180,7 +181,7 @@ def test_upload_file_to_new_deposition_on_zenodo():
     with (
         patch("requests.get") as mock_get,
         patch("requests.post") as mock_post,
-        patch("utils.config.read_folders_structure"),
+        patch("utils.paths.ENV_FILE", os.devnull),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
         patch("builtins.open") as mock_open_file,
@@ -242,7 +243,7 @@ def test_upload_file_to_draft_version_on_zenodo():
         patch("requests.get") as mock_get,
         patch("requests.put") as mock_put,
         patch("requests.post") as mock_post,
-        patch("utils.config.read_folders_structure"),
+        patch("utils.paths.ENV_FILE", os.devnull),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
         patch("builtins.open") as mock_open_file,
@@ -291,7 +292,7 @@ def test_upload_file_to_new_version_on_zenodo():
         patch("requests.put") as mock_put,
         patch("requests.post") as mock_post,
         patch("requests.delete") as mock_delete,
-        patch("utils.config.read_folders_structure"),
+        patch("utils.paths.ENV_FILE", os.devnull),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
         patch("builtins.open") as mock_open_file,
@@ -372,7 +373,7 @@ def test_zenodo_error_get_depositions():
     """
     with (
         patch("requests.get") as mock_get,
-        patch("utils.config.read_folders_structure"),
+        patch("utils.paths.ENV_FILE", os.devnull),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
         patch("builtins.open") as mock_open_file,
@@ -406,7 +407,7 @@ def test_zenodo_error_new_version_of_deposition():
     with (
         patch("requests.get") as mock_get,
         patch("requests.post") as mock_post,
-        patch("utils.config.read_folders_structure"),
+        patch("utils.paths.ENV_FILE", os.devnull),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
         patch("builtins.open") as mock_open_file,
@@ -445,7 +446,7 @@ def test_zenodo_error_update_new_version_of_deposition():
         patch("requests.get") as mock_get,
         patch("requests.post") as mock_post,
         patch("requests.put") as mock_put,
-        patch("utils.config.read_folders_structure"),
+        patch("utils.paths.ENV_FILE", os.devnull),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
         patch("builtins.open") as mock_open_file,
@@ -490,7 +491,7 @@ def test_zenodo_error_get_files_in_draft():
         patch("requests.get") as mock_get,
         patch("requests.post") as mock_post,
         patch("requests.put") as mock_put,
-        patch("utils.config.read_folders_structure"),
+        patch("utils.paths.ENV_FILE", os.devnull),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
         patch("builtins.open") as mock_open_file,
@@ -540,7 +541,7 @@ def test_zenodo_error_delete_files_in_draft():
         patch("requests.post") as mock_post,
         patch("requests.put") as mock_put,
         patch("requests.delete") as mock_delete,
-        patch("utils.config.read_folders_structure"),
+        patch("utils.paths.ENV_FILE", os.devnull),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
         patch("builtins.open") as mock_open_file,
@@ -593,7 +594,7 @@ def test_zenodo_error_update_draft_metadata():
     with (
         patch("requests.get") as mock_get,
         patch("requests.put") as mock_put,
-        patch("utils.config.read_folders_structure"),
+        patch("utils.paths.ENV_FILE", os.devnull),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
         patch("builtins.open") as mock_open_file,
@@ -632,7 +633,7 @@ def test_zenodo_error_create_new_deposition():
     with (
         patch("requests.get") as mock_get,
         patch("requests.post") as mock_post,
-        patch("utils.config.read_folders_structure"),
+        patch("utils.paths.ENV_FILE", os.devnull),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
         patch("builtins.open") as mock_open_file,
@@ -670,7 +671,7 @@ def test_zenodo_error_upload_file_to_deposition():
     with (
         patch("requests.get") as mock_get,
         patch("requests.post") as mock_post,
-        patch("utils.config.read_folders_structure"),
+        patch("utils.paths.ENV_FILE", os.devnull),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
         patch("builtins.open") as mock_open_file,
@@ -723,7 +724,7 @@ def test_zenodo_error_publish_deposition():
     with (
         patch("requests.get") as mock_get,
         patch("requests.post") as mock_post,
-        patch("utils.config.read_folders_structure"),
+        patch("utils.paths.ENV_FILE", os.devnull),
         patch("dotenv.load_dotenv"),
         patch("os.getenv"),
         patch("builtins.open") as mock_open_file,

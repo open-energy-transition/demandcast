@@ -20,6 +20,7 @@ import pytest
 import utils.config
 import utils.entities
 import utils.fetcher
+import utils.paths
 from retrievals.electricity_demand_data_sources import hydroquebec, ons
 
 
@@ -259,9 +260,7 @@ def test_describe_request(request_, description):
 
 def test_manual_downloads():
     """Test that the skipped data sources are the manual downloads."""
-    folder = utils.config.read_folders_structure()[
-        "electricity_demand_data_sources_folder"
-    ]
+    folder = utils.paths.DATA_SOURCES_FOLDER
     manual_downloads = []
     for data_source in utils.entities.read_data_sources():
         file_path = os.path.join(folder, f"{data_source}.py")
@@ -273,9 +272,9 @@ def test_manual_downloads():
 
 
 @pytest.fixture
-def fake_checks(monkeypatch, tmp_folders, tmp_path):
+def fake_checks(monkeypatch):
     """
-    Replace the check of a data source, and the folder of the report.
+    Replace the check of a data source.
 
     Cen fails, and the other data sources pass.
 
@@ -284,7 +283,6 @@ def fake_checks(monkeypatch, tmp_folders, tmp_path):
     dict[str, int]
         The maximum age in days used for each data source checked.
     """
-    tmp_folders["checks_folder"] = os.path.join(tmp_path, "checks")
     maximum_ages = {}
 
     def check_data_source(
@@ -314,7 +312,7 @@ def fake_checks(monkeypatch, tmp_folders, tmp_path):
     return maximum_ages
 
 
-def test_run_check(fake_checks, tmp_path):
+def test_run_check(fake_checks):
     """Test that the results are saved, without the manual downloads."""
     results = checks.data_sources.run_check(
         ["ons", "eskom", "cen"],
@@ -329,7 +327,9 @@ def test_run_check(fake_checks, tmp_path):
     ]
     assert fake_checks == {"ons": 45, "cen": 200}
 
-    file_path = os.path.join(tmp_path, "checks", "data_sources_report")
+    file_path = os.path.join(
+        utils.paths.get_results_folder("checks"), "data_sources_report"
+    )
     with open(file_path + ".json", encoding="utf-8") as file:
         report = json.load(file)
     assert pd.Timestamp(report["checked_at"]).tz is not None
@@ -370,9 +370,11 @@ def test_run_check(fake_checks, tmp_path):
 
 
 @pytest.mark.usefixtures("fake_checks")
-def test_run_check_counts_the_failures_in_a_row(tmp_path):
+def test_run_check_counts_the_failures_in_a_row():
     """Test that the failures are counted from the previous report."""
-    file_path = os.path.join(tmp_path, "checks", "data_sources_report.json")
+    file_path = os.path.join(
+        utils.paths.get_results_folder("checks"), "data_sources_report.json"
+    )
 
     # Cen fails each check, and ONS passes after failing the first one.
     for failures_in_a_row in [1, 2, 3]:
@@ -453,7 +455,7 @@ def test_run_check_without_an_answer(monkeypatch):
 def test_configuration_of_the_live_check(monkeypatch):
     """Test that check.py reads the configuration of the live check."""
     config_file_path = os.path.join(
-        utils.config.read_folders_structure()["config_folder"],
+        utils.paths.CONFIG_FOLDER,
         "check_data_sources_config.yaml",
     )
     monkeypatch.setattr(

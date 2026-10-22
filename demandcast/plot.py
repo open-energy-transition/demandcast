@@ -14,6 +14,7 @@ import figures.data_availability
 import figures.map_of_available_entities
 import figures.ml_results
 import utils.config
+import utils.paths
 from pydantic import BaseModel, model_validator
 
 
@@ -74,7 +75,7 @@ def main(config: ConfigModel) -> None:
     utils.config.log_configuration(config)
 
     # Create a directory to store the figures.
-    figure_directory = utils.config.read_folders_structure()["figures_folder"]
+    figure_directory = utils.paths.get_results_folder("figures")
     os.makedirs(figure_directory, exist_ok=True)
 
     if config.figure == "data_availability":
