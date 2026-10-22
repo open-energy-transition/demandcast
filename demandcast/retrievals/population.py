@@ -19,9 +19,9 @@ Description:
 
 import pandas as pd
 import utils.catalogue
-import utils.geospatial
 import utils.scenarios
 
+import retrievals.gridded_totals
 import retrievals.indicators
 from retrievals.socio_economic_data_sources import iiasa, world_bank
 
@@ -45,7 +45,7 @@ def _extract_historical_population(
         # Extract the historical population for the country or
         # subdivision by aggregating gridded data.
         historical_population = (
-            utils.geospatial.get_total_value_from_gridded_data(
+            retrievals.gridded_totals.get_total_value_from_gridded_data(
                 "population",
                 code,
                 used_historical_years,
@@ -125,13 +125,15 @@ def _extract_future_population(
     else:
         # Extract the future population for the country or subdivision
         # by aggregating gridded data.
-        future_population = utils.geospatial.get_total_value_from_gridded_data(
-            "population",
-            code,
-            future_years,
-            available_future_years_of_gridded_data,
-            available_historical_years_of_gridded_data[-1],
-            scenario,
+        future_population = (
+            retrievals.gridded_totals.get_total_value_from_gridded_data(
+                "population",
+                code,
+                future_years,
+                available_future_years_of_gridded_data,
+                available_historical_years_of_gridded_data[-1],
+                scenario,
+            )
         )
 
     return future_population

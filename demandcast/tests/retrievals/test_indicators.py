@@ -126,9 +126,8 @@ def _run(retrieval: str, code: str) -> None:
                 - 1000.0
             ),
         ),
-        patch.object(
-            module.utils.geospatial,
-            "get_total_value_from_gridded_data",
+        patch(
+            "retrievals.gridded_totals.get_total_value_from_gridded_data",
             side_effect=_gridded,
         ),
     ]

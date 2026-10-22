@@ -16,9 +16,9 @@ from typing import cast
 import cpi
 import pandas as pd
 import utils.catalogue
-import utils.geospatial
 import utils.scenarios
 
+import retrievals.gridded_totals
 import retrievals.indicators
 from retrievals.socio_economic_data_sources import iiasa, imf, world_bank
 
@@ -96,7 +96,7 @@ def _get_gdp_ppp_per_capita_from_gridded_data(
         The GDP PPP per capita for the specified years.
     """
     # Get the total GDP PPP from gridded data.
-    gdp_ppp = utils.geospatial.get_total_value_from_gridded_data(
+    gdp_ppp = retrievals.gridded_totals.get_total_value_from_gridded_data(
         "gdp_ppp",
         code,
         selected_years,
@@ -111,7 +111,7 @@ def _get_gdp_ppp_per_capita_from_gridded_data(
     gdp_ppp = gdp_ppp.apply(lambda x: cpi.inflate(x, 2005, to=2021))
 
     # Get the total population from gridded data.
-    population = utils.geospatial.get_total_value_from_gridded_data(
+    population = retrievals.gridded_totals.get_total_value_from_gridded_data(
         "population",
         code,
         selected_years,

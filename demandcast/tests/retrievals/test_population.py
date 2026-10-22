@@ -50,7 +50,7 @@ def _retrieve(code: str) -> pd.Series:
         patch.object(population.world_bank, "download", return_value=national),
         patch.object(population.iiasa, "read"),
         patch.object(
-            population.utils.geospatial,
+            population.retrievals.gridded_totals,
             "get_total_value_from_gridded_data",
             side_effect=_gridded_population,
         ),
