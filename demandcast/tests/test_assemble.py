@@ -17,17 +17,13 @@ import dask.dataframe
 import numpy as np
 import pandas as pd
 import pytest
+import retrievals.temperature
+import utils.entities
+import utils.time_series
 
-# The columns of the temperature that the assembly reads.
-TEMPERATURE_COLUMNS = [
-    "Temperature - Top 1 (K)",
-    "Temperature - Top 3 (K)",
-    "Monthly average temperature - Top 1 (K)",
-    "Monthly average temperature rank - Top 1",
-    "Annual average temperature - Top 1 (K)",
-    "5 percentile temperature - Top 1 (K)",
-    "95 percentile temperature - Top 1 (K)",
-]
+# The codes of the inputs, in time zones with daylight saving time and
+# with a half hour from UTC.
+CODES = ["FRA", "DEU", "IND"]
 
 
 def _hours(years: list[int]) -> pd.DatetimeIndex:
@@ -71,15 +67,49 @@ def _save(folder: str, name: str, frame: pd.DataFrame) -> None:
     frame.to_parquet(os.path.join(folder, f"{name}.parquet"))
 
 
+def _local_hours(code: str, years: list[int]) -> pd.DatetimeIndex:
+    """
+    Get the ends of the hours of the local years of a code, in UTC.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country.
+    years : list[int]
+        The years.
+
+    Returns
+    -------
+    pandas.DatetimeIndex
+        The ends of the whole hours in UTC whose starts are in the
+        years in local time.
+    """
+    time_zone = utils.entities.get_time_zone(code)
+    start, _ = utils.time_series.get_local_year_bounds(years[0], time_zone)
+    _, end = utils.time_series.get_local_year_bounds(years[-1], time_zone)
+    hours = pd.date_range(
+        start.floor("h"),
+        end.ceil("h") + pd.Timedelta(hours=1),
+        freq="h",
+        name="Time (UTC)",
+        unit="us",
+    ).tz_localize(None)
+    return hours[
+        utils.time_series.get_local_years(hours, time_zone).isin(years)
+    ]
+
+
 def _write_inputs(
     folders: dict[str, str], codes: list[str], years: list[int]
 ) -> None:
     """
     Write the inputs of the assembly of some codes and years.
 
+    The inputs are made with the helpers of the retrievals, so that
+    they have the times and the local years that the retrievals give.
     The electricity demand of each code is 1000 MW plus its hour of the
-    day, in the combined folder, with its data source, and the cleaned
-    folder has another demand, which the assembly does not read.
+    day in UTC, in the combined folder, with its data source, and the
+    cleaned folder has another demand, which the assembly does not read.
 
     Parameters
     ----------
@@ -90,38 +120,42 @@ def _write_inputs(
     years : list[int]
         The years.
     """
-    hours = _hours(years)
-    local_year = (hours - pd.Timedelta(hours=1)).year
     for number, code in enumerate(codes):
-        _save(
-            folders["annual_electricity_demand_per_capita_folder"],
-            code,
-            pd.DataFrame(
-                {"Annual electricity demand per capita (kWh)": 5000.0},
-                index=hours,
+        time_zone = utils.entities.get_time_zone(code)
+        for folder, column, value in (
+            (
+                "annual_electricity_demand_per_capita_folder",
+                "Annual electricity demand per capita (kWh)",
+                5000.0,
             ),
-        )
-        _save(
-            folders["population_folder"],
-            code,
-            pd.DataFrame({"Population": 1e6 * (number + 1)}, index=hours),
-        )
-        _save(
-            folders["gdp_ppp_per_capita_folder"],
-            code,
-            pd.DataFrame(
-                {"GDP PPP per capita (2021 international $)": 40000.0},
-                index=hours,
+            ("population_folder", "Population", 1e6 * (number + 1)),
+            (
+                "gdp_ppp_per_capita_folder",
+                "GDP PPP per capita (2021 international $)",
+                40000.0,
             ),
-        )
-        for year in years:
-            in_year = local_year == year
-            temperature = pd.DataFrame(
-                dict.fromkeys(TEMPERATURE_COLUMNS, 280.0),
-                index=hours[in_year],
+        ):
+            hourly = utils.time_series.convert_from_yearly_to_hourly(
+                pd.Series(value, index=years), time_zone
             )
-            temperature["Local year"] = year
-            _save(folders["temperature_folder"], f"{code}_{year}", temperature)
+            _save(
+                folders[folder],
+                code,
+                utils.time_series.clean_data(hourly, column).to_frame(),
+            )
+        hours = _local_hours(code, years)
+        for year in years:
+            year_hours = hours[
+                utils.time_series.get_local_years(hours, time_zone) == year
+            ]
+            temperature = pd.Series(280.0, index=year_hours)
+            _save(
+                folders["temperature_folder"],
+                f"{code}_{year}",
+                retrievals.temperature._build_temperature_database(
+                    temperature, temperature, time_zone
+                ),
+            )
         _save(
             folders["combined_electricity_demand_folder"],
             code,
@@ -145,18 +179,21 @@ def _write_inputs(
 @pytest.fixture
 def assembly_inputs(tmp_folders, monkeypatch):
     """
-    Write the inputs of France and Germany in 2023 and 2024.
+    Write the inputs of France, Germany and India in 2023 and 2024.
+
+    India is 5 hours and 30 minutes ahead of UTC, so its years start on
+    the half hour in UTC.
 
     Returns
     -------
     dict[str, str]
         The folders of the data.
     """
-    _write_inputs(tmp_folders, ["FRA", "DEU"], [2023, 2024])
+    _write_inputs(tmp_folders, CODES, [2023, 2024])
     monkeypatch.setattr(
         assemble.utils.entities,
         "check_and_get_codes_with",
-        lambda *_, **__: ["FRA", "DEU"],
+        lambda *_, **__: CODES,
     )
     return tmp_folders
 
@@ -326,12 +363,14 @@ def test_assembly_for_training(assembly_inputs):
     Test the assembly for training.
 
     The electricity demand is the combined one, and the rows are in the
-    order of the entities and of the times (#146).
+    order of the entities and of the times. Every hour of the local
+    years is kept, also the last one, which ends at midnight on
+    January 1.
     """
     assemble.run_data_assemply("training")
 
     assembled = _read_assembled(assembly_inputs, "training")
-    assert len(assembled) == 2 * len(_hours([2023, 2024]))
+    assert len(assembled) == len(CODES) * len(_hours([2023, 2024]))
     assert assembled.equals(
         assembled.sort_values(["Entity code", "Time (UTC)"], ignore_index=True)
     )
@@ -350,12 +389,47 @@ def test_assembly_for_forecasting_of_some_years(assembly_inputs):
     assemble.run_data_assemply("forecasting", start_year=2024, end_year=2024)
 
     assembled = _read_assembled(assembly_inputs, "forecasting")
-    assert len(assembled) == 2 * len(_hours([2024]))
+    assert len(assembled) == len(CODES) * len(_hours([2024]))
     assert set(assembled["Local year"]) == {2024}
     assert "Load (MW)" not in assembled.columns
     assert assembled["Entity code"].tolist() == sorted(
         assembled["Entity code"]
     )
+
+
+def test_assembly_for_training_without_incomplete_years(assembly_inputs):
+    """
+    Test that the training leaves out the years without enough hours.
+
+    Germany misses the summer of 2023: the fraction of the annual total
+    of its other hours would assume that they represent the year.
+    """
+    file_path = os.path.join(
+        assembly_inputs["combined_electricity_demand_folder"], "DEU.parquet"
+    )
+    demand = pd.read_parquet(file_path)
+    summer = (demand.index >= "2023-06-01") & (demand.index < "2023-09-01")
+    demand[~summer].to_parquet(file_path)
+
+    assemble.run_data_assemply("training")
+
+    assembled = _read_assembled(assembly_inputs, "training")
+    years = assembled.groupby("Entity code")["Local year"].unique()
+    assert sorted(years["DEU"]) == [2024]
+    assert sorted(years["FRA"]) == [2023, 2024]
+    coverage_path = next(
+        path
+        for path in glob.glob(
+            os.path.join(assembly_inputs["assembled_data_folder"], "*.csv")
+        )
+        if path.endswith("_coverage.csv")
+    )
+    coverage = pd.read_csv(coverage_path).set_index(
+        ["Entity code", "Local year"]
+    )
+    assert not coverage.loc[("DEU", 2023), "Kept"]
+    assert coverage.loc[("DEU", 2023), "Lowest month coverage"] == 0
+    assert coverage["Kept"].sum() == len(CODES) * 2 - 1
 
 
 def test_assembly_with_wrong_inputs():

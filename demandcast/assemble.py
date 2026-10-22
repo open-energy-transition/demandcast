@@ -5,6 +5,20 @@ Description:
 
     This script assembles and preprocesses the retrieved data for
     training the machine learning models or forecasting.
+
+    Each row is an hour of an entity, at its end in UTC, with the mean
+    electricity demand of the hour, the mean temperature of the hour,
+    the calendar of its start in local time and the annual values of
+    the local year of its start (see retrievals/temperature.py and
+    utils.time_series.convert_from_yearly_to_hourly). The datasets are
+    merged on the hours and the entities, keeping only the hours that
+    all of them have.
+
+    The target of the training, the fraction of the annual total, is
+    estimated from the hours of each year with data, which must then
+    represent the year: the training keeps only the years with at least
+    90% of their hours and half of the hours of each month, and lists
+    the coverage of all the years next to the assembled data.
 """
 
 import datetime
@@ -26,6 +40,11 @@ import utils.config
 import utils.entities
 from pydantic import BaseModel, ValidationError
 from tqdm import tqdm
+
+# The shares of the hours of a year, and of each of its months, that
+# the training needs.
+MIN_YEAR_COVERAGE = 0.9
+MIN_MONTH_COVERAGE = 0.5
 
 
 class ConfigModel(BaseModel):
@@ -646,6 +665,77 @@ def _merge_datasets(
     return computed_dataset
 
 
+def _select_complete_years(
+    merged_dataset: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Keep the years of each entity with enough of their hours.
+
+    The fraction of the annual total of an hour assumes that the hours
+    of its year with data represent the whole year: a year without its
+    winter or its summer would have the wrong annual total.
+
+    Parameters
+    ----------
+    merged_dataset : pandas.DataFrame
+        The merged dataset, with the entity code, the local year and the
+        local month of the year of each hour.
+
+    Returns
+    -------
+    tuple[pandas.DataFrame, pandas.DataFrame]
+        The rows of the years with at least MIN_YEAR_COVERAGE of their
+        hours and MIN_MONTH_COVERAGE of the hours of each month, and the
+        coverage of each year of each entity: its hours ("Hours"), their
+        share of the year ("Year coverage") and the lowest share of the
+        hours of a month ("Lowest month coverage"), and whether it is
+        kept ("Kept").
+    """
+    keys = ["Entity code", "Local year"]
+    hours_by_month = merged_dataset.pivot_table(
+        index=keys,
+        columns="Local month of the year",
+        aggfunc="size",
+        fill_value=0,
+    ).reindex(columns=range(1, 13), fill_value=0)
+    hours_in_months = pd.DataFrame(
+        [
+            [
+                pd.Timestamp(int(year), month, 1).days_in_month * 24
+                for month in range(1, 13)
+            ]
+            for year in hours_by_month.index.get_level_values("Local year")
+        ],
+        index=hours_by_month.index,
+        columns=hours_by_month.columns,
+    )
+    coverage = pd.DataFrame(
+        {
+            "Hours": hours_by_month.sum(axis=1),
+            "Year coverage": hours_by_month.sum(axis=1)
+            / hours_in_months.sum(axis=1),
+            "Lowest month coverage": (hours_by_month / hours_in_months).min(
+                axis=1
+            ),
+        }
+    )
+    coverage["Kept"] = (coverage["Year coverage"] >= MIN_YEAR_COVERAGE) & (
+        coverage["Lowest month coverage"] >= MIN_MONTH_COVERAGE
+    )
+
+    excluded = coverage.index[~coverage["Kept"]]
+    logging.info(
+        f"Excluded {len(excluded)} of {len(coverage)} years of the "
+        "entities with too few hours: "
+        + (", ".join(f"{code} {year}" for code, year in excluded) or "none")
+        + "."
+    )
+    kept = pd.MultiIndex.from_frame(merged_dataset[keys]).isin(
+        coverage.index[coverage["Kept"]]
+    )
+    return merged_dataset[kept], coverage.reset_index()
+
+
 def _calculate_load_fraction(merged_dataset: pd.DataFrame) -> pd.DataFrame:
     """
     Calculate the fraction of load at each timestamp.
@@ -800,8 +890,11 @@ def run_data_assemply(
         ["Time (UTC)", "Entity code"],
     )
 
+    coverage = None
     if target_use == "training":
-        # Calculate load fraction for training data.
+        # Keep the years with enough hours, and calculate the load
+        # fraction for training data.
+        assembled_data, coverage = _select_complete_years(assembled_data)
         assembled_data = _calculate_load_fraction(assembled_data)
 
     # Get the assembled data folder path.
@@ -825,6 +918,8 @@ def run_data_assemply(
     )
     assembled_data.to_csv(output_path + ".csv", index=False)
     assembled_data.to_parquet(output_path + ".parquet", index=False)
+    if coverage is not None:
+        coverage.to_csv(output_path + "_coverage.csv", index=False)
 
     logging.info(
         f"Assembled data saved to {output_path}.csv and {output_path}.parquet"
