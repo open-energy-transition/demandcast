@@ -14,11 +14,13 @@ Description:
     so that a value after a gap does not cover the gap. The resolution
     is that around each value, the median time between the 25 values
     around it, since it can change within a data source, such as from 30
-    to 5 minutes in the NEM of Australia in October 2021. It is computed
-    once, before any value is removed. A value follows the one before it
-    if the time between them is at most its resolution: the rules below
-    that look at runs of values never bridge a gap, whether the data
-    source misses the values or an earlier rule removed them. The day of
+    to 5 minutes in the NEM of Australia in October 2021. The intervals
+    are computed once, before any value is removed, so that removing a
+    value does not lengthen the interval of the next one. A value
+    follows the one before it if the time between them is its interval:
+    the rules below that look at runs of values never bridge a gap,
+    whether the data source misses the values or an earlier rule removed
+    them. The day of
     a value is the local day of the start of its interval, so that the
     value at midnight belongs to the day that it ends, except for the
     copied days below.
@@ -161,8 +163,29 @@ def _get_resolutions(values: pd.Series) -> pd.Series:
     return pd.to_timedelta(median.fillna(3600), unit="s")
 
 
+def _get_durations(values: pd.Series, resolutions: pd.Series) -> pd.Series:
+    """
+    Get the duration of the interval of each value.
+
+    Parameters
+    ----------
+    values : pandas.Series
+        The whole time series, at the ends of the intervals, before any
+        value is removed.
+    resolutions : pandas.Series
+        The resolution of each value.
+
+    Returns
+    -------
+    pandas.Series
+        The time since the value before it, at most its resolution.
+    """
+    gaps = values.index.to_series().diff()
+    return gaps.where(gaps <= resolutions, resolutions)
+
+
 def _get_intervals(
-    values: pd.Series, resolutions: pd.Series
+    values: pd.Series, durations: pd.Series
 ) -> tuple[pd.Series, pd.Series]:
     """
     Get the interval of each value, and whether it follows the last one.
@@ -172,21 +195,20 @@ def _get_intervals(
     values : pandas.Series
         The time series, at the ends of the intervals, without the
         values removed so far.
-    resolutions : pandas.Series
-        The resolution of each value of the whole time series, before
-        any value is removed.
+    durations : pandas.Series
+        The duration of the interval of each value of the whole time
+        series, before any value is removed.
 
     Returns
     -------
     tuple[pandas.Series, pandas.Series]
-        The duration of the interval of each value: the time since the
-        value before it, at most its resolution. And whether the value
-        follows the one before it without a gap.
+        The duration of the interval of each value, and whether the
+        value follows the one before it without a gap: whether the
+        interval starts at the value before it.
     """
-    resolutions = resolutions.reindex(values.index)
-    gaps = values.index.to_series().diff()
-    follows = gaps <= resolutions
-    return gaps.where(follows, resolutions), follows
+    durations = durations.reindex(values.index)
+    follows = values.index.to_series().diff() <= durations
+    return durations, follows
 
 
 def _get_local_starts(
@@ -238,7 +260,7 @@ def _find_implausible(values: pd.Series) -> pd.Series:
     return values > IMPLAUSIBLE_FACTOR * median
 
 
-def _find_frozen(values: pd.Series, resolutions: pd.Series) -> pd.Series:
+def _find_frozen(values: pd.Series, durations: pd.Series) -> pd.Series:
     """
     Find the runs of the same value that last too long.
 
@@ -246,15 +268,16 @@ def _find_frozen(values: pd.Series, resolutions: pd.Series) -> pd.Series:
     ----------
     values : pandas.Series
         The demand.
-    resolutions : pandas.Series
-        The resolution of each value, before any value is removed.
+    durations : pandas.Series
+        The duration of the interval of each value, before any value is
+        removed.
 
     Returns
     -------
     pandas.Series
         True for the values of the runs.
     """
-    durations, follows = _get_intervals(values, resolutions)
+    durations, follows = _get_intervals(values, durations)
     runs = ((values != values.shift()) | ~follows).cumsum().to_numpy()
     duration = durations.groupby(runs).transform("sum")
     return pd.Series(
@@ -308,7 +331,7 @@ def _find_repeated_days(
 
 
 def _find_copied_days(
-    values: pd.Series, resolutions: pd.Series, time_zone: str
+    values: pd.Series, durations: pd.Series, time_zone: str
 ) -> pd.Series:
     """
     Find the days whose values repeat those of an earlier day.
@@ -321,8 +344,9 @@ def _find_copied_days(
     ----------
     values : pandas.Series
         The demand, at times in UTC.
-    resolutions : pandas.Series
-        The resolution of each value, before any value is removed.
+    durations : pandas.Series
+        The duration of the interval of each value, before any value is
+        removed.
     time_zone : str
         The time zone of the days.
 
@@ -331,7 +355,7 @@ def _find_copied_days(
     pandas.Series
         True for the values of the copied days.
     """
-    durations, _ = _get_intervals(values, resolutions)
+    durations, _ = _get_intervals(values, durations)
     starts = _get_local_starts(values, durations, time_zone)
     ends = (
         pd.DatetimeIndex(values.index)
@@ -346,7 +370,9 @@ def _find_copied_days(
     )
 
 
-def _find_spikes(values: pd.Series, resolutions: pd.Series) -> pd.Series:
+def _find_spikes(
+    values: pd.Series, resolutions: pd.Series, durations: pd.Series
+) -> pd.Series:
     """
     Find the short runs of values that leave the level around them.
 
@@ -356,6 +382,9 @@ def _find_spikes(values: pd.Series, resolutions: pd.Series) -> pd.Series:
         The demand, without the values of the other rules.
     resolutions : pandas.Series
         The resolution of each value, before any value is removed.
+    durations : pandas.Series
+        The duration of the interval of each value, before any value is
+        removed.
 
     Returns
     -------
@@ -364,7 +393,7 @@ def _find_spikes(values: pd.Series, resolutions: pd.Series) -> pd.Series:
     """
     if len(values) < 3:
         return pd.Series(False, index=values.index)
-    durations, follows = _get_intervals(values, resolutions)
+    durations, follows = _get_intervals(values, durations)
     x = values.to_numpy()
     # The number of runs found that start at or before each value, minus
     # those that end before it.
@@ -477,7 +506,7 @@ def _find_drop_days(daily: pd.Series, reference: pd.Series) -> pd.Index:
 
 
 def _find_level_drops(
-    values: pd.Series, resolutions: pd.Series, time_zone: str
+    values: pd.Series, durations: pd.Series, time_zone: str
 ) -> pd.Series:
     """
     Find the runs of days whose level drops far below the usual one.
@@ -487,8 +516,9 @@ def _find_level_drops(
     values : pandas.Series
         The demand, without the values of the other rules, at times in
         UTC.
-    resolutions : pandas.Series
-        The resolution of each value, before any value is removed.
+    durations : pandas.Series
+        The duration of the interval of each value, before any value is
+        removed.
     time_zone : str
         The time zone of the days.
 
@@ -502,7 +532,7 @@ def _find_level_drops(
 
     # The mean of each day whose values cover enough of it, weighted by
     # their intervals, and of every day from the first to the last.
-    durations, _ = _get_intervals(values, resolutions)
+    durations, _ = _get_intervals(values, durations)
     days = _get_local_starts(values, durations, time_zone).normalize()
     seconds = pd.Series(durations.dt.total_seconds().to_numpy(), index=days)
     covered = seconds.groupby(level=0).sum()
@@ -516,7 +546,10 @@ def _find_level_drops(
 
 
 def _find_removed(
-    values: pd.Series, resolutions: pd.Series, time_zone: str
+    values: pd.Series,
+    resolutions: pd.Series,
+    durations: pd.Series,
+    time_zone: str,
 ) -> pd.Series:
     """
     Find the rule that removes each value, if any.
@@ -527,6 +560,8 @@ def _find_removed(
         The processed demand, at times in UTC.
     resolutions : pandas.Series
         The resolution of each value.
+    durations : pandas.Series
+        The duration of the interval of each value.
     time_zone : str
         The time zone of the country or subdivision.
 
@@ -545,22 +580,22 @@ def _find_removed(
     remove("future", pd.Series(values.index > now, index=values.index))
     remove("non_positive", values <= 0)
     remove("implausible", _find_implausible(values[removed == ""]))
-    remove("frozen", _find_frozen(values[removed == ""], resolutions))
+    remove("frozen", _find_frozen(values[removed == ""], durations))
     remove(
         "copied_day",
-        _find_copied_days(values[removed == ""], resolutions, time_zone),
+        _find_copied_days(values[removed == ""], durations, time_zone),
     )
-    remove("spike", _find_spikes(values[removed == ""], resolutions))
+    remove(
+        "spike", _find_spikes(values[removed == ""], resolutions, durations)
+    )
     remove(
         "level_drop",
-        _find_level_drops(values[removed == ""], resolutions, time_zone),
+        _find_level_drops(values[removed == ""], durations, time_zone),
     )
     return removed
 
 
-def _resample_hourly(
-    values: pd.Series, resolutions: pd.Series
-) -> pd.DataFrame:
+def _resample_hourly(values: pd.Series, durations: pd.Series) -> pd.DataFrame:
     """
     Average the values of each hour, at its end.
 
@@ -572,8 +607,9 @@ def _resample_hourly(
     ----------
     values : pandas.Series
         The demand, at the resolution of the data source.
-    resolutions : pandas.Series
-        The resolution of each value, before any value is removed.
+    durations : pandas.Series
+        The duration of the interval of each value, before any value is
+        removed.
 
     Returns
     -------
@@ -586,7 +622,7 @@ def _resample_hourly(
             {"Load (MW)": pd.Series(dtype="float64"), "covered": False},
             index=values.index,
         )
-    durations, _ = _get_intervals(values, resolutions)
+    durations, _ = _get_intervals(values, durations)
     ends = pd.DatetimeIndex(values.index)
     first_hour = (ends - durations.to_numpy()).min().floor("h")
     hours = pd.date_range(first_hour, ends.max().ceil("h"), freq="h")
@@ -682,14 +718,18 @@ def clean_data(code: str, data_source: str) -> pd.Series:
         )
     )["Load (MW)"].sort_index()
     resolutions = _get_resolutions(processed)
+    durations = _get_durations(processed, resolutions)
     step = resolutions.max() if len(processed) else pd.Timedelta(hours=1)
 
     # Remove the values of the rules, at the resolution of the data
     # source, and average the others in each hour.
     removed = _find_removed(
-        processed, resolutions, str(utils.entities.get_time_zone(code))
+        processed,
+        resolutions,
+        durations,
+        str(utils.entities.get_time_zone(code)),
     )
-    hourly = _resample_hourly(processed[removed == ""], resolutions)
+    hourly = _resample_hourly(processed[removed == ""], durations)
     cleaned = hourly.loc[hourly["covered"], "Load (MW)"]
     cleaned.index.name = processed.index.name
     cleaned.name = processed.name

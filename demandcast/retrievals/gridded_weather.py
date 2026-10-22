@@ -26,6 +26,135 @@ import xarray
 from dotenv import load_dotenv
 from tqdm import tqdm
 
+# The time after the end of a year until its reanalysis data is
+# complete: ERA5 is published about five days after real time, and
+# updated every day until then.
+REANALYSIS_DELAY = pd.Timedelta(days=7)
+REANALYSIS_UPDATE = pd.Timedelta(days=1)
+
+
+def get_available_scenarios_for_model() -> dict[str, list[str]]:
+    """
+    Get the available future scenarios for each climate model.
+
+    Returns
+    -------
+    dict[str, list[str]]
+        A dictionary mapping each climate model to its available
+        scenarios.
+    """
+    return {
+        "CAMS-CSM1-0": [
+            "SSP1-1.9",
+            "SSP1-2.6",
+            "SSP2-4.5",
+            "SSP3-7.0",
+            "SSP5-8.5",
+        ],  # China
+        "CESM2": ["SSP1-2.6", "SSP2-4.5", "SSP3-7.0", "SSP5-8.5"],  # USA
+        "CNRM-ESM2-1": [
+            "SSP1-1.9",
+            "SSP1-2.6",
+            "SSP4-3.4",
+            "SSP2-4.5",
+            "SSP4-6.0",
+            "SSP3-7.0",
+            "SSP5-8.5",
+        ],  # France
+        "EC-Earth3-Veg-LR": [
+            "SSP1-1.9",
+            "SSP1-2.6",
+            "SSP2-4.5",
+            "SSP3-7.0",
+            "SSP5-8.5",
+        ],  # Europe
+        "HadGEM3-GC31-LL": ["SSP1-2.6", "SSP2-4.5", "SSP5-8.5"],  # UK
+        "MIROC-ES2L": [
+            "SSP1-1.9",
+            "SSP1-2.6",
+            "SSP2-4.5",
+            "SSP3-7.0",
+            "SSP5-8.5",
+        ],  # Japan
+        "MPI-ESM1-2-LR": [
+            "SSP1-2.6",
+            "SSP2-4.5",
+            "SSP3-7.0",
+            "SSP5-8.5",
+        ],  # Germany
+    }
+
+
+def get_file_name(
+    variable: str,
+    year: int,
+    model: str | None,
+    scenario: str | None,
+    code: str | None = None,
+) -> str:
+    """
+    Get the name of a file of weather data, without extension.
+
+    Parameters
+    ----------
+    variable : str
+        The weather variable.
+    year : int
+        The year of the weather data.
+    model : str | None
+        The model of the weather data, None for reanalysis data.
+    scenario : str | None
+        The scenario of the weather data, None for reanalysis data.
+    code : str | None, optional
+        The code of the country or subdivision, None for global data.
+
+    Returns
+    -------
+    str
+        The name of the file, such as DEU_temperature_2024 or
+        temperature_2030_CESM2_SSP2_4_5.
+    """
+    name = f"{variable}_{year}"
+    if model and scenario:
+        name += f"_{model}_" + scenario.replace("-", "_").replace(".", "_")
+    return f"{code}_{name}" if code else name
+
+
+def is_outdated(
+    file_path: str, year: int, model: str | None, scenario: str | None
+) -> bool:
+    """
+    Check whether a file of weather data must be retrieved again.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the file.
+    year : int
+        The year of the weather data.
+    model : str | None
+        The model of the weather data, None for reanalysis data.
+    scenario : str | None
+        The scenario of the weather data, None for reanalysis data.
+
+    Returns
+    -------
+    bool
+        Whether the file does not exist, or has reanalysis data written
+        before the data of its year was complete and more than a day
+        ago, when the data may have been updated since. This also
+        completes a year retrieved while it was in progress.
+    """
+    if not os.path.exists(file_path):
+        return True
+    if model is not None or scenario is not None:
+        return False
+    written = pd.Timestamp(os.path.getmtime(file_path), unit="s")
+    return written < min(
+        pd.Timestamp(year + 1, 1, 1) + REANALYSIS_DELAY,
+        pd.Timestamp.now() - REANALYSIS_UPDATE,
+    )
+
 
 def _get_request(
     variable: str,
@@ -291,47 +420,8 @@ def run_data_retrieval(
     # Define the available years for the future weather data.
     available_future_years = list(range(pd.Timestamp.now().year, 2101))
 
-    # Define the available scenarios for the weather data.
-    available_scenarios_for_model = {
-        "CAMS-CSM1-0": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # China
-        "CESM2": ["SSP1-2.6", "SSP2-4.5", "SSP3-7.0", "SSP5-8.5"],  # USA
-        "CNRM-ESM2-1": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP4-3.4",
-            "SSP2-4.5",
-            "SSP4-6.0",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # France
-        "EC-Earth3-Veg-LR": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # Europe
-        "HadGEM3-GC31-LL": ["SSP1-2.6", "SSP2-4.5", "SSP5-8.5"],  # UK
-        "MIROC-ES2L": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # Japan
-        "MPI-ESM1-2-LR": [
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # Germany
-    }
+    # Get the available scenarios for each climate model.
+    available_scenarios_for_model = get_available_scenarios_for_model()
 
     # Define the available weather variables.
     available_variables = ["temperature"]
@@ -385,29 +475,21 @@ def run_data_retrieval(
                 )
             )
 
-            # Define the case name for the file.
-            case_name = f"{variable}_{selected_year}" + (
-                f"_{selected_model}_"
-                f"{selected_scenario.replace('-', '_').replace('.', '_')}"
-                if selected_model and selected_scenario
-                else ""
-            )
-
             # Define the full file path for the global weather data.
             global_file_path_without_ext = os.path.join(
                 downloaded_data_directory,
-                f"{case_name}",
+                get_file_name(
+                    variable, selected_year, selected_model, selected_scenario
+                ),
             )
 
-            # Check if the global file does not exist. For the
-            # current year and historical data, we re-download the
-            # global data to account for possible updates in the
-            # reanalysis data.
-            if not os.path.exists(global_file_path_without_ext + ".nc") or (
-                os.path.exists(global_file_path_without_ext + ".nc")
-                and selected_year == pd.Timestamp.now().year
-                and selected_model is None
-                and selected_scenario is None
+            # Download the global data if it does not exist, or if the
+            # reanalysis data may have been updated since.
+            if is_outdated(
+                global_file_path_without_ext + ".nc",
+                selected_year,
+                selected_model,
+                selected_scenario,
             ):
                 # Get the CDS variable name.
                 cds_variable_name = cds_variable_mapping[variable][
@@ -442,21 +524,22 @@ def run_data_retrieval(
                 # the country or subdivision.
                 entity_file_path = os.path.join(
                     result_directory,
-                    f"{entity_code}_{case_name}.nc",
+                    get_file_name(
+                        variable,
+                        selected_year,
+                        selected_model,
+                        selected_scenario,
+                        entity_code,
+                    )
+                    + ".nc",
                 )
 
-                # Check if the file of weather data for the
-                # given country or subdivision, year, model, and
-                # scenario already exists. For the current year
-                # and historical data, we re-extract the weather
-                # data to account for possible updates in the
-                # reanalysis data.
-                if not os.path.exists(entity_file_path) or (
-                    os.path.exists(entity_file_path)
-                    and selected_year == pd.Timestamp.now().year
-                    and selected_model is None
-                    and selected_scenario is None
-                ):
+                # Extract the weather data of the country or
+                # subdivision if it does not exist, or if the global
+                # data is newer.
+                if not os.path.exists(entity_file_path) or os.path.getmtime(
+                    entity_file_path
+                ) < os.path.getmtime(global_file_path_without_ext + ".nc"):
                     logging.info(
                         f"Extracting gridded {variable} data for "
                         f"{entity_code} and "
@@ -527,17 +610,23 @@ def run_data_retrieval(
                 # Define the full file paths of the ERA5 data.
                 entity_file_path_without_ext = os.path.join(
                     result_directory,
-                    f"{entity_code}_{variable}_{selected_year}"
-                    + (
-                        f"_{selected_model}_"
-                        + selected_scenario.replace("-", "_").replace(".", "_")
-                        if selected_model and selected_scenario
-                        else ""
+                    get_file_name(
+                        variable,
+                        selected_year,
+                        selected_model,
+                        selected_scenario,
+                        entity_code,
                     ),
                 )
 
-                # Check if the file does not exist.
-                if not os.path.exists(entity_file_path_without_ext + ".nc"):
+                # Download the data if it does not exist, or if the
+                # reanalysis data may have been updated since.
+                if is_outdated(
+                    entity_file_path_without_ext + ".nc",
+                    selected_year,
+                    selected_model,
+                    selected_scenario,
+                ):
                     # Get the CDS variable name.
                     cds_variable_name = cds_variable_mapping[variable][
                         "projections"

@@ -141,6 +141,25 @@ def test_hourly_averages_keep_the_energy():
     assert cleaned["2024-01-01 01:00"] == pytest.approx(expected)
 
 
+def test_removed_values_do_not_lengthen_the_next_interval():
+    """Test that a removed value leaves its interval uncovered."""
+    # The value at 00:05 is removed: the value at 00:15 still covers
+    # only the 10 minutes after it, and the hour the other 55 minutes.
+    times = pd.DatetimeIndex(
+        [
+            "2024-01-01 00:00",
+            "2024-01-01 00:05",
+            *pd.date_range("2024-01-01 00:15", periods=4, freq="15min"),
+        ]
+    )
+    demand = pd.Series([100.0, -10.0, 200.0, 300.0, 400.0, 500.0], index=times)
+
+    cleaned, _ = _clean(demand)
+
+    expected = (200 * 10 + (300 + 400 + 500) * 15) / 55
+    assert cleaned["2024-01-01 01:00"] == pytest.approx(expected)
+
+
 def test_future_and_non_positive_values():
     """Test that future, zero and negative values are removed."""
     demand = _demand("2025-12-20 01:00", 24 * 20)

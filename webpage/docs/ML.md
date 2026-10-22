@@ -222,6 +222,10 @@ climate_model_for_temperature:     # Climate model for temperature data
 
 The script outputs assembled data files to `data/assembled/` with filenames indicating the purpose and timestamp: `assembled_data_for_{target_use}_YYYYMMDD_HHMMSS.parquet`.
 
+Each row is an hour of a country or subdivision, at its end in UTC (`Time (UTC)`). Its electricity demand is the mean demand of the hour, and its temperature the mean temperature of the hour, from the instantaneous temperatures at its start and at its end. Its local hour of the day, weekend indicator, month and year are those of the start of the hour in local time, so that the hour from 23:00 to midnight on a Friday is on a Friday, and the hour before midnight on January 1 belongs to the year before, with the annual values of that year. The datasets are merged on the hours and the countries or subdivisions, keeping only the hours that all of them have.
+
+The fraction of the annual total divides the demand of each hour by the annual demand, estimated from the hours of the year with data, which must then represent the whole year: a year without its winter or its summer would have the wrong annual demand. The training data therefore keeps only the years with at least 90% of their hours and half of the hours of each month, and `assembled_data_for_training_YYYYMMDD_HHMMSS_coverage.csv` lists the hours of each year of each country or subdivision, their share of the year, the lowest share of a month and whether the year is kept.
+
 ### Model Training
 
 The script `demandcast/train.py` trains a machine learning model on assembled historical data.

@@ -366,145 +366,69 @@ def run_data_retrieval(
         file_path_without_ext = os.path.join(result_directory, entity_code)
 
         if requested_historical_years:
-            if not os.path.exists(
-                file_path_without_ext + ".parquet"
-            ) or not os.path.exists(file_path_without_ext + ".csv"):
-                logging.info(
-                    "Processing historical GDP PPP per capita data for "
-                    f"{entity_code}."
-                )
+            logging.info(
+                "Processing historical GDP PPP per capita data for "
+                f"{entity_code}."
+            )
 
-                # Extract the historical GDP PPP per capita data for the
-                # country or subdivision of interest.
-                historical_gdp_ppp_per_capita = (
-                    _extract_historical_gdp_ppp_per_capita(
-                        entity_code,
-                        iso_alpha_3_code,
-                        global_historical_gdp_ppp_per_capita,
-                        requested_historical_years,
-                        used_historical_years,
-                        available_historical_years_of_gridded_data,
-                    )
+            # Extract the historical GDP PPP per capita data for the
+            # country or subdivision of interest.
+            historical_gdp_ppp_per_capita = (
+                _extract_historical_gdp_ppp_per_capita(
+                    entity_code,
+                    iso_alpha_3_code,
+                    global_historical_gdp_ppp_per_capita,
+                    requested_historical_years,
+                    used_historical_years,
+                    available_historical_years_of_gridded_data,
                 )
+            )
 
-                # Extract the historical GDP PPP per capita for the
-                # selected years.
-                selected_historical_gdp_ppp_per_capita = (
-                    historical_gdp_ppp_per_capita.loc[
-                        historical_gdp_ppp_per_capita.index.isin(
-                            requested_historical_years
-                        )
-                    ]
-                )
+            # Save the selected years as hourly values.
+            utils.time_series.save_yearly_values(
+                historical_gdp_ppp_per_capita,
+                requested_historical_years,
+                "GDP PPP per capita (2021 international $)",
+                file_path_without_ext,
+                time_zone,
+            )
 
-                # Convert the historical GDP PPP per capita data from
-                # yearly to hourly values.
-                selected_historical_gdp_ppp_per_capita = (
-                    utils.time_series.convert_from_yearly_to_hourly(
-                        selected_historical_gdp_ppp_per_capita,
-                        time_zone,
-                    )
-                )
-
-                # Clean the time series.
-                selected_historical_gdp_ppp_per_capita = (
-                    utils.time_series.clean_data(
-                        selected_historical_gdp_ppp_per_capita,
-                        "GDP PPP per capita (2021 international $)",
-                    )
-                )
-
-                # Save the historical GDP PPP per capita data to CSV and
-                # Parquet files.
-                selected_historical_gdp_ppp_per_capita.to_frame().to_parquet(
-                    file_path_without_ext + ".parquet",
-                )
-                selected_historical_gdp_ppp_per_capita.to_csv(
-                    file_path_without_ext + ".csv",
-                )
-
-                logging.info(
-                    f"Historical GDP PPP per capita data for {entity_code} "
-                    "has been "
-                    "extracted and saved successfully."
-                )
-            else:
-                logging.info(
-                    f"Historical GDP PPP per capita data for {entity_code} "
-                    "already "
-                    "exists. Skipping extraction."
-                )
+            logging.info(
+                f"Historical GDP PPP per capita data for {entity_code} "
+                "has been "
+                "extracted and saved successfully."
+            )
 
         if future_years:
             for selected_scenario in scenarios:
-                if not os.path.exists(
-                    f"{file_path_without_ext}_{selected_scenario}.parquet"
-                ) or not os.path.exists(
-                    f"{file_path_without_ext}_{selected_scenario}.csv"
-                ):
-                    logging.info(
-                        f"Processing future GDP PPP per capita data for "
-                        f"{entity_code} and scenario {selected_scenario}."
-                    )
+                logging.info(
+                    f"Processing future GDP PPP per capita data for "
+                    f"{entity_code} and scenario {selected_scenario}."
+                )
 
-                    # Extract the future GDP PPP per capita data for
-                    # the country or subdivision of interest.
-                    future_gdp_ppp_per_capita = (
-                        _extract_future_gdp_ppp_per_capita(
-                            entity_code,
-                            iso_alpha_3_code,
-                            global_future_gdp_ppp_per_capita,
-                            future_years,
-                            available_future_years_of_gridded_data,
-                            available_historical_years_of_gridded_data,
-                            selected_scenario,
-                        )
-                    )
+                # Extract the future GDP PPP per capita data for
+                # the country or subdivision of interest.
+                future_gdp_ppp_per_capita = _extract_future_gdp_ppp_per_capita(
+                    entity_code,
+                    iso_alpha_3_code,
+                    global_future_gdp_ppp_per_capita,
+                    future_years,
+                    available_future_years_of_gridded_data,
+                    available_historical_years_of_gridded_data,
+                    selected_scenario,
+                )
 
-                    # Extract the future GDP PPP per capita for the
-                    # selected years.
-                    selected_future_gdp_ppp_per_capita = (
-                        future_gdp_ppp_per_capita.loc[
-                            future_gdp_ppp_per_capita.index.isin(future_years)
-                        ]
-                    )
-
-                    # Convert the future GDP PPP per capita data from
-                    # yearly to hourly values.
-                    selected_future_gdp_ppp_per_capita = (
-                        utils.time_series.convert_from_yearly_to_hourly(
-                            selected_future_gdp_ppp_per_capita,
-                            time_zone,
-                        )
-                    )
-
-                    # Clean the time series.
-                    selected_future_gdp_ppp_per_capita = (
-                        utils.time_series.clean_data(
-                            selected_future_gdp_ppp_per_capita,
-                            "GDP PPP per capita (2021 international $)",
-                        )
-                    )
-
-                    # Save the future GDP PPP per capita data to CSV and
-                    # Parquet files.
-                    selected_future_gdp_ppp_per_capita.to_frame().to_parquet(
-                        f"{file_path_without_ext}_{selected_scenario}.parquet",
-                    )
-                    selected_future_gdp_ppp_per_capita.to_csv(
-                        f"{file_path_without_ext}_{selected_scenario}.csv",
-                    )
-                    logging.info(
-                        f"Future GDP PPP per capita data for {entity_code} "
-                        "and "
-                        f"scenario {selected_scenario} has been extracted "
-                        "and saved successfully."
-                    )
-
-                else:
-                    logging.info(
-                        f"Future GDP PPP per capita data for {entity_code} "
-                        "and "
-                        f"scenario {selected_scenario} already exists. "
-                        "Skipping extraction."
-                    )
+                # Save the selected years as hourly values.
+                utils.time_series.save_yearly_values(
+                    future_gdp_ppp_per_capita,
+                    future_years,
+                    "GDP PPP per capita (2021 international $)",
+                    f"{file_path_without_ext}_{selected_scenario}",
+                    time_zone,
+                )
+                logging.info(
+                    f"Future GDP PPP per capita data for {entity_code} "
+                    "and "
+                    f"scenario {selected_scenario} has been extracted "
+                    "and saved successfully."
+                )

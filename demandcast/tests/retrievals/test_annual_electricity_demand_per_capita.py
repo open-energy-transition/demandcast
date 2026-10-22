@@ -33,10 +33,10 @@ def test_run_data_retrieval_of_future_scenario(tmp_folders):
         patch.object(
             annual_demand.iiasa,
             "extrapolate",
-            return_value=pd.Series({2022: 7200.0}),
-        ) as mock_extrapolate,
+            side_effect=[pd.Series({2022: 7200.0}), pd.Series({2022: 7300.0})],
+        ),
     ):
-        # The second run finds the files and skips the retrieval.
+        # The second run replaces the year with its revised value.
         for __ in range(2):
             annual_demand.run_data_retrieval(
                 code="FRA",
@@ -53,7 +53,14 @@ def test_run_data_retrieval_of_future_scenario(tmp_folders):
         "FRA_SSP2_45.csv",
         "FRA_SSP2_45.parquet",
     ]
-    mock_extrapolate.assert_called_once()
+    saved = pd.read_parquet(
+        os.path.join(
+            tmp_folders["annual_electricity_demand_per_capita_folder"],
+            "FRA_SSP2_45.parquet",
+        )
+    )["Annual electricity demand per capita (kWh)"]
+    assert set(saved) == {7300.0}
+    assert len(saved) == 8760
 
 
 def test_download_of_ember(monkeypatch):
@@ -211,11 +218,12 @@ def test_run_data_retrieval_of_historical_years(tmp_folders, code):
         )
     )["Annual electricity demand per capita (kWh)"]
     # A subdivision has the demand per capita of its country, and each
-    # value covers the hours of its year in local time.
+    # value covers the hours of its year in local time, at their ends:
+    # the last hour of 2020 ends at midnight on 2021-01-01.
     values = {"FRA": (7000.0, 7100.0), "IND_KL": (1100.0, 1200.0)}[code]
     last_hour_of_2020 = {
-        "FRA": "2020-12-31 22:00",
-        "IND_KL": "2020-12-31 17:30",
+        "FRA": "2020-12-31 23:00",
+        "IND_KL": "2020-12-31 18:30",
     }[code]
     assert saved[last_hour_of_2020] == values[0]
     assert (

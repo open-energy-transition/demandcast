@@ -25,10 +25,11 @@ Description:
     an estimate of it to each hour:
 
     - From 2025-01-29, the first day of the data, the estimate of ISO-NE
-      in real time (five-minute estimated zonal load), in MW at each
-      five minutes in each of the eight load zones. The module adds the
-      mean of the sum of the zones over the samples of the hour, after
-      its start and until its end.
+      in real time (five-minute estimated zonal load), in MW for each
+      five minutes in each of the eight load zones, by the start of the
+      five minutes. The module adds the mean of the sum of the zones
+      over the five minutes that start in the hour, leaving out those
+      without all the zones.
     - Before, and in the hours without samples (such as the first hours
       of 2025-01-29), the estimate of ISO-NE for its load forecast (BTM
       PV data, updated about three times a year), which counts only the
@@ -76,8 +77,9 @@ BTM_PV_DATA_URL = (
 )
 
 # The first day of the estimate of the solar behind the meters in real
-# time, in local time.
+# time, in local time, and the number of its load zones.
 FIRST_DAY_OF_REAL_TIME_SOLAR = pd.Timestamp("2025-01-29")
+LOAD_ZONES = 8
 
 # The capacity of the distributed solar of New England in MW at the end
 # of each year, of all the categories (in the markets or not), from the
@@ -249,7 +251,8 @@ def _get_real_time_solar(day: pd.Timestamp, headers: dict) -> pd.Series:
     Returns
     -------
     pandas.Series
-        The solar of New England in MW at each five minutes, in UTC.
+        The solar of New England in MW for each five minutes, at their
+        starts in UTC, if all the load zones have it.
     """
     rows = (
         _fetch_day("fiveminuteestimatedzonalload", day, headers)
@@ -261,7 +264,9 @@ def _get_real_time_solar(day: pd.Timestamp, headers: dict) -> pd.Series:
         return pd.Series(dtype=float)
     dataset = pd.DataFrame(rows)
     dataset["time"] = pd.to_datetime(dataset["interval_begin_date"], utc=True)
-    return dataset.groupby("time")["estimated_btm_pv_mw"].sum().astype(float)
+    by_time = dataset.groupby("time")
+    solar = by_time["estimated_btm_pv_mw"].sum().astype(float)
+    return solar[by_time["load_zone_id"].nunique() == LOAD_ZONES]
 
 
 def _get_distributed_solar_capacity(times: pd.DatetimeIndex) -> np.ndarray:
@@ -404,11 +409,11 @@ def download_and_extract_data_for_request(
             [_get_real_time_solar(day, headers) for day in real_time_days]
         ).sort_index()
         if not samples.empty:
-            # Each hour takes the samples after its start and until its
-            # end, and the hour repeated when the clocks go back, which
-            # has no samples, takes the hours around it, at night.
+            # Each hour takes the five minutes that start in it, and the
+            # hour repeated when the clocks go back, which has no
+            # samples, takes the hours around it, at night.
             solar = (
-                samples.resample("h", closed="right", label="right")
+                samples.resample("h", closed="left", label="right")
                 .mean()
                 .interpolate(limit=2)
             )
