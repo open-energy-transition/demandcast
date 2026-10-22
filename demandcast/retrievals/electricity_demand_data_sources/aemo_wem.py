@@ -24,8 +24,14 @@ Description:
     intervals without one from 2020-11-03, while the demand before it is
     the operational demand, without the rooftop solar. The yearly file
     of the estimates after the reform is downloaded once for each month.
-    A daily file of the demand that is missing within the last 7 days,
-    which can be not published yet, is skipped.
+
+    A month that ends less than 7 days before the end date of the data,
+    or after it, is retrieved until its last day before the end date,
+    which its request includes, so that the request gives the same days
+    whenever it is processed again. Its daily files of the 7 days before
+    that day, which can be not published yet, are skipped if they are
+    missing. The other months are retrieved whole, with all their daily
+    files.
 
     Source: https://data.wa.aemo.com.au/#operational-demand
     Source: https://data.wa.aemo.com.au/public/market-data/wemde/operationalDemandWithdrawal/dailyFiles/
@@ -79,19 +85,27 @@ def get_available_requests(
     -------
     list[tuple[bool, int, int | None, int | None]]
         The requests, as tuples in the format (pre_reform, year, month,
-        day), where the month is None for the years before the reform,
-        and the day is None for all of them.
+        day), where the month is None for the years before the reform.
+        The day is the last day of a month whose daily files can be not
+        published yet, and None for the other months and the years.
     """
     # The years before the reform, from 2006 to 2023, and the months
     # after it, from October 2023.
-    pre_reform_years = list(range(start_date.year, POST_REFORM_START.year + 1))
-    post_reform_months = pd.period_range(
-        start=POST_REFORM_START, end=end_date, freq="M"
-    )
-    return [(True, year, None, None) for year in pre_reform_years] + [
-        (False, period.year, period.month, None)
-        for period in post_reform_months
+    requests: list[tuple[bool, int, int | None, int | None]] = [
+        (True, year, None, None)
+        for year in range(start_date.year, POST_REFORM_START.year + 1)
     ]
+    for period in pd.period_range(
+        start=POST_REFORM_START, end=end_date, freq="M"
+    ):
+        month_end = period.end_time.date()
+        day = (
+            None
+            if (end_date - month_end).days > DAYS_NOT_PUBLISHED
+            else min(month_end, end_date).day
+        )
+        requests.append((False, period.year, period.month, day))
+    return requests
 
 
 def get_url(
@@ -156,9 +170,11 @@ def get_dpv_url(pre_reform: bool, year: int) -> str:
     return DATA_FILES_URL + f"estimated-dpv-csv/distributed-pv-new-{year}.csv"
 
 
-def _get_trading_days(year: int, month: int) -> list[pd.Timestamp]:
+def _get_trading_days(
+    year: int, month: int, day: int | None
+) -> list[pd.Timestamp]:
     """
-    Get the trading days of a month after the reform, until today.
+    Get the trading days of a month after the reform, until a day.
 
     Parameters
     ----------
@@ -166,17 +182,22 @@ def _get_trading_days(year: int, month: int) -> list[pd.Timestamp]:
         The year of the month.
     month : int
         The month.
+    day : int | None
+        The last day, or None for the whole month.
 
     Returns
     -------
     list[pandas.Timestamp]
         The trading days.
     """
-    today = pd.Timestamp.now(tz=AWST).tz_localize(None).normalize()
     first_day = max(
         pd.Timestamp(year=year, month=month, day=1), POST_REFORM_START
     )
-    last_day = min(first_day + pd.offsets.MonthEnd(0), today)
+    last_day = (
+        first_day + pd.offsets.MonthEnd(0)
+        if day is None
+        else pd.Timestamp(year=year, month=month, day=day)
+    )
     return list(pd.date_range(first_day, last_day, freq="D"))
 
 
@@ -220,7 +241,8 @@ def download_and_extract_data_for_request(
         A boolean flag to indicate if the request is for the pre-reform
         period (until 2023), and the year, month and day of the
         electricity demand data. The month is None for the pre-reform
-        period, and the day is None for all of them.
+        period. The day is the last day of a month whose daily files can
+        be not published yet, and None otherwise.
     code : str
         The code of Western Australia.
 
@@ -234,7 +256,8 @@ def download_and_extract_data_for_request(
     ValueError
         If a request after the reform has no month.
     utils.fetcher.DataNotFoundError
-        If the daily file of a day before the last week is not found.
+        If the daily file of a whole month, or of a day more than a week
+        before the last day of the request, is not found.
     """
     pre_reform, year, month, day = pre_reform_and_date
 
@@ -300,9 +323,9 @@ def download_and_extract_data_for_request(
         # Fetch the daily file of each trading day of the month. The
         # times are the starts of the 5-minute dispatch intervals, with
         # their offset from UTC: move them to the ends of the intervals.
-        today = pd.Timestamp.now(tz=AWST).tz_localize(None).normalize()
+        trading_days = _get_trading_days(year, month, day)
         daily_demand = []
-        for trading_day in _get_trading_days(year, month):
+        for trading_day in trading_days:
             try:
                 dataset = utils.fetcher.fetch_dataframe(
                     get_url(pre_reform, year, month, trading_day.day),
@@ -312,7 +335,11 @@ def download_and_extract_data_for_request(
                     json_keys=["data", "data"],
                 )
             except utils.fetcher.DataNotFoundError:
-                if (today - trading_day).days > DAYS_NOT_PUBLISHED:
+                if (
+                    day is None
+                    or (trading_days[-1] - trading_day).days
+                    > DAYS_NOT_PUBLISHED
+                ):
                     raise
                 logging.warning(
                     f"The demand of {trading_day.date()} is not published "

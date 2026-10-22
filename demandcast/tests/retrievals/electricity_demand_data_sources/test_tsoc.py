@@ -31,11 +31,16 @@ def _write_yearly_file(file_path, first_day, minutes_early):
     middle of the day, and the times of the file are early by some
     minutes.
     """
-    # The start of each interval in Cyprus local time, UTC+2 in winter.
+    # The start of each interval in Cyprus local time, UTC+2 in winter
+    # and UTC+3 in summer.
     starts = pd.date_range(first_day, periods=10 * 96, freq="15min")
     middles = (starts + pd.Timedelta(minutes=7.5)).to_series()
     hours = middles.dt.hour + middles.dt.minute / 60
-    noon = tsoc._solar_noon(pd.DatetimeIndex(starts.normalize())) + 2
+    days = pd.DatetimeIndex(starts.normalize())
+    offsets = (
+        days.tz_localize("Asia/Nicosia") - days.tz_localize("UTC")
+    ) / pd.Timedelta(hours=-1)
+    noon = tsoc._solar_noon(days) + offsets.to_numpy()
     solar = np.clip(1 - ((hours - noon - tsoc.SOLAR_DELAY) / 4) ** 2, 0, None)
     times = starts - pd.Timedelta(minutes=minutes_early)
 
@@ -143,3 +148,21 @@ def test_download_and_extract_data_for_request_one_hour_late(
         ),
     )
     assert "seem +1 hours from the solar generation" in caplog.text
+
+
+def test_download_and_extract_data_when_the_clocks_change(
+    fake_downloads, tmp_path
+):
+    """Test that the interval before the clocks go forward is kept."""
+    url_2025 = URL_2019.replace("2019.xlsx", "2025.xlsx")
+    file_path = tmp_path / "2025.xlsx"
+    _write_yearly_file(file_path, "2025-03-26", minutes_early=0)
+    fake_downloads.serve(url_2025, file_path)
+
+    time_series = tsoc.download_and_extract_data_for_request(2025, "CYP")
+
+    # The interval that starts at 02:45 on 2025-03-30 ends at 04:00,
+    # when the clocks have gone forward from 03:00 to 04:00.
+    end = pd.Timestamp("2025-03-30 04:00", tz="Asia/Nicosia")
+    assert end in time_series.index
+    assert time_series[end] == 500.5 + 4 * 96 + 2 * 4 + 3

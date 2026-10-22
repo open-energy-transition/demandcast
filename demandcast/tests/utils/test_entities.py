@@ -784,6 +784,24 @@ def write_data_source(tmp_folders, tmp_path):
     return write
 
 
+def test_read_data_source_with_dates_as_text(write_data_source):
+    """Test that the dates written as text are read as dates."""
+    write_data_source(
+        {
+            "licence": LICENCE,
+            "entities": [{**FRANCE, "start_date": "2020-01-01"}],
+        }
+    )
+
+    start_date, _ = (
+        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+            "test_source"
+        )["FRA"]
+    )
+
+    assert start_date == datetime.date(2020, 1, 1)
+
+
 def test_read_data_source(write_data_source):
     """Test that a valid yaml file of a data source is read as is."""
     write_data_source({"licence": LICENCE, "entities": [FRANCE, TEXAS]})

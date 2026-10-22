@@ -419,6 +419,9 @@ def fetch_data(  # noqa: C901
                 f"The content type {content_type} is not supported."
             )
 
+        # The errors are raised again without the original ones, whose
+        # messages can have the URL with an API key, and which a
+        # traceback would show.
         except (requests.exceptions.HTTPError, urllib.error.HTTPError) as e:
             status_code = _get_status_code(e)
             if not _is_temporary(status_code):
@@ -426,8 +429,8 @@ def fetch_data(  # noqa: C901
                     f"HTTP error {status_code} while fetching {redact(url)}."
                 )
                 if status_code in NOT_FOUND_STATUS_CODES:
-                    raise DataNotFoundError(message) from e
-                raise ConnectionError(message) from e
+                    raise DataNotFoundError(message) from None
+                raise ConnectionError(message) from None
             error = e
 
         except (
@@ -448,8 +451,8 @@ def fetch_data(  # noqa: C901
 
     raise ConnectionError(
         f"Failed to fetch {redact(url)} after {retries} attempts: "
-        f"{redact(str(error))}"
-    ) from error
+        f"{type(error).__name__}: {redact(str(error))}"
+    ) from None
 
 
 def fetch_dataframe(
@@ -489,6 +492,38 @@ def fetch_dataframe(
     return dataset
 
 
+def find_manual_files(prefix: str) -> list[str]:
+    """
+    Find the data files that were downloaded manually.
+
+    The raw data (see utils.raw_data) keeps the files found while a
+    request is downloaded, and gives them back when it is processed
+    again.
+
+    Parameters
+    ----------
+    prefix : str
+        The start of the names of the files.
+
+    Returns
+    -------
+    list[str]
+        The paths of the files in the folder of manually downloaded
+        electricity demand data whose names start with the prefix, in
+        the order of their names.
+    """
+    data_directory = utils.config.read_folders_structure()[
+        "manually_downloaded_electricity_demand_folder"
+    ]
+    if not os.path.isdir(data_directory):
+        return []
+    return [
+        os.path.join(data_directory, file)
+        for file in sorted(os.listdir(data_directory))
+        if file.startswith(prefix)
+    ]
+
+
 def read_manual_files(
     data_source_name: str,
     url: str,
@@ -501,7 +536,8 @@ def read_manual_files(
 
     Some data sources have no download that can be automated. Their
     files are downloaded manually into the folder of manually downloaded
-    electricity demand data, with names that start with a prefix.
+    electricity demand data, with names that start with a prefix (see
+    find_manual_files).
 
     Parameters
     ----------
@@ -527,15 +563,11 @@ def read_manual_files(
     FileNotFoundError
         If no file starts with the prefix.
     """
-    data_directory = utils.config.read_folders_structure()[
-        "manually_downloaded_electricity_demand_folder"
-    ]
-    file_paths = [
-        os.path.join(data_directory, file)
-        for file in sorted(os.listdir(data_directory))
-        if file.startswith(prefix)
-    ]
+    file_paths = find_manual_files(prefix)
     if not file_paths:
+        data_directory = utils.config.read_folders_structure()[
+            "manually_downloaded_electricity_demand_folder"
+        ]
         raise FileNotFoundError(
             f"The data for {data_source_name} has not been found in the "
             f"folder {data_directory}. Please download the data manually "

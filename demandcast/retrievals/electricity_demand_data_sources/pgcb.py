@@ -29,10 +29,6 @@ Description:
     "23:00". The module takes midnight from "24:00" when the report has
     it, and from "00:00" otherwise.
 
-    The server of the website sent its certificate without the
-    intermediate one until 2026, but it now sends its whole chain, so
-    the certificate is verified as for any other website.
-
     Source: https://erp.powergrid.gov.bd/w/report/eyJpdiI6IldsU2ZQTGkvbkRnQU9FMjZ5UHhmeGc9PSIsInZhbHVlIjoiQzhONVl5ZGxRY3E3T3ZVNCtLZGt1Zz09IiwibWFjIjoiN2JiNTI5MzNhOWIxZDVjY2NkMmFlZWU4ZDU1N2I4OWZlYjNlZWM1ZGU4NzRiNWU4ZjQ3ZDc1ODRlMTk3MDc0YyIsInRhZyI6IiJ9/show_report
 """
 
