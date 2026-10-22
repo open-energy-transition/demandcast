@@ -52,11 +52,12 @@ def harmonize_coords[T: (xarray.DataArray, xarray.Dataset)](ds: T) -> T:
     elif "lon" in ds.coords and "lat" in ds.coords:
         ds = ds.rename({"lon": "x", "lat": "y"})
 
-    # Reset longitudes from the range [0, 360] to [-180, 180].
+    # Reset longitudes from the range [0, 360] to [-180, 180], in double
+    # precision: in single precision, such as in ARCO-ERA5, 354.25
+    # would become -5.749984.
     if ds["x"].min() >= 0:
-        ds = ds.assign_coords(
-            x=(ds["x"] + 179.99999) % 360 - 179.99999
-        ).sortby("x")
+        x = ds["x"].astype("float64")
+        ds = ds.assign_coords(x=(x + 179.99999) % 360 - 179.99999).sortby("x")
 
     # Drop duplicate x coordinates if they exist.
     ds = ds.drop_duplicates("x")

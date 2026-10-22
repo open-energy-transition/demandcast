@@ -46,6 +46,19 @@ def test_harmonize_coords():
     assert np.all(result["x"].to_numpy() >= -180)
     assert np.all(result["x"].to_numpy() <= 180)
 
+    # Test that longitudes in single precision, as in ARCO-ERA5, move
+    # to the same points of the grid.
+    ds = xarray.Dataset(
+        coords={
+            "x": np.array([2.25, 354.25], dtype="float32"),
+            "y": [50, 60],
+        }
+    )
+    result = utils.geospatial.harmonize_coords(ds)
+    assert result["x"].to_numpy().tolist() == pytest.approx(
+        [-5.75, 2.25], abs=1e-9
+    )
+
     # Test the dropping of duplicate coordinates.
     ds = xarray.Dataset(coords={"x": [0, 0, 10], "y": [50, 60]})
     n_duplicates = len(ds["x"]) - len(np.unique(ds["x"]))
