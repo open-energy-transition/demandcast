@@ -333,11 +333,77 @@ def harmonize_time_series(
     return time_series
 
 
+def get_local_year_bounds(
+    year: int, time_zone: datetime.tzinfo
+) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """
+    Get the start and the end of a year in local time.
+
+    A year can start at a midnight that does not exist, when daylight
+    saving time starts then, as in Peru on 1990-01-01, so it starts at
+    the first time after it.
+
+    Parameters
+    ----------
+    year : int
+        The year.
+    time_zone : datetime.tzinfo
+        The local time zone.
+
+    Returns
+    -------
+    tuple[pandas.Timestamp, pandas.Timestamp]
+        The local midnights of January 1 of the year and of the next
+        year, in UTC.
+    """
+
+    def new_year(year: int) -> pd.Timestamp:
+        return (
+            pd.Timestamp(year, 1, 1)
+            .tz_localize(
+                time_zone, ambiguous=False, nonexistent="shift_forward"
+            )
+            .tz_convert("UTC")
+        )
+
+    return new_year(year), new_year(year + 1)
+
+
+def get_local_years(
+    times: pd.DatetimeIndex, time_zone: datetime.tzinfo
+) -> pd.Index:
+    """
+    Get the local year of the hours that end at the given times.
+
+    The year of an hour is that of its start in local time, so that the
+    hour that ends at midnight on January 1 belongs to the year before.
+
+    Parameters
+    ----------
+    times : pandas.DatetimeIndex
+        The ends of the hours, with a time zone or in UTC without one.
+    time_zone : datetime.tzinfo
+        The local time zone.
+
+    Returns
+    -------
+    pandas.Index
+        The local year of each hour.
+    """
+    times = pd.DatetimeIndex(times)
+    if times.tz is None:
+        times = times.tz_localize("UTC")
+    return (times - pd.Timedelta(hours=1)).tz_convert(time_zone).year
+
+
 def convert_from_yearly_to_hourly(
     time_series: pd.Series, time_zone: datetime.tzinfo
 ) -> pd.Series:
     """
     Convert a yearly time series to an hourly time series.
+
+    The hours are stamped at their ends, like the electricity demand,
+    and take the value of the local year of their starts.
 
     Parameters
     ----------
@@ -349,61 +415,65 @@ def convert_from_yearly_to_hourly(
     Returns
     -------
     pandas.Series
-        The hourly time series.
+        The hourly time series, at the ends of the hours of the local
+        years, from 01:00 on January 1 of the first year to midnight on
+        January 1 after the last year, in the local time zone.
     """
-    # Define a new index with hourly frequency in the local time zone.
-    # A year can start at a midnight that does not exist, when daylight
-    # saving time starts then, as in Peru on 1990-01-01, so its first
-    # hour is shifted forward.
+    start, _ = get_local_year_bounds(int(time_series.index.min()), time_zone)
+    _, end = get_local_year_bounds(int(time_series.index.max()), time_zone)
     index = pd.date_range(
-        start=pd.Timestamp(f"{time_series.index.min()!s}-01-01").tz_localize(
-            time_zone, nonexistent="shift_forward"
-        ),
-        end=pd.Timestamp(
-            f"{time_series.index.max()!s}-12-31 23:00:00"
-        ).tz_localize(time_zone, ambiguous=False, nonexistent="shift_forward"),
-        freq="h",
-    )
+        start + pd.Timedelta(hours=1), end, freq="h"
+    ).tz_convert(time_zone)
 
-    return pd.Series(index.year.map(time_series.to_dict()), index=index)
+    return pd.Series(
+        get_local_years(index, time_zone).map(time_series.to_dict()),
+        index=index,
+    )
 
 
 def save_yearly_values(
-    time_series: pd.Series,
+    yearly_values: pd.Series,
+    years: list[int],
+    variable_name: str,
     file_path_without_ext: str,
     time_zone: datetime.tzinfo,
 ) -> None:
     """
-    Save the hourly values of some years, keeping the other saved years.
+    Save yearly values as hourly values, keeping the other saved years.
 
-    The values replace the saved ones of their local years, and both
-    files are replaced only once they are written.
+    The values of the given years are converted to the hours of their
+    local years and cleaned, and replace the saved values of those
+    years. Both files are replaced only once they are written.
 
     Parameters
     ----------
-    time_series : pandas.Series
-        The hourly values of whole local years, at times in UTC without
-        time zone, as given by clean_data.
+    yearly_values : pandas.Series
+        The value of each year.
+    years : list[int]
+        The years to save.
+    variable_name : str
+        The name of the variable.
     file_path_without_ext : str
         The path of the Parquet and CSV files, without extension.
     time_zone : datetime.tzinfo
         The time zone of the local years.
     """
-
-    def local_years(index: pd.Index) -> pd.Index:
-        return (
-            pd.DatetimeIndex(index)
-            .tz_localize("UTC")
-            .tz_convert(time_zone)
-            .year
-        )
+    time_series = clean_data(
+        convert_from_yearly_to_hourly(
+            yearly_values[yearly_values.index.isin(years)], time_zone
+        ),
+        variable_name,
+    )
 
     if os.path.exists(file_path_without_ext + ".parquet"):
         saved = pd.read_parquet(file_path_without_ext + ".parquet")[
             time_series.name
         ]
-        saved = saved[
-            ~local_years(saved.index).isin(local_years(time_series.index))
+        saved_years = get_local_years(pd.DatetimeIndex(saved.index), time_zone)
+        saved = saved.loc[
+            ~saved_years.isin(
+                get_local_years(pd.DatetimeIndex(time_series.index), time_zone)
+            )
         ]
         if not saved.empty:
             time_series = pd.concat([saved, time_series]).sort_index()

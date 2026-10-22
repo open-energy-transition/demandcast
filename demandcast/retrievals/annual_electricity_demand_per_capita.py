@@ -280,36 +280,11 @@ def run_data_retrieval(
                 f"for {entity_code}."
             )
 
-            # Extract the respective electricity demand per capita.
-            selected_historical_electricity_demand_per_capita = (
-                historical_electricity_demand_per_capita[
-                    historical_electricity_demand_per_capita.index.isin(
-                        selected_historical_years
-                    )
-                ]
-            )
-
-            # Convert the historical electricity demand per capita
-            # data from yearly to hourly values.
-            selected_historical_electricity_demand_per_capita = (
-                utils.time_series.convert_from_yearly_to_hourly(
-                    selected_historical_electricity_demand_per_capita,
-                    time_zone,
-                )
-            )
-
-            # Clean the time series.
-            selected_historical_electricity_demand_per_capita = (
-                utils.time_series.clean_data(
-                    selected_historical_electricity_demand_per_capita,
-                    "Annual electricity demand per capita (kWh)",
-                )
-            )
-
-            # Save the electricity demand per capita data to parquet
-            # and CSV files.
+            # Save the selected years as hourly values.
             utils.time_series.save_yearly_values(
-                selected_historical_electricity_demand_per_capita,
+                historical_electricity_demand_per_capita,
+                selected_historical_years,
+                "Annual electricity demand per capita (kWh)",
                 file_path_without_ext,
                 time_zone,
             )
@@ -355,37 +330,11 @@ def run_data_retrieval(
                     available_future_years,
                 )
 
-                # Extract the electricity demand per capita for
-                # the selected future years.
-                selected_future_electricity_demand_per_capita = (
-                    future_electricity_demand_per_capita[
-                        future_electricity_demand_per_capita.index.isin(
-                            selected_future_years
-                        )
-                    ]
-                )
-
-                # Convert the future electricity demand per capita
-                # data from yearly to hourly values.
-                selected_future_electricity_demand_per_capita = (
-                    utils.time_series.convert_from_yearly_to_hourly(
-                        selected_future_electricity_demand_per_capita,
-                        time_zone,
-                    )
-                )
-
-                # Clean the time series.
-                selected_future_electricity_demand_per_capita = (
-                    utils.time_series.clean_data(
-                        selected_future_electricity_demand_per_capita,
-                        "Annual electricity demand per capita (kWh)",
-                    )
-                )
-
-                # Save the electricity demand per capita data to
-                # parquet and CSV files.
+                # Save the selected years as hourly values.
                 utils.time_series.save_yearly_values(
-                    selected_future_electricity_demand_per_capita,
+                    future_electricity_demand_per_capita,
+                    selected_future_years,
+                    "Annual electricity demand per capita (kWh)",
                     scenario_file_path_without_ext,
                     time_zone,
                 )

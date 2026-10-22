@@ -320,14 +320,19 @@ def test_convert_from_yearly_to_hourly():
     assert isinstance(hourly_series.index, pd.DatetimeIndex)
     assert str(hourly_series.index.tz) == str(local_time_zone)
 
-    # Check that each year's values are correctly assigned
+    # Check that the hours are stamped at their ends, with the value of
+    # the year of their starts.
+    assert hourly_series.index[0] == pd.Timestamp(
+        "2020-01-01 01:00:00", tz=local_time_zone
+    )
     assert hourly_series.iloc[0] == 100
-    idx_2020 = pd.Timestamp("2020-12-31 23:00:00", tz=local_time_zone)
-    assert hourly_series[idx_2020] == 100
-    idx_2021 = pd.Timestamp("2021-01-01 00:00:00", tz=local_time_zone)
+    idx_2020_end = pd.Timestamp("2021-01-01 00:00:00", tz=local_time_zone)
+    assert hourly_series[idx_2020_end] == 100
+    idx_2021 = pd.Timestamp("2021-01-01 01:00:00", tz=local_time_zone)
     assert hourly_series[idx_2021] == 200
-    idx_2021_end = pd.Timestamp("2021-12-31 23:00:00", tz=local_time_zone)
+    idx_2021_end = pd.Timestamp("2022-01-01 00:00:00", tz=local_time_zone)
     assert hourly_series[idx_2021_end] == 200
+    assert hourly_series.index[-1] == idx_2021_end
 
     # Check all unique values are as expected
     assert set(hourly_series.values) == {100, 200}
@@ -381,7 +386,8 @@ def test_convert_from_yearly_to_hourly_with_missing_midnight():
     Test the conversion when a year starts at a missing midnight.
 
     Peru started daylight saving time at 00:00 on 1990-01-01, so that
-    time does not exist, and the year starts an hour later.
+    time does not exist, and the year starts an hour later: its first
+    hour ends at 02:00 in local time.
     """
     time_zone = pytz.timezone("America/Lima")
     values = pd.Series([100, 200], index=pd.Index([1990, 1991]))
@@ -391,10 +397,10 @@ def test_convert_from_yearly_to_hourly_with_missing_midnight():
     )
 
     assert hourly_series.index[0] == pd.Timestamp(
-        "1990-01-01 05:00:00", tz="UTC"
+        "1990-01-01 06:00:00", tz="UTC"
     )
     assert hourly_series.index[-1] == pd.Timestamp(
-        "1992-01-01 04:00:00", tz="UTC"
+        "1992-01-01 05:00:00", tz="UTC"
     )
     assert (
         hourly_series.index.to_series()
@@ -416,27 +422,19 @@ def test_save_yearly_values(tmp_path):
     """
     file_path = str(tmp_path / "values")
 
-    def save(values: dict[int, float]) -> None:
-        hourly = utils.time_series.clean_data(
-            utils.time_series.convert_from_yearly_to_hourly(
-                pd.Series(values), local_time_zone
-            ),
-            "Value",
-        )
+    def save(values: dict[int, float], years: list[int]) -> None:
         utils.time_series.save_yearly_values(
-            hourly, file_path, local_time_zone
+            pd.Series(values), years, "Value", file_path, local_time_zone
         )
 
-    save({2023: 1.0})
-    save({2024: 2.0})
-    save({2023: 3.0})
+    # The years not requested are not saved.
+    save({2022: 0.0, 2023: 1.0}, [2023])
+    save({2024: 2.0}, [2024])
+    save({2023: 3.0}, [2023])
 
     saved = pd.read_parquet(file_path + ".parquet")["Value"]
-    local_years = (
-        pd.DatetimeIndex(saved.index)
-        .tz_localize("UTC")
-        .tz_convert(local_time_zone)
-        .year
+    local_years = utils.time_series.get_local_years(
+        pd.DatetimeIndex(saved.index), local_time_zone
     )
     assert saved.groupby(local_years).agg(["min", "max", "count"]).to_dict(
         "index"
@@ -451,3 +449,34 @@ def test_save_yearly_values(tmp_path):
         "values.csv",
         "values.parquet",
     ]
+
+
+@pytest.mark.parametrize(
+    ("time_zone", "first_end"),
+    [
+        ("UTC", "2024-01-01 01:00"),
+        ("Europe/Paris", "2024-01-01 00:00"),
+        ("Asia/Kolkata", "2023-12-31 19:30"),
+    ],
+)
+def test_local_years_of_hours(time_zone, first_end):
+    """
+    Test that each hour belongs to the local year of its start.
+
+    The hour that ends at midnight on January 1 belongs to the year
+    before, in a time zone with a whole or a half hour from UTC.
+    """
+    tz = pytz.timezone(time_zone)
+    start, end = utils.time_series.get_local_year_bounds(2024, tz)
+    hours = pd.date_range(start + pd.Timedelta(hours=1), end, freq="h")
+
+    years = utils.time_series.get_local_years(hours, tz)
+
+    assert hours[0] == pd.Timestamp(first_end, tz="UTC")
+    assert len(hours) == 8784
+    assert set(years) == {2024}
+    assert set(
+        utils.time_series.get_local_years(
+            hours[[0]] - pd.Timedelta(hours=1), tz
+        )
+    ) == {2023}

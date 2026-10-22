@@ -85,6 +85,41 @@ def get_available_scenarios_for_model() -> dict[str, list[str]]:
     }
 
 
+def get_file_name(
+    variable: str,
+    year: int,
+    model: str | None,
+    scenario: str | None,
+    code: str | None = None,
+) -> str:
+    """
+    Get the name of a file of weather data, without extension.
+
+    Parameters
+    ----------
+    variable : str
+        The weather variable.
+    year : int
+        The year of the weather data.
+    model : str | None
+        The model of the weather data, None for reanalysis data.
+    scenario : str | None
+        The scenario of the weather data, None for reanalysis data.
+    code : str | None, optional
+        The code of the country or subdivision, None for global data.
+
+    Returns
+    -------
+    str
+        The name of the file, such as DEU_temperature_2024 or
+        temperature_2030_CESM2_SSP2_4_5.
+    """
+    name = f"{variable}_{year}"
+    if model and scenario:
+        name += f"_{model}_" + scenario.replace("-", "_").replace(".", "_")
+    return f"{code}_{name}" if code else name
+
+
 def is_outdated(
     file_path: str, year: int, model: str | None, scenario: str | None
 ) -> bool:
@@ -440,18 +475,12 @@ def run_data_retrieval(
                 )
             )
 
-            # Define the case name for the file.
-            case_name = f"{variable}_{selected_year}" + (
-                f"_{selected_model}_"
-                f"{selected_scenario.replace('-', '_').replace('.', '_')}"
-                if selected_model and selected_scenario
-                else ""
-            )
-
             # Define the full file path for the global weather data.
             global_file_path_without_ext = os.path.join(
                 downloaded_data_directory,
-                f"{case_name}",
+                get_file_name(
+                    variable, selected_year, selected_model, selected_scenario
+                ),
             )
 
             # Download the global data if it does not exist, or if the
@@ -495,7 +524,14 @@ def run_data_retrieval(
                 # the country or subdivision.
                 entity_file_path = os.path.join(
                     result_directory,
-                    f"{entity_code}_{case_name}.nc",
+                    get_file_name(
+                        variable,
+                        selected_year,
+                        selected_model,
+                        selected_scenario,
+                        entity_code,
+                    )
+                    + ".nc",
                 )
 
                 # Extract the weather data of the country or
@@ -574,12 +610,12 @@ def run_data_retrieval(
                 # Define the full file paths of the ERA5 data.
                 entity_file_path_without_ext = os.path.join(
                     result_directory,
-                    f"{entity_code}_{variable}_{selected_year}"
-                    + (
-                        f"_{selected_model}_"
-                        + selected_scenario.replace("-", "_").replace(".", "_")
-                        if selected_model and selected_scenario
-                        else ""
+                    get_file_name(
+                        variable,
+                        selected_year,
+                        selected_model,
+                        selected_scenario,
+                        entity_code,
                     ),
                 )
 

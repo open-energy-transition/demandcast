@@ -384,37 +384,11 @@ def run_data_retrieval(
                 )
             )
 
-            # Extract the historical GDP PPP per capita for the
-            # selected years.
-            selected_historical_gdp_ppp_per_capita = (
-                historical_gdp_ppp_per_capita.loc[
-                    historical_gdp_ppp_per_capita.index.isin(
-                        requested_historical_years
-                    )
-                ]
-            )
-
-            # Convert the historical GDP PPP per capita data from
-            # yearly to hourly values.
-            selected_historical_gdp_ppp_per_capita = (
-                utils.time_series.convert_from_yearly_to_hourly(
-                    selected_historical_gdp_ppp_per_capita,
-                    time_zone,
-                )
-            )
-
-            # Clean the time series.
-            selected_historical_gdp_ppp_per_capita = (
-                utils.time_series.clean_data(
-                    selected_historical_gdp_ppp_per_capita,
-                    "GDP PPP per capita (2021 international $)",
-                )
-            )
-
-            # Save the historical GDP PPP per capita data to CSV and
-            # Parquet files.
+            # Save the selected years as hourly values.
             utils.time_series.save_yearly_values(
-                selected_historical_gdp_ppp_per_capita,
+                historical_gdp_ppp_per_capita,
+                requested_historical_years,
+                "GDP PPP per capita (2021 international $)",
                 file_path_without_ext,
                 time_zone,
             )
@@ -444,35 +418,11 @@ def run_data_retrieval(
                     selected_scenario,
                 )
 
-                # Extract the future GDP PPP per capita for the
-                # selected years.
-                selected_future_gdp_ppp_per_capita = (
-                    future_gdp_ppp_per_capita.loc[
-                        future_gdp_ppp_per_capita.index.isin(future_years)
-                    ]
-                )
-
-                # Convert the future GDP PPP per capita data from
-                # yearly to hourly values.
-                selected_future_gdp_ppp_per_capita = (
-                    utils.time_series.convert_from_yearly_to_hourly(
-                        selected_future_gdp_ppp_per_capita,
-                        time_zone,
-                    )
-                )
-
-                # Clean the time series.
-                selected_future_gdp_ppp_per_capita = (
-                    utils.time_series.clean_data(
-                        selected_future_gdp_ppp_per_capita,
-                        "GDP PPP per capita (2021 international $)",
-                    )
-                )
-
-                # Save the future GDP PPP per capita data to CSV and
-                # Parquet files.
+                # Save the selected years as hourly values.
                 utils.time_series.save_yearly_values(
-                    selected_future_gdp_ppp_per_capita,
+                    future_gdp_ppp_per_capita,
+                    future_years,
+                    "GDP PPP per capita (2021 international $)",
                     f"{file_path_without_ext}_{selected_scenario}",
                     time_zone,
                 )

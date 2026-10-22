@@ -8,6 +8,13 @@ Description:
     populous grid cells in a given country or subdivision. It calculates
     the average temperature and saves the results into CSV and Parquet
     files.
+
+    Each row is an hour, at its end in UTC, like the electricity demand,
+    which is the mean demand of the hour. Its temperature is the mean of
+    the instantaneous temperatures at the start and at the end of the
+    hour, and its local hour, day, month and year are those of its
+    start, so that the hour from 23:00 to midnight on a Friday is on a
+    Friday and that before midnight on January 1 in the year before.
 """
 
 import datetime
@@ -16,12 +23,12 @@ import os
 
 import numpy as np
 import pandas as pd
-import pytz
 import utils.config
 import utils.entities
 import utils.geospatial
 import utils.scenarios
 import utils.shapes
+import utils.time_series
 import xarray
 from tqdm import tqdm
 
@@ -89,11 +96,8 @@ def _load_gridded_temperature_data(
     temperature_data_file_paths = [
         os.path.join(
             temperature_data_directory,
-            f"{code}_temperature_{y}"
-            + (
-                f"_{climate_model}_{climate_scenario.replace('-', '_').replace('.', '_')}"
-                if climate_model and climate_scenario
-                else ""
+            retrievals.gridded_weather.get_file_name(
+                "temperature", y, climate_model, climate_scenario, code
             )
             + ".nc",
         )
@@ -282,7 +286,12 @@ def _extract_temperature_in_local_year(
     projections: bool,
 ) -> xarray.DataArray:
     """
-    Extract the temperature data for the given year in local time.
+    Extract the hourly mean temperature of a year in local time.
+
+    The electricity demand of an hour is its mean, at the end of the
+    hour, so the temperature of an hour is its mean too: the mean of the
+    temperatures at its start and at its end, which are instantaneous,
+    or the temperature at its half hour if it changes linearly.
 
     Parameters
     ----------
@@ -299,7 +308,8 @@ def _extract_temperature_in_local_year(
     Returns
     -------
     xarray.DataArray
-        The temperature data for the given year in local time.
+        The mean temperature of the hours of the year in local time, at
+        their ends in UTC: the hours that start in the year.
     """
     if projections:
         # Add 12 hours to the time coordinate to center the daily data
@@ -312,30 +322,14 @@ def _extract_temperature_in_local_year(
         # interpolation.
         temperature_data = temperature_data.resample(time="1h").interpolate()
 
-    # Define the start and end date for the given year in local time.
-    start_date = (
-        pd.Timestamp(str(year) + "-01-01 00:00:00", tz=entity_time_zone)
-        .tz_convert("UTC")
-        .tz_localize(None)
-    )
-    try:
-        end_date = (
-            pd.Timestamp(str(year) + "-12-31 23:59:59", tz=entity_time_zone)
-            .tz_convert("UTC")
-            .tz_localize(None)
-        )
-    except pytz.exceptions.AmbiguousTimeError:
-        # This handles the case of Bangladesh in 2009 when the end date
-        # falls in the ambiguous hour due to the end of daylight saving
-        # time. In this case, we set the end date to 22:59:59.
-        end_date = (
-            pd.Timestamp(str(year) + "-12-31 22:59:59", tz=entity_time_zone)
-            .tz_convert("UTC")
-            .tz_localize(None)
-        )
+    # The mean temperature of each hour, at its end.
+    temperature_data = temperature_data.rolling(time=2).mean()
 
-    # Extract the temperature data for the given year in local time.
-    return temperature_data.sel(time=slice(start_date, end_date))
+    # The hours that start in the year in local time.
+    local_years = utils.time_series.get_local_years(
+        temperature_data.indexes["time"], entity_time_zone
+    )
+    return temperature_data.isel(time=np.flatnonzero(local_years == year))
 
 
 def _get_temperature_in_most_populous_cells(
@@ -478,24 +472,20 @@ def _build_temperature_database(
         index=temperature_time_series_top_1.index
     )
 
-    # Convert the temperature time series to the local time zone.
-    temperature_time_series_top_1 = temperature_time_series_top_1.tz_localize(
-        "UTC"
+    # Get the local time of the start of each hour, which gives the
+    # hour, the day, the month and the year of the hour: the times are
+    # the ends of the hours in UTC.
+    local_time = (
+        pd.DatetimeIndex(temperature_time_series_top_1.index).tz_localize(
+            "UTC"
+        )
+        - pd.Timedelta(hours=1)
     ).tz_convert(entity_time_zone)
-    temperature_time_series_top_3 = temperature_time_series_top_3.tz_localize(
-        "UTC"
-    ).tz_convert(entity_time_zone)
-
-    # Get the local time of the temperature time series.
-    local_time = pd.DatetimeIndex(temperature_time_series_top_1.index)
 
     # Get the monthly average temperature.
-    monthly_average_temperature = (
-        temperature_time_series_top_1.tz_localize(None).resample("ME").mean()
-    )
-    monthly_average_temperature.index = pd.DatetimeIndex(
-        monthly_average_temperature.index
-    ).month
+    monthly_average_temperature = temperature_time_series_top_1.groupby(
+        local_time.month
+    ).mean()
 
     # Get the rank of the monthly average temperature.
     monthly_average_temperature_rank = monthly_average_temperature.rank(
@@ -520,10 +510,7 @@ def _build_temperature_database(
 
     # Get the annual average temperature.
     annual_average_temperature = pd.Series(
-        temperature_time_series_top_1.tz_localize(None)
-        .resample("YE")
-        .mean()
-        .to_numpy()[0],
+        temperature_time_series_top_1.mean(),
         index=temperature_time_series_top_1.index,
     )
 

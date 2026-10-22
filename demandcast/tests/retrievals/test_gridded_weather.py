@@ -93,3 +93,15 @@ def test_few_codes_complete_the_last_year(tmp_folders):
         )
 
     assert [call.args[1] for call in download.call_args_list] == [[2025]]
+
+
+def test_file_names():
+    """Test the names of the files of weather data."""
+    assert (
+        gridded_weather.get_file_name("temperature", 2024, None, None, "DEU")
+        == "DEU_temperature_2024"
+    )
+    assert (
+        gridded_weather.get_file_name("temperature", 2030, "CESM2", "SSP2-4.5")
+        == "temperature_2030_CESM2_SSP2_4_5"
+    )

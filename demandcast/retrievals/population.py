@@ -258,31 +258,11 @@ def run_data_retrieval(
                 available_historical_years_of_gridded_data,
             )
 
-            # Extract the historical population for the selected
-            # years.
-            selected_historical_population = historical_population.loc[
-                historical_population.index.isin(requested_historical_years)
-            ]
-
-            # Convert the historical population data from yearly to
-            # hourly values.
-            selected_historical_population = (
-                utils.time_series.convert_from_yearly_to_hourly(
-                    selected_historical_population,
-                    time_zone,
-                )
-            )
-
-            # Clean the time series.
-            selected_historical_population = utils.time_series.clean_data(
-                selected_historical_population,
-                "Population",
-            )
-
-            # Save the historical population data to CSV and Parquet
-            # files.
+            # Save the selected years as hourly values.
             utils.time_series.save_yearly_values(
-                selected_historical_population,
+                historical_population,
+                requested_historical_years,
+                "Population",
                 file_path_without_ext,
                 time_zone,
             )
@@ -310,31 +290,11 @@ def run_data_retrieval(
                     selected_scenario,
                 )
 
-                # Extract the future population for the selected
-                # years.
-                selected_future_population = future_population.loc[
-                    future_population.index.isin(future_years)
-                ]
-
-                # Convert the future population data from yearly to
-                # hourly values.
-                selected_future_population = (
-                    utils.time_series.convert_from_yearly_to_hourly(
-                        selected_future_population,
-                        time_zone,
-                    )
-                )
-
-                # Clean the time series.
-                selected_future_population = utils.time_series.clean_data(
-                    selected_future_population,
-                    "Population",
-                )
-
-                # Save the future population data to CSV and Parquet
-                # files.
+                # Save the selected years as hourly values.
                 utils.time_series.save_yearly_values(
-                    selected_future_population,
+                    future_population,
+                    future_years,
+                    "Population",
                     f"{file_path_without_ext}_{selected_scenario}",
                     time_zone,
                 )

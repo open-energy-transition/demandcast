@@ -218,11 +218,12 @@ def test_run_data_retrieval_of_historical_years(tmp_folders, code):
         )
     )["Annual electricity demand per capita (kWh)"]
     # A subdivision has the demand per capita of its country, and each
-    # value covers the hours of its year in local time.
+    # value covers the hours of its year in local time, at their ends:
+    # the last hour of 2020 ends at midnight on 2021-01-01.
     values = {"FRA": (7000.0, 7100.0), "IND_KL": (1100.0, 1200.0)}[code]
     last_hour_of_2020 = {
-        "FRA": "2020-12-31 22:00",
-        "IND_KL": "2020-12-31 17:30",
+        "FRA": "2020-12-31 23:00",
+        "IND_KL": "2020-12-31 18:30",
     }[code]
     assert saved[last_hour_of_2020] == values[0]
     assert (
