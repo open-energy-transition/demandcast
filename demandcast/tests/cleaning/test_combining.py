@@ -14,7 +14,7 @@ import pandas as pd
 import pytest
 import utils.config
 
-pytestmark = pytest.mark.usefixtures("tmp_folders")
+pytestmark = pytest.mark.usefixtures("tmp_folders", "longitude")
 
 
 def _hourly(start: str, end: str, value: float = 100.0) -> pd.Series:

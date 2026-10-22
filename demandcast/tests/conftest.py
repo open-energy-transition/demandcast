@@ -20,6 +20,7 @@ import ml_models  # noqa: F401
 # isort: split
 import os
 
+import cleaning.flags
 import pandas as pd
 import pytest
 import utils.config
@@ -65,6 +66,17 @@ def tmp_folders(tmp_path, monkeypatch):
         utils.config, "read_folders_structure", lambda: dict(folders)
     )
     return folders
+
+
+@pytest.fixture
+def longitude(monkeypatch):
+    """
+    Give every entity the longitude of Paris for the flags.
+
+    The longitude is otherwise read from the shape of the entity, which
+    can be downloaded.
+    """
+    monkeypatch.setattr(cleaning.flags, "_get_longitude", lambda _code: 2.35)
 
 
 @pytest.fixture

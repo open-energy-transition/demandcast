@@ -16,7 +16,6 @@ import sys
 import types
 from unittest.mock import Mock, call, create_autospec
 
-import cleaning.flags
 import pandas as pd
 import pytest
 import requests
@@ -26,18 +25,7 @@ import utils.raw_data
 import yaml
 
 # Freeze today, the end date of the entities of the data sources.
-pytestmark = pytest.mark.usefixtures("frozen_now")
-
-
-@pytest.fixture(autouse=True)
-def longitude(monkeypatch):
-    """
-    Give every entity the longitude of Paris for the flags.
-
-    The longitude is otherwise read from the shape of the entity, which
-    can be downloaded.
-    """
-    monkeypatch.setattr(cleaning.flags, "_get_longitude", lambda _code: 2.35)
+pytestmark = pytest.mark.usefixtures("frozen_now", "longitude")
 
 
 @pytest.fixture
