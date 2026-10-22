@@ -215,7 +215,7 @@ def _local_starts(demand: pd.Series) -> pd.DatetimeIndex:
 @pytest.mark.parametrize(
     ("by_starts", "expected"),
     [
-        # The hours that start on the day, the last one ends at midnight.
+        # The hours that start on the day, the last ends at midnight.
         (True, "2024-01-03 20:00/2024-01-04 19:00"),
         # The hours that end on the day, the first one ends at 00:30.
         (False, "2024-01-03 19:00/2024-01-04 18:00"),
