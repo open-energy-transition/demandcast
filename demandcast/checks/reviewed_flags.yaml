@@ -146,7 +146,7 @@ reviews:
     code: USA_NE
     flag: midday_dip
     verdict: net_demand
-    note: The load of ISO New England leaves out the solar behind the meters.
+    note: The load of ISO New England leaves out the solar behind the meters, which isone adds.
   - data_source: krogd
     code: KOR
     flag: midday_dip

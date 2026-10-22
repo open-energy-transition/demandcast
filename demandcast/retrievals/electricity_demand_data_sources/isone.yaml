@@ -1,0 +1,27 @@
+licence:
+  redistribute: false
+  terms: Content protected by copyright. Any duplication of the content or non-personal use may violate copyright.
+  url: https://www.iso-ne.com/legal-privacy
+definition:
+  - start_date: 2019-05-31
+    quantity: native load of the system, plus the estimate of the solar behind the meters
+    embedded_generation: added
+    network_losses: included
+    storage_charging: excluded
+    power_plant_use: unknown
+    note: The solar behind the meters is the normalized output of the estimate of ISO-NE for its load forecast, times the capacity of all the distributed solar, scaled to the estimate in real time of 2025.
+  - start_date: 2025-01-29
+    quantity: native load of the system, plus the estimate of the solar behind the meters
+    embedded_generation: added
+    network_losses: included
+    storage_charging: excluded
+    power_plant_use: unknown
+    note: The solar behind the meters is the estimate of ISO-NE in real time, of the solar of the consumers and of the settlement-only generators.
+entities:
+  - subdivision_name: New England
+    subdivision_code: NE
+    country_name: United States
+    country_code: USA
+    start_date: 2019-05-31
+    end_date: today
+    time_zone: America/New_York
