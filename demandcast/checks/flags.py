@@ -46,7 +46,7 @@ import pandas as pd
 import utils.config
 import utils.entities
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 # The data source of the flags of the combined electricity demand.
 COMBINED = "combined"
@@ -74,6 +74,10 @@ COLUMNS = [*FLAG_COLUMNS, "verdict", "note", "review_of"]
 
 class Review(BaseModel):
     """The review of a flag of a data source and a code."""
+
+    # A misspelt field is an error, so that a review of some periods
+    # does not become one of all the periods.
+    model_config = ConfigDict(extra="forbid")
 
     data_source: str
     code: str

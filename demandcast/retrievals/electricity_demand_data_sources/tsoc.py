@@ -28,6 +28,7 @@ import urllib.parse
 import numpy as np
 import pandas as pd
 import utils.fetcher
+import utils.time_series
 
 # The shift in minutes to add to the times of the files, from each day
 # on, to get the start of each interval in Cyprus local time. They align
@@ -330,10 +331,16 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         year,
     )
 
-    # Mark the end of each interval, in Cyprus local time.
-    electricity_demand_time_series = pd.Series(
-        pd.to_numeric(dataset["demand"]).to_numpy(),
-        index=pd.DatetimeIndex(local_start + pd.Timedelta(minutes=15)),
-    ).tz_localize("Asia/Nicosia", ambiguous="NaT", nonexistent="NaT")
-
-    return electricity_demand_time_series
+    # Mark the end of each interval, in Cyprus local time. The starts
+    # that are ambiguous or do not exist, when the clocks change, are
+    # left out.
+    return utils.time_series.localize_interval_starts(
+        pd.Series(
+            pd.to_numeric(dataset["demand"]).to_numpy(),
+            index=pd.DatetimeIndex(local_start),
+        ),
+        "Asia/Nicosia",
+        pd.Timedelta(minutes=15),
+        ambiguous="NaT",
+        nonexistent="NaT",
+    )

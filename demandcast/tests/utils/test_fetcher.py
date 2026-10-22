@@ -341,10 +341,11 @@ def test_read_manual_files(tmp_folders, tmp_path):
     assert dataset["load"].tolist() == [1, 2]
 
 
-def test_read_manual_files_without_files(tmp_folders, tmp_path):
+@pytest.mark.parametrize("folder", ["", "missing"])
+def test_read_manual_files_without_files(tmp_folders, tmp_path, folder):
     """Test that the error says where and how to download the files."""
     tmp_folders["manually_downloaded_electricity_demand_folder"] = str(
-        tmp_path
+        tmp_path / folder
     )
 
     with pytest.raises(
@@ -571,13 +572,22 @@ def test_fetch_data_hides_the_api_keys(monkeypatch, caplog):
         utils.fetcher.fetch_data(url, "html", retries=1, retry_delay=0)
     assert "secret-value" not in str(error.value)
     assert "api_key=***" in str(error.value)
+    # Nor in the traceback, which shows the errors that caused it.
+    assert "secret-value" not in "".join(
+        traceback.format_exception(error.value)
+    )
 
+    not_found = _http_error(404)
+    not_found.args = (f"404 Client Error: Not Found for url: {url}",)
     with (
-        patch("requests.get", side_effect=_http_error(404)),
+        patch("requests.get", side_effect=not_found),
         pytest.raises(utils.fetcher.DataNotFoundError) as error,
     ):
         utils.fetcher.fetch_data(url, "html", retry_delay=0)
     assert "secret-value" not in str(error.value)
+    assert "secret-value" not in "".join(
+        traceback.format_exception(error.value)
+    )
 
     assert "secret-value" not in caplog.text
 

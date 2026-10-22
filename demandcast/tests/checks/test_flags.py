@@ -166,6 +166,21 @@ def test_reviews_of_the_repository():
         assert review.code in codes
 
 
+def test_review_with_a_misspelt_field():
+    """Test that a misspelt field of a review is an error."""
+    with pytest.raises(ValueError, match="period"):
+        checks.flags.Review.model_validate(
+            {
+                "data_source": "neso",
+                "code": "GBR",
+                "flag": "time_lag",
+                "period": ["DJF 2024"],
+                "verdict": "false_positive",
+                "note": "A misspelt field.",
+            }
+        )
+
+
 def test_configuration_of_the_report(monkeypatch):
     """Test that check.py reads the configuration of the report."""
     config_file_path = os.path.join(

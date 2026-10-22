@@ -27,11 +27,11 @@ Description:
     them: in the median national series, its yearly demand is 0.94
     times that of Ember and 1.05 times that of the World Bank, and it
     gets closer to Ember as the embedded generation is added to it for
-    the gross demand that DemandCast models. Averaging the two sources
-    gave a value between the definitions that jumped when one of them
-    was missing, such as by 8% for India in 2025. Ember, which counts
-    the demand whatever supplies it, gives the value, then, and the
-    World Bank fills the countries and years that Ember does not have
+    the gross demand that DemandCast models. The two sources are not
+    averaged, since an average of their definitions would jump where
+    one of them is missing. Ember, which counts the demand whatever
+    supplies it, gives the value, and the World Bank fills the
+    countries and years that Ember does not have
     (before 2000, and about 46 countries), times the ratio of Ember to
     the World Bank of the country in the years that both have, or the
     median of these ratios for a country without enough such years.

@@ -77,6 +77,63 @@ def _process_series(
     return processed.to_frame().assign(Retrieved=retrieved)
 
 
+def _replay_version(
+    retrieval_module: Any,
+    data_source: str,
+    code: str,
+    request: Any,
+    version: dict[str, Any],
+) -> pd.Series | None:
+    """
+    Extract the electricity demand of a version from its responses.
+
+    Parameters
+    ----------
+    retrieval_module : Any
+        The module of the data source.
+    data_source : str
+        The data source.
+    code : str
+        The code of the country or subdivision.
+    request : Any
+        The request.
+    version : dict[str, Any]
+        The version, as in the manifest of the raw data.
+
+    Returns
+    -------
+    pandas.Series | None
+        The electricity demand, as the data source returns it, or None
+        if the version misses a response, has one that is not found,
+        or could not be extracted when it was downloaded and still
+        cannot.
+    """
+    description = (
+        f"The version of {version['first_retrieved']} of the request "
+        f"{request} of {data_source}"
+    )
+    try:
+        with utils.raw_data.replaying(data_source, version["responses"]):
+            return retrieval_module.download_and_extract_data_for_request(
+                request, code
+            )
+    except (
+        utils.raw_data.RawDataNotFoundError,
+        utils.fetcher.DataNotFoundError,
+    ) as error:
+        # A response that is not found can be that of a file not
+        # published yet, which the data source then skipped.
+        logging.warning(f"{description} cannot be processed again: {error}")
+    except Exception as error:
+        if "error" not in version:
+            raise
+        logging.warning(
+            f"{description} still cannot be extracted: "
+            f"{utils.fetcher.redact(str(error))}"
+        )
+    return None
+
+
 def _process_data(
     data_source: str,
     code: str,
@@ -126,24 +183,14 @@ def _process_data(
         # only fill.
         combined: pd.DataFrame | None = None
         for number, version in enumerate(reversed(entry["versions"])):
-            if number == 0 and request_key in downloaded:
-                time_series = downloaded[request_key]
-            else:
-                try:
-                    with utils.raw_data.replaying(
-                        data_source, version["responses"]
-                    ):
-                        time_series = retrieval_module.download_and_extract_data_for_request(
-                            request, code
-                        )
-                except utils.raw_data.RawDataNotFoundError as error:
-                    logging.warning(
-                        f"The version of {version['first_retrieved']} of "
-                        f"the request {request} of {data_source} cannot be "
-                        f"processed again: {error}"
-                    )
-                    continue
-            if time_series.empty:
+            time_series = (
+                downloaded[request_key]
+                if number == 0 and request_key in downloaded
+                else _replay_version(
+                    retrieval_module, data_source, code, request, version
+                )
+            )
+            if time_series is None or time_series.empty:
                 continue
             frame = _process_series(
                 time_series, data_source, version["first_retrieved"]
@@ -177,7 +224,9 @@ def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:
     skipped, because the file of the latest period can be not published
     yet. If a request fails, the responses of the requests before it
     are kept in the raw data, so that a long retrieval that fails does
-    not lose them: they can be processed without the network.
+    not lose them: they can be processed without the network. So are
+    the responses of the request itself, with the error, if its data
+    cannot be extracted from them.
 
     Parameters
     ----------
@@ -215,10 +264,11 @@ def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:
         code, start_date, end_date
     )
     retrieved = pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%dT%H:%M:%SZ")
-    downloads: list[tuple[Any, list[dict[str, Any]]]] = []
+    downloads: list[tuple[Any, list[dict[str, Any]], str | None]] = []
     downloaded: dict[str, pd.Series] = {}
     try:
         for index, request in enumerate(requests):
+            responses: list[dict[str, Any]] = []
             try:
                 with utils.raw_data.recording(data_source) as responses:
                     time_series = (
@@ -236,7 +286,23 @@ def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:
                     f"{data_source} is not found, maybe not published yet."
                 )
                 continue
-            downloads.append((request, responses))
+            except Exception as error:
+                # Keep the responses whose data cannot be extracted,
+                # such as after a change of their format, with the
+                # error, so that they can be processed again once the
+                # code of the data source is fixed. The responses of a
+                # failed download, which miss some, are not kept.
+                if not isinstance(error, OSError):
+                    message = utils.fetcher.redact(str(error))
+                    downloads.append(
+                        (
+                            request,
+                            responses,
+                            f"{type(error).__name__}: {message}",
+                        )
+                    )
+                raise
+            downloads.append((request, responses, None))
             downloaded[
                 json.dumps(
                     utils.raw_data.encode_request(request), sort_keys=True
@@ -322,7 +388,6 @@ def run_data_retrieval(
         f"data of {data_source}."
     )
 
-    # Loop over the codes.
     for entity_code in tqdm(codes, desc="Countries and subdivisions"):
         logging.info(f"Retrieving electricity data for {entity_code}.")
 
