@@ -72,8 +72,8 @@ def test_default_configuration_is_valid(script, monkeypatch):
     assert config.model_dump()
 
 
-def test_upload_configuration_is_valid(monkeypatch):
-    """Test that upload.py reads its default configuration."""
+def test_upload_configuration_needs_a_bucket(monkeypatch):
+    """Test that the default upload.py configuration names no bucket."""
     config_file_path = os.path.join(
         utils.config.read_folders_structure()["config_folder"],
         "upload_config.yaml",
@@ -82,7 +82,10 @@ def test_upload_configuration_is_valid(monkeypatch):
         sys, "argv", ["upload.py", "--config", config_file_path]
     )
 
-    importlib.import_module("upload")._read_and_check_configuration()
+    with pytest.raises(ValueError, match="gcs_bucket_name is required"):
+        utils.config.read_and_check_configuration(
+            "upload", importlib.import_module("upload").ConfigModel
+        )
 
 
 @pytest.mark.parametrize(
@@ -113,6 +116,12 @@ def test_upload_configuration_is_valid(monkeypatch):
         ),
         ("assemble", "target_use: testing\n", "target_use"),
         ("train", "", "reserve_testing_set"),
+        (
+            "upload",
+            "target_platform: zenodo\ndata_directory: d\n",
+            "made_by_oet and publish_to_zenodo are required",
+        ),
+        ("upload", "target_platform: s3\ndata_directory: d\n", "gcs"),
     ],
 )
 def test_invalid_configuration(

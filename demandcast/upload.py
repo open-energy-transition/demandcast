@@ -9,55 +9,49 @@ Description:
 
 import logging
 import os
+from typing import Literal
 
 import pandas as pd
 import utils.config
 import utils.entities
 import utils.uploader
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, model_validator
 
 
 class ConfigModel(BaseModel):
     """Settings of upload.py."""
 
-    target_platform: str
+    target_platform: Literal["gcs", "zenodo"]
     data_directory: str
     gcs_bucket_name: str | None = None
     publish_to_zenodo: bool | None = None
     made_by_oet: bool | None = None
 
+    @model_validator(mode="after")
+    def _check_settings_of_platform(self) -> "ConfigModel":
+        """
+        Check the settings that each platform needs.
 
-def _read_and_check_configuration() -> ConfigModel:
-    """
-    Read and check the configuration for data upload.
+        Returns
+        -------
+        ConfigModel
+            The settings.
 
-    Returns
-    -------
-    config : ConfigModel
-        A Pydantic model containing the validated configuration.
-
-    Raises
-    ------
-    ValueError
-        If the configuration is invalid.
-    """
-    # Read the configuration.
-    raw_config = utils.config.read_configuration(
-        "upload",
-        "Upload the electricity demand data to the specified destination.",
-    )
-
-    # Validate the configuration.
-    try:
-        config = ConfigModel(**raw_config)
-    except ValidationError as e:
-        raise ValueError(f"Configuration validation error: {e}") from e
-
-    logging.info("Configuration validated successfully:")
-    for field, value in config.model_dump().items():
-        logging.info(f" - {field}: {value}")
-
-    return config
+        Raises
+        ------
+        ValueError
+            If a setting of the platform is missing.
+        """
+        if self.target_platform == "gcs" and self.gcs_bucket_name is None:
+            raise ValueError("gcs_bucket_name is required to upload to GCS.")
+        if self.target_platform == "zenodo" and (
+            self.made_by_oet is None or self.publish_to_zenodo is None
+        ):
+            raise ValueError(
+                "made_by_oet and publish_to_zenodo are required to "
+                "upload to Zenodo."
+            )
+        return self
 
 
 def _get_data_source(file_name: str) -> str:
@@ -93,12 +87,23 @@ def _get_data_source(file_name: str) -> str:
     return max(data_sources, key=len)
 
 
-if __name__ == "__main__":
-    # Set up the logging configuration.
-    utils.config.set_up_logging("upload_of_electricity_demand_data")
+def main(config: ConfigModel) -> None:
+    """
+    Upload the electricity demand files of the settings.
 
-    # Read and check the configuration.
-    config = _read_and_check_configuration()
+    Parameters
+    ----------
+    config : ConfigModel
+        The settings.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the data is not made by Open Energy Transition and the
+        metadata of the Zenodo upload is missing.
+    """
+    utils.config.set_up_logging("upload_of_electricity_demand_data")
+    utils.config.log_configuration(config)
 
     # Get the date of upload.
     date_of_upload = pd.Timestamp.today().strftime("%Y-%m-%d")
@@ -109,28 +114,14 @@ if __name__ == "__main__":
             file_path = os.path.join(config.data_directory, file_name)
 
             if config.target_platform == "gcs":
-                if config.gcs_bucket_name is None:
-                    raise ValueError(
-                        "gcs_bucket_name is required to upload to GCS."
-                    )
-
                 # Upload the parquet file of the electricity demand time
                 # series to GCS.
                 utils.uploader.upload_to_gcs(
                     file_path,
-                    config.gcs_bucket_name,
+                    str(config.gcs_bucket_name),
                     f"upload_{date_of_upload}/{file_name}",
                 )
-            elif config.target_platform == "zenodo":
-                if (
-                    config.made_by_oet is None
-                    or config.publish_to_zenodo is None
-                ):
-                    raise ValueError(
-                        "made_by_oet and publish_to_zenodo are required to "
-                        "upload to Zenodo."
-                    )
-
+            else:
                 if not config.made_by_oet:
                     # Check if a metadata file other than the default
                     # one for OET-created content has been provided.
@@ -160,8 +151,8 @@ if __name__ == "__main__":
                     utils.uploader.upload_to_zenodo(
                         file_path,
                         data_type="actual",
-                        made_by_oet=config.made_by_oet,
-                        publish=config.publish_to_zenodo,
+                        made_by_oet=bool(config.made_by_oet),
+                        publish=bool(config.publish_to_zenodo),
                         testing=True,
                     )
                 else:
@@ -170,3 +161,13 @@ if __name__ == "__main__":
                         "redistribution. The data will not be "
                         "uploaded to Zenodo."
                     )
+
+
+if __name__ == "__main__":
+    main(
+        utils.config.read_and_check_configuration(
+            "upload",
+            ConfigModel,
+            "Upload the electricity demand data to the specified destination.",
+        )
+    )
