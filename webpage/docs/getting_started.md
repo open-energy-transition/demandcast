@@ -39,6 +39,8 @@ ENTSOE_API_KEY=<your_key>          # For data retrieval from ENTSO-E
 EIA_API_KEY=<your_key>             # For data retrieval from EIA
 EPIAS_USERNAME=<your_username>     # For data retrieval from EPIAS, with a free account
 EPIAS_PASSWORD=<your_password>     # For data retrieval from EPIAS
+ISONE_USERNAME=<your_username>     # For data retrieval from ISO New England, with a free ISO Express account
+ISONE_PASSWORD=<your_password>     # For data retrieval from ISO New England
 ZENODO_API_KEY=<your_key>          # For data upload to Zenodo
 SANDBOX_ZENODO_API_KEY=<your_key>  # For data upload to Zenodo Sandbox
 ```
@@ -168,7 +170,7 @@ uv run retrieve.py
 
 ---
 
-After retrieving the necessary data, assemble it into a unified dataset for model training. This step merges electricity demand, temperature, GDP PPP per capita, annual electricity demand per capita, and population data for all four countries from 2020 to 2023.
+After retrieving the necessary data, assemble it into a unified dataset for model training. This step merges electricity demand, temperature, GDP PPP per capita, annual electricity demand per capita, and population data for all four countries from 2020 to 2023. The electricity demand is the combined one, which joins all the data sources of each country (see [Data Retrieval](retrieval.md#electricity-demand)).
 
 Edit `demandcast/config/assemble_config.yaml`:
 
