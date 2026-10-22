@@ -33,10 +33,10 @@ def test_run_data_retrieval_of_future_scenario(tmp_folders):
         patch.object(
             annual_demand.iiasa,
             "extrapolate",
-            return_value=pd.Series({2022: 7200.0}),
-        ) as mock_extrapolate,
+            side_effect=[pd.Series({2022: 7200.0}), pd.Series({2022: 7300.0})],
+        ),
     ):
-        # The second run finds the files and skips the retrieval.
+        # The second run replaces the year with its revised value.
         for __ in range(2):
             annual_demand.run_data_retrieval(
                 code="FRA",
@@ -53,7 +53,14 @@ def test_run_data_retrieval_of_future_scenario(tmp_folders):
         "FRA_SSP2_45.csv",
         "FRA_SSP2_45.parquet",
     ]
-    mock_extrapolate.assert_called_once()
+    saved = pd.read_parquet(
+        os.path.join(
+            tmp_folders["annual_electricity_demand_per_capita_folder"],
+            "FRA_SSP2_45.parquet",
+        )
+    )["Annual electricity demand per capita (kWh)"]
+    assert set(saved) == {7300.0}
+    assert len(saved) == 8760
 
 
 def test_download_of_ember(monkeypatch):

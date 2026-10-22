@@ -12,6 +12,7 @@ Description:
 import datetime
 import itertools
 import logging
+import os
 from typing import Any
 
 import pandas as pd
@@ -365,6 +366,55 @@ def convert_from_yearly_to_hourly(
     )
 
     return pd.Series(index.year.map(time_series.to_dict()), index=index)
+
+
+def save_yearly_values(
+    time_series: pd.Series,
+    file_path_without_ext: str,
+    time_zone: datetime.tzinfo,
+) -> None:
+    """
+    Save the hourly values of some years, keeping the other saved years.
+
+    The values replace the saved ones of their local years, and both
+    files are replaced only once they are written.
+
+    Parameters
+    ----------
+    time_series : pandas.Series
+        The hourly values of whole local years, at times in UTC without
+        time zone, as given by clean_data.
+    file_path_without_ext : str
+        The path of the Parquet and CSV files, without extension.
+    time_zone : datetime.tzinfo
+        The time zone of the local years.
+    """
+
+    def local_years(index: pd.Index) -> pd.Index:
+        return (
+            pd.DatetimeIndex(index)
+            .tz_localize("UTC")
+            .tz_convert(time_zone)
+            .year
+        )
+
+    if os.path.exists(file_path_without_ext + ".parquet"):
+        saved = pd.read_parquet(file_path_without_ext + ".parquet")[
+            time_series.name
+        ]
+        saved = saved[
+            ~local_years(saved.index).isin(local_years(time_series.index))
+        ]
+        if not saved.empty:
+            time_series = pd.concat([saved, time_series]).sort_index()
+
+    for extension in (".parquet", ".csv"):
+        temporary_path = file_path_without_ext + ".tmp" + extension
+        if extension == ".parquet":
+            time_series.to_frame().to_parquet(temporary_path)
+        else:
+            time_series.to_csv(temporary_path)
+        os.replace(temporary_path, file_path_without_ext + extension)
 
 
 def clean_data(time_series: pd.Series, variable_name: str) -> pd.Series:

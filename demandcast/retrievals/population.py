@@ -244,128 +244,103 @@ def run_data_retrieval(
         file_path_without_ext = os.path.join(result_directory, entity_code)
 
         if requested_historical_years:
-            if not os.path.exists(
-                file_path_without_ext + ".parquet"
-            ) or not os.path.exists(file_path_without_ext + ".csv"):
+            logging.info(
+                f"Extracting historical population data for {entity_code}."
+            )
+
+            # Extract the historical population data for the
+            # country or subdivision of interest.
+            historical_population = _extract_historical_population(
+                entity_code,
+                global_historical_population,
+                requested_historical_years,
+                used_historical_years,
+                available_historical_years_of_gridded_data,
+            )
+
+            # Extract the historical population for the selected
+            # years.
+            selected_historical_population = historical_population.loc[
+                historical_population.index.isin(requested_historical_years)
+            ]
+
+            # Convert the historical population data from yearly to
+            # hourly values.
+            selected_historical_population = (
+                utils.time_series.convert_from_yearly_to_hourly(
+                    selected_historical_population,
+                    time_zone,
+                )
+            )
+
+            # Clean the time series.
+            selected_historical_population = utils.time_series.clean_data(
+                selected_historical_population,
+                "Population",
+            )
+
+            # Save the historical population data to CSV and Parquet
+            # files.
+            utils.time_series.save_yearly_values(
+                selected_historical_population,
+                file_path_without_ext,
+                time_zone,
+            )
+
+            logging.info(
+                f"Historical population data for {entity_code} has been "
+                "extracted and saved successfully."
+            )
+
+        if future_years:
+            for selected_scenario in scenarios:
                 logging.info(
-                    f"Extracting historical population data for {entity_code}."
+                    f"Extracting future population data for "
+                    f"{entity_code} and scenario {selected_scenario}."
                 )
 
-                # Extract the historical population data for the
-                # country or subdivision of interest.
-                historical_population = _extract_historical_population(
+                # Extract the future population data for the country
+                # or subdivision of interest.
+                future_population = _extract_future_population(
                     entity_code,
-                    global_historical_population,
-                    requested_historical_years,
-                    used_historical_years,
+                    global_future_population,
+                    future_years,
+                    available_future_years_of_gridded_data,
                     available_historical_years_of_gridded_data,
+                    selected_scenario,
                 )
 
-                # Extract the historical population for the selected
+                # Extract the future population for the selected
                 # years.
-                selected_historical_population = historical_population.loc[
-                    historical_population.index.isin(
-                        requested_historical_years
-                    )
+                selected_future_population = future_population.loc[
+                    future_population.index.isin(future_years)
                 ]
 
-                # Convert the historical population data from yearly to
+                # Convert the future population data from yearly to
                 # hourly values.
-                selected_historical_population = (
+                selected_future_population = (
                     utils.time_series.convert_from_yearly_to_hourly(
-                        selected_historical_population,
+                        selected_future_population,
                         time_zone,
                     )
                 )
 
                 # Clean the time series.
-                selected_historical_population = utils.time_series.clean_data(
-                    selected_historical_population,
+                selected_future_population = utils.time_series.clean_data(
+                    selected_future_population,
                     "Population",
                 )
 
-                # Save the historical population data to CSV and Parquet
+                # Save the future population data to CSV and Parquet
                 # files.
-                selected_historical_population.to_frame().to_parquet(
-                    file_path_without_ext + ".parquet",
-                )
-                selected_historical_population.to_csv(
-                    file_path_without_ext + ".csv",
+                utils.time_series.save_yearly_values(
+                    selected_future_population,
+                    f"{file_path_without_ext}_{selected_scenario}",
+                    time_zone,
                 )
 
                 logging.info(
-                    f"Historical population data for {entity_code} has been "
-                    "extracted and saved successfully."
+                    f"Future population data for {entity_code} and "
+                    f"scenario {selected_scenario} has been extracted "
+                    "and saved successfully."
                 )
-
-            else:
-                logging.info(
-                    f"Historical population data for {entity_code} already "
-                    "exists. Skipping extraction."
-                )
-
-        if future_years:
-            for selected_scenario in scenarios:
-                if not os.path.exists(
-                    f"{file_path_without_ext}_{selected_scenario}.parquet"
-                ) or not os.path.exists(
-                    f"{file_path_without_ext}_{selected_scenario}.csv"
-                ):
-                    logging.info(
-                        f"Extracting future population data for "
-                        f"{entity_code} and scenario {selected_scenario}."
-                    )
-
-                    # Extract the future population data for the country
-                    # or subdivision of interest.
-                    future_population = _extract_future_population(
-                        entity_code,
-                        global_future_population,
-                        future_years,
-                        available_future_years_of_gridded_data,
-                        available_historical_years_of_gridded_data,
-                        selected_scenario,
-                    )
-
-                    # Extract the future population for the selected
-                    # years.
-                    selected_future_population = future_population.loc[
-                        future_population.index.isin(future_years)
-                    ]
-
-                    # Convert the future population data from yearly to
-                    # hourly values.
-                    selected_future_population = (
-                        utils.time_series.convert_from_yearly_to_hourly(
-                            selected_future_population,
-                            time_zone,
-                        )
-                    )
-
-                    # Clean the time series.
-                    selected_future_population = utils.time_series.clean_data(
-                        selected_future_population,
-                        "Population",
-                    )
-
-                    # Save the future population data to CSV and Parquet
-                    # files.
-                    selected_future_population.to_frame().to_parquet(
-                        f"{file_path_without_ext}_{selected_scenario}.parquet",
-                    )
-                    selected_future_population.to_csv(
-                        f"{file_path_without_ext}_{selected_scenario}.csv",
-                    )
-
-                    logging.info(
-                        f"Future population data for {entity_code} and "
-                        f"scenario {selected_scenario} has been extracted "
-                        "and saved successfully."
-                    )
-
-                else:
-                    logging.info(
-                        f"Future population data for {entity_code} and "
-                        f"scenario {selected_scenario} already exists. "
-                        "Skipping extraction."
-                    )

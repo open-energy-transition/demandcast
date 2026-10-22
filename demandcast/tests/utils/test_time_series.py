@@ -405,3 +405,49 @@ def test_convert_from_yearly_to_hourly_with_missing_midnight():
     )
     assert hourly_series.iloc[0] == 100
     assert hourly_series.iloc[-1] == 200
+
+
+def test_save_yearly_values(tmp_path):
+    """
+    Test that saving some years keeps the other saved years.
+
+    The years saved again replace their saved values, and both files
+    have the same values.
+    """
+    file_path = str(tmp_path / "values")
+
+    def save(values: dict[int, float]) -> None:
+        hourly = utils.time_series.clean_data(
+            utils.time_series.convert_from_yearly_to_hourly(
+                pd.Series(values), local_time_zone
+            ),
+            "Value",
+        )
+        utils.time_series.save_yearly_values(
+            hourly, file_path, local_time_zone
+        )
+
+    save({2023: 1.0})
+    save({2024: 2.0})
+    save({2023: 3.0})
+
+    saved = pd.read_parquet(file_path + ".parquet")["Value"]
+    local_years = (
+        pd.DatetimeIndex(saved.index)
+        .tz_localize("UTC")
+        .tz_convert(local_time_zone)
+        .year
+    )
+    assert saved.groupby(local_years).agg(["min", "max", "count"]).to_dict(
+        "index"
+    ) == {
+        2023: {"min": 3.0, "max": 3.0, "count": 8760},
+        2024: {"min": 2.0, "max": 2.0, "count": 8784},
+    }
+    assert saved.index.is_monotonic_increasing
+    from_csv = pd.read_csv(file_path + ".csv", index_col=0)["Value"]
+    assert from_csv.to_numpy().tolist() == saved.to_numpy().tolist()
+    assert sorted(path.name for path in tmp_path.iterdir()) == [
+        "values.csv",
+        "values.parquet",
+    ]
