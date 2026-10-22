@@ -78,7 +78,6 @@ reviews:
     code: IND_TR
     flag: midday_dip
     periods:
-      - DJF 2019
       - DJF 2020
       - DJF 2021
     verdict: definition_change
@@ -101,12 +100,26 @@ reviews:
     verdict: real_event
     note: The lockdown of 2020.
   - data_source: niti
-    code: IND_DL
+    code: IND_PB
     flag: midday_dip
     periods:
       - MAM 2020
     verdict: real_event
     note: The lockdown of 2020.
+  - data_source: niti
+    code: IND_CH
+    flag: midday_dip
+    periods:
+      - MAM 2021
+    verdict: false_positive
+    note: The index is just past the threshold, as close to it as in MAM 2023, and back to about 0.99 from 2024; the other states have no dip in MAM 2021.
+  - data_source: niti
+    code: IND_TN
+    flag: midday_dip
+    periods:
+      - DJF 2026
+    verdict: net_demand
+    note: The demand at midday stays the same from DJF 2025 while that of the morning and the afternoon grows by 3% to 6%, probably as the solar in the distribution networks of Tamil Nadu grows, as in Kerala.
   - data_source: cnd
     code: PAN
     flag: midday_dip
@@ -322,7 +335,23 @@ reviews:
     code: IND_NL
     flag: midday_dip
     periods:
+      - DJF 2025
       - SON 2025
+      - DJF 2026
+    verdict: false_positive
+    note: The demand of the morning and the afternoon grows faster than that at midday from 2024, which the few MW of solar of Nagaland cannot explain; the states around it have no dip.
+  - data_source: niti
+    code: IND_AR
+    flag: midday_dip
+    periods:
+      - JJA 2019
+    verdict: false_positive
+    note: A single quarter of a small state, whose midday index is noisy.
+  - data_source: niti
+    code: IND_SK
+    flag: midday_dip
+    periods:
+      - SON 2019
     verdict: false_positive
     note: A single quarter of a small state, whose midday index is noisy.
   - data_source: eia
@@ -409,22 +438,7 @@ reviews:
     verdict: false_positive
     note: Single quarters or a small state, whose midday index is noisy.
   - data_source: niti
-    code: IND_HP
-    flag: midday_rise
-    verdict: false_positive
-    note: Single quarters or a small state, whose midday index is noisy.
-  - data_source: niti
-    code: IND_ML
-    flag: midday_rise
-    verdict: false_positive
-    note: Single quarters or a small state, whose midday index is noisy.
-  - data_source: niti
     code: IND_MN
-    flag: midday_rise
-    verdict: false_positive
-    note: Single quarters or a small state, whose midday index is noisy.
-  - data_source: niti
-    code: IND_MZ
     flag: midday_rise
     verdict: false_positive
     note: Single quarters or a small state, whose midday index is noisy.
@@ -445,11 +459,6 @@ reviews:
     note: Single quarters or a small state, whose midday index is noisy.
   - data_source: niti
     code: IND_TN
-    flag: midday_rise
-    verdict: false_positive
-    note: Single quarters or a small state, whose midday index is noisy.
-  - data_source: niti
-    code: IND_TR
     flag: midday_rise
     verdict: false_positive
     note: Single quarters or a small state, whose midday index is noisy.

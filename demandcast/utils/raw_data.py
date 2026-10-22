@@ -10,12 +10,17 @@ Description:
 
     While a request of a data source is downloaded, the responses to
     the requests that its code sends with requests or urllib are
-    recorded. The content of each response is saved once, under its
-    checksum, in raw/<data source>/files/. The manifest of the data
-    source, raw/<data source>/manifest.json, lists the requests of each
-    code and, for each of them, the versions of its responses: a version
-    is a set of responses, with the dates of the first and the last
-    retrievals that downloaded it.
+    recorded, and so are the files downloaded manually that it reads
+    (see utils.fetcher.find_manual_files), as responses to a request
+    with the method FILE and the name of the file. The content of each
+    response is saved once, under its checksum, in
+    raw/<data source>/files/. The manifest of the data source,
+    raw/<data source>/manifest.json, lists the requests of each code
+    and, for each of them, the versions of its responses: a version is a
+    set of responses, with the dates of the first and the last
+    retrievals that downloaded it, and the error that the data source
+    raised if its data could not be extracted from them, such as after
+    a change of their format.
 
     The API keys and passwords in the URLs and the bodies of the
     requests are hidden in the manifest. The responses to the requests
@@ -23,8 +28,9 @@ Description:
     saved: when the data is processed again, they get an empty response.
 
     To process a version again, its responses are replayed to the code
-    of the data source instead of downloads: a request without a saved
-    response raises an error, so nothing is downloaded.
+    of the data source instead of downloads, and its files downloaded
+    manually instead of those in their folder: a request without a
+    saved response raises an error, so nothing is downloaded.
 """
 
 from __future__ import annotations
@@ -36,6 +42,8 @@ import hashlib
 import io
 import json
 import os
+import shutil
+import tempfile
 import urllib.request
 from collections.abc import Iterator
 from typing import Any
@@ -45,6 +53,9 @@ import requests
 
 import utils.config
 import utils.fetcher
+
+# The method of the requests of the files downloaded manually.
+MANUAL_FILE = "FILE"
 
 
 class RawDataNotFoundError(LookupError):
@@ -284,6 +295,9 @@ def recording(data_source: str) -> Iterator[list[dict[str, Any]]]:
     """
     Record the responses of the requests sent with requests or urllib.
 
+    The files downloaded manually that the data source finds are
+    recorded too.
+
     Parameters
     ----------
     data_source : str
@@ -299,6 +313,7 @@ def recording(data_source: str) -> Iterator[list[dict[str, Any]]]:
     responses: list[dict[str, Any]] = []
     send = requests.Session.send
     urlopen = urllib.request.urlopen  # noqa: S310
+    find_manual_files = utils.fetcher.find_manual_files
 
     def record(
         method: str,
@@ -356,13 +371,91 @@ def recording(data_source: str) -> Iterator[list[dict[str, Any]]]:
         record(method, full_url, body, content, status, headers)
         return _UrlResponse(content, headers, status, full_url)
 
+    def recording_find_manual_files(prefix: str) -> list[str]:
+        file_paths = find_manual_files(prefix)
+        for file_path in file_paths:
+            name = os.path.basename(file_path)
+            # A file found twice, such as to check whether it changed
+            # before reading it, is recorded once.
+            if any(
+                response["key"] == list(_key(MANUAL_FILE, name, None))
+                for response in responses
+            ):
+                continue
+            with open(file_path, "rb") as file:
+                record(MANUAL_FILE, name, None, file.read(), 200, {})
+        return file_paths
+
     setattr(requests.Session, "send", recording_send)  # noqa: B010
     setattr(urllib.request, "urlopen", recording_urlopen)  # noqa: B010
+    setattr(  # noqa: B010
+        utils.fetcher, "find_manual_files", recording_find_manual_files
+    )
     try:
         yield responses
     finally:
         setattr(requests.Session, "send", send)  # noqa: B010
         setattr(urllib.request, "urlopen", urlopen)  # noqa: B010
+        setattr(  # noqa: B010
+            utils.fetcher, "find_manual_files", find_manual_files
+        )
+
+
+def _copy_manual_files(
+    data_source: str,
+    saved: dict[tuple[str, str, str | None], dict[str, Any]],
+    prefix: str,
+    folder: str,
+) -> list[str]:
+    """
+    Copy the saved files downloaded manually that start with a prefix.
+
+    Parameters
+    ----------
+    data_source : str
+        The data source, whose folder keeps the files.
+    saved : dict[tuple[str, str, str | None], dict[str, Any]]
+        The saved responses, by their key.
+    prefix : str
+        The start of the names of the files.
+    folder : str
+        The folder to copy the files into, with their names.
+
+    Returns
+    -------
+    list[str]
+        The paths of the copies, in the order of their names.
+
+    Raises
+    ------
+    RawDataNotFoundError
+        If no saved file starts with the prefix.
+    """
+    names = sorted(
+        name
+        for method, name, _ in saved
+        if method == MANUAL_FILE and name.startswith(prefix)
+    )
+    if not names:
+        raise RawDataNotFoundError(
+            f"No saved file of {data_source} downloaded manually whose "
+            f"name starts with {prefix}. Retrieve the data again to save "
+            "the files."
+        )
+    file_paths = []
+    for name in names:
+        file_path = os.path.join(folder, name)
+        if not os.path.exists(file_path):
+            shutil.copyfile(
+                os.path.join(
+                    _folder(data_source),
+                    "files",
+                    saved[(MANUAL_FILE, name, None)]["file"],
+                ),
+                file_path,
+            )
+        file_paths.append(file_path)
+    return file_paths
 
 
 @contextlib.contextmanager
@@ -384,11 +477,16 @@ def replaying(
     ------
     None
         Nothing: the requests sent with requests or urllib get the saved
-        responses meanwhile.
+        responses meanwhile, and the data source finds the saved files
+        downloaded manually.
     """
     saved = {tuple(response["key"]): response for response in responses}
     send = requests.Session.send
     urlopen = urllib.request.urlopen  # noqa: S310
+    find_manual_files = utils.fetcher.find_manual_files
+    # The saved files downloaded manually are copied with their names,
+    # which can tell how to read them.
+    manual_folder = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
 
     def replay(
         method: str, url: str, body: Any
@@ -439,13 +537,25 @@ def replaying(
             full_url,
         )
 
+    def replaying_find_manual_files(prefix: str) -> list[str]:
+        return _copy_manual_files(
+            data_source, saved, prefix, manual_folder.name
+        )
+
     setattr(requests.Session, "send", replaying_send)  # noqa: B010
     setattr(urllib.request, "urlopen", replaying_urlopen)  # noqa: B010
+    setattr(  # noqa: B010
+        utils.fetcher, "find_manual_files", replaying_find_manual_files
+    )
     try:
         yield
     finally:
         setattr(requests.Session, "send", send)  # noqa: B010
         setattr(urllib.request, "urlopen", urlopen)  # noqa: B010
+        setattr(  # noqa: B010
+            utils.fetcher, "find_manual_files", find_manual_files
+        )
+        manual_folder.cleanup()
 
 
 def read_manifest(data_source: str) -> dict[str, Any]:
@@ -491,15 +601,15 @@ def _write_manifest(data_source: str, manifest: dict[str, Any]) -> None:
 def save_versions(
     data_source: str,
     code: str,
-    downloads: list[tuple[Any, list[dict[str, Any]]]],
+    downloads: list[tuple[Any, list[dict[str, Any]], str | None]],
     retrieved: str,
 ) -> None:
     """
     Save the responses of the requests of a code as their versions.
 
     If the responses of a request are those of its latest version, only
-    the date of its last retrieval changes. The manifest is written once
-    for all the requests.
+    the date of its last retrieval changes, and its error is that of the
+    last retrieval. The manifest is written once for all the requests.
 
     Parameters
     ----------
@@ -507,8 +617,9 @@ def save_versions(
         The data source.
     code : str
         The code of the country or subdivision.
-    downloads : list[tuple[Any, list[dict[str, Any]]]]
-        Each request, with its responses as recording gives them.
+    downloads : list[tuple[Any, list[dict[str, Any]], str | None]]
+        Each request, with its responses as recording gives them, and
+        the error raised while its data was extracted from them, if any.
     retrieved : str
         The date and time of the retrieval, in ISO format.
     """
@@ -518,7 +629,7 @@ def save_versions(
         for entry in manifest["requests"]
         if entry["code"] == code
     }
-    for request, responses in downloads:
+    for request, responses, error in downloads:
         encoded = encode_request(request)
         entry = entries.get(json.dumps(encoded, sort_keys=True))
         if entry is None:
@@ -538,12 +649,15 @@ def save_versions(
         ):
             latest["last_retrieved"] = retrieved
         else:
-            entry["versions"].append(
-                {
-                    "first_retrieved": retrieved,
-                    "last_retrieved": retrieved,
-                    "responses": responses,
-                }
-            )
+            latest = {
+                "first_retrieved": retrieved,
+                "last_retrieved": retrieved,
+                "responses": responses,
+            }
+            entry["versions"].append(latest)
+        if error is None:
+            latest.pop("error", None)
+        else:
+            latest["error"] = error
 
     _write_manifest(data_source, manifest)

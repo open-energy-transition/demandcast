@@ -32,8 +32,22 @@ def test_get_available_requests():
         (True, 2023, None, None),
         (False, 2023, 10, None),
     ]
-    assert requests[-1] == (False, 2025, 12, None)
+    # The last month, after the end date, is requested until it.
+    assert requests[-2:] == [(False, 2025, 11, None), (False, 2025, 12, 28)]
     assert len(requests) == 18 + 27
+
+
+def test_get_available_requests_of_the_last_week():
+    """Test that a month ending in the last week has its last day."""
+    requests = aemo_wem.get_available_requests(
+        "AUS_WA", datetime.date(2006, 9, 20), datetime.date(2026, 1, 5)
+    )
+
+    assert requests[-3:] == [
+        (False, 2025, 11, None),
+        (False, 2025, 12, 31),
+        (False, 2026, 1, 5),
+    ]
 
 
 def test_download_and_extract_data_for_request_before_reform(
@@ -125,43 +139,84 @@ def test_download_and_extract_data_for_request_after_reform(
 
 
 @pytest.mark.usefixtures("frozen_now")
-@pytest.mark.parametrize("day", [1, 30])
-def test_download_and_extract_data_with_missing_day(monkeypatch, day):
-    """Test that only a missing day of the last week is left out."""
-    # Today is 2026-01-02 in the tests.
-    month = (2025, 12) if day == 30 else (2025, 11)
-    monkeypatch.setattr(
-        aemo_wem,
-        "_get_trading_days",
-        lambda *_: [pd.Timestamp(year=month[0], month=month[1], day=day)],
-    )
+def _fetch_without_day(monkeypatch, missing_day):
+    """
+    Serve empty files, except the daily file of a day, which is missing.
 
-    def fetch(*_args, **_kwargs):
-        raise utils.fetcher.DataNotFoundError("HTTP error 404")
+    Returns
+    -------
+    list[str]
+        The URLs fetched.
+    """
+    fetched = []
+
+    def fetch(url, *_args, **_kwargs):
+        fetched.append(url)
+        if url.endswith(f"-{missing_day:02d}.json"):
+            raise utils.fetcher.DataNotFoundError("HTTP error 404")
+        return pd.DataFrame(
+            {
+                "operationalDemand": [],
+                "dispatchInterval": [],
+                "Timestamp": [],
+                "Estimated DPV Generation(MW)": [],
+            }
+        )
 
     monkeypatch.setattr(aemo_wem.utils.fetcher, "fetch_dataframe", fetch)
+    return fetched
 
-    if day == 30:
+
+@pytest.mark.parametrize(
+    ("request_", "missing_day", "skipped"),
+    [
+        ((False, 2025, 12, 31), 24, True),
+        ((False, 2025, 12, 31), 23, False),
+        ((False, 2025, 11, None), 30, False),
+    ],
+)
+def test_download_and_extract_data_with_missing_day(
+    monkeypatch, request_, missing_day, skipped
+):
+    """Test that only the missing days of the last week are skipped."""
+    _fetch_without_day(monkeypatch, missing_day)
+
+    if skipped:
         time_series = aemo_wem.download_and_extract_data_for_request(
-            (False, *month, None), "AUS_WA"
+            request_, "AUS_WA"
         )
         assert time_series.empty
     else:
         with pytest.raises(utils.fetcher.DataNotFoundError):
-            aemo_wem.download_and_extract_data_for_request(
-                (False, *month, None), "AUS_WA"
-            )
+            aemo_wem.download_and_extract_data_for_request(request_, "AUS_WA")
 
 
-@pytest.mark.usefixtures("frozen_now")
+@pytest.mark.parametrize("now", ["2025-12-03", "2026-03-01"])
+def test_requests_do_not_depend_on_today(monkeypatch, now):
+    """Test that a request gets the same days whenever it is run."""
+    monkeypatch.setattr(
+        pd.Timestamp, "now", lambda *_, **__: pd.Timestamp(now)
+    )
+    fetched = _fetch_without_day(monkeypatch, 2)
+
+    aemo_wem.download_and_extract_data_for_request(
+        (False, 2025, 12, 2), "AUS_WA"
+    )
+
+    assert [url[-7:-5] for url in fetched if url.endswith(".json")] == [
+        "01",
+        "02",
+    ]
+
+
 def test_get_trading_days():
-    """Test that the trading days are those of the month until today."""
-    # Today is 2026-01-02 in the tests, and the reform is on 2023-10-01.
-    assert len(aemo_wem._get_trading_days(2025, 12)) == 31
-    assert aemo_wem._get_trading_days(2026, 1)[-1] == pd.Timestamp(
+    """Test that the trading days are those of the month until a day."""
+    # The reform is on 2023-10-01.
+    assert len(aemo_wem._get_trading_days(2025, 12, None)) == 31
+    assert aemo_wem._get_trading_days(2026, 1, 2)[-1] == pd.Timestamp(
         "2026-01-02"
     )
-    assert aemo_wem._get_trading_days(2023, 10)[0] == pd.Timestamp(
+    assert aemo_wem._get_trading_days(2023, 10, None)[0] == pd.Timestamp(
         "2023-10-01"
     )
 

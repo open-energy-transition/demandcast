@@ -16,15 +16,28 @@ import sys
 import types
 from unittest.mock import Mock, call, create_autospec
 
+import cleaning.flags
 import pandas as pd
 import pytest
 import requests
 import retrievals.electricity_demand
 import utils.fetcher
+import utils.raw_data
 import yaml
 
 # Freeze today, the end date of the entities of the data sources.
 pytestmark = pytest.mark.usefixtures("frozen_now")
+
+
+@pytest.fixture(autouse=True)
+def longitude(monkeypatch):
+    """
+    Give every entity the longitude of Paris for the flags.
+
+    The longitude is otherwise read from the shape of the entity, which
+    can be downloaded.
+    """
+    monkeypatch.setattr(cleaning.flags, "_get_longitude", lambda _code: 2.35)
 
 
 @pytest.fixture
@@ -582,3 +595,128 @@ def test_newest_of_overlapping_requests(
         "2026-01-02T00:00:00Z",
         "2026-01-01T00:00:00Z",
     ]
+
+
+def _read_csv_demand(text: str, column: str = "value") -> pd.Series:
+    """
+    Read a demand from a CSV text with a time and a value column.
+
+    Returns
+    -------
+    pandas.Series
+        The demand in MW, at times in UTC.
+    """
+    values = pd.read_csv(io.StringIO(text), index_col=0, parse_dates=True)
+    return values[column].astype(float).tz_localize("UTC")
+
+
+def test_manual_files_in_the_raw_data(
+    tmp_folders, add_data_source, monkeypatch
+):
+    """Test that the files downloaded manually are kept as versions."""
+    folder = tmp_folders["manually_downloaded_electricity_demand_folder"]
+    os.makedirs(folder)
+    file_path = os.path.join(folder, "MAN_1.csv")
+
+    def download_and_extract_data_for_request(_request, _code):
+        dataset = utils.fetcher.read_manual_files(
+            data_source_name="Manual",
+            url="https://example.org",
+            prefix="MAN",
+            read_file=lambda path: pd.read_csv(path, dtype=str),
+        )
+        return _read_csv_demand(dataset.to_csv(index=False))
+
+    add_data_source(
+        "manual",
+        ["FRA"],
+        get_available_requests=Mock(return_value=[None]),
+        download_and_extract_data_for_request=(
+            download_and_extract_data_for_request
+        ),
+    )
+
+    # The file is downloaded again, with another value.
+    for now, content in [
+        ("2026-01-01", "time,value\n2024-01-01 00:00,100\n"),
+        ("2026-01-02", "time,value\n2024-01-01 01:00,200\n"),
+    ]:
+        with open(file_path, "w", encoding="utf-8") as file:
+            file.write(content)
+        monkeypatch.setattr(
+            pd.Timestamp, "now", lambda *_, now=now, **__: pd.Timestamp(now)
+        )
+        retrievals.electricity_demand.run_data_retrieval("manual", None, None)
+
+    (entry,) = utils.raw_data.read_manifest("manual")["requests"]
+    assert [
+        [response["key"] for response in version["responses"]]
+        for version in entry["versions"]
+    ] == [[["FILE", "MAN_1.csv", None]]] * 2
+
+    # Both files are processed again, without the file of the folder.
+    os.remove(file_path)
+    retrievals.electricity_demand.run_data_retrieval(
+        "manual", None, None, offline=True
+    )
+    processed = pd.read_parquet(
+        os.path.join(
+            tmp_folders["processed_electricity_demand_folder"],
+            "FRA_manual.parquet",
+        )
+    )
+    assert processed["Load (MW)"].tolist() == [100.0, 200.0]
+
+
+def test_raw_data_kept_when_the_data_cannot_be_extracted(
+    tmp_folders, add_data_source, monkeypatch, caplog
+):
+    """Test that the responses whose data has an error are kept."""
+
+    # A website whose file has another name of its column.
+    def send(_adapter, request, **_kwargs):
+        response = requests.Response()
+        response.status_code = 200
+        response._content = b"time,valeur\n2023-01-01 00:00,1\n"
+        response.request = request
+        return response
+
+    monkeypatch.setattr(requests.adapters.HTTPAdapter, "send", send)
+    column = {"name": "value"}
+
+    def download_and_extract_data_for_request(_request, _code):
+        text = requests.get("https://example.org/data.csv", timeout=10).text
+        return _read_csv_demand(text, column["name"])
+
+    add_data_source(
+        "changed",
+        ["FRA"],
+        get_available_requests=Mock(return_value=[None]),
+        download_and_extract_data_for_request=(
+            download_and_extract_data_for_request
+        ),
+    )
+
+    with pytest.raises(KeyError):
+        retrievals.electricity_demand.run_data_retrieval("changed", None, None)
+
+    # The response is kept with the error, and is skipped while the
+    # code still fails.
+    (entry,) = utils.raw_data.read_manifest("changed")["requests"]
+    (version,) = entry["versions"]
+    assert len(version["responses"]) == 1
+    assert version["error"].startswith("KeyError")
+    retrievals.electricity_demand.run_data_retrieval(
+        "changed", None, None, offline=True
+    )
+    assert "still cannot be extracted" in caplog.text
+
+    # Once the code is fixed, it is processed without the network.
+    column["name"] = "valeur"
+    monkeypatch.setattr(requests.adapters.HTTPAdapter, "send", None)
+    retrievals.electricity_demand.run_data_retrieval(
+        "changed", None, None, offline=True
+    )
+    assert _read_saved_data(tmp_folders, "FRA", "changed") == {
+        "2023-01-01 00:00": 1.0
+    }

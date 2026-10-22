@@ -14,6 +14,7 @@ import urllib.request
 import pandas as pd
 import pytest
 import requests
+import utils.fetcher
 import utils.raw_data
 
 
@@ -137,6 +138,40 @@ def test_record_and_replay_urllib(tmp_path):
         assert response.read() == b"time,value\n"
 
 
+def test_record_and_replay_manual_files(tmp_folders, tmp_path):
+    """Test that the files downloaded manually are kept and replayed."""
+    folder = tmp_path / "manual"
+    folder.mkdir()
+    tmp_folders["manually_downloaded_electricity_demand_folder"] = str(folder)
+    (folder / "ABC_1.csv").write_text("load\n1\n")
+
+    def read():
+        return utils.fetcher.read_manual_files(
+            data_source_name="ABC",
+            url="https://example.org",
+            prefix="ABC",
+            read_file=pd.read_csv,
+        )["load"].tolist()
+
+    with utils.raw_data.recording("test") as responses:
+        assert read() == [1]
+        # A file found again is recorded once.
+        assert read() == [1]
+    assert [response["key"] for response in responses] == [
+        ["FILE", "ABC_1.csv", None]
+    ]
+
+    # The saved file is replayed, also after the file changes or is
+    # removed, and only with its prefix.
+    (folder / "ABC_1.csv").unlink()
+    with utils.raw_data.replaying("test", responses):
+        assert read() == [1]
+        assert read() == [1]
+        with pytest.raises(utils.raw_data.RawDataNotFoundError):
+            utils.fetcher.find_manual_files("XYZ")
+    assert utils.fetcher.find_manual_files("ABC") == []
+
+
 @pytest.mark.usefixtures("tmp_folders")
 def test_save_versions(server):
     """Test that a version is added only when the responses change."""
@@ -147,7 +182,7 @@ def test_save_versions(server):
         with utils.raw_data.recording("test") as responses:
             requests.get("https://example.org/data", timeout=10)
         utils.raw_data.save_versions(
-            "test", "FRA", [(request, responses)], retrieved
+            "test", "FRA", [(request, responses, None)], retrieved
         )
 
     retrieve("2026-01-01T00:00:00Z")

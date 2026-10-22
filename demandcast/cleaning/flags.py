@@ -414,7 +414,8 @@ def _get_lag(profile: np.ndarray, reference: np.ndarray) -> int:
     -------
     int
         The hours by which the profile has to move later, or 0 if no
-        move halves its squared difference with the reference.
+        move brings its squared difference with the reference below
+        LAG_SHARE of the difference without a move.
     """
     errors = {
         lag: float(((np.roll(profile, lag) - reference) ** 2).sum())

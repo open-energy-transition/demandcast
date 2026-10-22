@@ -60,10 +60,10 @@ Description:
 
 import datetime
 import functools
+import hashlib
 import os
 
 import pandas as pd
-import utils.config
 import utils.fetcher
 import utils.time_series
 
@@ -105,32 +105,33 @@ SUBDIVISIONS = {
 }
 
 
-def _list_files() -> tuple[tuple[str, float], ...]:
+def _list_files() -> tuple[tuple[str, str], ...]:
     """
-    List the downloaded files with the time of their last change.
+    List the downloaded files with the checksum of their content.
+
+    The files are those of the raw data when it is processed again.
 
     Returns
     -------
-    tuple[tuple[str, float], ...]
-        The paths of the files that start with "NIT", with the time of
-        their last change, or nothing if the folder does not exist.
+    tuple[tuple[str, str], ...]
+        The names of the files that start with "NIT", with the checksum
+        of their content.
     """
-    folder = utils.config.read_folders_structure()[
-        "manually_downloaded_electricity_demand_folder"
-    ]
-    if not os.path.isdir(folder):
-        return ()
-    paths = [
-        os.path.join(folder, name)
-        for name in sorted(os.listdir(folder))
-        if name.startswith("NIT")
-    ]
-    return tuple((path, os.path.getmtime(path)) for path in paths)
+    files = []
+    for file_path in utils.fetcher.find_manual_files("NIT"):
+        with open(file_path, "rb") as file:
+            files.append(
+                (
+                    os.path.basename(file_path),
+                    hashlib.sha256(file.read()).hexdigest(),
+                )
+            )
+    return tuple(files)
 
 
 @functools.lru_cache(maxsize=1)
 def _read_states_of_files(
-    files: tuple[tuple[str, float], ...],
+    files: tuple[tuple[str, str], ...],
 ) -> pd.DataFrame:
     """
     Read the demand of the states from the downloaded files.
@@ -140,8 +141,8 @@ def _read_states_of_files(
 
     Parameters
     ----------
-    files : tuple[tuple[str, float], ...]
-        The paths of the files with the time of their last change, which
+    files : tuple[tuple[str, str], ...]
+        The names of the files with the checksum of their content, which
         only identify the files that are read.
 
     Returns

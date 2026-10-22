@@ -414,7 +414,7 @@ def read_data_sources() -> list[str]:
     return data_sources
 
 
-def _read_data_source_file(data_source: str) -> dict:
+def _read_data_source_file(data_source: str) -> _DataSourceFile:
     """
     Read the yaml file of a data source, and check its content.
 
@@ -425,8 +425,10 @@ def _read_data_source_file(data_source: str) -> dict:
 
     Returns
     -------
-    dict
-        The content of the file: the licence and the entities.
+    _DataSourceFile
+        The content of the file, checked and with its values converted,
+        such as the dates written as text: the licence, the definition
+        and the entities.
 
     Raises
     ------
@@ -453,14 +455,12 @@ def _read_data_source_file(data_source: str) -> dict:
 
     # Check its content.
     try:
-        _DataSourceFile.model_validate(content)
+        return _DataSourceFile.model_validate(content)
     except ValidationError as error:
         raise ValueError(
             f"The yaml file of the data source {data_source} is not "
             f"valid: {error}"
         ) from error
-
-    return content
 
 
 def read_entities(data_source: str) -> list[DataSourceEntity]:
@@ -478,10 +478,7 @@ def read_entities(data_source: str) -> list[DataSourceEntity]:
         The countries and subdivisions, from the yaml file of the data
         source.
     """
-    return [
-        DataSourceEntity.model_validate(entity)
-        for entity in _read_data_source_file(data_source)["entities"]
-    ]
+    return _read_data_source_file(data_source).entities
 
 
 def read_licence(data_source: str) -> DataSourceLicence:
@@ -498,7 +495,7 @@ def read_licence(data_source: str) -> DataSourceLicence:
     DataSourceLicence
         The licence, from the yaml file of the data source.
     """
-    return DataSourceLicence(**_read_data_source_file(data_source)["licence"])
+    return _read_data_source_file(data_source).licence
 
 
 def read_compiled(data_source: str) -> bool:
@@ -515,7 +512,7 @@ def read_compiled(data_source: str) -> bool:
     bool
         Whether the data source is compiled, from its yaml file.
     """
-    return bool(_read_data_source_file(data_source).get("compiled", False))
+    return _read_data_source_file(data_source).compiled
 
 
 def read_definition(data_source: str) -> list[DataSourceDefinition]:
@@ -533,10 +530,7 @@ def read_definition(data_source: str) -> list[DataSourceDefinition]:
         The periods of the definition, from the yaml file of the data
         source, in the order of their start dates.
     """
-    return [
-        DataSourceDefinition(**period)
-        for period in _read_data_source_file(data_source)["definition"]
-    ]
+    return _read_data_source_file(data_source).definition
 
 
 def get_definition(
@@ -598,8 +592,12 @@ def _read_entities_info(
         provided, or if neither is provided.
     """
     if file_path == "" and data_source != "":
-        # Read and check the yaml file of the data source.
-        return _read_data_source_file(data_source)["entities"]
+        # Read and check the yaml file of the data source, with the
+        # values converted and only the fields that it has.
+        return [
+            entity.model_dump(exclude_unset=True)
+            for entity in _read_data_source_file(data_source).entities
+        ]
     if file_path == "" and data_source == "":
         # If no file path or data source is provided, raise an error.
         raise ValueError("Either file_path or data_source must be provided.")

@@ -106,15 +106,39 @@ def test_clean_data_resamples_to_hours():
 
 
 def test_clean_data_with_half_hours():
-    """Test that hourly values on the half hour become full hours."""
+    """Test that hourly values on the half hour are shared by hours."""
     # The ends of the hours of India (UTC+5:30) are on the half hour in
-    # UTC.
+    # UTC: the hour that ends at 01:00 has half of each value.
     demand = _demand("2024-01-01 00:30", 24 * 3)
 
     cleaned, _ = _clean(demand)
 
     assert pd.DatetimeIndex(cleaned.index).minute.unique().tolist() == [0]
+    assert cleaned["2024-01-01 01:00"] == pytest.approx(demand.iloc[:2].mean())
+    # The first and last hours have half of a value, which is enough.
     assert cleaned.iloc[0] == pytest.approx(demand.iloc[0])
+    assert len(cleaned) == 24 * 3 + 1
+
+
+def test_hourly_averages_keep_the_energy():
+    """Test that each value counts for the time of its interval."""
+    # The values of an hour that end at 00:05, 00:15, 00:30, 00:45 and
+    # 01:00, at a resolution of 15 minutes.
+    times = pd.DatetimeIndex(
+        [
+            "2024-01-01 00:05",
+            "2024-01-01 00:15",
+            *pd.date_range("2024-01-01 00:30", periods=3, freq="15min"),
+        ]
+    )
+    demand = pd.Series([100.0, 200.0, 300.0, 400.0, 500.0], index=times)
+
+    cleaned, _ = _clean(demand)
+
+    # The first value covers 5 minutes of the hour, and the others 10
+    # and 15.
+    expected = (100 * 5 + 200 * 10 + (300 + 400 + 500) * 15) / 60
+    assert cleaned["2024-01-01 01:00"] == pytest.approx(expected)
 
 
 def test_future_and_non_positive_values():
@@ -159,24 +183,78 @@ def test_frozen_values():
     ]
 
 
-def test_copied_days():
-    """Test that a day that repeats an earlier day is removed."""
+def test_frozen_values_do_not_bridge_gaps():
+    """Test that the same value on both sides of a gap is kept."""
     demand = _demand("2024-01-01 01:00", 24 * 10)
-    # The third local day of India repeats the first one.
-    times = (
-        pd.DatetimeIndex(demand.index)
+    # Two values 10 hours apart, without values between them.
+    demand = demand.drop(demand.index[31:40])
+    demand.iloc[[30, 31]] = 950.0
+
+    _, removed = _clean(demand)
+
+    assert _removed_times(removed, "frozen") == []
+
+
+def _local_starts(demand: pd.Series) -> pd.DatetimeIndex:
+    """
+    Get the starts of the hours of a demand, in the time of India.
+
+    Returns
+    -------
+    pandas.DatetimeIndex
+        The starts of the hours, without time zone.
+    """
+    return (
+        (pd.DatetimeIndex(demand.index) - pd.Timedelta(hours=1))
         .tz_localize("UTC")
         .tz_convert("Asia/Kolkata")
+        .tz_localize(None)
     )
-    first = demand[times.date == pd.Timestamp("2024-01-02").date()]
-    third = times.date == pd.Timestamp("2024-01-04").date()
+
+
+@pytest.mark.parametrize(
+    ("by_starts", "expected"),
+    [
+        # The hours that start on the day, the last ends at midnight.
+        (True, "2024-01-03 20:00/2024-01-04 19:00"),
+        # The hours that end on the day, the first one ends at 00:30.
+        (False, "2024-01-03 19:00/2024-01-04 18:00"),
+    ],
+)
+def test_copied_days(by_starts, expected):
+    """Test that a day that repeats an earlier day is removed."""
+    demand = _demand("2024-01-01 01:00", 24 * 10)
+    # The third local day of India repeats the first one, with the days
+    # of the starts or of the ends of the hours.
+    times = (
+        _local_starts(demand)
+        if by_starts
+        else _local_starts(demand) + pd.Timedelta(hours=1)
+    )
+    days = times.normalize()
+    first = demand[days == pd.Timestamp("2024-01-02")]
+    third = days == pd.Timestamp("2024-01-04")
     demand[third] = first.to_numpy()
 
     _, removed = _clean(demand)
 
-    assert _removed_times(removed, "copied_day") == [
-        "2024-01-03 19:00/2024-01-04 18:00"
-    ]
+    assert _removed_times(removed, "copied_day") == [expected]
+
+
+def test_days_with_other_missing_hours_are_not_copies():
+    """Test that days are compared at the same times of the day."""
+    demand = _demand("2024-01-01 01:00", 24 * 10)
+    days = _local_starts(demand).normalize()
+    first = demand[days == pd.Timestamp("2024-01-02")]
+    third = demand[days == pd.Timestamp("2024-01-04")]
+    # The first day misses its first hour, and the third day has the
+    # same values an hour earlier, without its last hour.
+    demand[third.index[:-1]] = first.to_numpy()[1:]
+    demand = demand.drop([first.index[0], third.index[-1]])
+
+    _, removed = _clean(demand)
+
+    assert _removed_times(removed, "copied_day") == []
 
 
 @pytest.mark.parametrize(
@@ -201,6 +279,34 @@ def test_spikes(freq, factor, is_spike):
     assert _removed_times(removed, "spike") == (
         [f"{expected}/{expected}"] if is_spike else []
     )
+
+
+@pytest.mark.parametrize(
+    ("length", "is_spike"), [(4, True), (6, True), (7, False)]
+)
+def test_spikes_of_several_values(length, is_spike):
+    """Test that a spike lasts up to 30 minutes, whatever its values."""
+    demand = _demand("2024-01-01 00:05", 12 * 24 * 3, "5min")
+    demand.iloc[200 : 200 + length] *= 1.5
+
+    _, removed = _clean(demand)
+
+    first = f"{demand.index[200]:%Y-%m-%d %H:%M}"
+    last = f"{demand.index[200 + length - 1]:%Y-%m-%d %H:%M}"
+    assert _removed_times(removed, "spike") == (
+        [f"{first}/{last}"] if is_spike else []
+    )
+
+
+def test_spikes_do_not_bridge_gaps():
+    """Test that a value between two gaps is not a spike."""
+    demand = _demand("2024-01-01 01:00", 24 * 10)
+    demand.iloc[100] *= 2
+    demand = demand.drop(demand.index[[*range(90, 100), *range(101, 111)]])
+
+    _, removed = _clean(demand)
+
+    assert _removed_times(removed, "spike") == []
 
 
 def test_peaks_and_steps_are_not_spikes():
@@ -251,19 +357,19 @@ def test_change_of_resolution():
 
 def _local_days(removed: pd.DataFrame, rule: str) -> set[str]:
     """
-    Get the days of India whose values a rule removes.
+    Get the days of India whose hourly values a rule removes.
 
     Returns
     -------
     set[str]
-        The days, in the time of India, of the times of the values.
+        The days, in the time of India, of the starts of the hours of
+        the values.
     """
     periods = removed[removed["rule"] == rule]
     days = set()
     for start, end in zip(periods["start"], periods["end"], strict=True):
-        times = pd.date_range(start, end, freq="1h", tz="UTC")
-        local = times.tz_convert("Asia/Kolkata")
-        days |= {f"{day:%Y-%m-%d}" for day in local.normalize()}
+        times = pd.Series(index=pd.date_range(start, end, freq="1h"))
+        days |= {f"{day:%Y-%m-%d}" for day in _local_starts(times).normalize()}
     return days
 
 
@@ -280,14 +386,8 @@ def _days(start: str, end: str) -> set[str]:
 
 
 def _scale_days(demand: pd.Series, start: str, end: str, factor: float):
-    """Scale the values of the days of India from a start to an end."""
-    days = (
-        pd.DatetimeIndex(demand.index)
-        .tz_localize("UTC")
-        .tz_convert("Asia/Kolkata")
-        .tz_localize(None)
-        .normalize()
-    )
+    """Scale the hourly values of the days of India in a period."""
+    days = _local_starts(demand).normalize()
     within = (days >= pd.Timestamp(start)) & (days <= pd.Timestamp(end))
     demand[within] *= factor
 
@@ -326,3 +426,47 @@ def test_level_drops_of_neighbouring_years():
     assert _local_days(removed, "level_drop") == _days(
         "2021-10-01", "2021-10-31"
     ) | _days("2023-10-01", "2023-10-31")
+
+
+@pytest.mark.parametrize("hours_left", [0, 6])
+def test_level_drops_do_not_bridge_missing_days(hours_left):
+    """
+    Test that missing days, or days with few values, break a drop.
+
+    Two weeks below the level, around 12 days without enough values,
+    are not a drop of 14 days.
+    """
+    demand = _demand("2019-01-01 01:00", 24 * 365 * 5)
+    _scale_days(demand, "2022-06-01", "2022-06-26", 0.25)
+    days = _local_starts(demand).normalize()
+    missing = (days >= pd.Timestamp("2022-06-08")) & (
+        days <= pd.Timestamp("2022-06-19")
+    )
+    hours = _local_starts(demand).hour
+    demand = demand[~missing | (hours < hours_left)]
+
+    _, removed = _clean(demand)
+
+    assert _local_days(removed, "level_drop") == set()
+
+
+def test_level_drops_over_short_gaps():
+    """
+    Test that a drop goes on over a few missing days.
+
+    A month below the level that misses a day every week, as in
+    Albania in 2023, is one drop, without the missing days.
+    """
+    demand = _demand("2019-01-01 01:00", 24 * 365 * 5)
+    _scale_days(demand, "2022-06-01", "2022-06-30", 0.25)
+    days = _local_starts(demand).normalize()
+    missing_days = pd.DatetimeIndex(
+        ["2022-06-07", "2022-06-14", "2022-06-21", "2022-06-28"]
+    )
+    demand = demand[~days.isin(missing_days)]
+
+    _, removed = _clean(demand)
+
+    assert _local_days(removed, "level_drop") == _days(
+        "2022-06-01", "2022-06-30"
+    ) - {f"{day:%Y-%m-%d}" for day in missing_days}

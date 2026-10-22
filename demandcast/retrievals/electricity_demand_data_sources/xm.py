@@ -173,8 +173,8 @@ def download_and_extract_data_for_request(
     # Values are in kWh with a frequency of 1 hour. Convert to MW.
     electricity_demand_time_series = electricity_demand_time_series / 1000
 
-    # Move the times to the ends of the hours, because they are given at
-    # the beginning of the hour.
+    # The times above are the starts of the hours, from 00:00 for
+    # "Hour01", which ends at 01:00: move them to the ends of the hours.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,
