@@ -352,10 +352,7 @@ def _read_configuration() -> ConfigModel:
     ValueError
         If the configuration file contains invalid values.
     """
-    config_path = os.path.join(
-        utils.paths.CONFIG_FOLDER,
-        "lstm_config.yaml",
-    )
+    config_path = utils.paths.get_config_file("lstm_config.yaml")
 
     with open(config_path) as f:
         raw_config = yaml.safe_load(f)

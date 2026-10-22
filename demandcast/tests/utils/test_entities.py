@@ -385,25 +385,6 @@ def test_check_and_get_codes_with_errors():
             )
 
 
-def test_check_codes():
-    """
-    Test if the check_code function works correctly.
-
-    This test checks if the function can check the validity of codes
-    for a specific data source and if it raises errors for invalid
-    codes or data sources.
-    """
-    utils.entities.check_code_in_data_source("USA_TEX", data_source="eia")
-    with pytest.raises(ValueError, match="Invalid code"):
-        utils.entities.check_code_in_data_source(
-            "INVALID_CODE", data_source="entsoe"
-        )
-    with pytest.raises(ValueError, match="Invalid data source"):
-        utils.entities.check_code_in_data_source(
-            "FRA", data_source="INVALID_DATA_SOURCE"
-        )
-
-
 def test_time_zones():
     """
     Test if the entities module can retrieve time zones correctly.
@@ -908,27 +889,6 @@ def test_read_invalid_data_source(write_data_source, content, error):
         utils.entities._read_entities_info(data_source="test_source")
     with pytest.raises(ValueError, match="data source test_source is not"):
         utils.entities.read_licence("test_source")
-
-
-def test_years():
-    """
-    Test if the function retrieves available years correctly.
-
-    This test checks if the function retrieves the available years for a
-    specific country code and returns a list of years.
-    """
-    # Check if the function retrieves available years for a specific
-    # country code
-    years = utils.entities.get_available_years("FRA")
-
-    # Check if the years are read correctly.
-    assert isinstance(years, list)
-    assert len(years) > 0
-    assert all(isinstance(year, int) for year in years)
-
-    # Check if the function catches errors for invalid codes.
-    with pytest.raises(ValueError, match="is not recognized or not available"):
-        utils.entities.get_available_years("INVALID_CODE")
 
 
 def test_continents():

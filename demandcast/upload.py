@@ -126,9 +126,8 @@ def main(config: ConfigModel) -> None:
                 if not config.made_by_oet:
                     # Check if a metadata file other than the default
                     # one for OET-created content has been provided.
-                    metadata_file_path = os.path.join(
-                        utils.paths.CONFIG_FOLDER,
-                        "zenodo_metadata.yaml",
+                    metadata_file_path = utils.paths.get_config_file(
+                        "zenodo_metadata.yaml"
                     )
                     if not os.path.exists(metadata_file_path):
                         raise FileNotFoundError(

@@ -64,10 +64,7 @@ def read_and_check_ml_configuration() -> ConfigModel:
         If the configuration is invalid.
     """
     # Define the path to the features and target configuration file.
-    config_path = os.path.join(
-        utils.paths.CONFIG_FOLDER,
-        "ml_config.yaml",
-    )
+    config_path = utils.paths.get_config_file("ml_config.yaml")
 
     # Read the configuration.
     with open(config_path, encoding="utf-8") as file:

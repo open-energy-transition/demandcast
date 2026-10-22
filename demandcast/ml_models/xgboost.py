@@ -44,10 +44,7 @@ def _read_configuration() -> ConfigModel:
         If the configuration validation fails.
     """
     # Read the configuration.
-    config_path = os.path.join(
-        utils.paths.CONFIG_FOLDER,
-        "xgboost_config.yaml",
-    )
+    config_path = utils.paths.get_config_file("xgboost_config.yaml")
 
     # Read the raw configuration.
     with open(config_path) as f:

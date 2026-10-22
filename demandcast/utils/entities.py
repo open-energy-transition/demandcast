@@ -277,10 +277,7 @@ def _read_continent_codes() -> dict[str, str]:
     continent_codes : dict[str, str]
         The continent code of each country, by ISO Alpha-3 code.
     """
-    file_path = os.path.join(
-        utils.paths.CONFIG_FOLDER,
-        "continents.yaml",
-    )
+    file_path = utils.paths.get_config_file("continents.yaml")
     with open(file_path, encoding="utf-8") as file:
         return yaml.safe_load(file)["continents"]
 
@@ -721,34 +718,6 @@ def read_all_codes_with_electricity_demand_data() -> list[str]:
 
     # Remove duplicates and return the list of codes.
     return list(set(codes))
-
-
-def check_code_in_data_source(code: str, data_source: str) -> None:
-    """
-    Check if the code is available in the specified data source.
-
-    This function checks if the provided code is valid by comparing it
-    with the list of available codes from the specified data source.
-
-    Parameters
-    ----------
-    code : str
-        The code of the entity (country or subdivision) to check.
-    data_source : str
-        The name of the data source from which to read the available
-        codes.
-
-    Raises
-    ------
-    ValueError
-        If the code is not available in the data source.
-    """
-    # Check if the code is valid.
-    if code not in read_codes_in(data_source=data_source):
-        raise ValueError(
-            f"Invalid code: {code}. Available codes are: "
-            f"{', '.join(read_codes_in(data_source=data_source))}"
-        )
 
 
 def _get_all_codes_with_all_data() -> list[str]:
@@ -1359,51 +1328,6 @@ def read_all_date_ranges() -> dict[str, tuple[datetime.date, datetime.date]]:
                 start_and_end_dates[code] = (start_date, end_date)
 
     return start_and_end_dates
-
-
-def get_available_years(code: str) -> list[int]:
-    """
-    Get the years of the available data for a country or subdivision.
-
-    This function retrieves the years of the available data for a
-    country or subdivision based on its code. It reads the start and end
-    dates of the available data for the country or subdivision, converts
-    them to the time zone of the country or subdivision, and returns a
-    list of years for which data is available.
-
-    Parameters
-    ----------
-    code : str
-        The ISO Alpha-3 code of the country or the combination of the
-        ISO Alpha-3 and the subdivision code.
-
-    Returns
-    -------
-    list[int]
-        The years of the available data for the country or subdivision.
-    """
-    # Get the time zone of the country or subdivision.
-    entity_time_zone = get_time_zone(code)
-
-    # Read the start and end dates of the available data for the country
-    # or subdivision of interest.
-    start_date, end_date = read_all_date_ranges()[code]
-
-    # Convert the start and end dates to the time zone of the country or
-    # subdivision.
-    start_date = (
-        pd.to_datetime(start_date)
-        .tz_localize(entity_time_zone)
-        .tz_convert("UTC")
-    )
-    end_date = (
-        pd.to_datetime(end_date)
-        .tz_localize(entity_time_zone)
-        .tz_convert("UTC")
-    )
-
-    # Return the years of the data availability.
-    return list(range(start_date.year, end_date.year + 1))
 
 
 def get_continent_code(code: str) -> str:

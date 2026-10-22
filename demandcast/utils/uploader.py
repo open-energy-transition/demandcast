@@ -174,15 +174,13 @@ def upload_to_zenodo(  # noqa: C901
     # Define the creators based on whether the data is made by OET.
     if made_by_oet:
         # Load the OET metadata from the YAML file.
-        author_metadata_path = os.path.join(
-            utils.paths.CONFIG_FOLDER,
-            "oet_zenodo_metadata.yaml",
+        author_metadata_path = utils.paths.get_config_file(
+            "oet_zenodo_metadata.yaml"
         )
     else:
         # Load the metadata of external contributors from the YAML file.
-        author_metadata_path = os.path.join(
-            utils.paths.CONFIG_FOLDER,
-            "zenodo_metadata.yaml",
+        author_metadata_path = utils.paths.get_config_file(
+            "zenodo_metadata.yaml"
         )
 
     # Load the metadata from the YAML file.
