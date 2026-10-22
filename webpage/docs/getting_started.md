@@ -59,6 +59,8 @@ Everything that the scripts write, from the downloaded data to the trained model
 
 In this example, we will retrieve data for four European countries (France, Germany, Italy, and Spain), train a model on data from 2020-2023, and then use it to forecast electricity demand for Spain in 2024. The following steps will guide you through the data retrieval process.
 
+Each script reads its settings from `config/<script>_config.yaml`, or from the file given with `--config`, and checks them before it starts: a misspelt option, a scenario or climate model that the data does not have, or a missing setting stops it with an error that lists the valid values.
+
 ### 2.1 Create a Country List File
 
 First, create a YAML file listing all countries. Create a file named `demandcast/config/example_countries.yaml`:

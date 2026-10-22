@@ -85,12 +85,13 @@ demandcast/
 │   ├── checks/                     # Modules to perform data availability and quality checks
 │   ├── cleaning/                   # Modules to clean, flag and combine the electricity demand
 │   ├── config/                     # Configuration files for all scripts
-│   ├── figures/                    # Modules to plot figures and resulting figures
+│   ├── data/                       # Data, models, results and logs written by the scripts (not in repo)
+│   ├── figures/                    # Modules to plot figures, and the figures of the documentation
 │   ├── ml_models/                  # Machine learning models for forecasting electricity demand
 │   ├── retrievals/                 # Modules to retrieve data from various sources
 │   ├── shapes/                     # Scripts to generate shapes for non-standard subdivisions and resulting shapefiles
 │   ├── tests/                      # Tests, in folders that mirror the code
-│   ├── utils/                      # Shared utilities for data fetching, processing, and uploading
+│   ├── utils/                      # Shared utilities: paths, catalogue of scenarios, fetching, processing, uploading
 │   ├── .dockerignore               # Files and directories to ignore in Docker build context
 │   ├── .env                        # API keys (not included in repo)
 │   ├── .python-version             # Python version for the environment
