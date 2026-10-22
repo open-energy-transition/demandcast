@@ -51,6 +51,10 @@ Description:
     change of large industrial loads rather than of the times, so it is
     not corrected.
 
+    ENTSO-E republishes the data of the TSOs, so it is compiled in the
+    yaml file: the combined demand of a code takes the data of its TSO
+    first (see cleaning/combining.py).
+
     Source: https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html
     Source: https://github.com/EnergieID/entsoe-py
 """

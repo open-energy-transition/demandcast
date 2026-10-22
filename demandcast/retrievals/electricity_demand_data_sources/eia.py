@@ -18,6 +18,10 @@ Description:
     For New England, isone.py gives the gross demand, with the estimate
     of ISO New England of this solar added.
 
+    The EIA republishes the data of the balancing authorities, so it
+    is compiled in the yaml file: the combined demand of a code takes
+    the data of its system operator first (see cleaning/combining.py).
+
     Source: https://www.eia.gov/opendata/browser/electricity/rto/region-data
 """
 

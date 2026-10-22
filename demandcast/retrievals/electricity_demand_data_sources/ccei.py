@@ -45,6 +45,10 @@ Description:
     converted with UTC-7 all year, and about 0.5% higher since 2016.
     Saskatchewan is left out, since its data is daily.
 
+    The CCEI republishes the data of the provincial operators, so it
+    is compiled in the yaml file: the combined demand of a province
+    takes the data of its operator first (see cleaning/combining.py).
+
     Source: https://energy-information.canada.ca/en/resources/high-frequency-electricity-data
 """
 

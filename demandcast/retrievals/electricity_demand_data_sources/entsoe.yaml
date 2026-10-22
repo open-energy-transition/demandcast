@@ -2,6 +2,7 @@ licence:
   redistribute: false
   terms: Actual total load is not on the list of data that ENTSO-E opens under CC BY 4.0. Its re-use needs the agreement of the TSOs that own it, where it could prejudice their rights.
   url: https://transparencyplatform.zendesk.com/hc/en-us/articles/40921911218961-Legal-Terms-and-Conditions
+compiled: true
 definition:
   - start_date: 2014-10-19
     quantity: actual total load

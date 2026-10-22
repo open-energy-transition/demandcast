@@ -70,7 +70,9 @@ class DataSourceEntity(BaseModel):
 
     A subdivision has a name, a code and a time zone, and a country none
     of them. The data is available from the start date to the end date,
-    which can be "today".
+    which can be "today". The data covers the area of the shape of the
+    code, unless same_area is false, as for a source that leaves out
+    part of it.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -82,6 +84,7 @@ class DataSourceEntity(BaseModel):
     time_zone: str | None = None
     start_date: datetime.date
     end_date: datetime.date | Literal["today"]
+    same_area: bool = True
 
     @property
     def code(self) -> str:
@@ -172,11 +175,17 @@ class DataSourceDefinition(BaseModel):
 
 
 class _DataSourceFile(BaseModel):
-    """The content of the yaml file of a data source."""
+    """
+    The content of the yaml file of a data source.
+
+    A data source is compiled when it republishes the data of the system
+    operators, such as the EIA, rather than its own.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
     licence: DataSourceLicence
+    compiled: bool = False
     definition: list[DataSourceDefinition]
     entities: list[DataSourceEntity]
 
@@ -490,6 +499,23 @@ def read_licence(data_source: str) -> DataSourceLicence:
         The licence, from the yaml file of the data source.
     """
     return DataSourceLicence(**_read_data_source_file(data_source)["licence"])
+
+
+def read_compiled(data_source: str) -> bool:
+    """
+    Read whether a data source republishes the data of other sources.
+
+    Parameters
+    ----------
+    data_source : str
+        The name of the data source.
+
+    Returns
+    -------
+    bool
+        Whether the data source is compiled, from its yaml file.
+    """
+    return bool(_read_data_source_file(data_source).get("compiled", False))
 
 
 def read_definition(data_source: str) -> list[DataSourceDefinition]:

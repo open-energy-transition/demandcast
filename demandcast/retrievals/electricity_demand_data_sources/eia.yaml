@@ -2,6 +2,7 @@ licence:
   redistribute: true
   terms: Use for any purpose with attribution to EIA.
   url: https://www.eia.gov/about/copyrights_reuse.php
+compiled: true
 definition:
   - start_date: 2020-01-01
     quantity: demand of the balancing authority (EIA-930)

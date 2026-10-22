@@ -977,3 +977,18 @@ def test_definition_with_periods_out_of_order():
                 "entities": [],
             }
         )
+
+
+def test_compiled_data_sources_and_areas():
+    """
+    Test the compiled data sources and the data of part of an area.
+
+    The EIA republishes the data of others, and the data of CAISO covers
+    only part of the area of its code.
+    """
+    assert utils.entities.read_compiled("eia")
+    assert not utils.entities.read_compiled("caiso")
+    caiso = utils.entities.read_entities("caiso")[0]
+    assert caiso.code == "USA_CAL"
+    assert not caiso.same_area
+    assert utils.entities.read_entities("isone")[0].same_area
