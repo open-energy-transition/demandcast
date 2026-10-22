@@ -297,7 +297,12 @@ scenario:                          # SSP scenario (e.g., SSP2) for which to retr
 
 ### Gridded weather
 
-The module `demandcast/retrievals/gridded_weather.py` retrieves gridded weather data from the Copernicus Climate Data Store (CDS). The weather data is stored in NetCDF format for each country and subdivision of interest.
+The module `demandcast/retrievals/gridded_weather.py` retrieves gridded weather data, the ERA5 reanalysis and the CMIP6 projections, and stores it in NetCDF format for each country and subdivision of interest. The reanalysis comes from one of two sources, chosen with `reanalysis_source`, which give the same values:
+
+- `cds`: the Copernicus Climate Data Store (CDS), which prepares each request, a year of the globe for more than five codes or of each code otherwise, in a queue of minutes to hours, and gives the data until about a week ago.
+- `arco`: [ARCO-ERA5](https://github.com/google-research/arco-era5), the analysis-ready ERA5 of Google Research on Google Cloud Storage, read without an account and without a queue, a global map an hour, about 40 minutes a year for all the codes at once, until about a week ago. Google gives no commitment to keep it up to date.
+
+The projections of the climate models always come from the CDS. The reanalysis of a year is downloaded again until about a week after the end of the year, when its data is complete.
 
 To retrieve weather data from the Copernicus Climate Data Store (CDS), first ensure that you are registered on the website and have your API key stored in the `.env` file. Instructions for the API key can be found [here](https://cds.climate.copernicus.eu/how-to-api). Then run:
 
@@ -326,13 +331,20 @@ scenario:                          # Climate model scenario (e.g., SSP2-4.5) for
 weather_variable: temperature      # Weather variable (currently only temperature supported)
 
 climate_model:                     # Climate model (e.g., CESM2)
+
+reanalysis_source: cds             # Source of the reanalysis: cds or arco
 ```
 
-The script will store weather data in `data/gridded_weather/`. Note that the size of weather data files is on the order of 100 MB per country per year, so ensure you have sufficient storage space.
+The script will store weather data in `data/gridded_weather/`. Note that the size of weather data files is on the order of 100 MB per country per year, about 5 GB a year for the 184 countries and subdivisions with electricity demand, so ensure you have sufficient storage space.
 
 ### Temperature
 
-The module `demandcast/retrievals/temperature.py` extracts temperature time series from the gridded weather data based on population count. It uses both the gridded weather data and the gridded population data to identify the most populated areas and extract temperature time series for those areas.
+The module `demandcast/retrievals/temperature.py` extracts the temperature of the most populous cells of the gridded population (that of the most populous cell and the mean of the three most populous ones) and its statistics. Each hour has the mean temperature of the hour, from the instantaneous temperatures at its start and end, at its end in UTC like the electricity demand. The temperature of the reanalysis comes from one of three sources, chosen with `reanalysis_source`, which give the same values, since the cells of the gridded population are on the points of ERA5:
+
+- `points` (by default): the hourly series of the points of ERA5 of the most populous cells, from the [ERA5 time series](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels-timeseries) of the CDS (`demandcast/retrievals/era5_points.py`). The whole series of a point, from 1990, takes about 35 seconds and 4 MB, and is saved in `data/gridded_weather/points/` and updated from 120 days before its end at most once a day, when later hours may be available. The points are downloaded one at a time, since the CDS rejects more queued requests. The CDS describes this dataset as experimental.
+- `cds` or `arco`: the gridded weather data of the countries and subdivisions (see above), downloaded if needed.
+
+The projections of the climate models come from the gridded weather data of the CDS.
 
 ```bash
 cd demandcast
@@ -359,6 +371,8 @@ scenario:                          # Climate model scenario (e.g., SSP2-4.5) for
 weather_variable: temperature      # Weather variable (currently only temperature supported)
 
 climate_model:                     # Climate model (e.g., CESM2)
+
+reanalysis_source: points          # Source of the reanalysis: points, cds or arco
 ```
 
 The script will store temperature data in `data/temperature/`.

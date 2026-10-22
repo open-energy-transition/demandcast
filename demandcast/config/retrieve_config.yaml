@@ -56,3 +56,13 @@ weather_variable: temperature
 # OPTIONAL.
 # The climate model for the weather data to be retrieved.
 climate_model:
+
+# OPTIONAL - only for the temperature and gridded_weather variables.
+# The source of the ERA5 reanalysis (default: points):
+# - points: the hourly series of the points of the most populous cells,
+#   from the time series of the CDS (temperature only; gridded_weather
+#   then downloads from the CDS),
+# - cds: the grids of the Copernicus Climate Data Store,
+# - arco: the grids of ARCO-ERA5 on Google Cloud, without account.
+# The projections of the climate models always come from the CDS.
+reanalysis_source: points

@@ -15,6 +15,7 @@ dependencies = [
     "cpi>=2.0.8",
     "dask>=2025.11.0",
     "entsoe-py>=0.6.18",
+    "gcsfs>=2025.3.0",
     "geopandas>=1.0.1",
     "google-cloud-storage>=3.1.0",
     "matplotlib>=3.10.0",
@@ -43,6 +44,7 @@ dependencies = [
     "xarray>=2025.1.2",
     "xgboost-cpu>=3.1.2",
     "xlrd>=2.0.1",
+    "zarr>=3.0.8",
 ]
 
 [project.optional-dependencies]

@@ -9,6 +9,20 @@ Description:
     the average temperature and saves the results into CSV and Parquet
     files.
 
+    The temperature of the reanalysis comes from one of three sources of
+    the same ERA5 data (the reanalysis_source of retrieve.py):
+
+    - points (by default): the hourly series of the points of ERA5
+      closest to the most populous cells, from the time series of the
+      CDS (see retrievals/era5_points.py), a few MB for all the years.
+    - cds or arco: the grids of the countries and subdivisions, from the
+      CDS or from ARCO-ERA5 (see retrievals/gridded_weather.py), about
+      5 GB a year for all of them.
+
+    The cells of the gridded population are on the points of ERA5, so
+    the three sources give the same cells and values. The projections
+    of the climate models come from the grids of the CDS.
+
     Each row is an hour, at its end in UTC, like the electricity demand,
     which is the mean demand of the hour. Its temperature is the mean of
     the instantaneous temperatures at the start and at the end of the
@@ -32,8 +46,12 @@ import utils.time_series
 import xarray
 from tqdm import tqdm
 
+import retrievals.era5_points
 import retrievals.gridded_population
 import retrievals.gridded_weather
+
+# The sources of the temperature of the reanalysis.
+REANALYSIS_SOURCES = ("points", *retrievals.gridded_weather.SOURCES)
 
 
 def _load_gridded_temperature_data(
@@ -42,6 +60,7 @@ def _load_gridded_temperature_data(
     available_climate_years: list[int],
     climate_model: str | None,
     climate_scenario: str | None,
+    source: str = "cds",
 ) -> xarray.DataArray:
     """
     Load the gridded temperature data.
@@ -65,6 +84,8 @@ def _load_gridded_temperature_data(
         The model of the climate data.
     climate_scenario : str | None
         The scenario of the climate data.
+    source : str, optional
+        The source of the gridded reanalysis data, "cds" or "arco".
 
     Returns
     -------
@@ -122,6 +143,7 @@ def _load_gridded_temperature_data(
                 variable="temperature",
                 model=climate_model,
                 scenario=climate_scenario,
+                source=source,
             )
 
     # Read the temperature data.
@@ -332,6 +354,44 @@ def _extract_temperature_in_local_year(
     return temperature_data.isel(time=np.flatnonzero(local_years == year))
 
 
+def _get_temperature_of_points(
+    most_populous_grid_cells: xarray.DataArray,
+) -> xarray.DataArray:
+    """
+    Get the temperature of the points of the most populous cells.
+
+    Parameters
+    ----------
+    most_populous_grid_cells : xarray.DataArray
+        The grid cells with the largest population.
+
+    Returns
+    -------
+    xarray.DataArray
+        The hourly temperature of the closest point of ERA5 to each of
+        the most populous cells, along the "cell" dimension, as given by
+        _extract_temperature_in_most_populous_cells.
+    """
+    points = [
+        retrievals.era5_points.get_grid_point(float(x), float(y))
+        for x, y in zip(
+            most_populous_grid_cells["x"].to_numpy(),
+            most_populous_grid_cells["y"].to_numpy(),
+            strict=True,
+        )
+    ]
+    series = pd.concat(
+        retrievals.era5_points.get_points_series("temperature", points),
+        axis=1,
+        keys=range(len(points)),
+    )
+    return xarray.DataArray(
+        series.to_numpy(),
+        coords={"time": pd.DatetimeIndex(series.index).to_numpy()},
+        dims=("time", "cell"),
+    )
+
+
 def _get_temperature_in_most_populous_cells(
     code: str,
     year: int,
@@ -340,6 +400,7 @@ def _get_temperature_in_most_populous_cells(
     climate_scenario: str | None,
     entity_time_zone: datetime.tzinfo,
     numbers_of_grid_cells: tuple[int, ...] = (1,),
+    reanalysis_source: str = "points",
 ) -> list[pd.Series]:
     """
     Get the temperature data for the most populous grid cells.
@@ -367,23 +428,32 @@ def _get_temperature_in_most_populous_cells(
         Time zone of the country or subdivision of interest.
     numbers_of_grid_cells : tuple[int, ...], optional
         The numbers of grid cells to consider.
+    reanalysis_source : str, optional
+        The source of the temperature of the reanalysis, "points",
+        "cds" or "arco" (see the description of the module).
 
     Returns
     -------
     list[pandas.Series]
         Temperature data for each number of most populous grid cells.
     """
-    # Load the gridded temperature data.
-    temperature_data = _load_gridded_temperature_data(
-        code,
-        year,
-        available_climate_years,
-        climate_model,
-        climate_scenario,
-    )
+    # Load the gridded temperature data, unless the reanalysis comes
+    # from the series of points.
+    temperature_data = None
+    if climate_model is not None or reanalysis_source != "points":
+        temperature_data = _load_gridded_temperature_data(
+            code,
+            year,
+            available_climate_years,
+            climate_model,
+            climate_scenario,
+            "cds" if climate_model is not None else reanalysis_source,
+        )
 
     # Harmonize the time coordinate of the temperature data.
-    if climate_model is None:
+    if temperature_data is None:
+        pass
+    elif climate_model is None:
         # Reanalysis data has a time coordinate named "valid_time".
         temperature_data = temperature_data.rename({"valid_time": "time"})
     else:
@@ -420,7 +490,9 @@ def _get_temperature_in_most_populous_cells(
         # cells, in the given year in local time.
         temperature_in_most_populous_grid_cells = (
             _extract_temperature_in_local_year(
-                _extract_temperature_in_most_populous_cells(
+                _get_temperature_of_points(most_populous_grid_cells)
+                if temperature_data is None
+                else _extract_temperature_in_most_populous_cells(
                     temperature_data, most_populous_grid_cells
                 ),
                 year,
@@ -568,6 +640,7 @@ def run_data_retrieval(
     end_year: int | None,
     model: str | None,
     scenario: str | None,
+    reanalysis_source: str = "points",
 ) -> None:
     """
     Extract temperature data for the most populous grid cells.
@@ -598,7 +671,21 @@ def run_data_retrieval(
         The model of the weather data.
     scenario : str | None
         The scenario of the weather data.
+    reanalysis_source : str, optional
+        The source of the temperature of the reanalysis, "points",
+        "cds" or "arco" (see the description of the module).
+
+    Raises
+    ------
+    ValueError
+        If the source of the reanalysis is not supported.
     """
+    if reanalysis_source not in REANALYSIS_SOURCES:
+        raise ValueError(
+            f"Reanalysis source {reanalysis_source} is not supported. "
+            f"Supported sources are: {', '.join(REANALYSIS_SOURCES)}."
+        )
+
     # Create a directory to store the weather data.
     result_directory = utils.config.read_folders_structure()[
         "temperature_folder"
@@ -701,6 +788,7 @@ def run_data_retrieval(
                     selected_scenario,
                     entity_time_zone,
                     numbers_of_grid_cells=(1, 3),
+                    reanalysis_source=reanalysis_source,
                 )
 
                 # Add temperature statistics to the time series.

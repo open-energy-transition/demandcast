@@ -236,3 +236,83 @@ def test_calendar_of_the_hours():
     assert year_end["Local year"] == 2024
     assert year_end["Local month of the year"] == 12
     assert database.loc[pd.Timestamp("2025-01-01 00:00"), "Local year"] == 2025
+
+
+def test_points_give_the_temperature_of_the_grid():
+    """
+    Test that the points and the grid give the same temperature.
+
+    The series of the points of the most populous cells are those of
+    the cells of the grid, so both sources give the same hourly means.
+    """
+    population = _grid([[10, 0, 0], [0, 20, 0], [0, 0, 30]], step=0.25)
+    population = population.assign_coords(
+        x=population["x"] + 2.0, y=population["y"] + 48.0
+    )
+    times = pd.date_range("2023-12-30", "2025-01-02", freq="h")
+    hours = np.asarray((times - times[0]) / pd.Timedelta(hours=1))
+    values = (
+        280
+        + 0.01 * hours[:, None, None]
+        + population["y"].to_numpy()[None, :, None]
+        + population["x"].to_numpy()[None, None, :]
+    )
+    grid = xarray.DataArray(
+        values,
+        coords={
+            "valid_time": times,
+            "y": population["y"].to_numpy(),
+            "x": population["x"].to_numpy(),
+        },
+        dims=("valid_time", "y", "x"),
+    )
+
+    def points_series(_variable, points):
+        return [
+            grid.sel(x=longitude, y=latitude).to_series()
+            for longitude, latitude in points
+        ]
+
+    results = {}
+    with (
+        patch.object(
+            temperature,
+            "_load_gridded_population_data",
+            return_value=population,
+        ),
+        patch.object(
+            temperature, "_load_gridded_temperature_data", return_value=grid
+        ),
+        patch.object(temperature.utils.shapes, "get_entity_shape"),
+        patch.object(
+            temperature.utils.geospatial,
+            "get_largest_values_in_shape",
+            side_effect=lambda _shape, data, number: _most_populous(
+                data, number
+            ),
+        ),
+        patch.object(
+            temperature.retrievals.era5_points,
+            "get_points_series",
+            side_effect=points_series,
+        ),
+    ):
+        for source in ("points", "cds"):
+            results[source] = (
+                temperature._get_temperature_in_most_populous_cells(
+                    "FRA",
+                    2024,
+                    list(range(1990, 2027)),
+                    None,
+                    None,
+                    pytz.timezone("Europe/Paris"),
+                    numbers_of_grid_cells=(1, 3),
+                    reanalysis_source=source,
+                )
+            )
+
+    for from_points, from_grid in zip(
+        results["points"], results["cds"], strict=True
+    ):
+        assert len(from_points) == 8784
+        assert np.allclose(from_points.to_numpy(), from_grid.to_numpy())

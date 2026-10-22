@@ -11,6 +11,7 @@ Description:
 """
 
 import logging
+from typing import Literal
 
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.electricity_demand
@@ -38,6 +39,7 @@ class ConfigModel(BaseModel):
     scenario: str | None = None
     weather_variable: str | None = None
     climate_model: str | None = None
+    reanalysis_source: Literal["points", "cds", "arco"] = "points"
     offline: bool = False
 
 
@@ -187,6 +189,11 @@ if __name__ == "__main__":
             config.weather_variable,
             config.climate_model,
             config.scenario,
+            source=(
+                "cds"
+                if config.reanalysis_source == "points"
+                else config.reanalysis_source
+            ),
         )
     elif config.variable == "temperature":
         # Run the data retrieval for temperature.
@@ -198,4 +205,5 @@ if __name__ == "__main__":
             config.end_year,
             config.climate_model,
             config.scenario,
+            reanalysis_source=config.reanalysis_source,
         )
