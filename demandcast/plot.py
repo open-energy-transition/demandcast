@@ -49,6 +49,11 @@ class ConfigModel(BaseModel):
                     "The version must be provided when plotting the ML "
                     "results figure."
                 )
+            if self.by_group and self.compare_with_version is not None:
+                raise ValueError(
+                    "The variables 'by_group' and 'compare_with_version' "
+                    "cannot be used together at the moment."
+                )
         elif (
             self.version is not None
             or self.compare_with_version is not None

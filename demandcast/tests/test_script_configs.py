@@ -112,6 +112,14 @@ def test_upload_configuration_needs_a_bucket(monkeypatch):
         ("plot", "figure: ml_results\n", "version must be provided"),
         (
             "plot",
+            (
+                "figure: ml_results\nversion: a\ncompare_with_version: b\n"
+                "by_group: true\n"
+            ),
+            "cannot be used together",
+        ),
+        (
+            "plot",
             "figure: data_availability\nby_group: true\n",
             "must not be provided",
         ),

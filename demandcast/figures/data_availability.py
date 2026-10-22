@@ -10,6 +10,7 @@ Description:
     electricity demand data across different countries and continents.
 """
 
+import dataclasses
 import os
 from typing import cast
 
@@ -22,6 +23,42 @@ import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
 import utils.entities
 from tailwind_colors import TAILWIND_COLORS_HEX
+
+# The levels of annual electricity demand per capita, in kWh.
+ELECTRICITY_DEMAND_LEVELS = {
+    "Low demand": (0, 2000),
+    "Lower middle demand": (2000, 5000),
+    "Upper middle demand": (5000, 12000),
+    "High demand": (12000, float("inf")),
+}
+
+# The levels of GDP PPP per capita, in 2021 international $.
+GDP_LEVELS = {
+    "Low income": (0, 10000),
+    "Lower middle income": (10000, 30000),
+    "Upper middle income": (30000, 60000),
+    "High income": (60000, float("inf")),
+}
+
+# The names of the continents.
+CONTINENT_NAMES = {
+    "AF": "Africa",
+    "AS": "Asia",
+    "EU": "Europe",
+    "NA": "North America",
+    "SA": "South America",
+    "OC": "Oceania",
+}
+
+# The colors of the continents.
+COLORS = {
+    "AF": TAILWIND_COLORS_HEX.VIOLET_900,
+    "AS": TAILWIND_COLORS_HEX.GREEN_800,
+    "EU": TAILWIND_COLORS_HEX.YELLOW_400,
+    "NA": TAILWIND_COLORS_HEX.PINK_700,
+    "SA": TAILWIND_COLORS_HEX.RED_350,
+    "OC": TAILWIND_COLORS_HEX.CYAN_500,
+}
 
 
 def _get_year_fractions(codes: list[str]) -> dict[str, dict[int, float]]:
@@ -338,108 +375,131 @@ def _add_bar_chart(
     return ax
 
 
-def plot(figure_directory: str) -> None:
+@dataclasses.dataclass(frozen=True)
+class FigureData:
     """
-    Plot a figure showing data availability.
+    The data of the figure of the availability of the data.
 
-    This function generates a figure that visualizes the availability of
-    hourly and sub-hourly electricity demand data by GDP PPP and annual
-    electricity demand per capita. It uses data from Ember, the World
-    Bank and the IMF to visualize the coverage of electricity demand
-    data across different countries and continents. All sources are used
-    to improve the coverage of the data.
-
-    Parameters
+    Attributes
     ----------
-    figure_directory : str
-        The directory to store the figure.
+    gdp_occurrence : dict[str, dict[str, float]]
+        The years of data of each continent in each level of GDP PPP
+        per capita.
+    electricity_demand_occurrence : dict[str, dict[str, float]]
+        The years of data of each continent in each level of annual
+        electricity demand per capita.
+    gdp_points : dict[str, pandas.Series]
+        The GDP PPP per capita of the first and last years of data of
+        each country, of its country or subdivision with the most years.
+    electricity_demand_points : dict[str, pandas.Series]
+        The annual electricity demand per capita of the same years.
+    continents : dict[str, str]
+        The continent of each country.
     """
-    # Read the codes of all countries and subdivisions.
+
+    gdp_occurrence: dict[str, dict[str, float]]
+    electricity_demand_occurrence: dict[str, dict[str, float]]
+    gdp_points: dict[str, pd.Series]
+    electricity_demand_points: dict[str, pd.Series]
+    continents: dict[str, str]
+
+
+def get_data() -> FigureData:
+    """
+    Get the data of the figure of the availability of the data.
+
+    The years of electricity demand data of all the countries and
+    subdivisions are counted by continent and by level of GDP PPP and
+    of annual electricity demand per capita, from Ember, the World Bank
+    and the IMF.
+
+    Returns
+    -------
+    FigureData
+        The data of the figure.
+    """
+    # Read the codes of all countries and subdivisions, with their
+    # continents and the fractions of the years of their data.
     codes = utils.entities.read_all_codes_with_electricity_demand_data()
-
-    # Get the continent for each country.
-    continent_codes = {}
-    for code in codes:
-        continent_codes[code] = utils.entities.get_continent_code(code)
-
-    # Get the fractions of years for which data is available for each
-    # country or subdivision.
+    continent_codes = {
+        code: utils.entities.get_continent_code(code) for code in codes
+    }
     fractions_of_years = _get_year_fractions(codes)
-
-    # Extract the available years for each country or subdivision.
     available_years = {
         code: list(fractions_of_years[code].keys()) for code in codes
     }
 
-    # Get the electricity demand data from Ember and the World Bank.
+    # Get the electricity demand data from Ember and the World Bank,
+    # and the GDP PPP per capita data from the World Bank and the IMF.
     electricity_data = _get_electricity_demand_per_capita(
-        codes,
-        available_years,
+        codes, available_years
+    )
+    gdp_data = _get_gdp_ppp_per_capita(codes, available_years)
+
+    # Get the codes of each country.
+    codes_of_countries: dict[str, list[str]] = {}
+    for code in codes:
+        codes_of_countries.setdefault(code.split("_")[0], []).append(code)
+
+    # Get the first and last years of each country, from the code with
+    # the longest data, in the years with both values.
+    gdp_points = {}
+    electricity_demand_points = {}
+    for iso_alpha_3_code, local_codes in codes_of_countries.items():
+        local_gdp = pd.Series(dtype=float)
+        local_electricity = pd.Series(dtype=float)
+        for code in local_codes:
+            if len(gdp_data[iso_alpha_3_code][code]) > len(local_gdp):
+                local_gdp = gdp_data[iso_alpha_3_code][code]
+            if len(electricity_data[iso_alpha_3_code][code]) > len(
+                local_electricity
+            ):
+                local_electricity = electricity_data[iso_alpha_3_code][code]
+        if local_gdp.empty or local_electricity.empty:
+            continue
+        common_index = local_gdp.index.intersection(local_electricity.index)
+        gdp_points[iso_alpha_3_code] = local_gdp[common_index].take([0, -1])
+        electricity_demand_points[iso_alpha_3_code] = local_electricity[
+            common_index
+        ].take([0, -1])
+
+    return FigureData(
+        gdp_occurrence=_get_occurrences(
+            gdp_data,
+            codes,
+            continent_codes,
+            CONTINENT_NAMES,
+            fractions_of_years,
+            GDP_LEVELS,
+        ),
+        electricity_demand_occurrence=_get_occurrences(
+            electricity_data,
+            codes,
+            continent_codes,
+            CONTINENT_NAMES,
+            fractions_of_years,
+            ELECTRICITY_DEMAND_LEVELS,
+        ),
+        gdp_points=gdp_points,
+        electricity_demand_points=electricity_demand_points,
+        continents={
+            iso_alpha_3_code: continent_codes[local_codes[0]]
+            for iso_alpha_3_code, local_codes in codes_of_countries.items()
+        },
     )
 
-    # Get the GDP PPP per capita data from the World Bank.
-    gdp_data = _get_gdp_ppp_per_capita(
-        codes,
-        available_years,
-    )
 
-    # Define the electricity demand groups.
-    electricity_demand_levels = {
-        "Low demand": (0, 2000),
-        "Lower middle demand": (2000, 5000),
-        "Upper middle demand": (5000, 12000),
-        "High demand": (12000, float("inf")),
-    }
+def draw(data: FigureData, figure_directory: str) -> None:
+    """
+    Draw the figure of the availability of the data.
 
-    # Define the GDP groups.
-    gdp_levels = {
-        "Low income": (0, 10000),
-        "Lower middle income": (10000, 30000),
-        "Upper middle income": (30000, 60000),
-        "High income": (60000, float("inf")),
-    }
-
-    # Define the labels for the continents.
-    continent_names = {
-        "AF": "Africa",
-        "AS": "Asia",
-        "EU": "Europe",
-        "NA": "North America",
-        "SA": "South America",
-        "OC": "Oceania",
-    }
-
-    # Get the electricity demand occurrence in the defined electricity
-    # demand levels and by continent.
-    electricity_demand_occurrence = _get_occurrences(
-        electricity_data,
-        codes,
-        continent_codes,
-        continent_names,
-        fractions_of_years,
-        electricity_demand_levels,
-    )
-
-    # Get the GDP occurrence in the defined GDP levels and by continent.
-    gdp_occurrence = _get_occurrences(
-        gdp_data,
-        codes,
-        continent_codes,
-        continent_names,
-        fractions_of_years,
-        gdp_levels,
-    )
-
-    # Define the colors for the continents.
-    colors = {
-        "AF": TAILWIND_COLORS_HEX.VIOLET_900,  # Africa
-        "AS": TAILWIND_COLORS_HEX.GREEN_800,  # Asia
-        "EU": TAILWIND_COLORS_HEX.YELLOW_400,  # Europe
-        "NA": TAILWIND_COLORS_HEX.PINK_700,  # North America
-        "SA": TAILWIND_COLORS_HEX.RED_350,  # South America
-        "OC": TAILWIND_COLORS_HEX.CYAN_500,  # Oceania
-    }
-
+    Parameters
+    ----------
+    data : FigureData
+        The data of the figure.
+    figure_directory : str
+        The directory to store the figure.
+    """
     # Set the font size.
     plt.rc("font", size=12)
 
@@ -451,11 +511,11 @@ def plot(figure_directory: str) -> None:
     ax = fig.add_axes((0.0, 0.0, 0.2, 1))
     ax = _add_bar_chart(
         ax,
-        gdp_levels,
-        gdp_occurrence,
+        GDP_LEVELS,
+        data.gdp_occurrence,
         "GDP per capita, PPP\n(2021 international k$)",
-        continent_names,
-        colors,
+        CONTINENT_NAMES,
+        COLORS,
     )
 
     # Set the y-axis limit to the maximum cumulative height and the
@@ -467,11 +527,11 @@ def plot(figure_directory: str) -> None:
     ax = fig.add_axes((0.25, 0.0, 0.2, 1))
     ax = _add_bar_chart(
         ax,
-        electricity_demand_levels,
-        electricity_demand_occurrence,
+        ELECTRICITY_DEMAND_LEVELS,
+        data.electricity_demand_occurrence,
         "Annual electricity demand\nper capita (MWh)",
-        continent_names,
-        colors,
+        CONTINENT_NAMES,
+        COLORS,
     )
     # Set the y-axis limit to the maximum cumulative height.
     ax.set_ylim(0, 520)
@@ -485,100 +545,46 @@ def plot(figure_directory: str) -> None:
     ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
     ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
 
-    # Initialize the GDP and electricity demand data to plot.
-    gdp_data_to_plot: dict[str, pd.Series] = {}
-    electricity_data_to_plot: dict[str, pd.Series] = {}
+    for iso_alpha_3_code, gdp_points in data.gdp_points.items():
+        electricity_demand_points = data.electricity_demand_points[
+            iso_alpha_3_code
+        ]
+        color = COLORS[data.continents[iso_alpha_3_code]]
 
-    # Get the ISO Alpha-3 codes for all countries and subdivisions.
-    codes_with_iso_alpha_3_codes: dict[str, list[str]] = {}
-    for code in codes:
-        iso_alpha_3_code = code.split("_")[0]
-        if iso_alpha_3_code in codes_with_iso_alpha_3_codes:
-            codes_with_iso_alpha_3_codes[iso_alpha_3_code].append(code)
-        else:
-            codes_with_iso_alpha_3_codes[iso_alpha_3_code] = [code]
+        # Plot the GDP per capita and annual electricity demand per
+        # capita of the first and last years of data.
+        ax.plot(
+            gdp_points / 1000,
+            electricity_demand_points / 1000,
+            "o",
+            alpha=0.7,
+            color=color,
+            markeredgecolor="none",
+            markersize=10,
+            label=CONTINENT_NAMES[data.continents[iso_alpha_3_code]],
+        )
 
-    # Loop over the ISO Alpha-3 codes and plot the data.
-    for iso_alpha_3_codes, local_codes in codes_with_iso_alpha_3_codes.items():
-        # Initialize the GDP and electricity demand data to plot.
-        gdp_data_to_plot[iso_alpha_3_codes] = pd.Series(dtype=float)
-        electricity_data_to_plot[iso_alpha_3_codes] = pd.Series(dtype=float)
-
-        # Get the GDP and electricity demand data for the current
-        # alpha-3 code with the longest available time range.
-        for code in local_codes:
-            local_gdp_data = gdp_data[iso_alpha_3_codes][code]
-            local_electricity_data = electricity_data[iso_alpha_3_codes][code]
-            if len(local_gdp_data) > len(gdp_data_to_plot[iso_alpha_3_codes]):
-                gdp_data_to_plot[iso_alpha_3_codes] = local_gdp_data
-            if len(local_electricity_data) > len(
-                electricity_data_to_plot[iso_alpha_3_codes]
-            ):
-                electricity_data_to_plot[iso_alpha_3_codes] = (
-                    local_electricity_data
-                )
-
-        if (
-            not gdp_data_to_plot[iso_alpha_3_codes].empty
-            and not electricity_data_to_plot[iso_alpha_3_codes].empty
-        ):
-            # Make sure the GDP and electricity demand data are aligned
-            # by year.
-            common_index = gdp_data_to_plot[
-                iso_alpha_3_codes
-            ].index.intersection(
-                electricity_data_to_plot[iso_alpha_3_codes].index
-            )
-            gdp_data_to_plot[iso_alpha_3_codes] = gdp_data_to_plot[
-                iso_alpha_3_codes
-            ][common_index]
-            electricity_data_to_plot[iso_alpha_3_codes] = (
-                electricity_data_to_plot[iso_alpha_3_codes][common_index]
-            )
-
-            # Get the the first and last values of the GDP and
-            # electricity demand data.
-            gdp_data_to_plot[iso_alpha_3_codes] = gdp_data_to_plot[
-                iso_alpha_3_codes
-            ].take([0, -1])
-            electricity_data_to_plot[iso_alpha_3_codes] = (
-                electricity_data_to_plot[iso_alpha_3_codes].take([0, -1])
-            )
-
-            # Plot the of GDP per capita and annual electricity demand
-            # per capita data.
-            ax.plot(
-                gdp_data_to_plot[iso_alpha_3_codes] / 1000,
-                electricity_data_to_plot[iso_alpha_3_codes] / 1000,
-                "o",
-                alpha=0.7,
-                color=colors[continent_codes[local_codes[0]]],
-                markeredgecolor="none",
-                markersize=10,
-                label=continent_names[continent_codes[local_codes[0]]],
-            )
-
-            # Add an arrow from the first to the last point.
-            ax.annotate(
-                text="",
-                xy=(
-                    gdp_data_to_plot[iso_alpha_3_codes].iloc[1] / 1000,
-                    electricity_data_to_plot[iso_alpha_3_codes].iloc[1] / 1000,
-                ),
-                xytext=(
-                    gdp_data_to_plot[iso_alpha_3_codes].iloc[0] / 1000,
-                    electricity_data_to_plot[iso_alpha_3_codes].iloc[0] / 1000,
-                ),
-                arrowprops={
-                    "facecolor": colors[continent_codes[local_codes[0]]],
-                    "edgecolor": (0, 0, 0, 0.7),
-                    "linewidth": 0.3,
-                    "alpha": 0.7,
-                    "width": 3,
-                    "headwidth": 8,
-                    "headlength": 8,
-                },
-            )
+        # Add an arrow from the first to the last point.
+        ax.annotate(
+            text="",
+            xy=(
+                gdp_points.iloc[1] / 1000,
+                electricity_demand_points.iloc[1] / 1000,
+            ),
+            xytext=(
+                gdp_points.iloc[0] / 1000,
+                electricity_demand_points.iloc[0] / 1000,
+            ),
+            arrowprops={
+                "facecolor": color,
+                "edgecolor": (0, 0, 0, 0.7),
+                "linewidth": 0.3,
+                "alpha": 0.7,
+                "width": 3,
+                "headwidth": 8,
+                "headlength": 8,
+            },
+        )
 
     # Add sample points for the GDP and electricity demand data to
     # explain the plot.
@@ -611,92 +617,91 @@ def plot(figure_directory: str) -> None:
     ax.annotate(
         text="Nigeria",
         xy=(
-            gdp_data_to_plot["NGA"].iloc[0] * 1.08 / 1000,
-            electricity_data_to_plot["NGA"].iloc[0] / 1000,
+            data.gdp_points["NGA"].iloc[0] * 1.08 / 1000,
+            data.electricity_demand_points["NGA"].iloc[0] / 1000,
         ),
         ha="left",
         va="center",
         fontsize=12,
-        color=colors["AF"],
+        color=COLORS["AF"],
     )
     ax.annotate(
         text="Peru",
         xy=(
-            gdp_data_to_plot["PER"].iloc[0] / 1000,
-            electricity_data_to_plot["PER"].iloc[0] * 0.92 / 1000,
+            data.gdp_points["PER"].iloc[0] / 1000,
+            data.electricity_demand_points["PER"].iloc[0] * 0.92 / 1000,
         ),
         ha="center",
         va="top",
         fontsize=12,
-        color=colors["SA"],
+        color=COLORS["SA"],
     )
     ax.annotate(
         "Pakistan",
         xy=(
-            gdp_data_to_plot["PAK"].iloc[0] * 1.1 / 1000,
-            electricity_data_to_plot["PAK"].iloc[0] * 0.9 / 1000,
+            data.gdp_points["PAK"].iloc[0] * 1.1 / 1000,
+            data.electricity_demand_points["PAK"].iloc[0] * 0.9 / 1000,
         ),
         ha="center",
         va="top",
         fontsize=12,
-        color=colors["AS"],
+        color=COLORS["AS"],
     )
     ax.annotate(
         text="Canada",
         xy=(
-            gdp_data_to_plot["CAN"].iloc[0] * 1.01 / 1000,
-            electricity_data_to_plot["CAN"].iloc[0] * 1.07 / 1000,
+            data.gdp_points["CAN"].iloc[0] * 1.01 / 1000,
+            data.electricity_demand_points["CAN"].iloc[0] * 1.07 / 1000,
         ),
         ha="left",
         va="bottom",
         fontsize=12,
-        color=colors["NA"],
+        color=COLORS["NA"],
     )
     ax.annotate(
         text="Norway",
         xy=(
-            gdp_data_to_plot["NOR"].iloc[0] * 0.93 / 1000,
-            electricity_data_to_plot["NOR"].iloc[0] * 1.04 / 1000,
+            data.gdp_points["NOR"].iloc[0] * 0.93 / 1000,
+            data.electricity_demand_points["NOR"].iloc[0] * 1.04 / 1000,
         ),
         ha="right",
         va="center",
         fontsize=12,
-        color=colors["EU"],
+        color=COLORS["EU"],
     )
     ax.annotate(
         text="Luxembourg",
         xy=(
-            gdp_data_to_plot["LUX"].iloc[0] * 1.10 / 1000,
-            electricity_data_to_plot["LUX"].iloc[0] * 1.10 / 1000,
+            data.gdp_points["LUX"].iloc[0] * 1.10 / 1000,
+            data.electricity_demand_points["LUX"].iloc[0] * 1.10 / 1000,
         ),
         ha="right",
         va="bottom",
         fontsize=12,
-        color=colors["EU"],
+        color=COLORS["EU"],
     )
 
     # Add a legend to the plot.
-    for count, continent_code in enumerate(continent_names.keys()):
+    for count, continent_code in enumerate(CONTINENT_NAMES.keys()):
         ax.add_patch(
             matplotlib.patches.Rectangle(
                 (
                     0.02,
-                    0.925
-                    - 0.25 * (count) / (len(continent_names.values()) - 1),
+                    0.925 - 0.25 * (count) / (len(CONTINENT_NAMES) - 1),
                 ),
                 0.24,
                 0.05,
-                facecolor=colors[continent_code],
+                facecolor=COLORS[continent_code],
                 edgecolor="none",
                 alpha=0.7,
                 transform=ax.transAxes,
             )
         )
         ax.annotate(
-            text=continent_names[continent_code],
+            text=CONTINENT_NAMES[continent_code],
             xy=(
                 0.03,
-                0.94 - 0.25 * (count) / (len(continent_names.values()) - 1),
+                0.94 - 0.25 * (count) / (len(CONTINENT_NAMES) - 1),
             ),
             xycoords="axes fraction",
             color=(0, 0, 0, 1),
@@ -728,3 +733,19 @@ def plot(figure_directory: str) -> None:
         dpi=300,
         bbox_inches="tight",
     )
+
+
+def plot(figure_directory: str) -> None:
+    """
+    Plot the figure of the availability of the data.
+
+    The figure shows the years of hourly and sub-hourly electricity
+    demand data by GDP PPP and annual electricity demand per capita,
+    with the data of Ember, the World Bank and the IMF.
+
+    Parameters
+    ----------
+    figure_directory : str
+        The directory to store the figure.
+    """
+    draw(get_data(), figure_directory)

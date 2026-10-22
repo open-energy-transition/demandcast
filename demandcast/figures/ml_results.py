@@ -539,16 +539,16 @@ def plot(
         "continent": ["AF", "AS", "EU", "OC", "NA", "SA"],
     }
 
-    # Read the MAPE values from the CSV files.
-    mape = _read_mape(
-        results_directory, version, compare_with_version, by_group, groups
-    )
-
     if by_group and compare_with_version is not None:
         raise ValueError(
             "The --by_group and --compare_with_version options cannot be "
             "used together at the moment."
         )
+
+    # Read the MAPE values from the CSV files.
+    mape = _read_mape(
+        results_directory, version, compare_with_version, by_group, groups
+    )
     if by_group:
         _plot_by_group(figure_directory, version, mape, groups)
     elif compare_with_version is not None:
