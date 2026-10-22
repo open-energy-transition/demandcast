@@ -13,7 +13,9 @@ Description:
     hour 1. Until 2015 the demand is the one of the central system (SIC)
     only, about 30% less, so the data starts in 2016. The API has no
     data after 2026-05-13: the data of CEN is now published on another
-    platform (issue #262).
+    platform (issue #262). The end date of the YAML file is that day, so
+    that the live check does not report the data as old, and still
+    reports the data after it if the API gives it again.
 
     Source: https://www.coordinador.cl/operacion/graficos/operacion-real/demanda-real/
 """

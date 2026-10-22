@@ -14,4 +14,4 @@ entities:
   - country_name: Chile
     country_code: CHL
     start_date: 2016-01-01
-    end_date: today
+    end_date: 2026-05-13
