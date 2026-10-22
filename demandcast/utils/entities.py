@@ -512,7 +512,7 @@ def read_compiled(data_source: str) -> bool:
     bool
         Whether the data source is compiled, from its yaml file.
     """
-    return bool(_read_data_source_file(data_source).get("compiled", False))
+    return _read_data_source_file(data_source).compiled
 
 
 def read_definition(data_source: str) -> list[DataSourceDefinition]:
