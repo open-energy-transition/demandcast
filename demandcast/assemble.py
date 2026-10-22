@@ -15,6 +15,7 @@ from collections.abc import Callable
 from functools import reduce
 
 import dask.dataframe
+import numpy as np
 import pandas as pd
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
@@ -142,66 +143,6 @@ def _validate_scenario_model_combination(
         _validate("scenario", selected_scenario, available_scenarios)
 
 
-def _get_data_sources_with_longest_date_range(
-    entity_codes: list[str],
-) -> dict[str, str]:
-    """
-    Get the electricity demand data sources with the longest date range.
-
-    Parameters
-    ----------
-    entity_codes : list[str]
-        List of entity codes to check.
-
-    Returns
-    -------
-    data_source_with_longest_range : dict[str, str]
-        Dictionary mapping entity codes to the data source with the
-        longest date range.
-    """
-    # Get the data sources for each entity code.
-    data_sources = {}
-    for entity_code in entity_codes:
-        data_sources[entity_code] = (
-            utils.entities.get_electricity_demand_data_sources_containing_code(
-                entity_code
-            )
-        )
-
-    # Initialize a dictionary to hold the data source with the longest
-    # date range for each entity code.
-    data_source_with_longest_range = {}
-
-    for entity_code in tqdm(
-        entity_codes,
-        desc=(
-            "Determining electricity demand data sources with longest date range"
-        ),
-    ):
-        # Initialize a temporary variable to hold the longest date range
-        # for the current entity code.
-        longest_date_range = 0
-
-        for data_source in data_sources[entity_code]:
-            # Get the date ranges available for the current entity code
-            # and data source.
-            date_range = utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
-                data_source
-            )[entity_code]
-
-            # Calculate the number of days in the date range.
-            days = (date_range[1] - date_range[0]).days
-
-            if days > longest_date_range:
-                # Update the longest date range found so far.
-                longest_date_range = days
-
-                # Update the data source with the longest range.
-                data_source_with_longest_range[entity_code] = data_source
-
-    return data_source_with_longest_range
-
-
 def _get_files_to_load(
     variable: str,
     entity_codes: list[str],
@@ -233,14 +174,11 @@ def _get_files_to_load(
     ]
 
     if variable == "electricity demand":
-        # For electricity demand, read the hourly cleaned data.
+        # For electricity demand, read the hourly demand that combines
+        # all the data sources of each code (see cleaning/combining.py).
         data_folder = utils.config.read_folders_structure()[
-            "cleaned_electricity_demand_folder"
+            "combined_electricity_demand_folder"
         ]
-
-        # For electricity demand, get the data source with the longest
-        # date range for each entity code.
-        data_source = _get_data_sources_with_longest_date_range(entity_codes)
 
     # Initialize an empty dictionary to hold the files to load.
     files_to_load = {}
@@ -249,11 +187,7 @@ def _get_files_to_load(
         # Define the file pattern based on the variable and parameters.
         file_pattern = f"{entity_code}"
 
-        if variable == "electricity demand":
-            # For electricity demand, include the data source in the
-            # file name.
-            file_pattern += f"_{data_source[entity_code]}"
-        elif variable == "temperature":
+        if variable == "temperature":
             # For temperature, add a glob pattern representing the year
             # number because multiple files per entity code exist.
             file_pattern += "_" + ("[0-9]" * 4)
@@ -338,8 +272,15 @@ def _load_data_for_entity(
         entity_frames.append(current_data)
 
     if entity_frames:
-        # Concatenate all data for the entity.
+        # Concatenate all data for the entity, without the columns of
+        # text, such as the data source of each hour of the electricity
+        # demand, which cannot be averaged.
         entity_data = pd.concat(entity_frames)
+        entity_data = entity_data.drop(
+            columns=entity_data.columns.difference(
+                entity_data.select_dtypes("number").columns
+            )
+        )
     else:
         # If no data was loaded, return None.
         return None
@@ -696,9 +637,7 @@ def _merge_datasets(
     return merged_dataset
 
 
-def _calculate_load_fraction(
-    merged_dataset: dask.dataframe.DataFrame,
-) -> dask.dataframe.DataFrame:
+def _calculate_load_fraction(merged_dataset: pd.DataFrame) -> pd.DataFrame:
     """
     Calculate the fraction of load at each timestamp.
 
@@ -708,59 +647,39 @@ def _calculate_load_fraction(
     function assumes that time is in hourly frequency. Changes should be
     made if a different frequency is used.
 
+    The fraction is calculated on the computed dataset: the merge of the
+    annual totals back into the dataset in dask failed with many
+    entities and years (#147).
+
     Parameters
     ----------
-    merged_dataset : dask.dataframe.DataFrame
+    merged_dataset : pandas.DataFrame
         Input dataframe with load, entity code, and local year columns.
 
     Returns
     -------
-    merged_dataset : dask.dataframe.DataFrame
+    merged_dataset : pandas.DataFrame
         Dataframe with load fraction column added.
     """
     logging.info("Calculating load fraction for each timestamp.")
 
-    # Define the groupby object for entity code and local year.
-    groups = merged_dataset.groupby(["Entity code", "Local year"])
-
-    # Compute the total annual load for each entity and year.
-    annual_load = groups.agg({"Load (MW)": "sum"})["Load (MW)"]
-
-    # Compute the amount of hours tracked in the dataset.
-    amount_of_hours_tracked = groups.agg({"Load (MW)": "count"})["Load (MW)"]
-
-    # Extract the year for each group.
-    years = groups.agg({"Local year": "first"})["Local year"]
-
-    # Define a boolean mask for leap years.
-    is_leap_year = (years % 4 == 0) & ((years % 100 != 0) | (years % 400 == 0))
+    # Compute the total annual load and the amount of hours tracked in
+    # the dataset for each entity and year.
+    groups = merged_dataset.groupby(["Entity code", "Local year"])["Load (MW)"]
+    annual_load = groups.transform("sum")
+    amount_of_hours_tracked = groups.transform("count")
 
     # Calculate the amount of hours in each year.
-    amount_of_hours_in_year = is_leap_year.map(
-        {True: 8784, False: 8760}, meta="int64"
-    )
-
-    # Calculate the factor to scale the load.
-    scaling_factor = (
-        (amount_of_hours_tracked / (amount_of_hours_in_year * annual_load))
-        .rename("Scaling factor")
-        .to_frame()
-    )
-
-    # Merge the scaling factor back into the merged dataset.
-    merged_dataset = merged_dataset.merge(
-        scaling_factor,
-        on=["Entity code", "Local year"],
-        how="left",
-    )
+    years = merged_dataset["Local year"]
+    is_leap_year = (years % 4 == 0) & ((years % 100 != 0) | (years % 400 == 0))
+    amount_of_hours_in_year = np.where(is_leap_year, 8784, 8760)
 
     # Calculate the load fraction.
     merged_dataset["Load (fraction of annual total)"] = (
-        merged_dataset["Load (MW)"] * merged_dataset["Scaling factor"]
+        merged_dataset["Load (MW)"]
+        * amount_of_hours_tracked
+        / (amount_of_hours_in_year * annual_load)
     )
-
-    # Drop the scaling factor column.
-    merged_dataset = merged_dataset.drop(columns=["Scaling factor"])
 
     logging.info("Load fraction calculated successfully.")
 
@@ -861,21 +780,22 @@ def run_data_assemply(
         # Add electricity demand data if assembling for training.
         datasets_to_merge.append(_load_electricity_demand(file_path=file))
 
-    # Merge datasets on common columns.
-    merged_dataset = _merge_datasets(
+    # Merge datasets on common columns, and compute the merged dataset
+    # once.
+    assembled_data = _merge_datasets(
         datasets_to_merge,
         ["Time (UTC)", "Entity code"],
-    )
+    ).compute()
 
     if target_use == "training":
         # Calculate load fraction for training data.
-        merged_dataset = _calculate_load_fraction(merged_dataset)
+        assembled_data = _calculate_load_fraction(assembled_data)
 
     if start_year and end_year:
         # Filter merged data for the specified year range.
-        merged_dataset = merged_dataset.loc[
-            (merged_dataset["Local year"] >= start_year)
-            & (merged_dataset["Local year"] <= end_year)
+        assembled_data = assembled_data.loc[
+            (assembled_data["Local year"] >= start_year)
+            & (assembled_data["Local year"] <= end_year)
         ]
 
     # Get the assembled data folder path.
@@ -891,9 +811,15 @@ def run_data_assemply(
         f"{datetime.datetime.now().astimezone():%Y%m%d_%H%M%S}",
     )
 
-    # Save the merged dataset to CSV and Parquet formats.
-    merged_dataset.to_csv(output_path + ".csv", index=False, single_file=True)
-    merged_dataset.compute().to_parquet(output_path + ".parquet", index=False)
+    # Sort the dataset in the order of the entities and of the times:
+    # the merges of dask give the rows in the order of their partitions,
+    # while the windows of the LSTM need consecutive hours (#146). Save
+    # it to CSV and Parquet formats.
+    assembled_data = assembled_data.sort_values(
+        ["Entity code", "Time (UTC)"], ignore_index=True
+    )
+    assembled_data.to_csv(output_path + ".csv", index=False)
+    assembled_data.to_parquet(output_path + ".parquet", index=False)
 
     logging.info(
         f"Assembled data saved to {output_path}.csv and {output_path}.parquet"
