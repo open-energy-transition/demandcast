@@ -25,6 +25,7 @@ import os
 import zipfile
 
 import requests
+import utils.catalogue
 import utils.entities
 import utils.figures
 import utils.geospatial
@@ -53,10 +54,10 @@ def _download_historical_gridded_population_density(
     ValueError
         If the year is not available.
     """
-    if year not in list(range(2000, 2021, 5)):
+    if year not in utils.catalogue.GRIDDED_POPULATION_YEARS:
         raise ValueError(
             "year must be one of the available years: "
-            f"{list(range(2000, 2021, 5))}."
+            f"{list(utils.catalogue.GRIDDED_POPULATION_YEARS)}."
         )
 
     # Define the file path for the population density data.
@@ -113,10 +114,10 @@ def _download_future_gridded_population(  # noqa: C901
     ValueError
         If the scenario is not available.
     """
-    if scenario not in ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]:
+    if scenario not in utils.catalogue.SSP_SCENARIOS:
         raise ValueError(
-            "ssp must be one of the following: ['SSP1', 'SSP2', 'SSP3', "
-            "'SSP4', 'SSP5']."
+            "ssp must be one of the following: "
+            f"{list(utils.catalogue.SSP_SCENARIOS)}."
         )
 
     # Define the folder name for the population data for the specified
@@ -312,24 +313,15 @@ def run_data_retrieval(
     )
     os.makedirs(downloaded_data_directory, exist_ok=True)
 
-    # Define the available years for the historical population data.
-    available_historical_years = list(range(2000, 2021, 5))
-
-    # Define the available years for the future population data.
-    available_future_years = list(range(2025, 2101, 5))
-
-    # Define the available scenarios for the population data.
-    available_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
-
     # Get the list of year and scenario combinations.
     year_scenario_list = utils.scenarios.get_year_and_scenario_combinations(
         year,
         start_year,
         end_year,
-        available_historical_years,
-        available_future_years,
+        list(utils.catalogue.GRIDDED_POPULATION_YEARS),
+        list(utils.catalogue.PROJECTION_YEARS),
         scenario,
-        available_scenarios,
+        list(utils.catalogue.SSP_SCENARIOS),
     )
 
     # Get the list of codes of the countries and subdivisions of
@@ -406,7 +398,7 @@ def run_data_retrieval(
                     y=slice(entity_bounds[1], entity_bounds[3]),
                 )
 
-                if selected_year in available_historical_years:
+                if selected_year in utils.catalogue.GRIDDED_POPULATION_YEARS:
                     # Convert the population density to population
                     # count.
                     population = utils.geospatial.from_density_to_count(

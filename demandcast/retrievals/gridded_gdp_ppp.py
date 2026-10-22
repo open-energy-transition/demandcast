@@ -18,6 +18,7 @@ from io import BytesIO
 
 import py7zr
 import requests
+import utils.catalogue
 import utils.entities
 import utils.figures
 import utils.geospatial
@@ -145,24 +146,15 @@ def run_data_retrieval(
     raw_directory = utils.paths.get_gridded_folder("gdp_ppp", "raw")
     _download_gdp_ppp(raw_directory)
 
-    # Define the available years for historical GDP data.
-    available_historical_years = list(range(2000, 2021))
-
-    # Define the available years for future GDP data.
-    available_future_years = list(range(2025, 2101, 5))
-
-    # Define the available scenarios for the GDP data.
-    available_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
-
     # Get the list of year and scenario combinations.
     year_scenario_list = utils.scenarios.get_year_and_scenario_combinations(
         year,
         start_year,
         end_year,
-        available_historical_years,
-        available_future_years,
+        list(utils.catalogue.GRIDDED_GDP_PPP_YEARS),
+        list(utils.catalogue.PROJECTION_YEARS),
         scenario,
-        available_scenarios,
+        list(utils.catalogue.SSP_SCENARIOS),
     )
 
     # Get the list of codes of the countries and subdivisions of

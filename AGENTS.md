@@ -18,6 +18,8 @@ Each step is a script in `demandcast/`, configured by `config/<script>_config.ya
 
 Paths come from `utils/paths.py`; use its functions instead of hard-coding paths. The inputs that come with the code (configuration, shapes, data source YAMLs, flag reviews) stay in the code folder, and everything the scripts write goes under the data folder: `data/`, or the folder named by `DEMANDCAST_DATA_FOLDER`. Each dataset has its own folder there, with its stages (`raw/`, `processed/`, ...), next to `assembled/`, `models/<algorithm>/`, `results/` (validation, cross-validation, forecasts, figures, check reports) and `logs/`.
 
+The scenarios (SSP, IAMC and CMIP6), the climate models and the years of each projection and gridded dataset are listed once, in `utils/catalogue.py`; use it instead of writing them again.
+
 ## Layout
 
 - `demandcast/`: the Python project. Run all Python commands from this folder, because modules are imported as top-level packages (`import utils.config`, not `import demandcast.utils.config`).

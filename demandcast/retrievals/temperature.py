@@ -23,6 +23,7 @@ import os
 
 import numpy as np
 import pandas as pd
+import utils.catalogue
 import utils.entities
 import utils.geospatial
 import utils.paths
@@ -169,19 +170,15 @@ def _load_gridded_population_data(
     xarray.DataArray
         The gridded population data.
 
-    Raises
-    ------
-    ValueError
-        If the scenario of the climate data is not valid.
     """
-    # Define the available years for the historical population data.
-    available_historical_population_years = np.arange(2000, 2021, 5)
-
-    # Define the available years for the future population data.
-    available_future_population_years = np.arange(2025, 2101, 5)
-
-    # Define the available scenarios for the population data.
-    available_population_scenarios = ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
+    # Define the available years for the historical and future
+    # population data.
+    available_historical_population_years = np.array(
+        utils.catalogue.GRIDDED_POPULATION_YEARS
+    )
+    available_future_population_years = np.array(
+        utils.catalogue.PROJECTION_YEARS
+    )
 
     # Find the year of the population data that is closest to the year
     # of the temperature data.
@@ -196,20 +193,11 @@ def _load_gridded_population_data(
 
     # Find the scenario of the population data if the year of the
     # population data is in the future.
-    if climate_scenario is not None:
-        population_scenario = None
-        for scenario in available_population_scenarios:
-            if scenario in climate_scenario:
-                population_scenario = scenario
-                break
-        if population_scenario is None:
-            raise ValueError(
-                "The scenario of the climate data is not valid. "
-                f"It must include one of the following: "
-                f"{', '.join(available_population_scenarios)}."
-            )
-    else:
-        population_scenario = None
+    population_scenario = (
+        utils.catalogue.get_ssp(climate_scenario)
+        if climate_scenario is not None
+        else None
+    )
 
     # # Define the directory where the population data is stored.
     population_data_directory = utils.paths.get_gridded_folder(
@@ -609,18 +597,10 @@ def run_data_retrieval(
         "all_data", code=code, file_path=file
     )
 
-    # Define the available years for the historical weather data.
-    # Historical data is available from 1940 but it is not necessary to
-    # go that far back for our purposes.
-    available_historical_years = list(range(1990, pd.Timestamp.now().year + 1))
-
-    # Define the available years for the future weather data.
-    available_future_years = list(range(pd.Timestamp.now().year, 2101))
-
-    # Get the available scenarios for the weather data.
-    available_scenarios_for_model = (
-        retrievals.gridded_weather.get_available_scenarios_for_model()
-    )
+    # Define the available years of the reanalysis and of the
+    # projections of the weather.
+    available_historical_years = utils.catalogue.get_reanalysis_years()
+    available_future_years = utils.catalogue.get_climate_projection_years()
 
     # Get the list of year, model, and scenario combinations.
     year_model_scenario_list = (
@@ -632,7 +612,12 @@ def run_data_retrieval(
             available_future_years,
             model,
             scenario,
-            available_scenarios_for_model,
+            {
+                climate_model: list(scenarios)
+                for climate_model, scenarios in (
+                    utils.catalogue.CLIMATE_MODEL_SCENARIOS.items()
+                )
+            },
         )
     )
 

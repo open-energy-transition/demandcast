@@ -11,6 +11,8 @@ import logging
 
 import pandas as pd
 
+import utils.catalogue
+
 
 def _normalize_scenarios(scenarios: list[str]) -> list[str]:
     """
@@ -492,7 +494,10 @@ def get_years_and_scenarios(
         available_historical_years
     )
     available_future_years = list(
-        range(max(extended_available_historical_years) + 1, 2101)
+        range(
+            max(extended_available_historical_years) + 1,
+            utils.catalogue.LAST_PROJECTION_YEAR + 1,
+        )
     )
 
     # Get the list of available years sorted without duplicates.

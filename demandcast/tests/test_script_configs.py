@@ -116,6 +116,39 @@ def test_upload_configuration_needs_a_bucket(monkeypatch):
             "must not be provided",
         ),
         ("assemble", "target_use: testing\n", "target_use"),
+        (
+            "retrieve",
+            "variable: population\nscenario: SSP6\n",
+            "'SSP6' is not available",
+        ),
+        (
+            "retrieve",
+            "variable: annual_electricity_demand_per_capita\nscenario: SSP2\n",
+            "'SSP2' is not available",
+        ),
+        (
+            "retrieve",
+            (
+                "variable: electricity_demand\nelectricity_data_source: "
+                "entsoe\nscenario: SSP2\n"
+            ),
+            "electricity_demand has no scenarios",
+        ),
+        (
+            "retrieve",
+            "variable: temperature\nclimate_model: CESM3\n",
+            "climate model 'CESM3' is not available",
+        ),
+        (
+            "retrieve",
+            "variable: temperature\nclimate_model: CESM2\nscenario: SSP1-1.9\n",
+            "'SSP1-1.9' is not available",
+        ),
+        (
+            "assemble",
+            "target_use: forecasting\nscenario_for_population: SSP2-45\n",
+            "'SSP2-45' is not available",
+        ),
         ("train", "", "reserve_testing_set"),
         (
             "upload",
@@ -224,11 +257,17 @@ def test_retrieve_dispatch_by_scenario(monkeypatch, variable):
         lambda *args: calls.append(args),
     )
 
-    retrieve.main(
-        retrieve.ConfigModel(variable=variable, year=2030, scenario="SSP2")
+    scenario = (
+        "SSP2-45"
+        if variable == "annual_electricity_demand_per_capita"
+        else "SSP2"
     )
 
-    assert calls == [(None, None, 2030, None, None, "SSP2")]
+    retrieve.main(
+        retrieve.ConfigModel(variable=variable, year=2030, scenario=scenario)
+    )
+
+    assert calls == [(None, None, 2030, None, None, scenario)]
 
 
 @pytest.mark.parametrize(
@@ -333,3 +372,32 @@ def test_main_of_the_scripts(
     module.main(module.ConfigModel(**settings))
 
     assert calls == [arguments]
+
+
+def test_scenarios_are_spelt_as_in_the_catalogue():
+    """Test that the scenarios and models are found in any case."""
+    retrieval = retrieve.ConfigModel(
+        variable="temperature", climate_model="cesm2", scenario="ssp2-4.5"
+    )
+    assembly = importlib.import_module("assemble").ConfigModel(
+        target_use="forecasting",
+        scenario_for_annual_electricity_demand_per_capita="ssp2-baseline",
+        scenario_for_population="ssp3",
+        climate_model_for_temperature="hadgem3-gc31-ll",
+        scenario_for_temperature="ssp5-8.5",
+    )
+
+    assert (retrieval.climate_model, retrieval.scenario) == (
+        "CESM2",
+        "SSP2-4.5",
+    )
+    assert (
+        assembly.scenario_for_annual_electricity_demand_per_capita
+        == "SSP2-Baseline"
+    )
+    assert assembly.scenario_for_population == "SSP3"
+    assert assembly.scenario_for_gdp_ppp_per_capita is None
+    assert (
+        assembly.climate_model_for_temperature,
+        assembly.scenario_for_temperature,
+    ) == ("HadGEM3-GC31-LL", "SSP5-8.5")

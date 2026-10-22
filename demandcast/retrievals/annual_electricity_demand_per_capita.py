@@ -49,6 +49,7 @@ from typing import cast
 
 import numpy as np
 import pandas as pd
+import utils.catalogue
 import utils.entities
 import utils.paths
 import utils.scenarios
@@ -60,45 +61,6 @@ from retrievals.socio_economic_data_sources import ember, iiasa, world_bank
 # The years that Ember and the World Bank both need for the ratio of a
 # country.
 MIN_YEARS_OF_BOTH = 3
-
-
-def get_available_scenarios() -> list[str]:
-    """
-    Get the available future scenarios.
-
-    Returns
-    -------
-    list[str]
-        The available IAMC scenarios.
-    """
-    return [
-        "SSP1-Baseline",
-        "SSP1-19",
-        "SSP1-26",
-        "SSP1-34",
-        "SSP1-45",
-        "SSP2-Baseline",
-        "SSP2-19",
-        "SSP2-26",
-        "SSP2-34",
-        "SSP2-45",
-        "SSP2-60",
-        "SSP3-Baseline",
-        "SSP3-34",
-        "SSP3-45",
-        "SSP3-60",
-        "SSP4-Baseline",
-        "SSP4-26",
-        "SSP4-34",
-        "SSP4-45",
-        "SSP4-60",
-        "SSP5-Baseline",
-        "SSP5-19",
-        "SSP5-26",
-        "SSP5-34",
-        "SSP5-45",
-        "SSP5-60",
-    ]
 
 
 def get_historical_data() -> pd.DataFrame:
@@ -205,7 +167,7 @@ def run_data_retrieval(
     )
 
     # Get the available scenarios.
-    available_scenarios = get_available_scenarios()
+    available_scenarios = list(utils.catalogue.IAMC_SCENARIOS)
 
     # Loop over the countries and subdivisions.
     for entity_code in tqdm(codes, desc="Countries and subdivisions"):
@@ -231,7 +193,10 @@ def run_data_retrieval(
 
         # Get the years of available future data.
         available_future_years = list(
-            range(max(available_historical_years) + 1, 2101)
+            range(
+                max(available_historical_years) + 1,
+                utils.catalogue.LAST_PROJECTION_YEAR + 1,
+            )
         )
 
         # Get the list of year and scenario combinations.

@@ -25,7 +25,6 @@ import datetime
 import glob
 import logging
 import os
-from collections.abc import Callable
 from functools import reduce
 from typing import Literal, cast
 
@@ -33,14 +32,11 @@ import dask
 import dask.dataframe
 import numpy as np
 import pandas as pd
-import retrievals.annual_electricity_demand_per_capita
-import retrievals.gdp_ppp_per_capita
-import retrievals.gridded_weather
-import retrievals.population
+import utils.catalogue
 import utils.config
 import utils.entities
 import utils.paths
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from tqdm import tqdm
 
 # The shares of the hours of a year, and of each of its months, that
@@ -62,73 +58,77 @@ class ConfigModel(BaseModel):
     scenario_for_temperature: str | None = None
     climate_model_for_temperature: str | None = None
 
+    @model_validator(mode="after")
+    def _check_scenarios(self) -> "ConfigModel":
+        """
+        Check the scenarios and the climate model.
 
-def _validate(
-    parameter_name: str,
-    selected_value: str | None,
-    available_values: list[str],
-) -> None:
-    """
-    Validate a selected parameter value against available options.
+        They are spelt as in the catalogue, whatever their case.
 
-    Parameters
-    ----------
-    parameter_name : str
-        Name of the parameter being validated.
-    selected_value : str
-        The selected value to validate.
-    available_values : list[str]
-        List of available valid values.
-
-    Raises
-    ------
-    ValueError
-        If the selected value is not in the list of available values.
-    """
-    if selected_value and selected_value not in available_values:
-        raise ValueError(
-            f"{parameter_name.capitalize()} '{selected_value}' is not available. "
-            f"Available {parameter_name}s: {available_values}"
+        Returns
+        -------
+        ConfigModel
+            The settings.
+        """
+        for field, scenarios in (
+            (
+                "scenario_for_annual_electricity_demand_per_capita",
+                utils.catalogue.IAMC_SCENARIOS,
+            ),
+            ("scenario_for_gdp_ppp_per_capita", utils.catalogue.SSP_SCENARIOS),
+            ("scenario_for_population", utils.catalogue.SSP_SCENARIOS),
+        ):
+            _, scenario = _get_scenario_and_model(
+                None, getattr(self, field), scenarios, climate=False
+            )
+            setattr(self, field, scenario)
+        self.climate_model_for_temperature, self.scenario_for_temperature = (
+            _get_scenario_and_model(
+                self.climate_model_for_temperature,
+                self.scenario_for_temperature,
+                None,
+                climate=True,
+            )
         )
+        return self
 
 
-def _validate_scenario_model_combination(
+def _get_scenario_and_model(
     selected_model: str | None,
     selected_scenario: str | None,
-    scenario_getter: Callable[[], list[str]] | None,
-    model_scenario_getter: Callable[[], dict[str, list[str]]] | None,
-) -> None:
+    scenarios: tuple[str, ...] | None,
+    climate: bool,
+) -> tuple[str | None, str | None]:
     """
-    Validate the selected scenario and model combination.
+    Check the selected climate model and scenario of a variable.
 
     Parameters
     ----------
     selected_model : str | None
-        The selected model to validate.
+        The selected climate model.
     selected_scenario : str | None
-        The selected scenario to validate.
-    scenario_getter : Callable[[], list[str]] | None
-        Function that returns list of available scenarios. If None,
-        no scenario validation is performed.
-    model_scenario_getter : Callable[[], dict[str, list[str]]]
-        Function that returns dict mapping models to their available
-        scenarios.
+        The selected scenario.
+    scenarios : tuple[str, ...] | None
+        The scenarios of the variable, from utils/catalogue.py, None to
+        leave the scenario unchecked.
+    climate : bool
+        Whether the variable comes from the climate models, whose
+        scenarios depend on the model.
+
+    Returns
+    -------
+    tuple[str | None, str | None]
+        The climate model and the scenario, spelt as in the catalogue.
     """
-    if model_scenario_getter and selected_model:
-        available_scenarios_for_model = model_scenario_getter()
-        _validate(
-            "model", selected_model, list(available_scenarios_for_model.keys())
+    if climate:
+        return utils.catalogue.get_climate_model_and_scenario(
+            selected_model, selected_scenario
         )
-        _validate(
-            "scenario",
-            selected_scenario,
-            available_scenarios_for_model[selected_model]
-            if selected_model
-            else [""],
+    if scenarios is not None and selected_scenario:
+        selected_scenario = utils.catalogue.get_scenario(
+            selected_scenario, scenarios
         )
-    elif scenario_getter:
-        available_scenarios = scenario_getter()
-        _validate("scenario", selected_scenario, available_scenarios)
+    return selected_model, selected_scenario
 
 
 def _get_files_to_load(
@@ -315,8 +315,8 @@ def _load_data(
     target_use: str,
     selected_scenario: str | None = None,
     selected_model: str | None = None,
-    scenario_getter: Callable[[], list[str]] | None = None,
-    model_scenario_getter: Callable[[], dict[str, list[str]]] | None = None,
+    scenarios: tuple[str, ...] | None = None,
+    climate: bool = False,
     file_path: str | None = None,
 ) -> dask.dataframe.DataFrame:
     """
@@ -332,12 +332,12 @@ def _load_data(
         Scenario to load. None for historical data.
     selected_model : str | None
         Model to load (e.g., climate model). None for historical data.
-    scenario_getter : Callable[[], list[str]] | None
-        Function that returns list of available scenarios. If None,
-        no scenario validation is performed.
-    model_scenario_getter : Callable[[], dict[str, list[str]]] | None
-        Function that returns dict mapping models to their available
-        scenarios. Required when selected_model is used.
+    scenarios : tuple[str, ...] | None
+        The scenarios of the variable, from utils/catalogue.py. If
+        None, the scenario is not checked.
+    climate : bool
+        Whether the variable comes from the climate models, whose
+        scenarios depend on the model.
     file_path : str | None
         Optional file path including entity codes to load. If None,
         load all available codes.
@@ -360,12 +360,9 @@ def _load_data(
         data_feature, file_path=file_path
     )
 
-    # Validate scenario and model combination.
-    _validate_scenario_model_combination(
-        selected_model,
-        selected_scenario,
-        scenario_getter,
-        model_scenario_getter,
+    # Check the scenario and the climate model.
+    selected_model, selected_scenario = _get_scenario_and_model(
+        selected_model, selected_scenario, scenarios, climate
     )
 
     # Get the list of files to load for each entity code.
@@ -462,7 +459,7 @@ def _load_annual_electricity_demand_per_capita(
         numeric_columns=["Annual electricity demand per capita (kWh)"],
         target_use=target_use,
         selected_scenario=selected_scenario,
-        scenario_getter=retrievals.annual_electricity_demand_per_capita.get_available_scenarios,
+        scenarios=utils.catalogue.IAMC_SCENARIOS,
         file_path=file_path,
     )
 
@@ -496,7 +493,7 @@ def _load_gdp_ppp_per_capita(
         numeric_columns=["GDP PPP per capita (2021 international $)"],
         target_use=target_use,
         selected_scenario=selected_scenario,
-        scenario_getter=retrievals.gdp_ppp_per_capita.get_available_scenarios,
+        scenarios=utils.catalogue.SSP_SCENARIOS,
         file_path=file_path,
     )
 
@@ -530,7 +527,7 @@ def _load_population(
         numeric_columns=["Population"],
         target_use=target_use,
         selected_scenario=selected_scenario,
-        scenario_getter=retrievals.population.get_available_scenarios,
+        scenarios=utils.catalogue.SSP_SCENARIOS,
         file_path=file_path,
     )
 
@@ -576,7 +573,7 @@ def _load_temperature(
         target_use=target_use,
         selected_scenario=selected_scenario,
         selected_model=selected_model,
-        model_scenario_getter=retrievals.gridded_weather.get_available_scenarios_for_model,
+        climate=True,
         file_path=file_path,
     )
 

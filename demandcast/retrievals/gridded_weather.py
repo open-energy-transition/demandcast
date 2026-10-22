@@ -17,6 +17,7 @@ import zipfile
 
 import cdsapi
 import pandas as pd
+import utils.catalogue
 import utils.entities
 import utils.geospatial
 import utils.paths
@@ -31,58 +32,6 @@ from tqdm import tqdm
 # updated every day until then.
 REANALYSIS_DELAY = pd.Timedelta(days=7)
 REANALYSIS_UPDATE = pd.Timedelta(days=1)
-
-
-def get_available_scenarios_for_model() -> dict[str, list[str]]:
-    """
-    Get the available future scenarios for each climate model.
-
-    Returns
-    -------
-    dict[str, list[str]]
-        A dictionary mapping each climate model to its available
-        scenarios.
-    """
-    return {
-        "CAMS-CSM1-0": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # China
-        "CESM2": ["SSP1-2.6", "SSP2-4.5", "SSP3-7.0", "SSP5-8.5"],  # USA
-        "CNRM-ESM2-1": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP4-3.4",
-            "SSP2-4.5",
-            "SSP4-6.0",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # France
-        "EC-Earth3-Veg-LR": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # Europe
-        "HadGEM3-GC31-LL": ["SSP1-2.6", "SSP2-4.5", "SSP5-8.5"],  # UK
-        "MIROC-ES2L": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # Japan
-        "MPI-ESM1-2-LR": [
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # Germany
-    }
 
 
 def get_file_name(
@@ -409,17 +358,6 @@ def run_data_retrieval(
         "all_data", code=code, file_path=file
     )
 
-    # Define the available years for the historical weather data.
-    # Historical data is available from 1940 but it is not necessary to
-    # go that far back for our purposes.
-    available_historical_years = list(range(1990, pd.Timestamp.now().year + 1))
-
-    # Define the available years for the future weather data.
-    available_future_years = list(range(pd.Timestamp.now().year, 2101))
-
-    # Get the available scenarios for each climate model.
-    available_scenarios_for_model = get_available_scenarios_for_model()
-
     # Define the available weather variables.
     available_variables = ["temperature"]
 
@@ -442,11 +380,16 @@ def run_data_retrieval(
             year,
             start_year,
             end_year,
-            available_historical_years,
-            available_future_years,
+            utils.catalogue.get_reanalysis_years(),
+            utils.catalogue.get_climate_projection_years(),
             model,
             scenario,
-            available_scenarios_for_model,
+            {
+                climate_model: list(scenarios)
+                for climate_model, scenarios in (
+                    utils.catalogue.CLIMATE_MODEL_SCENARIOS.items()
+                )
+            },
         )
     )
 

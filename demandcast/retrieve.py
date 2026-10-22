@@ -22,9 +22,22 @@ import retrievals.gridded_population
 import retrievals.gridded_weather
 import retrievals.population
 import retrievals.temperature
+import utils.catalogue
 import utils.config
 import utils.entities
 from pydantic import BaseModel, field_validator, model_validator
+
+# The scenarios of the variables of the socio-economic projections.
+SCENARIOS = {
+    "annual_electricity_demand_per_capita": utils.catalogue.IAMC_SCENARIOS,
+    "population": utils.catalogue.SSP_SCENARIOS,
+    "gridded_population": utils.catalogue.SSP_SCENARIOS,
+    "gdp_ppp_per_capita": utils.catalogue.SSP_SCENARIOS,
+    "gridded_gdp_ppp": utils.catalogue.SSP_SCENARIOS,
+}
+
+# The variables of the projections of the climate models.
+CLIMATE_VARIABLES = {"gridded_weather", "temperature"}
 
 
 class ConfigModel(BaseModel):
@@ -84,7 +97,10 @@ class ConfigModel(BaseModel):
     @model_validator(mode="after")
     def _check_required_settings(self) -> "ConfigModel":
         """
-        Check the settings that some variables require.
+        Check the settings that some variables need, and the scenario.
+
+        The scenario and the climate model are spelt as in the
+        catalogue, whatever their case.
 
         Returns
         -------
@@ -94,7 +110,8 @@ class ConfigModel(BaseModel):
         Raises
         ------
         ValueError
-            If a required setting is missing.
+            If a required setting is missing, or if the scenario or the
+            climate model is not available for the variable.
         """
         if (
             self.variable == "electricity_demand"
@@ -108,6 +125,18 @@ class ConfigModel(BaseModel):
             raise ValueError(
                 "The weather variable must be specified for the "
                 "retrieval of gridded weather data."
+            )
+        if self.variable in CLIMATE_VARIABLES:
+            self.climate_model, self.scenario = (
+                utils.catalogue.get_climate_model_and_scenario(
+                    self.climate_model, self.scenario
+                )
+            )
+        elif self.scenario is not None:
+            if self.variable not in SCENARIOS:
+                raise ValueError(f"The {self.variable} has no scenarios.")
+            self.scenario = utils.catalogue.get_scenario(
+                self.scenario, SCENARIOS[self.variable]
             )
         return self
 

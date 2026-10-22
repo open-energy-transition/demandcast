@@ -17,6 +17,7 @@ from typing import cast
 
 import cpi
 import pandas as pd
+import utils.catalogue
 import utils.entities
 import utils.geospatial
 import utils.paths
@@ -25,18 +26,6 @@ import utils.time_series
 from tqdm import tqdm
 
 from retrievals.socio_economic_data_sources import iiasa, imf, world_bank
-
-
-def get_available_scenarios() -> list[str]:
-    """
-    Get the available future scenarios.
-
-    Returns
-    -------
-    list[str]
-        The available scenarios.
-    """
-    return ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
 
 
 def get_historical_data() -> pd.DataFrame:
@@ -326,11 +315,15 @@ def run_data_retrieval(
 
     # Define the available years for gridded GDP PPP and population
     # data.
-    available_historical_years_of_gridded_data = list(range(2000, 2021, 5))
-    available_future_years_of_gridded_data = list(range(2025, 2101, 5))
+    available_historical_years_of_gridded_data = list(
+        utils.catalogue.GRIDDED_POPULATION_YEARS
+    )
+    available_future_years_of_gridded_data = list(
+        utils.catalogue.PROJECTION_YEARS
+    )
 
     # Define the available scenarios for the GDP PPP per capita data.
-    available_scenarios = get_available_scenarios()
+    available_scenarios = list(utils.catalogue.SSP_SCENARIOS)
 
     # Loop over the countries and subdivisions.
     for entity_code in tqdm(codes, desc="Countries and subdivisions"):
