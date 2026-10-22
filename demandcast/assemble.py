@@ -14,13 +14,14 @@ import os
 from collections.abc import Callable
 from functools import reduce
 
+import dask
 import dask.dataframe
 import numpy as np
 import pandas as pd
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
+import retrievals.gridded_weather
 import retrievals.population
-import retrievals.temperature
 import utils.config
 import utils.entities
 from pydantic import BaseModel, ValidationError
@@ -590,25 +591,27 @@ def _load_temperature(
         target_use=target_use,
         selected_scenario=selected_scenario,
         selected_model=selected_model,
-        model_scenario_getter=retrievals.temperature.get_available_scenarios_for_model,
+        model_scenario_getter=retrievals.gridded_weather.get_available_scenarios_for_model,
         file_path=file_path,
     )
 
 
 def _merge_datasets(
     datasets: list[dask.dataframe.DataFrame], on: list[str]
-) -> dask.dataframe.DataFrame:
+) -> pd.DataFrame:
     """
-    Merge multiple datasets on specified columns.
+    Merge multiple datasets on specified columns, and compute the merge.
 
     Parameters
     ----------
     datasets : list[dask.dataframe.DataFrame]
         List of dataframes to merge.
+    on : list[str]
+        The columns to merge on.
 
     Returns
     -------
-    merged_dataset : dask.dataframe.DataFrame
+    merged_dataset : pandas.DataFrame
         Merged dataset.
     """
     logging.info(f"Merging {len(datasets)} datasets.")
@@ -621,20 +624,26 @@ def _merge_datasets(
         datasets,
     )
 
+    # Compute the merge and the entities of each dataset at once: each
+    # statistic of the lazy merge would compute it again.
+    computed_dataset, *entities = dask.compute(
+        merged_dataset,
+        *(dataset["Entity code"].unique() for dataset in datasets),
+    )
+    merged_entities = set(computed_dataset["Entity code"])
+
     logging.info(f"Merged {len(datasets)} datasets successfully.")
     logging.info(
-        f"Merged dataset contains {len(merged_dataset)} rows, "
-        f"{len(merged_dataset.columns)} columns, and "
-        f"{len(merged_dataset['Entity code'].unique())} entities."
+        f"Merged dataset contains {len(computed_dataset)} rows, "
+        f"{len(computed_dataset.columns)} columns, and "
+        f"{len(merged_entities)} entities."
     )
     logging.info("Excluded entities during merging:")
-    for i, dataset in enumerate(datasets):
-        merged_entities = merged_dataset["Entity code"].unique()
-        original_entities = dataset["Entity code"].unique()
-        excluded_entities = set(original_entities) - set(merged_entities)
+    for i, dataset_entities in enumerate(entities):
+        excluded_entities = set(dataset_entities) - merged_entities
         logging.info(f" - Dataset {i + 1}: {excluded_entities or 'None'}")
 
-    return merged_dataset
+    return computed_dataset
 
 
 def _calculate_load_fraction(merged_dataset: pd.DataFrame) -> pd.DataFrame:
@@ -646,10 +655,6 @@ def _calculate_load_fraction(merged_dataset: pd.DataFrame) -> pd.DataFrame:
     year, adjusted for the amount of hours tracked in the dataset. The
     function assumes that time is in hourly frequency. Changes should be
     made if a different frequency is used.
-
-    The fraction is calculated on the computed dataset: the merge of the
-    annual totals back into the dataset in dask failed with many
-    entities and years (#147).
 
     Parameters
     ----------
@@ -768,6 +773,15 @@ def run_data_assemply(
         file_path=file,
     )
 
+    if start_year and end_year:
+        # Keep the specified year range, before the merges: the other
+        # datasets have no local year, and the merges keep only the
+        # rows of all the datasets.
+        temperature = temperature[
+            (temperature["Local year"] >= start_year)
+            & (temperature["Local year"] <= end_year)
+        ]
+
     # Combine datasets into a list for merging.
     datasets_to_merge = [
         annual_electricity_demand_per_capita,
@@ -780,23 +794,15 @@ def run_data_assemply(
         # Add electricity demand data if assembling for training.
         datasets_to_merge.append(_load_electricity_demand(file_path=file))
 
-    # Merge datasets on common columns, and compute the merged dataset
-    # once.
+    # Merge datasets on common columns.
     assembled_data = _merge_datasets(
         datasets_to_merge,
         ["Time (UTC)", "Entity code"],
-    ).compute()
+    )
 
     if target_use == "training":
         # Calculate load fraction for training data.
         assembled_data = _calculate_load_fraction(assembled_data)
-
-    if start_year and end_year:
-        # Filter merged data for the specified year range.
-        assembled_data = assembled_data.loc[
-            (assembled_data["Local year"] >= start_year)
-            & (assembled_data["Local year"] <= end_year)
-        ]
 
     # Get the assembled data folder path.
     assembled_data_folder = utils.config.read_folders_structure()[
@@ -811,10 +817,9 @@ def run_data_assemply(
         f"{datetime.datetime.now().astimezone():%Y%m%d_%H%M%S}",
     )
 
-    # Sort the dataset in the order of the entities and of the times:
-    # the merges of dask give the rows in the order of their partitions,
-    # while the windows of the LSTM need consecutive hours (#146). Save
-    # it to CSV and Parquet formats.
+    # Sort the dataset in the order of the entities and of the times,
+    # since the windows of the LSTM need consecutive hours. Save it to
+    # CSV and Parquet formats.
     assembled_data = assembled_data.sort_values(
         ["Entity code", "Time (UTC)"], ignore_index=True
     )

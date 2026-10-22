@@ -12,6 +12,7 @@ import glob
 import os
 
 import assemble
+import dask.callbacks
 import dask.dataframe
 import numpy as np
 import pandas as pd
@@ -269,9 +270,15 @@ def test_merge_datasets():
         )
         frames.append(dask.dataframe.from_pandas(frame, npartitions=3))
 
-    merged = assemble._merge_datasets(frames, ["Time (UTC)", "Entity code"])
+    computations: list[object] = []
+    with dask.callbacks.Callback(start=computations.append):
+        merged = assemble._merge_datasets(
+            frames, ["Time (UTC)", "Entity code"]
+        )
 
-    assert len(merged.compute()) == 3 * len(hours)
+    assert len(merged) == 3 * len(hours)
+    # The merge and its statistics are computed at once.
+    assert len(computations) == 1
 
 
 def test_calculate_load_fraction():
