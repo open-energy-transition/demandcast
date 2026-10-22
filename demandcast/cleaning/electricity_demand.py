@@ -20,7 +20,8 @@ Description:
     that look at runs of values never bridge a gap, whether the data
     source misses the values or an earlier rule removed them. The day of
     a value is the local day of the start of its interval, so that the
-    value at midnight belongs to the day that it ends.
+    value at midnight belongs to the day that it ends, except for the
+    copied days below.
 
     The cleaning screens the values with statistical rules, which look
     for what errors usually look like rather than for the errors of
@@ -37,7 +38,10 @@ Description:
       is more likely a stuck reading or filled data than the demand.
     - copied_day: the days, in local time, whose values repeat those of
       an earlier day at the same times of the day, once rounded to 0.01
-      MW, which is more likely copied data than the demand.
+      MW, which is more likely copied data than the demand. The days
+      are taken from the starts of the intervals and from their ends,
+      since a data source copies its days by whichever its times mark,
+      such as Taipower on 2017-09-24 by the ends.
     - spike: a run of values that leaves the level of the values just
       before and after it, without gaps, and comes back to it within 30
       minutes. The values change by more than 20% below a resolution of
@@ -254,11 +258,60 @@ def _find_frozen(values: pd.Series, resolutions: pd.Series) -> pd.Series:
     )
 
 
+def _find_repeated_days(
+    values: pd.Series, local_times: pd.DatetimeIndex
+) -> np.ndarray:
+    """
+    Find the days whose values repeat those of an earlier day.
+
+    Parameters
+    ----------
+    values : pandas.Series
+        The demand.
+    local_times : pandas.DatetimeIndex
+        The local time of each value, without time zone, whose day is
+        the day of the value.
+
+    Returns
+    -------
+    numpy.ndarray
+        True for the values of the repeated days.
+    """
+    days = local_times.normalize()
+    # Each day is compared by its values at their times of the day, so
+    # that days missing other values differ.
+    fingerprints = pd.Series(
+        list(
+            zip(
+                local_times - days,
+                values.round(COPIED_DAY_DECIMALS).to_numpy(),
+                strict=True,
+            )
+        ),
+        index=days,
+    )
+    seen = set()
+    copied = set()
+    for day, day_values in fingerprints.groupby(level=0):
+        if len(day_values) < MIN_VALUES_OF_DAY:
+            continue
+        fingerprint = tuple(day_values)
+        if fingerprint in seen:
+            copied.add(day)
+        else:
+            seen.add(fingerprint)
+    return days.isin(list(copied))
+
+
 def _find_copied_days(
     values: pd.Series, resolutions: pd.Series, time_zone: str
 ) -> pd.Series:
     """
     Find the days whose values repeat those of an earlier day.
+
+    A data source can copy its days by the starts or by the ends of its
+    intervals, whichever its times mark, so the days are taken both
+    ways.
 
     Parameters
     ----------
@@ -276,30 +329,17 @@ def _find_copied_days(
     """
     durations, _ = _get_intervals(values, resolutions)
     starts = _get_local_starts(values, durations, time_zone)
-    days = starts.normalize()
-    # Each day is compared by its values at the times of the day of
-    # their intervals, so that days missing other values differ.
-    fingerprints = pd.Series(
-        list(
-            zip(
-                starts - days,
-                values.round(COPIED_DAY_DECIMALS).to_numpy(),
-                strict=True,
-            )
-        ),
-        index=days,
+    ends = (
+        pd.DatetimeIndex(values.index)
+        .tz_localize("UTC")
+        .tz_convert(time_zone)
+        .tz_localize(None)
     )
-    seen = set()
-    copied = set()
-    for day, day_values in fingerprints.groupby(level=0):
-        if len(day_values) < MIN_VALUES_OF_DAY:
-            continue
-        fingerprint = tuple(day_values)
-        if fingerprint in seen:
-            copied.add(day)
-        else:
-            seen.add(fingerprint)
-    return pd.Series(days.isin(list(copied)), index=values.index)
+    return pd.Series(
+        _find_repeated_days(values, starts)
+        | _find_repeated_days(values, ends),
+        index=values.index,
+    )
 
 
 def _find_spikes(values: pd.Series, resolutions: pd.Series) -> pd.Series:

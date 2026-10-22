@@ -212,21 +212,33 @@ def _local_starts(demand: pd.Series) -> pd.DatetimeIndex:
     )
 
 
-def test_copied_days():
+@pytest.mark.parametrize(
+    ("by_starts", "expected"),
+    [
+        # The hours that start on the day, the last one ends at midnight.
+        (True, "2024-01-03 20:00/2024-01-04 19:00"),
+        # The hours that end on the day, the first one ends at 00:30.
+        (False, "2024-01-03 19:00/2024-01-04 18:00"),
+    ],
+)
+def test_copied_days(by_starts, expected):
     """Test that a day that repeats an earlier day is removed."""
     demand = _demand("2024-01-01 01:00", 24 * 10)
-    # The third local day of India repeats the first one: its hours
-    # start on the day, so the last one ends at midnight.
-    days = _local_starts(demand).normalize()
+    # The third local day of India repeats the first one, with the days
+    # of the starts or of the ends of the hours.
+    times = (
+        _local_starts(demand)
+        if by_starts
+        else _local_starts(demand) + pd.Timedelta(hours=1)
+    )
+    days = times.normalize()
     first = demand[days == pd.Timestamp("2024-01-02")]
     third = days == pd.Timestamp("2024-01-04")
     demand[third] = first.to_numpy()
 
     _, removed = _clean(demand)
 
-    assert _removed_times(removed, "copied_day") == [
-        "2024-01-03 20:00/2024-01-04 19:00"
-    ]
+    assert _removed_times(removed, "copied_day") == [expected]
 
 
 def test_days_with_other_missing_hours_are_not_copies():
