@@ -144,21 +144,23 @@ def test_real_time_solar(fake_downloads, assert_demand, tmp_path):
         [1000.0, 2000.0, 3000.0],
     )
     _serve_forecast_solar(fake_downloads, tmp_path, "2025-07-15", {3: 0.1})
-    # Two zones, each with the same solar at each five minutes of the
-    # first hour (04:00 to 05:00 UTC) and 10 MW more in the second, and
-    # no samples in the third.
+    # The eight zones, each with the same solar in each five minutes
+    # that start in the first hour (04:00 to 05:00 UTC) and 10 MW more
+    # in the second, and no samples in the third. The five minutes from
+    # 01:30, without the last zone, are left out.
     samples = [
         {
             "interval_begin_date": (
                 f"2025-07-15T{minutes // 60:02d}:{minutes % 60:02d}:00.000-04:00"
             ),
             "load_zone_id": zone,
-            "load_zone_name": name,
+            "load_zone_name": f".Z.ZONE{zone}",
             "estimated_load_mw": 500,
-            "estimated_btm_pv_mw": 5.0 if minutes <= 60 else 15.0,
+            "estimated_btm_pv_mw": 5.0 if minutes < 60 else 15.0,
         }
-        for minutes in range(0, 125, 5)
-        for zone, name in ((4001, ".Z.MAINE"), (4004, ".Z.CONNECTICUT"))
+        for minutes in range(0, 120, 5)
+        for zone in range(4001, 4009)
+        if (minutes, zone) != (90, 4008)
     ]
     fake_downloads.serve(
         isone.get_url(
@@ -181,15 +183,15 @@ def test_real_time_solar(fake_downloads, assert_demand, tmp_path):
     )
 
     # The hour from 00:00 to 01:00 in local time ends at 05:00 UTC and
-    # takes the samples after 00:00 and until 01:00.
+    # takes the five minutes that start from 00:00 to 00:55.
     third_hour = pd.DatetimeIndex([pd.Timestamp("2025-07-15 07:00", tz="UTC")])
     capacity = isone._get_distributed_solar_capacity(third_hour)[0]
     assert_demand(
         time_series,
         "UTC",
         {
-            "2025-07-15 05:00": 1010.0,
-            "2025-07-15 06:00": 2030.0,
+            "2025-07-15 05:00": 1040.0,
+            "2025-07-15 06:00": 2120.0,
             "2025-07-15 07:00": 3000.0 + 0.1 * capacity * 0.98,
         },
     )
