@@ -14,6 +14,10 @@ Description:
     CAISO and its OASIS API an hour earlier. The module moves them back
     by an hour in the demand of California.
 
+    The demand of the regions leaves out the solar behind the meters.
+    For New England, isone.py gives the gross demand, with the estimate
+    of ISO New England of this solar added.
+
     Source: https://www.eia.gov/opendata/browser/electricity/rto/region-data
 """
 
