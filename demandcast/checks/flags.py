@@ -25,9 +25,11 @@ Description:
     The flags of the combined electricity demand of each code (see
     cleaning/combining.py) have the data source "combined". A combined
     flag takes the review that has the data source "combined", if there
-    is one, and otherwise that of the same flag and period of its main
-    source, the data source of most of the hours of the flagged period:
-    a flag that comes from the data of a source is reviewed once.
+    is one, and otherwise, if its main source, the data source of most
+    of the hours of the flagged period, has the same flag in the same
+    period, the review of that flag: a flag that comes from the data of
+    a source is reviewed once. A flag that its main source does not
+    have comes from the combination and needs its own review.
 
     The report, checks/flags_report.csv and checks/flags_report.md,
     lists the flags that have not been reviewed, those that have, with
@@ -276,12 +278,30 @@ def _add_reviews(flags: pd.DataFrame, reviews: list[Review]) -> pd.DataFrame:
         The flags, with the verdict ("verdict") and the note ("note") of
         their review, empty if they have not been reviewed, and the data
         source of the review ("review_of"): a combined flag without its
-        own review takes that of its main source.
+        own review takes that of the same flag of its main source.
     """
+    source_flags = set(
+        zip(
+            flags["data_source"].astype(str),
+            flags["code"].astype(str),
+            flags["flag"].astype(str),
+            flags["period"].astype(str),
+            strict=True,
+        )
+    )
     verdicts, notes, reviews_of = [], [], []
     for row in flags.itertuples():
         data_sources = [str(row.data_source)]
-        if row.data_source == COMBINED:
+        if (
+            row.data_source == COMBINED
+            and (
+                str(row.main_source),
+                str(row.code),
+                str(row.flag),
+                str(row.period),
+            )
+            in source_flags
+        ):
             data_sources.append(str(row.main_source))
         review = next(
             (

@@ -199,8 +199,21 @@ def test_combined_flags(checks_folder):
     Test the reviews of the flags of the combined electricity demand.
 
     A combined flag takes its own review, or that of the same flag of
-    its main source, the source of most of the hours of its period.
+    its main source, the source of most of the hours of its period, if
+    the main source has the flag.
     """
+    # A review of all the annual changes of the main source, which has
+    # none: the annual change of the combined data comes from the
+    # combination.
+    with open(os.path.join(checks_folder, "reviewed_flags.yaml"), "a") as file:
+        file.write(
+            "  - data_source: aemo_nem\n"
+            "    code: AUS_SA\n"
+            "    flag: annual_change\n"
+            "    verdict: false_positive\n"
+            "    note: Not a change.\n"
+        )
+    _save_flags("AUS_SA_aemo_nem", [("midday_dip", "DJF 2024")])
     file_path = utils.config.get_electricity_demand_file_path(
         "combined", "AUS_SA"
     )
@@ -221,26 +234,29 @@ def test_combined_flags(checks_folder):
             ("midday_dip", "DJF 2024"),
             ("midday_dip", "MAM 2024"),
             ("time_lag", "DJF 2024"),
+            ("annual_change", "2024"),
         ],
         stage="combined",
     )
 
     flags = checks.flags.run_check()
 
-    assert flags[
-        ["data_source", "main_source", "verdict", "review_of"]
+    combined = flags[flags["data_source"] == "combined"]
+    assert combined[
+        ["flag", "main_source", "verdict", "review_of"]
     ].to_numpy().tolist() == [
-        ["combined", "aemo_nem", "net_demand", "aemo_nem"],
-        ["combined", "aemo_nem", "", ""],
-        ["combined", "aemo_nem", "net_demand", "combined"],
+        ["midday_dip", "aemo_nem", "net_demand", "aemo_nem"],
+        ["midday_dip", "aemo_nem", "", ""],
+        ["time_lag", "aemo_nem", "net_demand", "combined"],
+        ["annual_change", "aemo_nem", "", ""],
     ]
     with open(os.path.join(checks_folder, "flags_report.md")) as file:
         report = file.read()
     # The flags of the sources have no combined flags in their count.
-    assert "0 flags of 0 series, 0 not reviewed" in report
+    assert "1 flags of 1 series, 0 not reviewed" in report
     assert (
-        "3 flags of 1 codes: 1 with the review of the same flag of their "
-        "main source, 1 with their own review, and 1 not reviewed."
+        "4 flags of 1 codes: 1 with the review of the same flag of their "
+        "main source, 1 with their own review, and 2 not reviewed."
     ) in report
     assert "| AUS_SA | midday_dip | MAM 2024 | aemo_nem |" in report
     assert (
