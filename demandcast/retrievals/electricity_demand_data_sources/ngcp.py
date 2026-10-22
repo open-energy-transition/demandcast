@@ -93,18 +93,10 @@ def download_and_extract_data_for_request(
     url = get_url()
 
     # Download the Excel file once, and read its sheets below.
-    excel_file = utils.fetcher.fetch_data(
+    excel_file = utils.fetcher.fetch_excel_file(
         url,
-        "html",
-        read_as="excel_file",
         header_params={"User-Agent": "Mozilla/5.0"},
     )
-
-    if not isinstance(excel_file, pd.ExcelFile):
-        raise TypeError(
-            f"The extracted data is a {type(excel_file)} object, "
-            "expected a pandas ExcelFile."
-        )
 
     # Define the main regions in the Philippines.
     regions = ["LUZON", "VISAYAS", "MINDANAO"]

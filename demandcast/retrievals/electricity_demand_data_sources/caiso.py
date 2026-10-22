@@ -66,11 +66,6 @@ def get_available_requests(
     -------
     list[tuple[int, int | None]]
         The list of available requests.
-
-    Raises
-    ------
-    TypeError
-        If the extracted page is not a string.
     """
     # Requests before 2024.
     requests_before: list[tuple[int, int | None]] = [
@@ -78,17 +73,9 @@ def get_available_requests(
     ]
 
     # Read the page that lists the files.
-    page = utils.fetcher.fetch_data(
+    page = utils.fetcher.fetch_text(
         "https://www.caiso.com/library/historical-ems-hourly-load",
-        "html",
-        read_as="text",
     )
-
-    # Make sure the page is a string.
-    if not isinstance(page, str):
-        raise TypeError(
-            f"The extracted page is a {type(page)} object, expected a string."
-        )
 
     # Find the months of the monthly files, such as
     # "historical-ems-hourly-load-for-may-2026.xlsx", or

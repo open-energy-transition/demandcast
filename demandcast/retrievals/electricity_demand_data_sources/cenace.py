@@ -45,7 +45,6 @@ import zoneinfo
 from io import BytesIO, StringIO
 
 import pandas as pd
-import requests
 import utils.fetcher
 import utils.time_series
 import utils.time_zones
@@ -124,8 +123,6 @@ def download_and_extract_data_for_request(
 
     Raises
     ------
-    TypeError
-        If the response is not a requests.Response object.
     ValueError
         If the retrieval period is longer than 1 year, or if a file of
         the archive has no header.
@@ -177,22 +174,13 @@ def download_and_extract_data_for_request(
     header_params = {"User-Agent": "Mozilla/5.0"}
 
     # Fetch HTML content from the URL.
-    response = utils.fetcher.fetch_data(
+    response = utils.fetcher.fetch_response(
         url,
-        "html",
-        read_with="requests.post",
-        read_as="plain",
+        "POST",
         header_params=header_params,
         post_data_params=post_data_params,
         query_aspx_webpage=True,
     )
-
-    # Make sure the response is a requests.Response object.
-    if not isinstance(response, requests.Response):
-        raise TypeError(
-            f"The extracted response is a {type(response)} object, "
-            "expected a requests.Response object."
-        )
 
     # Extract the zip file from the HTML content.
     archive = zipfile.ZipFile(BytesIO(response.content), "r")

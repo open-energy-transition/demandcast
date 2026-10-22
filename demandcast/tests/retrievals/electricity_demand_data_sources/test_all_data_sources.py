@@ -128,7 +128,7 @@ def test_module(data_source):
 def test_requests(data_source, monkeypatch):
     """Test that the requests of the source match its download."""
     monkeypatch.setattr(socket.socket, "connect", _no_network)
-    monkeypatch.setattr(utils.fetcher, "fetch_data", _no_network)
+    monkeypatch.setattr(utils.fetcher, "_with_retries", _no_network)
     module = importlib.import_module(
         f"retrievals.electricity_demand_data_sources.{data_source}"
     )
