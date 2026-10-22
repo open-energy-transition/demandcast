@@ -23,7 +23,7 @@ The scenarios (SSP, IAMC and CMIP6), the climate models and the years of each pr
 ## Layout
 
 - `demandcast/`: the Python project. Run all Python commands from this folder, because modules are imported as top-level packages (`import utils.config`, not `import demandcast.utils.config`).
-  - `retrievals/`: data retrieval. Each electricity demand source is a module plus a YAML file in `retrievals/electricity_demand_data_sources/`.
+  - `retrievals/`: data retrieval. Each electricity demand source is a module plus a YAML file in `retrievals/electricity_demand_data_sources/`. The indicators (population, GDP PPP per capita, annual electricity demand per capita) save their years and scenarios with `retrievals/indicators.py`, and the gridded data extracts each country and subdivision with `retrievals/gridded.py`.
   - `ml_models/`: the models. `registry.py` lists them and defines the interface of their modules (`ModelModule`).
   - `utils/`: shared helpers; CI requires at least 95% test coverage.
   - `tests/`: the pytest suite, in folders that mirror the code: the tests of `utils/ml.py` are in `tests/utils/test_ml.py`, and those of the scripts are at the top of `tests/`.

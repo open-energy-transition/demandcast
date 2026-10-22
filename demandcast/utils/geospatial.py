@@ -8,7 +8,7 @@ Description:
 
 import importlib
 import os
-from typing import cast
+from typing import Literal, cast
 
 import geopandas
 import numpy as np
@@ -532,13 +532,8 @@ def _aggregate_gridded_data(
         The total value of the variable for the country or subdivision.
     """
     # Define the path to the gridded data.
-    gridded_data_path = os.path.join(
-        utils.paths.get_gridded_folder(
-            cast(utils.paths.GriddedVariable, variable), "processed"
-        ),
-        f"{code}_0.25_deg_{year}"
-        + (f"_{scenario}" if scenario else "")
-        + ".nc",
+    gridded_data_path = utils.paths.get_gridded_file(
+        cast(Literal["population", "gdp_ppp"], variable), code, year, scenario
     )
 
     if not os.path.exists(gridded_data_path):

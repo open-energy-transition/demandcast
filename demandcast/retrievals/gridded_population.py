@@ -23,17 +23,15 @@ Description:
 import logging
 import os
 import zipfile
+from typing import cast
 
 import requests
 import utils.catalogue
-import utils.entities
-import utils.figures
 import utils.geospatial
 import utils.paths
-import utils.scenarios
-import utils.shapes
 import xarray
-from tqdm import tqdm
+
+import retrievals.gridded
 
 
 def _download_historical_gridded_population_density(
@@ -301,138 +299,78 @@ def run_data_retrieval(
     scenario : str | None
         The scenario of the population data to be retrieved.
     """
-    # Get the directory to store the population data.
-    result_directory = utils.paths.get_gridded_folder(
-        "population", "processed"
-    )
-    os.makedirs(result_directory, exist_ok=True)
+    raw_directory = utils.paths.get_gridded_folder("population", "raw")
 
-    # Get the directory to store the downloaded population data.
-    downloaded_data_directory = utils.paths.get_gridded_folder(
-        "population", "raw"
-    )
-    os.makedirs(downloaded_data_directory, exist_ok=True)
+    def get_global_grid(
+        selected_year: int, selected_scenario: str | None
+    ) -> xarray.DataArray:
+        """
+        Download, if needed, and read the global population of a year.
 
-    # Get the list of year and scenario combinations.
-    year_scenario_list = utils.scenarios.get_year_and_scenario_combinations(
+        Parameters
+        ----------
+        selected_year : int
+            The year.
+        selected_scenario : str | None
+            The scenario, none for a historical year.
+
+        Returns
+        -------
+        xarray.DataArray
+            The population density of a historical year, or the
+            population of a future year.
+        """
+        if selected_year <= 2020:
+            _download_historical_gridded_population_density(
+                raw_directory, selected_year
+            )
+        elif selected_year >= 2025 and selected_scenario is not None:
+            _download_future_gridded_population(
+                raw_directory, selected_scenario
+            )
+        return _read_population_dataset(
+            raw_directory, selected_year, selected_scenario
+        )
+
+    def process(
+        population: retrievals.gridded.Grid,
+        bounds: retrievals.gridded.Bounds,
+        selected_year: int,
+    ) -> retrievals.gridded.Grid:
+        """
+        Get the population count at the resolution of the weather data.
+
+        Parameters
+        ----------
+        population : retrievals.gridded.Grid
+            The population density of a historical year, or the
+            population of a future year, of a country or subdivision.
+        bounds : retrievals.gridded.Bounds
+            The bounds of the country or subdivision.
+        selected_year : int
+            The year.
+
+        Returns
+        -------
+        retrievals.gridded.Grid
+            The population, at 0.25 degrees.
+        """
+        population = cast(xarray.DataArray, population)
+        if selected_year in utils.catalogue.GRIDDED_POPULATION_YEARS:
+            # Convert the population density to population count.
+            population = utils.geospatial.from_density_to_count(population)
+        return utils.geospatial.coarsen(population, bounds)
+
+    retrievals.gridded.run_retrieval(
+        "population",
+        "population",
+        code,
+        file,
         year,
         start_year,
         end_year,
-        list(utils.catalogue.GRIDDED_POPULATION_YEARS),
-        list(utils.catalogue.PROJECTION_YEARS),
         scenario,
-        list(utils.catalogue.SSP_SCENARIOS),
+        utils.catalogue.GRIDDED_POPULATION_YEARS,
+        get_global_grid,
+        process,
     )
-
-    # Get the list of codes of the countries and subdivisions of
-    # interest.
-    codes = utils.entities.check_and_get_codes_with(
-        "all_data", code=code, file_path=file
-    )
-
-    # Loop over the years and scenarios.
-    for selected_year, selected_scenario in tqdm(
-        year_scenario_list, desc="Years and scenarios"
-    ):
-        logging.info(
-            f"Processing gridded population data for the year {selected_year}"
-            + (
-                f" and scenario {selected_scenario}."
-                if selected_scenario
-                else "."
-            )
-        )
-
-        if selected_year <= 2020:
-            # Download historical population density data.
-            _download_historical_gridded_population_density(
-                downloaded_data_directory, selected_year
-            )
-        elif selected_year >= 2025 and selected_scenario is not None:
-            # Download future population data.
-            _download_future_gridded_population(
-                downloaded_data_directory, selected_scenario
-            )
-
-        # Define the year and scenario string for the file name.
-        year_scenario = (
-            f"{selected_year}_{selected_scenario}"
-            if selected_scenario
-            else str(selected_year)
-        )
-
-        # Read the population dataset for the specified year and
-        # scenario.
-        global_population_dataset = _read_population_dataset(
-            downloaded_data_directory, selected_year, selected_scenario
-        )
-
-        # Loop over the countries and subdivisions of interest.
-        for entity_code in codes:
-            # Define the file path of the population for the country or
-            # subdivision.
-            file_path = os.path.join(
-                result_directory, f"{entity_code}_0.25_deg_{year_scenario}.nc"
-            )
-
-            if not os.path.exists(file_path):
-                logging.info(
-                    f"Extracting gridded population data for {entity_code}."
-                )
-
-                # Get the shape of the country or subdivision.
-                entity_shape = utils.shapes.get_entity_shape(
-                    entity_code, make_plot=False
-                )
-
-                # Get the lateral bounds of the country or subdivision
-                # of interest.
-                entity_bounds = utils.shapes.get_entity_bounds(
-                    entity_shape
-                )  # West, South, East, North
-
-                # Select the population data within the bounds of the
-                # country or subdivision.
-                population_dataset = global_population_dataset.sel(
-                    x=slice(entity_bounds[0], entity_bounds[2]),
-                    y=slice(entity_bounds[1], entity_bounds[3]),
-                )
-
-                if selected_year in utils.catalogue.GRIDDED_POPULATION_YEARS:
-                    # Convert the population density to population
-                    # count.
-                    population = utils.geospatial.from_density_to_count(
-                        population_dataset
-                    )
-                else:
-                    population = population_dataset
-
-                # Coarsen the population to the same resolution as the
-                # weather data.
-                population = utils.geospatial.coarsen(
-                    population, entity_bounds
-                )
-
-                # Save the population data to a NetCDF file.
-                population.to_netcdf(file_path)
-
-                make_plot = False
-                if make_plot:
-                    # Make a plot of the population data.
-                    utils.figures.simple_plot(
-                        population,
-                        f"population_{entity_code}_{year_scenario}",
-                    )
-
-                logging.info(
-                    f"Gridde population data for {entity_code} has been "
-                    "successfully "
-                    "extracted and saved."
-                )
-
-            else:
-                logging.info(
-                    f"Gridde population data for {entity_code} already "
-                    "exists. "
-                    "Skipping extraction."
-                )

@@ -199,17 +199,9 @@ def _load_gridded_population_data(
         else None
     )
 
-    # # Define the directory where the population data is stored.
-    population_data_directory = utils.paths.get_gridded_folder(
-        "population", "processed"
-    )
-
     # Define the file path of the population data.
-    population_data_file_path = os.path.join(
-        population_data_directory,
-        f"{code}_0.25_deg_{population_year}"
-        + (f"_{population_scenario}" if population_scenario else "")
-        + ".nc",
+    population_data_file_path = utils.paths.get_gridded_file(
+        "population", code, int(population_year), population_scenario
     )
 
     # Check if the population data file does not exist and download if

@@ -43,19 +43,14 @@ Description:
     the same.
 """
 
-import logging
-import os
 from typing import cast
 
 import numpy as np
 import pandas as pd
 import utils.catalogue
-import utils.entities
-import utils.paths
 import utils.scenarios
-import utils.time_series
-from tqdm import tqdm
 
+import retrievals.indicators
 from retrievals.socio_economic_data_sources import ember, iiasa, world_bank
 
 # The years that Ember and the World Bank both need for the ratio of a
@@ -145,13 +140,6 @@ def run_data_retrieval(
         The scenario of the electricity demand per capita data to be
         retrieved.
     """
-    # Get the directory to store the annual electricity demand per
-    # capita data.
-    result_directory = utils.paths.get_indicator_folder(
-        "annual_electricity_demand_per_capita"
-    )
-    os.makedirs(result_directory, exist_ok=True)
-
     # Download the historical electricity demand per capita data.
     global_historical_electricity_demand_per_capita = get_historical_data()
 
@@ -160,23 +148,27 @@ def run_data_retrieval(
         "annual_electricity_demand_per_capita"
     )
 
-    # Get the list of codes of the countries and subdivisions of
-    # interest.
-    codes = utils.entities.check_and_get_codes_with(
-        "all_data", code=code, file_path=file
-    )
+    def get_request(entity_code: str) -> retrievals.indicators.Request:
+        """
+        Get the years and scenarios of a country or subdivision.
 
-    # Get the available scenarios.
-    available_scenarios = list(utils.catalogue.IAMC_SCENARIOS)
+        A subdivision has the data of its country. The projections
+        start after the last historical year of the country, from its
+        value.
 
-    # Loop over the countries and subdivisions.
-    for entity_code in tqdm(codes, desc="Countries and subdivisions"):
+        Parameters
+        ----------
+        entity_code : str
+            The code of the country or subdivision.
+
+        Returns
+        -------
+        retrievals.indicators.Request
+            The request.
+        """
         # Get the ISO Alpha-3 code of the country itself or the country
         # to which the subdivision belongs.
-        iso_alpha_3_code = entity_code.split("_")[0]
-
-        # Get the time zone of the country or subdivision.
-        time_zone = utils.entities.get_time_zone(entity_code)
+        iso_alpha_3_code = entity_code.split("_", maxsplit=1)[0]
 
         # Extract the electricity data for the country.
         historical_electricity_demand_per_capita = cast(
@@ -186,15 +178,14 @@ def run_data_retrieval(
             ],
         ).dropna()
 
-        # Get the years of available historical data.
+        # Get the years of available historical and future data.
         available_historical_years = (
             historical_electricity_demand_per_capita.index.tolist()
         )
-
-        # Get the years of available future data.
+        last_historical_year = max(available_historical_years)
         available_future_years = list(
             range(
-                max(available_historical_years) + 1,
+                last_historical_year + 1,
                 utils.catalogue.LAST_PROJECTION_YEAR + 1,
             )
         )
@@ -208,105 +199,52 @@ def run_data_retrieval(
                 available_historical_years,
                 available_future_years,
                 scenario,
-                available_scenarios,
+                list(utils.catalogue.IAMC_SCENARIOS),
             )
         )
 
-        # Define the file path of the electricity demand per capita
-        # data of the country or subdivision.
-        file_path_without_ext = os.path.join(result_directory, entity_code)
-
-        # Get the selected historical years.
-        selected_historical_years = list(
-            {year for year, scenario in year_scenario_list if scenario is None}
+        return retrievals.indicators.Request(
+            historical_years=list(
+                {
+                    year
+                    for year, scenario in year_scenario_list
+                    if scenario is None
+                }
+            ),
+            future_years=list(
+                {
+                    year
+                    for year, scenario in year_scenario_list
+                    if scenario is not None
+                }
+            ),
+            scenarios=list(
+                {
+                    scenario
+                    for __, scenario in year_scenario_list
+                    if scenario is not None
+                }
+            ),
+            get_historical_values=lambda: (
+                historical_electricity_demand_per_capita
+            ),
+            get_future_values=lambda selected_scenario: iiasa.extrapolate(
+                global_future_electricity_demand_per_capita_growth_rates,
+                iso_alpha_3_code,
+                selected_scenario,
+                historical_electricity_demand_per_capita.loc[
+                    last_historical_year
+                ],
+                last_historical_year,
+                available_future_years,
+            ),
         )
 
-        # Get the selected future years.
-        selected_future_years = list(
-            {
-                year
-                for year, scenario in year_scenario_list
-                if scenario is not None
-            }
-        )
-
-        # Get the selected scenarios.
-        selected_scenarios = list(
-            {
-                scenario
-                for __, scenario in year_scenario_list
-                if scenario is not None
-            }
-        )
-
-        if selected_historical_years:
-            logging.info(
-                "Extracting historical annual electricity per capita data "
-                f"for {entity_code}."
-            )
-
-            # Save the selected years as hourly values.
-            utils.time_series.save_yearly_values(
-                historical_electricity_demand_per_capita,
-                selected_historical_years,
-                "Annual electricity demand per capita (kWh)",
-                file_path_without_ext,
-                time_zone,
-            )
-
-            logging.info(
-                "Historical annual electricity per capita data for "
-                f"{entity_code} "
-                "has been extracted and saved successfully."
-            )
-
-        if selected_future_years:
-            for selected_scenario in selected_scenarios:
-                # Define the file path of the scenario data, with the
-                # file name that assemble.py reads.
-                scenario_file_path_without_ext = (
-                    f"{file_path_without_ext}_"
-                    f"{selected_scenario.replace('-', '_')}"
-                )
-
-                logging.info(
-                    f"Extracting future annual electricity demand per "
-                    f"capita data for {entity_code} and "
-                    f"{selected_scenario}."
-                )
-
-                # Get the last year and value of the historical
-                # electricity demand per capita.
-                last_historical_year = max(available_historical_years)
-                last_historical_value = (
-                    historical_electricity_demand_per_capita.loc[
-                        last_historical_year
-                    ]
-                )
-
-                # Calculate the future electricity demand per
-                # capita.
-                future_electricity_demand_per_capita = iiasa.extrapolate(
-                    global_future_electricity_demand_per_capita_growth_rates,
-                    iso_alpha_3_code,
-                    selected_scenario,
-                    last_historical_value,
-                    last_historical_year,
-                    available_future_years,
-                )
-
-                # Save the selected years as hourly values.
-                utils.time_series.save_yearly_values(
-                    future_electricity_demand_per_capita,
-                    selected_future_years,
-                    "Annual electricity demand per capita (kWh)",
-                    scenario_file_path_without_ext,
-                    time_zone,
-                )
-
-                logging.info(
-                    f"Future annual electricity demand per capita data "
-                    f"for {entity_code} and {selected_scenario} has been "
-                    "extracted "
-                    "and saved successfully."
-                )
+    retrievals.indicators.run_retrieval(
+        "annual_electricity_demand_per_capita",
+        "Annual electricity demand per capita (kWh)",
+        "annual electricity demand per capita",
+        code,
+        file,
+        get_request,
+    )

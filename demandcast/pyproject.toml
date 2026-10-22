@@ -110,7 +110,8 @@ filterwarnings = [
 [tool.coverage.run]
 branch = true
 source = ["."]
-omit = ["tests/*", "archive/*", ".venv/*"]
+# The sources of compiled extensions, such as netCDF4, are not ours.
+omit = ["tests/*", "archive/*", ".venv/*", "*.pyx"]
 
 [tool.coverage.report]
 show_missing = true

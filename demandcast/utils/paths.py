@@ -182,6 +182,39 @@ def get_gridded_folder(
     return get_data_folder(f"gridded_{variable}", stage)
 
 
+def get_gridded_file(
+    variable: Literal["population", "gdp_ppp"],
+    code: str,
+    year: int,
+    scenario: str | None = None,
+) -> str:
+    """
+    Get the path of the grid of a country or subdivision.
+
+    Parameters
+    ----------
+    variable : str
+        The gridded variable, "population" or "gdp_ppp".
+    code : str
+        The code of the country or subdivision.
+    year : int
+        The year of the grid.
+    scenario : str | None, optional
+        The scenario of the grid, none for a historical year.
+
+    Returns
+    -------
+    str
+        The path of the NetCDF file in the processed folder of the
+        variable, <code>_0.25_deg_<year>[_<scenario>].nc, at the
+        resolution of the weather data.
+    """
+    name = f"{code}_0.25_deg_{year}" + (f"_{scenario}" if scenario else "")
+    return os.path.join(
+        get_gridded_folder(variable, "processed"), f"{name}.nc"
+    )
+
+
 def get_indicator_folder(indicator: Indicator) -> str:
     """
     Get the folder of the time series of an indicator.
