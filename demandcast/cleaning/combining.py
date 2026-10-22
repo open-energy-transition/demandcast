@@ -19,24 +19,32 @@ Description:
        as the EIA): a copy cannot count more than the original, even
        when its definition is less known, as for the CCEI, whose
        definition differs by province.
-    3. By the definition of their demand, hour by hour: the gross demand
-       (with the embedded generation included or added) before the one
-       whose embedded generation is unknown, before the net demand. The
-       seasons flagged with a midday dip that the reviews find to be net
-       demand count as net, and those that they find to be errors of the
-       source or of its reading come last.
+    3. By the definition of their demand, on average over their hours:
+       the gross demand (with the embedded generation included or
+       added) before the one whose embedded generation is unknown,
+       before the net demand. The seasons flagged with a midday dip that
+       the reviews find to be net demand count as net.
     4. The longer data before the shorter.
+
+    The ranking is of whole sources, not hour by hour: a source keeps
+    its rank in all its hours, so that the series does not switch
+    between sources at each change of their definitions. The hours of
+    the seasons whose flags the reviews find to be errors of the source
+    or of its reading are taken out of their source, and come after all
+    the sources: they fill only the hours that no source gives.
 
     The best source gives all its hours. Each of the others, in order,
     fills only the hours outside the range of the hours already combined
     and the gaps of at least a day in it, so that the series does not
     switch between sources at each missing hour. A source fills them
     only if it gives the same quantity as the hours already combined:
-    over at least 30 days of common hours, the median of its ratio to
-    them must be within 2% of 1, and 90% of the ratios within 5% of 1.
-    A source without enough common hours, such as one that ends before
-    the other starts, fills them too, and the step between them shows in
-    the flags of the annual change of the combined series.
+    over its common hours with them, the median of its ratio to them
+    must be within 2% of 1, and 90% of the ratios within 5% of 1. With
+    less than 7 days of common hours, such as for a source that ends
+    before the other starts, the ratios cannot show whether it gives the
+    same quantity: it fills the hours, as unverified, and the step
+    between them shows in the flags of the annual change of the combined
+    series.
 """
 
 import logging
@@ -69,7 +77,7 @@ SHORTEST_GAP = pd.Timedelta(hours=24)
 
 # The common hours needed to compare two sources, and the largest
 # differences of their ratio from 1, for its median and for 90% of it.
-SHORTEST_OVERLAP_HOURS = 30 * 24
+SHORTEST_OVERLAP_HOURS = 7 * 24
 LARGEST_MEDIAN_DIFFERENCE = 0.02
 LARGEST_SPREAD = 0.05
 
@@ -196,7 +204,9 @@ def _get_definition_ranks(
     return ranks
 
 
-def _rank_data_sources(code: str, cleaned: dict[str, pd.Series]) -> list[str]:
+def _rank_data_sources(
+    code: str, cleaned: dict[str, pd.Series], ranks: dict[str, np.ndarray]
+) -> list[str]:
     """
     Rank the data sources of a code, from the best.
 
@@ -206,6 +216,8 @@ def _rank_data_sources(code: str, cleaned: dict[str, pd.Series]) -> list[str]:
         The code of the country or subdivision.
     cleaned : dict[str, pandas.Series]
         The cleaned electricity demand of each data source.
+    ranks : dict[str, numpy.ndarray]
+        The rank of the definition of each hour of each data source.
 
     Returns
     -------
@@ -219,12 +231,11 @@ def _rank_data_sources(code: str, cleaned: dict[str, pd.Series]) -> list[str]:
             for entity in utils.entities.read_entities(data_source)
             if entity.code == code
         )
-        times = pd.DatetimeIndex(cleaned[data_source].index)
         return (
             not entity.same_area,
             utils.entities.read_compiled(data_source),
-            float(_get_definition_ranks(code, data_source, times).mean()),
-            -len(times),
+            float(ranks[data_source].mean()),
+            -len(cleaned[data_source]),
         )
 
     return sorted(cleaned, key=key)
@@ -278,11 +289,8 @@ def _is_same_quantity(comparison: dict[str, float]) -> bool:
     Returns
     -------
     bool
-        Whether the source has too few common hours to compare, or the
-        ratios of the common hours are close to 1.
+        Whether the ratios of the common hours are close to 1.
     """
-    if comparison["common_hours"] < SHORTEST_OVERLAP_HOURS:
-        return True
     return (
         abs(comparison["median_ratio"] - 1) <= LARGEST_MEDIAN_DIFFERENCE
         and comparison["low_ratio"] >= 1 - LARGEST_SPREAD
@@ -324,7 +332,9 @@ def _get_hours_to_fill(
 
 
 def _combine(
-    cleaned: dict[str, pd.Series], ranked: list[str]
+    cleaned: dict[str, pd.Series],
+    ranked: list[str],
+    errors: dict[str, pd.Series] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Combine the electricity demand of the ranked data sources.
@@ -335,6 +345,9 @@ def _combine(
         The cleaned electricity demand of each data source.
     ranked : list[str]
         The data sources, from the best.
+    errors : dict[str, pandas.Series] | None, optional
+        The hours of each data source that the reviews of its flags find
+        to be errors, taken out of its cleaned demand.
 
     Returns
     -------
@@ -342,38 +355,44 @@ def _combine(
         The combined electricity demand ("Load (MW)") and the data
         source of each hour ("Source"), and the table of the sources.
     """
-    best = ranked[0]
-    combined = cleaned[best]
-    sources = pd.Series(best, index=combined.index)
-    rows = [
-        {
-            "data_source": best,
-            "rank": 1,
-            "hours": len(combined),
-            "first": combined.index[0],
-            "last": combined.index[-1],
-            "common_hours": 0,
-            "median_ratio": np.nan,
-            "low_ratio": np.nan,
-            "high_ratio": np.nan,
-            "used_hours": len(combined),
-            "decision": "best",
-        }
+    # The data sources from the best, and then their errors.
+    entries = [
+        (data_source, cleaned[data_source], False) for data_source in ranked
+    ]
+    entries += [
+        (data_source, values, True)
+        for data_source, values in (errors or {}).items()
+        if not values.empty
     ]
 
-    for rank, data_source in enumerate(ranked[1:], start=2):
-        values = cleaned[data_source]
+    combined = pd.Series(dtype="float64")
+    sources = pd.Series(dtype="string")
+    rows = []
+    for rank, (data_source, values, are_errors) in enumerate(entries, start=1):
         comparison = _compare(values, combined)
-        used = pd.DatetimeIndex([])
-        if not _is_same_quantity(comparison):
-            decision = "different quantity"
+        if combined.empty:
+            used, decision = pd.DatetimeIndex(values.index), "best"
+        elif (
+            not are_errors
+            and comparison["common_hours"] >= SHORTEST_OVERLAP_HOURS
+            and not _is_same_quantity(comparison)
+        ):
+            used, decision = pd.DatetimeIndex([]), "different quantity"
         else:
             used = _get_hours_to_fill(combined, pd.DatetimeIndex(values.index))
-            decision = "fills" if len(used) else "not needed"
+            decision = (
+                "not needed"
+                if used.empty
+                else "fills"
+                if comparison["common_hours"] >= SHORTEST_OVERLAP_HOURS
+                else "fills unverified"
+            )
+        if are_errors:
+            decision = "reviewed errors"
         if len(used):
             combined = pd.concat([combined, values[used]]).sort_index()
             sources = pd.concat(
-                [sources, pd.Series(data_source, index=used)]
+                [sources, pd.Series(data_source, index=used, dtype="string")]
             ).sort_index()
         rows.append(
             {
@@ -388,10 +407,8 @@ def _combine(
             }
         )
 
-    combined_data = pd.DataFrame(
-        {"Load (MW)": combined, "Source": sources.astype("string")}
-    )
-    combined_data.index.name = cleaned[best].index.name
+    combined_data = pd.DataFrame({"Load (MW)": combined, "Source": sources})
+    combined_data.index.name = entries[0][1].index.name
     return combined_data, pd.DataFrame(rows, columns=SOURCE_COLUMNS)
 
 
@@ -416,8 +433,32 @@ def combine_data(code: str) -> pd.DataFrame | None:
         logging.warning(f"No data source has cleaned data of {code}.")
         return None
 
-    ranked = _rank_data_sources(code, cleaned)
-    combined, sources = _combine(cleaned, ranked)
+    # Take the hours of the seasons reviewed as errors out of their
+    # source, to fill only the hours that no source gives.
+    ranks = {
+        data_source: _get_definition_ranks(
+            code, data_source, pd.DatetimeIndex(values.index)
+        )
+        for data_source, values in cleaned.items()
+    }
+    errors = {
+        data_source: values[ranks[data_source] == ERROR_RANK]
+        for data_source, values in cleaned.items()
+    }
+    sound = {
+        data_source: values[ranks[data_source] != ERROR_RANK]
+        for data_source, values in cleaned.items()
+    }
+    sound_ranks = {
+        data_source: ranks[data_source][ranks[data_source] != ERROR_RANK]
+        for data_source in cleaned
+    }
+    ranked = _rank_data_sources(
+        code,
+        {source: values for source, values in sound.items() if len(values)},
+        sound_ranks,
+    )
+    combined, sources = _combine(sound, ranked, errors)
 
     file_path = utils.config.get_electricity_demand_file_path("combined", code)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)

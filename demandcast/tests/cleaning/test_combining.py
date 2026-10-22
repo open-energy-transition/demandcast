@@ -138,7 +138,11 @@ def test_source_with_a_spread_ratio():
 
 
 def test_sources_without_common_hours():
-    """Test that a source that starts after the other ends fills."""
+    """
+    Test that a source that starts after the other ends fills.
+
+    Without common hours, it cannot be compared, so it is unverified.
+    """
     before = _hourly("2016-01-01", "2019-12-31 23:00")
     after = _hourly("2024-07-01", "2025-06-30 23:00", 130.0)
 
@@ -149,7 +153,31 @@ def test_sources_without_common_hours():
     assert _on_day(combined, "Source", "2025-01-01").eq("after").all()
     assert sources.loc[1, "common_hours"] == 0
     assert sources["median_ratio"].isna().tolist() == [True, True]
-    assert sources.loc[1, "decision"] == "fills"
+    assert sources.loc[1, "decision"] == "fills unverified"
+
+
+@pytest.mark.parametrize(
+    ("common_days", "decision"),
+    [(10, "different quantity"), (6, "fills unverified")],
+)
+def test_short_overlap(common_days, decision):
+    """
+    Test that a short overlap is enough to show a different quantity.
+
+    The other source gives twice the demand: from 7 days of common
+    hours, it does not fill, and with less it fills, as unverified.
+    """
+    best = _hourly("2023-01-01", "2023-12-31 23:00")
+    start = pd.Timestamp("2024-01-01") - pd.Timedelta(days=common_days)
+    other = _hourly(str(start), "2024-06-30 23:00", 200.0)
+
+    _, sources = cleaning.combining._combine(
+        {"best": best, "other": other}, ["best", "other"]
+    )
+
+    assert sources.loc[1, "common_hours"] == common_days * 24
+    assert sources.loc[1, "median_ratio"] == pytest.approx(2.0)
+    assert sources.loc[1, "decision"] == decision
 
 
 def test_source_not_needed():
@@ -261,3 +289,90 @@ def test_ranks_of_the_seasons_of_net_demand():
     spring = (values.index >= "2023-03-01") & (values.index < "2023-06-01")
     assert (ranks[spring] == 2).all()
     assert (ranks[~spring] == 1).all()
+
+
+def _review_errors(code: str, data_source: str, values: pd.Series) -> None:
+    """
+    Save a cleaned demand whose spring of 2023 is reviewed as an error.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+    data_source : str
+        The data source.
+    values : pandas.Series
+        The demand.
+    """
+    _save_cleaned(code, data_source, values)
+    flags_path = utils.config.get_electricity_demand_file_path(
+        "cleaned", code, data_source
+    ).removesuffix(".parquet")
+    pd.DataFrame(
+        {
+            "start": [pd.Timestamp("2023-03-01")],
+            "end": [pd.Timestamp("2023-05-31")],
+            "flag": ["midday_dip"],
+            "period": ["MAM 2023"],
+            "value": [0.9],
+            "reference": [0.95],
+        }
+    ).to_parquet(flags_path + "_flags.parquet")
+
+
+@pytest.fixture
+def error_review(monkeypatch):
+    """Review the midday dip of ISO-NE in spring 2023 as an error."""
+    review = cleaning.combining.checks.flags.Review(
+        data_source="isone",
+        code="USA_NE",
+        flag="midday_dip",
+        periods=["MAM 2023"],
+        verdict="source_error",
+        note="Wrong data.",
+    )
+    monkeypatch.setattr(
+        cleaning.combining.checks.flags, "read_reviews", lambda: [review]
+    )
+
+
+@pytest.mark.usefixtures("error_review")
+def test_reviewed_errors_come_last():
+    """
+    Test that the hours reviewed as errors come after all the sources.
+
+    ISO-NE, the best source of New England, has an error in the spring
+    of 2023, which the EIA fills, although its demand is net.
+    """
+    _review_errors(
+        "USA_NE", "isone", _hourly("2023-01-01", "2023-12-31 23:00")
+    )
+    _save_cleaned("USA_NE", "eia", _hourly("2023-01-01", "2023-12-31 23:00"))
+
+    combined = cleaning.combining.combine_data("USA_NE")
+
+    assert combined is not None
+    assert _on_day(combined, "Source", "2023-04-15").eq("eia").all()
+    assert _on_day(combined, "Source", "2023-07-15").eq("isone").all()
+    sources = pd.read_parquet(
+        utils.config.get_electricity_demand_file_path(
+            "combined", "USA_NE"
+        ).removesuffix(".parquet")
+        + "_sources.parquet"
+    )
+    assert sources["decision"].tolist() == ["best", "fills", "reviewed errors"]
+    assert sources.loc[2, "used_hours"] == 0
+
+
+@pytest.mark.usefixtures("error_review")
+def test_reviewed_errors_without_another_source():
+    """Test that the reviewed errors fill when no source gives data."""
+    _review_errors(
+        "USA_NE", "isone", _hourly("2023-01-01", "2023-12-31 23:00")
+    )
+
+    combined = cleaning.combining.combine_data("USA_NE")
+
+    assert combined is not None
+    assert len(combined) == 365 * 24
+    assert combined["Source"].eq("isone").all()
