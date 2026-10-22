@@ -431,3 +431,91 @@ def test_assembly_with_wrong_inputs():
         assemble.run_data_assemply("testing")
     with pytest.raises(ValueError, match="start_year and end_year"):
         assemble.run_data_assemply("training", start_year=2024)
+
+
+@pytest.mark.usefixtures("assembly_inputs")
+def test_assembly_for_forecasting_of_scenarios():
+    """
+    Test that the assembly reads the files of the scenarios.
+
+    The files of the scenarios have twice the annual values and a
+    temperature 10 K higher than the historical files, and their names
+    have the scenario, and the climate model of the temperature, in
+    upper case with underscores, as the retrievals write them.
+    """
+    scenario_files: tuple[tuple[utils.paths.Indicator, str], ...] = (
+        ("annual_electricity_demand_per_capita", "SSP2_45"),
+        ("gdp_ppp_per_capita", "SSP3"),
+        ("population", "SSP3"),
+    )
+    for indicator, scenario in scenario_files:
+        folder = utils.paths.get_indicator_folder(indicator)
+        for code in CODES:
+            values = pd.read_parquet(os.path.join(folder, f"{code}.parquet"))
+            (2 * values).to_parquet(
+                os.path.join(folder, f"{code}_{scenario}.parquet")
+            )
+    folder = utils.paths.get_indicator_folder("temperature")
+    for code in CODES:
+        temperature = pd.read_parquet(
+            os.path.join(folder, f"{code}_2024.parquet")
+        )
+        for column in temperature.columns:
+            if column.endswith("(K)"):
+                temperature[column] += 10
+        temperature.to_parquet(
+            os.path.join(folder, f"{code}_2024_CESM2_SSP2_4_5.parquet")
+        )
+
+    assemble.run_data_assemply(
+        "forecasting",
+        scenario_for_annual_electricity_demand_per_capita="SSP2-45",
+        scenario_for_gdp_ppp_per_capita="SSP3",
+        scenario_for_population="SSP3",
+        scenario_for_temperature="SSP2-4.5",
+        climate_model_for_temperature="CESM2",
+    )
+
+    assembled = _read_assembled("forecasting")
+    assert set(assembled["Local year"]) == {2024}
+    assert len(assembled) == len(CODES) * len(_hours([2024]))
+    assert set(assembled["Annual electricity demand per capita (kWh)"]) == {
+        10000.0
+    }
+    assert set(assembled["GDP PPP per capita (2021 international $)"]) == {
+        80000.0
+    }
+    assert set(assembled["Temperature - Top 1 (K)"]) == {290.0}
+
+
+def test_file_paths_of_inputs(caplog):
+    """
+    Test the names of the files of the inputs.
+
+    The temperature has one file per local year, and a missing year is
+    reported.
+    """
+    population, temperature = (
+        next(dataset for dataset in assemble.DATASETS if dataset.name == name)
+        for name in ("population", "temperature")
+    )
+    folder = utils.paths.get_indicator_folder("temperature")
+    os.makedirs(folder)
+    for year in (2031, 2030):
+        open(
+            os.path.join(folder, f"FRA_{year}_CESM2_SSP2_4_5.parquet"), "w"
+        ).close()
+
+    assert assemble._get_file_paths(population, "FRA", "SSP3", None) == [
+        os.path.join(
+            utils.paths.get_indicator_folder("population"), "FRA_SSP3.parquet"
+        )
+    ]
+    assert assemble._get_file_paths(
+        temperature, "FRA", "SSP2-4.5", "CESM2"
+    ) == [
+        os.path.join(folder, f"FRA_{year}_CESM2_SSP2_4_5.parquet")
+        for year in (2030, 2031)
+    ]
+    assert assemble._get_file_paths(temperature, "DEU", None, None) == []
+    assert "No temperature files found for entity code DEU." in caplog.text
