@@ -64,7 +64,7 @@ def read_folders_structure() -> dict[str, str]:
 
 
 def get_electricity_demand_file_path(
-    stage: str, code: str, data_source: str
+    stage: str, code: str, data_source: str | None = None
 ) -> str:
     """
     Get the path of the file of the electricity demand of a stage.
@@ -72,11 +72,11 @@ def get_electricity_demand_file_path(
     Parameters
     ----------
     stage : str
-        The stage of the data, "processed" or "cleaned".
+        The stage of the data, "processed", "cleaned" or "combined".
     code : str
         The code of the country or subdivision.
-    data_source : str
-        The data source.
+    data_source : str | None, optional
+        The data source, none for the combined data of all of them.
 
     Returns
     -------
@@ -85,7 +85,8 @@ def get_electricity_demand_file_path(
         source, in the folder of the stage.
     """
     folder = read_folders_structure()[f"{stage}_electricity_demand_folder"]
-    return os.path.join(folder, f"{code}_{data_source}.parquet")
+    name = code if data_source is None else f"{code}_{data_source}"
+    return os.path.join(folder, f"{name}.parquet")
 
 
 def read_api_key(variable: str, service: str) -> str:

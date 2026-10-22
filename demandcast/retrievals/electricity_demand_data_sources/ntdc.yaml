@@ -15,3 +15,4 @@ entities:
     country_code: PAK
     start_date: 2015-01-01
     end_date: 2020-04-30
+    same_area: false

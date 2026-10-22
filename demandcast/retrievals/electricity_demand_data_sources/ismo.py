@@ -25,6 +25,9 @@ Description:
     level of the data of NTDC in 2018 and 2019. Its lowest values, about
     5.8 GW, are around noon on 2025-03-31, the day of Eid al-Fitr.
 
+    The demand leaves out K-Electric, so its data has same_area false
+    in the yaml file: it does not cover the whole shape of Pakistan.
+
     Source: https://www.ismo.gov.pk/library/hourly-system-demand
 """
 

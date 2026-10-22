@@ -27,6 +27,7 @@ import logging
 import os
 from typing import Any
 
+import cleaning.combining
 import cleaning.electricity_demand
 import cleaning.flags
 import pandas as pd
@@ -339,11 +340,13 @@ def run_data_retrieval(
             )
             continue
 
-        # Save the processed electricity demand, clean it, and flag the
-        # changes of the cleaned demand that need a review.
+        # Save the processed electricity demand, clean it, flag the
+        # changes of the cleaned demand that need a review, and combine
+        # it with the cleaned demand of the other data sources.
         _save_data(processed, entity_code, data_source)
         cleaning.electricity_demand.clean_data(entity_code, data_source)
         cleaning.flags.flag_data(entity_code, data_source)
+        cleaning.combining.combine_data(entity_code)
 
     logging.info(
         f"Electricity data of {data_source} has been successfully "

@@ -2,6 +2,7 @@ licence:
   redistribute: true
   terms: Non-commercial reproduction with attribution to CCEI. Commercial redistribution needs written permission.
   url: https://www.canada.ca/en/transparency/terms.html
+compiled: true
 definition:
   - start_date: 2002-05-01
     quantity: load or demand of the province, as each utility or system operator reports it

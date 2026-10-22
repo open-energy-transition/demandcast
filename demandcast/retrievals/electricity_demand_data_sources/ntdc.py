@@ -48,6 +48,9 @@ Description:
     ISMO, which took over the system operation of
     NTDC, publishes the hourly demand from July 2024 (see ismo.py).
 
+    The load leaves out K-Electric, so its data has same_area false in
+    the yaml file: it does not cover the whole shape of Pakistan.
+
     Source: https://www.kaggle.com/datasets/tentative/ntdc-dataset
 """
 
