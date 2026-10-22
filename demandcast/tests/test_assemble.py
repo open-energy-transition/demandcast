@@ -18,9 +18,9 @@ import numpy as np
 import pandas as pd
 import pytest
 import retrievals.temperature
-import utils.entities
 import utils.paths
 import utils.time_series
+import utils.time_zones
 
 # The codes of the inputs, in time zones with daylight saving time and
 # with a half hour from UTC.
@@ -85,7 +85,7 @@ def _local_hours(code: str, years: list[int]) -> pd.DatetimeIndex:
         The ends of the whole hours in UTC whose starts are in the
         years in local time.
     """
-    time_zone = utils.entities.get_time_zone(code)
+    time_zone = utils.time_zones.get_time_zone(code)
     start, _ = utils.time_series.get_local_year_bounds(years[0], time_zone)
     _, end = utils.time_series.get_local_year_bounds(years[-1], time_zone)
     hours = pd.date_range(
@@ -118,7 +118,7 @@ def _write_inputs(codes: list[str], years: list[int]) -> None:
         The years.
     """
     for number, code in enumerate(codes):
-        time_zone = utils.entities.get_time_zone(code)
+        time_zone = utils.time_zones.get_time_zone(code)
         inputs: tuple[tuple[utils.paths.Indicator, str, float], ...] = (
             (
                 "annual_electricity_demand_per_capita",
@@ -184,7 +184,7 @@ def assembly_inputs(monkeypatch):
     """
     _write_inputs(CODES, [2023, 2024])
     monkeypatch.setattr(
-        assemble.utils.entities,
+        assemble.utils.availability,
         "check_and_get_codes_with",
         lambda *_, **__: CODES,
     )

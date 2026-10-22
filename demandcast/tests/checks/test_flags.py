@@ -17,7 +17,7 @@ import checks.flags
 import pandas as pd
 import pytest
 import utils.config
-import utils.entities
+import utils.data_sources
 import utils.paths
 
 
@@ -172,11 +172,9 @@ def test_reviews_of_the_repository():
     for review in reviews:
         assert review.flag in flags
         if review.data_source == checks.flags.COMBINED:
-            codes = (
-                utils.entities.read_all_codes_with_electricity_demand_data()
-            )
+            codes = utils.data_sources.read_all_codes_with_electricity_demand_data()
         else:
-            codes = utils.entities.read_codes_in(
+            codes = utils.data_sources.read_codes_in(
                 data_source=review.data_source
             )
         assert review.code in codes

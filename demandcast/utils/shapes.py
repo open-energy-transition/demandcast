@@ -16,7 +16,7 @@ import pandas as pd
 import pycountry
 from shapely import Polygon
 
-import utils.entities
+import utils.codes
 import utils.figures
 import utils.paths
 
@@ -161,9 +161,7 @@ def get_standard_shape(
         iso_alpha_3_code, subdivision_code = code.split("_")
 
         # Get the ISO Alpha-2 code from the ISO Alpha-3 code.
-        iso_alpha_2_code = utils.entities.get_iso_alpha_2_code(
-            iso_alpha_3_code
-        )
+        iso_alpha_2_code = utils.codes.get_iso_alpha_2_code(iso_alpha_3_code)
 
         # Combine the ISO Alpha-2 code and the subdivision code to
         # match the format used in the shapefile database.
@@ -192,7 +190,7 @@ def get_standard_shape(
     if entity_shape is None:
         # Get the name of the country or subdivision of interest based
         # on its code.
-        name_to_search = utils.entities.get_name_from_code(code)
+        name_to_search = utils.codes.get_name_from_code(code)
 
         # Read the shape of the country or subdivision of interest by
         # searching for its name.
@@ -483,8 +481,7 @@ def get_all_codes_with_shapes() -> list[str]:
     # Taiwan is included as a separate country with its own code, which
     # is TWN.
     codes_of_extra_entities = {
-        info["name"]: code
-        for code, info in utils.entities.extra_entities.items()
+        info["name"]: code for code, info in utils.codes.EXTRA_ENTITIES.items()
     }
     codes_of_all_countries = []
     for shape in list(reader.records()):

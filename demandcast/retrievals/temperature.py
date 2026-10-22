@@ -23,13 +23,14 @@ import os
 
 import numpy as np
 import pandas as pd
+import utils.availability
 import utils.catalogue
-import utils.entities
 import utils.geospatial
 import utils.paths
 import utils.scenarios
 import utils.shapes
 import utils.time_series
+import utils.time_zones
 import xarray
 from tqdm import tqdm
 
@@ -585,7 +586,7 @@ def run_data_retrieval(
 
     # Get the list of codes of the countries and subdivisions of
     # interest.
-    codes = utils.entities.check_and_get_codes_with(
+    codes = utils.availability.check_and_get_codes_with(
         "all_data", code=code, file_path=file
     )
 
@@ -618,7 +619,7 @@ def run_data_retrieval(
         logging.info(f"Retrieving temperature data for {entity_code}.")
 
         # Get the time zone of the country or subdivision.
-        entity_time_zone = utils.entities.get_time_zone(entity_code)
+        entity_time_zone = utils.time_zones.get_time_zone(entity_code)
 
         # Loop over the year, model, and scenario combinations.
         for (

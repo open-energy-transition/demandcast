@@ -46,9 +46,9 @@ from io import BytesIO, StringIO
 
 import pandas as pd
 import requests
-import utils.entities
 import utils.fetcher
 import utils.time_series
+import utils.time_zones
 
 # The time of central Mexico, the clock of all areas of the SIN.
 CENTRAL_MEXICO_TIME = zoneinfo.ZoneInfo("America/Mexico_City")
@@ -214,7 +214,7 @@ def download_and_extract_data_for_request(
     # Mexico for the areas of the SIN, and the time zone of the area for
     # the systems of Baja California.
     if subdivision_code in {"BCA", "BCS"}:
-        time_zone = utils.entities.get_time_zone(code)
+        time_zone = utils.time_zones.get_time_zone(code)
     else:
         time_zone = CENTRAL_MEXICO_TIME
 

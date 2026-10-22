@@ -17,8 +17,8 @@ import os
 from collections.abc import Callable
 from typing import Literal
 
+import utils.availability
 import utils.catalogue
-import utils.entities
 import utils.paths
 import utils.scenarios
 import utils.shapes
@@ -193,7 +193,7 @@ def run_retrieval(
         scenario,
         list(utils.catalogue.SSP_SCENARIOS),
     )
-    codes = utils.entities.check_and_get_codes_with(
+    codes = utils.availability.check_and_get_codes_with(
         "all_data", code=code, file_path=file
     )
 

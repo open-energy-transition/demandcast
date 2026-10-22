@@ -9,7 +9,7 @@ Description:
 
 import pandas as pd
 import pytest
-import utils.entities
+import utils.data_sources
 from retrievals.electricity_demand_data_sources import niti
 
 
@@ -82,7 +82,7 @@ def test_download_and_extract_data_without_files():
 
 def test_subdivisions_match_the_entities():
     """Test that each subdivision of the YAML file has its states."""
-    codes = utils.entities.read_codes_in(data_source="niti")
+    codes = utils.data_sources.read_codes_in(data_source="niti")
 
     assert sorted(codes) == sorted(niti.SUBDIVISIONS)
     states = [state for names in niti.SUBDIVISIONS.values() for state in names]

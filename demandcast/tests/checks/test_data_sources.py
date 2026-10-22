@@ -18,7 +18,7 @@ import checks.data_sources
 import pandas as pd
 import pytest
 import utils.config
-import utils.entities
+import utils.data_sources
 import utils.fetcher
 import utils.paths
 from retrievals.electricity_demand_data_sources import hydroquebec, ons
@@ -217,7 +217,7 @@ def test_check_data_source_with_an_end_date(
 ):
     """Test that data after the end date of the YAML file are found."""
     _, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+        utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
             "hydroquebec"
         )["CAN_QC"]
     )
@@ -262,7 +262,7 @@ def test_manual_downloads():
     """Test that the skipped data sources are the manual downloads."""
     folder = utils.paths.DATA_SOURCES_FOLDER
     manual_downloads = []
-    for data_source in utils.entities.read_data_sources():
+    for data_source in utils.data_sources.read_data_sources():
         file_path = os.path.join(folder, f"{data_source}.py")
         with open(file_path, encoding="utf-8") as file:
             if "utils.fetcher.read_manual_files(" in file.read():
@@ -405,7 +405,7 @@ def test_run_check_of_all_data_sources(fake_checks):
     results = checks.data_sources.run_check()
 
     assert [result.data_source for result in results] == sorted(
-        utils.entities.read_data_sources()
+        utils.data_sources.read_data_sources()
     )
     assert [
         result.data_source for result in results if result.status == "skipped"

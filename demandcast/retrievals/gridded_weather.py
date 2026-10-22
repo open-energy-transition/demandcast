@@ -18,8 +18,8 @@ from collections.abc import Callable
 
 import cdsapi
 import pandas as pd
+import utils.availability
 import utils.catalogue
-import utils.entities
 import utils.geospatial
 import utils.paths
 import utils.scenarios
@@ -364,7 +364,7 @@ def run_data_retrieval(
 
     # Get the list of codes of the countries and subdivisions of
     # interest.
-    codes = utils.entities.check_and_get_codes_with(
+    codes = utils.availability.check_and_get_codes_with(
         "all_data", code=code, file_path=file
     )
 

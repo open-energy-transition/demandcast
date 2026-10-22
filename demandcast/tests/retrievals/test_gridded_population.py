@@ -128,7 +128,7 @@ def test_run_data_retrieval(monkeypatch):
         return grid
 
     monkeypatch.setattr(
-        gridded_population.utils.entities,
+        gridded_population.utils.availability,
         "check_and_get_codes_with",
         lambda *_, **__: ["FRA"],
     )

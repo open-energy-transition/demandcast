@@ -20,8 +20,8 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 import retrievals.annual_electricity_demand_per_capita as annual_demand
-import utils.entities
 import utils.paths
+import utils.time_zones
 from retrievals import gdp_ppp_per_capita, population
 
 pytestmark = pytest.mark.usefixtures("frozen_now")
@@ -181,7 +181,7 @@ def _snapshot(retrieval: str, code: str) -> dict[str, dict[str, float]]:
     folder = utils.paths.get_indicator_folder(
         cast(utils.paths.Indicator, retrieval)
     )
-    time_zone = utils.entities.get_time_zone(code)
+    time_zone = utils.time_zones.get_time_zone(code)
     snapshot = {}
     for file_name in sorted(os.listdir(folder)):
         if not file_name.endswith(".parquet"):

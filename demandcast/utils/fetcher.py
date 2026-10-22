@@ -27,7 +27,7 @@ import requests.exceptions
 from entsoe import EntsoePandasClient
 from entsoe.exceptions import NoMatchingDataError
 
-import utils.entities
+import utils.codes
 import utils.paths
 
 # The HTTP status codes of the data that does not exist, for example a
@@ -707,7 +707,7 @@ def fetch_entsoe_demand(
     # Get the area of ENTSO-E: the ISO Alpha-2 code of the country, if
     # no other area is given.
     if area is None:
-        area = utils.entities.get_iso_alpha_2_code(iso_alpha_3_code)
+        area = utils.codes.get_iso_alpha_2_code(iso_alpha_3_code)
 
     # Define the ENTSO-E API client, which retries after connection
     # errors.

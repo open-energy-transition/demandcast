@@ -150,7 +150,7 @@ def test_many_codes_split_the_global_data(monkeypatch):
     A country is extracted again only when the global data is newer.
     """
     monkeypatch.setattr(
-        gridded_weather.utils.entities,
+        gridded_weather.utils.availability,
         "check_and_get_codes_with",
         lambda *_, **__: list(BOUNDS),
     )

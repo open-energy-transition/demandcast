@@ -328,8 +328,8 @@ def run_check() -> None:
     Check for the availability of data and save its summary.
 
     The summary, data_availability_summary.csv in the folder of the
-    checks of the code, is an input of utils.entities, which reads the
-    codes that have all the data from it.
+    checks of the code, is an input of utils.availability, which reads
+    the codes that have all the data from it.
     """
     get_data_availability().to_csv(
         os.path.join(

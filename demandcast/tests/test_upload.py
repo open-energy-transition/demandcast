@@ -101,7 +101,8 @@ def test_get_data_source(file_name, data_source):
 def test_get_data_source_with_overlapping_names():
     """Test that the longest data source name ending the file wins."""
     with patch(
-        "utils.entities.read_data_sources", return_value=["nem", "aemo_nem"]
+        "utils.data_sources.read_data_sources",
+        return_value=["nem", "aemo_nem"],
     ):
         assert (
             upload._get_data_source("AUS_QLD_aemo_nem.parquet") == "aemo_nem"

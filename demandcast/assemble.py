@@ -35,9 +35,9 @@ import dask
 import dask.dataframe
 import numpy as np
 import pandas as pd
+import utils.availability
 import utils.catalogue
 import utils.config
-import utils.entities
 import utils.paths
 from pydantic import BaseModel, model_validator
 from tqdm import tqdm
@@ -403,7 +403,7 @@ def _load_dataset(
     """
     logging.info(f"Loading {dataset.description} data.")
 
-    entity_codes = utils.entities.check_and_get_codes_with(
+    entity_codes = utils.availability.check_and_get_codes_with(
         "electricity_demand_data" if target_use == "training" else "all_data",
         file_path=file_path,
     )

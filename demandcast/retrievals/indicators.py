@@ -23,9 +23,10 @@ import os
 from collections.abc import Callable
 
 import pandas as pd
-import utils.entities
+import utils.availability
 import utils.paths
 import utils.time_series
+import utils.time_zones
 from tqdm import tqdm
 
 
@@ -111,11 +112,11 @@ def run_retrieval(
     """
     os.makedirs(utils.paths.get_indicator_folder(indicator), exist_ok=True)
 
-    codes = utils.entities.check_and_get_codes_with(
+    codes = utils.availability.check_and_get_codes_with(
         "all_data", code=code, file_path=file
     )
     for entity_code in tqdm(codes, desc="Countries and subdivisions"):
-        time_zone = utils.entities.get_time_zone(entity_code)
+        time_zone = utils.time_zones.get_time_zone(entity_code)
         request = get_request(entity_code)
 
         if request.historical_years:
