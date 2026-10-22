@@ -448,3 +448,25 @@ def test_level_drops_do_not_bridge_missing_days(hours_left):
     _, removed = _clean(demand)
 
     assert _local_days(removed, "level_drop") == set()
+
+
+def test_level_drops_over_short_gaps():
+    """
+    Test that a drop goes on over a few missing days.
+
+    A month below the level that misses a day every week, as in
+    Albania in 2023, is one drop, without the missing days.
+    """
+    demand = _demand("2019-01-01 01:00", 24 * 365 * 5)
+    _scale_days(demand, "2022-06-01", "2022-06-30", 0.25)
+    days = _local_starts(demand).normalize()
+    missing_days = pd.DatetimeIndex(
+        ["2022-06-07", "2022-06-14", "2022-06-21", "2022-06-28"]
+    )
+    demand = demand[~days.isin(missing_days)]
+
+    _, removed = _clean(demand)
+
+    assert _local_days(removed, "level_drop") == _days(
+        "2022-06-01", "2022-06-30"
+    ) - {f"{day:%Y-%m-%d}" for day in missing_days}

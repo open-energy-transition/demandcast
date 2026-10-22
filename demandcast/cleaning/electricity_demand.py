@@ -50,18 +50,20 @@ Description:
       of a small system can change by 20% within an hour. At those
       resolutions, a single value is a run, although its interval lasts
       30 minutes or more.
-    - level_drop: a run of 14 consecutive days or more, in local time,
-      whose mean is less than half the level of the same days of the
-      two years before and after, the median of the 31 days around them
-      in each year and then of the years: a part of the system left
-      out, as in Albania from 2022-12-11 to 2023-12-04 and in the
-      Netherlands from 2014-10-20 to 2014-12-19, at about a quarter of
-      their level. A day whose values cover less than half of it has no
-      mean, and so breaks a run. The level is computed again without the
-      days found, so that an error of a year does not hide that of
-      another. The lockdowns of 2020, from 2020-03-15 to 2020-06-30, are
-      left, since they halved the demand of some places, such as Dadra
-      and Nagar Haveli and Daman and Diu.
+    - level_drop: a run of 14 days or more, in local time, whose mean
+      is less than half the level of the same days of the two years
+      before and after, the median of the 31 days around them in each
+      year and then of the years: a part of the system left out, as in
+      Albania from 2022-12-11 to 2023-12-04 and in the Netherlands from
+      2014-10-20 to 2014-12-19, at about a quarter of their level. A day
+      whose values cover less than half of it has no mean. A run goes on
+      over a gap of up to 3 such days, as within the drop of Albania,
+      which misses a day every week or so, but not over a longer gap,
+      and only its days with a mean count. The level is computed again
+      without the days found, so that an error of a year does not hide
+      that of another. The lockdowns of 2020, from 2020-03-15 to
+      2020-06-30, are left, since they halved the demand of some places,
+      such as Dadra and Nagar Haveli and Daman and Diu.
 
     The values left are then averaged in each hour, at its end, if they
     cover at least half of the hour (low_coverage otherwise). Each value
@@ -113,11 +115,13 @@ SPIKE_CHANGE_SUBHOURLY = 0.2
 SPIKE_CHANGE_HOURLY = 0.5
 
 # The share of the level of the same days of the neighbouring years
-# below which a run of days drops, the days of the run, the days around
-# each day and the years around each year of the level, and the
-# lockdowns of 2020, whose drops are real.
+# below which a run of days drops, the days of the run, the longest gap
+# of days without data within it, the days around each day and the
+# years around each year of the level, and the lockdowns of 2020, whose
+# drops are real.
 LEVEL_DROP_SHARE = 0.5
 LEVEL_DROP_DAYS = 14
+LEVEL_DROP_GAP_DAYS = 3
 LEVEL_DAYS = 15
 LEVEL_YEARS = (-2, -1, 1, 2)
 LOCKDOWNS = (pd.Timestamp("2020-03-15"), pd.Timestamp("2020-06-30"))
@@ -448,7 +452,7 @@ def _find_drop_days(daily: pd.Series, reference: pd.Series) -> pd.Index:
     ----------
     daily : pandas.Series
         The mean demand of every day, missing for the days without
-        enough values, which break the runs.
+        enough values, whose gaps break the runs if they are long.
     reference : pandas.Series
         The mean demand of the days that give the level.
 
@@ -462,8 +466,13 @@ def _find_drop_days(daily: pd.Series, reference: pd.Series) -> pd.Index:
         daily.index <= LOCKDOWNS[1]
     )
     low = (ratios < LEVEL_DROP_SHARE) & ~in_lockdowns
-    runs = (low != low.shift()).cumsum()
-    lengths = low.groupby(runs).transform("size")
+    # A run is broken by a day that is not low, or by a gap of missing
+    # days longer than a few, and needs enough low days.
+    observed = daily.notna()
+    gaps = (observed != observed.shift()).cumsum()
+    gap_lengths = (~observed).groupby(gaps).transform("sum")
+    breaks = (observed & ~low) | (gap_lengths > LEVEL_DROP_GAP_DAYS)
+    lengths = low.groupby(breaks.cumsum()).transform("sum")
     return daily.index[low & (lengths >= LEVEL_DROP_DAYS)]
 
 
