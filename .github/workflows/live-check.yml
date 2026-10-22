@@ -1,8 +1,8 @@
 # Checks the electricity demand data sources over the network every week,
 # and keeps one issue open with the data sources that fail two checks in a
 # row. The API keys and the accounts of EPIAS and ISO New England are
-# secrets of the environment live-checks, which only the main branch can use. The keys belong to the
-# account esmtools@openenergytransition.org.
+# secrets of the environment live-checks, which only the main branch can
+# use. The keys belong to the account esmtools@openenergytransition.org.
 
 name: Live check
 
