@@ -191,7 +191,11 @@ def test_configuration_of_the_report(monkeypatch):
         sys, "argv", ["check.py", "--config", config_file_path]
     )
 
-    assert check._read_and_check_configuration().check == "flags"
+    config = utils.config.read_and_check_configuration(
+        "check", check.ConfigModel
+    )
+
+    assert config.check == "flags"
 
 
 def test_combined_flags(checks_folder):

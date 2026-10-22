@@ -460,7 +460,9 @@ def test_configuration_of_the_live_check(monkeypatch):
         sys, "argv", ["check.py", "--config", config_file_path]
     )
 
-    config = check._read_and_check_configuration()
+    config = utils.config.read_and_check_configuration(
+        "check", check.ConfigModel
+    )
 
     assert config.check == "data_sources"
     assert config.data_sources is None

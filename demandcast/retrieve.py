@@ -10,7 +10,9 @@ Description:
     data, and temperature data.
 """
 
-import logging
+from collections.abc import Callable
+from types import ModuleType
+from typing import Literal
 
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.electricity_demand
@@ -22,13 +24,22 @@ import retrievals.population
 import retrievals.temperature
 import utils.config
 import utils.entities
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, field_validator, model_validator
 
 
 class ConfigModel(BaseModel):
     """Settings of retrieve.py."""
 
-    variable: str
+    variable: Literal[
+        "electricity_demand",
+        "annual_electricity_demand_per_capita",
+        "population",
+        "gridded_population",
+        "gdp_ppp_per_capita",
+        "gridded_gdp_ppp",
+        "gridded_weather",
+        "temperature",
+    ]
     electricity_data_source: str | None = None
     code: str | None = None
     file: str | None = None
@@ -36,166 +47,168 @@ class ConfigModel(BaseModel):
     start_year: int | None = None
     end_year: int | None = None
     scenario: str | None = None
-    weather_variable: str | None = None
+    weather_variable: Literal["temperature"] | None = None
     climate_model: str | None = None
     offline: bool = False
 
+    @field_validator("electricity_data_source")
+    @classmethod
+    def _check_data_source(cls, data_source: str | None) -> str | None:
+        """
+        Check that the data source of electricity demand exists.
 
-def _read_and_check_configuration() -> ConfigModel:
+        Parameters
+        ----------
+        data_source : str | None
+            The data source.
+
+        Returns
+        -------
+        str | None
+            The data source.
+
+        Raises
+        ------
+        ValueError
+            If the data source does not exist.
+        """
+        if data_source is not None:
+            data_sources = utils.entities.read_data_sources()
+            if data_source not in data_sources:
+                raise ValueError(
+                    f"The data source '{data_source}' is not recognized. "
+                    f"Valid data sources are: {data_sources}."
+                )
+        return data_source
+
+    @model_validator(mode="after")
+    def _check_required_settings(self) -> "ConfigModel":
+        """
+        Check the settings that some variables require.
+
+        Returns
+        -------
+        ConfigModel
+            The settings.
+
+        Raises
+        ------
+        ValueError
+            If a required setting is missing.
+        """
+        if (
+            self.variable == "electricity_demand"
+            and not self.electricity_data_source
+        ):
+            raise ValueError(
+                "The data source must be specified for the retrieval of "
+                "electricity demand data."
+            )
+        if self.variable == "gridded_weather" and not self.weather_variable:
+            raise ValueError(
+                "The weather variable must be specified for the "
+                "retrieval of gridded weather data."
+            )
+        return self
+
+
+def _retrieve_by_scenario(
+    module: ModuleType,
+) -> Callable[[ConfigModel], None]:
     """
-    Read and check the configuration for data retrieval.
+    Get the retrieval of a variable given by years and scenarios.
+
+    Parameters
+    ----------
+    module : types.ModuleType
+        The retrieval module of the variable.
 
     Returns
     -------
-    ConfigModel
-        A Pydantic model containing the validated configuration.
-
-    Raises
-    ------
-    ValueError
-        If the configuration is invalid.
+    Callable[[ConfigModel], None]
+        The function that runs the retrieval with the settings.
     """
-    # Read the configuration.
-    raw_config = utils.config.read_configuration(
-        "retrieve",
-        "Retrieve the specified data for the specified countries and "
-        "subdivisions.",
+    return lambda config: module.run_data_retrieval(
+        config.code,
+        config.file,
+        config.year,
+        config.start_year,
+        config.end_year,
+        config.scenario,
     )
 
-    try:
-        # Validate the configuration.
-        return ConfigModel(**raw_config)
-    except ValidationError as e:
-        raise ValueError(f"Configuration validation error: {e}") from e
+
+# The retrieval of each variable, with the settings that it takes.
+RETRIEVALS: dict[str, Callable[[ConfigModel], None]] = {
+    "electricity_demand": (
+        lambda config: retrievals.electricity_demand.run_data_retrieval(
+            str(config.electricity_data_source),
+            config.code,
+            config.file,
+            offline=config.offline,
+        )
+    ),
+    "annual_electricity_demand_per_capita": _retrieve_by_scenario(
+        retrievals.annual_electricity_demand_per_capita
+    ),
+    "population": _retrieve_by_scenario(retrievals.population),
+    "gridded_population": _retrieve_by_scenario(retrievals.gridded_population),
+    "gdp_ppp_per_capita": _retrieve_by_scenario(retrievals.gdp_ppp_per_capita),
+    "gridded_gdp_ppp": _retrieve_by_scenario(retrievals.gridded_gdp_ppp),
+    "gridded_weather": (
+        lambda config: retrievals.gridded_weather.run_data_retrieval(
+            config.code,
+            config.file,
+            config.year,
+            config.start_year,
+            config.end_year,
+            str(config.weather_variable),
+            config.climate_model,
+            config.scenario,
+        )
+    ),
+    "temperature": (
+        lambda config: retrievals.temperature.run_data_retrieval(
+            config.code,
+            config.file,
+            config.year,
+            config.start_year,
+            config.end_year,
+            config.climate_model,
+            config.scenario,
+        )
+    ),
+}
 
 
-if __name__ == "__main__":
-    # Read and check the configuration.
-    config = _read_and_check_configuration()
+def main(config: ConfigModel) -> None:
+    """
+    Retrieve the data of the variable of the settings.
 
-    # Set up the logging configuration.
+    Parameters
+    ----------
+    config : ConfigModel
+        The settings.
+    """
     utils.config.set_up_logging(
         f"retrieval_of_{config.variable}"
         + (
             f"_from_{config.electricity_data_source}"
             if config.variable == "electricity_demand"
-            and config.electricity_data_source
             else ""
         )
     )
+    utils.config.log_configuration(config)
 
-    logging.info("Configuration validated successfully:")
-    for field, value in config.model_dump().items():
-        logging.info(f" - {field}: {value}")
+    RETRIEVALS[config.variable](config)
 
-    if config.variable == "electricity_demand":
-        if not config.electricity_data_source:
-            raise ValueError(
-                "The data source must be specified for the retrieval of "
-                "electricity demand data."
-            )
 
-        if (
-            config.electricity_data_source
-            not in utils.entities.read_data_sources()
-        ):
-            raise ValueError(
-                f"The specified data source '{config.electricity_data_source}' is not "
-                "recognized. Valid data sources are: "
-                f"{utils.entities.read_data_sources()}."
-            )
-
-        # Run the data retrieval for electricity demand.
-        retrievals.electricity_demand.run_data_retrieval(
-            config.electricity_data_source,
-            config.code,
-            config.file,
-            offline=config.offline,
+if __name__ == "__main__":
+    main(
+        utils.config.read_and_check_configuration(
+            "retrieve",
+            ConfigModel,
+            "Retrieve the specified data for the specified countries and "
+            "subdivisions.",
         )
-    elif config.variable == "annual_electricity_demand_per_capita":
-        # Run the data retrieval for annual electricity demand per
-        # capita.
-        retrievals.annual_electricity_demand_per_capita.run_data_retrieval(
-            config.code,
-            config.file,
-            config.year,
-            config.start_year,
-            config.end_year,
-            config.scenario,
-        )
-    elif config.variable == "population":
-        # Run the data retrieval for the population.
-        retrievals.population.run_data_retrieval(
-            config.code,
-            config.file,
-            config.year,
-            config.start_year,
-            config.end_year,
-            config.scenario,
-        )
-    elif config.variable == "gridded_population":
-        # Run the data retrieval for the gridded population.
-        retrievals.gridded_population.run_data_retrieval(
-            config.code,
-            config.file,
-            config.year,
-            config.start_year,
-            config.end_year,
-            config.scenario,
-        )
-    elif config.variable == "gdp_ppp_per_capita":
-        # Run the data retrieval for the GDP PPP per capita.
-        retrievals.gdp_ppp_per_capita.run_data_retrieval(
-            config.code,
-            config.file,
-            config.year,
-            config.start_year,
-            config.end_year,
-            config.scenario,
-        )
-    elif config.variable == "gridded_gdp_ppp":
-        # Run the data retrieval for the gridded GDP PPP.
-        retrievals.gridded_gdp_ppp.run_data_retrieval(
-            config.code,
-            config.file,
-            config.year,
-            config.start_year,
-            config.end_year,
-            config.scenario,
-        )
-    elif config.variable == "gridded_weather":
-        if not config.weather_variable:
-            raise ValueError(
-                "The weather variable must be specified for the "
-                "retrieval of gridded weather data."
-            )
-
-        if config.weather_variable != "temperature":
-            raise ValueError(
-                f"The specified weather variable "
-                f"'{config.weather_variable}' is not recognized. "
-                "Only 'temperature' is currently supported."
-            )
-
-        # Run the data retrieval for weather.
-        retrievals.gridded_weather.run_data_retrieval(
-            config.code,
-            config.file,
-            config.year,
-            config.start_year,
-            config.end_year,
-            config.weather_variable,
-            config.climate_model,
-            config.scenario,
-        )
-    elif config.variable == "temperature":
-        # Run the data retrieval for temperature.
-        retrievals.temperature.run_data_retrieval(
-            config.code,
-            config.file,
-            config.year,
-            config.start_year,
-            config.end_year,
-            config.climate_model,
-            config.scenario,
-        )
+    )

@@ -14,6 +14,7 @@ from datetime import datetime
 
 import yaml
 from dotenv import load_dotenv
+from pydantic import BaseModel, ValidationError
 
 
 def read_folders_structure() -> dict[str, str]:
@@ -179,6 +180,56 @@ def read_configuration(
         config = yaml.safe_load(file)
 
     return config
+
+
+def read_and_check_configuration[ConfigModelT: BaseModel](
+    script_name: str,
+    config_model: type[ConfigModelT],
+    script_description: str = "",
+) -> ConfigModelT:
+    """
+    Read the configuration file of a script and validate it.
+
+    Parameters
+    ----------
+    script_name : str
+        The name of the script, which names its default configuration
+        file.
+    config_model : type[ConfigModelT]
+        The Pydantic model of the settings of the script.
+    script_description : str, optional
+        A brief description of the script, for its help message.
+
+    Returns
+    -------
+    ConfigModelT
+        The validated settings.
+
+    Raises
+    ------
+    ValueError
+        If the configuration is invalid.
+    """
+    raw_config = read_configuration(script_name, script_description)
+    try:
+        # An empty file has no settings.
+        return config_model(**(raw_config or {}))
+    except ValidationError as e:
+        raise ValueError(f"Configuration validation error: {e}") from e
+
+
+def log_configuration(config: BaseModel) -> None:
+    """
+    Log the validated settings of a script.
+
+    Parameters
+    ----------
+    config : pydantic.BaseModel
+        The settings.
+    """
+    logging.info("Configuration validated successfully:")
+    for field, value in config.model_dump().items():
+        logging.info(f" - {field}: {value}")
 
 
 def set_up_logging(process: str) -> None:

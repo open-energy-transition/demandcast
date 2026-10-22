@@ -27,6 +27,7 @@ import logging
 import os
 from collections.abc import Callable
 from functools import reduce
+from typing import Literal
 
 import dask
 import dask.dataframe
@@ -38,7 +39,7 @@ import retrievals.gridded_weather
 import retrievals.population
 import utils.config
 import utils.entities
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 from tqdm import tqdm
 
 # The shares of the hours of a year, and of each of its months, that
@@ -50,7 +51,7 @@ MIN_MONTH_COVERAGE = 0.5
 class ConfigModel(BaseModel):
     """Settings of assemble.py."""
 
-    target_use: str
+    target_use: Literal["training", "forecasting"]
     file: str | None = None
     start_year: int | None = None
     end_year: int | None = None
@@ -59,40 +60,6 @@ class ConfigModel(BaseModel):
     scenario_for_population: str | None = None
     scenario_for_temperature: str | None = None
     climate_model_for_temperature: str | None = None
-
-
-def _read_and_check_configuration() -> ConfigModel:
-    """
-    Read and check the configuration for data assembly.
-
-    Returns
-    -------
-    config : ConfigModel
-        A Pydantic model containing the validated configuration.
-
-    Raises
-    ------
-    ValueError
-        If the configuration is invalid.
-    """
-    # Read the configuration.
-    raw_config = utils.config.read_configuration(
-        "assemble",
-        "Assemble and preprocess the retrieved data for "
-        "training the machine learning models or forecasting.",
-    )
-
-    # Validate the configuration.
-    try:
-        config = ConfigModel(**raw_config)
-    except ValidationError as e:
-        raise ValueError(f"Configuration validation error: {e}") from e
-
-    logging.info("Configuration validated successfully:")
-    for field, value in config.model_dump().items():
-        logging.info(f" - {field}: {value}")
-
-    return config
 
 
 def _validate(
@@ -926,14 +893,18 @@ def run_data_assemply(
     )
 
 
-if __name__ == "__main__":
-    # Set up the logging configuration.
+def main(config: ConfigModel) -> None:
+    """
+    Assemble the data of the settings.
+
+    Parameters
+    ----------
+    config : ConfigModel
+        The settings.
+    """
     utils.config.set_up_logging("assembly_of_retrieved_data")
+    utils.config.log_configuration(config)
 
-    # Read and check the configuration.
-    config = _read_and_check_configuration()
-
-    # Run the data assembly process.
     run_data_assemply(
         config.target_use,
         config.file,
@@ -944,4 +915,15 @@ if __name__ == "__main__":
         config.scenario_for_population,
         config.scenario_for_temperature,
         config.climate_model_for_temperature,
+    )
+
+
+if __name__ == "__main__":
+    main(
+        utils.config.read_and_check_configuration(
+            "assemble",
+            ConfigModel,
+            "Assemble and preprocess the retrieved data for training the "
+            "machine learning models or forecasting.",
+        )
     )
