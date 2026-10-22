@@ -57,7 +57,7 @@ To check a source over the network, set `data_sources` in `demandcast/config/che
 
 ### Adding a machine learning model
 
-Each model is a module in `demandcast/ml_models/` that provides the interface of `ModelModule` in `demandcast/ml_models/registry.py`: `get_initialized_model()`, `train()`, `predict()`, `save()` and `load()`, and the extension of its saved files. Its settings go in `demandcast/config/<model>_config.yaml`; `ml_models/xgboost.py` is a good template. Please also:
+Each model is a module in `demandcast/ml_models/` that provides the interface of `ModelModule` in `demandcast/ml_models/registry.py`: a `ConfigModel` of its settings, `get_initialized_model(config)`, `train(prepared_dataset, config)`, `predict()`, `save(model, file_path)` and `load(file_path)`, and the extension of its saved files. Its settings go in `demandcast/config/<model>_config.yaml`, which the scripts read with `ml_models.registry.read_model_configuration` and pass to the module, so the module reads no file itself; `ml_models/xgboost.py` is a good template. Please also:
 
 - add the module to `MODEL_MODULES` in `ml_models/registry.py`, and to the modules that mypy checks in `demandcast/tests/ml_models/test_registry.py`, whose contract test then trains, saves, loads and predicts with the model;
 - put heavy dependencies in an optional extra in `demandcast/pyproject.toml`, like `lstm`;

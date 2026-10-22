@@ -9,11 +9,13 @@ Description:
 """
 
 import logging
+import os
 
 import ml_models.registry
 import pandas as pd
 import utils.config
 import utils.ml
+import utils.paths
 from pydantic import BaseModel
 
 
@@ -29,7 +31,8 @@ def run_model_training(
     reserve_testing_set: bool,
     use_validation_set: bool,
     data_path: str | None,
-    algorithm: str,
+    ml_config: utils.ml.ConfigModel,
+    model_config: BaseModel,
 ) -> None:
     """
     Run the model training process.
@@ -43,12 +46,16 @@ def run_model_training(
     data_path : str | None
         The path to the assembled data file. If None, the latest file
         in the default directory will be used.
-    algorithm : str
-        The machine learning algorithm to use for training.
+    ml_config : utils.ml.ConfigModel
+        The settings of the machine learning models, with the
+        algorithm.
+    model_config : pydantic.BaseModel
+        The settings of the model of the algorithm.
     """
     logging.info("Starting model training process.")
 
     # Get the module of the model.
+    algorithm = ml_config.algorithm
     model_module = ml_models.registry.get_model_module(algorithm)
 
     # Get the assembled data path.
@@ -56,7 +63,7 @@ def run_model_training(
 
     # Read and prepare the dataset.
     prepared_dataset = utils.ml.prepare_split_datasets(
-        data_path, reserve_testing_set, use_validation_set
+        data_path, ml_config, reserve_testing_set, use_validation_set
     )
 
     # Define a model name based on timestamp.
@@ -66,8 +73,13 @@ def run_model_training(
     )
 
     # Train the model and save it.
-    model = model_module.train(prepared_dataset)
-    model_module.save(model, model_name)
+    model = model_module.train(prepared_dataset, model_config)
+    model_folder = utils.paths.get_models_folder(algorithm.lower())
+    os.makedirs(model_folder, exist_ok=True)
+    model_module.save(
+        model,
+        os.path.join(model_folder, model_name + model_module.FILE_EXTENSION),
+    )
 
 
 def main(config: ConfigModel) -> None:
@@ -89,7 +101,8 @@ def main(config: ConfigModel) -> None:
         config.reserve_testing_set,
         config.use_validation_set,
         config.data_path,
-        ml_config.algorithm,
+        ml_config,
+        ml_models.registry.read_model_configuration(ml_config.algorithm),
     )
 
 

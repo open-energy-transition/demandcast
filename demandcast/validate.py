@@ -128,7 +128,7 @@ def run_model_validation(
     used_validation_set: bool,
     model_path: str | None,
     data_path: str | None,
-    algorithm: str,
+    ml_config: utils.ml.ConfigModel,
 ) -> None:
     """
     Run the model validation process.
@@ -143,12 +143,14 @@ def run_model_validation(
     data_path : str | None
         The path to the assembled data file. If None, the latest file
         in the default directory will be used.
-    algorithm : str
-        The machine learning algorithm to use for validation.
+    ml_config : utils.ml.ConfigModel
+        The settings of the machine learning models, with the
+        algorithm.
     """
     logging.info("Starting model validation process.")
 
     # Get the module of the model.
+    algorithm = ml_config.algorithm
     model_module = ml_models.registry.get_model_module(algorithm)
 
     # Get the assembled data path.
@@ -156,7 +158,7 @@ def run_model_validation(
 
     # Read and prepare the dataset.
     prepared_dataset = utils.ml.prepare_split_datasets(
-        data_path, True, used_validation_set
+        data_path, ml_config, True, used_validation_set
     )
 
     # Load the trained model, and check that it was trained with the
@@ -204,7 +206,7 @@ def main(config: ConfigModel) -> None:
         config.used_validation_set,
         config.model_path,
         config.data_path,
-        ml_config.algorithm,
+        ml_config,
     )
 
 

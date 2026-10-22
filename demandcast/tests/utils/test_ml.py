@@ -593,14 +593,13 @@ def test_prepare_split_datasets():
     )
 
     with (
-        patch("utils.ml.read_and_check_ml_configuration") as mock_read_config,
         patch("pandas.read_parquet") as mock_read_parquet,
     ):
-        mock_read_config.return_value = sample_config
         mock_read_parquet.return_value = sample_data
 
         result = utils.ml.prepare_split_datasets(
             "/path/to/data.parquet",
+            sample_config,
             testing_set=True,
             validation_set=True,
         )
@@ -638,14 +637,13 @@ def test_prepare_split_datasets_with_training_set_only():
     )
 
     with (
-        patch("utils.ml.read_and_check_ml_configuration") as mock_read_config,
         patch("pandas.read_parquet") as mock_read_parquet,
     ):
-        mock_read_config.return_value = sample_config
         mock_read_parquet.return_value = sample_data
 
         result = utils.ml.prepare_split_datasets(
             "/path/to/data.parquet",
+            sample_config,
             testing_set=False,
             validation_set=False,
         )
@@ -682,14 +680,13 @@ def test_prepare_dataset_without_splits():
     )
 
     with (
-        patch("utils.ml.read_and_check_ml_configuration") as mock_read_config,
         patch("pandas.read_parquet") as mock_read_parquet,
     ):
-        mock_read_config.return_value = sample_config
         mock_read_parquet.return_value = sample_data
 
         result = utils.ml.prepare_dataset(
             "/path/to/data.parquet",
+            sample_config,
             target=True,
         )
 
@@ -730,14 +727,13 @@ def test_prepare_dataset_without_target():
     )
 
     with (
-        patch("utils.ml.read_and_check_ml_configuration") as mock_read_config,
         patch("pandas.read_parquet") as mock_read_parquet,
     ):
-        mock_read_config.return_value = sample_config
         mock_read_parquet.return_value = sample_data
 
         result = utils.ml.prepare_dataset(
             "/path/to/data.parquet",
+            sample_config,
             target=False,
         )
 
@@ -769,14 +765,12 @@ def test_prepare_dataset_without_local_year():
     )
 
     with (
-        patch("utils.ml.read_and_check_ml_configuration") as mock_read_config,
         patch("pandas.read_parquet") as mock_read_parquet,
     ):
-        mock_read_config.return_value = sample_config
         mock_read_parquet.return_value = sample_data
 
         with pytest.raises(ValueError, match="no 'Local year' column"):
-            utils.ml.prepare_dataset("/path/to/data.parquet")
+            utils.ml.prepare_dataset("/path/to/data.parquet", sample_config)
 
 
 def test_to_load_relative_to_annual_mean():

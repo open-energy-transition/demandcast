@@ -72,7 +72,7 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 
 ## Adding a model
 
-1. Add `ml_models/<model>.py` with the interface of `ModelModule` in `ml_models/registry.py`, and its settings in `config/<model>_config.yaml`, validated with pydantic.
+1. Add `ml_models/<model>.py` with the interface of `ModelModule` in `ml_models/registry.py`, and its settings in `config/<model>_config.yaml`, validated by the `ConfigModel` of the module. The scripts read the settings (`ml_models.registry.read_model_configuration`) and pass them in; the module reads no file.
 2. Add the module to `MODEL_MODULES` in `ml_models/registry.py`, and to the modules that mypy checks in `tests/ml_models/test_registry.py`, whose contract test then runs the model.
 3. Put heavy dependencies in an optional extra in `pyproject.toml`, like `lstm`.
 

@@ -70,7 +70,7 @@ def _construct_output_dataset(
 def run_forecasting(
     model_path: str | None,
     data_path: str | None,
-    algorithm: str,
+    ml_config: utils.ml.ConfigModel,
 ) -> None:
     """
     Run the model forecasting process.
@@ -83,19 +83,23 @@ def run_forecasting(
     data_path : str | None
         The path to the assembled data file. If None, the latest file
         in the default directory will be used.
-    algorithm : str
-        The machine learning algorithm to use for forecasting.
+    ml_config : utils.ml.ConfigModel
+        The settings of the machine learning models, with the
+        algorithm.
     """
     logging.info("Starting model forecasting process.")
 
     # Get the module of the model.
+    algorithm = ml_config.algorithm
     model_module = ml_models.registry.get_model_module(algorithm)
 
     # Get the assembled data path.
     data_path = utils.ml.get_assemble_data_path(data_path)
 
     # Read and prepare the dataset.
-    prepared_dataset = utils.ml.prepare_dataset(data_path, target=False)
+    prepared_dataset = utils.ml.prepare_dataset(
+        data_path, ml_config, target=False
+    )
 
     # Load the trained model, and check that it was trained with the
     # features of the prepared dataset.
@@ -143,7 +147,7 @@ def main(config: ConfigModel) -> None:
     run_forecasting(
         config.model_path,
         config.data_path,
-        ml_config.algorithm,
+        ml_config,
     )
 
 
