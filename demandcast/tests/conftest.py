@@ -21,12 +21,16 @@ import ml_models  # noqa: F401
 import os
 
 import cleaning.flags
+import matplotlib as mpl
 import pandas as pd
 import pytest
 import utils.paths
 
 # Draw figures without a display: interactive backends need Tcl/Tk,
-# which is missing on some systems, such as Windows CI runners.
+# which is missing or broken on some systems, such as Windows CI
+# runners. matplotlib is already imported (by cleaning.flags), so the
+# backend is set directly, and the variable is for the subprocesses.
+mpl.use("Agg")
 os.environ["MPLBACKEND"] = "Agg"
 
 
