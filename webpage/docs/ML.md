@@ -180,6 +180,16 @@ On this benchmark, XGBoost outperforms LSTM by a wide margin on every entity. Th
 - LSTM: default hyperparameters (`n_timesteps=24`, `n_units=32`, `n_layers=1`, `epochs=5`)
 - XGBoost: default hyperparameters (see [XGBoost Configuration](#xgboost-configuration))
 
+**Reproducing the benchmark:** `demandcast/benchmark/` has the configuration files of the retrieval and assembly of the benchmark data, and a script that runs them one after the other and stops at the first step that fails:
+
+```bash
+cd demandcast
+uv run python -m benchmark.run                 # all six steps
+uv run python -m benchmark.run --from-step 5   # resume from the temperature
+```
+
+The assembled data is saved in `data/assembled/`; train and validate each model on it as described below, with `reserve_testing_set: true`.
+
 ## Training and Validation
 
 The machine learning pipeline in DemandCast is managed through several Python scripts located in the `demandcast/` directory. Each script utilizes a configuration file to specify parameters such as data paths, model settings, and evaluation metrics. All scripts accept only the path to a configuration file:
@@ -266,7 +276,7 @@ model_path:                        # Path to trained model file
 data_path:                         # Path to assembled data file
 ```
 
-Results are saved to `ml_models/validation/with_{trained_model_name}/using_{data_file_name}/{case}_YYYYMMDD_HHMMSS.parquet`, containing metrics for each region in the test set.
+Results are saved to `data/results/validation/with_{trained_model_name}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the MAPE of each country and subdivision in each set.
 
 ### Cross-Validation
 
@@ -288,7 +298,7 @@ n_jobs: 1                          # Number of parallel jobs
 data_path:                         # Path to assembled data file
 ```
 
-Cross-validation results are saved to `ml_models/cross_validation/using_{model_name}/with_{data_file_name}/{case}_YYYYMMDD_HHMMSS.parquet`, containing metrics for each held-out region.
+Cross-validation results are saved to `data/results/cross_validation/with_{algorithm}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the MAPE of each held-out country and subdivision.
 
 ### Forecasting
 
@@ -308,7 +318,7 @@ model_path:                        # Path to trained model file
 data_path:                         # Path to assembled data file
 ```
 
-Forecasts are saved to `ml_models/forecasts/with_{trained_model_name}/using_{data_file_name}/{case}_YYYYMMDD_HHMMSS.parquet`, containing predicted electricity demand for the forecast period.
+Forecasts are saved to `data/results/forecasts/with_{trained_model_name}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the predicted electricity demand for the forecast period.
 
 ## Model Configuration
 

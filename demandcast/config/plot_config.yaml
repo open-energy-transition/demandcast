@@ -8,7 +8,8 @@
 figure: data_availability
 
 # OPTIONAL - REQUIRED for ml_results figure.
-# The version of the ML model whose results are to be plotted.
+# The version of the ML model whose results are to be plotted: the name of its
+# folder of MAPE files in data/results/validation.
 version:
 
 # OPTIONAL.

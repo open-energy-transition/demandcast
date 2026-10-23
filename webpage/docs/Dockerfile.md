@@ -81,7 +81,7 @@ The [Dockerfile](https://github.com/open-energy-transition/demandcast/blob/main/
 
 - starts from the official `python:3.12-slim` image, and copies [uv](https://docs.astral.sh/uv/) from its official image, both pinned to an exact digest (Dependabot proposes updates);
 - installs the dependencies from `uv.lock` (`uv sync --locked --no-dev`) into `/app/.venv`, without development tools such as pytest;
-- copies the DemandCast code to `/app`, without the tests and the `archive/` folder;
+- copies the DemandCast code to `/app`, without the tests;
 - runs as the unprivileged user `demandcast` (ID 1000);
 - puts the virtual environment on the `PATH`, so `python` and `uv run` use it directly, without changing it.
 
