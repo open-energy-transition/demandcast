@@ -286,8 +286,16 @@ JAM,Jamaica,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,T
 JEY,Jersey,False,,,False,,,False,,,False,False,False,False
 JOR,Jordan,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
 JPN,Japan,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+JPN_Chūbu,Subdivision of Japan,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+JPN_Chūgoku,Subdivision of Japan,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+JPN_Hokkaidō,Subdivision of Japan,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+JPN_Hokuriku,Subdivision of Japan,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 JPN_Kansai,Subdivision of Japan,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 JPN_Kantō,Subdivision of Japan,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+JPN_Kyūshū,Subdivision of Japan,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+JPN_Okinawa,Subdivision of Japan,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+JPN_Shikoku,Subdivision of Japan,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+JPN_Tōhoku,Subdivision of Japan,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 KAZ,Kazakhstan,True,1960.0,2025.0,True,1990.0,2025.0,True,1990.0,2025.0,True,True,True,True
 KEN,Kenya,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 KGZ,Kyrgyzstan,True,1960.0,2025.0,True,1990.0,2025.0,True,1990.0,2025.0,True,True,True,True

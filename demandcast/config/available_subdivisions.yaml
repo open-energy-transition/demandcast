@@ -713,12 +713,44 @@ entities:
     subdivision_name: West Bengal
   - country_code: JPN
     country_name: Japan
+    subdivision_code: Chūbu
+    subdivision_name: Chūbu
+  - country_code: JPN
+    country_name: Japan
+    subdivision_code: Chūgoku
+    subdivision_name: Chūgoku
+  - country_code: JPN
+    country_name: Japan
+    subdivision_code: Hokkaidō
+    subdivision_name: Hokkaidō
+  - country_code: JPN
+    country_name: Japan
+    subdivision_code: Hokuriku
+    subdivision_name: Hokuriku
+  - country_code: JPN
+    country_name: Japan
     subdivision_code: Kansai
     subdivision_name: Kansai
   - country_code: JPN
     country_name: Japan
     subdivision_code: Kantō
     subdivision_name: Kantō
+  - country_code: JPN
+    country_name: Japan
+    subdivision_code: Kyūshū
+    subdivision_name: Kyūshū
+  - country_code: JPN
+    country_name: Japan
+    subdivision_code: Okinawa
+    subdivision_name: Okinawa
+  - country_code: JPN
+    country_name: Japan
+    subdivision_code: Shikoku
+    subdivision_name: Shikoku
+  - country_code: JPN
+    country_name: Japan
+    subdivision_code: Tōhoku
+    subdivision_name: Tōhoku
   - country_code: MEX
     country_name: Mexico
     subdivision_code: BCA

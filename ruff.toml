@@ -36,8 +36,9 @@ preview = true
 pydocstyle.convention = "numpy"
 pycodestyle.max-doc-length = 72
 pep8-naming.extend-ignore-names = ["X", "X_*"]
-# Turkish and Japanese characters in the column names of data sources.
-allowed-confusables = ["ı", "〔", "〕"]
+# Turkish and Japanese characters in the column names and screens of data
+# sources.
+allowed-confusables = ["ı", "〔", "〕", "（", "）", "～"]
 
 [lint.per-file-ignores]
 "demandcast/tests/**" = ["S101"]

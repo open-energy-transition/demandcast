@@ -1,0 +1,84 @@
+licence:
+  redistribute: false
+  terms: The terms of use of the system information service of OCCTO were not found, so the data is not redistributed.
+  url: https://occtonet3.occto.or.jp/public/dfw/RP11/OCCTO/SD/LOGIN_login
+compiled: true
+definition:
+  - start_date: 2016-04-01
+    quantity: area demand
+    embedded_generation: included
+    network_losses: unknown
+    storage_charging: excluded
+    power_plant_use: unknown
+    note: OCCTO republishes the area demand of the general transmission operators, in their national format, which lists the pumping of storage and the transmission to other areas apart. It counts the solar fed into the networks, but not the solar that the consumers of the surplus purchase scheme use themselves, as Kyushu explains for the same format.
+entities:
+  - subdivision_name: Hokkaidō
+    subdivision_code: Hokkaidō
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Tōhoku
+    subdivision_code: Tōhoku
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Kantō
+    subdivision_code: Kantō
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Chūbu
+    subdivision_code: Chūbu
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Hokuriku
+    subdivision_code: Hokuriku
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Kansai
+    subdivision_code: Kansai
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Chūgoku
+    subdivision_code: Chūgoku
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Shikoku
+    subdivision_code: Shikoku
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Kyūshū
+    subdivision_code: Kyūshū
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Okinawa
+    subdivision_code: Okinawa
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
