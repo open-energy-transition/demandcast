@@ -136,6 +136,67 @@ def test_no_midday_dip(monkeypatch):
     ]
 
 
+def _seasonal_demand(capacity: dict[tuple[int, int], float]) -> pd.Series:
+    """
+    Make an hourly demand without the solar of some seasons.
+
+    Returns
+    -------
+    pandas.Series
+        The demand of _demand, without the solar capacity of each year
+        and quarter (from 0 for December to February) given, from
+        December 2019 to November 2023.
+    """
+    demand = _demand(dict.fromkeys(range(2020, 2024), 0))
+    middle = (
+        pd.DatetimeIndex(demand.index)
+        - pd.Timedelta(minutes=30)
+        + pd.Timedelta(hours=3)
+    )
+    hours = middle.hour + middle.minute / 60
+    daylight = np.clip(np.sin(np.pi * (hours - 6) / 12), 0, None)
+    seasons = zip(
+        middle.year + (middle.month == 12),
+        (middle.month % 12) // 3,
+        strict=True,
+    )
+    solar = np.array([capacity.get(season, 0.0) for season in seasons])
+    return (demand - solar * np.asarray(daylight)).rename("Load (MW)")
+
+
+def test_midday_dip_of_a_single_season(monkeypatch):
+    """Test that a dip of a single season is not flagged."""
+    # The dip of JJA 2021 alone does not last.
+    flags = _flag(_seasonal_demand({(2021, 2): 200}), monkeypatch)
+
+    assert flags.empty
+
+
+def test_midday_dip_of_the_same_season(monkeypatch):
+    """Test that a dip of the same season of two years is flagged."""
+    # The solar grows, so the second dip is deeper than the first, which
+    # the median of the earlier years includes.
+    flags = _flag(
+        _seasonal_demand({(2021, 2): 200, (2022, 2): 300}), monkeypatch
+    )
+
+    assert flags[["flag", "period"]].to_numpy().tolist() == [
+        ["midday_dip", "JJA 2021"],
+        ["midday_dip", "JJA 2022"],
+        # The last year of the season, where a change shows once.
+        ["midday_rise", "JJA 2023"],
+    ]
+
+
+def test_midday_dip_of_the_last_season(monkeypatch):
+    """Test that a dip of the last year of a season is flagged."""
+    flags = _flag(_seasonal_demand({(2023, 3): 200}), monkeypatch)
+
+    assert flags[["flag", "period"]].to_numpy().tolist() == [
+        ["midday_dip", "SON 2023"]
+    ]
+
+
 def test_midday_dip_without_enough_days(monkeypatch):
     """Test that a quarter with too few days is not flagged."""
     demand = _demand({2020: 0, 2021: 0, 2022: 0, 2023: 200})

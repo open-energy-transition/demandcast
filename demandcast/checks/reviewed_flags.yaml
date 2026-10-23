@@ -1,16 +1,6 @@
 reviews:
   - data_source: aemo_nem
-    code: AUS_NSW
-    flag: midday_dip
-    verdict: net_demand
-    note: The operational demand of AEMO leaves out the rooftop solar, whose estimate is added from 2017 (#297); before, AEMO has none.
-  - data_source: aemo_nem
     code: AUS_SA
-    flag: midday_dip
-    verdict: net_demand
-    note: The operational demand of AEMO leaves out the rooftop solar, whose estimate is added from 2017 (#297); before, AEMO has none.
-  - data_source: aemo_nem
-    code: AUS_VIC
     flag: midday_dip
     verdict: net_demand
     note: The operational demand of AEMO leaves out the rooftop solar, whose estimate is added from 2017 (#297); before, AEMO has none.
@@ -48,7 +38,6 @@ reviews:
     periods:
       - JJA 2022
       - SON 2022
-      - MAM 2023
     verdict: net_demand
     note: The load of ONS leaves out the distributed generation until 2023-04-29.
   - data_source: ons
@@ -62,13 +51,6 @@ reviews:
       - MAM 2023
     verdict: net_demand
     note: The load of ONS leaves out the distributed generation until 2023-04-29.
-  - data_source: epias
-    code: TUR
-    flag: midday_dip
-    verdict: false_positive
-    note: The licence-exempt generation is added until 2020-12-29 (#286); the winter of 2017 is compared with that of 2016, which has mostly January and February.
-    periods:
-      - DJF 2017
   - data_source: caiso
     code: USA_CAL
     flag: midday_rise
@@ -94,13 +76,6 @@ reviews:
     note: The rooftop solar of Uttarakhand grows from 2024.
   - data_source: niti
     code: IND_CH
-    flag: midday_dip
-    periods:
-      - MAM 2020
-    verdict: real_event
-    note: The lockdown of 2020.
-  - data_source: niti
-    code: IND_PB
     flag: midday_dip
     periods:
       - MAM 2020
@@ -311,27 +286,6 @@ reviews:
     verdict: net_demand
     note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
   - data_source: niti
-    code: IND_ML
-    flag: midday_dip
-    periods:
-      - MAM 2018
-    verdict: false_positive
-    note: A single quarter of a small state, whose midday index is noisy.
-  - data_source: niti
-    code: IND_MN
-    flag: midday_dip
-    periods:
-      - DJF 2020
-    verdict: false_positive
-    note: A single quarter of a small state, whose midday index is noisy.
-  - data_source: niti
-    code: IND_MZ
-    flag: midday_dip
-    periods:
-      - SON 2024
-    verdict: false_positive
-    note: A single quarter of a small state, whose midday index is noisy.
-  - data_source: niti
     code: IND_NL
     flag: midday_dip
     periods:
@@ -340,27 +294,6 @@ reviews:
       - DJF 2026
     verdict: false_positive
     note: The demand of the morning and the afternoon grows faster than that at midday from 2024, which the few MW of solar of Nagaland cannot explain; the states around it have no dip.
-  - data_source: niti
-    code: IND_AR
-    flag: midday_dip
-    periods:
-      - JJA 2019
-    verdict: false_positive
-    note: A single quarter of a small state, whose midday index is noisy.
-  - data_source: niti
-    code: IND_SK
-    flag: midday_dip
-    periods:
-      - SON 2019
-    verdict: false_positive
-    note: A single quarter of a small state, whose midday index is noisy.
-  - data_source: eia
-    code: USA_SW
-    flag: midday_dip
-    periods:
-      - SON 2021
-    verdict: false_positive
-    note: A single quarter; the index is back in 2022.
   - data_source: entsoe
     code: CYP
     flag: midday_rise
@@ -382,31 +315,12 @@ reviews:
     verdict: definition_change
     note: The load at midday rises in 2026, probably with the charging of the batteries that Chile builds counted as load.
   - data_source: entsoe
-    code: ESP
-    flag: midday_rise
-    periods:
-      - MAM 2020
-    verdict: real_event
-    note: The lockdown of 2020.
-  - data_source: entsoe
-    code: GRC
-    flag: midday_rise
-    periods:
-      - MAM 2020
-    verdict: real_event
-    note: The lockdown of 2020.
-  - data_source: entsoe
     code: SVN
     flag: midday_rise
     periods:
       - JJA 2026
     verdict: false_positive
     note: A single quarter after years of dips; to check whether it continues.
-  - data_source: niti
-    code: IND_AP
-    flag: midday_rise
-    verdict: real_event
-    note: The agricultural supply of the state moves to the day, partly with solar feeders.
   - data_source: niti
     code: IND_HR
     flag: midday_rise
@@ -443,22 +357,12 @@ reviews:
     verdict: false_positive
     note: Single quarters or a small state, whose midday index is noisy.
   - data_source: niti
-    code: IND_NL
-    flag: midday_rise
-    verdict: false_positive
-    note: Single quarters or a small state, whose midday index is noisy.
-  - data_source: niti
     code: IND_OR
     flag: midday_rise
     verdict: false_positive
     note: Single quarters or a small state, whose midday index is noisy.
   - data_source: niti
     code: IND_SK
-    flag: midday_rise
-    verdict: false_positive
-    note: Single quarters or a small state, whose midday index is noisy.
-  - data_source: niti
-    code: IND_TN
     flag: midday_rise
     verdict: false_positive
     note: Single quarters or a small state, whose midday index is noisy.
@@ -567,7 +471,6 @@ reviews:
     code: AUS_WA
     flag: midday_rise
     periods:
-      - SON 2024
       - MAM 2026
       - JJA 2026
     verdict: definition_change
