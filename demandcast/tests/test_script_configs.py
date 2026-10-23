@@ -371,10 +371,10 @@ def test_main_of_the_scripts(
     module = importlib.import_module(script)
     calls = []
     monkeypatch.setattr(module, function, lambda *args: calls.append(args))
-    if hasattr(module, "utils") and hasattr(module.utils, "ml"):
+    if hasattr(module, "ml_models") and hasattr(module.ml_models, "data"):
         ml_config = types.SimpleNamespace(algorithm="xgboost")
         monkeypatch.setattr(
-            module.utils.ml,
+            module.ml_models.data,
             "read_and_check_ml_configuration",
             lambda: ml_config,
         )

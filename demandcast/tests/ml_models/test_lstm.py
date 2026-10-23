@@ -6,11 +6,11 @@ Description:
     Unit tests for ml_models.lstm.
 
     Tests use a small synthetic dataset whose structure exactly mirrors
-    the output of ``utils.ml.prepare_split_datasets(testing_set=True,
-    validation_set=True)``: a dict with ``"training"``,
-    ``"validation"``, and ``"testing"`` keys, each containing
-    ``"features"``, ``"target"``, ``"group"``, ``"time"``, and
-    ``"scaling_factor"`` sub-keys.
+    the output of ``ml_models.data.prepare_split_datasets(
+    testing_set=True, validation_set=True)``: a dict with
+    ``"training"``, ``"validation"``, and ``"testing"`` keys, each
+    containing ``"features"``, ``"target"``, ``"group"``, ``"time"``,
+    and ``"scaling_factor"`` sub-keys.
 
     Where file I/O or configuration reading is needed, the tests patch
     the relevant functions rather than touching the real file system.

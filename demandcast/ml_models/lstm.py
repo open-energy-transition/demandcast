@@ -22,21 +22,20 @@ from typing import cast, overload
 # isort: off
 # torch must be imported before pandas — pandas side-effects corrupt
 # the Windows DLL loader state for torch's c10.dll initialisation.
-import utils.torch_windows
-import utils.paths
+import ml_models.torch_windows
 
-_dll_dir_tokens = utils.torch_windows.enable_torch_dll_directory()
+_dll_dir_tokens = ml_models.torch_windows.enable_torch_dll_directory()
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 from torch import nn  # noqa: E402
 import pandas as pd  # noqa: E402
 
 # isort: on
-import utils.config  # noqa: E402
-import utils.ml  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 from sklearn.base import BaseEstimator, RegressorMixin  # noqa: E402
 from sklearn.utils.validation import check_is_fitted  # noqa: E402
+
+import ml_models.data  # noqa: E402
 
 # The extension of the files of the saved models.
 FILE_EXTENSION = ".pt"
@@ -440,7 +439,7 @@ def get_initialized_model(config: ConfigModel) -> LSTMRegressor:
 
 
 def train(
-    prepared_dataset: dict[str, utils.ml.PreparedDataset],
+    prepared_dataset: dict[str, ml_models.data.PreparedDataset],
     config: ConfigModel,
 ) -> LSTMRegressor:
     """
@@ -453,9 +452,10 @@ def train(
     Parameters
     ----------
     prepared_dataset : dict[str, PreparedDataset]
-        Datasets produced by ``utils.ml.prepare_split_datasets`` with at
-        least a ``"training"`` key containing ``"features"``,
-        ``"target"``, and ``"group"`` sub-keys.
+        Datasets produced by
+        ``ml_models.data.prepare_split_datasets`` with at least a
+        ``"training"`` key containing ``"features"``, ``"target"``, and
+        ``"group"`` sub-keys.
     config : ConfigModel
         The settings of the model.
 
@@ -482,21 +482,21 @@ def train(
 
 @overload
 def predict(
-    lstm_model: LSTMRegressor, prepared_dataset: utils.ml.PreparedDataset
+    lstm_model: LSTMRegressor, prepared_dataset: ml_models.data.PreparedDataset
 ) -> pd.Series: ...
 
 
 @overload
 def predict(
     lstm_model: LSTMRegressor,
-    prepared_dataset: dict[str, utils.ml.PreparedDataset],
+    prepared_dataset: dict[str, ml_models.data.PreparedDataset],
 ) -> dict[str, pd.Series]: ...
 
 
 def predict(
     lstm_model: LSTMRegressor,
-    prepared_dataset: utils.ml.PreparedDataset
-    | dict[str, utils.ml.PreparedDataset],
+    prepared_dataset: ml_models.data.PreparedDataset
+    | dict[str, ml_models.data.PreparedDataset],
 ) -> pd.Series | dict[str, pd.Series]:
     """
     Make predictions with a trained LSTM model.
@@ -517,8 +517,9 @@ def predict(
     lstm_model : LSTMRegressor
         Fitted LSTM model.
     prepared_dataset : PreparedDataset | dict[str, PreparedDataset]
-        Dataset produced by ``utils.ml.prepare_dataset``, or datasets
-        produced by ``utils.ml.prepare_split_datasets``.
+        Dataset produced by ``ml_models.data.prepare_dataset``, or
+        datasets produced by
+        ``ml_models.data.prepare_split_datasets``.
 
     Returns
     -------
@@ -529,7 +530,7 @@ def predict(
     logging.info("Making predictions with the trained LSTM model.")
 
     if "features" in prepared_dataset:
-        dataset = cast("utils.ml.PreparedDataset", prepared_dataset)
+        dataset = cast("ml_models.data.PreparedDataset", prepared_dataset)
         preds = lstm_model.predict(
             dataset["features"],
             groups=dataset.get("group"),

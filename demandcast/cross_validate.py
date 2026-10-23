@@ -11,10 +11,11 @@ Description:
 import logging
 import os
 
+import ml_models.data
 import ml_models.evaluation
+import ml_models.files
 import ml_models.registry
 import utils.config
-import utils.ml
 from pydantic import BaseModel
 
 
@@ -30,7 +31,7 @@ def run_model_cross_validation(
     scoring_metric: str,
     n_jobs: int | None,
     data_path: str | None,
-    ml_config: utils.ml.ConfigModel,
+    ml_config: ml_models.data.ConfigModel,
     model_config: BaseModel,
 ) -> None:
     """
@@ -45,7 +46,7 @@ def run_model_cross_validation(
     data_path : str | None
         The path to the assembled data file. If None, the latest file
         in the default directory will be used.
-    ml_config : utils.ml.ConfigModel
+    ml_config : ml_models.data.ConfigModel
         The settings of the machine learning models, with the
         algorithm.
     model_config : pydantic.BaseModel
@@ -54,10 +55,10 @@ def run_model_cross_validation(
     logging.info("Starting cross-validation process.")
 
     # Get the assembled data path.
-    data_path = utils.ml.get_assemble_data_path(data_path)
+    data_path = ml_models.files.get_assemble_data_path(data_path)
 
     # Read and prepare the dataset.
-    prepared_dataset = utils.ml.prepare_dataset(data_path, ml_config)
+    prepared_dataset = ml_models.data.prepare_dataset(data_path, ml_config)
 
     # Run Leave-One-Group-Out cross-validation.
     mapes = ml_models.evaluation.cross_validate(
@@ -69,7 +70,7 @@ def run_model_cross_validation(
     )
 
     # Save the cross-validation results.
-    utils.ml.save_results(
+    ml_models.files.save_results(
         "cross_validation",
         mapes,
         ml_config.algorithm.lower(),
@@ -91,7 +92,7 @@ def main(config: ConfigModel) -> None:
     utils.config.log_configuration(config)
 
     # Read and check machine learning configuration.
-    ml_config = utils.ml.read_and_check_ml_configuration()
+    ml_config = ml_models.data.read_and_check_ml_configuration()
 
     run_model_cross_validation(
         config.scoring_metric,

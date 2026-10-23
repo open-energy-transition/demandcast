@@ -10,9 +10,10 @@ import logging
 from typing import cast, overload
 
 import pandas as pd
-import utils.ml
 from pydantic import BaseModel
 from xgboost import XGBRegressor
+
+import ml_models.data
 
 # The extension of the files of the saved models.
 FILE_EXTENSION = ".json"
@@ -91,7 +92,7 @@ def get_initialized_model(config: ConfigModel) -> XGBRegressor:
 
 
 def train(
-    prepared_dataset: dict[str, utils.ml.PreparedDataset],
+    prepared_dataset: dict[str, ml_models.data.PreparedDataset],
     config: ConfigModel,
 ) -> XGBRegressor:
     """
@@ -101,7 +102,7 @@ def train(
     ----------
     prepared_dataset : dict[str, PreparedDataset]
         The prepared datasets for training, validation, and testing,
-        produced by ``utils.ml.prepare_split_datasets``.
+        produced by ``ml_models.data.prepare_split_datasets``.
     config : ConfigModel
         The settings of the model.
 
@@ -140,21 +141,21 @@ def train(
 
 @overload
 def predict(
-    xgb_model: XGBRegressor, prepared_dataset: utils.ml.PreparedDataset
+    xgb_model: XGBRegressor, prepared_dataset: ml_models.data.PreparedDataset
 ) -> pd.Series: ...
 
 
 @overload
 def predict(
     xgb_model: XGBRegressor,
-    prepared_dataset: dict[str, utils.ml.PreparedDataset],
+    prepared_dataset: dict[str, ml_models.data.PreparedDataset],
 ) -> dict[str, pd.Series]: ...
 
 
 def predict(
     xgb_model: XGBRegressor,
-    prepared_dataset: utils.ml.PreparedDataset
-    | dict[str, utils.ml.PreparedDataset],
+    prepared_dataset: ml_models.data.PreparedDataset
+    | dict[str, ml_models.data.PreparedDataset],
 ) -> pd.Series | dict[str, pd.Series]:
     """
     Make predictions using the trained XGBoost model.
@@ -177,7 +178,7 @@ def predict(
     if "features" in prepared_dataset:
         # The prepared_dataset is a single dataset, not split into
         # training/validation/testing.
-        dataset = cast("utils.ml.PreparedDataset", prepared_dataset)
+        dataset = cast("ml_models.data.PreparedDataset", prepared_dataset)
 
         # Make predictions and return them.
         return pd.Series(xgb_model.predict(dataset["features"]))

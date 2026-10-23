@@ -12,12 +12,12 @@ Description:
 
 from unittest.mock import patch
 
+import ml_models.data
 import ml_models.evaluation
 import ml_models.registry
 import numpy as np
 import pandas as pd
 import pytest
-import utils.ml
 from pydantic import BaseModel
 
 _ENTITIES = ["DEU", "FRA", "GBR"]
@@ -61,7 +61,7 @@ def _model_config(algorithm: str) -> BaseModel:
     return config_model()
 
 
-def _make_prepared_dataset() -> utils.ml.PreparedDataset:
+def _make_prepared_dataset() -> ml_models.data.PreparedDataset:
     """
     Build a flat prepared dataset spanning three entities.
 
@@ -69,7 +69,7 @@ def _make_prepared_dataset() -> utils.ml.PreparedDataset:
     -------
     PreparedDataset
         The features, target and entity codes, like the output of
-        ``utils.ml.prepare_dataset()``.
+        ``ml_models.data.prepare_dataset()``.
     """
     rng = np.random.default_rng(0)
     n_per = 20
@@ -109,7 +109,7 @@ def test_cross_validate_forwards_groups(algorithm):
     model_module = ml_models.registry.get_model_module(algorithm)
     real_train, real_predict = model_module.train, model_module.predict
     training_groups: list[pd.Series] = []
-    predicted_datasets: list[utils.ml.PreparedDataset] = []
+    predicted_datasets: list[ml_models.data.PreparedDataset] = []
 
     def spy_train(prepared_dataset, config):
         training_groups.append(prepared_dataset["training"]["group"])
@@ -174,7 +174,7 @@ def test_calculate_mape_by_entity():
 def test_calculate_mapes(caplog):
     """Test that the MAPEs of each set are columns, and are logged."""
     entity_codes = pd.Series(["FRA", "DEU"], name="Entity code")
-    prepared_dataset: dict[str, utils.ml.PreparedDataset] = {
+    prepared_dataset: dict[str, ml_models.data.PreparedDataset] = {
         split: {
             "features": pd.DataFrame({"a": [0.0, 0.0]}),
             "target": pd.Series([1.0, 2.0]),

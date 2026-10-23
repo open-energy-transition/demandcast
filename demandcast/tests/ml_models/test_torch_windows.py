@@ -3,7 +3,7 @@ License: AGPL-3.0.
 
 Description:
 
-    Unit tests for utils.torch_windows.
+    Unit tests for ml_models.torch_windows.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 from unittest.mock import patch
 
-import utils.torch_windows as torch_windows_module
+import ml_models.torch_windows as torch_windows_module
 
 
 def test_returns_empty_list_on_non_windows():

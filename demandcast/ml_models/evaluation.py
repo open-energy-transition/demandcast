@@ -10,7 +10,8 @@ Description:
     subdivision in turn and scores it on the one left out.
 
     The errors are those of the target of the models, the load relative
-    to the annual mean of its local year (see utils.ml), so they measure
+    to the annual mean of its local year (see ml_models.data), so they
+    measure
     the error of the hourly profile, not that of the annual demand.
 """
 
@@ -19,13 +20,13 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-import utils.ml
 from pydantic import BaseModel
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.metrics import get_scorer, mean_absolute_percentage_error
 from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.utils.parallel import Parallel, delayed
 
+import ml_models.data
 import ml_models.registry
 
 
@@ -95,7 +96,7 @@ def calculate_mape_by_entity(
 
 
 def calculate_mapes(
-    prepared_dataset: dict[str, utils.ml.PreparedDataset],
+    prepared_dataset: dict[str, ml_models.data.PreparedDataset],
     predictions: dict[str, pd.Series],
 ) -> pd.DataFrame:
     """
@@ -179,7 +180,7 @@ class _GroupAwareModel(RegressorMixin, BaseEstimator):
 def _score_fold(
     algorithm: str,
     model_config: BaseModel,
-    prepared_dataset: utils.ml.PreparedDataset,
+    prepared_dataset: ml_models.data.PreparedDataset,
     scoring_metric: str,
     train_index: np.ndarray,
     test_index: np.ndarray,
@@ -239,7 +240,7 @@ def _score_fold(
 
 
 def cross_validate(
-    prepared_dataset: utils.ml.PreparedDataset,
+    prepared_dataset: ml_models.data.PreparedDataset,
     scoring_metric: str,
     n_jobs: int | None,
     algorithm: str,

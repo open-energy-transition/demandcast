@@ -11,10 +11,11 @@ Description:
 import logging
 import os
 
+import ml_models.data
+import ml_models.files
 import ml_models.registry
 import pandas as pd
 import utils.config
-import utils.ml
 from pydantic import BaseModel
 
 
@@ -26,7 +27,7 @@ class ConfigModel(BaseModel):
 
 
 def _construct_output_dataset(
-    prepared_dataset: utils.ml.PreparedDataset,
+    prepared_dataset: ml_models.data.PreparedDataset,
     predictions: pd.Series,
 ) -> pd.DataFrame:
     """
@@ -47,7 +48,7 @@ def _construct_output_dataset(
     """
     # Convert the predictions from the load relative to the annual mean
     # to MW.
-    predictions = utils.ml.to_megawatts(
+    predictions = ml_models.data.to_megawatts(
         predictions,
         prepared_dataset["local_year"],
         prepared_dataset["scaling_factor"],
@@ -69,7 +70,7 @@ def _construct_output_dataset(
 def run_forecasting(
     model_path: str | None,
     data_path: str | None,
-    ml_config: utils.ml.ConfigModel,
+    ml_config: ml_models.data.ConfigModel,
 ) -> None:
     """
     Run the model forecasting process.
@@ -82,7 +83,7 @@ def run_forecasting(
     data_path : str | None
         The path to the assembled data file. If None, the latest file
         in the default directory will be used.
-    ml_config : utils.ml.ConfigModel
+    ml_config : ml_models.data.ConfigModel
         The settings of the machine learning models, with the
         algorithm.
     """
@@ -93,20 +94,20 @@ def run_forecasting(
     model_module = ml_models.registry.get_model_module(algorithm)
 
     # Get the assembled data path.
-    data_path = utils.ml.get_assemble_data_path(data_path)
+    data_path = ml_models.files.get_assemble_data_path(data_path)
 
     # Read and prepare the dataset.
-    prepared_dataset = utils.ml.prepare_dataset(
+    prepared_dataset = ml_models.data.prepare_dataset(
         data_path, ml_config, target=False
     )
 
     # Load the trained model, and check that it was trained with the
     # features of the prepared dataset.
-    trained_model_path = utils.ml.get_trained_model_path(
+    trained_model_path = ml_models.files.get_trained_model_path(
         model_path, algorithm.lower(), model_module.FILE_EXTENSION
     )
     model = model_module.load(trained_model_path)
-    utils.ml.check_model_features(model, prepared_dataset["features"])
+    ml_models.data.check_model_features(model, prepared_dataset["features"])
 
     # Make predictions.
     predictions = model_module.predict(model, prepared_dataset)
@@ -119,7 +120,7 @@ def run_forecasting(
     )
 
     # Save the output dataset.
-    utils.ml.save_results(
+    ml_models.files.save_results(
         "forecasts",
         output_dataset,
         os.path.basename(trained_model_path).split(".")[0],
@@ -141,7 +142,7 @@ def main(config: ConfigModel) -> None:
     utils.config.log_configuration(config)
 
     # Read and check machine learning configuration.
-    ml_config = utils.ml.read_and_check_ml_configuration()
+    ml_config = ml_models.data.read_and_check_ml_configuration()
 
     run_forecasting(
         config.model_path,
