@@ -311,6 +311,7 @@ def test_check_dispatch(monkeypatch, caplog, name):
             "ml_results",
             ("v1", None, True),
         ),
+        ({"figure": "status"}, "status", ()),
     ],
 )
 def test_plot_dispatch(monkeypatch, settings, module, arguments):
