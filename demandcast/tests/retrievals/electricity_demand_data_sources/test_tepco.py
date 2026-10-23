@@ -35,7 +35,7 @@ def _daily_file(day: str, values: list[int]) -> bytes:
         f"{day} 23:55 UPDATE",
         "ピーク時供給力(万kW),時間帯,供給力情報更新日,供給力情報更新時刻",
         # TEPCO writes the time ranges with a full-width tilde.
-        "4607,13:00～14:00,12/1,23:40",  # noqa: RUF001
+        "4607,13:00～14:00,12/1,23:40",
         "",
         "DATE,TIME,当日実績(万kW),予測値(万kW),使用率(%),供給力(万kW)",
         *[
