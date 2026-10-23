@@ -137,3 +137,19 @@ def test_plot(tmp_path):
     assert os.listdir(tmp_path) == [
         "data_availability_by_gpd_ppp_and_electricity_demand.png"
     ]
+
+
+def test_get_height_of_bar_charts():
+    """Test that the tallest stack of either chart sets the height."""
+    gdp = {
+        "EU": {"low": 100.0, "high": 300.0},
+        "AS": {"low": 50.0, "high": 0.0},
+    }
+    demand = {
+        "EU": {"low": 200.0, "high": 0.0},
+        "AS": {"low": 300.0, "high": 0.0},
+    }
+
+    assert data_availability._get_height_of_bar_charts(
+        gdp, demand
+    ) == pytest.approx(525.0)
