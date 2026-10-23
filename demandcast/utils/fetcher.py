@@ -495,6 +495,11 @@ def _check_table_options(
         raise TypeError(f"Unknown options of the request: {sorted(unknown)}.")
 
 
+# The time out of the download of a CSV or Excel file, in seconds, by
+# default: some servers take tens of seconds to prepare a file, such as
+# ADME for a year of data.
+FILE_TIMEOUT = 300
+
 # The compression of a file by the extension of its name, as pandas
 # infers it.
 _COMPRESSIONS = {
@@ -567,7 +572,8 @@ def fetch_dataframe(
     retry_delay : int, optional
         The delay between attempts in seconds.
     **kwargs : Any
-        The other options of the request, as for fetch_response.
+        The other options of the request, as for fetch_response. The
+        time out of a CSV or Excel file is FILE_TIMEOUT by default.
 
     Returns
     -------
@@ -589,7 +595,10 @@ def fetch_dataframe(
         response = _send(
             url,
             "POST" if read_with == "requests.post" else "GET",
-            kwargs.get("timeout", 10),
+            kwargs.get(
+                "timeout",
+                FILE_TIMEOUT if content_type in ("csv", "excel") else 10,
+            ),
             kwargs.get("verify_ssl", True),
             kwargs.get("header_params"),
             kwargs.get("request_params"),

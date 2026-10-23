@@ -56,6 +56,8 @@ def test_fetch_compressed_csv():
         )
 
     assert dataset.to_dict("list") == {"a": [1], "b": [2]}
+    # A file has a longer time out by default than a response.
+    assert mock_get.call_args.kwargs["timeout"] == utils.fetcher.FILE_TIMEOUT
 
 
 def test_fetch_of_each_type():
