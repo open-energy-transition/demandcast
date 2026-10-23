@@ -14,7 +14,8 @@ Each step is a script in `demandcast/`, configured by `config/<script>_config.ya
 2. `assemble.py` merges the retrieved data into one dataset for training or forecasting, in `data/assembled/`. Its inputs are the rows of `DATASETS`: a new input is a new row, with its folder, columns and scenarios.
 3. `train.py` trains a model; `validate.py` evaluates it on each entity's most recent year, and `cross_validate.py` on entities left out of training.
 4. `forecast.py` predicts hourly demand in MW with a trained model.
-5. `plot.py`, `check.py` and `upload.py` draw figures, check data availability and the data sources over the network, and upload data to Google Cloud Storage and Zenodo.
+5. `plot.py` and `check.py` draw figures, and check data availability and the data sources over the network.
+6. `sync.py` copies the data folder to or from a private bucket of Google Cloud Storage, never overwriting or deleting files, and `publish.py` uploads a release (trained model, settings, forecasts) to Zenodo as a draft; their code is in `publishing/`.
 
 Paths come from `utils/paths.py`; use its functions instead of hard-coding paths. The inputs that come with the code (configuration, shapes, data source YAMLs, flag reviews) stay in the code folder, and everything the scripts write goes under the data folder: `data/`, or the folder named by `DEMANDCAST_DATA_FOLDER`. Each dataset has its own folder there, with its stages (`raw/`, `processed/`, ...), next to `assembled/`, `models/<algorithm>/`, `results/` (validation, cross-validation, forecasts, figures, check reports) and `logs/`.
 

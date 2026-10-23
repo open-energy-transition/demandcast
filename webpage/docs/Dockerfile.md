@@ -69,10 +69,10 @@ docker run --rm --env-file demandcast/.env demandcast uv run retrieve.py
 docker run --rm -e CDS_API_KEY=your_key demandcast uv run retrieve.py
 ```
 
-To upload data to Google Cloud Storage, mount a service account key and point `GOOGLE_APPLICATION_CREDENTIALS` to it:
+To copy the data folder to or from a bucket of Google Cloud Storage (see [sharing and publishing](publishing.md)), mount a service account key and point `GOOGLE_APPLICATION_CREDENTIALS` to it:
 
 ```bash
-docker run --rm -v "$HOME/key.json:/secrets/key.json:ro" -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/key.json demandcast uv run upload.py
+docker run --rm -v "$HOME/key.json:/secrets/key.json:ro" -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/key.json demandcast uv run sync.py
 ```
 
 ## What the image contains

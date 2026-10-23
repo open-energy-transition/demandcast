@@ -49,8 +49,8 @@ EPIAS_USERNAME=<your_username>     # For data retrieval from EPIAS, with a free 
 EPIAS_PASSWORD=<your_password>     # For data retrieval from EPIAS
 ISONE_USERNAME=<your_username>     # For data retrieval from ISO New England, with a free ISO Express account
 ISONE_PASSWORD=<your_password>     # For data retrieval from ISO New England
-ZENODO_API_KEY=<your_key>          # For data upload to Zenodo
-SANDBOX_ZENODO_API_KEY=<your_key>  # For data upload to Zenodo Sandbox
+ZENODO_API_KEY=<your_key>          # For releases on Zenodo (publish.py)
+SANDBOX_ZENODO_API_KEY=<your_key>  # For test releases on the Zenodo Sandbox
 ```
 
 Replace `<your_key>`, `<your_username>` and `<your_password>` with your actual API keys and account. You can obtain them by registering on the respective service websites.

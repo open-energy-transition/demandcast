@@ -1,0 +1,28 @@
+# Configuration read by the publish.py script, which uploads a release of
+# DemandCast to Zenodo as a draft, to check and publish on the website of
+# Zenodo. The API key is read from ZENODO_API_KEY, or from
+# SANDBOX_ZENODO_API_KEY with sandbox: true.
+
+# REQUIRED.
+# The number of a version of your record, as in
+# https://zenodo.org/records/<number>, whose new version is the release,
+# or "new" to create a record.
+zenodo_record:
+
+# REQUIRED.
+# The version of the release, such as 1.1.0.
+version:
+
+# REQUIRED.
+# The files of the release: the trained model, its settings and its
+# forecasts, relative to the data folder unless absolute.
+files: []
+
+# OPTIONAL.
+# The file in the config folder with the creators and contributors of a
+# new record.
+metadata_file: oet_zenodo_metadata.yaml
+
+# OPTIONAL.
+# Whether to use the sandbox of Zenodo (sandbox.zenodo.org), to test.
+sandbox: false

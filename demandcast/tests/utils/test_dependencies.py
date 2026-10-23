@@ -29,7 +29,9 @@ HIGHER_LEVELS = {
     "forecast",
     "plot",
     "check",
-    "upload",
+    "sync",
+    "publish",
+    "publishing",
     "benchmark",
 }
 

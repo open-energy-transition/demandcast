@@ -1,0 +1,22 @@
+# Configuration read by the sync.py script, which copies the data folder
+# to or from a private bucket of Google Cloud Storage, without
+# overwriting or deleting files. Log in first with
+# "gcloud auth application-default login".
+
+# REQUIRED.
+# "upload" to copy the data folder to the bucket, "download" to copy the
+# bucket to the data folder.
+direction: upload
+
+# REQUIRED.
+# The name of your bucket, such as demandcast-data.
+bucket:
+
+# OPTIONAL.
+# The folders of the data folder that are not copied.
+excluded_folders:
+  - logs
+
+# OPTIONAL.
+# Whether to only list the files to copy, without copying them.
+dry_run: false
