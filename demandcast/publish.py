@@ -11,14 +11,14 @@ Description:
 
 import os
 
-from pydantic import BaseModel, field_validator
+from pydantic import field_validator
 
 import publishing.zenodo
 import utils.config
 import utils.paths
 
 
-class ConfigModel(BaseModel):
+class ConfigModel(utils.config.StrictSettings):
     """Settings of publish.py."""
 
     zenodo_record: int | str | None

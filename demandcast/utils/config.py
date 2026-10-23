@@ -15,9 +15,20 @@ from datetime import datetime
 
 import yaml
 from dotenv import load_dotenv
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 import utils.paths
+
+
+class StrictSettings(BaseModel):
+    """
+    Settings that reject the fields that they do not have.
+
+    A misspelled setting, such as "start_yr" for "start_year", is an
+    error instead of a setting that is silently left at its default.
+    """
+
+    model_config = ConfigDict(extra="forbid")
 
 
 def read_api_key(variable: str, service: str) -> str:

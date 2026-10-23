@@ -16,7 +16,7 @@ from typing import Any, NotRequired, TypedDict
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 
 import utils.config
 import utils.paths
@@ -27,7 +27,7 @@ import utils.paths
 LOCAL_YEAR_COLUMN = "Local year"
 
 
-class ConfigModel(BaseModel):
+class ConfigModel(utils.config.StrictSettings):
     """Settings of the machine learning models."""
 
     algorithm: str
@@ -253,46 +253,40 @@ def _split_temporally(
         "if requested."
     )
 
-    # Initialize an empty dictionary to hold the split datasets.
-    split_dataset: dict[str, pd.DataFrame] = {}
-    if testing_set:
-        split_dataset["testing"] = pd.DataFrame()
-    if validation_set:
-        split_dataset["validation"] = pd.DataFrame()
+    # The holdouts take the latest available years of each entity, in
+    # this order: the testing set the latest one, and the validation
+    # set the one before it, or the latest one without a testing set,
+    # so that no year of the training set comes after them.
+    holdouts = [
+        name
+        for name, requested in (
+            ("testing", testing_set),
+            ("validation", validation_set),
+        )
+        if requested
+    ]
+    split_indexes: dict[str, list[Any]] = {name: [] for name in holdouts}
+    for entity_code, entity in dataset.groupby(group_column):
+        years = sorted(entity[splitter_column].unique(), reverse=True)
+        if len(years) <= len(holdouts):
+            logging.warning(
+                f"{entity_code} has {len(years)} years of data, which "
+                f"are all held out ({', '.join(holdouts[: len(years)])}) "
+                "and none is for training."
+            )
+        for name, year in zip(holdouts, years, strict=False):
+            split_indexes[name].extend(
+                entity.index[entity[splitter_column] == year]
+            )
 
-    # Initialize lists to keep track of indexes to be removed from
-    # the original dataset.
-    indexes_not_for_training = []
-
-    for __, entity in dataset.groupby(group_column):
-        # Determine the latest year for the current entity.
-        latest_year = entity[splitter_column].max()
-
-        if testing_set or validation_set:
-            for split_name, split_data in split_dataset.items():
-                # Define the year to extract based on the split.
-                if split_name == "testing":
-                    year_to_extract = latest_year
-                elif split_name == "validation":
-                    year_to_extract = latest_year - 1
-
-                # Extract the data for the relevant year.
-                data_of_entity = entity[
-                    entity[splitter_column] == year_to_extract
-                ].copy()
-
-                # Append the indexes of the data to be removed later.
-                indexes_not_for_training.extend(data_of_entity.index)
-
-                # Append the data to the respective dataset.
-                split_dataset[split_name] = pd.concat(
-                    [split_data, data_of_entity],
-                    ignore_index=True,
-                )
-
-    # Remove testing and validation data from the original dataset to
-    # create the training dataset.
-    split_dataset["training"] = dataset.drop(index=indexes_not_for_training)
+    split_dataset = {
+        name: dataset.loc[indexes] for name, indexes in split_indexes.items()
+    }
+    split_dataset["training"] = dataset.drop(
+        index=[
+            index for indexes in split_indexes.values() for index in indexes
+        ]
+    )
 
     # Reset indexes for all datasets.
     for key, split_data in split_dataset.items():

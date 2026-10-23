@@ -14,7 +14,7 @@ from collections.abc import Callable
 from types import ModuleType
 from typing import Literal
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import field_validator, model_validator
 
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.electricity_demand
@@ -41,7 +41,7 @@ SCENARIOS = {
 CLIMATE_VARIABLES = {"gridded_weather", "temperature"}
 
 
-class ConfigModel(BaseModel):
+class ConfigModel(utils.config.StrictSettings):
     """Settings of retrieve.py."""
 
     variable: Literal[

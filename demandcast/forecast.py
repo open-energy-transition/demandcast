@@ -17,7 +17,6 @@ import logging
 import os
 
 import pandas as pd
-from pydantic import BaseModel
 
 import ml_models.data
 import ml_models.files
@@ -25,7 +24,7 @@ import ml_models.registry
 import utils.config
 
 
-class ConfigModel(BaseModel):
+class ConfigModel(utils.config.StrictSettings):
     """Settings of forecast.py."""
 
     model_path: str | None = None
@@ -100,7 +99,9 @@ def run_forecasting(
     model_module = ml_models.registry.get_model_module(algorithm)
 
     # Get the assembled data path.
-    data_path = ml_models.files.get_assemble_data_path(data_path)
+    data_path = ml_models.files.get_assemble_data_path(
+        data_path, "forecasting"
+    )
 
     # Read and prepare the dataset.
     prepared_dataset = ml_models.data.prepare_dataset(

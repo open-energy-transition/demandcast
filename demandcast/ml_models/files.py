@@ -102,7 +102,10 @@ def get_trained_model_path(
     return model_path
 
 
-def get_assemble_data_path(data_path: str | None) -> str:
+def get_assemble_data_path(
+    data_path: str | None,
+    target_use: Literal["training", "forecasting"] = "training",
+) -> str:
     """
     Get the path to the assembled data file.
 
@@ -110,7 +113,9 @@ def get_assemble_data_path(data_path: str | None) -> str:
     ----------
     data_path : str | None
         The path to the assembled data file. If None, the latest file
-        in the default directory will be used.
+        assembled for the use in the default directory will be used.
+    target_use : str, optional
+        The use of the assembled data, "training" or "forecasting".
 
     Returns
     -------
@@ -128,11 +133,14 @@ def get_assemble_data_path(data_path: str | None) -> str:
     # If no data path is provided, find the latest assembled data file.
     if data_path is None:
         data_path = _get_latest_file(
-            assembled_data_folder, "assembled_data", ".parquet"
+            assembled_data_folder,
+            f"assembled_data_for_{target_use}_",
+            ".parquet",
         )
         if data_path is None:
             raise FileNotFoundError(
-                f"No assembled data files found in '{assembled_data_folder}'."
+                f"No data assembled for {target_use} found in "
+                f"'{assembled_data_folder}'."
             )
 
     logging.info(f"Using assembled data file: {data_path}")

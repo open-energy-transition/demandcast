@@ -25,11 +25,11 @@ The fraction of the annual total of an average hour is about 1/8760, too small f
 
 Unlike typical machine learning where data is randomly split, temporal splitting is required for time-series forecasting. Random splitting would "leak" future information into training, making results unrealistically good. The dataset is split using the following logic:
 
-- **Test set**: For each region, the most recent calendar year for which that region has data
-- **Validation set**: For each region, the second-most-recent calendar year for which that region has data (optional)
+- **Test set**: For each region, the most recent local year for which that region has data (optional)
+- **Validation set**: For each region, the most recent year with data before the test year, or the most recent year without a test set (optional)
 - **Training set**: For each region, all remaining earlier years with data
 
-Regions with fewer than three years of data contribute only to the splits that are possible given their available years.
+The years are those that the region has, so a missing year is skipped: with data for 2019, 2021 and 2023, the test set is 2023, the validation set 2021 and the training set 2019. No year of the training set comes after those held out. A region with fewer years than the held-out sets gives its years to the test set first, then to the validation set, and none to training, which the log reports.
 
 This ensures the model is evaluated on future time periods it hasn't seen during training, which is critical for time-series forecasting.
 

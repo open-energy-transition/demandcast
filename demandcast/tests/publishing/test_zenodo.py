@@ -48,7 +48,7 @@ class _FakeZenodo:
         self.metadata: dict = {}
         self.uploaded: dict[str, bytes] = {}
 
-    def __call__(self, method, url, params, **kwargs):
+    def __call__(self, method, url, headers, **kwargs):
         """
         Answer a request.
 
@@ -57,7 +57,9 @@ class _FakeZenodo:
         _FakeResponse
             The response of Zenodo.
         """
-        assert params == {"access_token": "test-key"}
+        # The key is in the header, never in the address.
+        assert headers["Authorization"] == "Bearer test-key"
+        assert "params" not in kwargs
         self.requests.append((method, url.removeprefix(API)))
         draft = {
             "id": 200,
@@ -181,6 +183,39 @@ def test_failed_request(release_files):
     """Test that an error of Zenodo stops the release."""
     with pytest.raises(zenodo.ZenodoError, match="unexpected request"):
         zenodo.publish_release(release_files, "1.1.0", 999)
+
+
+def test_failed_connection_hides_the_request(monkeypatch):
+    """Test that a failed connection does not show the request."""
+    monkeypatch.setenv("ZENODO_API_KEY", "test-key")
+    error = zenodo.requests.ConnectionError(
+        f"Failed to connect to {API}?access_token=test-key"
+    )
+
+    with (
+        patch.object(zenodo.requests, "request", side_effect=error),
+        pytest.raises(zenodo.ZenodoError) as raised,
+    ):
+        zenodo.ZenodoApi(sandbox=False).request("GET", "/1", 200, "check")
+
+    assert "test-key" not in str(raised.value)
+    assert raised.value.__cause__ is None
+    assert raised.value.__suppress_context__
+
+
+def test_key_is_sent_only_to_zenodo(monkeypatch):
+    """Test that a full address outside Zenodo is refused."""
+    monkeypatch.setenv("ZENODO_API_KEY", "test-key")
+
+    with (
+        patch.object(zenodo.requests, "request") as request,
+        pytest.raises(zenodo.ZenodoError, match="not that of Zenodo"),
+    ):
+        zenodo.ZenodoApi(sandbox=False).request(
+            "PUT", "https://example.org/files/a", 201, "upload"
+        )
+
+    request.assert_not_called()
 
 
 def test_sandbox_needs_its_key(monkeypatch):

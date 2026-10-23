@@ -16,8 +16,6 @@ import ml_models  # noqa: F401
 import logging
 import os
 
-from pydantic import BaseModel
-
 import ml_models.data
 import ml_models.evaluation
 import ml_models.files
@@ -25,7 +23,7 @@ import ml_models.registry
 import utils.config
 
 
-class ConfigModel(BaseModel):
+class ConfigModel(utils.config.StrictSettings):
     """Settings of validate.py."""
 
     used_validation_set: bool

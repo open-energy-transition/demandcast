@@ -443,6 +443,7 @@ def test_unsupported_algorithm(run_script):
 def test_model_with_other_features(run_script, algorithm):
     """Test that a model trained on other features is rejected."""
     _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
+    _write_assembled_data(FORECASTING_DATA, [2024], False)
     train.run_model_training(True, False, None, *_settings(algorithm))
 
     # Take the features in the opposite order after the training.

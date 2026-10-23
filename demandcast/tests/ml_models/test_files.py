@@ -142,15 +142,20 @@ def test_get_assemble_data_path_without_provided_path():
         patch("os.listdir") as mock_listdir,
     ):
         mock_listdir.return_value = [
-            "assembled_data_20240101_120000.parquet",
-            "assembled_data_20240102_120000.parquet",
+            "assembled_data_for_training_20240101_120000.parquet",
+            "assembled_data_for_training_20240102_120000.parquet",
+            "assembled_data_for_forecasting_20240103_120000.parquet",
             "other_file.txt",
         ]
 
-        result = ml_models.files.get_assemble_data_path(None)
-
-        assert result == os.path.join(
-            "/data", "assembled_data_20240102_120000.parquet"
+        # A newer dataset for forecasting is not one for training.
+        assert ml_models.files.get_assemble_data_path(None) == os.path.join(
+            "/data", "assembled_data_for_training_20240102_120000.parquet"
+        )
+        assert ml_models.files.get_assemble_data_path(
+            None, "forecasting"
+        ) == os.path.join(
+            "/data", "assembled_data_for_forecasting_20240103_120000.parquet"
         )
 
 

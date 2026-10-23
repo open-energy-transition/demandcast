@@ -19,7 +19,9 @@ Description:
     The files are uploaded to the bucket of the draft, which takes large
     files. The API key is read from ZENODO_API_KEY, or from
     SANDBOX_ZENODO_API_KEY for the sandbox of Zenodo, which can be used
-    to test a release.
+    to test a release. It is sent in the Authorization header, only to
+    the address of Zenodo, and a failed request is reported without the
+    message of requests, which may show what it sent.
 """
 
 import json
@@ -71,6 +73,9 @@ class ZenodoApi:
             ZENODO_API_KEY.
         """
         self.url = ZENODO_API.format(sandbox="sandbox." if sandbox else "")
+        self.origin = "https://{sandbox}zenodo.org/".format(
+            sandbox="sandbox." if sandbox else ""
+        )
         self.access_token = utils.config.read_api_key(
             "SANDBOX_ZENODO_API_KEY" if sandbox else "ZENODO_API_KEY",
             "the sandbox of Zenodo" if sandbox else "Zenodo",
@@ -112,15 +117,32 @@ class ZenodoApi:
         Raises
         ------
         ZenodoError
-            If the status of the response is not the expected one.
+            If the address is not that of Zenodo, if the request fails,
+            or if the status of the response is not the expected one.
         """
-        response = requests.request(
-            method,
-            url if url.startswith("https://") else self.url + url,
-            params={"access_token": self.access_token},
-            timeout=timeout,
-            **kwargs,
-        )
+        full_url = url if url.startswith("https://") else self.url + url
+        if not full_url.startswith(self.origin):
+            raise ZenodoError(
+                f"Zenodo {action} failed: the address is not that of "
+                f"Zenodo ({self.origin})."
+            )
+        try:
+            response = requests.request(
+                method,
+                full_url,
+                headers={
+                    **kwargs.pop("headers", {}),
+                    "Authorization": f"Bearer {self.access_token}",
+                },
+                timeout=timeout,
+                **kwargs,
+            )
+        except requests.RequestException as error:
+            # The message of the error is left out, and so is the error
+            # in the traceback, since they may show the request.
+            raise ZenodoError(
+                f"Zenodo {action} failed: {type(error).__name__}."
+            ) from None
         if response.status_code != expected_status:
             raise ZenodoError(
                 f"Zenodo {action} failed ({response.status_code}): "

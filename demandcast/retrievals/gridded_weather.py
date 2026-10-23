@@ -223,6 +223,31 @@ def get_file_name(
     return f"{code}_{name}" if code else name
 
 
+def _get_last_time(file_path: str) -> pd.Timestamp:
+    """
+    Get the last time of a file of reanalysis data.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the file.
+
+    Returns
+    -------
+    pandas.Timestamp
+        The last time of the data, or the earliest time if the file has
+        no time, such as when it is broken.
+    """
+    try:
+        with xarray.open_dataset(file_path) as dataset:
+            for name in ("valid_time", "time"):
+                if name in dataset.coords and dataset.sizes.get(name, 1):
+                    return pd.Timestamp(dataset[name].to_numpy().max())
+    except (OSError, ValueError):
+        pass
+    return pd.Timestamp.min
+
+
 def is_outdated(
     file_path: str, year: int, model: str | None, scenario: str | None
 ) -> bool:
@@ -244,18 +269,23 @@ def is_outdated(
     -------
     bool
         Whether the file does not exist, or has reanalysis data written
-        before the data of its year was complete and more than a day
-        ago, when the data may have been updated since. This also
-        completes a year retrieved while it was in progress.
+        more than a day ago, when the data may have been updated since,
+        and either written before the data of its year was complete or
+        ending before the last hour of a past year. This also completes
+        a year retrieved while it was in progress. The end of the data
+        is read from the file, since the time of a file copied from
+        elsewhere, such as from a bucket, is that of its copy.
     """
     if not os.path.exists(file_path):
         return True
     if model is not None or scenario is not None:
         return False
     written = pd.Timestamp(os.path.getmtime(file_path), unit="s")
-    return written < min(
-        pd.Timestamp(year + 1, 1, 1) + REANALYSIS_DELAY,
-        pd.Timestamp.now() - REANALYSIS_UPDATE,
+    if written >= pd.Timestamp.now() - REANALYSIS_UPDATE:
+        return False
+    return written < pd.Timestamp(year + 1, 1, 1) + REANALYSIS_DELAY or (
+        year < pd.Timestamp.now().year
+        and _get_last_time(file_path) < pd.Timestamp(year, 12, 31, 23)
     )
 
 
@@ -735,6 +765,7 @@ def _retrieve_data_of_each_code(
     processed_directory = utils.paths.get_gridded_folder(
         "weather", "processed"
     )
+    os.makedirs(processed_directory, exist_ok=True)
 
     for entity_code in tqdm(codes, desc="Countries and subdivisions"):
         logging.info(f"Retrieving gridded {variable} data for {entity_code}.")

@@ -10,21 +10,35 @@ import logging
 from typing import cast, overload
 
 import pandas as pd
-from pydantic import BaseModel
+from pydantic import Field
 from xgboost import XGBRegressor
 
 import ml_models.data
+import utils.config
 
 # The extension of the files of the saved models.
 FILE_EXTENSION = ".json"
 
 
-class ConfigModel(BaseModel):
-    """Settings of the XGBoost model."""
+class ConfigModel(utils.config.StrictSettings):
+    """
+    Settings of the XGBoost model.
+
+    The hyperparameters that are not given keep the defaults of
+    XGBoost.
+    """
 
     random_state: int = 42
     enable_categorical: bool | None = True
     evaluation_metric: str | None = "mape"
+    n_estimators: int | None = Field(default=None, ge=1)
+    max_depth: int | None = Field(default=None, ge=0)
+    learning_rate: float | None = Field(default=None, gt=0)
+    subsample: float | None = Field(default=None, gt=0, le=1)
+    colsample_bytree: float | None = Field(default=None, gt=0, le=1)
+    min_child_weight: float | None = Field(default=None, ge=0)
+    reg_alpha: float | None = Field(default=None, ge=0)
+    reg_lambda: float | None = Field(default=None, ge=0)
 
 
 def load(model_path: str) -> XGBRegressor:
@@ -80,10 +94,15 @@ def get_initialized_model(config: ConfigModel) -> XGBRegressor:
         Initialized XGBoost model.
     """
     # Initialize model with config parameters.
+    hyperparameters = config.model_dump(
+        exclude={"random_state", "enable_categorical", "evaluation_metric"},
+        exclude_none=True,
+    )
     xgb_model = XGBRegressor(
         random_state=config.random_state,
         enable_categorical=config.enable_categorical,
         eval_metric=config.evaluation_metric,
+        **hyperparameters,
     )
 
     logging.info("XGBoost model initialized with configuration.")

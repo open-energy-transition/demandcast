@@ -6,12 +6,11 @@ Description:
     This module contains tests for the fetcher module.
 """
 
-import email.message
+import gzip
 import os
 import pathlib
 import re
 import traceback
-import urllib.error
 from io import BytesIO
 from unittest.mock import patch
 
@@ -23,19 +22,40 @@ import utils.fetcher
 import utils.paths
 
 
-@pytest.mark.parametrize(
-    ("content_type", "reader"), [("csv", "read_csv"), ("excel", "read_excel")]
-)
-def test_fetch_dataframe_of_a_file(content_type, reader):
-    """Test that a CSV or Excel file is read from its URL by pandas."""
-    table = pd.DataFrame({"a": [1]})
-    with patch(f"pandas.{reader}", return_value=table) as mock_read:
+@pytest.mark.parametrize("content_type", ["csv", "excel"])
+def test_fetch_dataframe_of_a_file(content_type):
+    """Test that a CSV or Excel file is downloaded with the options."""
+    content = BytesIO()
+    if content_type == "csv":
+        content.write(b"a;b\n1;2\n")
+    else:
+        pd.DataFrame({"a": [1], "b": [2]}).to_excel(content, index=False)
+
+    with patch("requests.get") as mock_get:
+        mock_get.return_value.content = content.getvalue()
         dataset = utils.fetcher.fetch_dataframe(
-            "http://example.com/file", content_type, csv_kwargs={"sep": ";"}
+            "http://example.com/file",
+            content_type,
+            csv_kwargs={"sep": ";"},
+            header_params={"User-Agent": "test"},
+            timeout=30,
         )
 
-    assert dataset is table
-    assert mock_read.call_args.args == ("http://example.com/file",)
+    assert dataset.to_dict("list") == {"a": [1], "b": [2]}
+    assert mock_get.call_args.args == ("http://example.com/file",)
+    assert mock_get.call_args.kwargs["headers"]["User-Agent"] == "test"
+    assert mock_get.call_args.kwargs["timeout"] == 30
+
+
+def test_fetch_compressed_csv():
+    """Test that a compressed CSV file is read by its extension."""
+    with patch("requests.get") as mock_get:
+        mock_get.return_value.content = gzip.compress(b"a,b\n1,2\n")
+        dataset = utils.fetcher.fetch_dataframe(
+            "http://example.com/data.csv.gz?version=1", "csv"
+        )
+
+    assert dataset.to_dict("list") == {"a": [1], "b": [2]}
 
 
 def test_fetch_of_each_type():
@@ -393,50 +413,16 @@ def test_fetch_hides_the_api_keys(monkeypatch, caplog):
     assert "secret-value" not in caplog.text
 
 
-@pytest.mark.parametrize(
-    ("error", "expected_error", "expected_calls"),
-    [
-        (
-            urllib.error.HTTPError(
-                url="", code=404, msg="", hdrs=email.message.Message(), fp=None
-            ),
-            utils.fetcher.DataNotFoundError,
-            1,
-        ),
-        (
-            urllib.error.HTTPError(
-                url="", code=503, msg="", hdrs=email.message.Message(), fp=None
-            ),
-            ConnectionError,
-            2,
-        ),
-        (urllib.error.URLError(reason="DNS"), ConnectionError, 2),
-        (TimeoutError(), ConnectionError, 2),
-    ],
-)
-def test_fetch_urllib_errors(error, expected_error, expected_calls):
-    """Test that the errors of urllib, raised by pandas, are handled."""
-    with (
-        patch("pandas.read_csv", side_effect=error) as mock_read_csv,
-        pytest.raises(expected_error),
-    ):
-        utils.fetcher.fetch_dataframe(
-            "http://example.com/data.csv", "csv", retries=2, retry_delay=0
-        )
-
-    assert mock_read_csv.call_count == expected_calls
-
-
 def test_fetch_csv_with_a_connection_error():
-    """Test that a CSV file read from a URL is retried as well."""
+    """Test that a CSV file is retried after a connection error."""
     with (
         patch(
-            "pandas.read_csv", side_effect=urllib.error.URLError(reason="DNS")
-        ) as mock_read_csv,
+            "requests.get", side_effect=requests.exceptions.ConnectionError()
+        ) as mock_get,
         pytest.raises(ConnectionError, match="after 3 attempts"),
     ):
         utils.fetcher.fetch_dataframe(
             "http://example.com/data.csv", "csv", retry_delay=0, retries=3
         )
 
-    assert mock_read_csv.call_count == 3
+    assert mock_get.call_count == 3

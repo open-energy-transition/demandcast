@@ -26,6 +26,8 @@ import base64
 import dataclasses
 import logging
 import os
+import re
+import uuid
 from collections.abc import Iterable
 from typing import Any, Literal
 
@@ -50,11 +52,15 @@ class SyncReport:
         The paths of the files that are identical at both ends.
     different : list[str]
         The paths of the files that differ, left as they are.
+    unsafe : list[str]
+        The names of the objects that are not paths inside the data
+        folder, which are not downloaded.
     """
 
     copied: list[str] = dataclasses.field(default_factory=list)
     identical: list[str] = dataclasses.field(default_factory=list)
     different: list[str] = dataclasses.field(default_factory=list)
+    unsafe: list[str] = dataclasses.field(default_factory=list)
 
 
 def get_checksum(file_path: str) -> str:
@@ -138,6 +144,38 @@ def _is_excluded(name: str, excluded_folders: Iterable[str]) -> bool:
     )
 
 
+def get_local_path(data_folder: str, name: str) -> str | None:
+    """
+    Get the path in the data folder of an object of the bucket.
+
+    Parameters
+    ----------
+    data_folder : str
+        The data folder.
+    name : str
+        The name of the object.
+
+    Returns
+    -------
+    str | None
+        The path of the file, or None if the name is not a relative path
+        with forward slashes, or if the path leads outside the data
+        folder, such as through a symbolic link.
+    """
+    parts = name.split("/")
+    if (
+        "\\" in name
+        or re.match(r"^[A-Za-z]:", name)
+        or any(part in ("", ".", "..") for part in parts)
+    ):
+        return None
+    file_path = os.path.join(data_folder, *parts)
+    root = os.path.realpath(data_folder)
+    if os.path.commonpath([os.path.realpath(file_path), root]) != root:
+        return None
+    return file_path
+
+
 def _is_identical(file_path: str, blob: Any) -> bool:
     """
     Tell whether a file and an object of the bucket are identical.
@@ -200,18 +238,59 @@ def _download(blob: Any, file_path: str) -> bool:
         Whether the object was downloaded, False if the file was written
         in the meantime.
     """
+    if os.path.exists(file_path):
+        return False
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    temporary_path = f"{file_path}.{uuid.uuid4().hex}.part"
     try:
-        file = open(file_path, "xb")  # noqa: SIM115
+        with open(temporary_path, "xb") as file:
+            blob.download_to_file(file)
+        # The link fails if the file was written in the meantime.
+        os.link(temporary_path, file_path)
     except FileExistsError:
         return False
-    try:
-        with file:
-            blob.download_to_file(file)
-    except BaseException:
-        os.remove(file_path)
-        raise
+    finally:
+        if os.path.exists(temporary_path):
+            os.remove(temporary_path)
     return True
+
+
+def _copy(
+    bucket: Any,
+    blobs: dict[str, Any],
+    local_files: dict[str, str],
+    data_folder: str,
+    direction: Literal["upload", "download"],
+    name: str,
+) -> bool:
+    """
+    Copy a file that is missing at the destination.
+
+    Parameters
+    ----------
+    bucket : google.cloud.storage.Bucket
+        The bucket.
+    blobs : dict[str, google.cloud.storage.Blob]
+        The objects of the bucket, by name.
+    local_files : dict[str, str]
+        The paths of the files of the data folder, by their name in the
+        bucket.
+    data_folder : str
+        The data folder.
+    direction : str
+        "upload" or "download".
+    name : str
+        The name of the file in the bucket.
+
+    Returns
+    -------
+    bool
+        Whether the file was copied, False if it was written at the
+        destination in the meantime.
+    """
+    if direction == "upload":
+        return _upload(bucket.blob(name), local_files[name])
+    return _download(blobs[name], str(get_local_path(data_folder, name)))
 
 
 def sync(
@@ -263,6 +342,11 @@ def sync(
         sources, destinations = blobs, local_files
 
     for name in sorted(sources):
+        if direction == "download" and (
+            get_local_path(data_folder, name) is None
+        ):
+            report.unsafe.append(name)
+            continue
         if name in destinations:
             file_path = local_files[name]
             if _is_identical(file_path, blobs[name]):
@@ -271,19 +355,12 @@ def sync(
                 report.different.append(name)
             continue
 
-        if dry_run:
+        if dry_run or _copy(
+            bucket, blobs, local_files, data_folder, direction, name
+        ):
             report.copied.append(name)
-        elif direction == "upload":
-            if _upload(bucket.blob(name), local_files[name]):
-                report.copied.append(name)
-            else:
-                report.different.append(name)
         else:
-            file_path = os.path.join(data_folder, *name.split("/"))
-            if _download(blobs[name], file_path):
-                report.copied.append(name)
-            else:
-                report.different.append(name)
+            report.different.append(name)
 
     logging.info(
         f"{'Would copy' if dry_run else 'Copied'} {len(report.copied)} "
@@ -296,5 +373,11 @@ def sync(
             f"{len(report.different)} files differ between the data folder "
             f"and gs://{bucket_name} and were left as they are at both "
             f"ends: {', '.join(report.different)}"
+        )
+    if report.unsafe:
+        logging.warning(
+            f"{len(report.unsafe)} objects of gs://{bucket_name} are not "
+            "paths inside the data folder and were not downloaded: "
+            f"{', '.join(report.unsafe)}"
         )
     return report

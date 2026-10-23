@@ -8,6 +8,8 @@ DemandCast keeps the retrieved data in a private bucket of Google Cloud Storage,
 
 A file at the same path at both ends is compared by its size and its CRC32C checksum. An identical file is skipped, and a file that differs, such as a cleaned file computed again with a newer version of the code, is left as it is at both ends and listed in the log, for you to decide which one to keep. The logs are not copied.
 
+A download is written to a temporary file and given its name only once complete, so a copy that stops leaves no partial file. An object of the bucket whose name is not a path inside the data folder, such as one with `..`, is not downloaded and is listed in the log. A weather file of a past year that ends before the year does is retrieved again a day after it was written, even when it was copied from the bucket.
+
 The bucket should be private. Log in once with your Google account, which needs access to the bucket:
 
 ```bash
@@ -36,7 +38,7 @@ The bucket is empty in the configuration of the repository, so nothing is copied
 
 `publish.py` uploads a release, the trained model, its settings and its forecasts, as a new version of a record on Zenodo, so that the DOI of all its versions stays the same (that of DemandCast is [10.5281/zenodo.18374351](https://doi.org/10.5281/zenodo.18374351)). The new version is a draft, without the files of the previous version, which stay in it: check it on the website of Zenodo, and publish it there.
 
-Set the API key of your Zenodo account in `ZENODO_API_KEY` in the `.env` file (see [getting started](getting_started.md#13-configure-environment-variables)), and the release in `config/publish_config.yaml`:
+Set the API key of your Zenodo account in `ZENODO_API_KEY` in the `.env` file, which `publish.py` sends only to Zenodo, in the header of its requests, (see [getting started](getting_started.md#13-configure-environment-variables)), and the release in `config/publish_config.yaml`:
 
 ```yaml
 zenodo_record: 18374352  # the number of a version of your record, or "new"

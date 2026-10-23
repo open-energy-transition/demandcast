@@ -12,6 +12,8 @@ from typing import cast
 
 import numpy as np
 import pandas as pd
+import pytest
+from pydantic import ValidationError
 
 import ml_models.data
 import ml_models.registry
@@ -80,3 +82,23 @@ def test_train_splits_on_the_prepared_target():
     # annual total itself, about 1/8760, nearly every tree is a single
     # leaf (issue #145).
     assert set(splits["Feature"]) == set(dataset["features"].columns)
+
+
+def test_hyperparameters_reach_the_model():
+    """Test that the given hyperparameters are those of the model."""
+    config = ml_models.xgboost.ConfigModel(n_estimators=7, max_depth=2)
+
+    params = ml_models.xgboost.get_initialized_model(config).get_params()
+
+    assert params["n_estimators"] == 7
+    assert params["max_depth"] == 2
+    # The hyperparameters not given keep the defaults of XGBoost.
+    assert params["learning_rate"] is None
+
+
+def test_invalid_hyperparameters_are_rejected():
+    """Test that unknown or invalid hyperparameters are errors."""
+    with pytest.raises(ValidationError, match="Extra inputs"):
+        ml_models.xgboost.ConfigModel(n_estimator=7)  # type: ignore[call-arg]
+    with pytest.raises(ValidationError, match="greater than or equal to 1"):
+        ml_models.xgboost.ConfigModel(n_estimators=0)

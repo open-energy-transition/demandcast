@@ -132,9 +132,10 @@ def test_split_temporally_with_testing_and_validation():
     assert "training" in result
     assert "testing" in result
     assert "validation" in result
-    assert len(result["testing"]) == 2  # Latest year for each entity
-    assert len(result["validation"]) == 2  # Second latest year
-    assert len(result["training"]) == 2  # Remaining data
+    assert set(result["testing"]["year"]) == {2022}
+    assert set(result["validation"]["year"]) == {2021}
+    assert set(result["training"]["year"]) == {2020}
+    assert len(result["testing"]) == 2
 
 
 def test_split_temporally_with_testing_only():
@@ -193,8 +194,54 @@ def test_split_temporally_with_validation_only():
     assert "training" in result
     assert "testing" not in result
     assert "validation" in result
-    assert len(result["validation"]) == 1
-    assert len(result["training"]) == 2
+    # Without a testing set, the validation set is the latest year, so
+    # that the training set has no year after it.
+    assert result["validation"]["year"].tolist() == [2022]
+    assert result["training"]["year"].tolist() == [2020, 2021]
+
+
+def test_split_temporally_with_missing_years():
+    """Test that the holdouts are the latest available years."""
+    dataset = pd.DataFrame(
+        {
+            "entity_code": ["A", "A", "A", "B", "B"],
+            "year": [2019, 2021, 2023, 2020, 2022],
+            "value": [1, 2, 3, 4, 5],
+        }
+    )
+
+    result = ml_models.data._split_temporally(
+        dataset,
+        testing_set=True,
+        validation_set=True,
+        group_column="entity_code",
+        splitter_column="year",
+    )
+
+    assert result["testing"]["year"].tolist() == [2023, 2022]
+    assert result["validation"]["year"].tolist() == [2021, 2020]
+    assert result["training"]["year"].tolist() == [2019]
+
+
+def test_split_temporally_with_too_few_years(caplog):
+    """Test that an entity with too few years is all held out."""
+    dataset = pd.DataFrame(
+        {"entity_code": ["A"], "year": [2022], "value": [1]}
+    )
+
+    with caplog.at_level("WARNING"):
+        result = ml_models.data._split_temporally(
+            dataset,
+            testing_set=True,
+            validation_set=True,
+            group_column="entity_code",
+            splitter_column="year",
+        )
+
+    assert result["testing"]["year"].tolist() == [2022]
+    assert result["validation"].empty
+    assert result["training"].empty
+    assert "none is for training" in caplog.text
 
 
 def test_split_temporally_without_splits():

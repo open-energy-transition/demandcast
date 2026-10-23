@@ -15,7 +15,6 @@ import logging
 import os
 import re
 import time
-import urllib.error
 import urllib.parse
 from collections.abc import Callable, Mapping
 from io import BytesIO, StringIO
@@ -77,14 +76,14 @@ def redact(text: str) -> str:
 
 
 def _get_status_code(
-    error: requests.exceptions.HTTPError | urllib.error.HTTPError,
+    error: requests.exceptions.HTTPError,
 ) -> int | None:
     """
     Get the HTTP status code of an HTTP error.
 
     Parameters
     ----------
-    error : requests.exceptions.HTTPError | urllib.error.HTTPError
+    error : requests.exceptions.HTTPError
         The HTTP error.
 
     Returns
@@ -92,8 +91,6 @@ def _get_status_code(
     int | None
         The status code, or None if the error has no response.
     """
-    if isinstance(error, urllib.error.HTTPError):
-        return error.code
     if error.response is None:
         return None
     return error.response.status_code
@@ -202,7 +199,7 @@ def _with_retries[T](
         # The errors are raised again without the original ones, whose
         # messages can have the URL with an API key, and which a
         # traceback would show.
-        except (requests.exceptions.HTTPError, urllib.error.HTTPError) as e:
+        except requests.exceptions.HTTPError as e:
             status_code = _get_status_code(e)
             if not _is_temporary(status_code):
                 message = (
@@ -216,7 +213,6 @@ def _with_retries[T](
         except (
             requests.exceptions.ConnectionError,
             requests.exceptions.Timeout,
-            urllib.error.URLError,
             ConnectionError,
             TimeoutError,
         ) as e:
@@ -499,6 +495,39 @@ def _check_table_options(
         raise TypeError(f"Unknown options of the request: {sorted(unknown)}.")
 
 
+# The compression of a file by the extension of its name, as pandas
+# infers it.
+_COMPRESSIONS = {
+    ".gz": "gzip",
+    ".bz2": "bz2",
+    ".zip": "zip",
+    ".xz": "xz",
+    ".zst": "zstd",
+    ".tar": "tar",
+}
+
+
+def _get_compression(url: str) -> str | None:
+    """
+    Get the compression of a file by the extension of its name.
+
+    Parameters
+    ----------
+    url : str
+        The URL of the file.
+
+    Returns
+    -------
+    str | None
+        The compression, as pandas names it, or None.
+    """
+    path = urllib.parse.urlparse(url).path.lower()
+    for extension, compression in _COMPRESSIONS.items():
+        if path.endswith(extension):
+            return compression
+    return None
+
+
 def fetch_dataframe(
     url: str,
     content_type: Literal["csv", "excel", "html"],
@@ -520,11 +549,11 @@ def fetch_dataframe(
     url : str
         The URL of the data.
     content_type : str
-        "csv" or "excel" for a file that pandas reads from the URL, or
-        "html" for the response of a request, read as read_as says.
+        "csv" or "excel" for a file, or "html" for the response of a
+        request, read as read_as says. All are downloaded with the
+        options of the request.
     read_with : str, optional
-        The request of an "html" content, "requests.get" or
-        "requests.post".
+        The request, "requests.get" or "requests.post".
     read_as : str, optional
         How to read the response: "csv_table", "excel_table" or "json".
     csv_kwargs : dict[str, Any], optional
@@ -557,10 +586,6 @@ def fetch_dataframe(
         pandas.DataFrame
             The data.
         """
-        if content_type == "csv":
-            return pd.read_csv(url, **csv_kwargs)
-        if content_type == "excel":
-            return pd.read_excel(url, **excel_kwargs)
         response = _send(
             url,
             "POST" if read_with == "requests.post" else "GET",
@@ -574,6 +599,15 @@ def fetch_dataframe(
             kwargs.get("get_cookies", False),
             kwargs.get("encoding_type"),
         )
+        if content_type == "csv":
+            # The file is read as pandas reads it from its URL, with the
+            # compression of the extension of its name.
+            return pd.read_csv(
+                BytesIO(response.content),
+                **{"compression": _get_compression(url), **csv_kwargs},
+            )
+        if content_type == "excel":
+            return pd.read_excel(BytesIO(response.content), **excel_kwargs)
         if read_as == "csv_table":
             return pd.read_csv(StringIO(response.text), **csv_kwargs)
         if read_as == "excel_table":
