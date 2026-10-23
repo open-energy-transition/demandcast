@@ -13,6 +13,7 @@ import pandas as pd
 import pytest
 
 import utils.availability
+import utils.paths
 
 
 def test_get_all_codes_with_all_data():
@@ -250,3 +251,41 @@ def test_check_and_get_codes_with_errors():
                 data_source="entsoe",
                 file_path="dummy.yaml",
             )
+
+
+def test_codes_with_historical_and_all_data(tmp_path, monkeypatch):
+    """Test that the codes without projections have historical data."""
+    columns = ["population", "electricity_demand_per_capita"]
+    columns.append("gdp_ppp_per_capita")
+    rows = {
+        # All the data.
+        "FRA": [True] * 6 + [False],
+        # The historical data only, as Kosovo.
+        "XKX": [True] * 3 + [False] * 3 + [False],
+        # The electricity demand per capita of a large area.
+        "USA_TX": [False, True, False, False, True, False, True],
+        # No electricity demand per capita.
+        "ABC": [True, False, True, True, False, True, True],
+    }
+    pd.DataFrame.from_dict(
+        rows,
+        orient="index",
+        columns=[f"historical_{column}" for column in columns]
+        + [f"future_{column}" for column in columns]
+        + ["area_greater_than_500_km2"],
+    ).to_csv(tmp_path / "data_availability_summary.csv")
+    monkeypatch.setattr(utils.paths, "CHECKS_FOLDER", str(tmp_path))
+
+    assert utils.availability.read_codes_with_all_data() == ["FRA", "USA_TX"]
+    assert utils.availability.read_codes_with_historical_data() == [
+        "FRA",
+        "XKX",
+        "USA_TX",
+    ]
+    assert utils.availability.check_and_get_codes_with(
+        "historical_data", code="XKX"
+    ) == ["XKX"]
+    with pytest.raises(ValueError, match="is not associated with a data"):
+        utils.availability.check_and_get_codes_with(
+            "historical_data", data_source="entsoe"
+        )

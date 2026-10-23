@@ -9,8 +9,10 @@ Description:
 
     For each country or subdivision, a retrieval gives a request: the
     historical years, the future years and the scenarios to save, and
-    the functions that extract their values. The values are saved as
-    hourly values over the local years (see
+    the functions that extract their values. The countries and
+    subdivisions without projections, such as Kosovo, have only their
+    historical years, for training (see utils.availability). The values
+    are saved as hourly values over the local years (see
     utils.time_series.save_yearly_values), in one file for the
     historical years, <code>, and one for each scenario,
     <code>_<scenario>, with the hyphens of the scenario replaced by
@@ -113,9 +115,12 @@ def run_retrieval(
     """
     os.makedirs(utils.paths.get_indicator_folder(indicator), exist_ok=True)
 
+    # The codes without projections, such as Kosovo, have only their
+    # historical years.
     codes = utils.availability.check_and_get_codes_with(
-        "all_data", code=code, file_path=file
+        "historical_data", code=code, file_path=file
     )
+    codes_with_projections = set(utils.availability.read_codes_with_all_data())
     for entity_code in tqdm(codes, desc="Countries and subdivisions"):
         time_zone = utils.time_zones.get_time_zone(entity_code)
         request = get_request(entity_code)
@@ -136,7 +141,12 @@ def run_retrieval(
                 "saved."
             )
 
-        if request.future_years:
+        if request.future_years and entity_code not in codes_with_projections:
+            logging.info(
+                f"The {description} of {entity_code} has no projections, so "
+                "its future years are skipped."
+            )
+        elif request.future_years:
             for scenario in request.scenarios:
                 logging.info(
                     f"Extracting the {description} of {entity_code} in "
