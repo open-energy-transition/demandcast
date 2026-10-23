@@ -801,6 +801,19 @@ def test_to_load_fraction_of_annual_total():
     ).tolist() == pytest.approx(load_fraction.tolist())
 
 
+def test_to_megawatts():
+    """Test that a load of 1 is the mean hour of the annual demand."""
+    local_year = pd.Series([2023, 2024])
+    # 8.76 TWh in 2023 and 8.784 TWh in 2024, in kWh: 1 GW on average.
+    scaling_factor = pd.Series([8.76e9, 8.784e9])
+
+    megawatts = utils.ml.to_megawatts(
+        pd.Series([1.0, 1.5]), local_year, scaling_factor
+    )
+
+    assert megawatts.tolist() == pytest.approx([1000.0, 1500.0])
+
+
 def test_save_results_validation():
     """
     Test save_results for validation case.

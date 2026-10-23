@@ -342,8 +342,8 @@ def test_cross_validate(algorithm, expected_mapes):
         algorithm.lower(),
         TRAINING_DATA,
     )
-    assert mapes.columns.tolist() == ["Entity Code", *expected_mapes]
-    assert mapes["Entity Code"].tolist() == COUNTRY_CODES
+    assert mapes.columns.tolist() == ["Entity code", *expected_mapes]
+    assert mapes["Entity code"].tolist() == COUNTRY_CODES
     for column, values in expected_mapes.items():
         assert mapes[column].tolist() == pytest.approx(
             values, rel=RELATIVE_TOLERANCES[algorithm]

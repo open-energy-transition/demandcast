@@ -46,13 +46,12 @@ def _construct_output_dataset(
         The output dataset with forecasts.
     """
     # Convert the predictions from the load relative to the annual mean
-    # back to the fraction of the annual total, and scale them to MW
-    # using the annual electricity demand per capita (kWh) and
-    # population.
-    load_fraction = utils.ml.to_load_fraction_of_annual_total(
-        predictions, prepared_dataset["local_year"]
+    # to MW.
+    predictions = utils.ml.to_megawatts(
+        predictions,
+        prepared_dataset["local_year"],
+        prepared_dataset["scaling_factor"],
     )
-    predictions = load_fraction * prepared_dataset["scaling_factor"] / 1000
 
     # Construct the output dataset.
     columns: list[pd.Series | pd.DataFrame] = [

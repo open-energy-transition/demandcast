@@ -11,12 +11,11 @@ Description:
 import logging
 import os
 
+import ml_models.evaluation
 import ml_models.registry
-import pandas as pd
 import utils.config
 import utils.ml
 from pydantic import BaseModel
-from sklearn.metrics import mean_absolute_percentage_error
 
 
 class ConfigModel(BaseModel):
@@ -25,103 +24,6 @@ class ConfigModel(BaseModel):
     used_validation_set: bool
     model_path: str | None = None
     data_path: str | None = None
-
-
-def _calculate_mape_by_entity(
-    predictions: pd.Series,
-    actual: pd.Series,
-    entity_codes: pd.Series,
-) -> pd.Series:
-    """
-    Calculate MAPE per entity.
-
-    Parameters
-    ----------
-    predictions : numpy.ndarray
-        Model predictions.
-    actual : pandas.Series
-        Actual target values.
-    entity_codes : pandas.Series
-        Series indicating the code of each entity.
-
-    Returns
-    -------
-    mapes : pandas.Series
-        Series containing MAPE values for each entity.
-    """
-    # Initialize lists to hold entity codes and their MAPE values.
-    list_entity_codes = []
-    list_mapes_values = []
-
-    # Calculate MAPE for each entity.
-    for entity_code, entity_group in pd.DataFrame(entity_codes).groupby(
-        "Entity code"
-    ):
-        current_mape = mean_absolute_percentage_error(
-            actual.iloc[entity_group.index],
-            predictions.iloc[entity_group.index],
-        )
-        list_entity_codes.append(entity_code)
-        list_mapes_values.append(current_mape)
-
-    # Create a Series for MAPE values indexed by entity codes.
-    mapes = pd.Series(
-        data=list_mapes_values,
-        index=list_entity_codes,
-        name="MAPE",
-    ).rename_axis("Entity code")
-
-    return mapes
-
-
-def _calculate_mapes(
-    prepared_dataset: dict[str, utils.ml.PreparedDataset],
-    predictions: dict[str, pd.Series],
-) -> pd.DataFrame:
-    """
-    Calculate MAPE for training, validation, and testing datasets.
-
-    Parameters
-    ----------
-    prepared_dataset : dict[str, PreparedDataset]
-        A dictionary containing the prepared datasets for training,
-        validation, and testing.
-    predictions : dict[str, pandas.Series]
-        A dictionary containing predictions for each dataset split.
-
-    Returns
-    -------
-    mapes : pandas.DataFrame
-        DataFrame containing MAPE values for each entity across the
-        datasets.
-    """
-    # Initialize a DataFrame to hold MAPE results.
-    mapes = pd.DataFrame()
-
-    for split in prepared_dataset:
-        # Calculate MAPE per entity for the current split.
-        mapes_of_split = _calculate_mape_by_entity(
-            predictions[split],
-            prepared_dataset[split]["target"],
-            prepared_dataset[split]["group"],
-        )
-
-        # Store the MAPE values in the results DataFrame.
-        mapes[f"{split.capitalize()} MAPE"] = mapes_of_split
-
-        logging.info(f"{split.capitalize()} set:")
-        logging.info(f" - Average MAPE = {mapes_of_split.mean():.4f}")
-        logging.info(f" - Median MAPE = {mapes_of_split.median():.4f}")
-        logging.info(f" - Std MAPE = {mapes_of_split.std():.4f}")
-
-    # Reset the index and reorder columns.
-    mapes = mapes.reset_index()
-    column_order = ["Entity code"] + [
-        f"{split.capitalize()} MAPE" for split in prepared_dataset
-    ]
-    mapes = mapes[column_order]
-
-    return mapes
 
 
 def run_model_validation(
@@ -175,7 +77,7 @@ def run_model_validation(
     predictions = model_module.predict(model, prepared_dataset)
 
     # Calculate MAPEs.
-    mapes = _calculate_mapes(prepared_dataset, predictions)
+    mapes = ml_models.evaluation.calculate_mapes(prepared_dataset, predictions)
 
     # Save the MAPEs.
     utils.ml.save_results(
