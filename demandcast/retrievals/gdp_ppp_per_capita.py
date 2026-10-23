@@ -11,32 +11,16 @@ Description:
     CSV and Parquet files.
 """
 
-import logging
-import os
 from typing import cast
 
 import cpi
 import pandas as pd
-import utils.config
-import utils.entities
-import utils.geospatial
+import utils.catalogue
 import utils.scenarios
-import utils.time_series
-from tqdm import tqdm
 
+import retrievals.gridded_totals
+import retrievals.indicators
 from retrievals.socio_economic_data_sources import iiasa, imf, world_bank
-
-
-def get_available_scenarios() -> list[str]:
-    """
-    Get the available future scenarios.
-
-    Returns
-    -------
-    list[str]
-        The available scenarios.
-    """
-    return ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
 
 
 def get_historical_data() -> pd.DataFrame:
@@ -112,7 +96,7 @@ def _get_gdp_ppp_per_capita_from_gridded_data(
         The GDP PPP per capita for the specified years.
     """
     # Get the total GDP PPP from gridded data.
-    gdp_ppp = utils.geospatial.get_total_value_from_gridded_data(
+    gdp_ppp = retrievals.gridded_totals.get_total_value_from_gridded_data(
         "gdp_ppp",
         code,
         selected_years,
@@ -127,7 +111,7 @@ def _get_gdp_ppp_per_capita_from_gridded_data(
     gdp_ppp = gdp_ppp.apply(lambda x: cpi.inflate(x, 2005, to=2021))
 
     # Get the total population from gridded data.
-    population = utils.geospatial.get_total_value_from_gridded_data(
+    population = retrievals.gridded_totals.get_total_value_from_gridded_data(
         "population",
         code,
         selected_years,
@@ -308,43 +292,40 @@ def run_data_retrieval(
     scenario : str | None
         The scenario of the GDP PPP per capita data to be retrieved.
     """
-    # Get the directory to store the GDP PPP per capita data.
-    result_directory = utils.config.read_folders_structure()[
-        "gdp_ppp_per_capita_folder"
-    ]
-    os.makedirs(result_directory, exist_ok=True)
-
     # Get the historical GDP PPP per capita.
     global_historical_gdp_ppp_per_capita = get_historical_data()
 
     # Read the future GDP PPP per capita data.
     global_future_gdp_ppp_per_capita = iiasa.read("gdp_ppp_per_capita")
 
-    # Get the list of codes of the countries and subdivisions of
-    # interest.
-    codes = utils.entities.check_and_get_codes_with(
-        "all_data", code=code, file_path=file
-    )
-
     # Define the available years for gridded GDP PPP and population
     # data.
-    available_historical_years_of_gridded_data = list(range(2000, 2021, 5))
-    available_future_years_of_gridded_data = list(range(2025, 2101, 5))
+    available_historical_years_of_gridded_data = list(
+        utils.catalogue.GRIDDED_POPULATION_YEARS
+    )
+    available_future_years_of_gridded_data = list(
+        utils.catalogue.PROJECTION_YEARS
+    )
 
-    # Define the available scenarios for the GDP PPP per capita data.
-    available_scenarios = get_available_scenarios()
+    def get_request(entity_code: str) -> retrievals.indicators.Request:
+        """
+        Get the years and scenarios of a country or subdivision.
 
-    # Loop over the countries and subdivisions.
-    for entity_code in tqdm(codes, desc="Countries and subdivisions"):
+        A subdivision has the data of its country, if there is one.
+
+        Parameters
+        ----------
+        entity_code : str
+            The code of the country or subdivision.
+
+        Returns
+        -------
+        retrievals.indicators.Request
+            The request.
+        """
         # Get the ISO Alpha-3 code of the country itself or the country
         # to which the subdivision belongs.
-        iso_alpha_3_code = entity_code.split("_")[0]
-
-        # Get the time zone of the country or subdivision.
-        time_zone = utils.entities.get_time_zone(entity_code)
-
-        # Get the years and scenarios dictionary for the country or
-        # subdivision of interest.
+        iso_alpha_3_code = entity_code.split("_", maxsplit=1)[0]
         (
             requested_historical_years,
             used_historical_years,
@@ -356,24 +337,15 @@ def run_data_retrieval(
             start_year,
             end_year,
             scenario,
-            available_scenarios,
+            list(utils.catalogue.SSP_SCENARIOS),
             global_historical_gdp_ppp_per_capita,
             available_historical_years_of_gridded_data,
         )
-
-        # Define the file path of the GDP PPP per capita data without
-        # the file extension.
-        file_path_without_ext = os.path.join(result_directory, entity_code)
-
-        if requested_historical_years:
-            logging.info(
-                "Processing historical GDP PPP per capita data for "
-                f"{entity_code}."
-            )
-
-            # Extract the historical GDP PPP per capita data for the
-            # country or subdivision of interest.
-            historical_gdp_ppp_per_capita = (
+        return retrievals.indicators.Request(
+            historical_years=requested_historical_years,
+            future_years=future_years,
+            scenarios=scenarios,
+            get_historical_values=lambda: (
                 _extract_historical_gdp_ppp_per_capita(
                     entity_code,
                     iso_alpha_3_code,
@@ -382,33 +354,9 @@ def run_data_retrieval(
                     used_historical_years,
                     available_historical_years_of_gridded_data,
                 )
-            )
-
-            # Save the selected years as hourly values.
-            utils.time_series.save_yearly_values(
-                historical_gdp_ppp_per_capita,
-                requested_historical_years,
-                "GDP PPP per capita (2021 international $)",
-                file_path_without_ext,
-                time_zone,
-            )
-
-            logging.info(
-                f"Historical GDP PPP per capita data for {entity_code} "
-                "has been "
-                "extracted and saved successfully."
-            )
-
-        if future_years:
-            for selected_scenario in scenarios:
-                logging.info(
-                    f"Processing future GDP PPP per capita data for "
-                    f"{entity_code} and scenario {selected_scenario}."
-                )
-
-                # Extract the future GDP PPP per capita data for
-                # the country or subdivision of interest.
-                future_gdp_ppp_per_capita = _extract_future_gdp_ppp_per_capita(
+            ),
+            get_future_values=lambda selected_scenario: (
+                _extract_future_gdp_ppp_per_capita(
                     entity_code,
                     iso_alpha_3_code,
                     global_future_gdp_ppp_per_capita,
@@ -417,18 +365,14 @@ def run_data_retrieval(
                     available_historical_years_of_gridded_data,
                     selected_scenario,
                 )
+            ),
+        )
 
-                # Save the selected years as hourly values.
-                utils.time_series.save_yearly_values(
-                    future_gdp_ppp_per_capita,
-                    future_years,
-                    "GDP PPP per capita (2021 international $)",
-                    f"{file_path_without_ext}_{selected_scenario}",
-                    time_zone,
-                )
-                logging.info(
-                    f"Future GDP PPP per capita data for {entity_code} "
-                    "and "
-                    f"scenario {selected_scenario} has been extracted "
-                    "and saved successfully."
-                )
+    retrievals.indicators.run_retrieval(
+        "gdp_ppp_per_capita",
+        "GDP PPP per capita (2021 international $)",
+        "GDP PPP per capita",
+        code,
+        file,
+        get_request,
+    )

@@ -50,7 +50,7 @@ jobs:
         run: |
           run_id="$(gh run list --workflow live-check.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
           if [ -n "$run_id" ]; then
-            gh run download "$run_id" --name data-sources-report --dir checks ||
+            gh run download "$run_id" --name data-sources-report --dir data/results/checks ||
               echo "::notice::The previous check has no report."
           fi
 
@@ -65,13 +65,13 @@ jobs:
         run: uv run --locked check.py --config config/check_data_sources_config.yaml
 
       - name: "Write the summary"
-        run: cat checks/data_sources_report.md >> "$GITHUB_STEP_SUMMARY"
+        run: cat data/results/checks/data_sources_report.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: "Upload the report"
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: data-sources-report
-          path: demandcast/checks/data_sources_report.*
+          path: demandcast/data/results/checks/data_sources_report.*
           if-no-files-found: error
           retention-days: 90
 

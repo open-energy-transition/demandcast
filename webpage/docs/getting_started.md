@@ -47,6 +47,8 @@ SANDBOX_ZENODO_API_KEY=<your_key>  # For data upload to Zenodo Sandbox
 
 Replace `<your_key>`, `<your_username>` and `<your_password>` with your actual API keys and account. You can obtain them by registering on the respective service websites.
 
+Everything that the scripts write, from the downloaded data to the trained models, the results and the logs, goes in `demandcast/data/`. To keep it elsewhere, such as on a larger disk, set the environment variable `DEMANDCAST_DATA_FOLDER` to another folder.
+
 ## 2. Retrieving Data
 
 ---
@@ -56,6 +58,8 @@ Replace `<your_key>`, `<your_username>` and `<your_password>` with your actual A
 ---
 
 In this example, we will retrieve data for four European countries (France, Germany, Italy, and Spain), train a model on data from 2020-2023, and then use it to forecast electricity demand for Spain in 2024. The following steps will guide you through the data retrieval process.
+
+Each script reads its settings from `config/<script>_config.yaml`, or from the file given with `--config`, and checks them before it starts: a misspelt option, a scenario or climate model that the data does not have, or a missing setting stops it with an error that lists the valid values.
 
 ### 2.1 Create a Country List File
 
@@ -209,7 +213,7 @@ cd demandcast
 uv run train.py
 ```
 
-The trained model will be saved in `ml_models/trained/` with a timestamp in the filename.
+The trained model will be saved in `data/models/xgboost/` with a timestamp in the filename.
 
 ## 5. Assembling Forecasting Data
 
@@ -246,7 +250,7 @@ Now use the trained model to forecast electricity demand for Spain. The forecast
 Edit `demandcast/config/forecast_config.yaml`:
 
 ```yaml
-model_path: ml_models/trained/XGBoost_model_YYYYMMDD_HHMMSS.json  # Use the actual filename
+model_path: data/models/xgboost/xgboost_model_YYYYMMDD_HHMMSS.json  # Use the actual filename
 data_path: data/assembled/assembled_data_for_forecasting_YYYYMMDD_HHMMSS.parquet  # Use the actual filename
 ```
 

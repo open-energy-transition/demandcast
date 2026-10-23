@@ -10,6 +10,7 @@ Description:
 
 import os
 import sys
+from typing import Literal
 
 import check
 import checks.flags
@@ -17,15 +18,16 @@ import pandas as pd
 import pytest
 import utils.config
 import utils.entities
+import utils.paths
 
 
 def _save_flags(
-    name: str, periods: list[tuple[str, str]], stage: str = "cleaned"
+    name: str,
+    periods: list[tuple[str, str]],
+    stage: Literal["cleaned", "combined"] = "cleaned",
 ) -> None:
     """Save the flags of a series, as (flag, period) pairs."""
-    folder = utils.config.read_folders_structure()[
-        f"{stage}_electricity_demand_folder"
-    ]
+    folder = utils.paths.get_electricity_demand_folder(stage)
     os.makedirs(folder, exist_ok=True)
     pd.DataFrame(
         {
@@ -41,7 +43,7 @@ def _save_flags(
 
 
 @pytest.fixture
-def checks_folder(tmp_folders, tmp_path):
+def checks_folder(monkeypatch, tmp_path):
     """
     Point the folder of the checks to a temporary one with reviews.
 
@@ -52,7 +54,7 @@ def checks_folder(tmp_folders, tmp_path):
     """
     folder = os.path.join(tmp_path, "checks")
     os.makedirs(folder)
-    tmp_folders["checks_folder"] = folder
+    monkeypatch.setattr(utils.paths, "CHECKS_FOLDER", folder)
     with open(os.path.join(folder, "reviewed_flags.yaml"), "w") as file:
         file.write(
             "reviews:\n"
@@ -81,7 +83,8 @@ def checks_folder(tmp_folders, tmp_path):
     return folder
 
 
-def test_run_check(checks_folder):
+@pytest.mark.usefixtures("checks_folder")
+def test_run_check():
     """Test that the flags are gathered with their reviews."""
     _save_flags(
         "CAN_NL_ccei",
@@ -105,10 +108,18 @@ def test_run_check(checks_folder):
         ["CAN_NL", "2025-03-09", "source_error"],
     ]
     assert flags["data_source"].tolist() == ["aemo_nem"] * 2 + ["ccei"] * 2
-    saved = pd.read_csv(os.path.join(checks_folder, "flags_report.csv"))
+    saved = pd.read_csv(
+        os.path.join(
+            utils.paths.get_results_folder("checks"), "flags_report.csv"
+        )
+    )
     assert saved["verdict"].fillna("").tolist() == flags["verdict"].tolist()
 
-    with open(os.path.join(checks_folder, "flags_report.md")) as file:
+    with open(
+        os.path.join(
+            utils.paths.get_results_folder("checks"), "flags_report.md"
+        )
+    ) as file:
         report = file.read()
     assert "4 flags of 2 series, 1 not reviewed" in report
     assert "| aemo_nem | AUS_SA | midday_dip | MAM 2024 |" in report
@@ -120,12 +131,17 @@ def test_run_check(checks_folder):
     assert "| ntdc | PAK | time_lag | source_error |" in report
 
 
-def test_run_check_without_flags(checks_folder):
+@pytest.mark.usefixtures("checks_folder")
+def test_run_check_without_flags():
     """Test that the report says that there are no flags."""
     flags = checks.flags.run_check()
 
     assert flags.empty
-    with open(os.path.join(checks_folder, "flags_report.md")) as file:
+    with open(
+        os.path.join(
+            utils.paths.get_results_folder("checks"), "flags_report.md"
+        )
+    ) as file:
         report = file.read()
     assert "0 flags of 0 series, 0 not reviewed" in report
     assert "## Not reviewed\n\nNone." in report
@@ -184,14 +200,18 @@ def test_review_with_a_misspelt_field():
 def test_configuration_of_the_report(monkeypatch):
     """Test that check.py reads the configuration of the report."""
     config_file_path = os.path.join(
-        utils.config.read_folders_structure()["config_folder"],
+        utils.paths.CONFIG_FOLDER,
         "check_flags_config.yaml",
     )
     monkeypatch.setattr(
         sys, "argv", ["check.py", "--config", config_file_path]
     )
 
-    assert check._read_and_check_configuration().check == "flags"
+    config = utils.config.read_and_check_configuration(
+        "check", check.ConfigModel
+    )
+
+    assert config.check == "flags"
 
 
 def test_combined_flags(checks_folder):
@@ -214,9 +234,7 @@ def test_combined_flags(checks_folder):
             "    note: Not a change.\n"
         )
     _save_flags("AUS_SA_aemo_nem", [("midday_dip", "DJF 2024")])
-    file_path = utils.config.get_electricity_demand_file_path(
-        "combined", "AUS_SA"
-    )
+    file_path = utils.paths.get_electricity_demand_file("combined", "AUS_SA")
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     hours = pd.date_range("2023-12-01", "2024-03-31 23:00", freq="h")
     pd.DataFrame(
@@ -250,7 +268,11 @@ def test_combined_flags(checks_folder):
         ["time_lag", "aemo_nem", "net_demand", "combined"],
         ["annual_change", "aemo_nem", "", ""],
     ]
-    with open(os.path.join(checks_folder, "flags_report.md")) as file:
+    with open(
+        os.path.join(
+            utils.paths.get_results_folder("checks"), "flags_report.md"
+        )
+    ) as file:
         report = file.read()
     # The flags of the sources have no combined flags in their count.
     assert "1 flags of 1 series, 0 not reviewed" in report

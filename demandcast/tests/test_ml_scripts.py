@@ -20,6 +20,7 @@ import pandas as pd
 import pytest
 import train
 import utils.ml
+import utils.paths
 import validate
 
 LSTM_MARKS = pytest.mark.skipif(
@@ -42,7 +43,7 @@ pytestmark = pytest.mark.usefixtures("frozen_now")
 
 
 def _write_assembled_data(
-    tmp_folders: dict[str, str], file_name: str, years: list[int], target: bool
+    file_name: str, years: list[int], target: bool
 ) -> None:
     """Write a small assembled dataset of three countries."""
     rng = np.random.default_rng(0)
@@ -107,10 +108,10 @@ def _write_assembled_data(
                 ) / 8760
             datasets.append(dataset)
 
-    os.makedirs(tmp_folders["assembled_data_folder"], exist_ok=True)
+    os.makedirs(utils.paths.get_assembled_folder(), exist_ok=True)
     pd.concat(datasets, ignore_index=True).to_parquet(
         os.path.join(
-            tmp_folders["assembled_data_folder"], f"{file_name}.parquet"
+            utils.paths.get_assembled_folder(), f"{file_name}.parquet"
         ),
         index=False,
     )
@@ -134,13 +135,13 @@ def _read_results(folder: str, model: str, data: str) -> pd.DataFrame:
 
 
 @pytest.mark.parametrize("algorithm", ALGORITHMS)
-def test_train(tmp_folders, algorithm):
+def test_train(algorithm):
     """Test that the trained model is saved with its name and time."""
-    _write_assembled_data(tmp_folders, TRAINING_DATA, [2021, 2022, 2023], True)
+    _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
 
     train.run_model_training(True, False, None, algorithm)
 
-    assert os.listdir(tmp_folders["trained_ml_models_folder"]) == [
+    assert os.listdir(utils.paths.get_models_folder(algorithm.lower())) == [
         f"{algorithm.lower()}_model_{NOW}.{MODEL_EXTENSIONS[algorithm]}"
     ]
 
@@ -226,15 +227,15 @@ def test_train(tmp_folders, algorithm):
         ),
     ],
 )
-def test_validate(tmp_folders, algorithm, use_validation_set, expected_mapes):
+def test_validate(algorithm, use_validation_set, expected_mapes):
     """Test the MAPEs of the trained model on each set."""
-    _write_assembled_data(tmp_folders, TRAINING_DATA, [2021, 2022, 2023], True)
+    _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
     train.run_model_training(True, use_validation_set, None, algorithm)
 
     validate.run_model_validation(use_validation_set, None, None, algorithm)
 
     mapes = _read_results(
-        tmp_folders["ml_validation_folder"],
+        utils.paths.get_results_folder("validation"),
         f"{algorithm.lower()}_model_{NOW}",
         TRAINING_DATA,
     )
@@ -282,16 +283,16 @@ def test_validate(tmp_folders, algorithm, use_validation_set, expected_mapes):
         ),
     ],
 )
-def test_cross_validate(tmp_folders, algorithm, expected_mapes):
+def test_cross_validate(algorithm, expected_mapes):
     """Test the MAPEs of the leave-one-country-out cross-validation."""
-    _write_assembled_data(tmp_folders, TRAINING_DATA, [2021, 2022, 2023], True)
+    _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
 
     cross_validate.run_model_cross_validation(
         "neg_mean_absolute_percentage_error", 1, None, algorithm
     )
 
     mapes = _read_results(
-        tmp_folders["ml_cross_validation_folder"],
+        utils.paths.get_results_folder("cross_validation"),
         algorithm.lower(),
         TRAINING_DATA,
     )
@@ -325,16 +326,16 @@ def test_cross_validate(tmp_folders, algorithm, expected_mapes):
         ),
     ],
 )
-def test_forecast(tmp_folders, algorithm, expected_sums):
+def test_forecast(algorithm, expected_sums):
     """Test the forecasts of the trained model, in MW."""
-    _write_assembled_data(tmp_folders, TRAINING_DATA, [2021, 2022, 2023], True)
+    _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
     train.run_model_training(True, False, None, algorithm)
-    _write_assembled_data(tmp_folders, FORECASTING_DATA, [2024], False)
+    _write_assembled_data(FORECASTING_DATA, [2024], False)
 
     forecast.run_forecasting(None, None, algorithm)
 
     forecasts = _read_results(
-        tmp_folders["ml_forecasts_folder"],
+        utils.paths.get_results_folder("forecasts"),
         f"{algorithm.lower()}_model_{NOW}",
         FORECASTING_DATA,
     )
@@ -365,9 +366,9 @@ def test_forecast(tmp_folders, algorithm, expected_sums):
     ],
     ids=["train", "validate", "cross_validate", "forecast"],
 )
-def test_unsupported_algorithm(tmp_folders, run_script):
+def test_unsupported_algorithm(run_script):
     """Test that the scripts reject an unknown algorithm."""
-    _write_assembled_data(tmp_folders, TRAINING_DATA, [2021, 2022, 2023], True)
+    _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
 
     with pytest.raises(ValueError, match="Unsupported algorithm: Unknown"):
         run_script()
@@ -384,11 +385,9 @@ def test_unsupported_algorithm(tmp_folders, run_script):
     ],
     ids=["validate", "forecast"],
 )
-def test_model_with_other_features(
-    tmp_folders, monkeypatch, run_script, algorithm
-):
+def test_model_with_other_features(monkeypatch, run_script, algorithm):
     """Test that a model trained on other features is rejected."""
-    _write_assembled_data(tmp_folders, TRAINING_DATA, [2021, 2022, 2023], True)
+    _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
     train.run_model_training(True, False, None, algorithm)
 
     # Take the features in the opposite order after the training.

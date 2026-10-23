@@ -8,66 +8,37 @@ Description:
     the flags of the cleaned electricity demand into a report.
 """
 
-import logging
+from typing import Literal
 
 import checks.data_availability
 import checks.data_sources
 import checks.flags
 import utils.config
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 
 class ConfigModel(BaseModel):
     """Settings of check.py."""
 
-    check: str
+    check: Literal["data_availability", "data_sources", "flags"]
     data_sources: list[str] | None = None
     maximum_age_days: int = 60
     maximum_age_days_by_source: dict[str, int] = {}
     time_limit_minutes: float = 15
 
 
-def _read_and_check_configuration() -> ConfigModel:
+def main(config: ConfigModel) -> None:
     """
-    Read and check the configuration for checks.
+    Run the check of the settings.
 
-    Returns
-    -------
-    ConfigModel
-        A Pydantic model containing the validated configuration.
-
-    Raises
-    ------
-    ValueError
-        If the configuration is invalid.
+    Parameters
+    ----------
+    config : ConfigModel
+        The settings.
     """
-    # Read the configuration.
-    raw_config = utils.config.read_configuration(
-        "check",
-        "Perform checks on the data data quality and availability.",
-    )
-
-    # Validate the configuration.
-    try:
-        config = ConfigModel(**raw_config)
-    except ValidationError as e:
-        raise ValueError(f"Configuration validation error: {e}") from e
-
-    logging.info("Configuration validated successfully:")
-    for field, value in config.model_dump().items():
-        logging.info(f" - {field}: {value}")
-
-    return config
-
-
-if __name__ == "__main__":
-    # Set up the logging configuration.
     utils.config.set_up_logging("checks")
+    utils.config.log_configuration(config)
 
-    # Read and check the configuration.
-    config = _read_and_check_configuration()
-
-    # Run the specified check.
     if config.check == "data_availability":
         checks.data_availability.run_check()
     elif config.check == "data_sources":
@@ -77,5 +48,15 @@ if __name__ == "__main__":
             config.maximum_age_days_by_source,
             config.time_limit_minutes,
         )
-    elif config.check == "flags":
+    else:
         checks.flags.run_check()
+
+
+if __name__ == "__main__":
+    main(
+        utils.config.read_and_check_configuration(
+            "check",
+            ConfigModel,
+            "Perform checks on the data data quality and availability.",
+        )
+    )

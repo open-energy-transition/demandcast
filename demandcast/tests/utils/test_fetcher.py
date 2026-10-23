@@ -7,6 +7,8 @@ Description:
 """
 
 import email.message
+import os
+import pathlib
 import re
 import traceback
 import urllib.error
@@ -18,6 +20,7 @@ import pandas as pd
 import pytest
 import requests
 import utils.fetcher
+import utils.paths
 from entsoe.exceptions import NoMatchingDataError
 from entsoe.mappings import Area
 
@@ -322,11 +325,12 @@ def test_fetch_dataframe_of_another_type():
         utils.fetcher.fetch_dataframe("https://example.com", "html")
 
 
-def test_read_manual_files(tmp_folders, tmp_path):
+def test_read_manual_files():
     """Test that the files with the prefix are read and joined."""
-    folder = tmp_path / "manual"
-    folder.mkdir()
-    tmp_folders["manually_downloaded_electricity_demand_folder"] = str(folder)
+    folder = pathlib.Path(
+        utils.paths.get_electricity_demand_folder("manual_downloads")
+    )
+    folder.mkdir(parents=True)
     (folder / "ABC_2.csv").write_text("load\n2\n")
     (folder / "ABC_1.csv").write_text("load\n1\n")
     (folder / "XYZ.csv").write_text("load\n9\n")
@@ -341,12 +345,13 @@ def test_read_manual_files(tmp_folders, tmp_path):
     assert dataset["load"].tolist() == [1, 2]
 
 
-@pytest.mark.parametrize("folder", ["", "missing"])
-def test_read_manual_files_without_files(tmp_folders, tmp_path, folder):
+@pytest.mark.parametrize("exists", [True, False])
+def test_read_manual_files_without_files(exists):
     """Test that the error says where and how to download the files."""
-    tmp_folders["manually_downloaded_electricity_demand_folder"] = str(
-        tmp_path / folder
-    )
+    if exists:
+        os.makedirs(
+            utils.paths.get_electricity_demand_folder("manual_downloads")
+        )
 
     with pytest.raises(
         FileNotFoundError,

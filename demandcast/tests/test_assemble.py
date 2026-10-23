@@ -19,6 +19,7 @@ import pandas as pd
 import pytest
 import retrievals.temperature
 import utils.entities
+import utils.paths
 import utils.time_series
 
 # The codes of the inputs, in time zones with daylight saving time and
@@ -99,9 +100,7 @@ def _local_hours(code: str, years: list[int]) -> pd.DatetimeIndex:
     ]
 
 
-def _write_inputs(
-    folders: dict[str, str], codes: list[str], years: list[int]
-) -> None:
+def _write_inputs(codes: list[str], years: list[int]) -> None:
     """
     Write the inputs of the assembly of some codes and years.
 
@@ -113,8 +112,6 @@ def _write_inputs(
 
     Parameters
     ----------
-    folders : dict[str, str]
-        The folders of the data.
     codes : list[str]
         The codes of the countries.
     years : list[int]
@@ -122,24 +119,25 @@ def _write_inputs(
     """
     for number, code in enumerate(codes):
         time_zone = utils.entities.get_time_zone(code)
-        for folder, column, value in (
+        inputs: tuple[tuple[utils.paths.Indicator, str, float], ...] = (
             (
-                "annual_electricity_demand_per_capita_folder",
+                "annual_electricity_demand_per_capita",
                 "Annual electricity demand per capita (kWh)",
                 5000.0,
             ),
-            ("population_folder", "Population", 1e6 * (number + 1)),
+            ("population", "Population", 1e6 * (number + 1)),
             (
-                "gdp_ppp_per_capita_folder",
+                "gdp_ppp_per_capita",
                 "GDP PPP per capita (2021 international $)",
                 40000.0,
             ),
-        ):
+        )
+        for indicator, column, value in inputs:
             hourly = utils.time_series.convert_from_yearly_to_hourly(
                 pd.Series(value, index=years), time_zone
             )
             _save(
-                folders[folder],
+                utils.paths.get_indicator_folder(indicator),
                 code,
                 utils.time_series.clean_data(hourly, column).to_frame(),
             )
@@ -150,14 +148,14 @@ def _write_inputs(
             ]
             temperature = pd.Series(280.0, index=year_hours)
             _save(
-                folders["temperature_folder"],
+                utils.paths.get_indicator_folder("temperature"),
                 f"{code}_{year}",
                 retrievals.temperature._build_temperature_database(
                     temperature, temperature, time_zone
                 ),
             )
         _save(
-            folders["combined_electricity_demand_folder"],
+            utils.paths.get_electricity_demand_folder("combined"),
             code,
             pd.DataFrame(
                 {
@@ -170,42 +168,34 @@ def _write_inputs(
             ),
         )
         _save(
-            folders["cleaned_electricity_demand_folder"],
+            utils.paths.get_electricity_demand_folder("cleaned"),
             f"{code}_entsoe",
             pd.DataFrame({"Load (MW)": 1.0}, index=hours),
         )
 
 
 @pytest.fixture
-def assembly_inputs(tmp_folders, monkeypatch):
+def assembly_inputs(monkeypatch):
     """
     Write the inputs of France, Germany and India in 2023 and 2024.
 
     India is 5 hours and 30 minutes ahead of UTC, so its years start on
     the half hour in UTC.
-
-    Returns
-    -------
-    dict[str, str]
-        The folders of the data.
     """
-    _write_inputs(tmp_folders, CODES, [2023, 2024])
+    _write_inputs(CODES, [2023, 2024])
     monkeypatch.setattr(
         assemble.utils.entities,
         "check_and_get_codes_with",
         lambda *_, **__: CODES,
     )
-    return tmp_folders
 
 
-def _read_assembled(folders: dict[str, str], target_use: str) -> pd.DataFrame:
+def _read_assembled(target_use: str) -> pd.DataFrame:
     """
     Read the assembled data of a target use.
 
     Parameters
     ----------
-    folders : dict[str, str]
-        The folders of the data.
     target_use : str
         The target use, "training" or "forecasting".
 
@@ -216,7 +206,7 @@ def _read_assembled(folders: dict[str, str], target_use: str) -> pd.DataFrame:
         its CSV file.
     """
     pattern = os.path.join(
-        folders["assembled_data_folder"],
+        utils.paths.get_assembled_folder(),
         f"assembled_data_for_{target_use}_*",
     )
     parquet_path = next(
@@ -358,7 +348,8 @@ def test_calculate_load_fraction():
     assert sums["DEU"] == pytest.approx(0.5)
 
 
-def test_assembly_for_training(assembly_inputs):
+@pytest.mark.usefixtures("assembly_inputs")
+def test_assembly_for_training():
     """
     Test the assembly for training.
 
@@ -369,7 +360,7 @@ def test_assembly_for_training(assembly_inputs):
     """
     assemble.run_data_assemply("training")
 
-    assembled = _read_assembled(assembly_inputs, "training")
+    assembled = _read_assembled("training")
     assert len(assembled) == len(CODES) * len(_hours([2023, 2024]))
     assert assembled.equals(
         assembled.sort_values(["Entity code", "Time (UTC)"], ignore_index=True)
@@ -384,11 +375,12 @@ def test_assembly_for_training(assembly_inputs):
     assert sums.to_numpy() == pytest.approx(1.0)
 
 
-def test_assembly_for_forecasting_of_some_years(assembly_inputs):
+@pytest.mark.usefixtures("assembly_inputs")
+def test_assembly_for_forecasting_of_some_years():
     """Test the assembly for forecasting, without the demand."""
     assemble.run_data_assemply("forecasting", start_year=2024, end_year=2024)
 
-    assembled = _read_assembled(assembly_inputs, "forecasting")
+    assembled = _read_assembled("forecasting")
     assert len(assembled) == len(CODES) * len(_hours([2024]))
     assert set(assembled["Local year"]) == {2024}
     assert "Load (MW)" not in assembled.columns
@@ -397,7 +389,8 @@ def test_assembly_for_forecasting_of_some_years(assembly_inputs):
     )
 
 
-def test_assembly_for_training_without_incomplete_years(assembly_inputs):
+@pytest.mark.usefixtures("assembly_inputs")
+def test_assembly_for_training_without_incomplete_years():
     """
     Test that the training leaves out the years without enough hours.
 
@@ -405,7 +398,7 @@ def test_assembly_for_training_without_incomplete_years(assembly_inputs):
     of its other hours would assume that they represent the year.
     """
     file_path = os.path.join(
-        assembly_inputs["combined_electricity_demand_folder"], "DEU.parquet"
+        utils.paths.get_electricity_demand_folder("combined"), "DEU.parquet"
     )
     demand = pd.read_parquet(file_path)
     summer = (demand.index >= "2023-06-01") & (demand.index < "2023-09-01")
@@ -413,14 +406,14 @@ def test_assembly_for_training_without_incomplete_years(assembly_inputs):
 
     assemble.run_data_assemply("training")
 
-    assembled = _read_assembled(assembly_inputs, "training")
+    assembled = _read_assembled("training")
     years = assembled.groupby("Entity code")["Local year"].unique()
     assert sorted(years["DEU"]) == [2024]
     assert sorted(years["FRA"]) == [2023, 2024]
     coverage_path = next(
         path
         for path in glob.glob(
-            os.path.join(assembly_inputs["assembled_data_folder"], "*.csv")
+            os.path.join(utils.paths.get_assembled_folder(), "*.csv")
         )
         if path.endswith("_coverage.csv")
     )
@@ -438,3 +431,91 @@ def test_assembly_with_wrong_inputs():
         assemble.run_data_assemply("testing")
     with pytest.raises(ValueError, match="start_year and end_year"):
         assemble.run_data_assemply("training", start_year=2024)
+
+
+@pytest.mark.usefixtures("assembly_inputs")
+def test_assembly_for_forecasting_of_scenarios():
+    """
+    Test that the assembly reads the files of the scenarios.
+
+    The files of the scenarios have twice the annual values and a
+    temperature 10 K higher than the historical files, and their names
+    have the scenario, and the climate model of the temperature, in
+    upper case with underscores, as the retrievals write them.
+    """
+    scenario_files: tuple[tuple[utils.paths.Indicator, str], ...] = (
+        ("annual_electricity_demand_per_capita", "SSP2_45"),
+        ("gdp_ppp_per_capita", "SSP3"),
+        ("population", "SSP3"),
+    )
+    for indicator, scenario in scenario_files:
+        folder = utils.paths.get_indicator_folder(indicator)
+        for code in CODES:
+            values = pd.read_parquet(os.path.join(folder, f"{code}.parquet"))
+            (2 * values).to_parquet(
+                os.path.join(folder, f"{code}_{scenario}.parquet")
+            )
+    folder = utils.paths.get_indicator_folder("temperature")
+    for code in CODES:
+        temperature = pd.read_parquet(
+            os.path.join(folder, f"{code}_2024.parquet")
+        )
+        for column in temperature.columns:
+            if column.endswith("(K)"):
+                temperature[column] += 10
+        temperature.to_parquet(
+            os.path.join(folder, f"{code}_2024_CESM2_SSP2_4_5.parquet")
+        )
+
+    assemble.run_data_assemply(
+        "forecasting",
+        scenario_for_annual_electricity_demand_per_capita="SSP2-45",
+        scenario_for_gdp_ppp_per_capita="SSP3",
+        scenario_for_population="SSP3",
+        scenario_for_temperature="SSP2-4.5",
+        climate_model_for_temperature="CESM2",
+    )
+
+    assembled = _read_assembled("forecasting")
+    assert set(assembled["Local year"]) == {2024}
+    assert len(assembled) == len(CODES) * len(_hours([2024]))
+    assert set(assembled["Annual electricity demand per capita (kWh)"]) == {
+        10000.0
+    }
+    assert set(assembled["GDP PPP per capita (2021 international $)"]) == {
+        80000.0
+    }
+    assert set(assembled["Temperature - Top 1 (K)"]) == {290.0}
+
+
+def test_file_paths_of_inputs(caplog):
+    """
+    Test the names of the files of the inputs.
+
+    The temperature has one file per local year, and a missing year is
+    reported.
+    """
+    population, temperature = (
+        next(dataset for dataset in assemble.DATASETS if dataset.name == name)
+        for name in ("population", "temperature")
+    )
+    folder = utils.paths.get_indicator_folder("temperature")
+    os.makedirs(folder)
+    for year in (2031, 2030):
+        open(
+            os.path.join(folder, f"FRA_{year}_CESM2_SSP2_4_5.parquet"), "w"
+        ).close()
+
+    assert assemble._get_file_paths(population, "FRA", "SSP3", None) == [
+        os.path.join(
+            utils.paths.get_indicator_folder("population"), "FRA_SSP3.parquet"
+        )
+    ]
+    assert assemble._get_file_paths(
+        temperature, "FRA", "SSP2-4.5", "CESM2"
+    ) == [
+        os.path.join(folder, f"FRA_{year}_CESM2_SSP2_4_5.parquet")
+        for year in (2030, 2031)
+    ]
+    assert assemble._get_file_paths(temperature, "DEU", None, None) == []
+    assert "No temperature files found for entity code DEU." in caplog.text

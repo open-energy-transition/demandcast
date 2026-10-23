@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import utils.ml
+import utils.paths
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 
@@ -82,7 +83,7 @@ def test_get_model_module_errors():
         ml_models.registry.get_model_module("Unknown")
 
 
-def test_model_module(model_module, tmp_folders):
+def test_model_module(model_module):
     """Test that the model trains, saves, loads and predicts."""
     dataset = _prepared_dataset()
 
@@ -95,7 +96,9 @@ def test_model_module(model_module, tmp_folders):
     model_module.save(model, "model")
     loaded_model = model_module.load(
         os.path.join(
-            tmp_folders["trained_ml_models_folder"],
+            utils.paths.get_models_folder(
+                model_module.__name__.rsplit(".", 1)[-1]
+            ),
             f"model{model_module.FILE_EXTENSION}",
         )
     )

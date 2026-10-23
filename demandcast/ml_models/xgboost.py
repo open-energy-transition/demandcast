@@ -11,8 +11,8 @@ import os
 from typing import cast, overload
 
 import pandas as pd
-import utils.config
 import utils.ml
+import utils.paths
 import yaml
 from pydantic import BaseModel, ValidationError
 from xgboost import XGBRegressor
@@ -44,10 +44,7 @@ def _read_configuration() -> ConfigModel:
         If the configuration validation fails.
     """
     # Read the configuration.
-    config_path = os.path.join(
-        utils.config.read_folders_structure()["config_folder"],
-        "xgboost_config.yaml",
-    )
+    config_path = utils.paths.get_config_file("xgboost_config.yaml")
 
     # Read the raw configuration.
     with open(config_path) as f:
@@ -94,9 +91,7 @@ def save(xgb_model: XGBRegressor, model_name: str) -> None:
         Name to identify the model when saving.
     """
     # Get the folder where to save the model.
-    model_folder = utils.config.read_folders_structure()[
-        "trained_ml_models_folder"
-    ]
+    model_folder = utils.paths.get_models_folder("xgboost")
     os.makedirs(model_folder, exist_ok=True)
 
     # Define the output path for the model.

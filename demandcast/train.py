@@ -14,7 +14,7 @@ import ml_models.registry
 import pandas as pd
 import utils.config
 import utils.ml
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 
 class ConfigModel(BaseModel):
@@ -23,40 +23,6 @@ class ConfigModel(BaseModel):
     reserve_testing_set: bool
     use_validation_set: bool
     data_path: str | None = None
-
-
-def _read_and_check_configuration() -> ConfigModel:
-    """
-    Read and check the configuration for model training.
-
-    Returns
-    -------
-    config : ConfigModel
-        A Pydantic model containing the validated configuration.
-
-    Raises
-    ------
-    ValueError
-        If the configuration is invalid.
-    """
-    # Read the configuration.
-    raw_config = utils.config.read_configuration(
-        "train",
-        "Train the machine learning model using the specified preprocessed "
-        "data and algorithm.",
-    )
-
-    # Validate the configuration.
-    try:
-        config = ConfigModel(**raw_config)
-    except ValidationError as e:
-        raise ValueError(f"Configuration validation error: {e}") from e
-
-    logging.info("Configuration validated successfully:")
-    for field, value in config.model_dump().items():
-        logging.info(f" - {field}: {value}")
-
-    return config
 
 
 def run_model_training(
@@ -104,20 +70,35 @@ def run_model_training(
     model_module.save(model, model_name)
 
 
-if __name__ == "__main__":
-    # Set up the logging configuration.
-    utils.config.set_up_logging("model_training")
+def main(config: ConfigModel) -> None:
+    """
+    Train the model of the settings.
 
-    # Read and check the configuration.
-    config = _read_and_check_configuration()
+    Parameters
+    ----------
+    config : ConfigModel
+        The settings.
+    """
+    utils.config.set_up_logging("model_training")
+    utils.config.log_configuration(config)
 
     # Read and check machine learning configuration.
     ml_config = utils.ml.read_and_check_ml_configuration()
 
-    # Run the model training process.
     run_model_training(
         config.reserve_testing_set,
         config.use_validation_set,
         config.data_path,
         ml_config.algorithm,
+    )
+
+
+if __name__ == "__main__":
+    main(
+        utils.config.read_and_check_configuration(
+            "train",
+            ConfigModel,
+            "Train the machine learning model using the specified "
+            "preprocessed data and algorithm.",
+        )
     )

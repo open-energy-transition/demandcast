@@ -14,7 +14,7 @@ import geopandas
 import matplotlib.pyplot as plt
 import xarray
 
-import utils.config
+import utils.paths
 
 
 def simple_plot(
@@ -34,7 +34,7 @@ def simple_plot(
         The name of the figure.
     """
     # Create a directory to store the figures.
-    figure_directory = utils.config.read_folders_structure()["figures_folder"]
+    figure_directory = utils.paths.get_results_folder("figures")
     os.makedirs(figure_directory, exist_ok=True)
 
     # Plot the data.

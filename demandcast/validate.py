@@ -15,7 +15,7 @@ import ml_models.registry
 import pandas as pd
 import utils.config
 import utils.ml
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 from sklearn.metrics import mean_absolute_percentage_error
 
 
@@ -25,40 +25,6 @@ class ConfigModel(BaseModel):
     used_validation_set: bool
     model_path: str | None = None
     data_path: str | None = None
-
-
-def _read_and_check_configuration() -> ConfigModel:
-    """
-    Read and check the configuration for model validation.
-
-    Returns
-    -------
-    config : ConfigModel
-        A Pydantic model containing the validated configuration.
-
-    Raises
-    ------
-    ValueError
-        If the configuration is invalid.
-    """
-    # Read the configuration.
-    raw_config = utils.config.read_configuration(
-        "validate",
-        "Validate the machine learning model using the specified "
-        "preprocessed data and algorithm.",
-    )
-
-    # Validate the configuration.
-    try:
-        config = ConfigModel(**raw_config)
-    except ValidationError as e:
-        raise ValueError(f"Configuration validation error: {e}") from e
-
-    logging.info("Configuration validated successfully:")
-    for field, value in config.model_dump().items():
-        logging.info(f" - {field}: {value}")
-
-    return config
 
 
 def _calculate_mape_by_entity(
@@ -219,20 +185,35 @@ def run_model_validation(
     )
 
 
-if __name__ == "__main__":
-    # Set up the logging configuration.
-    utils.config.set_up_logging("model_validation")
+def main(config: ConfigModel) -> None:
+    """
+    Validate the model of the settings.
 
-    # Read and check the configuration.
-    config = _read_and_check_configuration()
+    Parameters
+    ----------
+    config : ConfigModel
+        The settings.
+    """
+    utils.config.set_up_logging("model_validation")
+    utils.config.log_configuration(config)
 
     # Read and check machine learning configuration.
     ml_config = utils.ml.read_and_check_ml_configuration()
 
-    # Run the model validation process.
     run_model_validation(
         config.used_validation_set,
         config.model_path,
         config.data_path,
         ml_config.algorithm,
+    )
+
+
+if __name__ == "__main__":
+    main(
+        utils.config.read_and_check_configuration(
+            "validate",
+            ConfigModel,
+            "Validate the machine learning model using the specified "
+            "preprocessed data and algorithm.",
+        )
     )

@@ -21,24 +21,25 @@ Description:
     the coverage of all the years next to the assembled data.
 """
 
+import dataclasses
 import datetime
+import functools
 import glob
 import logging
 import os
 from collections.abc import Callable
 from functools import reduce
+from typing import Literal
 
 import dask
 import dask.dataframe
 import numpy as np
 import pandas as pd
-import retrievals.annual_electricity_demand_per_capita
-import retrievals.gdp_ppp_per_capita
-import retrievals.gridded_weather
-import retrievals.population
+import utils.catalogue
 import utils.config
 import utils.entities
-from pydantic import BaseModel, ValidationError
+import utils.paths
+from pydantic import BaseModel, model_validator
 from tqdm import tqdm
 
 # The shares of the hours of a year, and of each of its months, that
@@ -47,10 +48,107 @@ MIN_YEAR_COVERAGE = 0.9
 MIN_MONTH_COVERAGE = 0.5
 
 
+@dataclasses.dataclass(frozen=True)
+class Dataset:
+    """
+    An input of the assembly.
+
+    Attributes
+    ----------
+    name : str
+        The name of the input, which names its settings,
+        scenario_for_<name> and climate_model_for_<name>.
+    description : str
+        The name of the input in the messages of the log.
+    get_folder : Callable[[], str]
+        The function that gives the folder of its files.
+    columns : tuple[str, ...]
+        Its columns, which must be positive numbers.
+    scenarios : tuple[str, ...] | None, optional
+        Its scenarios, from utils/catalogue.py, none if it has none or
+        if they depend on the climate model.
+    climate : bool, optional
+        Whether it comes from the climate models, whose scenarios
+        depend on the model.
+    by_year : bool, optional
+        Whether it has one file per local year, <code>_<year>, with the
+        column "Local year", which selects the years to assemble.
+    training_only : bool, optional
+        Whether it is assembled only for training, as the target.
+    """
+
+    name: str
+    description: str
+    get_folder: Callable[[], str]
+    columns: tuple[str, ...]
+    scenarios: tuple[str, ...] | None = None
+    climate: bool = False
+    by_year: bool = False
+    training_only: bool = False
+
+
+# The inputs of the assembly, in the order of their columns.
+DATASETS = (
+    Dataset(
+        "annual_electricity_demand_per_capita",
+        "annual electricity demand per capita",
+        functools.partial(
+            utils.paths.get_indicator_folder,
+            "annual_electricity_demand_per_capita",
+        ),
+        ("Annual electricity demand per capita (kWh)",),
+        scenarios=utils.catalogue.IAMC_SCENARIOS,
+    ),
+    Dataset(
+        "gdp_ppp_per_capita",
+        "GDP PPP per capita",
+        functools.partial(
+            utils.paths.get_indicator_folder, "gdp_ppp_per_capita"
+        ),
+        ("GDP PPP per capita (2021 international $)",),
+        scenarios=utils.catalogue.SSP_SCENARIOS,
+    ),
+    Dataset(
+        "population",
+        "population",
+        functools.partial(utils.paths.get_indicator_folder, "population"),
+        ("Population",),
+        scenarios=utils.catalogue.SSP_SCENARIOS,
+    ),
+    Dataset(
+        "temperature",
+        "temperature",
+        functools.partial(utils.paths.get_indicator_folder, "temperature"),
+        (
+            "Temperature - Top 1 (K)",
+            "Temperature - Top 3 (K)",
+            "Monthly average temperature - Top 1 (K)",
+            "Monthly average temperature rank - Top 1",
+            "Annual average temperature - Top 1 (K)",
+            "5 percentile temperature - Top 1 (K)",
+            "95 percentile temperature - Top 1 (K)",
+        ),
+        climate=True,
+        by_year=True,
+    ),
+    # The hourly demand that combines all the data sources of each code
+    # (see cleaning/combining.py).
+    Dataset(
+        "electricity_demand",
+        "electricity demand",
+        functools.partial(
+            utils.paths.get_electricity_demand_folder, "combined"
+        ),
+        ("Load (MW)",),
+        training_only=True,
+    ),
+)
+
+
 class ConfigModel(BaseModel):
     """Settings of assemble.py."""
 
-    target_use: str
+    target_use: Literal["training", "forecasting"]
     file: str | None = None
     start_year: int | None = None
     end_year: int | None = None
@@ -60,195 +158,124 @@ class ConfigModel(BaseModel):
     scenario_for_temperature: str | None = None
     climate_model_for_temperature: str | None = None
 
+    @model_validator(mode="after")
+    def _check_scenarios(self) -> "ConfigModel":
+        """
+        Check the scenarios and the climate model.
 
-def _read_and_check_configuration() -> ConfigModel:
-    """
-    Read and check the configuration for data assembly.
+        They are spelt as in the catalogue, whatever their case.
 
-    Returns
-    -------
-    config : ConfigModel
-        A Pydantic model containing the validated configuration.
-
-    Raises
-    ------
-    ValueError
-        If the configuration is invalid.
-    """
-    # Read the configuration.
-    raw_config = utils.config.read_configuration(
-        "assemble",
-        "Assemble and preprocess the retrieved data for "
-        "training the machine learning models or forecasting.",
-    )
-
-    # Validate the configuration.
-    try:
-        config = ConfigModel(**raw_config)
-    except ValidationError as e:
-        raise ValueError(f"Configuration validation error: {e}") from e
-
-    logging.info("Configuration validated successfully:")
-    for field, value in config.model_dump().items():
-        logging.info(f" - {field}: {value}")
-
-    return config
-
-
-def _validate(
-    parameter_name: str,
-    selected_value: str | None,
-    available_values: list[str],
-) -> None:
-    """
-    Validate a selected parameter value against available options.
-
-    Parameters
-    ----------
-    parameter_name : str
-        Name of the parameter being validated.
-    selected_value : str
-        The selected value to validate.
-    available_values : list[str]
-        List of available valid values.
-
-    Raises
-    ------
-    ValueError
-        If the selected value is not in the list of available values.
-    """
-    if selected_value and selected_value not in available_values:
-        raise ValueError(
-            f"{parameter_name.capitalize()} '{selected_value}' is not available. "
-            f"Available {parameter_name}s: {available_values}"
-        )
-
-
-def _validate_scenario_model_combination(
-    selected_model: str | None,
-    selected_scenario: str | None,
-    scenario_getter: Callable[[], list[str]] | None,
-    model_scenario_getter: Callable[[], dict[str, list[str]]] | None,
-) -> None:
-    """
-    Validate the selected scenario and model combination.
-
-    Parameters
-    ----------
-    selected_model : str | None
-        The selected model to validate.
-    selected_scenario : str | None
-        The selected scenario to validate.
-    scenario_getter : Callable[[], list[str]] | None
-        Function that returns list of available scenarios. If None,
-        no scenario validation is performed.
-    model_scenario_getter : Callable[[], dict[str, list[str]]]
-        Function that returns dict mapping models to their available
-        scenarios.
-    """
-    if model_scenario_getter and selected_model:
-        available_scenarios_for_model = model_scenario_getter()
-        _validate(
-            "model", selected_model, list(available_scenarios_for_model.keys())
-        )
-        _validate(
-            "scenario",
-            selected_scenario,
-            available_scenarios_for_model[selected_model]
-            if selected_model
-            else [""],
-        )
-    elif scenario_getter:
-        available_scenarios = scenario_getter()
-        _validate("scenario", selected_scenario, available_scenarios)
-
-
-def _get_files_to_load(
-    variable: str,
-    entity_codes: list[str],
-    selected_scenario: str | None,
-    selected_model: str | None,
-) -> dict[str, list[str]]:
-    """
-    Get the list of files to load for a specific entity code.
-
-    Parameters
-    ----------
-    variable : str
-        Variable to load.
-    entity_codes : list[str]
-        List of entity codes to get files for.
-    selected_scenario : str | None
-        Scenario to load. None for historical data.
-    selected_model : str | None
-        Model to load (e.g., climate model). None for historical data.
-
-    Returns
-    -------
-    files_to_load : dict[str, list[str]]
-        Dictionary mapping entity codes to list of file paths to load.
-    """
-    # Get the folder containing the data.
-    data_folder = utils.config.read_folders_structure()[
-        f"{variable.replace(' ', '_').lower()}_folder"
-    ]
-
-    if variable == "electricity demand":
-        # For electricity demand, read the hourly demand that combines
-        # all the data sources of each code (see cleaning/combining.py).
-        data_folder = utils.config.read_folders_structure()[
-            "combined_electricity_demand_folder"
-        ]
-
-    # Initialize an empty dictionary to hold the files to load.
-    files_to_load = {}
-
-    for entity_code in entity_codes:
-        # Define the file pattern based on the variable and parameters.
-        file_pattern = f"{entity_code}"
-
-        if variable == "temperature":
-            # For temperature, add a glob pattern representing the year
-            # number because multiple files per entity code exist.
-            file_pattern += "_" + ("[0-9]" * 4)
-
-        # Append model and scenario if provided.
-        if selected_model:
-            file_pattern += f"_{selected_model.upper().replace('-', '_').replace('.', '_')}"
-        if selected_scenario:
-            file_pattern += f"_{selected_scenario.upper().replace('-', '_').replace('.', '_')}"
-
-        # Append the file extension.
-        file_pattern += ".parquet"
-
-        if variable == "temperature":
-            # Add all matching files for temperature.
-            files_to_load[entity_code] = glob.glob(
-                os.path.join(data_folder, file_pattern)
+        Returns
+        -------
+        ConfigModel
+            The settings.
+        """
+        for dataset in DATASETS:
+            if dataset.scenarios is None and not dataset.climate:
+                continue
+            model_field = f"climate_model_for_{dataset.name}"
+            scenario_field = f"scenario_for_{dataset.name}"
+            model, scenario = _get_scenario_and_model(
+                getattr(self, model_field, None),
+                getattr(self, scenario_field),
+                dataset.scenarios,
+                dataset.climate,
             )
+            if dataset.climate:
+                setattr(self, model_field, model)
+            setattr(self, scenario_field, scenario)
+        return self
 
-            if not files_to_load[entity_code]:
-                logging.warning(
-                    f"No temperature files found for entity code {entity_code}"
-                    + (
-                        f" with model {selected_model}"
-                        if selected_model
-                        else ""
-                    )
-                    + (
-                        f" and scenario {selected_scenario}"
-                        if selected_scenario
-                        else ""
-                    )
-                    + "."
-                )
-        else:
-            # Add a single file for other variables.
-            files_to_load[entity_code] = [
-                os.path.join(data_folder, file_pattern)
-            ]
 
-    return files_to_load
+def _get_scenario_and_model(
+    selected_model: str | None,
+    selected_scenario: str | None,
+    scenarios: tuple[str, ...] | None,
+    climate: bool,
+) -> tuple[str | None, str | None]:
+    """
+    Check the selected climate model and scenario of a variable.
+
+    Parameters
+    ----------
+    selected_model : str | None
+        The selected climate model.
+    selected_scenario : str | None
+        The selected scenario.
+    scenarios : tuple[str, ...] | None
+        The scenarios of the variable, from utils/catalogue.py, None to
+        leave the scenario unchecked.
+    climate : bool
+        Whether the variable comes from the climate models, whose
+        scenarios depend on the model.
+
+    Returns
+    -------
+    tuple[str | None, str | None]
+        The climate model and the scenario, spelt as in the catalogue.
+    """
+    if climate:
+        return utils.catalogue.get_climate_model_and_scenario(
+            selected_model, selected_scenario
+        )
+    if scenarios is not None and selected_scenario:
+        selected_scenario = utils.catalogue.get_scenario(
+            selected_scenario, scenarios
+        )
+    return selected_model, selected_scenario
+
+
+def _get_file_paths(
+    dataset: Dataset,
+    entity_code: str,
+    selected_scenario: str | None,
+    selected_model: str | None,
+) -> list[str]:
+    """
+    Get the files of an input of a country or subdivision.
+
+    The names have the climate model and the scenario, if any, in upper
+    case with underscores for hyphens and dots, as the retrievals write
+    them.
+
+    Parameters
+    ----------
+    dataset : Dataset
+        The input.
+    entity_code : str
+        The code of the country or subdivision.
+    selected_scenario : str | None
+        The scenario, none for historical data.
+    selected_model : str | None
+        The climate model, none for historical data.
+
+    Returns
+    -------
+    list[str]
+        The file of the input, or its files of each local year.
+    """
+    name = entity_code + ("_" + "[0-9]" * 4 if dataset.by_year else "")
+    for part in (selected_model, selected_scenario):
+        if part:
+            name += "_" + part.upper().replace("-", "_").replace(".", "_")
+    file_path = os.path.join(dataset.get_folder(), f"{name}.parquet")
+    if not dataset.by_year:
+        return [file_path]
+
+    file_paths = sorted(glob.glob(file_path))
+    if not file_paths:
+        logging.warning(
+            f"No {dataset.description} files found for entity code "
+            f"{entity_code}"
+            + (f" with model {selected_model}" if selected_model else "")
+            + (
+                f" and scenario {selected_scenario}"
+                if selected_scenario
+                else ""
+            )
+            + "."
+        )
+    return file_paths
 
 
 def _load_data_for_entity(
@@ -343,276 +370,68 @@ def _load_data_for_entity(
     return dask.dataframe.from_pandas(entity_data)
 
 
-def _load_data(
-    variable: str,
-    numeric_columns: list[str],
+def _load_dataset(
+    dataset: Dataset,
     target_use: str,
     selected_scenario: str | None = None,
     selected_model: str | None = None,
-    scenario_getter: Callable[[], list[str]] | None = None,
-    model_scenario_getter: Callable[[], dict[str, list[str]]] | None = None,
     file_path: str | None = None,
 ) -> dask.dataframe.DataFrame:
     """
-    Load generic scenario-based data with common loading pattern.
+    Load an input of all the countries and subdivisions.
 
     Parameters
     ----------
-    variable : str
-        Variable to load.
-    numeric_columns : list[str]
-        List of column names to convert to numeric.
-    selected_scenario : str | None
-        Scenario to load. None for historical data.
-    selected_model : str | None
-        Model to load (e.g., climate model). None for historical data.
-    scenario_getter : Callable[[], list[str]] | None
-        Function that returns list of available scenarios. If None,
-        no scenario validation is performed.
-    model_scenario_getter : Callable[[], dict[str, list[str]]] | None
-        Function that returns dict mapping models to their available
-        scenarios. Required when selected_model is used.
-    file_path : str | None
-        Optional file path including entity codes to load. If None,
-        load all available codes.
+    dataset : Dataset
+        The input.
+    target_use : str
+        The target use, "training" or "forecasting": the training needs
+        the codes with electricity demand data, the forecasting those
+        with all the other data.
+    selected_scenario : str | None, optional
+        The scenario, none for historical data.
+    selected_model : str | None, optional
+        The climate model, none for historical data.
+    file_path : str | None, optional
+        The file with the codes to load, all of them if none.
 
     Returns
     -------
-    result_data : dask.dataframe.DataFrame
-        Concatenated dataframe with data from all entity codes.
+    dask.dataframe.DataFrame
+        The data of all the codes, with the columns "Time (UTC)", those
+        of the input and "Entity code".
     """
-    logging.info(f"Loading {variable} data.")
+    logging.info(f"Loading {dataset.description} data.")
 
-    # Define the data feature that the entities must have.
-    if target_use == "training":
-        data_feature = "electricity_demand_data"
-    else:
-        data_feature = "all_data"
-
-    # Check and filter entity codes.
     entity_codes = utils.entities.check_and_get_codes_with(
-        data_feature, file_path=file_path
+        "electricity_demand_data" if target_use == "training" else "all_data",
+        file_path=file_path,
+    )
+    selected_model, selected_scenario = _get_scenario_and_model(
+        selected_model, selected_scenario, dataset.scenarios, dataset.climate
     )
 
-    # Validate scenario and model combination.
-    _validate_scenario_model_combination(
-        selected_model,
-        selected_scenario,
-        scenario_getter,
-        model_scenario_getter,
-    )
-
-    # Get the list of files to load for each entity code.
-    files_to_load = _get_files_to_load(
-        variable,
-        entity_codes,
-        selected_scenario,
-        selected_model,
-    )
-
-    # Initialize a list to hold the loaded data.
     result_data = []
-
     for entity_code in tqdm(
-        entity_codes,
-        desc=f"Loading {variable} data",
+        entity_codes, desc=f"Loading {dataset.description} data"
     ):
-        # Load data for the current entity code.
         entity_data = _load_data_for_entity(
             entity_code,
-            files_to_load[entity_code],
-            numeric_columns,
+            _get_file_paths(
+                dataset, entity_code, selected_scenario, selected_model
+            ),
+            list(dataset.columns),
         )
+        if entity_data is not None:
+            result_data.append(entity_data)
 
-        if entity_data is None:
-            continue
-
-        # Append to the result list.
-        result_data.append(entity_data)
-
-    # Concatenate all entity dataframes.
-    result_data = dask.dataframe.concat(result_data)
-
+    combined_data = dask.dataframe.concat(result_data)
     logging.info(
-        f"Loaded {variable} data for "
-        f"{len(result_data['Entity code'].unique())} entities successfully."
+        f"Loaded {dataset.description} data for "
+        f"{len(combined_data['Entity code'].unique())} entities "
+        "successfully."
     )
-
-    return result_data
-
-
-def _load_electricity_demand(
-    file_path: str | None = None,
-) -> dask.dataframe.DataFrame:
-    """
-    Load and resample hourly electricity demand.
-
-    Parameters
-    ----------
-    file_path : str | None
-        Optional file path including entity codes to load. If None,
-        load all available codes.
-
-    Returns
-    -------
-    dask.dataframe.DataFrame
-        Concatenated dataframe with columns: Time (UTC), Load (MW),
-        Entity code.
-    """
-    return _load_data(
-        variable="electricity demand",
-        numeric_columns=["Load (MW)"],
-        target_use="training",
-        file_path=file_path,
-    )
-
-
-def _load_annual_electricity_demand_per_capita(
-    target_use: str,
-    selected_scenario: str | None = None,
-    file_path: str | None = None,
-) -> dask.dataframe.DataFrame:
-    """
-    Load annual electricity demand per capita.
-
-    Parameters
-    ----------
-    target_use : str,
-        Target use for which the data is being assembled.
-    selected_scenario : str | None
-        Scenario to load. None for historical data.
-    file_path : str | None
-        Optional file path including entity codes to load. If None,
-        load all available codes.
-
-    Returns
-    -------
-    dask.dataframe.DataFrame
-        Concatenated dataframe with columns: Time (UTC),
-        Annual electricity demand per capita (kWh), entity code.
-    """
-    return _load_data(
-        variable="annual electricity demand per capita",
-        numeric_columns=["Annual electricity demand per capita (kWh)"],
-        target_use=target_use,
-        selected_scenario=selected_scenario,
-        scenario_getter=retrievals.annual_electricity_demand_per_capita.get_available_scenarios,
-        file_path=file_path,
-    )
-
-
-def _load_gdp_ppp_per_capita(
-    target_use: str,
-    selected_scenario: str | None = None,
-    file_path: str | None = None,
-) -> dask.dataframe.DataFrame:
-    """
-    Load GDP PPP per capita.
-
-    Parameters
-    ----------
-    target_use : str,
-        Target use for which the data is being assembled.
-    selected_scenario : str | None
-        Scenario to load. None for historical data.
-    file_path : str | None
-        Optional file path including entity codes to load. If None,
-        load all available codes.
-
-    Returns
-    -------
-    dask.dataframe.DataFrame
-        Dataframe with columns: Time (UTC), GDP PPP per capita
-        (2021 international $), entity code.
-    """
-    return _load_data(
-        variable="GDP PPP per capita",
-        numeric_columns=["GDP PPP per capita (2021 international $)"],
-        target_use=target_use,
-        selected_scenario=selected_scenario,
-        scenario_getter=retrievals.gdp_ppp_per_capita.get_available_scenarios,
-        file_path=file_path,
-    )
-
-
-def _load_population(
-    target_use: str,
-    selected_scenario: str | None = None,
-    file_path: str | None = None,
-) -> dask.dataframe.DataFrame:
-    """
-    Load population.
-
-    Parameters
-    ----------
-    target_use : str,
-        Target use for which the data is being assembled.
-    selected_scenario : str | None
-        Scenario to load. None for historical data.
-    file_path : str | None
-        Optional file path including entity codes to load. If None,
-        load all available codes.
-
-    Returns
-    -------
-    dask.dataframe.DataFrame
-        Concatenated dataframe with columns: Time (UTC), Population,
-        entity code.
-    """
-    return _load_data(
-        variable="population",
-        numeric_columns=["Population"],
-        target_use=target_use,
-        selected_scenario=selected_scenario,
-        scenario_getter=retrievals.population.get_available_scenarios,
-        file_path=file_path,
-    )
-
-
-def _load_temperature(
-    target_use: str,
-    selected_scenario: str | None = None,
-    selected_model: str | None = None,
-    file_path: str | None = None,
-) -> dask.dataframe.DataFrame:
-    """
-    Load temperature.
-
-    Parameters
-    ----------
-    target_use : str,
-        Target use for which the data is being assembled.
-    selected_scenario : str | None
-        Scenario to load. None for historical data.
-    selected_model : str | None
-        Climate model to load. None for historical data.
-    file_path : str | None
-        Optional file path including entity codes to load. If None,
-        load all available codes.
-
-    Returns
-    -------
-    dask.dataframe.DataFrame
-        Concatenated dataframe with temperature features and entity
-        code.
-    """
-    return _load_data(
-        variable="temperature",
-        numeric_columns=[
-            "Temperature - Top 1 (K)",
-            "Temperature - Top 3 (K)",
-            "Monthly average temperature - Top 1 (K)",
-            "Monthly average temperature rank - Top 1",
-            "Annual average temperature - Top 1 (K)",
-            "5 percentile temperature - Top 1 (K)",
-            "95 percentile temperature - Top 1 (K)",
-        ],
-        target_use=target_use,
-        selected_scenario=selected_scenario,
-        selected_model=selected_model,
-        model_scenario_getter=retrievals.gridded_weather.get_available_scenarios_for_model,
-        file_path=file_path,
-    )
+    return combined_data
 
 
 def _merge_datasets(
@@ -842,47 +661,37 @@ def run_data_assemply(
 
     logging.info(f"Starting data assembly for {target_use}.")
 
-    # Load individual datasets.
-    annual_electricity_demand_per_capita = _load_annual_electricity_demand_per_capita(
-        target_use,
-        selected_scenario=scenario_for_annual_electricity_demand_per_capita,
-        file_path=file,
-    )
-    gdp_ppp_per_capita = _load_gdp_ppp_per_capita(
-        target_use,
-        selected_scenario=scenario_for_gdp_ppp_per_capita,
-        file_path=file,
-    )
-    population = _load_population(
-        target_use, selected_scenario=scenario_for_population, file_path=file
-    )
-    temperature = _load_temperature(
-        target_use,
-        selected_scenario=scenario_for_temperature,
-        selected_model=climate_model_for_temperature,
-        file_path=file,
-    )
+    # The selected scenarios and climate models of the inputs.
+    selected_scenarios = {
+        "annual_electricity_demand_per_capita": (
+            scenario_for_annual_electricity_demand_per_capita
+        ),
+        "gdp_ppp_per_capita": scenario_for_gdp_ppp_per_capita,
+        "population": scenario_for_population,
+        "temperature": scenario_for_temperature,
+    }
+    selected_models = {"temperature": climate_model_for_temperature}
 
-    if start_year and end_year:
-        # Keep the specified year range, before the merges: the other
-        # datasets have no local year, and the merges keep only the
-        # rows of all the datasets.
-        temperature = temperature[
-            (temperature["Local year"] >= start_year)
-            & (temperature["Local year"] <= end_year)
-        ]
-
-    # Combine datasets into a list for merging.
-    datasets_to_merge = [
-        annual_electricity_demand_per_capita,
-        gdp_ppp_per_capita,
-        population,
-        temperature,
-    ]
-
-    if target_use == "training":
-        # Add electricity demand data if assembling for training.
-        datasets_to_merge.append(_load_electricity_demand(file_path=file))
+    datasets_to_merge = []
+    for dataset in DATASETS:
+        if dataset.training_only and target_use != "training":
+            continue
+        data = _load_dataset(
+            dataset,
+            target_use,
+            selected_scenarios.get(dataset.name),
+            selected_models.get(dataset.name),
+            file,
+        )
+        if dataset.by_year and start_year and end_year:
+            # Keep the specified year range, before the merges: the
+            # other inputs have no local year, and the merges keep only
+            # the rows of all the inputs.
+            data = data[
+                (data["Local year"] >= start_year)
+                & (data["Local year"] <= end_year)
+            ]
+        datasets_to_merge.append(data)
 
     # Merge datasets on common columns.
     assembled_data = _merge_datasets(
@@ -898,9 +707,7 @@ def run_data_assemply(
         assembled_data = _calculate_load_fraction(assembled_data)
 
     # Get the assembled data folder path.
-    assembled_data_folder = utils.config.read_folders_structure()[
-        "assembled_data_folder"
-    ]
+    assembled_data_folder = utils.paths.get_assembled_folder()
     os.makedirs(assembled_data_folder, exist_ok=True)
 
     # Construct the output file path.
@@ -926,14 +733,18 @@ def run_data_assemply(
     )
 
 
-if __name__ == "__main__":
-    # Set up the logging configuration.
+def main(config: ConfigModel) -> None:
+    """
+    Assemble the data of the settings.
+
+    Parameters
+    ----------
+    config : ConfigModel
+        The settings.
+    """
     utils.config.set_up_logging("assembly_of_retrieved_data")
+    utils.config.log_configuration(config)
 
-    # Read and check the configuration.
-    config = _read_and_check_configuration()
-
-    # Run the data assembly process.
     run_data_assemply(
         config.target_use,
         config.file,
@@ -944,4 +755,15 @@ if __name__ == "__main__":
         config.scenario_for_population,
         config.scenario_for_temperature,
         config.climate_model_for_temperature,
+    )
+
+
+if __name__ == "__main__":
+    main(
+        utils.config.read_and_check_configuration(
+            "assemble",
+            ConfigModel,
+            "Assemble and preprocess the retrieved data for training the "
+            "machine learning models or forecasting.",
+        )
     )

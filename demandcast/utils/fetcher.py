@@ -27,8 +27,8 @@ import requests.exceptions
 from entsoe import EntsoePandasClient
 from entsoe.exceptions import NoMatchingDataError
 
-import utils.config
 import utils.entities
+import utils.paths
 
 # The HTTP status codes of the data that does not exist, for example a
 # file that is not published yet.
@@ -512,9 +512,9 @@ def find_manual_files(prefix: str) -> list[str]:
         electricity demand data whose names start with the prefix, in
         the order of their names.
     """
-    data_directory = utils.config.read_folders_structure()[
-        "manually_downloaded_electricity_demand_folder"
-    ]
+    data_directory = utils.paths.get_electricity_demand_folder(
+        "manual_downloads"
+    )
     if not os.path.isdir(data_directory):
         return []
     return [
@@ -565,9 +565,9 @@ def read_manual_files(
     """
     file_paths = find_manual_files(prefix)
     if not file_paths:
-        data_directory = utils.config.read_folders_structure()[
-            "manually_downloaded_electricity_demand_folder"
-        ]
+        data_directory = utils.paths.get_electricity_demand_folder(
+            "manual_downloads"
+        )
         raise FileNotFoundError(
             f"The data for {data_source_name} has not been found in the "
             f"folder {data_directory}. Please download the data manually "

@@ -126,8 +126,8 @@ def test_read_configuration_returns_correct_values():
     )
     with (
         patch(
-            "utils.config.read_folders_structure",
-            return_value={"config_folder": "/cfg"},
+            "utils.paths.CONFIG_FOLDER",
+            "/cfg",
         ),
         patch("builtins.open", mock_open(read_data=yaml_content)),
     ):
@@ -147,8 +147,8 @@ def test_read_configuration_defaults_on_empty_yaml():
     """An empty YAML file returns default hyperparameters."""
     with (
         patch(
-            "utils.config.read_folders_structure",
-            return_value={"config_folder": "/cfg"},
+            "utils.paths.CONFIG_FOLDER",
+            "/cfg",
         ),
         patch("builtins.open", mock_open(read_data="{}\n")),
     ):
@@ -168,8 +168,8 @@ def test_read_configuration_raises_on_bad_type():
     """A wrong value type raises ValueError."""
     with (
         patch(
-            "utils.config.read_folders_structure",
-            return_value={"config_folder": "/cfg"},
+            "utils.paths.CONFIG_FOLDER",
+            "/cfg",
         ),
         patch(
             "builtins.open",
@@ -344,8 +344,8 @@ def test_save_creates_pt_file(trained_model_and_dataset):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         with patch(
-            "ml_models.lstm.utils.config.read_folders_structure",
-            return_value={"trained_ml_models_folder": tmpdir},
+            "utils.paths.get_models_folder",
+            return_value=tmpdir,
         ):
             lstm_module.save(model, "lstm_model_test")
 
@@ -359,8 +359,8 @@ def test_load_restores_feature_names(trained_model_and_dataset):
     with tempfile.TemporaryDirectory() as tmpdir:
         pt_path = os.path.join(tmpdir, "test_model.pt")
         with patch(
-            "ml_models.lstm.utils.config.read_folders_structure",
-            return_value={"trained_ml_models_folder": tmpdir},
+            "utils.paths.get_models_folder",
+            return_value=tmpdir,
         ):
             lstm_module.save(model, "test_model")
 
@@ -380,8 +380,8 @@ def test_load_predictions_match_original(trained_model_and_dataset):
     with tempfile.TemporaryDirectory() as tmpdir:
         pt_path = os.path.join(tmpdir, "test_model.pt")
         with patch(
-            "ml_models.lstm.utils.config.read_folders_structure",
-            return_value={"trained_ml_models_folder": tmpdir},
+            "utils.paths.get_models_folder",
+            return_value=tmpdir,
         ):
             lstm_module.save(model, "test_model")
 

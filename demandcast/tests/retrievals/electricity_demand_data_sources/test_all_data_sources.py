@@ -16,9 +16,9 @@ import os
 import socket
 
 import pytest
-import utils.config
 import utils.entities
 import utils.fetcher
+import utils.paths
 import utils.raw_data
 import yaml
 
@@ -41,9 +41,7 @@ def _read_entities(file_name: str) -> list[dict]:
     list[dict]
         The entities.
     """
-    file_path = os.path.join(
-        utils.config.read_folders_structure()["root_folder"], file_name
-    )
+    file_path = os.path.join(utils.paths.CODE_FOLDER, file_name)
     with open(file_path, encoding="utf-8") as file:
         content = yaml.safe_load(file)
     assert list(content) == ["entities"]
@@ -64,9 +62,7 @@ def _no_network(*args, **_kwargs):
 
 def test_each_data_source_has_a_module():
     """Test that each module of a data source has a YAML file."""
-    folder = utils.config.read_folders_structure()[
-        "electricity_demand_data_sources_folder"
-    ]
+    folder = utils.paths.DATA_SOURCES_FOLDER
     modules = sorted(
         file_name.removesuffix(".py")
         for file_name in os.listdir(folder)

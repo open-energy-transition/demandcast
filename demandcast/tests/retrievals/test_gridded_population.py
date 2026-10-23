@@ -4,7 +4,9 @@ License: AGPL-3.0.
 Description:
 
     Tests for the download of the future gridded population from
-    Figshare, with a small archive in place of the real one.
+    Figshare, with a small archive in place of the real one, and for
+    the extraction of the population of each country and subdivision,
+    with a small global grid in place of the downloaded ones.
 """
 
 import io
@@ -12,7 +14,10 @@ import os
 import zipfile
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
+import utils.paths
+import xarray
 from retrievals import gridded_population
 
 
@@ -92,3 +97,80 @@ def test_download_future_gridded_population_not_a_zip(tmp_path):
         )
 
     assert not os.path.exists(tmp_path / "SSP3.zip")
+
+
+# The netCDF4 library sets the shape of arrays, which NumPy 2.5
+# deprecates.
+@pytest.mark.filterwarnings(
+    "ignore:Setting the shape on a NumPy array:DeprecationWarning"
+)
+def test_run_data_retrieval(monkeypatch):
+    """
+    Test that the grid of each entity is saved in the processed folder.
+
+    The density of the historical years is converted to a count, and
+    the future grids, which are counts already, are kept.
+    """
+    global_grid = xarray.DataArray(
+        np.ones((4, 4)),
+        coords={"y": [0.5, 1.5, 2.5, 3.5], "x": [0.5, 1.5, 2.5, 3.5]},
+        dims=["y", "x"],
+    )
+    read = []
+    converted = []
+
+    def read_population_dataset(folder, year, scenario):
+        read.append((folder, year, scenario))
+        return global_grid
+
+    def from_density_to_count(grid):
+        converted.append(grid)
+        return grid
+
+    monkeypatch.setattr(
+        gridded_population.utils.entities,
+        "check_and_get_codes_with",
+        lambda *_, **__: ["FRA"],
+    )
+    for name in (
+        "_download_historical_gridded_population_density",
+        "_download_future_gridded_population",
+    ):
+        monkeypatch.setattr(gridded_population, name, lambda *_: None)
+    monkeypatch.setattr(
+        gridded_population,
+        "_read_population_dataset",
+        read_population_dataset,
+    )
+    monkeypatch.setattr(
+        gridded_population.utils.shapes,
+        "get_entity_shape",
+        lambda *_, **__: None,
+    )
+    monkeypatch.setattr(
+        gridded_population.utils.shapes,
+        "get_entity_bounds",
+        lambda _: (0, 0, 4, 4),
+    )
+    monkeypatch.setattr(
+        gridded_population.utils.geospatial,
+        "from_density_to_count",
+        from_density_to_count,
+    )
+    monkeypatch.setattr(
+        gridded_population.utils.geospatial,
+        "coarsen",
+        lambda grid, _bounds: grid,
+    )
+
+    gridded_population.run_data_retrieval("FRA", None, 2020, None, None, None)
+    gridded_population.run_data_retrieval(
+        "FRA", None, 2030, None, None, "SSP2"
+    )
+
+    raw_folder = utils.paths.get_gridded_folder("population", "raw")
+    assert read == [(raw_folder, 2020, None), (raw_folder, 2030, "SSP2")]
+    assert len(converted) == 1
+    assert sorted(
+        os.listdir(utils.paths.get_gridded_folder("population", "processed"))
+    ) == ["FRA_0.25_deg_2020.nc", "FRA_0.25_deg_2030_SSP2.nc"]

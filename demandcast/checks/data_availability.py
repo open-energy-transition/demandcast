@@ -27,7 +27,7 @@ import pandas as pd
 import pycountry
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
-import utils.config
+import utils.paths
 import utils.shapes
 import yaml
 from retrievals.socio_economic_data_sources import iiasa, world_bank
@@ -130,13 +130,18 @@ def _get_country_name(iso_alpha_3_code: str) -> str:
     return country.name
 
 
-def run_check() -> None:
+def get_data_availability() -> pd.DataFrame:
     """
-    Check for the availability of data.
+    Get the availability of data.
 
-    Check for the availability of data for all countries and
-    subdivisions with available shapes. The results are saved to a
-    CSV file.
+    The availability of each kind of data is checked for all countries
+    and subdivisions with available shapes.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The availability of each kind of data, with its first and last
+        years, and whether the area is greater than 500 km², by code.
 
     Raises
     ------
@@ -155,9 +160,10 @@ def run_check() -> None:
     ]
 
     # Add countries to pycountry that are not formally recognized.
-    pycountry.countries.add_entry(
-        alpha_2="XK", alpha_3="XKX", name="Kosovo", numeric="926"
-    )
+    if pycountry.countries.get(alpha_3="XKX") is None:
+        pycountry.countries.add_entry(
+            alpha_2="XK", alpha_3="XKX", name="Kosovo", numeric="926"
+        )
 
     # Get the list of all available ISO Alpha-3 codes.
     official_iso_alpha_3_codes = [
@@ -266,9 +272,7 @@ def run_check() -> None:
     ].isin(iiasa_future_gdp_ppp_per_capita.index)
 
     # Define the retreivals directory.
-    retrievals_directory = utils.config.read_folders_structure()[
-        "retrievals_folder"
-    ]
+    retrievals_directory = utils.paths.RETRIEVALS_FOLDER
 
     # Read codes available for future electricity demand per capita
     # projections from the IIASA SSP database.
@@ -316,13 +320,19 @@ def run_check() -> None:
             )
 
     # Drop the column with the parent ISO Alpha-3 codes.
-    data_availability = data_availability.drop(
-        columns=["parent_iso_alpha_3_code"]
-    )
+    return data_availability.drop(columns=["parent_iso_alpha_3_code"])
 
-    # Save the data to a CSV file.
-    data_availability.to_csv(
+
+def run_check() -> None:
+    """
+    Check for the availability of data and save its summary.
+
+    The summary, data_availability_summary.csv in the folder of the
+    checks of the code, is an input of utils.entities, which reads the
+    codes that have all the data from it.
+    """
+    get_data_availability().to_csv(
         os.path.join(
-            os.path.dirname(__file__), "data_availability_summary.csv"
+            utils.paths.CHECKS_FOLDER, "data_availability_summary.csv"
         )
     )

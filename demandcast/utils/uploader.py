@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 from google.cloud import storage
 from google.cloud.exceptions import GoogleCloudError
 
-import utils.config
+import utils.paths
 
 
 def upload_to_gcs(
@@ -108,11 +108,8 @@ def upload_to_zenodo(  # noqa: C901
     ZenodoError
         If a request to the Zenodo API is not successful.
     """
-    # Get the root directory of the project.
-    root_directory = utils.config.read_folders_structure()["root_folder"]
-
     # Load the environment variables.
-    load_dotenv(dotenv_path=os.path.join(root_directory, ".env"))
+    load_dotenv(dotenv_path=utils.paths.ENV_FILE)
 
     # Get the Zenodo access token from environment variables.
     if testing:
@@ -177,15 +174,13 @@ def upload_to_zenodo(  # noqa: C901
     # Define the creators based on whether the data is made by OET.
     if made_by_oet:
         # Load the OET metadata from the YAML file.
-        author_metadata_path = os.path.join(
-            utils.config.read_folders_structure()["config_folder"],
-            "oet_zenodo_metadata.yaml",
+        author_metadata_path = utils.paths.get_config_file(
+            "oet_zenodo_metadata.yaml"
         )
     else:
         # Load the metadata of external contributors from the YAML file.
-        author_metadata_path = os.path.join(
-            utils.config.read_folders_structure()["config_folder"],
-            "zenodo_metadata.yaml",
+        author_metadata_path = utils.paths.get_config_file(
+            "zenodo_metadata.yaml"
         )
 
     # Load the metadata from the YAML file.

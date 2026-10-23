@@ -43,7 +43,8 @@ uvx pre-commit run --all-files  # run them on the whole repository
 
    CI also checks that the lines you change are covered by tests.
 
-4. Update the documentation in `webpage/docs/` if you change how something works.
+4. Build paths with `utils/paths.py` and take scenarios, climate models and years from `utils/catalogue.py`, instead of writing them again. The modules of `utils/` import none of the other packages (`tests/utils/test_dependencies.py` checks it).
+5. Update the documentation in `webpage/docs/` if you change how something works.
 
 ### Adding an electricity demand data source
 

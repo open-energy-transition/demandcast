@@ -9,13 +9,14 @@ Description:
 
 import logging
 import os
-from typing import Any, NotRequired, TypedDict
+from typing import Any, Literal, NotRequired, TypedDict
 
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel, ValidationError
 
 import utils.config
+import utils.paths
 
 # The column of the local year of each row. assemble.py computes the
 # target as the fraction of the annual total of each entity and local
@@ -63,10 +64,7 @@ def read_and_check_ml_configuration() -> ConfigModel:
         If the configuration is invalid.
     """
     # Define the path to the features and target configuration file.
-    config_path = os.path.join(
-        utils.config.read_folders_structure()["config_folder"],
-        "ml_config.yaml",
-    )
+    config_path = utils.paths.get_config_file("ml_config.yaml")
 
     # Read the configuration.
     with open(config_path, encoding="utf-8") as file:
@@ -151,9 +149,7 @@ def get_trained_model_path(
         If no trained model files are found.
     """
     # Get the folder containing trained model files.
-    trained_models_folder = utils.config.read_folders_structure()[
-        "trained_ml_models_folder"
-    ]
+    trained_models_folder = utils.paths.get_models_folder(algorithm_name)
 
     # If no model path is provided, find the latest trained model file.
     if model_path is None:
@@ -216,9 +212,7 @@ def get_assemble_data_path(data_path: str | None) -> str:
         If no assembled data files are found.
     """
     # Get the folder containing assembled data files.
-    assembled_data_folder = utils.config.read_folders_structure()[
-        "assembled_data_folder"
-    ]
+    assembled_data_folder = utils.paths.get_assembled_folder()
 
     # If no data path is provided, find the latest assembled data file.
     if data_path is None:
@@ -629,7 +623,7 @@ def prepare_split_datasets(
 
 
 def save_results(
-    case: str,
+    case: Literal["validation", "cross_validation", "forecasts"],
     output_dataset: pd.DataFrame,
     trained_model_name: str,
     assembled_data_file_name: str,
@@ -662,7 +656,7 @@ def save_results(
     logging.info(f"Saving model {output_dataset_content}.")
 
     # Get the folder where to save the model results.
-    results_folder = utils.config.read_folders_structure()[f"ml_{case}_folder"]
+    results_folder = utils.paths.get_results_folder(case)
 
     # Construct the model results folder path.
     model_results_folder = os.path.join(

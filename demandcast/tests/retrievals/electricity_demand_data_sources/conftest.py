@@ -17,6 +17,7 @@ from typing import Any
 import pandas as pd
 import pytest
 import requests
+import utils.paths
 
 # The folder of the synthetic files that replace the downloads.
 FIXTURES_FOLDER = pathlib.Path(__file__).parent / "fixtures"
@@ -85,7 +86,7 @@ class FakeDownloads:
 
 
 @pytest.fixture
-def manual_downloads_folder(tmp_folders):
+def manual_downloads_folder():
     """
     Create the folder of the manually downloaded files, empty.
 
@@ -95,7 +96,7 @@ def manual_downloads_folder(tmp_folders):
         The folder, in a temporary folder.
     """
     folder = pathlib.Path(
-        tmp_folders["manually_downloaded_electricity_demand_folder"]
+        utils.paths.get_electricity_demand_folder("manual_downloads")
     )
     folder.mkdir(parents=True)
     return folder

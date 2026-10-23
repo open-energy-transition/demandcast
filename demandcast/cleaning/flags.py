@@ -126,8 +126,8 @@ from typing import cast
 
 import numpy as np
 import pandas as pd
-import utils.config
 import utils.entities
+import utils.paths
 import utils.shapes
 
 # The columns of the flags.
@@ -614,15 +614,15 @@ def _find_daylight_saving_errors(
 
 
 def _read_annual_values(
-    folder: str, column: str, code: str
+    indicator: utils.paths.Indicator, column: str, code: str
 ) -> pd.Series | None:
     """
     Read the yearly values of a variable of a country or subdivision.
 
     Parameters
     ----------
-    folder : str
-        The name of the folder of the variable.
+    indicator : utils.paths.Indicator
+        The indicator.
     column : str
         The column of the variable.
     code : str
@@ -634,7 +634,7 @@ def _read_annual_values(
         The value of each year, or None if it has not been retrieved.
     """
     file_path = os.path.join(
-        utils.config.read_folders_structure()[folder], f"{code}.parquet"
+        utils.paths.get_indicator_folder(indicator), f"{code}.parquet"
     )
     if not os.path.exists(file_path):
         return None
@@ -662,11 +662,11 @@ def _find_annual_errors(cleaned: pd.Series, code: str) -> pd.DataFrame:
         annual changes.
     """
     per_capita = _read_annual_values(
-        "annual_electricity_demand_per_capita_folder",
+        "annual_electricity_demand_per_capita",
         "Annual electricity demand per capita (kWh)",
         code,
     )
-    population = _read_annual_values("population_folder", "Population", code)
+    population = _read_annual_values("population", "Population", code)
     if per_capita is None or population is None:
         logging.info(
             f"The annual demand per capita or the population of {code} "
@@ -761,7 +761,7 @@ def flag_data(code: str, data_source: str | None = None) -> pd.DataFrame:
         the name of the period ("period"), and the value and reference
         of the flag ("value" and "reference") of each flagged period.
     """
-    file_path = utils.config.get_electricity_demand_file_path(
+    file_path = utils.paths.get_electricity_demand_file(
         "cleaned" if data_source else "combined", code, data_source
     )
     cleaned = pd.read_parquet(file_path)["Load (MW)"].sort_index()

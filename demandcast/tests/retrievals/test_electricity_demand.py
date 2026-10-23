@@ -21,6 +21,7 @@ import pytest
 import requests
 import retrievals.electricity_demand
 import utils.fetcher
+import utils.paths
 import utils.raw_data
 import yaml
 
@@ -29,7 +30,7 @@ pytestmark = pytest.mark.usefixtures("frozen_now", "longitude")
 
 
 @pytest.fixture
-def add_data_source(tmp_folders, tmp_path, monkeypatch):
+def add_data_source(tmp_path, monkeypatch):
     """
     Get a function that adds a fake data source.
 
@@ -44,8 +45,8 @@ def add_data_source(tmp_folders, tmp_path, monkeypatch):
     """
     data_sources_folder = tmp_path / "electricity_demand_data_sources"
     data_sources_folder.mkdir()
-    tmp_folders["electricity_demand_data_sources_folder"] = str(
-        data_sources_folder
+    monkeypatch.setattr(
+        utils.paths, "DATA_SOURCES_FOLDER", str(data_sources_folder)
     )
 
     def add(name: str, codes: list[str], **functions: Mock) -> None:
@@ -122,9 +123,7 @@ def _demand(
     )
 
 
-def _read_saved_data(
-    tmp_folders: dict[str, str], code: str, data_source: str
-) -> dict[str, float]:
+def _read_saved_data(code: str, data_source: str) -> dict[str, float]:
     """
     Read the saved electricity demand, checking the files.
 
@@ -135,13 +134,13 @@ def _read_saved_data(
     """
     # The processed data is saved in a file named after the code and
     # the data source, and the cleaned data next to it.
-    folder = tmp_folders["processed_electricity_demand_folder"]
+    folder = utils.paths.get_electricity_demand_folder("processed")
     data = pd.read_parquet(
         os.path.join(folder, f"{code}_{data_source}.parquet")
     )
     assert os.path.isfile(
         os.path.join(
-            tmp_folders["cleaned_electricity_demand_folder"],
+            utils.paths.get_electricity_demand_folder("cleaned"),
             f"{code}_{data_source}.parquet",
         )
     )
@@ -163,7 +162,7 @@ def _download_and_extract_data_for_request(request, code):
     """Download the data of a request of a data source."""
 
 
-def test_one_entity_with_the_code_and_the_dates(tmp_folders, add_data_source):
+def test_one_entity_with_the_code_and_the_dates(add_data_source):
     """Test a data source with one entity, downloaded at once."""
     get_available_requests = create_autospec(
         _get_available_requests, return_value=[None]
@@ -190,15 +189,13 @@ def test_one_entity_with_the_code_and_the_dates(tmp_folders, add_data_source):
         "FRA", datetime.date(2020, 1, 1), datetime.date(2025, 12, 28)
     )
     download_and_extract_data_for_request.assert_called_once_with(None, "FRA")
-    assert _read_saved_data(tmp_folders, "FRA", "single") == {
+    assert _read_saved_data("FRA", "single") == {
         "2024-01-01 00:00": 100.0,
         "2024-01-01 01:00": 200.0,
     }
 
 
-def test_several_entities_with_the_code_and_the_dates(
-    tmp_folders, add_data_source
-):
+def test_several_entities_with_the_code_and_the_dates(add_data_source):
     """Test that each request is passed whole, with the code."""
     get_available_requests = create_autospec(
         _get_available_requests, return_value=[(2024, 1), (2024, 2)]
@@ -231,14 +228,14 @@ def test_several_entities_with_the_code_and_the_dates(
         call((2024, 1), "USA_CAL"),
         call((2024, 2), "USA_CAL"),
     ]
-    assert _read_saved_data(tmp_folders, "USA_CAL", "subdivisions") == {
+    assert _read_saved_data("USA_CAL", "subdivisions") == {
         "2024-01-01 08:00": 100.0,
         "2024-02-01 08:00": 200.0,
     }
     # The other subdivision is not retrieved.
     assert not os.path.exists(
         os.path.join(
-            tmp_folders["processed_electricity_demand_folder"],
+            utils.paths.get_electricity_demand_folder("processed"),
             "USA_NY_subdivisions.parquet",
         )
     )
@@ -264,7 +261,7 @@ def test_values_that_are_not_numbers(add_data_source):
         retrievals.electricity_demand.run_data_retrieval("text", None, None)
 
 
-def test_cleaning_of_the_requests(tmp_folders, add_data_source):
+def test_cleaning_of_the_requests(add_data_source):
     """Test that the data of the requests are joined and cleaned."""
     downloads = {
         2023: _demand("2023-12-31 23:00", [100.0, 200.0]),
@@ -295,14 +292,14 @@ def test_cleaning_of_the_requests(tmp_folders, add_data_source):
         call(2024, "FRA"),
         call(2025, "FRA"),
     ]
-    assert _read_saved_data(tmp_folders, "FRA", "single") == {
+    assert _read_saved_data("FRA", "single") == {
         "2023-12-31 22:00": 100.0,
         "2023-12-31 23:00": 200.0,
         "2024-01-01 00:00": 300.0,
     }
 
 
-def test_unpublished_latest_request(tmp_folders, add_data_source):
+def test_unpublished_latest_request(add_data_source):
     """Test that the data of the latest request can be missing."""
 
     def download(request, _code):
@@ -319,9 +316,7 @@ def test_unpublished_latest_request(tmp_folders, add_data_source):
 
     retrievals.electricity_demand.run_data_retrieval("yearly", None, None)
 
-    assert _read_saved_data(tmp_folders, "FRA", "yearly") == {
-        "2023-01-01 00:00": 100.0
-    }
+    assert _read_saved_data("FRA", "yearly") == {"2023-01-01 00:00": 100.0}
 
 
 @pytest.mark.parametrize("requests", [[None], [2023, 2024]])
@@ -344,7 +339,7 @@ def test_missing_data_of_other_requests(add_data_source, requests):
         retrievals.electricity_demand.run_data_retrieval("missing", None, None)
 
 
-def test_all_the_entities_of_a_data_source(tmp_folders, add_data_source):
+def test_all_the_entities_of_a_data_source(add_data_source):
     """Test that all the entities are retrieved without a code."""
     downloads = {
         "AUT": _demand("2024-01-01 01:00", [100.0]),
@@ -373,15 +368,11 @@ def test_all_the_entities_of_a_data_source(tmp_folders, add_data_source):
         call(None, "AUT"),
         call(None, "DNK"),
     ]
-    assert _read_saved_data(tmp_folders, "AUT", "several") == {
-        "2024-01-01 00:00": 100.0
-    }
-    assert _read_saved_data(tmp_folders, "DNK", "several") == {
-        "2024-01-01 00:00": 200.0
-    }
+    assert _read_saved_data("AUT", "several") == {"2024-01-01 00:00": 100.0}
+    assert _read_saved_data("DNK", "several") == {"2024-01-01 00:00": 200.0}
 
 
-def test_entity_without_data(tmp_folders, add_data_source, caplog):
+def test_entity_without_data(add_data_source, caplog):
     """Test that an entity without data is skipped, not the others."""
     downloads = {
         "AUT": pd.Series(dtype=float),
@@ -401,16 +392,14 @@ def test_entity_without_data(tmp_folders, add_data_source, caplog):
     assert "The data source several has no data for AUT" in caplog.text
     assert not os.path.exists(
         os.path.join(
-            tmp_folders["processed_electricity_demand_folder"],
+            utils.paths.get_electricity_demand_folder("processed"),
             "AUT_several.parquet",
         )
     )
-    assert _read_saved_data(tmp_folders, "DNK", "several") == {
-        "2024-01-01 00:00": 200.0
-    }
+    assert _read_saved_data("DNK", "several") == {"2024-01-01 00:00": 200.0}
 
 
-def test_versions_of_the_raw_data(tmp_folders, add_data_source, monkeypatch):
+def test_versions_of_the_raw_data(add_data_source, monkeypatch):
     """Test that the versions of the raw data are combined offline."""
     # A website whose file changes between two retrievals.
     url = "https://example.org/demand.csv"
@@ -453,7 +442,7 @@ def test_versions_of_the_raw_data(tmp_folders, add_data_source, monkeypatch):
     # The newest version gives the values, and the older one fills the
     # time that the newest one does not have any more.
     file_path = os.path.join(
-        tmp_folders["processed_electricity_demand_folder"],
+        utils.paths.get_electricity_demand_folder("processed"),
         "FRA_versions.parquet",
     )
     expected = pd.DataFrame(
@@ -485,9 +474,7 @@ def test_versions_of_the_raw_data(tmp_folders, add_data_source, monkeypatch):
     )
 
 
-def test_raw_data_kept_when_a_request_fails(
-    tmp_folders, add_data_source, monkeypatch
-):
+def test_raw_data_kept_when_a_request_fails(add_data_source, monkeypatch):
     """Test that the responses before a failed request are kept."""
 
     # A website that answers the file of 2023 and fails for 2024.
@@ -527,14 +514,10 @@ def test_raw_data_kept_when_a_request_fails(
     retrievals.electricity_demand.run_data_retrieval(
         "failing", None, None, offline=True
     )
-    assert _read_saved_data(tmp_folders, "FRA", "failing") == {
-        "2023-01-01 00:00": 1.0
-    }
+    assert _read_saved_data("FRA", "failing") == {"2023-01-01 00:00": 1.0}
 
 
-def test_newest_of_overlapping_requests(
-    tmp_folders, add_data_source, monkeypatch
-):
+def test_newest_of_overlapping_requests(add_data_source, monkeypatch):
     """Test that the newest of overlapping requests gives the values."""
 
     def download_and_extract_data_for_request(request, _code):
@@ -571,7 +554,7 @@ def test_newest_of_overlapping_requests(
     # day that the month does not have.
     saved = pd.read_parquet(
         os.path.join(
-            tmp_folders["processed_electricity_demand_folder"],
+            utils.paths.get_electricity_demand_folder("processed"),
             "FRA_changing.parquet",
         )
     )
@@ -598,11 +581,9 @@ def _read_csv_demand(text: str, column: str = "value") -> pd.Series:
     return values[column].astype(float).tz_localize("UTC")
 
 
-def test_manual_files_in_the_raw_data(
-    tmp_folders, add_data_source, monkeypatch
-):
+def test_manual_files_in_the_raw_data(add_data_source, monkeypatch):
     """Test that the files downloaded manually are kept as versions."""
-    folder = tmp_folders["manually_downloaded_electricity_demand_folder"]
+    folder = utils.paths.get_electricity_demand_folder("manual_downloads")
     os.makedirs(folder)
     file_path = os.path.join(folder, "MAN_1.csv")
 
@@ -649,7 +630,7 @@ def test_manual_files_in_the_raw_data(
     )
     processed = pd.read_parquet(
         os.path.join(
-            tmp_folders["processed_electricity_demand_folder"],
+            utils.paths.get_electricity_demand_folder("processed"),
             "FRA_manual.parquet",
         )
     )
@@ -657,7 +638,7 @@ def test_manual_files_in_the_raw_data(
 
 
 def test_raw_data_kept_when_the_data_cannot_be_extracted(
-    tmp_folders, add_data_source, monkeypatch, caplog
+    add_data_source, monkeypatch, caplog
 ):
     """Test that the responses whose data has an error are kept."""
 
@@ -705,6 +686,4 @@ def test_raw_data_kept_when_the_data_cannot_be_extracted(
     retrievals.electricity_demand.run_data_retrieval(
         "changed", None, None, offline=True
     )
-    assert _read_saved_data(tmp_folders, "FRA", "changed") == {
-        "2023-01-01 00:00": 1.0
-    }
+    assert _read_saved_data("FRA", "changed") == {"2023-01-01 00:00": 1.0}

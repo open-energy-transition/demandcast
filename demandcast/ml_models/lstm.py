@@ -23,6 +23,7 @@ from typing import cast, overload
 # torch must be imported before pandas — pandas side-effects corrupt
 # the Windows DLL loader state for torch's c10.dll initialisation.
 import utils.torch_windows
+import utils.paths
 
 _dll_dir_tokens = utils.torch_windows.enable_torch_dll_directory()
 import numpy as np  # noqa: E402
@@ -351,10 +352,7 @@ def _read_configuration() -> ConfigModel:
     ValueError
         If the configuration file contains invalid values.
     """
-    config_path = os.path.join(
-        utils.config.read_folders_structure()["config_folder"],
-        "lstm_config.yaml",
-    )
+    config_path = utils.paths.get_config_file("lstm_config.yaml")
 
     with open(config_path) as f:
         raw_config = yaml.safe_load(f)
@@ -423,9 +421,7 @@ def save(lstm_model: LSTMRegressor, model_name: str) -> None:
         File stem for the output file (the ``.pt`` extension is
         appended automatically).
     """
-    model_folder = utils.config.read_folders_structure()[
-        "trained_ml_models_folder"
-    ]
+    model_folder = utils.paths.get_models_folder("lstm")
     os.makedirs(model_folder, exist_ok=True)
 
     output_path = os.path.join(model_folder, f"{model_name}{FILE_EXTENSION}")

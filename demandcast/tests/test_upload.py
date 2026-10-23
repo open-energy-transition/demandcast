@@ -10,18 +10,78 @@ from unittest.mock import patch
 
 import pytest
 import upload
+import utils.paths
 
 
-def test_read_and_check_configuration():
-    """Test that the script reads its own configuration file."""
-    with patch(
-        "utils.config.read_configuration",
-        return_value={"target_platform": "gcs", "data_directory": "data"},
-    ) as mock_read_configuration:
-        config = upload._read_and_check_configuration()
+def _write_files(folder, names):
+    """
+    Write empty files of electricity demand.
 
-    assert mock_read_configuration.call_args.args[0] == "upload"
-    assert config.target_platform == "gcs"
+    Parameters
+    ----------
+    folder : pathlib.Path
+        The folder of the files.
+    names : list[str]
+        The names of the files.
+    """
+    for name in names:
+        (folder / name).write_bytes(b"")
+
+
+def test_upload_to_gcs(tmp_path, frozen_now):
+    """Test that the parquet files are uploaded to the bucket."""
+    _write_files(tmp_path, ["FRA_entsoe.parquet", "notes.txt"])
+    config = upload.ConfigModel(
+        target_platform="gcs",
+        data_directory=str(tmp_path),
+        gcs_bucket_name="bucket",
+    )
+
+    with patch("utils.uploader.upload_to_gcs") as mock_upload_to_gcs:
+        upload.main(config)
+
+    mock_upload_to_gcs.assert_called_once_with(
+        str(tmp_path / "FRA_entsoe.parquet"),
+        "bucket",
+        f"upload_{frozen_now:%Y-%m-%d}/FRA_entsoe.parquet",
+    )
+
+
+def test_upload_to_zenodo(tmp_path):
+    """Test that only the redistributable data goes to Zenodo."""
+    _write_files(tmp_path, ["CHL_cen.parquet", "MEX_cenace.parquet"])
+    config = upload.ConfigModel(
+        target_platform="zenodo",
+        data_directory=str(tmp_path),
+        made_by_oet=True,
+        publish_to_zenodo=False,
+    )
+
+    with patch("utils.uploader.upload_to_zenodo") as mock_upload_to_zenodo:
+        upload.main(config)
+
+    mock_upload_to_zenodo.assert_called_once_with(
+        str(tmp_path / "CHL_cen.parquet"),
+        data_type="actual",
+        made_by_oet=True,
+        publish=False,
+        testing=True,
+    )
+
+
+def test_upload_to_zenodo_needs_metadata(monkeypatch, tmp_path):
+    """Test that data not made by OET needs its Zenodo metadata."""
+    _write_files(tmp_path, ["CHL_cen.parquet"])
+    monkeypatch.setattr(utils.paths, "CONFIG_FOLDER", str(tmp_path))
+    config = upload.ConfigModel(
+        target_platform="zenodo",
+        data_directory=str(tmp_path),
+        made_by_oet=False,
+        publish_to_zenodo=False,
+    )
+
+    with pytest.raises(FileNotFoundError, match="zenodo_metadata"):
+        upload.main(config)
 
 
 @pytest.mark.parametrize(
