@@ -32,16 +32,19 @@ DemandCast collects hourly electricity demand, weather and socio-economic data f
 
 DemandCast models the **gross electricity demand**: the electricity consumed, whatever generation supplies it, including the part that rooftop solar and other generation embedded in the distribution networks supply. Energy system models can then represent that generation explicitly, without counting it twice. Where a data source leaves it out, DemandCast adds an estimate of it when one is published, and flags the series otherwise (see [Data Retrieval](https://open-energy-transition.github.io/demandcast/retrieval/#gross-demand)).
 
-## Available data
+## Current state
 
-DemandCast has retrieval modules for the electricity demand of the countries and subdivisions below.
+<!-- status:start -->
+As of 23 October 2026, DemandCast has retrieval modules for the hourly electricity demand of **58 countries and 130 subdivisions**, in 67 countries, from **42 data sources**, with about **1,591 years of data** in total since 1994.
+<!-- status:end -->
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="webpage/docs/figures/available_entities_dark_mode.png">
-  <source media="(prefers-color-scheme: light)" srcset="webpage/docs/figures/available_entities_light_mode.png">
-  <img alt="Countries and subdivisions for which retrieval modules of electricity demand data are available" src="webpage/docs/figures/available_entities_light_mode.png">
+  <source media="(prefers-color-scheme: dark)" srcset="webpage/docs/status/available_entities_dark_mode.png">
+  <source media="(prefers-color-scheme: light)" srcset="webpage/docs/status/available_entities_light_mode.png">
+  <img alt="Countries and subdivisions for which retrieval modules of electricity demand data are available" src="webpage/docs/status/available_entities_light_mode.png">
 </picture>
 
+- The [current state](https://open-energy-transition.github.io/demandcast/status/) page shows the data by GDP and electricity demand per capita, and the forecast errors of the models.
 - The [data sources](https://open-energy-transition.github.io/demandcast/#data-sources) of each type of data are listed in the documentation.
 - The electricity demand that we retrieved is in this [Google Cloud Storage bucket](https://console.cloud.google.com/storage/browser/demandcast_data).
 - The forecasted hourly electricity demand of 184 countries from 2000 to 2024 is in this [Zenodo repository](https://doi.org/10.5281/zenodo.18374351).

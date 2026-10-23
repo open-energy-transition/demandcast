@@ -37,6 +37,10 @@ Description:
 
     The gridded weather of a few countries is downloaded for each of
     them, straight into its processed folder.
+
+    plot.py also writes the figures and numbers of the current state of
+    DemandCast into the documentation, in webpage/docs/status/, and the
+    same numbers into the README, both in the repository.
 """
 
 import os
@@ -54,6 +58,11 @@ DATA_SOURCES_FOLDER = os.path.join(
 )
 CHECKS_FOLDER = os.path.join(CODE_FOLDER, "checks")
 ENV_FILE = os.path.join(CODE_FOLDER, ".env")
+
+# The repository, with the README and the documentation.
+REPOSITORY_FOLDER = os.path.dirname(CODE_FOLDER)
+README_FILE = os.path.join(REPOSITORY_FOLDER, "README.md")
+STATUS_FOLDER = os.path.join(REPOSITORY_FOLDER, "webpage", "docs", "status")
 
 # The environment variable that names another data folder.
 DATA_FOLDER_VARIABLE = "DEMANDCAST_DATA_FOLDER"

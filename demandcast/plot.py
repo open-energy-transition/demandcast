@@ -4,7 +4,8 @@ License: AGPL-3.0.
 Description:
 
     This script plots figures of data availability, geographical
-    coverage, and machine learning results.
+    coverage, and machine learning results, and the figures and numbers
+    of the "Current state" page of the documentation.
 """
 
 import os
@@ -13,6 +14,7 @@ from typing import Literal
 import figures.data_availability
 import figures.map_of_available_entities
 import figures.ml_results
+import figures.status
 import utils.config
 import utils.paths
 from pydantic import BaseModel, model_validator
@@ -22,7 +24,10 @@ class ConfigModel(BaseModel):
     """Settings of plot.py."""
 
     figure: Literal[
-        "data_availability", "map_of_available_entities", "ml_results"
+        "data_availability",
+        "map_of_available_entities",
+        "ml_results",
+        "status",
     ]
     version: str | None = None
     compare_with_version: str | None = None
@@ -62,7 +67,7 @@ class ConfigModel(BaseModel):
             raise ValueError(
                 "The variables 'version', 'compare_with_version', and "
                 "'by_group' must not be provided when plotting data "
-                "availability or map of available entities figures."
+                "availability, map of available entities or status figures."
             )
         return self
 
@@ -87,6 +92,8 @@ def main(config: ConfigModel) -> None:
         figures.data_availability.plot(figure_directory)
     elif config.figure == "map_of_available_entities":
         figures.map_of_available_entities.plot(figure_directory)
+    elif config.figure == "status":
+        figures.status.plot(figure_directory)
     else:
         figures.ml_results.plot(
             figure_directory,

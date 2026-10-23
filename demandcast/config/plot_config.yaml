@@ -4,7 +4,9 @@
 # The figure to plot. Supported figures are:
 # - data_availability,
 # - map_of_available_entities,
-# - ml_results.
+# - ml_results,
+# - status: the figures and numbers of the Current state page of the
+#   documentation, also written into webpage/docs/status/ and the README.
 figure: data_availability
 
 # OPTIONAL - REQUIRED for ml_results figure.

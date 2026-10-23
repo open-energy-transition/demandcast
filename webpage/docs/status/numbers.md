@@ -1,0 +1,1 @@
+As of 23 October 2026, DemandCast has retrieval modules for the hourly electricity demand of **58 countries and 130 subdivisions**, in 67 countries, from **42 data sources**, with about **1,591 years of data** in total since 1994.

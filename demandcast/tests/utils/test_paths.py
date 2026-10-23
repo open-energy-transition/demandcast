@@ -40,6 +40,19 @@ def test_inputs_are_in_the_code_folder():
         assert os.path.isdir(folder)
 
 
+def test_files_of_the_repository():
+    """Test the paths of the README and of the status page's files."""
+    repository_folder = os.path.dirname(CODE_FOLDER)
+    assert (
+        os.path.join(repository_folder, "README.md") == utils.paths.README_FILE
+    )
+    assert os.path.exists(utils.paths.README_FILE)
+    assert (
+        os.path.join(repository_folder, "webpage", "docs", "status")
+        == utils.paths.STATUS_FOLDER
+    )
+
+
 @pytest.mark.parametrize("value", [None, ""])
 def test_default_data_folder(monkeypatch, value):
     """Test that the data folder is in the code folder by default."""
