@@ -30,6 +30,7 @@ HIGHER_LEVELS = {
     "plot",
     "check",
     "upload",
+    "benchmark",
 }
 
 

@@ -62,7 +62,7 @@ Other online resources include:
 
 - [Paper](https://arxiv.org/abs/2510.08000) accepted at the [NeurIPS 2025 Workshop](https://www.climatechange.ai/papers/neurips2025/42): Tackling Climate Change with Machine Learning.
 - [Poster](https://s3.us-east-1.amazonaws.com/climate-change-ai/papers/neurips2025/42/poster.pdf) presented at the NeurIPS 2025 Workshop.
-- [Video presentation](https://recorder-v3.slideslive.com/?share=107690&s=ed044008-3b06-4462-a839-b82b888eeb46) recorded for the NeurIPS 2025 Workshop.
+- [Video presentation](https://slideslive.com/39052515/demandcast-global-hourly-electricity-demand-forecasting) recorded for the NeurIPS 2025 Workshop.
 
 ## Contributing
 
@@ -76,52 +76,11 @@ Please read the [contributing guidelines](https://github.com/open-energy-transit
 
 We also would like to hear your feedback and suggestions. You can share your thoughts by completing this short [survey](https://forms.gle/nMYvCAfzbrUDjqRQ8).
 
-## Repository structure
-
-```
-demandcast/
-├── .github/                        # Github specifics such as actions
-├── demandcast/
-│   ├── checks/                     # Modules to perform data availability and quality checks
-│   ├── cleaning/                   # Modules to clean, flag and combine the electricity demand
-│   ├── config/                     # Configuration files for all scripts
-│   ├── data/                       # Data, models, results and logs written by the scripts (not in repo)
-│   ├── figures/                    # Modules to plot figures, and the figures of the documentation
-│   ├── ml_models/                  # Machine learning models for forecasting electricity demand
-│   ├── retrievals/                 # Modules to retrieve data from various sources
-│   ├── shapes/                     # Scripts to generate shapes for non-standard subdivisions and resulting shapefiles
-│   ├── tests/                      # Tests, in folders that mirror the code
-│   ├── utils/                      # Shared utilities: paths, catalogue of scenarios, fetching, processing, uploading
-│   ├── .dockerignore               # Files and directories to ignore in Docker build context
-│   ├── .env                        # API keys (not included in repo)
-│   ├── .python-version             # Python version for the environment
-│   ├── Dockerfile                  # Dockerfile to create an image for the project
-│   ├── assemble.py                 # Script to assemble/preprocess data
-│   ├── check.py                    # Script to run data checks
-│   ├── cross_validate.py           # Script to cross-validate models
-│   ├── forecast.py                 # Script to generate forecasts
-│   ├── plot.py                     # Script to generate plots for the data
-│   ├── pyproject.toml              # Project configuration and dependencies
-│   ├── retrieve.py                 # Main script to download and process data
-│   ├── train.py                    # Script to train models
-│   ├── upload.py                   # Script to upload data
-│   ├── uv.lock                     # Locked dependencies for the project
-│   └── validate.py                 # Script to validate data
-├── webpage/                        # Documentation website files (MkDocs)
-├── .editorconfig                   # Editor settings shared by all contributors
-├── .gitattributes                  # Git attributes for handling line endings
-├── .gitignore                      # File lists that git ignores
-├── .pre-commit-config.yaml         # Pre-commit configuration
-├── AGENTS.md                       # Instructions for AI coding agents
-├── CITATION.cff                    # Citation metadata
-├── CODE_OF_CONDUCT.md              # Code of Conduct
-├── CONTRIBUTING.md                 # Guide to contributing
-├── LICENSE                         # License file
-├── README.md                       # Project overview and instructions
-└── ruff.toml                       # Ruff configuration
-```
+## How DemandCast works
 
 ![DemandCast](figures/demandcast_illustration.png)
+
+The [architecture](architecture.md) page describes the scripts, the folders of the code and of the data, and how the modules depend on each other.
 
 ## Data sources
 
@@ -154,72 +113,9 @@ Forecasted hourly electricity demand for 184 countries from 2000 to 2024 is avai
 
 Forecasts for future years, including different climate models and scenarios, will be included in a future release. However, DemandCast is already capable of generating these forecasts for users who wish to produce them independently.
 
-## Basic getting started guide
+## Getting started
 
-An extended getting started guide is available in the [documentation](https://open-energy-transition.github.io/demandcast/getting_started/).
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/open-energy-transition/demandcast.git
-cd demandcast
-```
-
-### 2. Set up your environment
-
-This project uses [`uv`](https://github.com/astral-sh/uv) as a package manager to install the required dependencies and create an environment stored in `.venv`.
-
-`uv` can be used within the provided Dockerfile or installed standalone (see [installing uv](https://docs.astral.sh/uv/getting-started/installation/)).
-
-The `demandcast` folder contains a `pyproject.toml` file that defines all the dependencies for the project.
-
-To set up the environment, run:
-```bash
-cd demandcast
-uv sync
-```
-
-Alternatively, you may use a package manager of your choice (e.g., `conda`) to install the dependencies listed in the `pyproject.toml`. If you choose this approach, please adjust the commands below to align with the conventions of your selected package manager.
-
-### 3. Run scripts
-
-Scripts can be run directly using:
-
-```bash
-cd demandcast
-uv run script.py
-```
-
-Scripts accept configuration files to customize their behavior. Configuration files are located in `demandcast/config/`. The default name of the configuration file is `{script_name}_config.yaml`.
-
-Jupyter notebooks ([details](https://docs.astral.sh/uv/guides/integration/jupyter/#using-jupyter-within-a-project)) can be launched with:
-
-```bash
-cd demandcast
-uv run --with jupyter jupyter lab --allow-root
-```
-
-## Development workflow
-
-### Run tests and check test coverage
-
-```bash
-cd demandcast
-uv run --extra lstm pytest --cov
-```
-
-### Pre-commit and lint code
-
-To ensure code quality, we use [pre-commit](https://pre-commit.com/) hooks, defined in `.pre-commit-config.yaml`. They lint and format the code with [Ruff](https://docs.astral.sh/ruff/), check the types with [mypy](https://mypy-lang.org/), and check the other files, such as workflows and configuration files.
-
-From the root of the repository, install the hooks to run them on every commit, or run them on all files:
-
-```bash
-uvx pre-commit install
-uvx pre-commit run --all-files
-```
-
-To check only the types, run `uv run --extra lstm mypy` in the `demandcast` folder.
+The [getting started guide](getting_started.md) installs DemandCast and goes from the retrieval of the data to a forecast. To change the code, add a data source or a model, see the [contributing guidelines](https://github.com/open-energy-transition/demandcast/blob/main/CONTRIBUTING.md).
 
 ## Citation
 

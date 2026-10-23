@@ -46,6 +46,7 @@ nav:
   - ML.md
   - plot.md
   - Dockerfile.md
+  - architecture.md
 
 markdown_extensions:
   - toc:

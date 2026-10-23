@@ -90,29 +90,15 @@ DemandCast therefore:
 
 The annual electricity demand per capita, which scales the forecasts, comes from Ember first, whose demand is the electricity supplied, with the generation of the consumers (see [Annual electricity demand per capita](#annual-electricity-demand-per-capita)).
 
-#### Data source specific retrieval modules
+#### Data source modules and YAML files
 
-Each retrieval module in the `demandcast/retrievals/electricity_demand_data_sources/` folder is designed to fetch electricity demand data from a specific data source. The main functions in each module typically include:
+Each data source is a module in the `demandcast/retrievals/electricity_demand_data_sources/` folder, which downloads its data and returns the demand in MW, with time-zone-aware times that mark the end of each interval, and a YAML file with the same name, which describes its data. The [contributing guidelines](https://github.com/open-energy-transition/demandcast/blob/main/CONTRIBUTING.md#adding-an-electricity-demand-data-source) describe the functions of the module and the fields of the YAML file, to add a data source.
 
-- **Data request construction (`get_available_requests`)**: Builds the requests of a country or subdivision from its code and the dates of its data in the YAML file, which the retrieval code passes, in chronological order. A source that downloads all its data at once returns a single request, `None`.
-- **URL construction (`get_url`)**: An optional helper that builds the URL of a request, with the parameters that fit the source.
-- **Data download and processing (`download_and_extract_data_for_request`)**: Fetches the data of a request, which the retrieval code passes with the code, using the helpers of `utils.fetcher` such as `fetch_dataframe` and `read_manual_files`, and transforms it into a `pandas.Series` of the demand in MW, with time-zone-aware times that mark the end of each interval. `utils.time_series.localize_interval_starts` moves the starts of intervals in local time to their ends.
+The YAML file gives the `licence` of the data, with `redistribute`, whether the data can be published on Zenodo, whose dataset of actual data has the CC BY-NC 4.0 licence, and the countries and subdivisions of the data source, with the ISO 3166 names and codes, the time zone of the subdivisions and the dates of their data.
 
-The periods of the requests come from `utils.time_series.split_period`, and API keys from `utils.config.read_api_key`.
-
-#### Names, codes, time zones, and data time ranges for countries and subdivisions
-
-For each retrieval module in the `demandcast/retrievals/electricity_demand_data_sources/` folder, a corresponding YAML file must be created. It gives the `licence` of the data (`redistribute`, whether the data can be published on Zenodo, whose dataset of actual data has the CC BY-NC 4.0 licence, `terms`, a summary of the licence, and `url`, its link), its `definition`, and its `entities`, a list of dictionaries, each representing a country or subdivision from the respective data source. The following rules apply:
-
-The `definition` says what the demand of the data source counts, since DemandCast models the gross demand, with the demand that the generation embedded in the distribution networks supplies. It is a list of periods, in the order of their `start_date`, the first one from the start of the data, each with the `quantity` that the source gives, and whether the `embedded_generation` (such as rooftop solar), the `network_losses`, the `storage_charging` and the `power_plant_use` are `included` by the source, `added` by DemandCast from an estimate, `excluded`, or `unknown`, with a `note` on the reasons. For example, the total demand of AEMO for the NEM leaves out the rooftop solar until 2016, and has AEMO's estimate of it added from 2017. `utils.data_sources.get_definition(data_source, date)` gives the period of a date.
+The `definition` says what the demand of the data source counts, since DemandCast models the gross demand, with the demand that the generation embedded in the distribution networks supplies. It is a list of periods, each with the `quantity` that the source gives, and whether the `embedded_generation` (such as rooftop solar), the `network_losses`, the `storage_charging` and the `power_plant_use` are `included` by the source, `added` by DemandCast from an estimate, `excluded`, or `unknown`, with a `note` on the reasons. For example, the total demand of AEMO for the NEM leaves out the rooftop solar until 2016, and has AEMO's estimate of it added from 2017. `utils.data_sources.get_definition(data_source, date)` gives the period of a date.
 
 A data source that republishes the data of the system operators, such as the EIA, the CCEI and ENTSO-E, has `compiled: true`, and a country or subdivision whose data covers only part of the area of its shape has `same_area: false`, such as CAISO for California, whose shape is the region of the EIA. The combination uses them to rank the data sources of a code.
-
-- Names and codes should adhere to the ISO 3166 standard.
-- For countries and standard subdivisions, use Alpha-3 codes.
-- For non-standard subdivisions, use a widely accepted name and code.
-- Data time range must be specified.
-- For subdivisions, time zone must be specified.
 
 #### Non-standard subdivisions
 
