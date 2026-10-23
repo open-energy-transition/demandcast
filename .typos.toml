@@ -1,7 +1,7 @@
 # Configuration of the typos spell checker (pre-commit hook).
 
 [files]
-extend-exclude = ["demandcast/archive/", "*.ipynb", "*.csv"]
+extend-exclude = ["*.ipynb", "*.csv"]
 
 [default]
 extend-ignore-re = [

@@ -27,7 +27,15 @@ cd demandcast
 uv sync
 ```
 
+To use the optional LSTM model, add its dependencies with `uv sync --extra lstm`.
+
 Alternatively, you may use a package manager of your choice (e.g., `conda`) to install the dependencies listed in the `pyproject.toml`. If you choose this approach, please adjust the commands below to align with the conventions of your selected package manager.
+
+The scripts run from the `demandcast` folder, with `uv run <script>.py`, and Jupyter notebooks ([details](https://docs.astral.sh/uv/guides/integration/jupyter/#using-jupyter-within-a-project)) with:
+
+```bash
+uv run --with jupyter jupyter lab --allow-root
+```
 
 ### 1.3 Configure environment variables
 
@@ -261,7 +269,7 @@ cd demandcast
 uv run forecast.py
 ```
 
-The forecasts will be saved in `ml_models/forecasts/` and will contain hourly electricity demand predictions for Spain for 2024.
+The forecasts will be saved in `data/results/forecasts/` and will contain hourly electricity demand predictions for Spain for 2024.
 
 ## 7. Example Results
 

@@ -79,7 +79,6 @@ dev = [
 
 [tool.mypy]
 files = ["."]
-exclude = ["^archive/"]
 check_untyped_defs = true
 warn_unused_ignores = true
 warn_redundant_casts = true
@@ -113,7 +112,7 @@ filterwarnings = [
 branch = true
 source = ["."]
 # The sources of compiled extensions, such as netCDF4, are not ours.
-omit = ["tests/*", "archive/*", ".venv/*", "*.pyx"]
+omit = ["tests/*", ".venv/*", "*.pyx"]
 
 [tool.coverage.report]
 show_missing = true

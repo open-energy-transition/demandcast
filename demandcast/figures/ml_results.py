@@ -8,6 +8,15 @@ Description:
     are plotted for all countries and subdivisions, and can also be
     plotted by group (income level and continent) or compared between
     two versions of the model.
+
+    The MAPE values of a version are read from the CSV files of its
+    folder, by default in the validation results
+    (data/results/validation/<version>/): all.csv, with the testing
+    MAPE of each country and subdivision in the columns entity_code and
+    MAPE_test, and, for the plots by group, a file of the same columns
+    for each group, such as AF.csv or high_income.csv, with the MAPE of
+    the model trained on the data of the group. validate.py does not
+    write these files: they are copied into the folder by hand.
 """
 
 import os
@@ -76,19 +85,6 @@ def _read_mape(
                     usecols=["entity_code", "MAPE_test"],
                     index_col="entity_code",
                 )
-
-                if compare_with_version is not None:
-                    # Read the MAPE values for the current group for
-                    # the version to compare with.
-                    mape[f"{compare_with_version}_{group}"] = pd.read_csv(
-                        os.path.join(
-                            results_directory,
-                            compare_with_version,
-                            f"{group}.csv",
-                        ),
-                        usecols=["entity_code", "MAPE"],
-                        index_col="entity_code",
-                    )
 
     # Multiply the MAPE values by 100 to convert them to percentages.
     mape = mape * 100
@@ -495,6 +491,7 @@ def plot(
     version: str,
     compare_with_version: str | None = None,
     by_group: bool = False,
+    results_directory: str | None = None,
 ) -> None:
     """
     Plot the machine learning results.
@@ -511,6 +508,9 @@ def plot(
     by_group : bool, optional
         Whether to plot the results by group (income level and
         continent).
+    results_directory : str | None, optional
+        The folder with a folder of MAPE files for each version, by
+        default that of the validation results.
 
     Raises
     ------
@@ -518,14 +518,8 @@ def plot(
         If the --by_group and --compare_with_version options are used
         together.
     """
-    # Get the root directory of the project.
-    root_directory = utils.paths.CODE_FOLDER
-
-    # Define the directory containing the CSV files.
-    results_directory = os.path.join(
-        root_directory,
-        "mapes",
-    )
+    if results_directory is None:
+        results_directory = utils.paths.get_results_folder("validation")
 
     # Define the groups for the two cases (income level and continent).
     # Note that currently there are no validation results for the

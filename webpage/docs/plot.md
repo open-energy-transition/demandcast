@@ -14,20 +14,22 @@ Set the `figure` field in `config/plot_config.yaml` to specify the type of plot 
 
 ## Machine learning model results
 
-The folders `ml_models/validation/` and `ml_models/cross_validation/` contain CSV files with the Mean Absolute Percentage Error (MAPE) results of different versions of the machine learning models used for electricity demand forecasting. The MAPE is the difference between the predicted and actual electricity demand, expressed as a percentage of the actual demand. Each file corresponds to a specific model and entity group.
+The `ml_results` figure shows the Mean Absolute Percentage Error (MAPE) of a version of a machine learning model for each country and subdivision: the difference between the predicted and actual electricity demand, as a percentage of the actual demand. It can also compare two versions, or show the MAPE of the model trained on the data of each continent and income group against that of the model trained on all the data.
 
-To plot the results, update `config/plot_config.yaml` with the desired `figure` and `version` values, then run:
+The MAPE files of a version are in its folder in `data/results/validation/<version>/`: `all.csv`, with the testing MAPE of each country and subdivision in the columns `entity_code` and `MAPE_test`, and, for the figure by group, a file with the same columns for each group (`AF.csv`, `AS.csv`, `EU.csv`, `NA.csv`, `OC.csv`, `SA.csv`, `lower_middle_income.csv`, `upper_middle_income.csv` and `high_income.csv`). `validate.py` does not write these files yet: copy the MAPEs of its results into them. `demandcast/tests/figures/mape_examples/` has two example versions.
 
-```bash
-uv run plot.py
-```
-
-Examples of relevant configuration values:
+Set the `figure` and `version` values in `config/plot_config.yaml`:
 
 - `figure: ml_results`
 - `version: <model_version>`
 - `compare_with_version: <other_model_version>` (optional)
-- `by_group: true` (optional)
+- `by_group: true` (optional, not together with `compare_with_version`)
+
+Then run:
+
+```bash
+uv run plot.py
+```
 
 To use a different config file, pass it with `-c`:
 
@@ -35,4 +37,4 @@ To use a different config file, pass it with `-c`:
 uv run plot.py -c /path/to/plot_config.yaml
 ```
 
-The resulting plots will be saved in the `demandcast/figures` directory.
+The figures are saved in `data/results/figures/`.
