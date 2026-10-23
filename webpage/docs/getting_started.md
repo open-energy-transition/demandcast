@@ -261,7 +261,7 @@ cd demandcast
 uv run forecast.py
 ```
 
-The forecasts will be saved in `ml_models/forecasts/` and will contain hourly electricity demand predictions for Spain for 2024.
+The forecasts will be saved in `data/results/forecasts/` and will contain hourly electricity demand predictions for Spain for 2024.
 
 ## 7. Example Results
 

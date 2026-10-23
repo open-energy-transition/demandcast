@@ -1,16 +1,8 @@
-# Files that git does not track: data and results written by the scripts,
-# Python caches and builds, local environments (.env holds the API keys)
-# and editor settings.
+# Files that git does not track: the data folder, where the scripts write
+# their data, models, results and logs, Python caches and builds, local
+# environments (.env holds the API keys) and editor settings.
 
 demandcast/data/
-demandcast/logs/
-demandcast/ml_models/mapes/
-demandcast/ml_models/trained/
-demandcast/ml_models/forecasts/
-models/*/figures/
-models/*/models/
-models/*/predictions/
-results/
 
 __pycache__/
 *.py[cod]
