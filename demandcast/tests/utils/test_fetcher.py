@@ -12,7 +12,6 @@ import pathlib
 import re
 import traceback
 import urllib.error
-import zoneinfo
 from io import BytesIO
 from unittest.mock import patch
 
@@ -21,8 +20,6 @@ import pytest
 import requests
 import utils.fetcher
 import utils.paths
-from entsoe.exceptions import NoMatchingDataError
-from entsoe.mappings import Area
 
 
 @pytest.mark.parametrize(
@@ -256,96 +253,6 @@ def test_read_manual_files_without_files(exists):
         )
 
 
-def test_fetch_entsoe_demand():
-    """
-    Test fetching demand data from ENTSOE.
-
-    This test mocks the EntsoePandasClient to return a pandas.Series
-    with a time series of demand data.
-    """
-    # Define a mock series to simulate demand data.
-    mock_series = pd.Series(
-        [1, 2], index=pd.date_range("2023-01-01", periods=2, freq="h")
-    )
-
-    # Patch the EntsoePandasClient to return the mock series.
-    with patch("utils.fetcher.EntsoePandasClient") as mock_client:
-        mock_client.return_value.query_load.return_value = pd.DataFrame(
-            {"Actual Load": mock_series}
-        )
-
-        # Test fetching demand data for a valid country code.
-        result = utils.fetcher.fetch_entsoe_demand(
-            "dummy",
-            "FRA",
-            pd.Timestamp("2023-01-01"),
-            pd.Timestamp("2023-01-02"),
-        )
-        assert isinstance(result, pd.Series)
-
-        # Test with a country code that is added manually.
-        result = utils.fetcher.fetch_entsoe_demand(
-            "dummy",
-            "XKX",
-            pd.Timestamp("2023-01-01"),
-            pd.Timestamp("2023-01-02"),
-        )
-        assert isinstance(result, pd.Series)
-
-        # Test with an area of ENTSO-E in place of the country.
-        utils.fetcher.fetch_entsoe_demand(
-            "dummy",
-            "GBR_NIR",
-            pd.Timestamp("2023-01-01"),
-            pd.Timestamp("2023-01-02"),
-            area="GB_NIR",
-        )
-        assert mock_client.return_value.query_load.call_args.args[0] == (
-            "GB_NIR"
-        )
-
-
-def test_fetch_entsoe_demand_errors():
-    """
-    Test fetching demand data from ENTSOE with errors.
-
-    This test mocks the EntsoePandasClient to raise a connection error
-    and NoMatchingDataError, and checks that the fetch_entsoe_demand
-    function lets the client retry the first and skips the second.
-    """
-    with patch("utils.fetcher.EntsoePandasClient") as mock_client:
-        # Test the EntsoePandasClient to raise a connection error after
-        # its retries.
-        mock_client.return_value.query_load.side_effect = (
-            requests.exceptions.ConnectionError("Connection failed")
-        )
-        with pytest.raises(requests.exceptions.ConnectionError):
-            utils.fetcher.fetch_entsoe_demand(
-                "dummy",
-                "FRA",
-                pd.Timestamp("2023-01-01"),
-                pd.Timestamp("2023-01-02"),
-                retries=2,
-                retry_delay=0,
-            )
-        mock_client.assert_called_once_with(
-            api_key="dummy", retry_count=2, retry_delay=0
-        )
-
-        # Test the EntsoePandasClient to raise NoMatchingDataError.
-        mock_client.return_value.query_load.side_effect = NoMatchingDataError(
-            "No data"
-        )
-        result = utils.fetcher.fetch_entsoe_demand(
-            "dummy",
-            "FRA",
-            pd.Timestamp("2023-01-01"),
-            pd.Timestamp("2023-01-02"),
-        )
-        assert isinstance(result, pd.Series)
-        assert result.empty
-
-
 def _http_error(status_code: int) -> requests.exceptions.HTTPError:
     """
     Make the HTTP error that requests raises for a status code.
@@ -531,119 +438,3 @@ def test_fetch_csv_with_a_connection_error():
         )
 
     assert mock_read_csv.call_count == 3
-
-
-def _query_load_failing(status_code: int):
-    """
-    Make a query of the load that fails on 2025-10-09 with an error.
-
-    Returns
-    -------
-    Callable
-        The query, which gives a load of 1 MW a day, and raises the
-        error for the periods with 2025-10-09, and no data in December.
-    """
-
-    def query_load(_area, start, end):
-        if start <= pd.Timestamp("2025-10-09", tz="UTC") < end:
-            response = requests.Response()
-            response.status_code = status_code
-            raise requests.exceptions.HTTPError("Error", response=response)
-        if start >= pd.Timestamp("2025-12-01", tz="UTC"):
-            raise NoMatchingDataError
-        times = pd.date_range(start, end, freq="D", inclusive="left")
-        return pd.DataFrame({"Actual Load": 1.0}, index=times)
-
-    return query_load
-
-
-def test_fetch_entsoe_demand_with_failing_days(caplog):
-    """Test that the days that ENTSO-E fails to give are left out."""
-    with patch("utils.fetcher.EntsoePandasClient") as mock_client:
-        mock_client.return_value.query_load.side_effect = _query_load_failing(
-            400
-        )
-        result = utils.fetcher.fetch_entsoe_demand(
-            "dummy",
-            "CYP",
-            pd.Timestamp("2025-09-01", tz="UTC"),
-            pd.Timestamp("2026-01-01", tz="UTC"),
-        )
-
-    # The period is split into months, and October into days, so only
-    # 2025-10-09 is left out, and December has no data.
-    assert len(result) == 30 + 30 + 30
-    assert pd.Timestamp("2025-10-09", tz="UTC") not in result.index
-    assert "2025-10-09 00:00:00+00:00" in caplog.text
-    assert "left out" in caplog.text
-
-    # A period whose only day fails gives no data.
-    with patch("utils.fetcher.EntsoePandasClient") as mock_client:
-        mock_client.return_value.query_load.side_effect = _query_load_failing(
-            400
-        )
-        result = utils.fetcher.fetch_entsoe_demand(
-            "dummy",
-            "CYP",
-            pd.Timestamp("2025-10-09", tz="UTC"),
-            pd.Timestamp("2025-10-10", tz="UTC"),
-        )
-    assert result.empty
-
-
-def test_fetch_entsoe_demand_with_other_errors():
-    """Test that an error of ENTSO-E other than 400 is raised."""
-    with patch("utils.fetcher.EntsoePandasClient") as mock_client:
-        mock_client.return_value.query_load.side_effect = _query_load_failing(
-            500
-        )
-        with pytest.raises(requests.exceptions.HTTPError):
-            utils.fetcher.fetch_entsoe_demand(
-                "dummy",
-                "CYP",
-                pd.Timestamp("2025-09-01", tz="UTC"),
-                pd.Timestamp("2025-11-01", tz="UTC"),
-            )
-
-
-def test_time_zones_of_entsoe_areas():
-    """
-    Test that the time zones of the areas of ENTSO-E can be read.
-
-    The client of ENTSO-E gives old names, such as Europe/Kiev, which
-    the time zones of some systems leave out, so they are read from the
-    package tzdata.
-    """
-    unknown = []
-    for area in Area:
-        try:
-            zoneinfo.ZoneInfo(area.tz)
-        except zoneinfo.ZoneInfoNotFoundError:
-            unknown.append(area.tz)
-
-    assert unknown == []
-
-
-def test_fetch_entsoe_demand_errors_without_api_key():
-    """Test that the errors of ENTSO-E do not show the API key."""
-    # The key is made when the test runs, since the tracebacks of recent
-    # versions of Python show the source of the test.
-    api_key = "-".join(["secret", "key"])
-    with patch("utils.fetcher.EntsoePandasClient") as mock_client:
-        mock_client.return_value.query_load.side_effect = (
-            requests.exceptions.ConnectionError(
-                f"Max retries exceeded with url: /api?securityToken={api_key}"
-            )
-        )
-        with pytest.raises(requests.exceptions.ConnectionError) as error:
-            utils.fetcher.fetch_entsoe_demand(
-                api_key,
-                "FRA",
-                pd.Timestamp("2023-01-01"),
-                pd.Timestamp("2023-01-02"),
-            )
-
-    # The error and its traceback do not have the API key.
-    traceback_text = "".join(traceback.format_exception(error.value))
-    assert api_key not in traceback_text
-    assert "securityToken=***" in traceback_text

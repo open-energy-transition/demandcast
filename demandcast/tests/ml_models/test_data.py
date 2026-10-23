@@ -3,15 +3,15 @@ License: AGPL-3.0.
 
 Description:
 
-    This file contains unit tests for the ml module.
+    Unit tests of the preparation of the data of the models.
 """
 
-import os
 from unittest.mock import Mock, mock_open, patch
 
+import ml_models.data
+import ml_models.files
 import pandas as pd
 import pytest
-import utils.ml
 
 
 def test_read_and_check_ml_configuration():
@@ -39,7 +39,7 @@ def test_read_and_check_ml_configuration():
     ):
         mock_yaml_load.return_value = sample_config
 
-        config = utils.ml.read_and_check_ml_configuration()
+        config = ml_models.data.read_and_check_ml_configuration()
 
         assert config.algorithm == "xgboost"
         assert config.group == "entity_code"
@@ -74,7 +74,7 @@ def test_read_and_check_ml_configuration_minimal():
     ):
         mock_yaml_load.return_value = minimal_config
 
-        config = utils.ml.read_and_check_ml_configuration()
+        config = ml_models.data.read_and_check_ml_configuration()
 
         assert config.algorithm == "xgboost"
         assert config.categorical_features is None
@@ -101,160 +101,7 @@ def test_read_and_check_ml_configuration_error():
         mock_yaml_load.return_value = invalid_config
 
         with pytest.raises(ValueError, match="Configuration validation error"):
-            utils.ml.read_and_check_ml_configuration()
-
-
-def test_get_trained_model_path_with_provided_path():
-    """
-    Test get_trained_model_path when a path is provided.
-
-    This test checks if the function returns the provided path when
-    it's not None.
-    """
-    model_path = "/path/to/model.json"
-    result = utils.ml.get_trained_model_path(model_path, "xgboost")
-    assert result == model_path
-
-
-def test_get_trained_model_path_without_provided_path():
-    """
-    Test get_trained_model_path when no path is provided.
-
-    This test mocks the file system to simulate finding the latest
-    trained model file.
-    """
-    with (
-        patch("utils.paths.get_models_folder", return_value="/models"),
-        patch("os.listdir") as mock_listdir,
-    ):
-        mock_listdir.return_value = [
-            "xgboost_model_20240101_120000.json",
-            "xgboost_model_20240102_120000.json",
-            "other_file.txt",
-        ]
-
-        result = utils.ml.get_trained_model_path(None, "xgboost")
-
-        assert result == os.path.join(
-            "/models", "xgboost_model_20240102_120000.json"
-        )
-
-
-def test_get_trained_model_path_no_files_found():
-    """
-    Test get_trained_model_path when no files are found.
-
-    This test checks if the function raises FileNotFoundError when no
-    trained model files are found.
-    """
-    with (
-        patch("utils.paths.get_models_folder", return_value="/models"),
-        patch("os.listdir") as mock_listdir,
-    ):
-        mock_listdir.return_value = []
-
-        with pytest.raises(FileNotFoundError):
-            utils.ml.get_trained_model_path(None, "xgboost")
-
-
-def test_get_trained_model_path_pt_extension():
-    """
-    Test get_trained_model_path with ``.pt`` extension for LSTM.
-
-    Verifies the extension parameter selects ``.pt`` files and picks
-    the latest by datetime stamp.
-    """
-    with (
-        patch("utils.paths.get_models_folder", return_value="/models"),
-        patch("os.listdir") as mock_listdir,
-    ):
-        mock_listdir.return_value = [
-            "lstm_model_20240101_120000.pt",
-            "lstm_model_20240102_120000.pt",
-            "xgboost_model_20240103_120000.json",
-        ]
-
-        result = utils.ml.get_trained_model_path(None, "lstm", extension=".pt")
-
-        assert result == os.path.join(
-            "/models", "lstm_model_20240102_120000.pt"
-        )
-
-
-def test_get_trained_model_path_xgboost_unchanged_with_pt_present():
-    """
-    XGBoost path search ignores ``.pt`` files even when they exist.
-
-    Ensures the extension parameter keeps the two algorithm namespaces
-    fully separated.
-    """
-    with (
-        patch("utils.paths.get_models_folder", return_value="/models"),
-        patch("os.listdir") as mock_listdir,
-    ):
-        mock_listdir.return_value = [
-            "xgboost_model_20240101_120000.json",
-            "lstm_model_20240103_120000.pt",
-        ]
-
-        result = utils.ml.get_trained_model_path(None, "xgboost")
-
-        assert result == os.path.join(
-            "/models", "xgboost_model_20240101_120000.json"
-        )
-
-
-def test_get_assemble_data_path_with_provided_path():
-    """
-    Test get_assemble_data_path when a path is provided.
-
-    This test checks if the function returns the provided path when
-    it's not None.
-    """
-    data_path = "/path/to/data.parquet"
-    result = utils.ml.get_assemble_data_path(data_path)
-    assert result == data_path
-
-
-def test_get_assemble_data_path_without_provided_path():
-    """
-    Test get_assemble_data_path when no path is provided.
-
-    This test mocks the file system to simulate finding the latest
-    assembled data file.
-    """
-    with (
-        patch("utils.paths.get_assembled_folder", return_value="/data"),
-        patch("os.listdir") as mock_listdir,
-    ):
-        mock_listdir.return_value = [
-            "assembled_data_20240101_120000.parquet",
-            "assembled_data_20240102_120000.parquet",
-            "other_file.txt",
-        ]
-
-        result = utils.ml.get_assemble_data_path(None)
-
-        assert result == os.path.join(
-            "/data", "assembled_data_20240102_120000.parquet"
-        )
-
-
-def test_get_assemble_data_path_no_files_found():
-    """
-    Test get_assemble_data_path when no files are found.
-
-    This test checks if the function raises FileNotFoundError when no
-    assembled data files are found.
-    """
-    with (
-        patch("utils.paths.get_assembled_folder", return_value="/data"),
-        patch("os.listdir") as mock_listdir,
-    ):
-        mock_listdir.return_value = []
-
-        with pytest.raises(FileNotFoundError):
-            utils.ml.get_assemble_data_path(None)
+            ml_models.data.read_and_check_ml_configuration()
 
 
 def test_split_temporally_with_testing_and_validation():
@@ -273,7 +120,7 @@ def test_split_temporally_with_testing_and_validation():
         }
     )
 
-    result = utils.ml._split_temporally(
+    result = ml_models.data._split_temporally(
         dataset,
         testing_set=True,
         validation_set=True,
@@ -304,7 +151,7 @@ def test_split_temporally_with_testing_only():
         }
     )
 
-    result = utils.ml._split_temporally(
+    result = ml_models.data._split_temporally(
         dataset,
         testing_set=True,
         validation_set=False,
@@ -334,7 +181,7 @@ def test_split_temporally_with_validation_only():
         }
     )
 
-    result = utils.ml._split_temporally(
+    result = ml_models.data._split_temporally(
         dataset,
         testing_set=False,
         validation_set=True,
@@ -364,7 +211,7 @@ def test_split_temporally_without_splits():
         }
     )
 
-    result = utils.ml._split_temporally(
+    result = ml_models.data._split_temporally(
         dataset,
         testing_set=False,
         validation_set=False,
@@ -395,7 +242,7 @@ def test_split_in_groups():
         }
     )
 
-    result = utils.ml._split_in_groups(
+    result = ml_models.data._split_in_groups(
         dataset,
         group_column="entity_code",
         feature_columns=["feature1", "feature2"],
@@ -430,7 +277,7 @@ def test_split_in_groups_without_target():
         }
     )
 
-    result = utils.ml._split_in_groups(
+    result = ml_models.data._split_in_groups(
         dataset,
         group_column="entity_code",
         feature_columns=["feature1"],
@@ -462,7 +309,7 @@ def test_split_in_groups_with_categorical_features():
         }
     )
 
-    result = utils.ml._split_in_groups(
+    result = ml_models.data._split_in_groups(
         dataset,
         group_column="entity_code",
         feature_columns=["feature1", "feature2"],
@@ -494,7 +341,7 @@ def test_split_in_groups_with_scaling_variables():
         }
     )
 
-    result = utils.ml._split_in_groups(
+    result = ml_models.data._split_in_groups(
         dataset,
         group_column="entity_code",
         feature_columns=["feature1"],
@@ -529,7 +376,7 @@ def test_split_in_groups_with_additional_columns():
         }
     )
 
-    result = utils.ml._split_in_groups(
+    result = ml_models.data._split_in_groups(
         dataset,
         group_column="entity_code",
         feature_columns=["feature1"],
@@ -556,7 +403,7 @@ def test_split_in_groups_missing_columns():
     )
 
     with pytest.raises(ValueError, match="required columns are missing"):
-        utils.ml._split_in_groups(
+        ml_models.data._split_in_groups(
             dataset,
             group_column="entity_code",
             feature_columns=["feature1", "feature2"],
@@ -597,7 +444,7 @@ def test_prepare_split_datasets():
     ):
         mock_read_parquet.return_value = sample_data
 
-        result = utils.ml.prepare_split_datasets(
+        result = ml_models.data.prepare_split_datasets(
             "/path/to/data.parquet",
             sample_config,
             testing_set=True,
@@ -641,7 +488,7 @@ def test_prepare_split_datasets_with_training_set_only():
     ):
         mock_read_parquet.return_value = sample_data
 
-        result = utils.ml.prepare_split_datasets(
+        result = ml_models.data.prepare_split_datasets(
             "/path/to/data.parquet",
             sample_config,
             testing_set=False,
@@ -684,7 +531,7 @@ def test_prepare_dataset_without_splits():
     ):
         mock_read_parquet.return_value = sample_data
 
-        result = utils.ml.prepare_dataset(
+        result = ml_models.data.prepare_dataset(
             "/path/to/data.parquet",
             sample_config,
             target=True,
@@ -731,7 +578,7 @@ def test_prepare_dataset_without_target():
     ):
         mock_read_parquet.return_value = sample_data
 
-        result = utils.ml.prepare_dataset(
+        result = ml_models.data.prepare_dataset(
             "/path/to/data.parquet",
             sample_config,
             target=False,
@@ -770,7 +617,9 @@ def test_prepare_dataset_without_local_year():
         mock_read_parquet.return_value = sample_data
 
         with pytest.raises(ValueError, match="no 'Local year' column"):
-            utils.ml.prepare_dataset("/path/to/data.parquet", sample_config)
+            ml_models.data.prepare_dataset(
+                "/path/to/data.parquet", sample_config
+            )
 
 
 def test_to_load_relative_to_annual_mean():
@@ -780,7 +629,7 @@ def test_to_load_relative_to_annual_mean():
     local_year = pd.Series([2023, 2024, 2100, 2000])
     load_fraction = pd.Series([1 / 8760, 1 / 8784, 2 / 8760, 2 / 8784])
 
-    load_relative = utils.ml.to_load_relative_to_annual_mean(
+    load_relative = ml_models.data.to_load_relative_to_annual_mean(
         load_fraction, local_year
     )
 
@@ -792,11 +641,11 @@ def test_to_load_fraction_of_annual_total():
     local_year = pd.Series([2023, 2024, 2100, 2000])
     load_fraction = pd.Series([1.1e-4, 1.2e-4, 0.9e-4, 1.0e-4])
 
-    load_relative = utils.ml.to_load_relative_to_annual_mean(
+    load_relative = ml_models.data.to_load_relative_to_annual_mean(
         load_fraction, local_year
     )
 
-    assert utils.ml.to_load_fraction_of_annual_total(
+    assert ml_models.data.to_load_fraction_of_annual_total(
         load_relative, local_year
     ).tolist() == pytest.approx(load_fraction.tolist())
 
@@ -807,129 +656,20 @@ def test_to_megawatts():
     # 8.76 TWh in 2023 and 8.784 TWh in 2024, in kWh: 1 GW on average.
     scaling_factor = pd.Series([8.76e9, 8.784e9])
 
-    megawatts = utils.ml.to_megawatts(
+    megawatts = ml_models.data.to_megawatts(
         pd.Series([1.0, 1.5]), local_year, scaling_factor
     )
 
     assert megawatts.tolist() == pytest.approx([1000.0, 1500.0])
 
 
-def test_save_results_validation():
-    """
-    Test save_results for validation case.
-
-    This test mocks the file system operations to check if the function
-    correctly saves validation results.
-    """
-    output_data = pd.DataFrame({"mape": [0.1, 0.2]})
-
-    with (
-        patch("utils.paths.get_results_folder", return_value="/results"),
-        patch("os.makedirs") as mock_makedirs,
-        patch("pandas.DataFrame.to_csv") as mock_to_csv,
-        patch("pandas.DataFrame.to_parquet") as mock_to_parquet,
-        patch("pandas.Timestamp.now") as mock_now,
-    ):
-        mock_now.return_value.strftime.return_value = "20240101-120000"
-
-        utils.ml.save_results(
-            case="validation",
-            output_dataset=output_data,
-            trained_model_name="xgboost_model",
-            assembled_data_file_name="assembled_data",
-            file_name_prefix="validation",
-        )
-
-        mock_makedirs.assert_called_once()
-        mock_to_csv.assert_called_once()
-        mock_to_parquet.assert_called_once()
-
-
-def test_save_results_cross_validation():
-    """
-    Test save_results for cross_validation case.
-
-    This test checks if the function correctly saves cross-validation
-    results.
-    """
-    output_data = pd.DataFrame({"mape": [0.1, 0.2]})
-
-    with (
-        patch("utils.paths.get_results_folder", return_value="/results"),
-        patch("os.makedirs") as mock_makedirs,
-        patch("pandas.DataFrame.to_csv") as mock_to_csv,
-        patch("pandas.DataFrame.to_parquet") as mock_to_parquet,
-        patch("pandas.Timestamp.now") as mock_now,
-    ):
-        mock_now.return_value.strftime.return_value = "20240101-120000"
-
-        utils.ml.save_results(
-            case="cross_validation",
-            output_dataset=output_data,
-            trained_model_name="xgboost_model",
-            assembled_data_file_name="assembled_data",
-            file_name_prefix="cross_validation",
-        )
-
-        mock_makedirs.assert_called_once()
-        mock_to_csv.assert_called_once()
-        mock_to_parquet.assert_called_once()
-
-
-def test_save_results_forecasts():
-    """
-    Test save_results for forecasts case.
-
-    This test checks if the function correctly saves forecast results.
-    """
-    output_data = pd.DataFrame({"forecast": [100, 200]})
-
-    with (
-        patch("utils.paths.get_results_folder", return_value="/results"),
-        patch("os.makedirs") as mock_makedirs,
-        patch("pandas.DataFrame.to_csv") as mock_to_csv,
-        patch("pandas.DataFrame.to_parquet") as mock_to_parquet,
-        patch("pandas.Timestamp.now") as mock_now,
-    ):
-        mock_now.return_value.strftime.return_value = "20240101-120000"
-
-        utils.ml.save_results(
-            case="forecasts",
-            output_dataset=output_data,
-            trained_model_name="xgboost_model",
-            assembled_data_file_name="assembled_data",
-            file_name_prefix="forecasts",
-        )
-
-        mock_makedirs.assert_called_once()
-        mock_to_csv.assert_called_once()
-        mock_to_parquet.assert_called_once()
-
-
-def test_save_results_invalid_case():
-    """
-    Test save_results with invalid case.
-
-    This test checks if the function raises ValueError when an invalid
-    case is provided.
-    """
-    output_data = pd.DataFrame({"value": [1, 2]})
-
-    with pytest.raises(ValueError, match="Invalid case"):
-        utils.ml.save_results(
-            case="invalid_case",  # type: ignore[arg-type]
-            output_dataset=output_data,
-            trained_model_name="xgboost_model",
-            assembled_data_file_name="assembled_data",
-            file_name_prefix="test",
-        )
-
-
 def test_check_model_features():
     """Test that the features of the trained model are accepted."""
     model = Mock(feature_names_in_=pd.Index(["a", "b"]))
 
-    utils.ml.check_model_features(model, pd.DataFrame(columns=["a", "b"]))
+    ml_models.data.check_model_features(
+        model, pd.DataFrame(columns=["a", "b"])
+    )
 
 
 @pytest.mark.parametrize("columns", [["b", "a"], ["a"], ["a", "b", "c"]])
@@ -938,7 +678,9 @@ def test_check_model_features_errors(columns):
     model = Mock(feature_names_in_=pd.Index(["a", "b"]))
 
     with pytest.raises(ValueError, match="do not match those used during"):
-        utils.ml.check_model_features(model, pd.DataFrame(columns=columns))
+        ml_models.data.check_model_features(
+            model, pd.DataFrame(columns=columns)
+        )
 
 
 def test_get_latest_file(tmp_path):
@@ -952,7 +694,10 @@ def test_get_latest_file(tmp_path):
     ]:
         (tmp_path / file_name).touch()
 
-    assert utils.ml._get_latest_file(
+    assert ml_models.files._get_latest_file(
         str(tmp_path), "assembled_data", ".parquet"
     ) == str(tmp_path / "assembled_data_for_training_20250103_000000.parquet")
-    assert utils.ml._get_latest_file(str(tmp_path), "model", ".json") is None
+    assert (
+        ml_models.files._get_latest_file(str(tmp_path), "model", ".json")
+        is None
+    )

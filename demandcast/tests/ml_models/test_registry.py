@@ -11,12 +11,12 @@ Description:
 import os
 from typing import TYPE_CHECKING
 
+import ml_models.data
 import ml_models.registry
 import ml_models.xgboost
 import numpy as np
 import pandas as pd
 import pytest
-import utils.ml
 import utils.paths
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
@@ -48,7 +48,7 @@ def model_module(request):
     return ml_models.registry.get_model_module(request.param)
 
 
-def _prepared_dataset() -> utils.ml.PreparedDataset:
+def _prepared_dataset() -> ml_models.data.PreparedDataset:
     """
     Make a small prepared dataset of two countries.
 

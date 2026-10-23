@@ -15,12 +15,12 @@ import os
 
 import cross_validate
 import forecast
+import ml_models.data
 import ml_models.registry
 import numpy as np
 import pandas as pd
 import pytest
 import train
-import utils.ml
 import utils.paths
 import validate
 from pydantic import BaseModel
@@ -44,7 +44,7 @@ NOW = "20260102_030405"
 pytestmark = pytest.mark.usefixtures("frozen_now")
 
 
-def _ml_settings(algorithm: str) -> utils.ml.ConfigModel:
+def _ml_settings(algorithm: str) -> ml_models.data.ConfigModel:
     """
     Read the default settings of the machine learning, for an algorithm.
 
@@ -55,15 +55,15 @@ def _ml_settings(algorithm: str) -> utils.ml.ConfigModel:
 
     Returns
     -------
-    utils.ml.ConfigModel
+    ml_models.data.ConfigModel
         The settings of the machine learning, with the algorithm.
     """
-    return utils.ml.read_and_check_ml_configuration().model_copy(
+    return ml_models.data.read_and_check_ml_configuration().model_copy(
         update={"algorithm": algorithm}
     )
 
 
-def _settings(algorithm: str) -> tuple[utils.ml.ConfigModel, BaseModel]:
+def _settings(algorithm: str) -> tuple[ml_models.data.ConfigModel, BaseModel]:
     """
     Read the default settings of the machine learning and of a model.
 
@@ -74,7 +74,7 @@ def _settings(algorithm: str) -> tuple[utils.ml.ConfigModel, BaseModel]:
 
     Returns
     -------
-    tuple[utils.ml.ConfigModel, pydantic.BaseModel]
+    tuple[ml_models.data.ConfigModel, pydantic.BaseModel]
         The settings of the machine learning, with the algorithm, and
         those of the model.
     """
@@ -388,7 +388,7 @@ def test_forecast(algorithm, expected_sums):
     assert forecasts.columns.tolist() == [
         "Time (UTC)",
         "Entity code",
-        *utils.ml.read_and_check_ml_configuration().features,
+        *ml_models.data.read_and_check_ml_configuration().features,
         "Local year",
         "Forecast load (MW)",
     ]

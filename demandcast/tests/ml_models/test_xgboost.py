@@ -4,27 +4,27 @@ License: AGPL-3.0.
 Description:
 
     Tests for the XGBoost model on a target of the real magnitude,
-    converted by utils.ml to the load relative to the annual mean
+    converted by ml_models.data to the load relative to the annual mean
     (issue #145).
 """
 
 from typing import cast
 
+import ml_models.data
 import ml_models.registry
 import ml_models.xgboost
 import numpy as np
 import pandas as pd
-import utils.ml
 
 
-def _prepared_dataset() -> utils.ml.PreparedDataset:
+def _prepared_dataset() -> ml_models.data.PreparedDataset:
     """
     Make a dataset whose target is prepared like the real one.
 
     The load is a daily cycle plus a response to temperature, as a
     fraction of the annual total of about 1/8760 like the real target,
     and converted to the load relative to the annual mean like
-    utils.ml.prepare_dataset does. A model has to split on both
+    ml_models.data.prepare_dataset does. A model has to split on both
     features to fit it.
 
     Returns
@@ -52,7 +52,7 @@ def _prepared_dataset() -> utils.ml.PreparedDataset:
                 "Temperature - Top 1 (K)": temperature,
             }
         ),
-        "target": utils.ml.to_load_relative_to_annual_mean(
+        "target": ml_models.data.to_load_relative_to_annual_mean(
             load_fraction, local_year
         ),
         "group": pd.Series(["AUT"] * 480 + ["DNK"] * 480),

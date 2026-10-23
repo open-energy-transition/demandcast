@@ -11,10 +11,11 @@ Description:
 import logging
 import os
 
+import ml_models.data
+import ml_models.files
 import ml_models.registry
 import pandas as pd
 import utils.config
-import utils.ml
 import utils.paths
 from pydantic import BaseModel
 
@@ -31,7 +32,7 @@ def run_model_training(
     reserve_testing_set: bool,
     use_validation_set: bool,
     data_path: str | None,
-    ml_config: utils.ml.ConfigModel,
+    ml_config: ml_models.data.ConfigModel,
     model_config: BaseModel,
 ) -> None:
     """
@@ -46,7 +47,7 @@ def run_model_training(
     data_path : str | None
         The path to the assembled data file. If None, the latest file
         in the default directory will be used.
-    ml_config : utils.ml.ConfigModel
+    ml_config : ml_models.data.ConfigModel
         The settings of the machine learning models, with the
         algorithm.
     model_config : pydantic.BaseModel
@@ -59,10 +60,10 @@ def run_model_training(
     model_module = ml_models.registry.get_model_module(algorithm)
 
     # Get the assembled data path.
-    data_path = utils.ml.get_assemble_data_path(data_path)
+    data_path = ml_models.files.get_assemble_data_path(data_path)
 
     # Read and prepare the dataset.
-    prepared_dataset = utils.ml.prepare_split_datasets(
+    prepared_dataset = ml_models.data.prepare_split_datasets(
         data_path, ml_config, reserve_testing_set, use_validation_set
     )
 
@@ -95,7 +96,7 @@ def main(config: ConfigModel) -> None:
     utils.config.log_configuration(config)
 
     # Read and check machine learning configuration.
-    ml_config = utils.ml.read_and_check_ml_configuration()
+    ml_config = ml_models.data.read_and_check_ml_configuration()
 
     run_model_training(
         config.reserve_testing_set,

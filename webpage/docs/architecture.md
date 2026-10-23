@@ -34,7 +34,7 @@ demandcast/                         # the repository
 │   ├── config/                     # Configuration files of the scripts and lists of countries and subdivisions
 │   ├── data/                       # Data, models, results and logs written by the scripts (not in the repository)
 │   ├── figures/                    # Figures of the data availability and of the results of the models
-│   ├── ml_models/                  # Machine learning models, their registry and their evaluation
+│   ├── ml_models/                  # Machine learning models, their registry, data preparation and evaluation
 │   ├── retrievals/                 # Retrieval of each variable, and the modules and YAML files of the data sources
 │   ├── shapes/                     # Scripts that make the shapes of non-standard subdivisions, and the shapes
 │   ├── tests/                      # Tests, in folders that mirror the code

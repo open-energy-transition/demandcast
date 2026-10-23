@@ -19,7 +19,7 @@ The target variable represents normalized hourly electricity consumption. Take e
 
 **What the models learn: Load relative to the annual mean**
 
-The fraction of the annual total of an average hour is about 1/8760, too small for the models: the gain of an XGBoost split scales with the square of the target, so at that magnitude the model barely splits and rarely uses the continuous features ([issue #145](https://github.com/open-energy-transition/demandcast/issues/145)). When preparing the data, `utils.ml.to_load_relative_to_annual_mean()` therefore multiplies the target by the hours in its local year (8760, or 8784 in leap years), giving the load relative to the annual mean: 1.0 is an average hour, and 1.2 an hour with 20% more demand than average. All models are trained on this target, and `forecast.py` converts their predictions back with `utils.ml.to_load_fraction_of_annual_total()` before scaling them to MW. The assembled data keeps the fraction of the annual total. Models trained before this conversion was introduced must be retrained.
+The fraction of the annual total of an average hour is about 1/8760, too small for the models: the gain of an XGBoost split scales with the square of the target, so at that magnitude the model barely splits and rarely uses the continuous features ([issue #145](https://github.com/open-energy-transition/demandcast/issues/145)). When preparing the data, `ml_models.data.to_load_relative_to_annual_mean()` therefore multiplies the target by the hours in its local year (8760, or 8784 in leap years), giving the load relative to the annual mean: 1.0 is an average hour, and 1.2 an hour with 20% more demand than average. All models are trained on this target, and `forecast.py` converts their predictions back with `ml_models.data.to_load_fraction_of_annual_total()` before scaling them to MW. The assembled data keeps the fraction of the annual total. Models trained before this conversion was introduced must be retrained.
 
 **Temporal Splitting**
 
@@ -130,7 +130,7 @@ The LSTM model requires `torch>=2.0.0`, from the optional `lstm` extra of `deman
 
 ### Input and Output Format
 
-The LSTM model consumes the same `prepared_dataset` structure produced by `utils.ml.prepare_split_datasets` as XGBoost. Each split (`"training"`, `"validation"`, `"testing"`) is a dictionary containing:
+The LSTM model consumes the same `prepared_dataset` structure produced by `ml_models.data.prepare_split_datasets` as XGBoost. Each split (`"training"`, `"validation"`, `"testing"`) is a dictionary containing:
 
 - `"features"` — `pandas.DataFrame` of input features
 - `"target"` — `pandas.Series` of target values

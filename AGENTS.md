@@ -26,10 +26,10 @@ The scenarios (SSP, IAMC and CMIP6), the climate models and the years of each pr
 
 - `demandcast/`: the Python project. Run all Python commands from this folder, because modules are imported as top-level packages (`import utils.config`, not `import demandcast.utils.config`).
   - `retrievals/`: data retrieval. Each electricity demand source is a module plus a YAML file in `retrievals/electricity_demand_data_sources/`. The indicators (population, GDP PPP per capita, annual electricity demand per capita) save their years and scenarios with `retrievals/indicators.py`, and the gridded data extracts each country and subdivision with `retrievals/gridded.py`.
-  - `ml_models/`: the models. `registry.py` lists them and defines the interface of their modules (`ModelModule`), and `evaluation.py` computes their errors (the MAPE of each entity and set, and the cross-validation) for `validate.py` and `cross_validate.py`.
+  - `ml_models/`: the models. `registry.py` lists them and defines the interface of their modules (`ModelModule`), `data.py` holds the settings of `config/ml_config.yaml` and prepares the data (target conversions, splits), `files.py` finds the latest model and assembled data and saves the results, and `evaluation.py` computes the errors (the MAPE of each entity and set, and the cross-validation).
   - `utils/`: shared helpers; CI requires at least 95% test coverage. The countries and subdivisions are in `codes.py` (ISO codes, names, continents), `data_sources.py` (the YAML registry of the data sources), `time_zones.py` and `availability.py` (the codes of interest and their data).
   - `benchmark/`: the configuration files of the data of the benchmark of the models and `run.py`, which retrieves and assembles it.
-  - `tests/`: the pytest suite, in folders that mirror the code: the tests of `utils/ml.py` are in `tests/utils/test_ml.py`, and those of the scripts are at the top of `tests/`.
+  - `tests/`: the pytest suite, in folders that mirror the code: the tests of `utils/fetcher.py` are in `tests/utils/test_fetcher.py`, and those of the scripts are at the top of `tests/`.
 - `webpage/`: the MkDocs documentation site, a separate uv project.
 
 ## Commands

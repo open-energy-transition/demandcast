@@ -11,10 +11,11 @@ Description:
 import logging
 import os
 
+import ml_models.data
 import ml_models.evaluation
+import ml_models.files
 import ml_models.registry
 import utils.config
-import utils.ml
 from pydantic import BaseModel
 
 
@@ -30,7 +31,7 @@ def run_model_validation(
     used_validation_set: bool,
     model_path: str | None,
     data_path: str | None,
-    ml_config: utils.ml.ConfigModel,
+    ml_config: ml_models.data.ConfigModel,
 ) -> None:
     """
     Run the model validation process.
@@ -45,7 +46,7 @@ def run_model_validation(
     data_path : str | None
         The path to the assembled data file. If None, the latest file
         in the default directory will be used.
-    ml_config : utils.ml.ConfigModel
+    ml_config : ml_models.data.ConfigModel
         The settings of the machine learning models, with the
         algorithm.
     """
@@ -56,20 +57,20 @@ def run_model_validation(
     model_module = ml_models.registry.get_model_module(algorithm)
 
     # Get the assembled data path.
-    data_path = utils.ml.get_assemble_data_path(data_path)
+    data_path = ml_models.files.get_assemble_data_path(data_path)
 
     # Read and prepare the dataset.
-    prepared_dataset = utils.ml.prepare_split_datasets(
+    prepared_dataset = ml_models.data.prepare_split_datasets(
         data_path, ml_config, True, used_validation_set
     )
 
     # Load the trained model, and check that it was trained with the
     # features of the prepared dataset.
-    trained_model_path = utils.ml.get_trained_model_path(
+    trained_model_path = ml_models.files.get_trained_model_path(
         model_path, algorithm.lower(), model_module.FILE_EXTENSION
     )
     model = model_module.load(trained_model_path)
-    utils.ml.check_model_features(
+    ml_models.data.check_model_features(
         model, prepared_dataset["training"]["features"]
     )
 
@@ -80,7 +81,7 @@ def run_model_validation(
     mapes = ml_models.evaluation.calculate_mapes(prepared_dataset, predictions)
 
     # Save the MAPEs.
-    utils.ml.save_results(
+    ml_models.files.save_results(
         "validation",
         mapes,
         os.path.basename(trained_model_path).split(".")[0],
@@ -102,7 +103,7 @@ def main(config: ConfigModel) -> None:
     utils.config.log_configuration(config)
 
     # Read and check machine learning configuration.
-    ml_config = utils.ml.read_and_check_ml_configuration()
+    ml_config = ml_models.data.read_and_check_ml_configuration()
 
     run_model_validation(
         config.used_validation_set,

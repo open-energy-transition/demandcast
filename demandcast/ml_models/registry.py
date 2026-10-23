@@ -12,10 +12,11 @@ import importlib
 from typing import Any, Protocol, cast, overload
 
 import pandas as pd
-import utils.ml
 import utils.paths
 import yaml
 from pydantic import BaseModel, ValidationError
+
+import ml_models.data
 
 # The modules of the models, by algorithm name in lower case. Each
 # module is imported only when its model is used, so the LSTM needs
@@ -46,26 +47,28 @@ class ModelModule(Protocol):
 
     def train(
         self,
-        prepared_dataset: dict[str, utils.ml.PreparedDataset],
+        prepared_dataset: dict[str, ml_models.data.PreparedDataset],
         config: Any,
     ) -> Any:
         """Train a model, with its settings, on the training set."""
 
     @overload
     def predict(
-        self, model: Any, prepared_dataset: utils.ml.PreparedDataset
+        self, model: Any, prepared_dataset: ml_models.data.PreparedDataset
     ) -> pd.Series: ...
 
     @overload
     def predict(
-        self, model: Any, prepared_dataset: dict[str, utils.ml.PreparedDataset]
+        self,
+        model: Any,
+        prepared_dataset: dict[str, ml_models.data.PreparedDataset],
     ) -> dict[str, pd.Series]: ...
 
     def predict(
         self,
         model: Any,
-        prepared_dataset: utils.ml.PreparedDataset
-        | dict[str, utils.ml.PreparedDataset],
+        prepared_dataset: ml_models.data.PreparedDataset
+        | dict[str, ml_models.data.PreparedDataset],
     ) -> pd.Series | dict[str, pd.Series]:
         """Make predictions for one prepared dataset or several."""
 

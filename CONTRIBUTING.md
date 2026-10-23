@@ -35,7 +35,7 @@ uvx pre-commit run --all-files  # run them on the whole repository
 
 1. Create a branch from `main` in your fork.
 2. Follow the existing style: [Ruff](https://docs.astral.sh/ruff/) formatting and linting (lines of at most 79 characters), NumPy-style docstrings and type hints, checked by mypy. The pre-commit hooks check this for you.
-3. Add or update tests for your changes in `demandcast/tests/`, whose folders mirror the code (the tests of `utils/ml.py` are in `tests/utils/test_ml.py`), and run them from the `demandcast/` folder:
+3. Add or update tests for your changes in `demandcast/tests/`, whose folders mirror the code (the tests of `utils/fetcher.py` are in `tests/utils/test_fetcher.py`), and run them from the `demandcast/` folder:
 
    ```bash
    uv run --extra lstm pytest
