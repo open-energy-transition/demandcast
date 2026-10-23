@@ -10,11 +10,12 @@ Description:
 
 from typing import Literal
 
+from pydantic import BaseModel
+
 import checks.data_availability
 import checks.data_sources
 import checks.flags
 import utils.config
-from pydantic import BaseModel
 
 
 class ConfigModel(BaseModel):

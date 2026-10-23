@@ -13,6 +13,7 @@ import base64
 import google_crc32c
 import pytest
 from google.api_core.exceptions import PreconditionFailed
+
 from publishing import gcs
 
 

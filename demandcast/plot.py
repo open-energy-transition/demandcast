@@ -11,13 +11,14 @@ Description:
 import os
 from typing import Literal
 
+from pydantic import BaseModel, model_validator
+
 import figures.data_availability
 import figures.map_of_available_entities
 import figures.ml_results
 import figures.status
 import utils.config
 import utils.paths
-from pydantic import BaseModel, model_validator
 
 
 class ConfigModel(BaseModel):

@@ -9,10 +9,11 @@ Description:
 
 import os
 
-import checks.data_availability
 import geopandas
 import pandas as pd
 import shapely
+
+import checks.data_availability
 import utils.paths
 
 

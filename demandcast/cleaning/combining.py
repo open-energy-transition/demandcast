@@ -50,13 +50,13 @@ Description:
 import logging
 import os
 
-import checks.flags
 import numpy as np
 import pandas as pd
+
+import checks.flags
+import cleaning.flags
 import utils.data_sources
 import utils.paths
-
-import cleaning.flags
 
 # The rank of the definitions of the embedded generation.
 EMBEDDED_GENERATION_RANKS = {

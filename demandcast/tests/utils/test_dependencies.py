@@ -12,6 +12,7 @@ import glob
 import os
 
 import pytest
+
 import utils.paths
 
 # The packages and scripts that use utils.

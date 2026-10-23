@@ -13,10 +13,11 @@ import os
 import sys
 import threading
 
-import check
-import checks.data_sources
 import pandas as pd
 import pytest
+
+import check
+import checks.data_sources
 import utils.config
 import utils.data_sources
 import utils.fetcher

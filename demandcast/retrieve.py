@@ -14,6 +14,8 @@ from collections.abc import Callable
 from types import ModuleType
 from typing import Literal
 
+from pydantic import BaseModel, field_validator, model_validator
+
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.electricity_demand
 import retrievals.gdp_ppp_per_capita
@@ -25,7 +27,6 @@ import retrievals.temperature
 import utils.catalogue
 import utils.config
 import utils.data_sources
-from pydantic import BaseModel, field_validator, model_validator
 
 # The scenarios of the variables of the socio-economic projections.
 SCENARIOS = {

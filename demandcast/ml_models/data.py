@@ -16,9 +16,10 @@ from typing import Any, NotRequired, TypedDict
 
 import numpy as np
 import pandas as pd
+from pydantic import BaseModel, ValidationError
+
 import utils.config
 import utils.paths
-from pydantic import BaseModel, ValidationError
 
 # The column of the local year of each row. assemble.py computes the
 # target as the fraction of the annual total of each entity and local

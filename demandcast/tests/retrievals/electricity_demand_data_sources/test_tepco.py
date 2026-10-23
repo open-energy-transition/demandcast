@@ -11,6 +11,7 @@ import zipfile
 
 import pandas as pd
 import pytest
+
 from retrievals.electricity_demand_data_sources import tepco
 
 MONTHLY_URL = (

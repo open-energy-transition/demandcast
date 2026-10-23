@@ -12,6 +12,7 @@ from unittest.mock import MagicMock, call, patch
 import numpy as np
 import pandas as pd
 import pytest
+
 import retrievals.gridded_totals
 
 

@@ -26,12 +26,12 @@ import zipfile
 from typing import cast
 
 import requests
-import utils.catalogue
-import utils.geospatial
-import utils.paths
 import xarray
 
 import retrievals.gridded
+import utils.catalogue
+import utils.geospatial
+import utils.paths
 
 
 def _download_historical_gridded_population_density(

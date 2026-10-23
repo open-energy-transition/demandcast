@@ -18,12 +18,12 @@ from io import BytesIO
 
 import py7zr
 import requests
-import utils.catalogue
-import utils.geospatial
-import utils.paths
 import xarray
 
 import retrievals.gridded
+import utils.catalogue
+import utils.geospatial
+import utils.paths
 
 
 def _download_gdp_ppp(raw_directory: str) -> None:

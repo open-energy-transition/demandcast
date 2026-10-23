@@ -10,11 +10,12 @@ Description:
 
 from typing import cast
 
+import numpy as np
+import pandas as pd
+
 import ml_models.data
 import ml_models.registry
 import ml_models.xgboost
-import numpy as np
-import pandas as pd
 
 
 def _prepared_dataset() -> ml_models.data.PreparedDataset:

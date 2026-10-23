@@ -14,9 +14,10 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 import requests
-import utils.config
 from entsoe.exceptions import NoMatchingDataError
 from entsoe.mappings import Area
+
+import utils.config
 from retrievals.electricity_demand_data_sources import entsoe
 
 

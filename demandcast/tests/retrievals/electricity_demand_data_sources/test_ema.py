@@ -9,6 +9,7 @@ Description:
 import datetime
 
 import pandas as pd
+
 from retrievals.electricity_demand_data_sources import ema
 
 

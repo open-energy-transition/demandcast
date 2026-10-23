@@ -40,6 +40,7 @@ import re
 import zipfile
 
 import pandas as pd
+
 import utils.fetcher
 
 # The first month of the estimates of the rooftop solar of AEMO.

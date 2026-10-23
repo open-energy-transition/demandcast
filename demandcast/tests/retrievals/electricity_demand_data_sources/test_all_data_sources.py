@@ -16,11 +16,12 @@ import os
 import socket
 
 import pytest
+import yaml
+
 import utils.data_sources
 import utils.fetcher
 import utils.paths
 import utils.raw_data
-import yaml
 
 DATA_SOURCES = sorted(utils.data_sources.read_data_sources())
 

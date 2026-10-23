@@ -9,6 +9,7 @@ Description:
 import datetime
 
 import pytest
+
 from retrievals.electricity_demand_data_sources import ieso
 
 

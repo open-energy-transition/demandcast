@@ -35,12 +35,13 @@ import dask
 import dask.dataframe
 import numpy as np
 import pandas as pd
+from pydantic import BaseModel, model_validator
+from tqdm import tqdm
+
 import utils.availability
 import utils.catalogue
 import utils.config
 import utils.paths
-from pydantic import BaseModel, model_validator
-from tqdm import tqdm
 
 # The shares of the hours of a year, and of each of its months, that
 # the training needs.

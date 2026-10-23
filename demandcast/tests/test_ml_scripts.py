@@ -13,17 +13,18 @@ Description:
 import importlib.util
 import os
 
+import numpy as np
+import pandas as pd
+import pytest
+from pydantic import BaseModel
+
 import cross_validate
 import forecast
 import ml_models.data
 import ml_models.registry
-import numpy as np
-import pandas as pd
-import pytest
 import train
 import utils.paths
 import validate
-from pydantic import BaseModel
 
 LSTM_MARKS = pytest.mark.skipif(
     importlib.util.find_spec("torch") is None, reason="torch not installed"

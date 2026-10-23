@@ -37,6 +37,12 @@ import os
 
 import numpy as np
 import pandas as pd
+import xarray
+from tqdm import tqdm
+
+import retrievals.era5_points
+import retrievals.gridded_population
+import retrievals.gridded_weather
 import utils.availability
 import utils.catalogue
 import utils.geospatial
@@ -45,12 +51,6 @@ import utils.scenarios
 import utils.shapes
 import utils.time_series
 import utils.time_zones
-import xarray
-from tqdm import tqdm
-
-import retrievals.era5_points
-import retrievals.gridded_population
-import retrievals.gridded_weather
 
 # The sources of the temperature of the reanalysis.
 REANALYSIS_SOURCES = ("points", *retrievals.gridded_weather.SOURCES)

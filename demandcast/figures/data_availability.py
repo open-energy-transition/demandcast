@@ -19,11 +19,12 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker
 import numpy as np
 import pandas as pd
+from tailwind_colors import TAILWIND_COLORS_HEX
+
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
 import utils.codes
 import utils.data_sources
-from tailwind_colors import TAILWIND_COLORS_HEX
 
 # The levels of annual electricity demand per capita, in kWh.
 ELECTRICITY_DEMAND_LEVELS = {

@@ -10,9 +10,10 @@ import tempfile
 from pathlib import Path
 
 import geopandas
+from shapely import Point
+
 import utils.figures
 import utils.paths
-from shapely import Point
 
 
 def test_simple_plot(monkeypatch):

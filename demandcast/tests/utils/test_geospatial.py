@@ -13,10 +13,11 @@ from unittest.mock import patch
 import geopandas
 import numpy as np
 import pytest
-import utils.geospatial
-import utils.paths
 import xarray
 from shapely import box
+
+import utils.geospatial
+import utils.paths
 
 
 def test_harmonize_coords():

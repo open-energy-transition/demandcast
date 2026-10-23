@@ -17,13 +17,14 @@ import os
 from collections.abc import Callable
 from typing import Literal
 
+import xarray
+from tqdm import tqdm
+
 import utils.availability
 import utils.catalogue
 import utils.paths
 import utils.scenarios
 import utils.shapes
-import xarray
-from tqdm import tqdm
 
 type Grid = xarray.DataArray | xarray.Dataset
 type Bounds = list[float]

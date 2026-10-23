@@ -70,11 +70,12 @@ import logging
 import numpy as np
 import pandas as pd
 import requests
+from entsoe import EntsoePandasClient
+from entsoe.exceptions import NoMatchingDataError
+
 import utils.codes
 import utils.config
 import utils.time_series
-from entsoe import EntsoePandasClient
-from entsoe.exceptions import NoMatchingDataError
 
 # The areas of ENTSO-E of the subdivisions, by their code. The areas of
 # the countries are their ISO Alpha-2 codes.

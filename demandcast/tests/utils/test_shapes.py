@@ -10,8 +10,9 @@ from unittest.mock import patch
 
 import geopandas
 import pytest
-import utils.shapes
 from shapely import Polygon
+
+import utils.shapes
 
 
 @pytest.fixture

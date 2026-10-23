@@ -46,10 +46,11 @@ import os
 from typing import Literal
 
 import pandas as pd
-import utils.data_sources
-import utils.paths
 import yaml
 from pydantic import BaseModel, ConfigDict
+
+import utils.data_sources
+import utils.paths
 
 # The data source of the flags of the combined electricity demand.
 COMBINED = "combined"

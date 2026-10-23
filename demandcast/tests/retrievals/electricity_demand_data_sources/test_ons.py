@@ -9,6 +9,7 @@ Description:
 import datetime
 
 import numpy as np
+
 from retrievals.electricity_demand_data_sources import ons
 
 

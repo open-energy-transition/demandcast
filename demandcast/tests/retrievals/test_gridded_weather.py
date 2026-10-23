@@ -14,8 +14,9 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
-import utils.paths
 import xarray
+
+import utils.paths
 from retrievals import gridded_weather
 
 pytestmark = pytest.mark.usefixtures("frozen_now")

@@ -47,10 +47,10 @@ from typing import cast
 
 import numpy as np
 import pandas as pd
-import utils.catalogue
-import utils.scenarios
 
 import retrievals.indicators
+import utils.catalogue
+import utils.scenarios
 from retrievals.socio_economic_data_sources import ember, iiasa, world_bank
 
 # The years that Ember and the World Bank both need for the ratio of a

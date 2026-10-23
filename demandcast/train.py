@@ -8,16 +8,22 @@ Description:
     feature selection, and data splitting.
 """
 
+# On Windows, PyTorch must be imported before pandas, so the ml_models
+# package, which imports it first, is imported before everything else.
+import ml_models  # noqa: F401
+
+# isort: split
 import logging
 import os
+
+import pandas as pd
+from pydantic import BaseModel
 
 import ml_models.data
 import ml_models.files
 import ml_models.registry
-import pandas as pd
 import utils.config
 import utils.paths
-from pydantic import BaseModel
 
 
 class ConfigModel(BaseModel):

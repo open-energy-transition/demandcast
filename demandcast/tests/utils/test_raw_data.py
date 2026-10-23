@@ -15,6 +15,7 @@ import urllib.request
 import pandas as pd
 import pytest
 import requests
+
 import utils.fetcher
 import utils.paths
 import utils.raw_data

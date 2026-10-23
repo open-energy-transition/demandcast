@@ -45,6 +45,7 @@ import zoneinfo
 from io import BytesIO, StringIO
 
 import pandas as pd
+
 import utils.fetcher
 import utils.time_series
 import utils.time_zones

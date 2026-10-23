@@ -8,6 +8,7 @@ Description:
 """
 
 import pandas as pd
+
 from figures import map_of_available_entities
 
 

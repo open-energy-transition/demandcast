@@ -25,6 +25,7 @@ Description:
 import datetime
 
 import pandas as pd
+
 import utils.fetcher
 
 

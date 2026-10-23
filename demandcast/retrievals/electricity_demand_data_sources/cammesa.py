@@ -28,6 +28,7 @@ import datetime
 import logging
 
 import pandas as pd
+
 import utils.fetcher
 
 # The identifiers of the regions of CAMMESA whose demand makes up each

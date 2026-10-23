@@ -3,6 +3,9 @@
 
 target-version = "py312"
 line-length = 79
+# The modules of the project, which are imported as top-level packages
+# from the demandcast folder, and grouped after the third-party ones.
+src = ["demandcast"]
 
 [lint]
 select = [

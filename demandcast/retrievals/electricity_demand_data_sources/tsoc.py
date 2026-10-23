@@ -27,6 +27,7 @@ import urllib.parse
 
 import numpy as np
 import pandas as pd
+
 import utils.fetcher
 import utils.time_series
 

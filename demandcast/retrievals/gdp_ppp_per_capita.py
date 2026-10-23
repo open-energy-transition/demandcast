@@ -15,11 +15,11 @@ from typing import cast
 
 import cpi
 import pandas as pd
-import utils.catalogue
-import utils.scenarios
 
 import retrievals.gridded_totals
 import retrievals.indicators
+import utils.catalogue
+import utils.scenarios
 from retrievals.socio_economic_data_sources import iiasa, imf, world_bank
 
 

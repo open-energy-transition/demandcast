@@ -63,6 +63,7 @@ import logging
 
 import numpy as np
 import pandas as pd
+
 import utils.config
 import utils.fetcher
 import utils.time_series

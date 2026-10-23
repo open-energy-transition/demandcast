@@ -10,6 +10,7 @@ import datetime
 import logging
 
 import pandas as pd
+
 from retrievals.electricity_demand_data_sources import krogd
 
 PAGE_URL = "https://www.data.go.kr/data/15065266/fileData.do"

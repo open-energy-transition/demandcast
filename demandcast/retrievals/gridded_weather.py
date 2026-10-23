@@ -33,6 +33,10 @@ from collections.abc import Callable
 
 import cdsapi
 import pandas as pd
+import xarray
+from tqdm import tqdm
+
+import retrievals.gridded
 import utils.availability
 import utils.catalogue
 import utils.config
@@ -40,10 +44,6 @@ import utils.geospatial
 import utils.paths
 import utils.scenarios
 import utils.shapes
-import xarray
-from tqdm import tqdm
-
-import retrievals.gridded
 
 # The sources of the gridded reanalysis data.
 SOURCES = ("cds", "arco")

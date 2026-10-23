@@ -10,9 +10,10 @@ Description:
 import os
 from unittest.mock import patch
 
-import ml_models.files
 import pandas as pd
 import pytest
+
+import ml_models.files
 
 
 def test_get_trained_model_path_with_provided_path():

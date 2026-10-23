@@ -7,6 +7,7 @@ Description:
 """
 
 import pandas as pd
+
 from retrievals.electricity_demand_data_sources import ccei
 
 # The URL of the data of CCEI, without the dataflow and the variable.

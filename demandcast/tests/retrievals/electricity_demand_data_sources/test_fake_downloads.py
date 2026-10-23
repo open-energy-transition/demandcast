@@ -9,6 +9,7 @@ Description:
 
 import pandas as pd
 import pytest
+
 import utils.fetcher
 
 URL = "https://example.com/data.csv"

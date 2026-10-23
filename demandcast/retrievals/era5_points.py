@@ -33,10 +33,10 @@ import zipfile
 import numpy as np
 import pandas as pd
 import requests
-import utils.paths
 import xarray
 
 import retrievals.gridded_weather
+import utils.paths
 
 # The dataset of the time series of the CDS.
 DATASET = "reanalysis-era5-single-levels-timeseries"

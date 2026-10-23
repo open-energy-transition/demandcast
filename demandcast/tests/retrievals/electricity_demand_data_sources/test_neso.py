@@ -10,6 +10,7 @@ import datetime
 
 import pandas as pd
 import pytest
+
 from retrievals.electricity_demand_data_sources import neso
 
 CATALOGUE_URL = (

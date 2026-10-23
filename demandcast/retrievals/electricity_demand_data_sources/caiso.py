@@ -38,6 +38,7 @@ import logging
 import re
 
 import pandas as pd
+
 import utils.fetcher
 
 
