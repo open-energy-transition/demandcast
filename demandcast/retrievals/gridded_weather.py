@@ -3,12 +3,27 @@ License: AGPL-3.0.
 
 Description:
 
-    This module includes functions to download weather data from the
-    Copernicus Climate Data Store (CDS). It then extracts the weather
-    data for the countries and subdivisions of interest and saves it
-    into NetCDF files.
+    This module includes functions to download gridded weather data and
+    extract the weather data of the countries and subdivisions of
+    interest into NetCDF files, from one of two sources of the same
+    ERA5 reanalysis:
+
+    - cds: the Copernicus Climate Data Store (CDS), which prepares each
+      request, of a year of the globe or of a country, in a queue, from
+      minutes to hours, and gives the data until about a week ago. The
+      projections of the climate models come only from the CDS.
+    - arco: the analysis-ready ERA5 of Google Research on Google Cloud
+      Storage (ARCO-ERA5), read without an account and without a queue,
+      one global map an hour, with the same values as the CDS to its
+      rounding (0.001 K) and the preliminary data until about a week
+      ago. Google gives no commitment to keep it up to date.
+
+    The temperature of the most populous cells (see
+    retrievals/temperature.py) can also come from the time series of
+    single points of the CDS (see retrievals/era5_points.py).
 
     Source: https://cds.climate.copernicus.eu/
+    Source: https://github.com/google-research/arco-era5
 """
 
 import logging
@@ -20,15 +35,30 @@ import cdsapi
 import pandas as pd
 import utils.availability
 import utils.catalogue
+import utils.config
 import utils.geospatial
 import utils.paths
 import utils.scenarios
 import utils.shapes
 import xarray
-from dotenv import load_dotenv
 from tqdm import tqdm
 
 import retrievals.gridded
+
+# The sources of the gridded reanalysis data.
+SOURCES = ("cds", "arco")
+
+# The API of the CDS.
+CDS_URL = "https://cds.climate.copernicus.eu/api"
+
+# The store of ARCO-ERA5, the names of its variables and of the
+# variables of the files of the CDS, and the hours read at once.
+ARCO_ERA5_URL = (
+    "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
+)
+ARCO_VARIABLES = {"temperature": ("2m_temperature", "t2m")}
+ARCO_HOURS_PER_READ = 7 * 24
+ARCO_READ_THREADS = 16
 
 # The time after the end of a year until its reanalysis data is
 # complete: ERA5 is published about five days after real time, and
@@ -44,6 +74,118 @@ CDS_VARIABLES = {
         "projections": "near_surface_air_temperature",
     }
 }
+
+
+def get_cds_client(**kwargs: bool) -> cdsapi.Client:
+    """
+    Get a client of the API of the Copernicus Climate Data Store.
+
+    Parameters
+    ----------
+    **kwargs : bool
+        Other options of the client, such as quiet.
+
+    Returns
+    -------
+    cdsapi.Client
+        The client, with the key in CDS_API_KEY.
+    """
+    return cdsapi.Client(
+        url=CDS_URL,
+        key=utils.config.read_api_key(
+            "CDS_API_KEY", "the Copernicus Climate Data Store"
+        ),
+        **kwargs,
+    )
+
+
+def _open_arco_year(variable: str, year: int) -> xarray.DataArray:
+    """
+    Open the hours of a year of a variable of ARCO-ERA5.
+
+    Parameters
+    ----------
+    variable : str
+        The weather variable.
+    year : int
+        The year.
+
+    Returns
+    -------
+    xarray.DataArray
+        The variable, lazily, with harmonized coordinates (see
+        utils.geospatial.harmonize_coords), until the last day with
+        data: the store has the times until 2050.
+    """
+    dataset = xarray.open_zarr(
+        ARCO_ERA5_URL, chunks={}, storage_options={"token": "anon"}
+    )
+    last_day = dataset.attrs.get(
+        "valid_time_stop_era5t", dataset.attrs.get("valid_time_stop")
+    )
+    end = f"{year}-12-31T23"
+    if last_day:
+        end = min(end, f"{last_day}T23")
+    data = dataset[ARCO_VARIABLES[variable][0]].sel(
+        time=slice(f"{year}-01-01", end)
+    )
+    return utils.geospatial.harmonize_coords(data)
+
+
+def _extract_from_arco(
+    variable: str,
+    year: int,
+    bounds: dict[str, list[float]],
+    file_paths: dict[str, str],
+) -> None:
+    """
+    Extract the gridded data of a year of ARCO-ERA5 for some codes.
+
+    The hours are read a week at a time, for all the codes at once, and
+    the files have the variables and coordinates of those of the CDS.
+
+    Parameters
+    ----------
+    variable : str
+        The weather variable.
+    year : int
+        The year.
+    bounds : dict[str, list[float]]
+        The bounds of each code (West, South, East, North).
+    file_paths : dict[str, str]
+        The NetCDF file of each code.
+    """
+    data = _open_arco_year(variable, year)
+    parts: dict[str, list[xarray.DataArray]] = {code: [] for code in bounds}
+    for start in tqdm(
+        range(0, data.sizes["time"], ARCO_HOURS_PER_READ),
+        desc=f"Weeks of {year}",
+    ):
+        hours = data.isel(
+            time=slice(start, start + ARCO_HOURS_PER_READ)
+        ).compute(num_workers=ARCO_READ_THREADS)
+        for code, (west, south, east, north) in bounds.items():
+            parts[code].append(
+                hours.sel(x=slice(west, east), y=slice(south, north))
+            )
+
+    name = ARCO_VARIABLES[variable][1]
+    for code, file_path in file_paths.items():
+        dataset = (
+            xarray.concat(parts.pop(code), dim="time")
+            .rename(time="valid_time")
+            .to_dataset(name=name)
+        )
+        # Replace the file only once it is written.
+        dataset.to_netcdf(
+            file_path + ".tmp",
+            encoding={name: {"zlib": True, "complevel": 1}},
+        )
+        os.replace(file_path + ".tmp", file_path)
+    logging.info(
+        f"Gridded {variable} data of ARCO-ERA5 for year {year} has been "
+        f"extracted for {len(file_paths)} codes."
+    )
 
 
 def get_file_name(
@@ -244,16 +386,8 @@ def _download_data(
         )
     )
 
-    # Load the environment variables.
-    load_dotenv(dotenv_path=utils.paths.ENV_FILE)
-
-    # Get the API key.
-    cds_key = os.getenv("CDS_API_KEY")
-
     # Create a new CDS API client.
-    client = cdsapi.Client(
-        url="https://cds.climate.copernicus.eu/api", key=cds_key
-    )
+    client = get_cds_client()
 
     # Define the dataset.
     if dataset in {"reanalysis-era5-single-levels", "reanalysis"}:
@@ -325,13 +459,15 @@ def run_data_retrieval(
     variable: str,
     model: str | None,
     scenario: str | None,
+    source: str = "cds",
 ) -> None:
     """
     Download and extract gridded weather data.
 
     This function retrieves weather data from the Copernicus Climate
-    Data Store (CDS) for the countries and subdivisions of interest.
-    The data is saved into NetCDF files in the specified directory.
+    Data Store (CDS) or from ARCO-ERA5 for the countries and
+    subdivisions of interest. The data is saved into NetCDF files in the
+    specified directory.
 
     Parameters
     ----------
@@ -352,12 +488,21 @@ def run_data_retrieval(
         The model of the weather data to be retrieved.
     scenario : str | None
         The scenario of the weather data to be retrieved.
+    source : str, optional
+        The source of the reanalysis data, "cds" or "arco" (see the
+        description of the module). The projections come from the CDS.
 
     Raises
     ------
     ValueError
-        If the variable is not supported.
+        If the variable or the source is not supported.
     """
+    if source not in SOURCES:
+        raise ValueError(
+            f"Source {source} is not supported. Supported sources are: "
+            f"{', '.join(SOURCES)}."
+        )
+
     # Get the directory to store the population density data.
     result_directory = utils.paths.get_gridded_folder("weather", "processed")
     os.makedirs(result_directory, exist_ok=True)
@@ -392,6 +537,13 @@ def run_data_retrieval(
             },
         )
     )
+
+    if source == "arco":
+        year_model_scenario_list = _retrieve_from_arco(
+            variable, codes, year_model_scenario_list
+        )
+        if not year_model_scenario_list:
+            return
 
     # If there are many codes, download the global data and then extract
     # the data for each country and subdivision.
@@ -629,3 +781,86 @@ def _retrieve_data_of_each_code(
             f"Gridded {variable} data for {entity_code} has been retrieved "
             "and saved."
         )
+
+
+def retrieve_reanalysis(
+    code: str, year: int, variable: str, source: str = "cds"
+) -> None:
+    """
+    Retrieve the reanalysis of a year for a country or subdivision.
+
+    Unlike run_data_retrieval, any year with data can be retrieved, such
+    as the current one, whose first hours end the local year before it
+    west of UTC.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+    year : int
+        The year.
+    variable : str
+        The weather variable.
+    source : str, optional
+        The source of the reanalysis data, "cds" or "arco".
+    """
+    if source == "arco":
+        _retrieve_from_arco(variable, [code], [(year, None, None)])
+    else:
+        _retrieve_data_of_each_code(variable, [code], [(year, None, None)])
+
+
+def _retrieve_from_arco(
+    variable: str,
+    codes: list[str],
+    year_model_scenario_list: list[tuple[int, str | None, str | None]],
+) -> list[tuple[int, str | None, str | None]]:
+    """
+    Extract the reanalysis data of the codes from ARCO-ERA5.
+
+    Parameters
+    ----------
+    variable : str
+        The weather variable.
+    codes : list[str]
+        The codes of the countries and subdivisions.
+    year_model_scenario_list : list[tuple[int, str | None, str | None]]
+        The years, climate models and scenarios.
+
+    Returns
+    -------
+    list[tuple[int, str | None, str | None]]
+        The years, climate models and scenarios of the projections,
+        which come from the CDS.
+    """
+    os.makedirs(
+        utils.paths.get_gridded_folder("weather", "processed"), exist_ok=True
+    )
+    for year, model, scenario in tqdm(year_model_scenario_list, desc="Years"):
+        if model or scenario:
+            continue
+        get_file_path = _get_entity_file_path_function(
+            variable, year, None, None
+        )
+        outdated = {
+            code: get_file_path(code)
+            for code in codes
+            if is_outdated(get_file_path(code), year, None, None)
+        }
+        if outdated:
+            _extract_from_arco(
+                variable,
+                year,
+                {
+                    code: utils.shapes.get_entity_bounds(
+                        utils.shapes.get_entity_shape(code, make_plot=False)
+                    )
+                    for code in outdated
+                },
+                outdated,
+            )
+    return [
+        combination
+        for combination in year_model_scenario_list
+        if combination[1] or combination[2]
+    ]

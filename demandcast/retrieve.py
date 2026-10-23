@@ -62,6 +62,7 @@ class ConfigModel(BaseModel):
     scenario: str | None = None
     weather_variable: Literal["temperature"] | None = None
     climate_model: str | None = None
+    reanalysis_source: Literal["points", "cds", "arco"] = "points"
     offline: bool = False
 
     @field_validator("electricity_data_source")
@@ -194,6 +195,11 @@ RETRIEVALS: dict[str, Callable[[ConfigModel], None]] = {
             str(config.weather_variable),
             config.climate_model,
             config.scenario,
+            source=(
+                "cds"
+                if config.reanalysis_source == "points"
+                else config.reanalysis_source
+            ),
         )
     ),
     "temperature": (
@@ -205,6 +211,7 @@ RETRIEVALS: dict[str, Callable[[ConfigModel], None]] = {
             config.end_year,
             config.climate_model,
             config.scenario,
+            reanalysis_source=config.reanalysis_source,
         )
     ),
 }

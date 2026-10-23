@@ -12,11 +12,16 @@ import utils.catalogue
 
 @pytest.mark.usefixtures("frozen_now")
 def test_years_of_the_weather():
-    """Test that the weather years follow the current year, 2026."""
+    """
+    Test that the weather years follow the current year, 2026.
+
+    The reanalysis ends with the last complete year, and the current
+    year is only in the projections.
+    """
     reanalysis_years = utils.catalogue.get_reanalysis_years()
     projection_years = utils.catalogue.get_climate_projection_years()
 
-    assert (reanalysis_years[0], reanalysis_years[-1]) == (1990, 2026)
+    assert (reanalysis_years[0], reanalysis_years[-1]) == (1990, 2025)
     assert (projection_years[0], projection_years[-1]) == (2026, 2100)
 
 

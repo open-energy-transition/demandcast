@@ -212,3 +212,107 @@ def test_many_codes_split_the_global_data(monkeypatch):
             os.path.join(processed_folder, f"{code}_temperature_2020.nc")
         )
         assert (new_mtime != mtime) == (code == "FRA")
+
+
+def _arco_store() -> xarray.Dataset:
+    """
+    Make a store like that of ARCO-ERA5, with data until 2024-01-10.
+
+    The longitudes go from 0 to 359 and the latitudes down from 60, as
+    in ARCO-ERA5, and the temperature of a cell at an hour is its
+    longitude plus its latitude plus the hours since 2024.
+
+    Returns
+    -------
+    xarray.Dataset
+        The store, until 2024-01-31.
+    """
+    times = pd.date_range("2024-01-01", "2024-01-31 23:00", freq="h")
+    longitudes = np.arange(0.0, 360.0, 1.0)
+    latitudes = np.arange(60.0, 39.0, -1.0)
+    hours = np.arange(len(times), dtype=float)
+    values = (
+        hours[:, None, None]
+        + latitudes[None, :, None]
+        + np.where(longitudes > 180, longitudes - 360, longitudes)[
+            None, None, :
+        ]
+    )
+    return xarray.Dataset(
+        {"2m_temperature": (("time", "latitude", "longitude"), values)},
+        coords={"time": times, "latitude": latitudes, "longitude": longitudes},
+        attrs={
+            "valid_time_stop": "2024-01-05",
+            "valid_time_stop_era5t": "2024-01-10",
+        },
+    )
+
+
+# netCDF4 sets the shape of NumPy arrays when it writes compressed
+# variables, which NumPy 2.5 deprecates.
+@pytest.mark.filterwarnings(
+    "ignore:Setting the shape on a NumPy array:DeprecationWarning"
+)
+def test_arco_era5():
+    """
+    Test the gridded data of ARCO-ERA5, like the files of the CDS.
+
+    The data of each code is cut from the same hours, until the last day
+    with data, and is not read again once complete.
+    """
+    store = _arco_store()
+    bounds = {"FRA": [-5.0, 42.0, 8.0, 51.0], "DEU": [6.0, 47.0, 15.0, 55.0]}
+    with (
+        patch.object(
+            gridded_weather.utils.availability,
+            "check_and_get_codes_with",
+            return_value=list(bounds),
+        ),
+        patch.object(
+            gridded_weather.utils.shapes,
+            "get_entity_shape",
+            side_effect=lambda code, **_: code,
+        ),
+        patch.object(
+            gridded_weather.utils.shapes,
+            "get_entity_bounds",
+            side_effect=bounds.get,
+        ),
+        patch.object(
+            gridded_weather.xarray, "open_zarr", return_value=store
+        ) as open_zarr,
+        patch.object(gridded_weather, "_download_data") as download,
+    ):
+        for _ in range(2):
+            gridded_weather.run_data_retrieval(
+                code=None,
+                file=None,
+                year=2024,
+                start_year=None,
+                end_year=None,
+                variable="temperature",
+                model=None,
+                scenario=None,
+                source="arco",
+            )
+
+    assert open_zarr.call_count == 1
+    download.assert_not_called()
+    folder = gridded_weather.utils.paths.get_gridded_folder(
+        "weather", "processed"
+    )
+    for code, (west, south, east, north) in bounds.items():
+        data = xarray.open_dataset(
+            os.path.join(folder, f"{code}_temperature_2024.nc")
+        )["t2m"]
+        assert data.dims == ("valid_time", "y", "x")
+        assert data["valid_time"].to_numpy()[-1] == np.datetime64(
+            "2024-01-10T23:00"
+        )
+        assert np.allclose(data["x"].to_numpy(), np.arange(west, east + 1))
+        assert np.allclose(data["y"].to_numpy(), np.arange(south, north + 1))
+        first_hour = data.isel(valid_time=0)
+        expected = (
+            data["y"].to_numpy()[:, None] + data["x"].to_numpy()[None, :]
+        )
+        assert np.allclose(first_hour.to_numpy(), expected)
