@@ -7,7 +7,7 @@ Description:
     country or subdivision, with the gridded data mocked.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pandas as pd
@@ -136,6 +136,18 @@ def test_get_total_value_from_gridded_data():
             last_available_historical_years_of_gridded_data=extra_available_years,
             scenario=scenario,
         )
+
+    # Assert that the last historical year, without scenario, and the
+    # first future year cover the selected years, and that the values
+    # are interpolated between them.
+    assert mock_aggregate.call_args_list == [
+        call(variable, code, 2030, scenario=None),
+        call(variable, code, 2035, scenario=scenario),
+    ]
+    assert isinstance(result, pd.Series)
+    assert result.name == "GDP PPP"
+    assert list(result.index) == [2030, 2031, 2032, 2033, 2034, 2035]
+    assert np.allclose(result.to_numpy(), np.linspace(50000, 70000, 6))
 
 
 def test_get_total_value_from_gridded_data_errors():
