@@ -7,12 +7,10 @@ Description:
     result: the response of a request, its text, an Excel file, or a
     table read from CSV, Excel or JSON. All of them retry after the
     errors that can be temporary, and hide the API keys in their
-    messages. It also reads the files downloaded manually, and fetches
-    the electricity demand of the ENTSO-E API.
+    messages. It also reads the files downloaded manually.
 """
 
 import inspect
-import itertools
 import logging
 import os
 import re
@@ -26,10 +24,7 @@ from typing import Any, Literal
 import pandas as pd
 import requests
 import requests.exceptions
-from entsoe import EntsoePandasClient
-from entsoe.exceptions import NoMatchingDataError
 
-import utils.codes
 import utils.paths
 
 # The HTTP status codes of the data that does not exist, for example a
@@ -675,168 +670,3 @@ def read_manual_files(
             f"with '{prefix}'."
         )
     return pd.concat([read_file(file_path) for file_path in file_paths])
-
-
-# The periods into which a request to ENTSO-E is split when it answers
-# with an error, from the largest.
-ENTSOE_SPLITS = ["MS", "D"]
-
-
-def _query_entsoe_load(
-    client: EntsoePandasClient,
-    area: str,
-    start: pd.Timestamp,
-    end: pd.Timestamp,
-    splits: list[str],
-) -> pd.Series:
-    """
-    Query the load of an area of ENTSO-E, around the periods it fails.
-
-    ENTSO-E answers some periods with an error of the server (400,
-    "Unexpected ERROR occurred during processing of use case"), such as
-    the load of Cyprus on 2025-10-09, while it gives the days around
-    them. The period is then split into months, and a month that fails
-    into days, and the days that fail are left out.
-
-    Parameters
-    ----------
-    client : entsoe.EntsoePandasClient
-        The client of the API of ENTSO-E.
-    area : str
-        The area of ENTSO-E.
-    start : pandas.Timestamp
-        The start of the period.
-    end : pandas.Timestamp
-        The end of the period.
-    splits : list[str]
-        The frequencies of the periods into which the period is split if
-        it fails, from the largest.
-
-    Returns
-    -------
-    pandas.Series
-        The actual load in MW, without the days that fail.
-
-    Raises
-    ------
-    requests.exceptions.HTTPError
-        If ENTSO-E answers with another error than 400.
-    """
-    try:
-        return client.query_load(area, start=start, end=end)["Actual Load"]
-    except requests.exceptions.HTTPError as error:
-        if error.response is None or error.response.status_code != 400:
-            raise
-    if not splits:
-        # The error is not logged, since its URL has the API key.
-        logging.warning(
-            f"ENTSO-E answers the load of {area} from {start} to {end} "
-            "with an error, so this period is left out."
-        )
-        return pd.Series(dtype="float64")
-
-    edges = sorted(
-        {
-            start,
-            end,
-            *pd.date_range(start, end, freq=splits[0], inclusive="neither"),
-        }
-    )
-    parts = []
-    for part_start, part_end in itertools.pairwise(edges):
-        try:
-            part = _query_entsoe_load(
-                client, area, part_start, part_end, splits[1:]
-            )
-        except NoMatchingDataError:
-            continue
-        if not part.empty:
-            parts.append(part)
-    if not parts:
-        return pd.Series(dtype="float64")
-    load = pd.concat(parts)
-    return load[~load.index.duplicated()]
-
-
-def fetch_entsoe_demand(
-    api_key: str,
-    iso_alpha_3_code: str,
-    start_date_and_time: pd.Timestamp,
-    end_date_and_time: pd.Timestamp,
-    retries: int = 3,
-    retry_delay: int = 5,
-    area: str | None = None,
-) -> pd.Series:
-    """
-    Fetch the electricity demand time series from the ENTSO-E API.
-
-    This function retrieves the hourly electricity demand time series
-    for a specified country using the ENTSO-E API, whose client retries
-    the request after connection errors. The periods that ENTSO-E
-    answers with an error of the server are split into months and days,
-    and the days that still fail are left out (see _query_entsoe_load).
-    The errors of the requests are raised without the API key, which
-    their URL has.
-    The data is returned as a
-    pandas Series with the time index in the time zone of the country
-    and the values in MW.
-
-    Parameters
-    ----------
-    api_key : str
-        The API key for the ENTSO-E API.
-    iso_alpha_3_code : str
-        The ISO Alpha-3 code of the country.
-    start_date_and_time : pandas.Timestamp
-        The start date and time of the data retrieval.
-    end_date_and_time : pandas.Timestamp
-        The end date and time of the data retrieval.
-    retries : int, optional
-        The number of attempts, in case of connection errors.
-    retry_delay : int, optional
-        The delay between attempts in seconds.
-    area : str | None, optional
-        The area of ENTSO-E, such as GB_NIR for Northern Ireland,
-        instead of the country of the code.
-
-    Returns
-    -------
-    pandas.Series
-        The electricity demand time series in MW.
-    """
-    # Get the area of ENTSO-E: the ISO Alpha-2 code of the country, if
-    # no other area is given.
-    if area is None:
-        area = utils.codes.get_iso_alpha_2_code(iso_alpha_3_code)
-
-    # Define the ENTSO-E API client, which retries after connection
-    # errors.
-    client = EntsoePandasClient(
-        api_key=api_key, retry_count=retries, retry_delay=retry_delay
-    )
-
-    try:
-        return _query_entsoe_load(
-            client,
-            area,
-            start_date_and_time,
-            end_date_and_time,
-            ENTSOE_SPLITS,
-        )
-
-    except NoMatchingDataError:
-        # If the data is not available, skip to the next country.
-        logging.warning(
-            f"No data available for {iso_alpha_3_code} between "
-            f"{start_date_and_time.date()} and {end_date_and_time.date()}."
-        )
-
-        return pd.Series()
-
-    except requests.exceptions.RequestException as error:
-        # The message of the error has the URL of the request, with the
-        # API key, so the error is raised again without it, and without
-        # the original error, which would show it in the logs.
-        raise type(error)(
-            str(error).replace(api_key, "***"), response=error.response
-        ) from None
