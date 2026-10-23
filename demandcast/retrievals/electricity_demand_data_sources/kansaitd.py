@@ -14,7 +14,8 @@ Description:
     monthly files from March 2024 give the average area demand in MW of
     each half hour. The days of both start at 00:00, so the times are
     the starts of the intervals, in the time of Japan, which has no
-    daylight saving time.
+    daylight saving time. OCCTO republishes the same demand (see
+    occto.py).
 
     Source: https://www.kansai-td.co.jp/english/home/denkiyoho/area-performance/index.html
 """
