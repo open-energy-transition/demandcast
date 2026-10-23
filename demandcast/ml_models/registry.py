@@ -12,11 +12,11 @@ import importlib
 from typing import Any, Protocol, cast, overload
 
 import pandas as pd
-import utils.paths
 import yaml
 from pydantic import BaseModel, ValidationError
 
 import ml_models.data
+import utils.paths
 
 # The modules of the models, by algorithm name in lower case. Each
 # module is imported only when its model is used, so the LSTM needs

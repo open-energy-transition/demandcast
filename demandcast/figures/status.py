@@ -25,11 +25,10 @@ import datetime
 import os
 import shutil
 
-import utils.data_sources
-import utils.paths
-
 import figures.data_availability
 import figures.map_of_available_entities
+import utils.data_sources
+import utils.paths
 
 # The figures of the page, as figures.data_availability and
 # figures.map_of_available_entities name them.

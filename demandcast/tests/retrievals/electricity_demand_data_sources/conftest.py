@@ -17,6 +17,7 @@ from typing import Any
 import pandas as pd
 import pytest
 import requests
+
 import utils.paths
 
 # The folder of the synthetic files that replace the downloads.

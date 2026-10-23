@@ -12,6 +12,7 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
+
 from figures import data_availability
 
 # The continent of each code of the synthetic data.

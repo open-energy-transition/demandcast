@@ -9,9 +9,10 @@ Description:
 
 import os
 
-import cleaning.combining
 import pandas as pd
 import pytest
+
+import cleaning.combining
 import utils.paths
 
 pytestmark = pytest.mark.usefixtures("longitude")

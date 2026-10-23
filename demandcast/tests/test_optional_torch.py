@@ -14,6 +14,7 @@ import subprocess
 import sys
 
 import pytest
+
 import utils.paths
 
 SCRIPTS = ["train", "validate", "cross_validate", "forecast"]

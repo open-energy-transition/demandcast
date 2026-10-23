@@ -11,12 +11,13 @@ Description:
 import glob
 import os
 
-import assemble
 import dask.callbacks
 import dask.dataframe
 import numpy as np
 import pandas as pd
 import pytest
+
+import assemble
 import retrievals.temperature
 import utils.paths
 import utils.time_series

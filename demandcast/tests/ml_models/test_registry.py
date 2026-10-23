@@ -11,15 +11,16 @@ Description:
 import os
 from typing import TYPE_CHECKING
 
-import ml_models.data
-import ml_models.registry
-import ml_models.xgboost
 import numpy as np
 import pandas as pd
 import pytest
-import utils.paths
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
+
+import ml_models.data
+import ml_models.registry
+import ml_models.xgboost
+import utils.paths
 
 if TYPE_CHECKING:
     import ml_models.lstm

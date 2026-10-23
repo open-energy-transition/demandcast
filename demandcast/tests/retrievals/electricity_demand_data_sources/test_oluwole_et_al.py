@@ -8,6 +8,7 @@ Description:
 """
 
 import pandas as pd
+
 from retrievals.electricity_demand_data_sources import oluwole_et_al
 
 URL = (

@@ -11,6 +11,7 @@ import datetime
 
 import pandas as pd
 import pytest
+
 import utils.fetcher
 from retrievals.electricity_demand_data_sources import aemo_wem
 

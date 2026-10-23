@@ -12,6 +12,7 @@ import itertools
 import pandas as pd
 import pytest
 import pytz
+
 import utils.time_series
 
 local_time_zone = pytz.timezone("America/New_York")

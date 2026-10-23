@@ -11,9 +11,10 @@ import datetime
 from unittest.mock import patch
 
 import pytest
+import yaml
+
 import utils.data_sources
 import utils.paths
-import yaml
 
 # The licence, a country and a subdivision, as in the yaml file of a
 # data source.

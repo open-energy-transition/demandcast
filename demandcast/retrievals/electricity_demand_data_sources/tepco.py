@@ -22,6 +22,7 @@ import logging
 import zipfile
 
 import pandas as pd
+
 import utils.fetcher
 import utils.time_series
 

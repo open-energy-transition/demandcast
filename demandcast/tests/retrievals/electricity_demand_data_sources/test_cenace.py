@@ -10,6 +10,7 @@ import datetime
 import zipfile
 
 import pandas as pd
+
 from retrievals.electricity_demand_data_sources import cenace
 
 URL = (

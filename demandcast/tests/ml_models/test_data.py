@@ -8,10 +8,11 @@ Description:
 
 from unittest.mock import Mock, mock_open, patch
 
-import ml_models.data
-import ml_models.files
 import pandas as pd
 import pytest
+
+import ml_models.data
+import ml_models.files
 
 
 def test_read_and_check_ml_configuration():

@@ -8,15 +8,21 @@ Description:
     absolute percentage error (MAPE) metrics.
 """
 
+# On Windows, PyTorch must be imported before pandas, so the ml_models
+# package, which imports it first, is imported before everything else.
+import ml_models  # noqa: F401
+
+# isort: split
 import logging
 import os
+
+from pydantic import BaseModel
 
 import ml_models.data
 import ml_models.evaluation
 import ml_models.files
 import ml_models.registry
 import utils.config
-from pydantic import BaseModel
 
 
 class ConfigModel(BaseModel):

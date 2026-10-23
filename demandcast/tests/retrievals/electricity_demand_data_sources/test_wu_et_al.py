@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
+
 import utils.data_sources
 from retrievals.electricity_demand_data_sources import wu_et_al
 

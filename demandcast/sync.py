@@ -12,10 +12,11 @@ Description:
 
 from typing import Literal
 
+from pydantic import BaseModel, field_validator
+
 import publishing.gcs
 import utils.config
 import utils.paths
-from pydantic import BaseModel, field_validator
 
 
 class ConfigModel(BaseModel):

@@ -19,8 +19,9 @@ import os
 import cpi
 import pandas as pd
 import pycountry
-import utils.catalogue
 import yaml
+
+import utils.catalogue
 
 
 def _map_from_region_to_country(

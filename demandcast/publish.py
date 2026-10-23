@@ -11,10 +11,11 @@ Description:
 
 import os
 
+from pydantic import BaseModel, field_validator
+
 import publishing.zenodo
 import utils.config
 import utils.paths
-from pydantic import BaseModel, field_validator
 
 
 class ConfigModel(BaseModel):

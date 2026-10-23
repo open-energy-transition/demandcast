@@ -9,6 +9,7 @@ Description:
 import os
 
 import pytest
+
 import utils.paths
 
 CODE_FOLDER = os.path.abspath(

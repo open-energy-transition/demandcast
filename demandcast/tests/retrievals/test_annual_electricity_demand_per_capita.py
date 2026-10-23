@@ -15,6 +15,7 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
+
 import retrievals.annual_electricity_demand_per_capita as annual_demand
 import utils.paths
 from retrievals.socio_economic_data_sources import ember, world_bank

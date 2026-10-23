@@ -19,6 +19,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
+
 import retrievals.annual_electricity_demand_per_capita as annual_demand
 import utils.paths
 import utils.time_zones

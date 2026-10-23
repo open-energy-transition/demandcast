@@ -9,8 +9,9 @@ Description:
 
 import os
 
-import publish
 import pytest
+
+import publish
 import sync
 import utils.paths
 

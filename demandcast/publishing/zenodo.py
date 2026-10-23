@@ -29,9 +29,10 @@ from typing import Any
 
 import pandas as pd
 import requests
+import yaml
+
 import utils.config
 import utils.paths
-import yaml
 
 # The address of the API of the depositions of Zenodo, with "sandbox."
 # for its sandbox.

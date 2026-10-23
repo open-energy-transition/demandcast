@@ -12,8 +12,9 @@ from unittest.mock import patch
 
 import pytest
 import pytz
-import utils.time_zones
 from countryinfo import CountryNotFoundError
+
+import utils.time_zones
 
 
 def test_time_zones():

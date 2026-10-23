@@ -26,6 +26,7 @@ import threading
 import time
 
 import pandas as pd
+
 import utils.data_sources
 import utils.fetcher
 import utils.paths

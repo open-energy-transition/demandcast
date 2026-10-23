@@ -17,13 +17,13 @@ import os
 from typing import Literal, cast
 
 import pandas as pd
-import utils.geospatial
-import utils.paths
-import utils.shapes
 import xarray
 
 import retrievals.gridded_gdp_ppp
 import retrievals.gridded_population
+import utils.geospatial
+import utils.paths
+import utils.shapes
 
 # The retrieval of each gridded variable.
 RETRIEVALS = {

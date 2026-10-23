@@ -12,10 +12,11 @@ import os
 import sys
 from typing import Literal
 
-import check
-import checks.flags
 import pandas as pd
 import pytest
+
+import check
+import checks.flags
 import utils.config
 import utils.data_sources
 import utils.paths

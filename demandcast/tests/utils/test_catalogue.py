@@ -7,6 +7,7 @@ Description:
 """
 
 import pytest
+
 import utils.catalogue
 
 

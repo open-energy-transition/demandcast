@@ -19,11 +19,12 @@ from unittest.mock import Mock, call, create_autospec
 import pandas as pd
 import pytest
 import requests
+import yaml
+
 import retrievals.electricity_demand
 import utils.fetcher
 import utils.paths
 import utils.raw_data
-import yaml
 
 # Freeze today, the end date of the entities of the data sources.
 pytestmark = pytest.mark.usefixtures("frozen_now", "longitude")

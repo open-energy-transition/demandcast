@@ -23,11 +23,12 @@ import os
 from collections.abc import Callable
 
 import pandas as pd
+from tqdm import tqdm
+
 import utils.availability
 import utils.paths
 import utils.time_series
 import utils.time_zones
-from tqdm import tqdm
 
 
 @dataclasses.dataclass(frozen=True)

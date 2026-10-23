@@ -27,17 +27,18 @@ import logging
 import os
 from typing import Any
 
+import pandas as pd
+from tqdm import tqdm
+
 import cleaning.combining
 import cleaning.electricity_demand
 import cleaning.flags
-import pandas as pd
 import utils.availability
 import utils.data_sources
 import utils.fetcher
 import utils.paths
 import utils.raw_data
 import utils.time_series
-from tqdm import tqdm
 
 
 def _process_series(

@@ -18,6 +18,7 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 import requests
+
 import utils.fetcher
 import utils.paths
 

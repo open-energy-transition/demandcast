@@ -26,6 +26,7 @@ import logging
 
 import nepali_datetime
 import pandas as pd
+
 import utils.fetcher
 
 # Bikram Sambat year for dataset (April 2017 to April 2018).

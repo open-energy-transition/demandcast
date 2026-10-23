@@ -12,6 +12,7 @@ import os
 from unittest.mock import patch
 
 import pytest
+
 from publishing import zenodo
 
 API = "https://zenodo.org/api/deposit/depositions"

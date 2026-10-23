@@ -13,10 +13,11 @@ import os
 import sys
 import types
 
+import pytest
+
 import check
 import ml_models.registry
 import plot
-import pytest
 import retrieve
 import utils.config
 import utils.paths

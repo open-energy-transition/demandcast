@@ -39,6 +39,7 @@ import datetime
 import logging
 
 import pandas as pd
+
 import utils.fetcher
 
 # The embedded generation that supplies demand outside of the national

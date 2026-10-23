@@ -12,13 +12,14 @@ Description:
 
 from unittest.mock import patch
 
-import ml_models.data
-import ml_models.evaluation
-import ml_models.registry
 import numpy as np
 import pandas as pd
 import pytest
 from pydantic import BaseModel
+
+import ml_models.data
+import ml_models.evaluation
+import ml_models.registry
 
 _ENTITIES = ["DEU", "FRA", "GBR"]
 _SCORING_METRIC = "neg_mean_absolute_percentage_error"

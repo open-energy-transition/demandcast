@@ -13,11 +13,12 @@ import sys
 from types import SimpleNamespace
 from unittest.mock import patch
 
-import assemble
 import pytest
+import yaml
+
+import assemble
 import retrieve
 import utils.paths
-import yaml
 from benchmark import run
 
 SCRIPTS = {"retrieve.py": retrieve, "assemble.py": assemble}

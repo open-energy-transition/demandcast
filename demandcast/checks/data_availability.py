@@ -25,11 +25,12 @@ import os
 
 import pandas as pd
 import pycountry
+import yaml
+
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
 import utils.paths
 import utils.shapes
-import yaml
 from retrievals.socio_economic_data_sources import iiasa, world_bank
 
 

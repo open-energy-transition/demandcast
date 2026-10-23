@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 import matplotlib.pyplot as plt
 import pytest
+
 import utils.paths
 from figures import ml_results
 

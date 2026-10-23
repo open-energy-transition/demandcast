@@ -65,6 +65,7 @@ import hashlib
 import os
 
 import pandas as pd
+
 import utils.fetcher
 import utils.time_series
 

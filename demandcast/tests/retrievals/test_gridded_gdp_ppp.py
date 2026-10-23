@@ -11,8 +11,9 @@ import os
 
 import numpy as np
 import pytest
-import utils.paths
 import xarray
+
+import utils.paths
 from retrievals import gridded_gdp_ppp
 
 

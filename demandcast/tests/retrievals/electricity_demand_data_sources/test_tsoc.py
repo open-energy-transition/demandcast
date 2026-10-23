@@ -11,6 +11,7 @@ import datetime
 import numpy as np
 import pandas as pd
 import pytest
+
 from retrievals.electricity_demand_data_sources import tsoc
 
 URL_2019 = (

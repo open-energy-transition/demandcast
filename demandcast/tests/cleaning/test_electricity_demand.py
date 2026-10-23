@@ -9,10 +9,11 @@ Description:
 
 import os
 
-import cleaning.electricity_demand
 import numpy as np
 import pandas as pd
 import pytest
+
+import cleaning.electricity_demand
 import utils.paths
 
 pytestmark = pytest.mark.usefixtures("frozen_now")

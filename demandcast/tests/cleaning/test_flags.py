@@ -10,12 +10,13 @@ Description:
 
 import os
 
-import cleaning.flags
 import geopandas
 import numpy as np
 import pandas as pd
 import pytest
 import shapely
+
+import cleaning.flags
 import utils.paths
 import utils.shapes
 
