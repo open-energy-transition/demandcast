@@ -532,13 +532,15 @@ def read_all_codes_with_electricity_demand_data() -> list[str]:
     This function reads the codes of all countries and subdivisions for
     which high-resolution electricity demand data is available. It
     checks all yaml files in the retrieval scripts folder and combines
-    the codes from all files, removing duplicates.
+    the codes from all files, removing duplicates, in alphabetical
+    order, so that the codes are processed in the same order in every
+    run.
 
     Returns
     -------
     list[str]
         A list of codes of all countries and subdivisions for which
-        high-resolution electricity demand data is available.
+        high-resolution electricity demand data is available, sorted.
     """
     # Get the available data sources of electricity demand data.
     data_sources = read_data_sources()
@@ -553,8 +555,8 @@ def read_all_codes_with_electricity_demand_data() -> list[str]:
         # Append the codes to the list.
         codes.extend(file_codes)
 
-    # Remove duplicates and return the list of codes.
-    return list(set(codes))
+    # Remove duplicates and return the sorted list of codes.
+    return sorted(set(codes))
 
 
 def read_date_ranges_of_electricity_demand_in_data_source(

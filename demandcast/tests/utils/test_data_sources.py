@@ -128,6 +128,7 @@ def test_read_codes():
     assert isinstance(all_codes, list)
     assert "FRA" in all_codes
     assert "USA_TEX" in all_codes
+    assert all_codes == sorted(set(all_codes))
 
 
 def test_read_codes_errors():
