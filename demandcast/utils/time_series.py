@@ -3,15 +3,14 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to harmonize time series data by
-    adding missing time steps, resampling the time resolution, and
-    interpolating missing values. It also includes functions to check
-    data quality and clean data.
+    This module provides functions for time series: the split of a
+    period into shorter ones, the local time of the starts of
+    intervals, the local years, the conversion of yearly values into
+    hourly ones and their saving, and the cleaning of the data.
 """
 
 import datetime
 import itertools
-import logging
 import os
 from typing import Any
 
@@ -95,148 +94,6 @@ def localize_interval_starts(
     )
     localized_time_series.index = localized_time_series.index + interval
     return localized_time_series
-
-
-def add_missing_time_steps(
-    time_series: pd.Series, local_time_zone: datetime.tzinfo
-) -> pd.Series:
-    """
-    Add the missing time steps to a time series.
-
-    This function checks if the time series has the expected number of
-    time steps for a given year and adds the missing time steps if
-    necessary. It assumes that the time series has a constant time
-    resolution and that the time series is in the local time zone.
-
-    Parameters
-    ----------
-    time_series : pandas.Series
-        Original time series.
-    local_time_zone : datetime.tzinfo
-        Local time zone of the time series.
-
-    Returns
-    -------
-    time_series : pandas.Series
-        Time series of interest with the missing time steps added.
-    """
-    # Get the time resolution of the time series.
-    time_resolution = time_series.index.to_series().diff().min()
-
-    # Get the year of the time series.
-    year = pd.DatetimeIndex(time_series.index).year[0]
-
-    # Calculate the expected number of time steps in the time series.
-    expected_number_of_time_steps = int(
-        (8760 if year % 4 != 0 else 8784)
-        * pd.Timedelta("1h")
-        / time_resolution
-    )
-
-    # Check if there are less time steps than expected.
-    if len(time_series) < expected_number_of_time_steps:
-        logging.warning(
-            f"Added {expected_number_of_time_steps - len(time_series)} "
-            f"missing time steps out of {expected_number_of_time_steps}."
-        )
-
-        # Define the full time index for the time series in the local
-        # time zone.
-        full_local_time_index = pd.date_range(
-            start=str(year),
-            end=str(year + 1),
-            freq=time_resolution,
-            tz=local_time_zone,
-        )[:-1]
-
-        # Reindex the time series to include the missing time steps.
-        time_series = time_series.reindex(full_local_time_index)
-
-    return time_series
-
-
-def resample_time_resolution(
-    time_series: pd.Series, target_time_resolution: str = "1h"
-) -> pd.Series:
-    """
-    Resample the time resolution of a time series.
-
-    This function checks if the time resolution of the time series is
-    less than the target time resolution and resamples the time series
-    to the target time resolution if necessary. It assumes that the
-    time series has a constant time resolution.
-
-    Parameters
-    ----------
-    time_series : pandas.Series
-        Original time series.
-    target_time_resolution : str, optional
-        Target time resolution of the time series.
-
-    Returns
-    -------
-    time_series : pandas.Series
-        Resampled time series.
-    """
-    # Get the time resolution of the time series.
-    time_resolution = time_series.index.to_series().diff().min()
-
-    # Check if the time resolution of the time series is less than the
-    # target time resolution.
-    if time_resolution < pd.Timedelta(target_time_resolution):
-        # Resample the time series to the target time resolution.
-        time_series = time_series.resample(target_time_resolution).mean()
-
-        # Write the resampling information to the log file.
-        logging.warning(
-            "Resampled the time series from "
-            f"{time_resolution.total_seconds() / 3600}h to "
-            f"{target_time_resolution}."
-        )
-
-    return time_series
-
-
-def linearly_interpolate(time_series: pd.Series) -> pd.Series:
-    """
-    Linearly interpolate the missing values in a time series.
-
-    This function replaces isolated NaN values in the time series with
-    the average of the previous and next values. It assumes that the
-    time series has a constant time resolution and that the missing
-    values are isolated (i.e., not part of a larger block of NaN
-    values).
-
-    Parameters
-    ----------
-    time_series : pandas.Series
-        Original time series.
-
-    Returns
-    -------
-    time_series : pandas.Series
-        Time series of interest with the missing values interpolated.
-    """
-    # Get the number of original non-null values.
-    original_non_null_values = time_series.notna().sum()
-
-    # Where there is a NaN value, replace it with the average of the
-    # previous and next values. This takes care of replacing isolated
-    # NaN values.
-    time_series[time_series.isna()] = (
-        time_series.shift(-1) + time_series.shift(1)
-    ) / 2
-
-    # Get the number of interpolated values.
-    interpolated_values = time_series.notna().sum() - original_non_null_values
-
-    if interpolated_values > 0:
-        # Write the number of interpolated values to the log file.
-        logging.warning(
-            f"Interpolated {interpolated_values} isolated missing values."
-        )
-
-    return time_series
 
 
 def get_local_year_bounds(

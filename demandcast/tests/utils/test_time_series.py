@@ -9,7 +9,6 @@ Description:
 import datetime
 import itertools
 
-import numpy as np
 import pandas as pd
 import pytest
 import pytz
@@ -122,103 +121,6 @@ def test_localize_interval_starts_with_ambiguous_starts():
     )
 
     assert pd.isna(result.index).all()
-
-
-def test_add_missing_time_steps(sample_time_series):
-    """
-    Test if the function adds missing time steps to the time series.
-
-    This test checks if the function correctly identifies and adds
-    missing time steps to the time series, ensuring that the length of
-    the time series remains the same after adding the missing time step.
-
-    Parameters
-    ----------
-    sample_time_series : pandas.Series
-        A pandas Series representing a time series with a datetime index
-        and some missing values.
-    """
-    # Store the original length of the time series.
-    original_length = len(sample_time_series)
-
-    # Remove a time step.
-    time_series = sample_time_series.drop(sample_time_series.index[20])
-
-    # Count the number of missing data points.
-    missing_data_points = time_series.isna().sum()
-
-    # Add the missing time step back.
-    filled_time_series = utils.time_series.add_missing_time_steps(
-        time_series, local_time_zone
-    )
-
-    # Check if the missing time step is added.
-    assert len(filled_time_series) == original_length
-
-    # Ensure that there is one additional missing data point.
-    assert filled_time_series.isna().sum() == missing_data_points + 1
-
-
-def test_resample_time_resolution(sample_time_series):
-    """
-    Test if the function resamples the time series.
-
-    This test checks if the function correctly resamples the time series
-    to a specified time resolution, ensuring that the length of the
-    resampled time series matches the expected number of time steps for
-    the given resolution. For a one-year-long time series with hourly
-    resolution, the expected number of time steps is 8760.
-
-    Parameters
-    ----------
-    sample_time_series : pandas.Series
-        A pandas Series representing a time series with a datetime index
-        and some missing values.
-    """
-    # Resample to hourly resolution.
-    resampled_time_series = utils.time_series.resample_time_resolution(
-        sample_time_series, "1h"
-    )
-
-    # The one-year-long time series resampled to hourly resolution
-    # should have 8760 time steps.
-    assert len(resampled_time_series) == 8760
-
-
-def test_linearly_interpolate(sample_time_series):
-    """
-    Test if the function linearly interpolates missing values.
-
-    This test checks if the function correctly interpolates missing
-    values in the time series, ensuring that only isolated missing
-    values are interpolated. It also verifies that the interpolation is
-    performed correctly by checking specific indices in the time series.
-
-    Parameters
-    ----------
-    sample_time_series : pandas.Series
-        A pandas Series representing a time series with a datetime index
-        and some missing values.
-    """
-    # Check the data point expected to be interpolated.
-    assert np.isnan(sample_time_series.iloc[10])
-
-    # Count the number of missing data points.
-    missing_data_points = sample_time_series.isna().sum()
-
-    # Interpolate missing values where the two surrounding values are
-    # known.
-    interpolated_time_series = utils.time_series.linearly_interpolate(
-        sample_time_series
-    )
-
-    # Check if only isolated missing values are interpolated.
-    assert interpolated_time_series.isna().sum() == missing_data_points - 1
-
-    # Check correct interpolation.
-    assert np.isnan(interpolated_time_series.iloc[2])
-    assert np.isnan(interpolated_time_series.iloc[3])
-    assert interpolated_time_series.iloc[10] == 10
 
 
 def test_convert_from_yearly_to_hourly():
