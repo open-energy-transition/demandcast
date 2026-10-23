@@ -1,7 +1,7 @@
 variable: temperature
 electricity_data_source:
 code:
-file: config/benchmark_codes.yaml
+file: benchmark/codes.yaml
 year:
 start_year: 2021
 end_year: 2023

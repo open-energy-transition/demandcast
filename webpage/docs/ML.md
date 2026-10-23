@@ -180,6 +180,16 @@ On this benchmark, XGBoost outperforms LSTM by a wide margin on every entity. Th
 - LSTM: default hyperparameters (`n_timesteps=24`, `n_units=32`, `n_layers=1`, `epochs=5`)
 - XGBoost: default hyperparameters (see [XGBoost Configuration](#xgboost-configuration))
 
+**Reproducing the benchmark:** `demandcast/benchmark/` has the configuration files of the retrieval and assembly of the benchmark data, and a script that runs them one after the other and stops at the first step that fails:
+
+```bash
+cd demandcast
+uv run python -m benchmark.run                 # all six steps
+uv run python -m benchmark.run --from-step 5   # resume from the temperature
+```
+
+The assembled data is saved in `data/assembled/`; train and validate each model on it as described below, with `reserve_testing_set: true`.
+
 ## Training and Validation
 
 The machine learning pipeline in DemandCast is managed through several Python scripts located in the `demandcast/` directory. Each script utilizes a configuration file to specify parameters such as data paths, model settings, and evaluation metrics. All scripts accept only the path to a configuration file:

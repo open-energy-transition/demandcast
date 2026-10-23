@@ -1,7 +1,7 @@
 variable: electricity_demand
 electricity_data_source: entsoe
 code:
-file: config/benchmark_codes.yaml
+file: benchmark/codes.yaml
 year:
 start_year:
 end_year:

@@ -1,5 +1,5 @@
 target_use: training
-file: config/benchmark_codes.yaml
+file: benchmark/codes.yaml
 start_year: 2021
 end_year: 2023
 scenario_for_annual_electricity_demand_per_capita:
