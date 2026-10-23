@@ -94,7 +94,7 @@ def test_cross_validate_returns_one_row_per_entity(algorithm):
         _model_config(algorithm),
     )
 
-    assert mapes["Entity Code"].tolist() == _ENTITIES
+    assert mapes["Entity code"].tolist() == _ENTITIES
     assert (mapes[["Training MAPE", "Testing MAPE"]] >= 0).all().all()
 
 

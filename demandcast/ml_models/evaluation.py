@@ -295,7 +295,7 @@ def cross_validate(
     # The scores of scikit-learn are negative errors, such as the
     # negative MAPE.
     mapes = pd.DataFrame(
-        folds, columns=["Entity Code", "Training MAPE", "Testing MAPE"]
+        folds, columns=["Entity code", "Training MAPE", "Testing MAPE"]
     )
     mapes[["Training MAPE", "Testing MAPE"]] *= -1
     log_summary("Training", mapes["Training MAPE"])
