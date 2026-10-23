@@ -11,6 +11,7 @@ Set the `figure` field in `config/plot_config.yaml` to specify the type of plot 
 - `map_of_available_entities` to visualize the countries and subdivisions for which electricity demand data has been retrieved.
 - `data_availability` to visualize the availability of electricity demand data clustered by GDP, PPP per capita and annual electricity demand per capita.
 - `ml_results` to visualize the results of machine learning models and their error metrics.
+- `status` to draw the figures and count the numbers of the [current state](status.md) page: the map and the data availability figures, and the countries, subdivisions, data sources and years of data. It copies them into `webpage/docs/status/` and writes the numbers into the README, between the markers `<!-- status:start -->` and `<!-- status:end -->`. Run it from a clone of the repository, and commit the files that it changes.
 
 ## Machine learning model results
 

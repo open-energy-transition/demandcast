@@ -305,6 +305,32 @@ def _get_occurrences(
     return occurrence
 
 
+def _get_height_of_bar_charts(
+    *occurrences: dict[str, dict[str, float]],
+) -> float:
+    """
+    Get the height of the axes of the bar charts.
+
+    Parameters
+    ----------
+    *occurrences : dict[str, dict[str, float]]
+        The years of data of each continent in each level, of each bar
+        chart.
+
+    Returns
+    -------
+    float
+        The height of the tallest bar, the sum of the years of all the
+        continents in a level, plus 5%, so that the charts have the same
+        scale.
+    """
+    return 1.05 * max(
+        sum(occurrence[continent][level] for continent in occurrence)
+        for occurrence in occurrences
+        for level in next(iter(occurrence.values()))
+    )
+
+
 def _add_bar_chart(
     ax: matplotlib.axes.Axes,
     levels: dict[str, tuple[int, int | float]],
@@ -504,6 +530,11 @@ def draw(data: FigureData, figure_directory: str) -> None:
     # Set the font size.
     plt.rc("font", size=12)
 
+    # The height of the bar charts, which share their scale.
+    height = _get_height_of_bar_charts(
+        data.gdp_occurrence, data.electricity_demand_occurrence
+    )
+
     # Create a figure to plot the GDP coverage.
     fig, ax0 = plt.subplots(figsize=(15, 7))
     ax0.set_axis_off()
@@ -521,7 +552,7 @@ def draw(data: FigureData, figure_directory: str) -> None:
 
     # Set the y-axis limit to the maximum cumulative height and the
     # label.
-    ax.set_ylim(0, 520)
+    ax.set_ylim(0, height)
     ax.set_ylabel("Number of years", fontsize=14)
 
     # Add the bar chart for the GDP coverage.
@@ -535,7 +566,7 @@ def draw(data: FigureData, figure_directory: str) -> None:
         COLORS,
     )
     # Set the y-axis limit to the maximum cumulative height.
-    ax.set_ylim(0, 520)
+    ax.set_ylim(0, height)
 
     # Add scatter plot for the GDP and annual demand per capita data.
     ax = fig.add_axes((0.55, 0.0, 0.45, 1))

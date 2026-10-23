@@ -96,10 +96,10 @@ The table below provides an overview of the data sources currently used in Deman
 |National GDP per capita, PPP|[World Bank](https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD), [IMF](https://data.imf.org/en/Data-Explorer?datasetUrn=IMF.RES:WEO(6.0.0)&INDICATOR=NGDPRPPPPC)|[IIASA SSP Database](https://data.ece.iiasa.ac.at/ssp)|
 |National annual electricity<br>demand per capita|[Ember](https://ember-energy.org/data/yearly-electricity-data/), completed by the [World Bank](https://data.worldbank.org/indicator/EG.USE.ELEC.KH.PC) scaled to Ember|[IIASA SSP Database](https://tntcat.iiasa.ac.at/SspDb)|
 
-The map below shows the countries and subdivisions for which retrieval modules of electricity demand data are currently available in DemandCast.
+The map below shows the countries and subdivisions for which retrieval modules of electricity demand data are currently available in DemandCast. The [current state](status.md) page gives their numbers, shows them by GDP and electricity demand per capita, and shows the forecast errors of the models.
 
-![Countries and subdivisions for which retrieval modules of electricity demand data are available](figures/available_entities_light_mode.png#only-light)
-![Countries and subdivisions for which retrieval modules of electricity demand data are available](figures/available_entities_dark_mode.png#only-dark)
+![Countries and subdivisions for which retrieval modules of electricity demand data are available](status/available_entities_light_mode.png#only-light)
+![Countries and subdivisions for which retrieval modules of electricity demand data are available](status/available_entities_dark_mode.png#only-dark)
 
 You can find the code that we used to retrieve the data in their respective files inside the [demandcast/retrievals](https://github.com/open-energy-transition/demandcast/tree/main/demandcast/retrievals) folder.
 
