@@ -231,10 +231,7 @@ def get_point_series(
         if not _is_outdated(file_path, saved):
             return saved
 
-    logging.info(
-        f"Downloading the {variable} of the point at {longitude}, "
-        f"{latitude} from the CDS."
-    )
+    logging.info(f"Downloading the {variable} of a point from the CDS.")
     if saved is None:
         series = _download(variable, longitude, latitude, FIRST_DAY)
     else:
