@@ -7,6 +7,8 @@ Description:
 """
 
 import email.message
+import os
+import pathlib
 import re
 import traceback
 import urllib.error
@@ -18,147 +20,70 @@ import pandas as pd
 import pytest
 import requests
 import utils.fetcher
+import utils.paths
 from entsoe.exceptions import NoMatchingDataError
 from entsoe.mappings import Area
 
 
-def test_fetch_data_csv():
-    """
-    Test fetching CSV data.
-
-    This test mocks the pandas read_csv function to return a DataFrame.
-    It checks that the fetch_data function returns a DataFrame when
-    fetching CSV data.
-    """
-    with patch("pandas.read_csv") as mock_read_csv:
-        mock_read_csv.return_value = pd.DataFrame({"a": [1]})
-        dataset = utils.fetcher.fetch_data(
-            "http://example.com/file.csv", "csv"
+@pytest.mark.parametrize(
+    ("content_type", "reader"), [("csv", "read_csv"), ("excel", "read_excel")]
+)
+def test_fetch_dataframe_of_a_file(content_type, reader):
+    """Test that a CSV or Excel file is read from its URL by pandas."""
+    table = pd.DataFrame({"a": [1]})
+    with patch(f"pandas.{reader}", return_value=table) as mock_read:
+        dataset = utils.fetcher.fetch_dataframe(
+            "http://example.com/file", content_type, csv_kwargs={"sep": ";"}
         )
-        assert isinstance(dataset, pd.DataFrame)
+
+    assert dataset is table
+    assert mock_read.call_args.args == ("http://example.com/file",)
 
 
-def test_fetch_data_excel():
-    """
-    Test fetching Excel data.
-
-    This test mocks the pandas read_excel function to return a
-    DataFrame. It checks that the fetch_data function returns a
-    DataFrame when fetching Excel data.
-    """
-    with patch("pandas.read_excel") as mock_read_excel:
-        mock_read_excel.return_value = pd.DataFrame({"a": [1]})
-        dataset = utils.fetcher.fetch_data(
-            "http://example.com/file.xlsx", "excel"
+def test_fetch_of_each_type():
+    """Test the table, Excel file, text and response of a request."""
+    excel_binary = BytesIO()
+    with pd.ExcelWriter(excel_binary) as writer:
+        pd.DataFrame({"a": [10, 20], "b": [30, 40]}).to_excel(
+            writer, index=False
         )
-        assert isinstance(dataset, pd.DataFrame)
 
-
-def test_fetch_data_html_urllib():
-    """
-    Test fetching HTML data using urllib.
-
-    This test mocks the urllib.request.urlopen function to return a
-    response with HTML content. It checks that the fetch_data function
-    returns a string containing the HTML content.
-    """
-    with patch("urllib.request.urlopen") as mock_urlopen:
-        mock_urlopen.return_value.read.return_value = b"<html>Content</html>"
-        html_text = utils.fetcher.fetch_data(
-            "http://example.com",
-            "html",
-            read_with="urllib.request",
-            header_params={"User-Agent": "test"},
-        )
-        assert isinstance(html_text, str)
-        assert "<html>" in html_text
-
-
-def test_fetch_data_html_requests_get():
-    """
-    Test fetching HTML data using requests.get to read various format.
-
-    This test mocks the requests.get function to read various formats
-    of HTML data, including CSV, text, and plain response.
-    """
     with patch("requests.get") as mock_get:
-        # Test reading of HTML content with tabular data in CSV format.
         mock_get.return_value.text = "col1,col2\n1,2"
-        dataset = utils.fetcher.fetch_data(
-            "http://example.com", "html", read_as="csv_table"
-        )
-        assert isinstance(dataset, pd.DataFrame)
+        assert utils.fetcher.fetch_dataframe(
+            "http://example.com", "html"
+        ).columns.tolist() == ["col1", "col2"]
 
-        # Prepare a mock Excel binary.
-        df_original = pd.DataFrame({"a": [10, 20], "b": [30, 40]})
-        excel_binary = BytesIO()
-        with pd.ExcelWriter(excel_binary) as writer:
-            df_original.to_excel(writer, index=False)
-        excel_binary.seek(0)
-
-        # Test reading of HTML content with tabular data in Excel
-        # format.
         mock_get.return_value.content = excel_binary.getvalue()
-        dataset = utils.fetcher.fetch_data(
+        assert utils.fetcher.fetch_dataframe(
             "http://example.com", "html", read_as="excel_table"
+        )["b"].tolist() == [30, 40]
+        assert isinstance(
+            utils.fetcher.fetch_excel_file("http://example.com"), pd.ExcelFile
         )
-        assert isinstance(dataset, pd.DataFrame)
 
-        # Test reading of HTML content with tabular data as Excel file.
-        mock_get.return_value.content = excel_binary.getvalue()
-        dataset = utils.fetcher.fetch_data(
-            "http://example.com", "html", read_as="excel_file"
-        )
-        assert isinstance(dataset, pd.ExcelFile)
-
-        # Test reading HTML content with text.
         mock_get.return_value.text = "text content"
-        html_text = utils.fetcher.fetch_data(
-            "http://example.com", "html", read_as="text", encoding_type="utf-8"
+        assert (
+            utils.fetcher.fetch_text(
+                "http://example.com", encoding_type="utf-8"
+            )
+            == "text content"
         )
-        assert isinstance(html_text, str)
-        assert html_text == "text content"
+        assert mock_get.return_value.encoding == "utf-8"
 
-        # Test reading HTML content with plain format.
         mock_get.return_value = requests.Response()
         mock_get.return_value.status_code = 200
-        response = utils.fetcher.fetch_data(
-            "http://example.com", "html", read_as="plain"
+        assert isinstance(
+            utils.fetcher.fetch_response("http://example.com"),
+            requests.Response,
         )
-        assert isinstance(response, requests.Response)
 
 
-def test_fetch_data_html_requests_get_with_cookies():
+def test_fetch_with_cookies():
     """
-    Test fetching HTML data using requests.get with cookies.
+    Test that the cookies of the page are sent with the request.
 
-    This test mocks the requests.get and requests.Session functions to
-    simulate fetching data with cookies. It checks that the fetch_data
-    function returns a DataFrame.
-    """
-    with (
-        patch("requests.get") as mock_get,
-        patch("requests.Session") as mock_session,
-    ):
-        mock_get.return_value.text = "col1,col2\n1,2"
-        mock_session.return_value.cookies.get_dict.return_value = {
-            "sessionid": "12345"
-        }
-        dataset = utils.fetcher.fetch_data(
-            "http://example.com",
-            "html",
-            read_with="requests.get",
-            get_cookies=True,
-        )
-        assert isinstance(dataset, pd.DataFrame)
-
-
-def test_fetch_data_default_header_params_not_reused():
-    """
-    Test that default header parameters are not reused across calls.
-
-    This test validates that a first call with cookies enabled does not
-    leak a Cookie header into a later call that relies on defaults.
+    The headers of a call do not leak into a later call.
     """
     with (
         patch("requests.get") as mock_get,
@@ -169,60 +94,46 @@ def test_fetch_data_default_header_params_not_reused():
             "sessionid": "12345"
         }
 
-        utils.fetcher.fetch_data(
-            "http://example.com",
-            "html",
-            read_with="requests.get",
-            get_cookies=True,
+        utils.fetcher.fetch_dataframe(
+            "http://example.com", "html", get_cookies=True
         )
-        utils.fetcher.fetch_data(
-            "http://example.com",
-            "html",
-            read_with="requests.get",
-            get_cookies=False,
-        )
+        utils.fetcher.fetch_text("http://example.com")
 
-        first_headers = mock_get.call_args_list[0].kwargs["headers"]
-        second_headers = mock_get.call_args_list[1].kwargs["headers"]
-        assert first_headers == {"Cookie": "sessionid=12345"}
-        assert second_headers == {}
+    first_headers = mock_get.call_args_list[0].kwargs["headers"]
+    second_headers = mock_get.call_args_list[1].kwargs["headers"]
+    assert first_headers == {"Cookie": "sessionid=12345"}
+    assert second_headers == {}
 
 
-def test_fetch_data_html_requests_post_json():
-    """
-    Test fetching HTML data using requests.post with JSON response.
-
-    This test mocks the requests.post function to return a JSON response
-    containing a list of dictionaries. It checks that the fetch_data
-    function returns a DataFrame.
-    """
+def test_fetch_json_with_a_post_request():
+    """Test a table of a JSON response to a POST request with a body."""
     with patch("requests.post") as mock_post:
         mock_post.return_value.json = lambda: {"data": [{"a": 1}]}
-        dataset = utils.fetcher.fetch_data(
-            "http://example.com",
-            "html",
-            read_with="requests.post",
-            read_as="json",
-            json_keys=["data"],
-        )
-        assert isinstance(dataset, pd.DataFrame)
-
-
-def test_fetch_data_html_requests_post_with_a_json_body():
-    """Test that a JSON body is sent instead of the data."""
-    with patch("requests.post") as mock_post:
-        mock_post.return_value.json = lambda: {"items": [{"a": 1}]}
-        utils.fetcher.fetch_data(
+        dataset = utils.fetcher.fetch_dataframe(
             "http://example.com",
             "html",
             read_with="requests.post",
             read_as="json",
             post_json={"startDate": "2024-01-01T00:00:00+03:00"},
-            json_keys=["items"],
+            json_keys=["data"],
         )
+
+    assert dataset["a"].tolist() == [1]
     assert mock_post.call_args.kwargs["json"] == {
         "startDate": "2024-01-01T00:00:00+03:00"
     }
+
+
+def test_fetch_text_with_a_post_request():
+    """Test that the data of a POST request is sent."""
+    with patch("requests.post") as mock_post:
+        mock_post.return_value.text = "ticket"
+        text = utils.fetcher.fetch_text(
+            "http://example.com", "POST", post_data_params={"user": "a"}
+        )
+
+    assert text == "ticket"
+    assert mock_post.call_args.kwargs["data"] == {"user": "a"}
 
 
 def test_redact_hides_the_passwords(monkeypatch):
@@ -243,14 +154,12 @@ def test_redact_hides_the_encoded_passwords(monkeypatch):
     ) == ("username=user&password=*** or ***")
 
 
-def test_fetch_data_html_requests_post_aspx():
+def test_fetch_from_an_aspx_page():
     """
-    Test fetching HTML data from an ASPX page using requests.post.
+    Test that the form parameters of an ASPX page are sent.
 
-    This test mocks the requests.get and requests.post functions to
-    simulate fetching data from an ASPX page. It checks that the
-    fetch_data function correctly retrieves the viewstate and
-    eventvalidation values, and returns a DataFrame.
+    The view state and the event validation of the page are read with a
+    GET request and sent with the POST request.
     """
     with (
         patch("requests.get") as mock_get,
@@ -261,72 +170,54 @@ def test_fetch_data_html_requests_post_aspx():
             <input id="__EVENTVALIDATION" value="EV" />
         """
         mock_post.return_value.text = "col1,col2\n1,2"
-        dataset = utils.fetcher.fetch_data(
+        dataset = utils.fetcher.fetch_dataframe(
             "http://example.com",
             "html",
             read_with="requests.post",
             query_aspx_webpage=True,
         )
-        assert isinstance(dataset, pd.DataFrame)
+
+    assert dataset.columns.tolist() == ["col1", "col2"]
+    assert mock_post.call_args.kwargs["data"]["__VIEWSTATE"] == "VS"
 
 
-def test_fetch_data_invalid_arguments():
-    """
-    Test fetch_data with invalid arguments.
-
-    This test checks that the fetch_data function raises ValueError
-    when provided with unsupported formats or read methods.
-    """
+def test_fetch_dataframe_with_invalid_arguments():
+    """Test that the options that are not supported are errors."""
     with pytest.raises(
         ValueError, match="The content type unsupported is not supported"
     ):
-        utils.fetcher.fetch_data("http://example.com", "unsupported")
-    with (
-        patch("utils.fetcher.requests.Session"),
-        patch("utils.fetcher.requests.get"),
-        pytest.raises(
-            ValueError, match="The read_as parameter unknown is not supported"
-        ),
+        utils.fetcher.fetch_dataframe(
+            "http://example.com",
+            "unsupported",  # type: ignore[arg-type]
+        )
+    with pytest.raises(
+        ValueError, match="The read_as parameter unknown is not supported"
     ):
-        utils.fetcher.fetch_data(
-            "http://example.com", "html", read_as="unknown"
+        utils.fetcher.fetch_dataframe(
+            "http://example.com",
+            "html",
+            read_as="unknown",  # type: ignore[arg-type]
         )
     with pytest.raises(
         ValueError, match="Library unknown_lib is not supported"
     ):
-        utils.fetcher.fetch_data(
-            "http://example.com", "html", read_with="unknown_lib"
+        utils.fetcher.fetch_dataframe(
+            "http://example.com",
+            "html",
+            read_with="unknown_lib",  # type: ignore[arg-type]
+        )
+    with pytest.raises(TypeError, match="Unknown options of the request"):
+        utils.fetcher.fetch_dataframe(
+            "http://example.com", "html", read_as="json", jsonkeys=["a"]
         )
 
 
-def test_fetch_dataframe():
-    """Test that a table is fetched with the arguments of fetch_data."""
-    table = pd.DataFrame({"Load": [1000.5]})
-    with patch("utils.fetcher.fetch_data", return_value=table) as fetch_data:
-        result = utils.fetcher.fetch_dataframe(
-            "https://example.com/data.csv", "csv", csv_kwargs={"sep": ";"}
-        )
-
-    assert result is table
-    fetch_data.assert_called_once_with(
-        "https://example.com/data.csv", "csv", csv_kwargs={"sep": ";"}
-    )
-
-
-def test_fetch_dataframe_of_another_type():
-    """Test that data that is not a table is an error."""
-    with (
-        patch("utils.fetcher.fetch_data", return_value="<html></html>"),
-        pytest.raises(TypeError, match="expected a pandas DataFrame"),
-    ):
-        utils.fetcher.fetch_dataframe("https://example.com", "html")
-
-
-def test_read_manual_files(tmp_folders, tmp_path):
+def test_read_manual_files():
     """Test that the files with the prefix are read and joined."""
-    folder = tmp_path / "manual"
-    folder.mkdir()
-    tmp_folders["manually_downloaded_electricity_demand_folder"] = str(folder)
+    folder = pathlib.Path(
+        utils.paths.get_electricity_demand_folder("manual_downloads")
+    )
+    folder.mkdir(parents=True)
     (folder / "ABC_2.csv").write_text("load\n2\n")
     (folder / "ABC_1.csv").write_text("load\n1\n")
     (folder / "XYZ.csv").write_text("load\n9\n")
@@ -341,12 +232,13 @@ def test_read_manual_files(tmp_folders, tmp_path):
     assert dataset["load"].tolist() == [1, 2]
 
 
-@pytest.mark.parametrize("folder", ["", "missing"])
-def test_read_manual_files_without_files(tmp_folders, tmp_path, folder):
+@pytest.mark.parametrize("exists", [True, False])
+def test_read_manual_files_without_files(exists):
     """Test that the error says where and how to download the files."""
-    tmp_folders["manually_downloaded_electricity_demand_folder"] = str(
-        tmp_path / folder
-    )
+    if exists:
+        os.makedirs(
+            utils.paths.get_electricity_demand_folder("manual_downloads")
+        )
 
     with pytest.raises(
         FileNotFoundError,
@@ -484,14 +376,14 @@ def _http_error(status_code: int) -> requests.exceptions.HTTPError:
         _http_error(503),
     ],
 )
-def test_fetch_data_retries_temporary_errors(error, caplog):
+def test_fetch_retries_temporary_errors(error, caplog):
     """Test that the errors that can be temporary are retried."""
     with (
         patch("requests.get", side_effect=error) as mock_get,
         pytest.raises(ConnectionError, match="after 2 attempts"),
     ):
-        utils.fetcher.fetch_data(
-            "http://example.com", "html", retries=2, retry_delay=0
+        utils.fetcher.fetch_response(
+            "http://example.com", retries=2, retry_delay=0
         )
 
     assert mock_get.call_count == 2
@@ -500,7 +392,7 @@ def test_fetch_data_retries_temporary_errors(error, caplog):
 
 
 @pytest.mark.parametrize("status_code", [404, 410])
-def test_fetch_data_without_the_data(status_code):
+def test_fetch_without_the_data(status_code):
     """Test that data that does not exist is an error at once."""
     with (
         patch("requests.get", side_effect=_http_error(status_code)) as get,
@@ -510,28 +402,28 @@ def test_fetch_data_without_the_data(status_code):
             "http://example.com",
         ),
     ):
-        utils.fetcher.fetch_data(
-            "http://example.com", "html", retries=3, retry_delay=0
+        utils.fetcher.fetch_response(
+            "http://example.com", retries=3, retry_delay=0
         )
 
     assert get.call_count == 1
 
 
-def test_fetch_data_with_a_client_error():
+def test_fetch_with_a_client_error():
     """Test that a client error is an error at once, with its code."""
     with (
         patch("requests.get", side_effect=_http_error(403)) as mock_get,
         pytest.raises(ConnectionError, match="HTTP error 403") as error,
     ):
-        utils.fetcher.fetch_data(
-            "http://example.com", "html", retries=3, retry_delay=0
+        utils.fetcher.fetch_response(
+            "http://example.com", retries=3, retry_delay=0
         )
 
     assert not isinstance(error.value, utils.fetcher.DataNotFoundError)
     assert mock_get.call_count == 1
 
 
-def test_fetch_data_with_other_errors():
+def test_fetch_with_other_errors():
     """Test that the errors of the request or the data are raised."""
     with (
         patch(
@@ -539,8 +431,8 @@ def test_fetch_data_with_other_errors():
         ) as mock_get,
         pytest.raises(requests.exceptions.InvalidURL),
     ):
-        utils.fetcher.fetch_data(
-            "http://example.com", "html", retries=3, retry_delay=0
+        utils.fetcher.fetch_response(
+            "http://example.com", retries=3, retry_delay=0
         )
     assert mock_get.call_count == 1
 
@@ -552,12 +444,12 @@ def test_fetch_data_with_other_errors():
         patch("requests.get", return_value=response),
         pytest.raises(requests.exceptions.JSONDecodeError),
     ):
-        utils.fetcher.fetch_data(
+        utils.fetcher.fetch_dataframe(
             "http://example.com", "html", read_as="json", retry_delay=0
         )
 
 
-def test_fetch_data_hides_the_api_keys(monkeypatch, caplog):
+def test_fetch_hides_the_api_keys(monkeypatch, caplog):
     """Test that the API keys are not in the errors and the logs."""
     monkeypatch.setenv("EIA_API_KEY", "secret-value")
     url = "http://example.com/?api_key=secret-value"
@@ -569,7 +461,7 @@ def test_fetch_data_hides_the_api_keys(monkeypatch, caplog):
         ),
         pytest.raises(ConnectionError) as error,
     ):
-        utils.fetcher.fetch_data(url, "html", retries=1, retry_delay=0)
+        utils.fetcher.fetch_response(url, retries=1, retry_delay=0)
     assert "secret-value" not in str(error.value)
     assert "api_key=***" in str(error.value)
     # Nor in the traceback, which shows the errors that caused it.
@@ -583,7 +475,7 @@ def test_fetch_data_hides_the_api_keys(monkeypatch, caplog):
         patch("requests.get", side_effect=not_found),
         pytest.raises(utils.fetcher.DataNotFoundError) as error,
     ):
-        utils.fetcher.fetch_data(url, "html", retry_delay=0)
+        utils.fetcher.fetch_response(url, retry_delay=0)
     assert "secret-value" not in str(error.value)
     assert "secret-value" not in "".join(
         traceback.format_exception(error.value)
@@ -613,24 +505,20 @@ def test_fetch_data_hides_the_api_keys(monkeypatch, caplog):
         (TimeoutError(), ConnectionError, 2),
     ],
 )
-def test_fetch_data_urlopen_errors(error, expected_error, expected_calls):
-    """Test that the errors of urllib are handled like the others."""
+def test_fetch_urllib_errors(error, expected_error, expected_calls):
+    """Test that the errors of urllib, raised by pandas, are handled."""
     with (
-        patch("urllib.request.urlopen", side_effect=error) as mock_urlopen,
+        patch("pandas.read_csv", side_effect=error) as mock_read_csv,
         pytest.raises(expected_error),
     ):
-        utils.fetcher.fetch_data(
-            "http://example.com",
-            "html",
-            retries=2,
-            retry_delay=0,
-            read_with="urllib.request",
+        utils.fetcher.fetch_dataframe(
+            "http://example.com/data.csv", "csv", retries=2, retry_delay=0
         )
 
-    assert mock_urlopen.call_count == expected_calls
+    assert mock_read_csv.call_count == expected_calls
 
 
-def test_fetch_data_csv_with_a_connection_error():
+def test_fetch_csv_with_a_connection_error():
     """Test that a CSV file read from a URL is retried as well."""
     with (
         patch(
@@ -638,7 +526,7 @@ def test_fetch_data_csv_with_a_connection_error():
         ) as mock_read_csv,
         pytest.raises(ConnectionError, match="after 3 attempts"),
     ):
-        utils.fetcher.fetch_data(
+        utils.fetcher.fetch_dataframe(
             "http://example.com/data.csv", "csv", retry_delay=0, retries=3
         )
 

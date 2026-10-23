@@ -34,11 +34,9 @@ def test_read_and_check_ml_configuration():
     }
 
     with (
-        patch("utils.config.read_folders_structure") as mock_read_folders,
         patch("builtins.open", mock_open(read_data="dummy")),
         patch("utils.config.yaml.safe_load") as mock_yaml_load,
     ):
-        mock_read_folders.return_value = {"config_folder": "/config"}
         mock_yaml_load.return_value = sample_config
 
         config = utils.ml.read_and_check_ml_configuration()
@@ -71,11 +69,9 @@ def test_read_and_check_ml_configuration_minimal():
     }
 
     with (
-        patch("utils.config.read_folders_structure") as mock_read_folders,
         patch("builtins.open", mock_open(read_data="dummy")),
         patch("utils.config.yaml.safe_load") as mock_yaml_load,
     ):
-        mock_read_folders.return_value = {"config_folder": "/config"}
         mock_yaml_load.return_value = minimal_config
 
         config = utils.ml.read_and_check_ml_configuration()
@@ -99,11 +95,9 @@ def test_read_and_check_ml_configuration_error():
     }
 
     with (
-        patch("utils.config.read_folders_structure") as mock_read_folders,
         patch("builtins.open", mock_open(read_data="dummy")),
         patch("utils.config.yaml.safe_load") as mock_yaml_load,
     ):
-        mock_read_folders.return_value = {"config_folder": "/config"}
         mock_yaml_load.return_value = invalid_config
 
         with pytest.raises(ValueError, match="Configuration validation error"):
@@ -130,12 +124,9 @@ def test_get_trained_model_path_without_provided_path():
     trained model file.
     """
     with (
-        patch("utils.config.read_folders_structure") as mock_read_folders,
+        patch("utils.paths.get_models_folder", return_value="/models"),
         patch("os.listdir") as mock_listdir,
     ):
-        mock_read_folders.return_value = {
-            "trained_ml_models_folder": "/models"
-        }
         mock_listdir.return_value = [
             "xgboost_model_20240101_120000.json",
             "xgboost_model_20240102_120000.json",
@@ -157,12 +148,9 @@ def test_get_trained_model_path_no_files_found():
     trained model files are found.
     """
     with (
-        patch("utils.config.read_folders_structure") as mock_read_folders,
+        patch("utils.paths.get_models_folder", return_value="/models"),
         patch("os.listdir") as mock_listdir,
     ):
-        mock_read_folders.return_value = {
-            "trained_ml_models_folder": "/models"
-        }
         mock_listdir.return_value = []
 
         with pytest.raises(FileNotFoundError):
@@ -177,12 +165,9 @@ def test_get_trained_model_path_pt_extension():
     the latest by datetime stamp.
     """
     with (
-        patch("utils.config.read_folders_structure") as mock_read_folders,
+        patch("utils.paths.get_models_folder", return_value="/models"),
         patch("os.listdir") as mock_listdir,
     ):
-        mock_read_folders.return_value = {
-            "trained_ml_models_folder": "/models"
-        }
         mock_listdir.return_value = [
             "lstm_model_20240101_120000.pt",
             "lstm_model_20240102_120000.pt",
@@ -204,12 +189,9 @@ def test_get_trained_model_path_xgboost_unchanged_with_pt_present():
     fully separated.
     """
     with (
-        patch("utils.config.read_folders_structure") as mock_read_folders,
+        patch("utils.paths.get_models_folder", return_value="/models"),
         patch("os.listdir") as mock_listdir,
     ):
-        mock_read_folders.return_value = {
-            "trained_ml_models_folder": "/models"
-        }
         mock_listdir.return_value = [
             "xgboost_model_20240101_120000.json",
             "lstm_model_20240103_120000.pt",
@@ -242,10 +224,9 @@ def test_get_assemble_data_path_without_provided_path():
     assembled data file.
     """
     with (
-        patch("utils.config.read_folders_structure") as mock_read_folders,
+        patch("utils.paths.get_assembled_folder", return_value="/data"),
         patch("os.listdir") as mock_listdir,
     ):
-        mock_read_folders.return_value = {"assembled_data_folder": "/data"}
         mock_listdir.return_value = [
             "assembled_data_20240101_120000.parquet",
             "assembled_data_20240102_120000.parquet",
@@ -267,10 +248,9 @@ def test_get_assemble_data_path_no_files_found():
     assembled data files are found.
     """
     with (
-        patch("utils.config.read_folders_structure") as mock_read_folders,
+        patch("utils.paths.get_assembled_folder", return_value="/data"),
         patch("os.listdir") as mock_listdir,
     ):
-        mock_read_folders.return_value = {"assembled_data_folder": "/data"}
         mock_listdir.return_value = []
 
         with pytest.raises(FileNotFoundError):
@@ -613,14 +593,13 @@ def test_prepare_split_datasets():
     )
 
     with (
-        patch("utils.ml.read_and_check_ml_configuration") as mock_read_config,
         patch("pandas.read_parquet") as mock_read_parquet,
     ):
-        mock_read_config.return_value = sample_config
         mock_read_parquet.return_value = sample_data
 
         result = utils.ml.prepare_split_datasets(
             "/path/to/data.parquet",
+            sample_config,
             testing_set=True,
             validation_set=True,
         )
@@ -658,14 +637,13 @@ def test_prepare_split_datasets_with_training_set_only():
     )
 
     with (
-        patch("utils.ml.read_and_check_ml_configuration") as mock_read_config,
         patch("pandas.read_parquet") as mock_read_parquet,
     ):
-        mock_read_config.return_value = sample_config
         mock_read_parquet.return_value = sample_data
 
         result = utils.ml.prepare_split_datasets(
             "/path/to/data.parquet",
+            sample_config,
             testing_set=False,
             validation_set=False,
         )
@@ -702,14 +680,13 @@ def test_prepare_dataset_without_splits():
     )
 
     with (
-        patch("utils.ml.read_and_check_ml_configuration") as mock_read_config,
         patch("pandas.read_parquet") as mock_read_parquet,
     ):
-        mock_read_config.return_value = sample_config
         mock_read_parquet.return_value = sample_data
 
         result = utils.ml.prepare_dataset(
             "/path/to/data.parquet",
+            sample_config,
             target=True,
         )
 
@@ -750,14 +727,13 @@ def test_prepare_dataset_without_target():
     )
 
     with (
-        patch("utils.ml.read_and_check_ml_configuration") as mock_read_config,
         patch("pandas.read_parquet") as mock_read_parquet,
     ):
-        mock_read_config.return_value = sample_config
         mock_read_parquet.return_value = sample_data
 
         result = utils.ml.prepare_dataset(
             "/path/to/data.parquet",
+            sample_config,
             target=False,
         )
 
@@ -789,14 +765,12 @@ def test_prepare_dataset_without_local_year():
     )
 
     with (
-        patch("utils.ml.read_and_check_ml_configuration") as mock_read_config,
         patch("pandas.read_parquet") as mock_read_parquet,
     ):
-        mock_read_config.return_value = sample_config
         mock_read_parquet.return_value = sample_data
 
         with pytest.raises(ValueError, match="no 'Local year' column"):
-            utils.ml.prepare_dataset("/path/to/data.parquet")
+            utils.ml.prepare_dataset("/path/to/data.parquet", sample_config)
 
 
 def test_to_load_relative_to_annual_mean():
@@ -837,13 +811,12 @@ def test_save_results_validation():
     output_data = pd.DataFrame({"mape": [0.1, 0.2]})
 
     with (
-        patch("utils.config.read_folders_structure") as mock_read_folders,
+        patch("utils.paths.get_results_folder", return_value="/results"),
         patch("os.makedirs") as mock_makedirs,
         patch("pandas.DataFrame.to_csv") as mock_to_csv,
         patch("pandas.DataFrame.to_parquet") as mock_to_parquet,
         patch("pandas.Timestamp.now") as mock_now,
     ):
-        mock_read_folders.return_value = {"ml_validation_folder": "/results"}
         mock_now.return_value.strftime.return_value = "20240101-120000"
 
         utils.ml.save_results(
@@ -869,15 +842,12 @@ def test_save_results_cross_validation():
     output_data = pd.DataFrame({"mape": [0.1, 0.2]})
 
     with (
-        patch("utils.config.read_folders_structure") as mock_read_folders,
+        patch("utils.paths.get_results_folder", return_value="/results"),
         patch("os.makedirs") as mock_makedirs,
         patch("pandas.DataFrame.to_csv") as mock_to_csv,
         patch("pandas.DataFrame.to_parquet") as mock_to_parquet,
         patch("pandas.Timestamp.now") as mock_now,
     ):
-        mock_read_folders.return_value = {
-            "ml_cross_validation_folder": "/results"
-        }
         mock_now.return_value.strftime.return_value = "20240101-120000"
 
         utils.ml.save_results(
@@ -902,13 +872,12 @@ def test_save_results_forecasts():
     output_data = pd.DataFrame({"forecast": [100, 200]})
 
     with (
-        patch("utils.config.read_folders_structure") as mock_read_folders,
+        patch("utils.paths.get_results_folder", return_value="/results"),
         patch("os.makedirs") as mock_makedirs,
         patch("pandas.DataFrame.to_csv") as mock_to_csv,
         patch("pandas.DataFrame.to_parquet") as mock_to_parquet,
         patch("pandas.Timestamp.now") as mock_now,
     ):
-        mock_read_folders.return_value = {"ml_forecasts_folder": "/results"}
         mock_now.return_value.strftime.return_value = "20240101-120000"
 
         utils.ml.save_results(
@@ -935,7 +904,7 @@ def test_save_results_invalid_case():
 
     with pytest.raises(ValueError, match="Invalid case"):
         utils.ml.save_results(
-            case="invalid_case",
+            case="invalid_case",  # type: ignore[arg-type]
             output_dataset=output_data,
             trained_model_name="xgboost_model",
             assembled_data_file_name="assembled_data",

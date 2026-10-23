@@ -16,10 +16,8 @@ import numpy as np
 import pandas as pd
 import pytest
 import shapely
-import utils.config
+import utils.paths
 import utils.shapes
-
-pytestmark = pytest.mark.usefixtures("tmp_folders")
 
 # The longitude of the synthetic country, whose solar time is 3 hours
 # ahead of UTC.
@@ -67,7 +65,7 @@ def _flag(demand: pd.Series, monkeypatch, code: str = "IND") -> pd.DataFrame:
     monkeypatch.setattr(
         utils.shapes, "get_entity_shape", lambda *_, **__: shape
     )
-    file_path = utils.config.get_electricity_demand_file_path(
+    file_path = utils.paths.get_electricity_demand_file(
         "cleaned", code, "test"
     )
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -241,19 +239,20 @@ def _save_annual_values(
         if isinstance(per_capita, dict)
         else per_capita
     )
-    folders = utils.config.read_folders_structure()
-    for folder, column, value in [
+    inputs: list[tuple[utils.paths.Indicator, str, object]] = [
         (
-            "annual_electricity_demand_per_capita_folder",
+            "annual_electricity_demand_per_capita",
             "Annual electricity demand per capita (kWh)",
             per_capita_values,
         ),
-        ("population_folder", "Population", population),
-    ]:
-        os.makedirs(folders[folder], exist_ok=True)
+        ("population", "Population", population),
+    ]
+    for indicator, column, value in inputs:
+        folder = utils.paths.get_indicator_folder(indicator)
+        os.makedirs(folder, exist_ok=True)
         pd.DataFrame(
             {column: value}, index=pd.Index(times, name="Time (UTC)")
-        ).to_parquet(os.path.join(folders[folder], f"{code}.parquet"))
+        ).to_parquet(os.path.join(folder, f"{code}.parquet"))
 
 
 @pytest.mark.parametrize("code", ["IND", "IND_KL"])

@@ -10,8 +10,8 @@ import tempfile
 from pathlib import Path
 
 import geopandas
-import utils.config
 import utils.figures
+import utils.paths
 from shapely import Point
 
 
@@ -26,17 +26,15 @@ def test_simple_plot(monkeypatch):
     ----------
     monkeypatch : pytest.MonkeyPatch
         A pytest fixture that allows us to modify the behavior of the
-        utils.config.read_folders_structure function to return a
-        temporary directory.
+        folder of the figures to return a temporary directory.
     """
     # Create a temporary directory for figure output.
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Patch the utils.config.read_folders_structure to return
-        # the temp path.
+        # Save the figures in the temporary directory.
         monkeypatch.setattr(
-            utils.config,
-            "read_folders_structure",
-            lambda: {"figures_folder": tmpdir},
+            utils.paths,
+            "get_results_folder",
+            lambda _kind: tmpdir,
         )
 
         # Create a simple GeoDataFrame.

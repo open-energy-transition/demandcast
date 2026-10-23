@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import utils.config
 import utils.ml
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.metrics import get_scorer
 from sklearn.model_selection import LeaveOneGroupOut
@@ -30,40 +30,6 @@ class ConfigModel(BaseModel):
     scoring_metric: str
     n_jobs: int | None = 1
     data_path: str | None = None
-
-
-def _read_and_check_configuration() -> ConfigModel:
-    """
-    Read and check the configuration for model cross-validation.
-
-    Returns
-    -------
-    config : ConfigModel
-        A Pydantic model containing the validated configuration.
-
-    Raises
-    ------
-    ValueError
-        If the configuration is invalid.
-    """
-    # Read the configuration.
-    raw_config = utils.config.read_configuration(
-        "cross_validate",
-        "Perform cross-validation of the machine learning model using the "
-        "specified preprocessed data and algorithm.",
-    )
-
-    # Validate the configuration.
-    try:
-        config = ConfigModel(**raw_config)
-    except ValidationError as e:
-        raise ValueError(f"Configuration validation error: {e}") from e
-
-    logging.info("Configuration validated successfully:")
-    for field, value in config.model_dump().items():
-        logging.info(f" - {field}: {value}")
-
-    return config
 
 
 def _log_mape_summary(mapes: pd.DataFrame) -> None:
@@ -124,6 +90,7 @@ class _GroupAwareModel(RegressorMixin, BaseEstimator):
 
 def _score_fold(
     algorithm: str,
+    model_config: BaseModel,
     prepared_dataset: utils.ml.PreparedDataset,
     scoring_metric: str,
     train_index: np.ndarray,
@@ -136,6 +103,8 @@ def _score_fold(
     ----------
     algorithm : str
         The machine learning algorithm.
+    model_config : pydantic.BaseModel
+        The settings of the model of the algorithm.
     prepared_dataset : PreparedDataset
         The features, target and entity codes of the dataset.
     scoring_metric : str
@@ -164,7 +133,8 @@ def _score_fold(
                 "target": target.iloc[train_index],
                 "group": group.iloc[train_index],
             }
-        }
+        },
+        model_config,
     )
 
     # Score the model on the training rows and on the held-out rows.
@@ -186,6 +156,7 @@ def _cross_validate(
     scoring_metric: str,
     n_jobs: int | None,
     algorithm: str,
+    model_config: BaseModel,
 ) -> pd.DataFrame:
     """
     Run Leave-One-Group-Out cross-validation of a model.
@@ -204,6 +175,8 @@ def _cross_validate(
         The number of folds to run in parallel.
     algorithm : str
         The machine learning algorithm to use.
+    model_config : pydantic.BaseModel
+        The settings of the model of the algorithm.
 
     Returns
     -------
@@ -215,7 +188,12 @@ def _cross_validate(
 
     folds = Parallel(n_jobs=n_jobs)(
         delayed(_score_fold)(
-            algorithm, prepared_dataset, scoring_metric, train, test
+            algorithm,
+            model_config,
+            prepared_dataset,
+            scoring_metric,
+            train,
+            test,
         )
         for train, test in LeaveOneGroupOut().split(
             prepared_dataset["features"],
@@ -242,7 +220,8 @@ def run_model_cross_validation(
     scoring_metric: str,
     n_jobs: int | None,
     data_path: str | None,
-    algorithm: str,
+    ml_config: utils.ml.ConfigModel,
+    model_config: BaseModel,
 ) -> None:
     """
     Run cross-validation of the machine learning model and save results.
@@ -256,8 +235,11 @@ def run_model_cross_validation(
     data_path : str | None
         The path to the assembled data file. If None, the latest file
         in the default directory will be used.
-    algorithm : str
-        The machine learning algorithm to use for training.
+    ml_config : utils.ml.ConfigModel
+        The settings of the machine learning models, with the
+        algorithm.
+    model_config : pydantic.BaseModel
+        The settings of the model of the algorithm.
     """
     logging.info("Starting cross-validation process.")
 
@@ -265,40 +247,57 @@ def run_model_cross_validation(
     data_path = utils.ml.get_assemble_data_path(data_path)
 
     # Read and prepare the dataset.
-    prepared_dataset = utils.ml.prepare_dataset(data_path)
+    prepared_dataset = utils.ml.prepare_dataset(data_path, ml_config)
 
     # Run Leave-One-Group-Out cross-validation.
     mapes = _cross_validate(
         prepared_dataset,
         scoring_metric,
         n_jobs,
-        algorithm,
+        ml_config.algorithm,
+        model_config,
     )
 
     # Save the cross-validation results.
     utils.ml.save_results(
         "cross_validation",
         mapes,
-        algorithm.lower(),
+        ml_config.algorithm.lower(),
         os.path.basename(data_path).split(".")[0],
         "all",
     )
 
 
-if __name__ == "__main__":
-    # Set up the logging configuration.
-    utils.config.set_up_logging("model_cross_validation")
+def main(config: ConfigModel) -> None:
+    """
+    Cross-validate the model of the settings.
 
-    # Read and check the configuration.
-    config = _read_and_check_configuration()
+    Parameters
+    ----------
+    config : ConfigModel
+        The settings.
+    """
+    utils.config.set_up_logging("model_cross_validation")
+    utils.config.log_configuration(config)
 
     # Read and check machine learning configuration.
     ml_config = utils.ml.read_and_check_ml_configuration()
 
-    # Run the model validation process.
     run_model_cross_validation(
         config.scoring_metric,
         config.n_jobs,
         config.data_path,
-        ml_config.algorithm,
+        ml_config,
+        ml_models.registry.read_model_configuration(ml_config.algorithm),
+    )
+
+
+if __name__ == "__main__":
+    main(
+        utils.config.read_and_check_configuration(
+            "cross_validate",
+            ConfigModel,
+            "Perform cross-validation of the machine learning model using "
+            "the specified preprocessed data and algorithm.",
+        )
     )

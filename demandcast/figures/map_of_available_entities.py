@@ -11,15 +11,49 @@ Description:
     scripts.
 """
 
+import datetime
 import os
+from collections.abc import Mapping
 
 import cartopy.crs
 import cartopy.feature
 import matplotlib.cm
 import matplotlib.colors
 import matplotlib.pyplot as plt
-import utils.entities
+import utils.data_sources
 import utils.shapes
+
+# The classes of the years of available data, with their upper bounds.
+YEAR_CLASSES = {"0-4": 5, "5-9": 10, "10-19": 20, "20+": float("inf")}
+
+
+def get_classes_of_years(
+    date_ranges: Mapping[str, tuple[datetime.date, datetime.date]],
+) -> dict[str, int]:
+    """
+    Get the class of the years of available data of each code.
+
+    Parameters
+    ----------
+    date_ranges : Mapping[str, tuple[datetime.date, datetime.date]]
+        The first and last dates of the data of each country or
+        subdivision.
+
+    Returns
+    -------
+    dict[str, int]
+        The class of each code, the position of the first class of
+        YEAR_CLASSES whose upper bound is above its years of data, of
+        365 days.
+    """
+    return {
+        code: next(
+            number
+            for number, upper_bound in enumerate(YEAR_CLASSES.values())
+            if (end - start).days / 365 < upper_bound
+        )
+        for code, (start, end) in date_ranges.items()
+    }
 
 
 def plot(figure_directory: str) -> None:
@@ -38,12 +72,15 @@ def plot(figure_directory: str) -> None:
     figure_directory : str
         The directory to store the figure.
     """
-    # Read the codes of all countries and subdivisions.
-    codes = utils.entities.read_all_codes_with_electricity_demand_data()
-
-    # Get the range of available data for all countries and
-    # subdivisions.
-    date_ranges = utils.entities.read_all_date_ranges()
+    # Get the class of the years of available data of all countries
+    # and subdivisions.
+    date_ranges = utils.data_sources.read_all_date_ranges()
+    classes_of_years = get_classes_of_years(
+        {
+            code: date_ranges[code]
+            for code in utils.data_sources.read_all_codes_with_electricity_demand_data()
+        }
+    )
 
     # Define the map projection and the coordinate reference system of
     # the data to plot.
@@ -74,26 +111,17 @@ def plot(figure_directory: str) -> None:
         cartopy.feature.OCEAN, facecolor="white"
     )
 
+    # The colors of the classes.
+    base_colors = [
+        map_cmap(lower_bound + number * (upper_bound - lower_bound) / 3)
+        for number in range(len(YEAR_CLASSES))
+    ]
+
     # Loop over the countries.
-    for code in codes:
+    for code, class_of_years in classes_of_years.items():
         # Get the shape of the country or subdivision.
         entity_shape = utils.shapes.get_entity_shape(code, make_plot=False)
-
-        # Calculate the number of years of available data.
-        n_years = (date_ranges[code][1] - date_ranges[code][0]).days / 365
-
-        # Define the transparency of the shape based on the number
-        # of years of available data.
-        if n_years >= 0 and n_years < 5:
-            color = map_cmap(lower_bound)
-        elif n_years >= 5 and n_years < 10:
-            color = map_cmap(lower_bound + (upper_bound - lower_bound) / 3)
-        elif n_years >= 10 and n_years < 20:
-            color = map_cmap(
-                lower_bound + (2 * (upper_bound - lower_bound)) / 3
-            )
-        else:
-            color = map_cmap(upper_bound)
+        color = base_colors[class_of_years]
 
         # Plot the country or subdivision.
         entity_shape.plot(
@@ -107,21 +135,8 @@ def plot(figure_directory: str) -> None:
             alpha=alpha,
         )
 
-    # Extract the base colors of the colormap.
-    base_colors = [
-        map_cmap(lower_bound),
-        map_cmap(lower_bound + (upper_bound - lower_bound) / 3),
-        map_cmap(lower_bound + 2 * (upper_bound - lower_bound) / 3),
-        map_cmap(upper_bound),
-    ]
-
-    # Modify the transparency of the base colors.
-    base_colors = [
-        (base_colors[0][0], base_colors[0][1], base_colors[0][2], alpha),
-        (base_colors[1][0], base_colors[1][1], base_colors[1][2], alpha),
-        (base_colors[2][0], base_colors[2][1], base_colors[2][2], alpha),
-        (base_colors[3][0], base_colors[3][1], base_colors[3][2], alpha),
-    ]
+    # Give the colors of the colorbar the transparency of the shapes.
+    base_colors = [(*color[:3], alpha) for color in base_colors]
 
     # Add a colorbar.
     bar_cmap = matplotlib.colors.ListedColormap(base_colors, name="bar_cmap")
@@ -135,7 +150,7 @@ def plot(figure_directory: str) -> None:
         shrink=0.5,
         ticks=[0.5, 1.5, 2.5, 3.5],
     )
-    cbar.ax.set_xticklabels(["0-4", "5-9", "10-19", "20+"])
+    cbar.ax.set_xticklabels(list(YEAR_CLASSES))
     cbar.ax.tick_params(labelsize=12)
 
     # Add a label to the colorbar for the figure.

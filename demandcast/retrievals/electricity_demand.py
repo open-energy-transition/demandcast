@@ -31,9 +31,10 @@ import cleaning.combining
 import cleaning.electricity_demand
 import cleaning.flags
 import pandas as pd
-import utils.config
-import utils.entities
+import utils.availability
+import utils.data_sources
 import utils.fetcher
+import utils.paths
 import utils.raw_data
 import utils.time_series
 from tqdm import tqdm
@@ -256,7 +257,7 @@ def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:
     # the data source, and download each of them with the code, keeping
     # the responses.
     start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+        utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
             data_source
         )[code]
     )
@@ -340,7 +341,7 @@ def _save_data(
     data_source : str
         The data source.
     """
-    file_path = utils.config.get_electricity_demand_file_path(
+    file_path = utils.paths.get_electricity_demand_file(
         "processed", code, data_source
     )
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -376,7 +377,7 @@ def run_data_retrieval(
     """
     # Get the list of codes of the countries and subdivisions of
     # interest.
-    codes = utils.entities.check_and_get_codes_with(
+    codes = utils.availability.check_and_get_codes_with(
         "electricity_demand_data",
         code=code,
         data_source=data_source,

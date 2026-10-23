@@ -20,7 +20,8 @@ from __future__ import annotations
 
 import os
 import tempfile
-from unittest.mock import MagicMock, mock_open, patch
+from typing import cast
+from unittest.mock import mock_open, patch
 
 import numpy as np
 import pandas as pd
@@ -31,13 +32,14 @@ torch = pytest.importorskip(
 )
 
 import ml_models.lstm as lstm_module  # noqa: E402
+import ml_models.registry  # noqa: E402
 
 # ----------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------
 
 # Small hyperparameters so every test trains in under a second on CPU.
-_FAST_CONFIG = MagicMock(
+_FAST_CONFIG = lstm_module.ConfigModel(
     n_timesteps=4,
     n_units=8,
     n_layers=1,
@@ -108,7 +110,7 @@ def _make_prepared_dataset() -> dict:
 
 
 # ----------------------------------------------------------------------
-# _read_configuration
+# read_model_configuration
 # ----------------------------------------------------------------------
 
 
@@ -125,13 +127,12 @@ def test_read_configuration_returns_correct_values():
         "random_state: 7\n"
     )
     with (
-        patch(
-            "utils.config.read_folders_structure",
-            return_value={"config_folder": "/cfg"},
-        ),
         patch("builtins.open", mock_open(read_data=yaml_content)),
     ):
-        config = lstm_module._read_configuration()
+        config = cast(
+            lstm_module.ConfigModel,
+            ml_models.registry.read_model_configuration("lstm"),
+        )
 
     assert config.n_timesteps == 48
     assert config.n_units == 64
@@ -146,13 +147,12 @@ def test_read_configuration_returns_correct_values():
 def test_read_configuration_defaults_on_empty_yaml():
     """An empty YAML file returns default hyperparameters."""
     with (
-        patch(
-            "utils.config.read_folders_structure",
-            return_value={"config_folder": "/cfg"},
-        ),
         patch("builtins.open", mock_open(read_data="{}\n")),
     ):
-        config = lstm_module._read_configuration()
+        config = cast(
+            lstm_module.ConfigModel,
+            ml_models.registry.read_model_configuration("lstm"),
+        )
 
     assert config.n_timesteps == 24
     assert config.n_units == 32
@@ -168,16 +168,12 @@ def test_read_configuration_raises_on_bad_type():
     """A wrong value type raises ValueError."""
     with (
         patch(
-            "utils.config.read_folders_structure",
-            return_value={"config_folder": "/cfg"},
-        ),
-        patch(
             "builtins.open",
             mock_open(read_data="n_timesteps: not_an_int\n"),
         ),
         pytest.raises(ValueError, match="Configuration validation"),
     ):
-        lstm_module._read_configuration()
+        ml_models.registry.read_model_configuration("lstm")
 
 
 # ----------------------------------------------------------------------
@@ -187,10 +183,7 @@ def test_read_configuration_raises_on_bad_type():
 
 def test_get_initialized_model_returns_lstm_regressor():
     """get_initialized_model returns a fresh, unfitted LSTMRegressor."""
-    with patch(
-        "ml_models.lstm._read_configuration", return_value=_FAST_CONFIG
-    ):
-        model = lstm_module.get_initialized_model()
+    model = lstm_module.get_initialized_model(_FAST_CONFIG)
 
     assert isinstance(model, lstm_module.LSTMRegressor)
     assert not hasattr(model, "net_"), "Model should not be fitted yet"
@@ -198,10 +191,7 @@ def test_get_initialized_model_returns_lstm_regressor():
 
 def test_get_initialized_model_uses_config_values():
     """Hyperparameters from config are forwarded to LSTMRegressor."""
-    with patch(
-        "ml_models.lstm._read_configuration", return_value=_FAST_CONFIG
-    ):
-        model = lstm_module.get_initialized_model()
+    model = lstm_module.get_initialized_model(_FAST_CONFIG)
 
     assert model.n_timesteps == _FAST_CONFIG.n_timesteps
     assert model.n_units == _FAST_CONFIG.n_units
@@ -217,10 +207,7 @@ def test_get_initialized_model_uses_config_values():
 def test_train_returns_lstm_regressor():
     """train() returns a fitted LSTMRegressor instance."""
     dataset = _make_prepared_dataset()
-    with patch(
-        "ml_models.lstm._read_configuration", return_value=_FAST_CONFIG
-    ):
-        model = lstm_module.train(dataset)
+    model = lstm_module.train(dataset, _FAST_CONFIG)
 
     assert isinstance(model, lstm_module.LSTMRegressor)
     assert hasattr(model, "net_"), "Model must be fitted after train()"
@@ -229,10 +216,7 @@ def test_train_returns_lstm_regressor():
 def test_train_sets_feature_names():
     """After train(), feature_names_in_ matches the dataset columns."""
     dataset = _make_prepared_dataset()
-    with patch(
-        "ml_models.lstm._read_configuration", return_value=_FAST_CONFIG
-    ):
-        model = lstm_module.train(dataset)
+    model = lstm_module.train(dataset, _FAST_CONFIG)
 
     assert model.feature_names_in_.tolist() == _FEATURE_NAMES
 
@@ -244,10 +228,7 @@ def test_train_only_uses_training_split():
     del dataset["validation"]
     del dataset["testing"]
 
-    with patch(
-        "ml_models.lstm._read_configuration", return_value=_FAST_CONFIG
-    ):
-        model = lstm_module.train(dataset)
+    model = lstm_module.train(dataset, _FAST_CONFIG)
 
     assert isinstance(model, lstm_module.LSTMRegressor)
 
@@ -268,10 +249,7 @@ def trained_model_and_dataset():
         Fitted LSTM model and the prepared_dataset used to train it.
     """
     dataset = _make_prepared_dataset()
-    with patch(
-        "ml_models.lstm._read_configuration", return_value=_FAST_CONFIG
-    ):
-        model = lstm_module.train(dataset)
+    model = lstm_module.train(dataset, _FAST_CONFIG)
     return model, dataset
 
 
@@ -343,11 +321,7 @@ def test_save_creates_pt_file(trained_model_and_dataset):
     model, _ = trained_model_and_dataset
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        with patch(
-            "ml_models.lstm.utils.config.read_folders_structure",
-            return_value={"trained_ml_models_folder": tmpdir},
-        ):
-            lstm_module.save(model, "lstm_model_test")
+        lstm_module.save(model, os.path.join(tmpdir, "lstm_model_test.pt"))
 
         assert os.path.isfile(os.path.join(tmpdir, "lstm_model_test.pt"))
 
@@ -358,11 +332,7 @@ def test_load_restores_feature_names(trained_model_and_dataset):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         pt_path = os.path.join(tmpdir, "test_model.pt")
-        with patch(
-            "ml_models.lstm.utils.config.read_folders_structure",
-            return_value={"trained_ml_models_folder": tmpdir},
-        ):
-            lstm_module.save(model, "test_model")
+        lstm_module.save(model, os.path.join(tmpdir, "test_model.pt"))
 
         loaded = lstm_module.load(pt_path)
 
@@ -379,11 +349,7 @@ def test_load_predictions_match_original(trained_model_and_dataset):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         pt_path = os.path.join(tmpdir, "test_model.pt")
-        with patch(
-            "ml_models.lstm.utils.config.read_folders_structure",
-            return_value={"trained_ml_models_folder": tmpdir},
-        ):
-            lstm_module.save(model, "test_model")
+        lstm_module.save(model, os.path.join(tmpdir, "test_model.pt"))
 
         loaded = lstm_module.load(pt_path)
 

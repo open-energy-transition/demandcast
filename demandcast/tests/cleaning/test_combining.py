@@ -12,9 +12,9 @@ import os
 import cleaning.combining
 import pandas as pd
 import pytest
-import utils.config
+import utils.paths
 
-pytestmark = pytest.mark.usefixtures("tmp_folders", "longitude")
+pytestmark = pytest.mark.usefixtures("longitude")
 
 
 def _hourly(start: str, end: str, value: float = 100.0) -> pd.Series:
@@ -52,7 +52,7 @@ def _save_cleaned(code: str, data_source: str, values: pd.Series) -> None:
     values : pandas.Series
         The demand.
     """
-    file_path = utils.config.get_electricity_demand_file_path(
+    file_path = utils.paths.get_electricity_demand_file(
         "cleaned", code, data_source
     )
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -217,7 +217,7 @@ def test_ranking_of_the_data_sources(code, data_sources, best):
 
     assert combined is not None
     assert combined["Source"].eq(best).all()
-    file_path = utils.config.get_electricity_demand_file_path("combined", code)
+    file_path = utils.paths.get_electricity_demand_file("combined", code)
     assert os.path.exists(file_path)
     sources = pd.read_parquet(
         file_path.removesuffix(".parquet") + "_sources.parquet"
@@ -251,7 +251,7 @@ def test_combine_all_data(monkeypatch):
     """Test that the codes with cleaned data are combined."""
     _save_cleaned("CYP", "tsoc", _hourly("2021-01-01", "2021-01-31 23:00"))
     monkeypatch.setattr(
-        cleaning.combining.utils.entities,
+        cleaning.combining.utils.data_sources,
         "read_all_codes_with_electricity_demand_data",
         lambda: ["CYP", "USA_NE"],
     )
@@ -268,7 +268,7 @@ def test_ranks_of_the_seasons_of_net_demand():
     """
     values = _hourly("2023-01-01", "2023-12-31 23:00")
     _save_cleaned("DEU", "entsoe", values)
-    flags_path = utils.config.get_electricity_demand_file_path(
+    flags_path = utils.paths.get_electricity_demand_file(
         "cleaned", "DEU", "entsoe"
     ).removesuffix(".parquet")
     pd.DataFrame(
@@ -305,7 +305,7 @@ def _review_errors(code: str, data_source: str, values: pd.Series) -> None:
         The demand.
     """
     _save_cleaned(code, data_source, values)
-    flags_path = utils.config.get_electricity_demand_file_path(
+    flags_path = utils.paths.get_electricity_demand_file(
         "cleaned", code, data_source
     ).removesuffix(".parquet")
     pd.DataFrame(
@@ -355,7 +355,7 @@ def test_reviewed_errors_come_last():
     assert _on_day(combined, "Source", "2023-04-15").eq("eia").all()
     assert _on_day(combined, "Source", "2023-07-15").eq("isone").all()
     sources = pd.read_parquet(
-        utils.config.get_electricity_demand_file_path(
+        utils.paths.get_electricity_demand_file(
             "combined", "USA_NE"
         ).removesuffix(".parquet")
         + "_sources.parquet"

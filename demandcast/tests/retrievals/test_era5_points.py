@@ -18,7 +18,7 @@ import requests
 import xarray
 from retrievals import era5_points
 
-pytestmark = pytest.mark.usefixtures("tmp_folders", "frozen_now")
+pytestmark = pytest.mark.usefixtures("frozen_now")
 
 
 class FakeClient:

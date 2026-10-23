@@ -104,7 +104,7 @@ The periods of the requests come from `utils.time_series.split_period`, and API 
 
 For each retrieval module in the `demandcast/retrievals/electricity_demand_data_sources/` folder, a corresponding YAML file must be created. It gives the `licence` of the data (`redistribute`, whether the data can be published on Zenodo, whose dataset of actual data has the CC BY-NC 4.0 licence, `terms`, a summary of the licence, and `url`, its link), its `definition`, and its `entities`, a list of dictionaries, each representing a country or subdivision from the respective data source. The following rules apply:
 
-The `definition` says what the demand of the data source counts, since DemandCast models the gross demand, with the demand that the generation embedded in the distribution networks supplies. It is a list of periods, in the order of their `start_date`, the first one from the start of the data, each with the `quantity` that the source gives, and whether the `embedded_generation` (such as rooftop solar), the `network_losses`, the `storage_charging` and the `power_plant_use` are `included` by the source, `added` by DemandCast from an estimate, `excluded`, or `unknown`, with a `note` on the reasons. For example, the total demand of AEMO for the NEM leaves out the rooftop solar until 2016, and has AEMO's estimate of it added from 2017. `utils.entities.get_definition(data_source, date)` gives the period of a date.
+The `definition` says what the demand of the data source counts, since DemandCast models the gross demand, with the demand that the generation embedded in the distribution networks supplies. It is a list of periods, in the order of their `start_date`, the first one from the start of the data, each with the `quantity` that the source gives, and whether the `embedded_generation` (such as rooftop solar), the `network_losses`, the `storage_charging` and the `power_plant_use` are `included` by the source, `added` by DemandCast from an estimate, `excluded`, or `unknown`, with a `note` on the reasons. For example, the total demand of AEMO for the NEM leaves out the rooftop solar until 2016, and has AEMO's estimate of it added from 2017. `utils.data_sources.get_definition(data_source, date)` gives the period of a date.
 
 A data source that republishes the data of the system operators, such as the EIA, the CCEI and ENTSO-E, has `compiled: true`, and a country or subdivision whose data covers only part of the area of its shape has `same_area: false`, such as CAISO for California, whose shape is the region of the EIA. The combination uses them to rank the data sources of a code.
 
@@ -133,7 +133,7 @@ For each data source that is downloaded automatically, the check downloads the l
 - the latest value is more than `maximum_age_days` old (60 by default), for a data source whose `end_date` is `today`;
 - there are data after the `end_date` of the YAML file, which is then out of date.
 
-The data sources read from manually downloaded files are skipped, ENTSO-E and EIA need their API keys, and EPIAS and ISO New England their accounts. The results are saved to `checks/data_sources_report.md` and `checks/data_sources_report.json`. In the configuration file, `data_sources` limits the check to some data sources, `maximum_age_days_by_source` gives more days to the data sources that publish later, and `time_limit_minutes` is the time after which the data sources that have not answered fail.
+The data sources read from manually downloaded files are skipped, ENTSO-E and EIA need their API keys, and EPIAS and ISO New England their accounts. The results are saved to `data/results/checks/data_sources_report.md` and `data/results/checks/data_sources_report.json`. In the configuration file, `data_sources` limits the check to some data sources, `maximum_age_days_by_source` gives more days to the data sources that publish later, and `time_limit_minutes` is the time after which the data sources that have not answered fail.
 
 #### Report of the flags
 
@@ -143,7 +143,7 @@ The cleaning flags the changes of the cleaned demand that need a review, in `<co
 uv run check.py --config config/check_flags_config.yaml
 ```
 
-It compares them with the reviews in `checks/reviewed_flags.yaml`, which give a data source, a code, a flag, the periods that they review (all of them if not given), a verdict (`source_error`, `reading_error`, `definition_change`, `net_demand`, `real_event` or `false_positive`) and a note. The report, `checks/flags_report.md` and `checks/flags_report.csv`, lists the flags not reviewed, those reviewed with their verdicts, and the reviews that match no flag any more, such as those of errors that have been fixed. After a retrieval, the flags not reviewed are the ones to look at, and their reviews are added to the file.
+It compares them with the reviews in `checks/reviewed_flags.yaml`, which give a data source, a code, a flag, the periods that they review (all of them if not given), a verdict (`source_error`, `reading_error`, `definition_change`, `net_demand`, `real_event` or `false_positive`) and a note. The report, `data/results/checks/flags_report.md` and `data/results/checks/flags_report.csv`, lists the flags not reviewed, those reviewed with their verdicts, and the reviews that match no flag any more, such as those of errors that have been fixed. After a retrieval, the flags not reviewed are the ones to look at, and their reviews are added to the file.
 
 The flags of the combined demand have the data source `combined`, and their own section in the report. A combined flag takes the review with the data source `combined`, if there is one, and otherwise, if its main source, the data source of most of the hours of the flagged period, has the same flag in the same period, the review of that flag: a flag that comes from the data of a source is reviewed once. Only the flags that come from the combination, which the main source does not have, such as a step where a data source fills the hours after another, need a review of their own.
 
@@ -237,7 +237,7 @@ end_year:                          # End year of a range (inclusive)
 scenario:                          # SSP scenario (e.g., SSP2) for which to retrieve projected data
 ```
 
-The script will store gridded population data in `data/gridded_population/`.
+The script will store gridded population data in `data/gridded_population/`: the global grids, as downloaded, in `raw/`, and the grids of each country and subdivision in `processed/`.
 
 ### Gross Domestic Product (GDP), Purchasing Power Parity (PPP) per capita
 
@@ -295,6 +295,8 @@ end_year:                          # End year of a range (inclusive)
 scenario:                          # SSP scenario (e.g., SSP2) for which to retrieve projected data
 ```
 
+The script will store gridded GDP, PPP data in `data/gridded_gdp_ppp/`: the global grids, as downloaded, in `raw/`, and the grids of each country and subdivision in `processed/`.
+
 ### Gridded weather
 
 The module `demandcast/retrievals/gridded_weather.py` retrieves gridded weather data, the ERA5 reanalysis and the CMIP6 projections, and stores it in NetCDF format for each country and subdivision of interest. The reanalysis comes from one of two sources, chosen with `reanalysis_source`, which give the same values:
@@ -335,13 +337,13 @@ climate_model:                     # Climate model (e.g., CESM2)
 reanalysis_source: cds             # Source of the reanalysis: cds or arco
 ```
 
-The script will store weather data in `data/gridded_weather/`. Note that the size of weather data files is on the order of 100 MB per country per year, about 5 GB a year for the 184 countries and subdivisions with electricity demand, so ensure you have sufficient storage space.
+The script will store weather data in `data/gridded_weather/`: the global grids, downloaded from the CDS when more than five countries and subdivisions are retrieved, in `raw/`, and the grids of each country and subdivision in `processed/`. Note that the size of weather data files is on the order of 100 MB per country per year, about 5 GB a year for the 184 countries and subdivisions with electricity demand, so ensure you have sufficient storage space.
 
 ### Temperature
 
 The module `demandcast/retrievals/temperature.py` extracts the temperature of the most populous cells of the gridded population (that of the most populous cell and the mean of the three most populous ones) and its statistics. Each hour has the mean temperature of the hour, from the instantaneous temperatures at its start and end, at its end in UTC like the electricity demand. The temperature of the reanalysis comes from one of three sources, chosen with `reanalysis_source`, which give the same values, since the cells of the gridded population are on the points of ERA5:
 
-- `points` (by default): the hourly series of the points of ERA5 of the most populous cells, from the [ERA5 time series](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels-timeseries) of the CDS (`demandcast/retrievals/era5_points.py`). The whole series of a point, from 1990, takes about 35 seconds and 4 MB, and is saved in `data/gridded_weather/points/` and updated from 120 days before its end at most once a day, when later hours may be available. The points are downloaded one at a time, since the CDS rejects more queued requests. The CDS describes this dataset as experimental.
+- `points` (by default): the hourly series of the points of ERA5 of the most populous cells, from the [ERA5 time series](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels-timeseries) of the CDS (`demandcast/retrievals/era5_points.py`). The whole series of a point, from 1990, takes about 35 seconds and 4 MB, and is saved in `data/gridded_weather/raw/points/` and updated from 120 days before its end at most once a day, when later hours may be available. The points are downloaded one at a time, since the CDS rejects more queued requests. The CDS describes this dataset as experimental.
 - `cds` or `arco`: the gridded weather data of the countries and subdivisions (see above), downloaded if needed.
 
 The projections of the climate models come from the gridded weather data of the CDS.

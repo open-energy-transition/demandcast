@@ -112,8 +112,7 @@ filterwarnings = [
 [tool.coverage.run]
 branch = true
 source = ["."]
-# The compiled code of netCDF4 is traced with the relative paths of its
-# sources (src/netCDF4/_netCDF4.pyx), which are not installed.
+# The sources of compiled extensions, such as netCDF4, are not ours.
 omit = ["tests/*", "archive/*", ".venv/*", "*.pyx"]
 
 [tool.coverage.report]

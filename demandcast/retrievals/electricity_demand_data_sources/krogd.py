@@ -52,24 +52,13 @@ def _read_text(url: str, data: dict[str, str] | None = None) -> str:
     -------
     str
         The text of the page.
-
-    Raises
-    ------
-    TypeError
-        If the page is not a string.
     """
-    page = utils.fetcher.fetch_data(
+    page = utils.fetcher.fetch_text(
         url,
-        "html",
-        read_with="requests.post" if data else "requests.get",
-        read_as="text",
+        "POST" if data else "GET",
         post_data_params=data,
         header_params={"User-Agent": "Mozilla/5.0"},
     )
-    if not isinstance(page, str):
-        raise TypeError(
-            f"The extracted page is a {type(page)} object, expected a string."
-        )
     return page
 
 

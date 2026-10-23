@@ -23,49 +23,30 @@ import os
 import cleaning.flags
 import pandas as pd
 import pytest
-import utils.config
+import utils.paths
 
 # Draw figures without a display: interactive backends need Tcl/Tk,
 # which is missing on some systems, such as Windows CI runners.
 os.environ["MPLBACKEND"] = "Agg"
 
-# The folders that hold code, configurations or other inputs of the
-# repository, which the tests read and do not write.
-REPOSITORY_FOLDERS = {
-    "root_folder",
-    "config_folder",
-    "shapes_folder",
-    "checks_folder",
-    "retrievals_folder",
-    "electricity_demand_data_sources_folder",
-    "ml_models_folder",
-}
 
-
-@pytest.fixture
-def tmp_folders(tmp_path, monkeypatch):
+@pytest.fixture(autouse=True)
+def tmp_data_folder(tmp_path, monkeypatch):
     """
-    Point the data, log, figure and result folders to a temporary one.
+    Point the data folder to a temporary one in every test.
 
-    The folders keep their layout in the temporary folder, and the
-    folders of the repository, such as the configuration, stay where
-    they are. A test can change a folder in the returned dictionary.
+    The data, logs, models and results are written in it, and the
+    inputs that come with the code, such as the configuration, stay
+    where they are.
 
     Returns
     -------
-    dict[str, str]
-        The folders, by name.
+    str
+        The data folder.
     """
-    folders = utils.config.read_folders_structure()
-    for name, folder in folders.items():
-        if name not in REPOSITORY_FOLDERS:
-            folders[name] = os.path.join(
-                tmp_path, os.path.relpath(folder, folders["root_folder"])
-            )
-    monkeypatch.setattr(
-        utils.config, "read_folders_structure", lambda: dict(folders)
-    )
-    return folders
+    data_folder = str(tmp_path / "data")
+    monkeypatch.setenv(utils.paths.DATA_FOLDER_VARIABLE, data_folder)
+    return data_folder
 
 
 @pytest.fixture

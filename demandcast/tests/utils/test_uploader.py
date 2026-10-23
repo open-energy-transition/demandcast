@@ -3,15 +3,30 @@ License: AGPL-3.0.
 
 Description:
 
-    This file contains unit tests for the uploader module.
+    Tests for the upload of files to Google Cloud Storage, with the
+    client mocked, and to Zenodo, with a fake Zenodo server that
+    records the sequence of the requests.
 """
 
 import json
-from unittest.mock import Mock, mock_open, patch
+import logging
+import re
+from typing import Any
+from unittest.mock import Mock, patch
 
 import pytest
+import requests
+import utils.paths
 import utils.uploader
 from google.cloud.exceptions import GoogleCloudError
+
+# The address of the depositions of the sandbox of Zenodo.
+SANDBOX = "https://sandbox.zenodo.org/api/deposit/depositions"
+
+# The title of the dataset of actual data.
+ACTUAL_TITLE = (
+    "Global Dataset of Hourly or Sub-Hourly Historical Electricity Demand"
+)
 
 
 def test_upload_to_gcs():
@@ -60,709 +75,302 @@ def test_upload_to_gcs():
             )
 
 
-def _zenodo_request(  # noqa: C901
-    request_type: str = "",
-    response_type: str = "",
-    submitted: bool = True,
-    error: bool = False,
-):
+class FakeZenodo:
     """
-    Mock Zenodo API requests.
+    A fake Zenodo server, which records the requests that it gets.
 
-    This function simulates the responses from the Zenodo API based on
-    the request type and response type specified. It returns a mock
-    response object that mimics the behavior of the requests library.
+    Attributes
+    ----------
+    depositions : list[dict]
+        The depositions that the server has.
+    failing : str | None
+        The request, "<method> <path>" with the path from the address of
+        the depositions, that fails with a server error.
+    requests : list[tuple[str, str, dict]]
+        The method, path and keyword arguments of each request.
+    """
+
+    # The status of the answer to each request, by method and path,
+    # with numbers for the identifiers.
+    ROUTES = (
+        ("GET", r"", 200),
+        ("POST", r"", 201),
+        ("PUT", r"/\d+", 200),
+        ("POST", r"/\d+/actions/newversion", 201),
+        ("GET", r"/\d+/files", 200),
+        ("DELETE", r"/\d+/files/\w+", 204),
+        ("POST", r"/\d+/files", 201),
+        ("POST", r"/\d+/actions/publish", 202),
+    )
+
+    def __init__(self, depositions: list[dict], failing: str | None = None):
+        self.depositions = depositions
+        self.failing = failing
+        self.requests: list[tuple[str, str, dict]] = []
+
+    def handle(self, method: str, url: str, **kwargs) -> requests.Response:
+        """
+        Answer a request.
+
+        Parameters
+        ----------
+        method : str
+            The method of the request.
+        url : str
+            The URL of the request.
+        **kwargs
+            The keyword arguments of the request.
+
+        Returns
+        -------
+        requests.Response
+            The answer.
+        """
+        base = url.split("/api/deposit/depositions", maxsplit=1)[0]
+        path = url.removeprefix(base + "/api/deposit/depositions")
+        self.requests.append((method, path, kwargs))
+        response = requests.Response()
+        status = next(
+            status
+            for route_method, route, status in self.ROUTES
+            if route_method == method and re.fullmatch(route, path)
+        )
+        if self.failing == f"{method} {path}":
+            response.status_code = 500
+            response._content = b"server error"
+            return response
+        response.status_code = status
+        if method == "GET" and path == "":
+            content: object = self.depositions
+        elif method == "GET":
+            content = [{"id": "f1", "filename": "old.parquet"}]
+        elif path.endswith("newversion"):
+            content = {"id": 101}
+        else:
+            content = {"id": 7}
+        response._content = json.dumps(content).encode()
+        return response
+
+
+def _sender(server: FakeZenodo, method: str):
+    """
+    Get the function that sends the requests of a method to the server.
 
     Parameters
     ----------
-    request_type : str
-        The type of request being made (e.g., "get", "post", "put",
-        "delete").
-    response_type : str
-        The type of response expected (e.g., "actual", "synthetic",
-        "file", "no_depositions", "new_deposition", "upload_file",
-        "publish").
-    submitted : bool
-        Indicates whether the deposition is submitted or not.
-    error : bool
-        If True, simulates an error response from the Zenodo API.
+    server : FakeZenodo
+        The fake server.
+    method : str
+        The method, in lower case, as the name of its requests function.
 
     Returns
     -------
-    response : Mock
-        A mock response object that simulates the behavior of the
-        requests library.
+    Callable
+        The function, with the arguments of the requests function.
     """
-    # Create a mock response object.
-    response = Mock()
-
-    # Set the status code  and JSON return value based on the request
-    # and response types.
-    if error:
-        response.status_code = 500
-    elif request_type == "get":
-        response.status_code = 200
-        if response_type == "actual":
-            response.json.return_value = [
-                {
-                    "id": "12345",
-                    "metadata": {
-                        "title": (
-                            "Global Dataset of Hourly or Sub-Hourly "
-                            "Historical Electricity Demand"
-                        )
-                    },
-                    "submitted": submitted,
-                }
-            ]
-        elif response_type == "synthetic":
-            response.json.return_value = [
-                {
-                    "id": "12345",
-                    "metadata": {
-                        "title": (
-                            "Global Dataset of Hourly Synthetic "
-                            "Electricity Demand"
-                        )
-                    },
-                    "submitted": submitted,
-                }
-            ]
-        elif response_type == "file":
-            response.json.return_value = [
-                {"id": "12345", "filename": "file.csv"}
-            ]
-        elif response_type == "no_depositions":
-            response.json.return_value = []
-    elif request_type == "post":
-        if response_type == "new_deposition":
-            response.status_code = 201
-            response.json.return_value = {"id": "12345"}
-        elif response_type == "upload_file":
-            response.status_code = 201
-        elif response_type == "publish":
-            response.status_code = 202
-    elif request_type == "put":
-        response.status_code = 200
-    elif request_type == "delete":
-        response.status_code = 204
-
-    return response
+    return lambda url, **kwargs: server.handle(method.upper(), url, **kwargs)
 
 
-def _oet_metadata():
+@pytest.fixture
+def zenodo(monkeypatch, tmp_path):
     """
-    Return a mock object with sample metadata for OET.
+    Serve the requests to Zenodo with a fake server.
+
+    The API keys are in the environment, and the file to upload in a
+    temporary folder.
 
     Returns
     -------
-    Mock
-        A mock object containing sample metadata for OET.
+    Callable
+        The function that sets up the server with its depositions and
+        the failing request, and returns it.
     """
-    return mock_open(
-        read_data="""
-    creators:
-    - name: OET Creator
-    contributors:
-    - name: OET Contributor
+    monkeypatch.setattr(utils.paths, "ENV_FILE", str(tmp_path / ".env"))
+    monkeypatch.setenv("SANDBOX_ZENODO_API_KEY", "sandbox-token")
+    monkeypatch.setenv("ZENODO_API_KEY", "production-token")
+    (tmp_path / "FRA_rte.parquet").write_bytes(b"data")
+
+    def set_up(depositions=(), failing=None):
+        server = FakeZenodo(list(depositions), failing)
+        for method in ("get", "post", "put", "delete"):
+            monkeypatch.setattr(requests, method, _sender(server, method))
+        return server
+
+    return set_up
+
+
+def _upload(tmp_path, **kwargs) -> None:
     """
-    ).return_value
+    Upload the test file to Zenodo.
 
-
-def test_upload_file_to_new_deposition_on_zenodo():
+    Parameters
+    ----------
+    tmp_path : pathlib.Path
+        The folder of the file.
+    **kwargs
+        The options of utils.uploader.upload_to_zenodo.
     """
-    Test upload_to_zenodo for creating a new deposition.
+    options: dict[str, Any] = {
+        "data_type": "actual",
+        "made_by_oet": True,
+        "publish": True,
+    }
+    options.update(kwargs)
+    utils.uploader.upload_to_zenodo(
+        str(tmp_path / "FRA_rte.parquet"), **options
+    )
 
-    This test checks if the function correctly creates a new deposition
-    on Zenodo and uploads a file to it. It uses mocking to simulate the
-    Zenodo API interactions.
+
+@pytest.mark.usefixtures("frozen_now")
+def test_upload_to_a_new_deposition(zenodo, tmp_path):
     """
-    with (
-        patch("requests.get") as mock_get,
-        patch("requests.post") as mock_post,
-        patch("utils.config.read_folders_structure"),
-        patch("dotenv.load_dotenv"),
-        patch("os.getenv"),
-        patch("builtins.open") as mock_open_file,
-    ):
-        # Mock the response for getting depositions.
-        mock_get.return_value = _zenodo_request(
-            request_type="get", response_type="no_depositions"
-        )
+    Test the requests and the metadata of a new deposition.
 
-        # Mock the response for creating a new deposition.
-        mock_post_1 = _zenodo_request(
-            request_type="post", response_type="new_deposition"
-        )
-
-        # Mock the response for uploading a new file in the deposition.
-        mock_post_2 = _zenodo_request(
-            request_type="post", response_type="upload_file"
-        )
-
-        # Mock the response for publishing the deposition.
-        mock_post_3 = _zenodo_request(
-            request_type="post", response_type="publish"
-        )
-
-        # Combine the mock responses for the post requests.
-        mock_post.side_effect = [mock_post_1, mock_post_2, mock_post_3]
-
-        # Mock the content of the yaml file for OET metadata.
-        yaml_content = _oet_metadata()
-
-        # Mock the file content to be uploaded.
-        file_content = mock_open(read_data="test data").return_value
-
-        # Combine the mock file contents.
-        mock_open_file.side_effect = [yaml_content, file_content]
-
-        # Call the function to upload a file to a new deposition.
-        utils.uploader.upload_to_zenodo(
-            "/fake/root/file1.csv",
-            "actual",
-            publish=True,
-            testing=True,
-            made_by_oet=False,
-        )
-
-    # The actual data is published for non-commercial purposes only.
-    metadata = json.loads(mock_post.call_args_list[0].kwargs["data"])
-    assert metadata["metadata"]["license"] == "cc-by-nc-4.0"
-
-
-def test_upload_file_to_draft_version_on_zenodo():
+    The deposition is created with the metadata of the actual data, the
+    file uploaded with its name, and the deposition published.
     """
-    Test upload_to_zenodo for uploading a file to a draft version.
+    server = zenodo(
+        [{"id": 3, "submitted": True, "metadata": {"title": "Other"}}]
+    )
 
-    This test checks if the function correctly uploads a file to an
-    existing draft of a new version of a deposition on Zenodo.
+    _upload(tmp_path)
+
+    assert [(method, path) for method, path, _ in server.requests] == [
+        ("GET", ""),
+        ("POST", ""),
+        ("POST", "/7/files"),
+        ("POST", "/7/actions/publish"),
+    ]
+    for _, _, kwargs in server.requests:
+        assert kwargs["params"] == {"access_token": "sandbox-token"}
+    metadata = json.loads(server.requests[1][2]["data"])["metadata"]
+    assert metadata["title"] == ACTUAL_TITLE
+    assert metadata["license"] == "cc-by-nc-4.0"
+    assert metadata["publication_date"] == "2026-01-02"
+    assert metadata["creators"][0]["name"] == "Antonini, Enrico G. A."
+    assert metadata["contributors"][0]["type"] == "HostingInstitution"
+    assert server.requests[2][2]["data"] == {"name": "FRA_rte.parquet"}
+    assert server.requests[2][2]["timeout"] == 600
+
+
+def test_upload_to_a_draft(zenodo, tmp_path, caplog):
+    """Test that a draft with the title gets the file, unpublished."""
+    server = zenodo(
+        [{"id": 5, "submitted": False, "metadata": {"title": ACTUAL_TITLE}}]
+    )
+
+    with caplog.at_level(logging.INFO):
+        _upload(tmp_path, publish=False)
+
+    assert [(method, path) for method, path, _ in server.requests] == [
+        ("GET", ""),
+        ("PUT", "/5"),
+        ("POST", "/5/files"),
+    ]
+    assert "not published" in caplog.text
+
+
+def test_upload_to_a_new_version(zenodo, tmp_path):
     """
-    with (
-        patch("requests.get") as mock_get,
-        patch("requests.put") as mock_put,
-        patch("requests.post") as mock_post,
-        patch("utils.config.read_folders_structure"),
-        patch("dotenv.load_dotenv"),
-        patch("os.getenv"),
-        patch("builtins.open") as mock_open_file,
-    ):
-        # Mock the response for getting depositions.
-        mock_get.return_value = _zenodo_request(
-            request_type="get", response_type="actual", submitted=False
-        )
+    Test that a published deposition gets a new version.
 
-        # Mock the response for updating the deposition metadata.
-        mock_put.return_value = _zenodo_request(request_type="put")
-
-        # Mock the response for uploading a new file in the deposition.
-        mock_post.return_value = _zenodo_request(
-            request_type="post", response_type="upload_file"
-        )
-
-        # Mock the content of the yaml file for OET metadata.
-        yaml_content = _oet_metadata()
-
-        # Mock the file content to be uploaded.
-        file_content = mock_open(read_data="test data").return_value
-
-        # Combine the mock file contents.
-        mock_open_file.side_effect = [yaml_content, file_content]
-
-        # Call the function to upload a file to a draft version.
-        utils.uploader.upload_to_zenodo(
-            "/fake/root/file1.csv",
-            "actual",
-            publish=False,
-            testing=True,
-            made_by_oet=True,
-        )
-
-
-def test_upload_file_to_new_version_on_zenodo():
+    The files inherited from the previous version are deleted before
+    the new file is uploaded.
     """
-    Test upload_to_zenodo for uploading a file to a new version.
+    server = zenodo(
+        [{"id": 5, "submitted": True, "metadata": {"title": ACTUAL_TITLE}}]
+    )
 
-    This test checks if the function correctly uploads a file to a new
-    version of a deposition on Zenodo.
-    """
-    with (
-        patch("requests.get") as mock_get,
-        patch("requests.put") as mock_put,
-        patch("requests.post") as mock_post,
-        patch("requests.delete") as mock_delete,
-        patch("utils.config.read_folders_structure"),
-        patch("dotenv.load_dotenv"),
-        patch("os.getenv"),
-        patch("builtins.open") as mock_open_file,
-    ):
-        # Mock the response for getting depositions.
-        mock_get_1 = _zenodo_request(
-            request_type="get", response_type="synthetic", submitted=True
-        )
+    _upload(tmp_path)
 
-        # Mock the response for creating a new deposition.
-        mock_post_1 = _zenodo_request(
-            request_type="post", response_type="new_deposition"
-        )
-
-        # Mock the response for updating the deposition metadata.
-        mock_put.return_value = _zenodo_request(request_type="put")
-
-        # Mock the response for getting the files in the deposition.
-        mock_get_2 = _zenodo_request(request_type="get", response_type="file")
-
-        # Mock the response for deleting the existing files in the
-        # deposition.
-        mock_delete.return_value = _zenodo_request(request_type="delete")
-
-        # Mock the response for uploading a new file in the deposition.
-        mock_post_2 = _zenodo_request(
-            request_type="post", response_type="upload_file"
-        )
-
-        # Combine the mock responses for the get requests.
-        mock_get.side_effect = [mock_get_1, mock_get_2]
-
-        # Combine the mock responses for the post requests.
-        mock_post.side_effect = [mock_post_1, mock_post_2]
-
-        # Mock the content of the yaml file for OET metadata.
-        yaml_content = _oet_metadata()
-
-        # Mock the file content to be uploaded.
-        file_content = mock_open(read_data="test data").return_value
-
-        # Combine the mock file contents.
-        mock_open_file.side_effect = [yaml_content, file_content]
-
-        # Call the function to upload a file to a new version.
-        utils.uploader.upload_to_zenodo(
-            "/fake/root/file1.csv",
-            "synthetic",
-            publish=False,
-            testing=False,
-            made_by_oet=True,
-        )
+    assert [(method, path) for method, path, _ in server.requests] == [
+        ("GET", ""),
+        ("POST", "/5/actions/newversion"),
+        ("PUT", "/101"),
+        ("GET", "/101/files"),
+        ("DELETE", "/101/files/f1"),
+        ("POST", "/101/files"),
+        ("POST", "/101/actions/publish"),
+    ]
 
 
-def test_zenodo_error_invalid_input():
-    """
-    Test error handling for invalid input in upload_to_zenodo.
+def test_upload_to_production(zenodo, tmp_path, monkeypatch):
+    """Test the address and the key of Zenodo outside the sandbox."""
+    server = zenodo()
+    urls = []
+    handle = server.handle
 
-    This test checks if the function raises appropriate exceptions for
-    invalid inputs.
-    """
+    def record_url(method, url, **kwargs):
+        urls.append(url)
+        return handle(method, url, **kwargs)
+
+    monkeypatch.setattr(server, "handle", record_url)
+
+    _upload(tmp_path, testing=False, data_type="synthetic")
+
+    assert urls[0] == "https://zenodo.org/api/deposit/depositions"
+    assert server.requests[0][2]["params"] == {
+        "access_token": "production-token"
+    }
+    metadata = json.loads(server.requests[1][2]["data"])["metadata"]
+    assert metadata["title"] == (
+        "Global Dataset of Hourly Synthetic Electricity Demand"
+    )
+    assert metadata["license"] == "CC-BY-4.0"
+
+
+def test_upload_by_external_contributors(zenodo, tmp_path, monkeypatch):
+    """Test that the metadata of others is read from their file."""
+    server = zenodo()
+    (tmp_path / "zenodo_metadata.yaml").write_text(
+        "creators:\n  - name: Doe, Jane\ncontributors: []\n"
+    )
+    monkeypatch.setattr(utils.paths, "CONFIG_FOLDER", str(tmp_path))
+
+    _upload(tmp_path, made_by_oet=False)
+
+    metadata = json.loads(server.requests[1][2]["data"])["metadata"]
+    assert metadata["creators"] == [{"name": "Doe, Jane"}]
+
+
+def test_upload_of_unknown_data(zenodo, tmp_path):
+    """Test that the type of the data must be known."""
+    server = zenodo()
+
     with pytest.raises(ValueError, match="Invalid data_type"):
-        utils.uploader.upload_to_zenodo(
-            "/fake/root/file1.csv",
-            "invalid_type",
-            publish=False,
-            testing=False,
-            made_by_oet=True,
-        )
-
-
-def test_zenodo_error_get_depositions():
-    """
-    Test error handling when getting depositions from Zenodo.
-
-    This test checks if the function raises an exception when it fails
-    to retrieve depositions from Zenodo.
-    """
-    with (
-        patch("requests.get") as mock_get,
-        patch("utils.config.read_folders_structure"),
-        patch("dotenv.load_dotenv"),
-        patch("os.getenv"),
-        patch("builtins.open") as mock_open_file,
-    ):
-        # Mock the response for getting depositions to simulate an
-        # error.
-        mock_get.return_value = _zenodo_request(error=True)
-
-        # Mock the content of the yaml file for OET metadata.
-        mock_open_file.return_value = _oet_metadata()
-
-        with pytest.raises(
-            utils.uploader.ZenodoError, match="deposition retrieval"
-        ):
-            utils.uploader.upload_to_zenodo(
-                "/fake/root/file1.csv",
-                "actual",
-                publish=False,
-                testing=True,
-                made_by_oet=True,
-            )
-
-
-def test_zenodo_error_new_version_of_deposition():
-    """
-    Test error handling when creating a new version of a deposition.
-
-    This test checks if the function raises an exception when it fails
-    to create a new version of a deposition on Zenodo.
-    """
-    with (
-        patch("requests.get") as mock_get,
-        patch("requests.post") as mock_post,
-        patch("utils.config.read_folders_structure"),
-        patch("dotenv.load_dotenv"),
-        patch("os.getenv"),
-        patch("builtins.open") as mock_open_file,
-    ):
-        # Mock the response for getting depositions.
-        mock_get.return_value = _zenodo_request(
-            request_type="get", response_type="synthetic", submitted=True
-        )
-
-        # Mock the response for creating a new deposition with an error.
-        mock_post.return_value = _zenodo_request(error=True)
-
-        # Mock the content of the yaml file for OET metadata.
-        mock_open_file.return_value = _oet_metadata()
-
-        with pytest.raises(
-            utils.uploader.ZenodoError, match="new version creation"
-        ):
-            utils.uploader.upload_to_zenodo(
-                "/fake/root/file1.csv",
-                "synthetic",
-                publish=False,
-                testing=True,
-                made_by_oet=True,
-            )
-
-
-def test_zenodo_error_update_new_version_of_deposition():
-    """
-    Test error handling when updating metadata.
-
-    This test checks if the function raises an exception when it fails
-    to update the metadata of a new version of a deposition on Zenodo.
-    """
-    with (
-        patch("requests.get") as mock_get,
-        patch("requests.post") as mock_post,
-        patch("requests.put") as mock_put,
-        patch("utils.config.read_folders_structure"),
-        patch("dotenv.load_dotenv"),
-        patch("os.getenv"),
-        patch("builtins.open") as mock_open_file,
-    ):
-        # Mock the response for getting depositions.
-        mock_get.return_value = _zenodo_request(
-            request_type="get", response_type="synthetic", submitted=True
-        )
-
-        # Mock the response for creating a new deposition.
-        mock_post.return_value = _zenodo_request(
-            request_type="post", response_type="new_deposition"
-        )
-
-        # Mock the response for updating the deposition metadata with an
-        # error.
-        mock_put.return_value = _zenodo_request(error=True)
-
-        # Mock the content of the yaml file for OET metadata.
-        mock_open_file.return_value = _oet_metadata()
-
-        with pytest.raises(
-            utils.uploader.ZenodoError, match="metadata update"
-        ):
-            utils.uploader.upload_to_zenodo(
-                "/fake/root/file1.csv",
-                "synthetic",
-                publish=False,
-                testing=True,
-                made_by_oet=True,
-            )
-
-
-def test_zenodo_error_get_files_in_draft():
-    """
-    Test error handling when getting files in a draft deposition.
-
-    This test checks if the function raises an exception when it fails
-    to retrieve the files in a draft deposition on Zenodo.
-    """
-    with (
-        patch("requests.get") as mock_get,
-        patch("requests.post") as mock_post,
-        patch("requests.put") as mock_put,
-        patch("utils.config.read_folders_structure"),
-        patch("dotenv.load_dotenv"),
-        patch("os.getenv"),
-        patch("builtins.open") as mock_open_file,
-    ):
-        # Mock the response for getting depositions.
-        mock_get_1 = _zenodo_request(
-            request_type="get", response_type="synthetic", submitted=True
-        )
-
-        # Mock the response for creating a new deposition.
-        mock_post.return_value = _zenodo_request(
-            request_type="post", response_type="new_deposition"
-        )
-
-        # Mock the response for updating the deposition metadata.
-        mock_put.return_value = _zenodo_request(request_type="put")
-
-        # Mock the response for getting the files in the deposition with
-        # an error.
-        mock_get_2 = _zenodo_request(error=True)
-
-        # Combine the mock responses for the get requests.
-        mock_get.side_effect = [mock_get_1, mock_get_2]
-
-        # Mock the content of the yaml file for OET metadata.
-        mock_open_file.return_value = _oet_metadata()
-
-        with pytest.raises(utils.uploader.ZenodoError, match="file retrieval"):
-            utils.uploader.upload_to_zenodo(
-                "/fake/root/file1.csv",
-                "synthetic",
-                publish=False,
-                testing=True,
-                made_by_oet=True,
-            )
-
-
-def test_zenodo_error_delete_files_in_draft():
-    """
-    Test error handling when deleting files in a draft deposition.
-
-    This test checks if the function raises an exception when it fails
-    to delete existing files in a draft deposition on Zenodo.
-    """
-    with (
-        patch("requests.get") as mock_get,
-        patch("requests.post") as mock_post,
-        patch("requests.put") as mock_put,
-        patch("requests.delete") as mock_delete,
-        patch("utils.config.read_folders_structure"),
-        patch("dotenv.load_dotenv"),
-        patch("os.getenv"),
-        patch("builtins.open") as mock_open_file,
-    ):
-        # Mock the response for getting the depositions.
-        mock_get_1 = _zenodo_request(
-            request_type="get", response_type="synthetic", submitted=True
-        )
-
-        # Mock the response for creating a new deposition.
-        mock_post.return_value = _zenodo_request(
-            request_type="post", response_type="new_deposition"
-        )
-
-        # Mock the response for updating the deposition metadata.
-        mock_put.return_value = _zenodo_request(request_type="put")
-
-        # Mock the response for getting the files in the deposition.
-        mock_get_2 = _zenodo_request(request_type="get", response_type="file")
-
-        # Mock the response for deleting the existing files in the
-        # deposition with an error.
-        mock_delete.return_value = _zenodo_request(error=True)
-
-        # Combine the mock responses for the get requests.
-        mock_get.side_effect = [mock_get_1, mock_get_2]
-
-        # Mock the content of the yaml file for OET metadata.
-        mock_open_file.return_value = _oet_metadata()
-
-        with pytest.raises(
-            utils.uploader.ZenodoError, match="deletion of the file"
-        ):
-            utils.uploader.upload_to_zenodo(
-                "/fake/root/file1.csv",
-                "synthetic",
-                publish=False,
-                testing=True,
-                made_by_oet=True,
-            )
-
-
-def test_zenodo_error_update_draft_metadata():
-    """
-    Test error handling when updating draft metadata.
-
-    This test checks if the function raises an exception when it fails
-    to update the metadata of a draft deposition on Zenodo.
-    """
-    with (
-        patch("requests.get") as mock_get,
-        patch("requests.put") as mock_put,
-        patch("utils.config.read_folders_structure"),
-        patch("dotenv.load_dotenv"),
-        patch("os.getenv"),
-        patch("builtins.open") as mock_open_file,
-    ):
-        # Moch the response for getting the depositions.
-        mock_get.return_value = _zenodo_request(
-            request_type="get", response_type="synthetic", submitted=False
-        )
-
-        # Mock the response for updating the deposition metadata with an
-        # error.
-        mock_put.return_value = _zenodo_request(error=True)
-
-        # Mock the content of the yaml file for OET metadata.
-        mock_open_file.return_value = _oet_metadata()
-
-        with pytest.raises(
-            utils.uploader.ZenodoError, match="metadata update"
-        ):
-            utils.uploader.upload_to_zenodo(
-                "/fake/root/file1.csv",
-                "synthetic",
-                publish=False,
-                testing=True,
-                made_by_oet=True,
-            )
-
-
-def test_zenodo_error_create_new_deposition():
-    """
-    Test error handling when creating a new deposition.
-
-    This test checks if the function raises an exception when it fails
-    to create a new deposition on Zenodo.
-    """
-    with (
-        patch("requests.get") as mock_get,
-        patch("requests.post") as mock_post,
-        patch("utils.config.read_folders_structure"),
-        patch("dotenv.load_dotenv"),
-        patch("os.getenv"),
-        patch("builtins.open") as mock_open_file,
-    ):
-        # Mock the response for getting depositions.
-        mock_get.return_value = _zenodo_request(
-            request_type="get", response_type="no_depositions"
-        )
-
-        # Mock the response for creating a new deposition with an error.
-        mock_post.return_value = _zenodo_request(error=True)
-
-        # Mock the content of the yaml file for OET metadata.
-        mock_open_file.return_value = _oet_metadata()
-
-        with pytest.raises(
-            utils.uploader.ZenodoError, match="deposition creation"
-        ):
-            utils.uploader.upload_to_zenodo(
-                "/fake/root/file1.csv",
-                "actual",
-                publish=True,
-                testing=True,
-                made_by_oet=True,
-            )
-
-
-def test_zenodo_error_upload_file_to_deposition():
-    """
-    Test error handling when uploading a file to a deposition.
-
-    This test checks if the function raises an exception when it fails
-    to upload a file to a deposition on Zenodo.
-    """
-    with (
-        patch("requests.get") as mock_get,
-        patch("requests.post") as mock_post,
-        patch("utils.config.read_folders_structure"),
-        patch("dotenv.load_dotenv"),
-        patch("os.getenv"),
-        patch("builtins.open") as mock_open_file,
-    ):
-        # Mock the response for getting depositions.
-        mock_get.return_value = _zenodo_request(
-            request_type="get", response_type="no_depositions"
-        )
-
-        # Mock the response for creating a new deposition.
-        mock_post_1 = _zenodo_request(
-            request_type="post", response_type="new_deposition"
-        )
-
-        # Mock the response for uploading a new file in the deposition
-        # with an error.
-        mock_post_2 = _zenodo_request(error=True)
-
-        # Combine the mock responses for the post requests.
-        mock_post.side_effect = [mock_post_1, mock_post_2]
-
-        # Mock the content of the yaml file for OET metadata.
-        yaml_content = _oet_metadata()
-
-        # Mock the file content to be uploaded.
-        file_content = mock_open(read_data="test data").return_value
-
-        # Combine the mock file contents.
-        mock_open_file.side_effect = [yaml_content, file_content]
-
-        with pytest.raises(
-            utils.uploader.ZenodoError, match="upload of the file"
-        ):
-            utils.uploader.upload_to_zenodo(
-                "/fake/root/file1.csv",
-                "actual",
-                publish=True,
-                testing=True,
-                made_by_oet=True,
-            )
-
-
-def test_zenodo_error_publish_deposition():
-    """
-    Test error handling when publishing a deposition.
-
-    This test checks if the function raises an exception when it fails
-    to publish a deposition on Zenodo.
-    """
-    with (
-        patch("requests.get") as mock_get,
-        patch("requests.post") as mock_post,
-        patch("utils.config.read_folders_structure"),
-        patch("dotenv.load_dotenv"),
-        patch("os.getenv"),
-        patch("builtins.open") as mock_open_file,
-    ):
-        # Mock the response for getting depositions.
-        mock_get.return_value = _zenodo_request(
-            request_type="get", response_type="no_depositions"
-        )
-
-        # Mock the response for creating a new deposition.
-        mock_post_1 = _zenodo_request(
-            request_type="post", response_type="new_deposition"
-        )
-
-        # Mock the response for uploading a new file in the deposition.
-        mock_post_2 = _zenodo_request(
-            request_type="post", response_type="upload_file"
-        )
-
-        # Mock the response for publishing the deposition with an error.
-        mock_post_3 = _zenodo_request(error=True)
-
-        # Combine the mock responses for the post requests.
-        mock_post.side_effect = [mock_post_1, mock_post_2, mock_post_3]
-
-        # Mock the content of the yaml file for OET metadata.
-        yaml_content = _oet_metadata()
-
-        # Mock the file content to be uploaded.
-        file_content = mock_open(read_data="test data").return_value
-
-        # Combine the mock file contents.
-        mock_open_file.side_effect = [yaml_content, file_content]
-
-        with pytest.raises(utils.uploader.ZenodoError, match="publication"):
-            utils.uploader.upload_to_zenodo(
-                "/fake/root/file1.csv",
-                "actual",
-                publish=True,
-                testing=True,
-                made_by_oet=True,
-            )
+        _upload(tmp_path, data_type="forecast")
+
+    assert server.requests == []
+
+
+@pytest.mark.parametrize(
+    ("depositions", "failing", "message"),
+    [
+        ([], "GET ", "deposition retrieval failed"),
+        ([], "POST ", "deposition creation failed"),
+        ([], "POST /7/files", "upload of the file .*FRA_rte.parquet failed"),
+        ([], "POST /7/actions/publish", "publication failed"),
+        ("draft", "PUT /5", "metadata update failed"),
+        ("published", "POST /5/actions/newversion", "new version creation"),
+        ("published", "PUT /101", "metadata update failed"),
+        ("published", "GET /101/files", "file retrieval failed"),
+        ("published", "DELETE /101/files/f1", "file old.parquet failed"),
+    ],
+)
+def test_zenodo_errors(zenodo, tmp_path, depositions, failing, message):
+    """Test that a failing request stops with the answer of Zenodo."""
+    if depositions:
+        depositions = [
+            {
+                "id": 5,
+                "submitted": depositions == "published",
+                "metadata": {"title": ACTUAL_TITLE},
+            }
+        ]
+    server = zenodo(depositions, failing)
+
+    with pytest.raises(utils.uploader.ZenodoError, match=message) as error:
+        _upload(tmp_path)
+
+    assert "server error" in str(error.value)
+    assert f"{server.requests[-1][0]} {server.requests[-1][1]}" == failing

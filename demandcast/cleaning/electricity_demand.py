@@ -81,8 +81,8 @@ import os
 
 import numpy as np
 import pandas as pd
-import utils.config
-import utils.entities
+import utils.paths
+import utils.time_zones
 
 # The rules, in the order in which they are applied.
 RULES = [
@@ -713,9 +713,7 @@ def clean_data(code: str, data_source: str) -> pd.Series:
         UTC.
     """
     processed = pd.read_parquet(
-        utils.config.get_electricity_demand_file_path(
-            "processed", code, data_source
-        )
+        utils.paths.get_electricity_demand_file("processed", code, data_source)
     )["Load (MW)"].sort_index()
     resolutions = _get_resolutions(processed)
     durations = _get_durations(processed, resolutions)
@@ -727,7 +725,7 @@ def clean_data(code: str, data_source: str) -> pd.Series:
         processed,
         resolutions,
         durations,
-        str(utils.entities.get_time_zone(code)),
+        str(utils.time_zones.get_time_zone(code)),
     )
     hourly = _resample_hourly(processed[removed == ""], durations)
     cleaned = hourly.loc[hourly["covered"], "Load (MW)"]
@@ -749,7 +747,7 @@ def clean_data(code: str, data_source: str) -> pd.Series:
     )
     removed_periods = pd.concat(periods, ignore_index=True)
 
-    file_path = utils.config.get_electricity_demand_file_path(
+    file_path = utils.paths.get_electricity_demand_file(
         "cleaned", code, data_source
     )
     os.makedirs(os.path.dirname(file_path), exist_ok=True)

@@ -31,11 +31,12 @@ Description:
     a source is reviewed once. A flag that its main source does not
     have comes from the combination and needs its own review.
 
-    The report, checks/flags_report.csv and checks/flags_report.md,
-    lists the flags that have not been reviewed, those that have, with
-    their verdicts, and the reviews that match no flag any more, such as
-    those of the errors that have been fixed, which can be removed. The
-    combined flags have their own section.
+    The report, flags_report.csv and flags_report.md in the results of
+    the checks (see utils/paths.py), lists the flags that have not been
+    reviewed, those that have, with their verdicts, and the reviews that
+    match no flag any more, such as those of the errors that have been
+    fixed, which can be removed. The combined flags have their own
+    section.
 """
 
 import datetime
@@ -45,8 +46,8 @@ import os
 from typing import Literal
 
 import pandas as pd
-import utils.config
-import utils.entities
+import utils.data_sources
+import utils.paths
 import yaml
 from pydantic import BaseModel, ConfigDict
 
@@ -171,7 +172,7 @@ def _get_main_source(code: str, start: object, end: object) -> str:
         demand in the period, or of all of them without hours in it.
     """
     sources = pd.read_parquet(
-        utils.config.get_electricity_demand_file_path("combined", code),
+        utils.paths.get_electricity_demand_file("combined", code),
         columns=["Source"],
     )["Source"]
     days = pd.DatetimeIndex(sources.index).normalize()
@@ -197,13 +198,13 @@ def read_flags() -> pd.DataFrame:
         itself, or that of most hours of a combined flag) and code
         ("code").
     """
-    folders = utils.config.read_folders_structure()
-    data_sources = utils.entities.read_data_sources()
+    data_sources = utils.data_sources.read_data_sources()
     frames = []
     for file_path in sorted(
         glob.glob(
             os.path.join(
-                folders["cleaned_electricity_demand_folder"], "*_flags.parquet"
+                utils.paths.get_electricity_demand_folder("cleaned"),
+                "*_flags.parquet",
             )
         )
     ):
@@ -219,7 +220,7 @@ def read_flags() -> pd.DataFrame:
     for file_path in sorted(
         glob.glob(
             os.path.join(
-                folders["combined_electricity_demand_folder"],
+                utils.paths.get_electricity_demand_folder("combined"),
                 "*_flags.parquet",
             )
         )
@@ -253,7 +254,7 @@ def read_reviews() -> list[Review]:
         The reviews.
     """
     file_path = os.path.join(
-        utils.config.read_folders_structure()["checks_folder"],
+        utils.paths.CHECKS_FOLDER,
         REVIEWS_NAME + ".yaml",
     )
     with open(file_path, encoding="utf-8") as file:
@@ -485,7 +486,7 @@ def run_check() -> pd.DataFrame:
         )
     ]
 
-    checks_directory = utils.config.read_folders_structure()["checks_folder"]
+    checks_directory = utils.paths.get_results_folder("checks")
     os.makedirs(checks_directory, exist_ok=True)
     file_path = os.path.join(checks_directory, REPORT_NAME)
     flags.to_csv(file_path + ".csv", index=False)

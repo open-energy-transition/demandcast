@@ -10,6 +10,7 @@ Description:
 import json
 import logging
 import os
+from typing import Any
 
 import pandas as pd
 import requests
@@ -18,7 +19,7 @@ from dotenv import load_dotenv
 from google.cloud import storage
 from google.cloud.exceptions import GoogleCloudError
 
-import utils.config
+import utils.paths
 
 
 def upload_to_gcs(
@@ -72,64 +73,19 @@ class ZenodoError(RuntimeError):
     """Error returned by the Zenodo API."""
 
 
-def upload_to_zenodo(  # noqa: C901
-    file_path: str,
-    data_type: str,
-    made_by_oet: bool,
-    publish: bool = False,
-    testing: bool = True,
-) -> None:
-    """
-    Upload a file to Zenodo.
+# The address of the API of Zenodo, with "sandbox." for its sandbox.
+ZENODO_API = "https://{sandbox}zenodo.org/api/deposit/depositions"
 
-    This function uploads files to Zenodo using the Zenodo API. It
-    requires an access token for authentication.
-
-    Parameters
-    ----------
-    file_path : str
-        The path to the file to be uploaded.
-    data_type : str
-        The type of data being uploaded. It can be either "actual" or
-        "synthetic".
-    publish : bool, optional
-        If True, the function will publish the deposition in Zenodo.
-    testing : bool, optional
-        If True, the function will use the testing environment for
-        Zenodo. If False, it will use the production environment.
-    made_by_oet : bool
-        If True, the function will indicate that the deposition was made
-        by Open Energy Transition.
-
-    Raises
-    ------
-    ValueError
-        If the `data_type` is not 'actual' or 'synthetic'.
-    ZenodoError
-        If a request to the Zenodo API is not successful.
-    """
-    # Get the root directory of the project.
-    root_directory = utils.config.read_folders_structure()["root_folder"]
-
-    # Load the environment variables.
-    load_dotenv(dotenv_path=os.path.join(root_directory, ".env"))
-
-    # Get the Zenodo access token from environment variables.
-    if testing:
-        access_token = os.getenv("SANDBOX_ZENODO_API_KEY")
-        sandbox_url = "sandbox."
-    else:
-        access_token = os.getenv("ZENODO_API_KEY")
-        sandbox_url = ""
-
-    if data_type == "actual":
-        # Define the deposition title, description and license for the
-        # actual dataset.
-        title = (
+# The title, description and license of each type of dataset. The data
+# of some sources may be redistributed only for non-commercial
+# purposes, so the dataset of actual data keeps that condition.
+DATASETS = {
+    "actual": {
+        "title": (
             "Global Dataset of Hourly or Sub-Hourly Historical Electricity "
             "Demand"
-        )
-        description = (
+        ),
+        "description": (
             "<p>This dataset contains historical electricity demand data "
             "at hourly or sub-hourly resolution for various countries and "
             "subdivisions.</p>\n"
@@ -149,15 +105,12 @@ def upload_to_zenodo(  # noqa: C901
             "<p>The dataset is therefore published under the Creative "
             "Commons Attribution Non Commercial 4.0 International "
             "license.</p>"
-        )
-        # The data of some sources may be redistributed only for
-        # non-commercial purposes, so the dataset keeps that condition.
-        license_id = "cc-by-nc-4.0"
-    elif data_type == "synthetic":
-        # Define the deposition title, description and license for the
-        # synthetic dataset.
-        title = "Global Dataset of Hourly Synthetic Electricity Demand"
-        description = (
+        ),
+        "license": "cc-by-nc-4.0",
+    },
+    "synthetic": {
+        "title": "Global Dataset of Hourly Synthetic Electricity Demand",
+        "description": (
             "<p>This dataset contains synthetic electricity demand data at "
             "hourly resolution for various countries.</p>\n"
             "<p>The data is generated using machine learning models trained "
@@ -167,37 +120,56 @@ def upload_to_zenodo(  # noqa: C901
             "used can be found in the GitHub repository "
             '<a href="https://github.com/open-energy-transition/demandcast">'
             "https://github.com/open-energy-transition/demandcast</a>.</p>"
-        )
-        license_id = "CC-BY-4.0"
-    else:
+        ),
+        "license": "CC-BY-4.0",
+    },
+}
+
+
+def build_zenodo_metadata(data_type: str, made_by_oet: bool) -> dict:
+    """
+    Build the metadata of a deposition of a dataset on Zenodo.
+
+    Parameters
+    ----------
+    data_type : str
+        The type of data, "actual" or "synthetic".
+    made_by_oet : bool
+        Whether the data was made by Open Energy Transition, whose
+        authors are in config/oet_zenodo_metadata.yaml; those of others
+        are in config/zenodo_metadata.yaml.
+
+    Returns
+    -------
+    dict
+        The metadata, as the API of Zenodo takes it.
+
+    Raises
+    ------
+    ValueError
+        If the `data_type` is not 'actual' or 'synthetic'.
+    """
+    if data_type not in DATASETS:
         raise ValueError(
             "Invalid data_type. Expected 'actual' or 'synthetic'."
         )
+    dataset = DATASETS[data_type]
+    title, description, license_id = (
+        dataset["title"],
+        dataset["description"],
+        dataset["license"],
+    )
 
-    # Define the creators based on whether the data is made by OET.
-    if made_by_oet:
-        # Load the OET metadata from the YAML file.
-        author_metadata_path = os.path.join(
-            utils.config.read_folders_structure()["config_folder"],
-            "oet_zenodo_metadata.yaml",
-        )
-    else:
-        # Load the metadata of external contributors from the YAML file.
-        author_metadata_path = os.path.join(
-            utils.config.read_folders_structure()["config_folder"],
-            "zenodo_metadata.yaml",
-        )
-
-    # Load the metadata from the YAML file.
+    # Read the creators and contributors of the dataset.
+    author_metadata_path = utils.paths.get_config_file(
+        "oet_zenodo_metadata.yaml" if made_by_oet else "zenodo_metadata.yaml"
+    )
     with open(author_metadata_path, encoding="utf-8") as file:
         author_metadata = yaml.safe_load(file)
-
-    # Extract creators and contributors from the metadata.
     creators = author_metadata["creators"]
     contributors = author_metadata["contributors"]
 
-    # Define the deposition metadata for the dataset.
-    data = {
+    return {
         "metadata": {
             "title": title,
             "upload_type": "dataset",
@@ -237,173 +209,195 @@ def upload_to_zenodo(  # noqa: C901
         }
     }
 
-    # Get all the depositions from Zenodo.
-    response = requests.get(
-        f"https://{sandbox_url}zenodo.org/api/deposit/depositions",
-        params={"access_token": access_token},
-        timeout=60,
+
+class _ZenodoApi:
+    """The requests to the depositions of the API of Zenodo."""
+
+    def __init__(self, testing: bool) -> None:
+        """
+        Set up the address and the key of the API.
+
+        Parameters
+        ----------
+        testing : bool
+            Whether to use the sandbox of Zenodo, with the key in
+            SANDBOX_ZENODO_API_KEY, instead of Zenodo, with the key in
+            ZENODO_API_KEY.
+        """
+        load_dotenv(dotenv_path=utils.paths.ENV_FILE)
+        self.url = ZENODO_API.format(sandbox="sandbox." if testing else "")
+        self.access_token = os.getenv(
+            "SANDBOX_ZENODO_API_KEY" if testing else "ZENODO_API_KEY"
+        )
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        expected_status: int,
+        action: str,
+        timeout: int = 60,
+        **kwargs: Any,
+    ) -> requests.Response:
+        """
+        Send a request to the API and check its status.
+
+        Parameters
+        ----------
+        method : str
+            The method, "GET", "POST", "PUT" or "DELETE".
+        path : str
+            The path after the address of the depositions.
+        expected_status : int
+            The status of a success.
+        action : str
+            The action of the request, for the message of its failure.
+        timeout : int, optional
+            The timeout of the request in seconds.
+        **kwargs : Any
+            The other arguments of the request, such as its data.
+
+        Returns
+        -------
+        requests.Response
+            The response.
+
+        Raises
+        ------
+        ZenodoError
+            If the status of the response is not the expected one.
+        """
+        send = getattr(requests, method.lower())
+        response = send(
+            self.url + path,
+            params={"access_token": self.access_token},
+            timeout=timeout,
+            **kwargs,
+        )
+        if response.status_code != expected_status:
+            raise ZenodoError(f"Zenodo {action} failed: {response.text}")
+        return response
+
+
+def _prepare_deposition(api: _ZenodoApi, metadata: dict) -> int:
+    """
+    Get the deposition of a dataset, ready for its file.
+
+    A published deposition with the title of the dataset gets a new
+    version, without the files of the previous one, a draft with the
+    title gets the metadata, and otherwise a deposition is created.
+
+    Parameters
+    ----------
+    api : _ZenodoApi
+        The API of Zenodo.
+    metadata : dict
+        The metadata of the deposition.
+
+    Returns
+    -------
+    int
+        The identifier of the deposition.
+    """
+    depositions = api.request("GET", "", 200, "deposition retrieval").json()
+    deposition = next(
+        (
+            deposition
+            for deposition in depositions
+            if deposition["metadata"]["title"] == metadata["metadata"]["title"]
+        ),
+        None,
     )
 
-    # Check if the response is successful.
-    if response.status_code != 200:
-        raise ZenodoError(
-            f"Zenodo deposition retrieval failed: {response.text}"
+    if deposition is None:
+        response = api.request(
+            "POST", "", 201, "deposition creation", data=json.dumps(metadata)
         )
+        return response.json()["id"]
 
-    # Check if a deposition with the same title already exists.
-    new_version = False
-    add_to_draft = False
-    for deposition in response.json():
-        if deposition["metadata"]["title"] == data["metadata"]["title"]:
-            if deposition["submitted"]:
-                # If the deposition is already submitted (published),
-                # set new_version to True
-                new_version = True
-            else:
-                # If the deposition is not submitted (published), set
-                # add_to_draft to True
-                add_to_draft = True
-
-            # Extract the deposition ID from the response.
-            deposition_id = deposition["id"]
-            break
-
-    if new_version:
-        # Create a new version of the existing deposition in Zenodo.
-        response = requests.post(
-            (
-                f"https://{sandbox_url}zenodo.org/api/deposit/depositions/"
-                f"{deposition_id}/actions/newversion"
-            ),
-            params={"access_token": access_token},
-            timeout=60,
+    deposition_id = deposition["id"]
+    if deposition["submitted"]:
+        response = api.request(
+            "POST",
+            f"/{deposition_id}/actions/newversion",
+            201,
+            "new version creation",
         )
-
-        # Check if the response is successful.
-        if response.status_code != 201:
-            raise ZenodoError(
-                f"Zenodo new version creation failed: {response.text}"
-            )
-
-        # Extract the deposition ID of the new version from the
-        # response.
         deposition_id = response.json()["id"]
-
-        # Update the metadata for the new version.
-        response = requests.put(
-            (
-                f"https://{sandbox_url}zenodo.org/api/deposit/"
-                f"depositions/{deposition_id}"
-            ),
-            params={"access_token": access_token},
-            data=json.dumps(data),
-            timeout=60,
-        )
-
-        # Check if the response is successful.
-        if response.status_code != 200:
-            raise ZenodoError(
-                f"Zenodo metadata update failed: {response.text}"
-            )
-
-        # Get the list of files in the deposition.
-        response = requests.get(
-            f"https://{sandbox_url}zenodo.org/api/deposit/"
-            f"depositions/{deposition_id}/files",
-            params={"access_token": access_token},
-            timeout=60,
-        )
-
-        # Check if the response is successful.
-        if response.status_code != 200:
-            raise ZenodoError(f"Zenodo file retrieval failed: {response.text}")
-
+    api.request(
+        "PUT",
+        f"/{deposition_id}",
+        200,
+        "metadata update",
+        data=json.dumps(metadata),
+    )
+    if deposition["submitted"]:
         # Delete all files inherited from the previous version.
-        for file_info in response.json():
-            file_id = file_info["id"]
-            response = requests.delete(
-                f"https://{sandbox_url}zenodo.org/api/deposit/depositions/"
-                f"{deposition_id}/files/{file_id}",
-                params={"access_token": access_token},
-                timeout=60,
+        files = api.request(
+            "GET", f"/{deposition_id}/files", 200, "file retrieval"
+        ).json()
+        for file_info in files:
+            api.request(
+                "DELETE",
+                f"/{deposition_id}/files/{file_info['id']}",
+                204,
+                f"deletion of the file {file_info['filename']}",
             )
+    return deposition_id
 
-            # Check if the response is successful.
-            if response.status_code != 204:
-                raise ZenodoError(
-                    f"Zenodo deletion of the file {file_info['filename']} "
-                    f"failed: {response.text}"
-                )
-    elif add_to_draft:
-        # Update the metadata for the draft deposition in Zenodo.
-        response = requests.put(
-            (
-                f"https://{sandbox_url}zenodo.org/api/deposit/"
-                f"depositions/{deposition_id}"
-            ),
-            params={"access_token": access_token},
-            data=json.dumps(data),
-            timeout=60,
-        )
 
-        # Check if the response is successful.
-        if response.status_code != 200:
-            raise ZenodoError(
-                f"Zenodo metadata update failed: {response.text}"
-            )
-    else:
-        # Create a new deposition in Zenodo.
-        response = requests.post(
-            f"https://{sandbox_url}zenodo.org/api/deposit/depositions",
-            params={"access_token": access_token},
-            data=json.dumps(data),
-            timeout=60,
-        )
+def upload_to_zenodo(
+    file_path: str,
+    data_type: str,
+    made_by_oet: bool,
+    publish: bool = False,
+    testing: bool = True,
+) -> None:
+    """
+    Upload a file to Zenodo.
 
-        # Check if the response is successful.
-        if response.status_code != 201:
-            raise ZenodoError(
-                f"Zenodo deposition creation failed: {response.text}"
-            )
+    The file goes to the deposition of its dataset (see
+    _prepare_deposition), which is published if asked.
 
-        # Extract the deposition ID from the response.
-        deposition_id = response.json()["id"]
+    Parameters
+    ----------
+    file_path : str
+        The path to the file to be uploaded.
+    data_type : str
+        The type of data being uploaded. It can be either "actual" or
+        "synthetic".
+    made_by_oet : bool
+        If True, the function will indicate that the deposition was made
+        by Open Energy Transition.
+    publish : bool, optional
+        If True, the function will publish the deposition in Zenodo.
+    testing : bool, optional
+        If True, the function will use the testing environment for
+        Zenodo. If False, it will use the production environment.
+    """
+    metadata = build_zenodo_metadata(data_type, made_by_oet)
+    api = _ZenodoApi(testing)
+    deposition_id = _prepare_deposition(api, metadata)
 
-    # Upload the file to Zenodo.
     with open(file_path, "rb") as file_to_upload:
-        response = requests.post(
-            f"https://{sandbox_url}zenodo.org/api/deposit/depositions/"
-            f"{deposition_id}/files",
-            data={"name": os.path.basename(file_path)},
-            files={"file": file_to_upload},
-            params={"access_token": access_token},
+        api.request(
+            "POST",
+            f"/{deposition_id}/files",
+            201,
+            f"upload of the file {file_path}",
             # Zenodo answers once it has processed the whole file.
             timeout=600,
+            data={"name": os.path.basename(file_path)},
+            files={"file": file_to_upload},
         )
 
-        if response.status_code != 201:
-            raise ZenodoError(
-                f"Zenodo upload of the file {file_path} failed: "
-                f"{response.text}"
-            )
-
-    if not publish:
+    if publish:
+        api.request(
+            "POST", f"/{deposition_id}/actions/publish", 202, "publication"
+        )
+    else:
         logging.info(
             "File uploaded to Zenodo but not published. "
             "Set 'publish' to True to publish the deposition or "
             "use the Zenodo web interface to publish it."
         )
-    else:
-        # Publish the deposition in Zenodo.
-        response = requests.post(
-            (
-                f"https://{sandbox_url}zenodo.org/api/deposit/depositions/"
-                f"{deposition_id}/actions/publish"
-            ),
-            params={"access_token": access_token},
-            timeout=60,
-        )
-
-        # Check if the response is successful.
-        if response.status_code != 202:
-            raise ZenodoError(f"Zenodo publication failed: {response.text}")

@@ -29,28 +29,27 @@ Description:
 import logging
 import os
 import zipfile
+from collections.abc import Callable
 
 import cdsapi
 import pandas as pd
+import utils.availability
+import utils.catalogue
 import utils.config
-import utils.entities
 import utils.geospatial
+import utils.paths
 import utils.scenarios
 import utils.shapes
 import xarray
 from tqdm import tqdm
 
+import retrievals.gridded
+
 # The sources of the gridded reanalysis data.
 SOURCES = ("cds", "arco")
 
-# The API of the CDS, and the names of the variables in its datasets.
+# The API of the CDS.
 CDS_URL = "https://cds.climate.copernicus.eu/api"
-CDS_VARIABLES = {
-    "temperature": {
-        "reanalysis": "2m_temperature",
-        "projections": "near_surface_air_temperature",
-    }
-}
 
 # The store of ARCO-ERA5, the names of its variables and of the
 # variables of the files of the CDS, and the hours read at once.
@@ -67,57 +66,14 @@ ARCO_READ_THREADS = 16
 REANALYSIS_DELAY = pd.Timedelta(days=7)
 REANALYSIS_UPDATE = pd.Timedelta(days=1)
 
-
-def get_available_scenarios_for_model() -> dict[str, list[str]]:
-    """
-    Get the available future scenarios for each climate model.
-
-    Returns
-    -------
-    dict[str, list[str]]
-        A dictionary mapping each climate model to its available
-        scenarios.
-    """
-    return {
-        "CAMS-CSM1-0": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # China
-        "CESM2": ["SSP1-2.6", "SSP2-4.5", "SSP3-7.0", "SSP5-8.5"],  # USA
-        "CNRM-ESM2-1": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP4-3.4",
-            "SSP2-4.5",
-            "SSP4-6.0",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # France
-        "EC-Earth3-Veg-LR": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # Europe
-        "HadGEM3-GC31-LL": ["SSP1-2.6", "SSP2-4.5", "SSP5-8.5"],  # UK
-        "MIROC-ES2L": [
-            "SSP1-1.9",
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # Japan
-        "MPI-ESM1-2-LR": [
-            "SSP1-2.6",
-            "SSP2-4.5",
-            "SSP3-7.0",
-            "SSP5-8.5",
-        ],  # Germany
+# The names of the weather variables in the reanalysis and in the
+# projections of the Climate Data Store.
+CDS_VARIABLES = {
+    "temperature": {
+        "reanalysis": "2m_temperature",
+        "projections": "near_surface_air_temperature",
     }
+}
 
 
 def get_cds_client(**kwargs: bool) -> cdsapi.Client:
@@ -230,66 +186,6 @@ def _extract_from_arco(
         f"Gridded {variable} data of ARCO-ERA5 for year {year} has been "
         f"extracted for {len(file_paths)} codes."
     )
-
-
-def _retrieve_from_arco(
-    variable: str,
-    codes: list[str],
-    year_model_scenario_list: list[tuple[int, str | None, str | None]],
-    result_directory: str,
-) -> list[tuple[int, str | None, str | None]]:
-    """
-    Extract the reanalysis data of the codes from ARCO-ERA5.
-
-    Parameters
-    ----------
-    variable : str
-        The weather variable.
-    codes : list[str]
-        The codes of the countries and subdivisions.
-    year_model_scenario_list : list[tuple[int, str | None, str | None]]
-        The years, models and scenarios to retrieve.
-    result_directory : str
-        The folder of the gridded weather data.
-
-    Returns
-    -------
-    list[tuple[int, str | None, str | None]]
-        The years, models and scenarios of the projections, which come
-        from the CDS.
-    """
-    for year, model, scenario in tqdm(year_model_scenario_list, desc="Years"):
-        if model or scenario:
-            continue
-        file_paths = {
-            code: os.path.join(
-                result_directory,
-                get_file_name(variable, year, None, None, code) + ".nc",
-            )
-            for code in codes
-        }
-        outdated = {
-            code: file_path
-            for code, file_path in file_paths.items()
-            if is_outdated(file_path, year, None, None)
-        }
-        if outdated:
-            _extract_from_arco(
-                variable,
-                year,
-                {
-                    code: utils.shapes.get_entity_bounds(
-                        utils.shapes.get_entity_shape(code, make_plot=False)
-                    )
-                    for code in outdated
-                },
-                outdated,
-            )
-    return [
-        combination
-        for combination in year_model_scenario_list
-        if combination[1] or combination[2]
-    ]
 
 
 def get_file_name(
@@ -554,239 +450,6 @@ def _download_data(
         )
 
 
-def _retrieve_global_from_cds(
-    variable: str,
-    codes: list[str],
-    year_model_scenario_list: list[tuple[int, str | None, str | None]],
-    result_directory: str,
-) -> None:
-    """
-    Download the global data of the CDS and extract each code.
-
-    Parameters
-    ----------
-    variable : str
-        The weather variable.
-    codes : list[str]
-        The codes of the countries and subdivisions.
-    year_model_scenario_list : list[tuple[int, str | None, str | None]]
-        The years, models and scenarios to retrieve.
-    result_directory : str
-        The folder of the gridded weather data.
-    """
-    # Create a directory to store the downloaded global data.
-    downloaded_data_directory = os.path.join(result_directory, "downloads")
-    os.makedirs(downloaded_data_directory, exist_ok=True)
-
-    # Loop over the year, model, and scenario combinations.
-    for selected_year, selected_model, selected_scenario in tqdm(
-        year_model_scenario_list, desc="Years, models, and scenarios"
-    ):
-        logging.info(
-            f"Processing gridded {variable} data for the year "
-            f"{selected_year}"
-            + (
-                f", model {selected_model}, and scenario {selected_scenario}."
-                if selected_model and selected_scenario
-                else "."
-            )
-        )
-
-        # Define the full file path for the global weather data.
-        global_file_path_without_ext = os.path.join(
-            downloaded_data_directory,
-            get_file_name(
-                variable, selected_year, selected_model, selected_scenario
-            ),
-        )
-
-        # Download the global data if it does not exist, or if the
-        # reanalysis data may have been updated since.
-        if is_outdated(
-            global_file_path_without_ext + ".nc",
-            selected_year,
-            selected_model,
-            selected_scenario,
-        ):
-            # Get the CDS variable name.
-            cds_variable_name = CDS_VARIABLES[variable][
-                "projections"
-                if selected_model and selected_scenario
-                else "reanalysis"
-            ]
-
-            # Download the global weather data from CDS.
-            _download_data(
-                global_file_path_without_ext,
-                [selected_year],
-                cds_variable_name,
-                "projections"
-                if selected_model and selected_scenario
-                else "reanalysis",
-                selected_model,
-                selected_scenario,
-            )
-
-        # Load the global weather data.
-        global_data = xarray.open_dataset(global_file_path_without_ext + ".nc")
-
-        # Harmonize the coordinates of the global data.
-        global_data = utils.geospatial.harmonize_coords(global_data)
-
-        # Loop over the countries and subdivisions of interest.
-        for entity_code in tqdm(codes, desc="Countries and subdivisions"):
-            # Define the file path for the weather data of
-            # the country or subdivision.
-            entity_file_path = os.path.join(
-                result_directory,
-                get_file_name(
-                    variable,
-                    selected_year,
-                    selected_model,
-                    selected_scenario,
-                    entity_code,
-                )
-                + ".nc",
-            )
-
-            # Extract the weather data of the country or
-            # subdivision if it does not exist, or if the global
-            # data is newer.
-            if not os.path.exists(entity_file_path) or os.path.getmtime(
-                entity_file_path
-            ) < os.path.getmtime(global_file_path_without_ext + ".nc"):
-                logging.info(
-                    f"Extracting gridded {variable} data for "
-                    f"{entity_code} and "
-                    f"year {selected_year}."
-                )
-
-                # Get the shape of the country or subdivision.
-                entity_shape = utils.shapes.get_entity_shape(
-                    entity_code, make_plot=False
-                )
-
-                # Get the lateral bounds for the shape.
-                entity_bounds = utils.shapes.get_entity_bounds(
-                    entity_shape
-                )  # West, South, East, North
-
-                # Extract data for the country or subdivision.
-                entity_data = global_data.sel(
-                    x=slice(entity_bounds[0], entity_bounds[2]),
-                    y=slice(entity_bounds[1], entity_bounds[3]),
-                )
-
-                # Save the data to a NetCDF file.
-                entity_data.to_netcdf(entity_file_path)
-
-                logging.info(
-                    f"Gridded {variable} data for {entity_code} and "
-                    f"year {selected_year} has been successfully "
-                    "extracted and "
-                    "saved."
-                )
-            else:
-                logging.info(
-                    f"Gridded {variable} data for {entity_code} and "
-                    f"year {selected_year} already exists. Skipping "
-                    "extraction."
-                )
-
-        logging.info(
-            f"Processing of gridded {variable} data for year "
-            f"{selected_year} has "
-            "been completed."
-        )
-
-
-def _retrieve_each_from_cds(
-    variable: str,
-    codes: list[str],
-    year_model_scenario_list: list[tuple[int, str | None, str | None]],
-    result_directory: str,
-) -> None:
-    """
-    Download the data of each code from the CDS.
-
-    Parameters
-    ----------
-    variable : str
-        The weather variable.
-    codes : list[str]
-        The codes of the countries and subdivisions.
-    year_model_scenario_list : list[tuple[int, str | None, str | None]]
-        The years, models and scenarios to retrieve.
-    result_directory : str
-        The folder of the gridded weather data.
-    """
-    # Loop over the countries and subdivisions of interest.
-    for entity_code in tqdm(codes, desc="Countries and subdivisions"):
-        logging.info(f"Retrieving gridded {variable} data for {entity_code}.")
-
-        # Get the shape of the country or subdivision.
-        entity_shape = utils.shapes.get_entity_shape(
-            entity_code, make_plot=False
-        )
-
-        # Get the lateral bounds of the country or subdivision.
-        entity_bounds = utils.shapes.get_entity_bounds(
-            entity_shape
-        )  # West, South, East, North
-
-        # Loop over the year, model, and scenario combinations.
-        for (
-            selected_year,
-            selected_model,
-            selected_scenario,
-        ) in year_model_scenario_list:
-            # Define the full file paths of the ERA5 data.
-            entity_file_path_without_ext = os.path.join(
-                result_directory,
-                get_file_name(
-                    variable,
-                    selected_year,
-                    selected_model,
-                    selected_scenario,
-                    entity_code,
-                ),
-            )
-
-            # Download the data if it does not exist, or if the
-            # reanalysis data may have been updated since.
-            if is_outdated(
-                entity_file_path_without_ext + ".nc",
-                selected_year,
-                selected_model,
-                selected_scenario,
-            ):
-                # Get the CDS variable name.
-                cds_variable_name = CDS_VARIABLES[variable][
-                    "projections"
-                    if selected_model and selected_scenario
-                    else "reanalysis"
-                ]
-
-                # Download the weather data from CDS.
-                _download_data(
-                    entity_file_path_without_ext,
-                    [selected_year],
-                    cds_variable_name,
-                    "projections"
-                    if selected_model and selected_scenario
-                    else "reanalysis",
-                    selected_model,
-                    selected_scenario,
-                    bounds=entity_bounds,
-                )
-
-        logging.info(
-            f"Gridded {variable} data for {entity_code} has been "
-            "successfully "
-            "retrieved and saved."
-        )
-
-
 def run_data_retrieval(
     code: str | None,
     file: str | None,
@@ -841,35 +504,19 @@ def run_data_retrieval(
         )
 
     # Get the directory to store the population density data.
-    result_directory = utils.config.read_folders_structure()[
-        "gridded_weather_folder"
-    ]
+    result_directory = utils.paths.get_gridded_folder("weather", "processed")
     os.makedirs(result_directory, exist_ok=True)
 
     # Get the list of codes of the countries and subdivisions of
     # interest.
-    codes = utils.entities.check_and_get_codes_with(
+    codes = utils.availability.check_and_get_codes_with(
         "all_data", code=code, file_path=file
     )
 
-    # Define the available years for the historical weather data.
-    # Historical data is available from 1940 but it is not necessary to
-    # go that far back for our purposes.
-    available_historical_years = list(range(1990, pd.Timestamp.now().year + 1))
-
-    # Define the available years for the future weather data.
-    available_future_years = list(range(pd.Timestamp.now().year, 2101))
-
-    # Get the available scenarios for each climate model.
-    available_scenarios_for_model = get_available_scenarios_for_model()
-
-    # Define the available weather variables.
-    available_variables = ["temperature"]
-
-    if variable not in available_variables:
+    if variable not in CDS_VARIABLES:
         raise ValueError(
             f"Variable {variable} is not implemented yet. "
-            f"Supported variables are: {', '.join(available_variables)}."
+            f"Supported variables are: {', '.join(CDS_VARIABLES)}."
         )
 
     # Get the list of year, model, and scenario combinations.
@@ -878,29 +525,315 @@ def run_data_retrieval(
             year,
             start_year,
             end_year,
-            available_historical_years,
-            available_future_years,
+            utils.catalogue.get_reanalysis_years(),
+            utils.catalogue.get_climate_projection_years(),
             model,
             scenario,
-            available_scenarios_for_model,
+            {
+                climate_model: list(scenarios)
+                for climate_model, scenarios in (
+                    utils.catalogue.CLIMATE_MODEL_SCENARIOS.items()
+                )
+            },
         )
     )
 
     if source == "arco":
         year_model_scenario_list = _retrieve_from_arco(
-            variable, codes, year_model_scenario_list, result_directory
+            variable, codes, year_model_scenario_list
         )
         if not year_model_scenario_list:
             return
 
     # If there are many codes, download the global data and then extract
-    # the data for each country and subdivision, and otherwise download
-    # the data of each of them.
+    # the data for each country and subdivision.
     if len(codes) > 5:
-        _retrieve_global_from_cds(
-            variable, codes, year_model_scenario_list, result_directory
-        )
+        _retrieve_global_data(variable, codes, year_model_scenario_list)
     else:
-        _retrieve_each_from_cds(
-            variable, codes, year_model_scenario_list, result_directory
+        _retrieve_data_of_each_code(variable, codes, year_model_scenario_list)
+
+
+def _download(
+    file_path: str,
+    variable: str,
+    year: int,
+    model: str | None,
+    scenario: str | None,
+    bounds: list[float] | None = None,
+) -> None:
+    """
+    Download the weather data of a year, model and scenario.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the file, without its extension.
+    variable : str
+        The weather variable.
+    year : int
+        The year.
+    model : str | None
+        The climate model, None for the reanalysis.
+    scenario : str | None
+        The scenario, None for the reanalysis.
+    bounds : list[float] | None, optional
+        The bounds of the area, west, south, east and north, None for
+        the whole world.
+    """
+    dataset = "projections" if model and scenario else "reanalysis"
+    _download_data(
+        file_path,
+        [year],
+        CDS_VARIABLES[variable][dataset],
+        dataset,
+        model,
+        scenario,
+        bounds=bounds,
+    )
+
+
+def _get_entity_file_path_function(
+    variable: str, year: int, model: str | None, scenario: str | None
+) -> Callable[[str], str]:
+    """
+    Get the function that gives the processed file of a code.
+
+    Parameters
+    ----------
+    variable : str
+        The weather variable.
+    year : int
+        The year.
+    model : str | None
+        The climate model, None for the reanalysis.
+    scenario : str | None
+        The scenario, None for the reanalysis.
+
+    Returns
+    -------
+    Callable[[str], str]
+        The function that gives the path of the file of a code.
+    """
+    processed_directory = utils.paths.get_gridded_folder(
+        "weather", "processed"
+    )
+    return lambda code: os.path.join(
+        processed_directory,
+        get_file_name(variable, year, model, scenario, code) + ".nc",
+    )
+
+
+def _get_is_newer_function(global_file_path: str) -> Callable[[str], bool]:
+    """
+    Get the function that tells whether a file is up to date.
+
+    Parameters
+    ----------
+    global_file_path : str
+        The path of the global data.
+
+    Returns
+    -------
+    Callable[[str], bool]
+        The function that tells whether a file exists and is not older
+        than the global data, from which it was extracted.
+    """
+    return lambda file_path: (
+        os.path.exists(file_path)
+        and (os.path.getmtime(file_path) >= os.path.getmtime(global_file_path))
+    )
+
+
+def _retrieve_global_data(
+    variable: str,
+    codes: list[str],
+    year_model_scenario_list: list[tuple[int, str | None, str | None]],
+) -> None:
+    """
+    Download the global weather data and extract each code from it.
+
+    The global data of each year, model and scenario is downloaded
+    once, in the raw folder, and the data of a country or subdivision
+    is extracted again when the global data is newer.
+
+    Parameters
+    ----------
+    variable : str
+        The weather variable.
+    codes : list[str]
+        The codes of the countries and subdivisions.
+    year_model_scenario_list : list[tuple[int, str | None, str | None]]
+        The years, climate models and scenarios.
+    """
+    raw_directory = utils.paths.get_gridded_folder("weather", "raw")
+    os.makedirs(raw_directory, exist_ok=True)
+
+    for selected_year, selected_model, selected_scenario in tqdm(
+        year_model_scenario_list, desc="Years, models, and scenarios"
+    ):
+        description = f"{variable} data of {selected_year}" + (
+            f", model {selected_model}, and scenario {selected_scenario}"
+            if selected_model and selected_scenario
+            else ""
         )
+        logging.info(f"Processing the gridded {description}.")
+
+        # Download the global data if it does not exist, or if the
+        # reanalysis data may have been updated since.
+        global_file_path_without_ext = os.path.join(
+            raw_directory,
+            get_file_name(
+                variable, selected_year, selected_model, selected_scenario
+            ),
+        )
+        global_file_path = global_file_path_without_ext + ".nc"
+        if is_outdated(
+            global_file_path, selected_year, selected_model, selected_scenario
+        ):
+            _download(
+                global_file_path_without_ext,
+                variable,
+                selected_year,
+                selected_model,
+                selected_scenario,
+            )
+
+        with xarray.open_dataset(global_file_path) as global_data:
+            retrievals.gridded.extract_entity_grids(
+                utils.geospatial.harmonize_coords(global_data),
+                codes,
+                _get_entity_file_path_function(
+                    variable, selected_year, selected_model, selected_scenario
+                ),
+                description,
+                is_up_to_date=_get_is_newer_function(global_file_path),
+            )
+
+        logging.info(f"The gridded {description} has been processed.")
+
+
+def _retrieve_data_of_each_code(
+    variable: str,
+    codes: list[str],
+    year_model_scenario_list: list[tuple[int, str | None, str | None]],
+) -> None:
+    """
+    Download the weather data of each code on its own.
+
+    The data of a country or subdivision is downloaded within its
+    bounds, straight into the processed folder.
+
+    Parameters
+    ----------
+    variable : str
+        The weather variable.
+    codes : list[str]
+        The codes of the countries and subdivisions.
+    year_model_scenario_list : list[tuple[int, str | None, str | None]]
+        The years, climate models and scenarios.
+    """
+    processed_directory = utils.paths.get_gridded_folder(
+        "weather", "processed"
+    )
+
+    for entity_code in tqdm(codes, desc="Countries and subdivisions"):
+        logging.info(f"Retrieving gridded {variable} data for {entity_code}.")
+
+        # Get the lateral bounds of the country or subdivision.
+        entity_bounds = utils.shapes.get_entity_bounds(
+            utils.shapes.get_entity_shape(entity_code, make_plot=False)
+        )  # West, South, East, North
+
+        for (
+            selected_year,
+            selected_model,
+            selected_scenario,
+        ) in year_model_scenario_list:
+            entity_file_path_without_ext = os.path.join(
+                processed_directory,
+                get_file_name(
+                    variable,
+                    selected_year,
+                    selected_model,
+                    selected_scenario,
+                    entity_code,
+                ),
+            )
+
+            # Download the data if it does not exist, or if the
+            # reanalysis data may have been updated since.
+            if is_outdated(
+                entity_file_path_without_ext + ".nc",
+                selected_year,
+                selected_model,
+                selected_scenario,
+            ):
+                _download(
+                    entity_file_path_without_ext,
+                    variable,
+                    selected_year,
+                    selected_model,
+                    selected_scenario,
+                    bounds=entity_bounds,
+                )
+
+        logging.info(
+            f"Gridded {variable} data for {entity_code} has been retrieved "
+            "and saved."
+        )
+
+
+def _retrieve_from_arco(
+    variable: str,
+    codes: list[str],
+    year_model_scenario_list: list[tuple[int, str | None, str | None]],
+) -> list[tuple[int, str | None, str | None]]:
+    """
+    Extract the reanalysis data of the codes from ARCO-ERA5.
+
+    Parameters
+    ----------
+    variable : str
+        The weather variable.
+    codes : list[str]
+        The codes of the countries and subdivisions.
+    year_model_scenario_list : list[tuple[int, str | None, str | None]]
+        The years, climate models and scenarios.
+
+    Returns
+    -------
+    list[tuple[int, str | None, str | None]]
+        The years, climate models and scenarios of the projections,
+        which come from the CDS.
+    """
+    os.makedirs(
+        utils.paths.get_gridded_folder("weather", "processed"), exist_ok=True
+    )
+    for year, model, scenario in tqdm(year_model_scenario_list, desc="Years"):
+        if model or scenario:
+            continue
+        get_file_path = _get_entity_file_path_function(
+            variable, year, None, None
+        )
+        outdated = {
+            code: get_file_path(code)
+            for code in codes
+            if is_outdated(get_file_path(code), year, None, None)
+        }
+        if outdated:
+            _extract_from_arco(
+                variable,
+                year,
+                {
+                    code: utils.shapes.get_entity_bounds(
+                        utils.shapes.get_entity_shape(code, make_plot=False)
+                    )
+                    for code in outdated
+                },
+                outdated,
+            )
+    return [
+        combination
+        for combination in year_model_scenario_list
+        if combination[1] or combination[2]
+    ]

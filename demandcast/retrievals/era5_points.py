@@ -12,7 +12,7 @@ Description:
     values are those of the grids. The CDS describes this dataset as
     experimental; the grids remain available.
 
-    The series of each point is saved in the folder of the gridded
+    The series of each point is saved in the raw folder of the gridded
     weather, in points/. It is downloaded again from 120 days before its
     last hour, once a day at most, when the CDS may have later hours:
     the preliminary data of the last months (ERA5T) is replaced by the
@@ -33,7 +33,7 @@ import zipfile
 import numpy as np
 import pandas as pd
 import requests
-import utils.config
+import utils.paths
 import xarray
 
 import retrievals.gridded_weather
@@ -100,7 +100,7 @@ def _get_file_path(variable: str, longitude: float, latitude: float) -> str:
         The path of the Parquet file of the series.
     """
     return os.path.join(
-        utils.config.read_folders_structure()["gridded_weather_folder"],
+        utils.paths.get_gridded_folder("weather", "raw"),
         "points",
         f"{variable}_{latitude:+.2f}_{longitude:+.2f}.parquet",
     )

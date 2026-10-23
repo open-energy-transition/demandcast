@@ -15,7 +15,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import utils.config
+import utils.paths
 
 
 def _read_mape(
@@ -519,7 +519,7 @@ def plot(
         together.
     """
     # Get the root directory of the project.
-    root_directory = utils.config.read_folders_structure()["root_folder"]
+    root_directory = utils.paths.CODE_FOLDER
 
     # Define the directory containing the CSV files.
     results_directory = os.path.join(
@@ -539,16 +539,16 @@ def plot(
         "continent": ["AF", "AS", "EU", "OC", "NA", "SA"],
     }
 
-    # Read the MAPE values from the CSV files.
-    mape = _read_mape(
-        results_directory, version, compare_with_version, by_group, groups
-    )
-
     if by_group and compare_with_version is not None:
         raise ValueError(
             "The --by_group and --compare_with_version options cannot be "
             "used together at the moment."
         )
+
+    # Read the MAPE values from the CSV files.
+    mape = _read_mape(
+        results_directory, version, compare_with_version, by_group, groups
+    )
     if by_group:
         _plot_by_group(figure_directory, version, mape, groups)
     elif compare_with_version is not None:

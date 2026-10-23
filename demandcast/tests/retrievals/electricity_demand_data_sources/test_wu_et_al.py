@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
-import utils.entities
+import utils.data_sources
 from retrievals.electricity_demand_data_sources import wu_et_al
 
 
@@ -95,7 +95,7 @@ def test_download_and_extract_data_with_other_columns(
 
 def test_provinces_match_the_entities():
     """Test that the provinces are the entities of the YAML file."""
-    codes = utils.entities.read_codes_in(data_source="wu_et_al")
+    codes = utils.data_sources.read_codes_in(data_source="wu_et_al")
 
     assert sorted(codes) == sorted(
         f"CHN_{province}" for province in wu_et_al.PROVINCES

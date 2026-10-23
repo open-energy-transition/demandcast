@@ -3,12 +3,15 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides a function to fetch data from various online
-    content sources, including CSV, Excel, HTML, and JSON formats. It
-    also includes a function to fetch hourly electricity demand time
-    series from the ENTSO-E API.
+    This module fetches remote data, with one function for each type of
+    result: the response of a request, its text, an Excel file, or a
+    table read from CSV, Excel or JSON. All of them retry after the
+    errors that can be temporary, and hide the API keys in their
+    messages. It also reads the files downloaded manually, and fetches
+    the electricity demand of the ENTSO-E API.
 """
 
+import inspect
 import itertools
 import logging
 import os
@@ -16,10 +19,9 @@ import re
 import time
 import urllib.error
 import urllib.parse
-import urllib.request
 from collections.abc import Callable, Mapping
 from io import BytesIO, StringIO
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
 import requests
@@ -27,8 +29,8 @@ import requests.exceptions
 from entsoe import EntsoePandasClient
 from entsoe.exceptions import NoMatchingDataError
 
-import utils.config
-import utils.entities
+import utils.codes
+import utils.paths
 
 # The HTTP status codes of the data that does not exist, for example a
 # file that is not published yet.
@@ -164,260 +166,43 @@ def _read_aspx_params(
     }
 
 
-def fetch_data(  # noqa: C901
-    url: str,
-    content_type: str,
-    timeout: int = 10,
-    retries: int = 5,
-    retry_delay: int = 5,
-    read_with: str = "requests.get",
-    encoding_type: str | None = None,
-    read_as: str = "csv_table",
-    csv_kwargs: dict[str, Any] | None = None,
-    excel_kwargs: dict[str, Any] | None = None,
-    verify_ssl: bool | str = True,
-    request_params: Mapping[str, str] | None = None,
-    post_data_params: Mapping[str, str | int] | None = None,
-    post_json: Mapping[str, Any] | None = None,
-    header_params: Mapping[str, str] | None = None,
-    json_keys: list[str] | None = None,
-    query_aspx_webpage: bool = False,
-    get_cookies: bool = False,
-) -> pd.DataFrame | pd.ExcelFile | str | requests.Response:
+def _with_retries[T](
+    url: str, fetch: Callable[[], T], retries: int, retry_delay: int
+) -> T:
     """
-    Fetch the data from the specified URL.
+    Fetch remote data, retrying after the errors that can be temporary.
 
-    This function supports fetching data in various formats such as CSV,
-    Excel, HTML, and JSON. It retries after the errors that can be
-    temporary (lost connections, timeouts, and the HTTP errors of busy
-    or failing servers), and allows customization of the request
-    parameters, headers, and data formats.
+    The errors that can be temporary are the lost connections, the
+    timeouts, and the HTTP errors of busy or failing servers.
 
     Parameters
     ----------
     url : str
-        The URL of the data source.
-    content_type : str
-        The type of the content to be fetched.
-    timeout : int, optional
-        The timeout for the request in seconds.
-    retries : int, optional
-        The number of attempts, in case of temporary errors.
-    retry_delay : int, optional
+        The URL of the data, for the messages.
+    fetch : Callable[[], T]
+        The function that fetches the data.
+    retries : int
+        The number of attempts.
+    retry_delay : int
         The delay between attempts in seconds.
-    read_with : str, optional
-        The library to use for reading the html content.
-    encoding_type : str, optional
-        The encoding to use for reading the content.
-    read_as : str, optional
-        The format to read the content as.
-    csv_kwargs : dict[str, Any], optional
-        The keyword arguments for reading CSV files.
-    excel_kwargs : dict[str, Any], optional
-        The keyword arguments for reading Excel files.
-    verify_ssl : bool | str, optional
-        Verify the SSL certificate, with the default certificates or
-        with those in the file at this path.
-    header_params : Mapping[str, str], optional
-        The headers for the request.
-    request_params : Mapping[str, str], optional
-        The parameters for the request.
-    post_data_params : Mapping[str, str | int], optional
-        The data for the POST request.
-    post_json : Mapping[str, Any], optional
-        The JSON body for the POST request, instead of the data.
-    json_keys : list[str], optional
-        The keys to extract from the JSON response.
-    query_aspx_webpage : bool, optional
-        Whether to query the ASPX webpage.
-    get_cookies : bool, optional
-        Whether to get cookies from the initial GET request.
 
     Returns
     -------
-    pandas.DataFrame | pandas.ExcelFile | str | requests.Response
-        The fetched data as a DataFrame, Excel file, string, or
-        response object.
+    T
+        The data.
 
     Raises
     ------
-    ValueError
-        If the content type, the library or the URL scheme is not
-        supported.
     DataNotFoundError
         If the server answers that the data does not exist.
     ConnectionError
         If the server answers with another client error, or the data
         cannot be fetched within the specified number of attempts.
     """
-    if csv_kwargs is None:
-        csv_kwargs = {}
-    if excel_kwargs is None:
-        excel_kwargs = {}
-    if request_params is None:
-        request_params = {}
-    if post_data_params is None:
-        post_data_params = {}
-    # Copy the headers, which are updated with cookies below.
-    header_params = dict(header_params or {})
-    if json_keys is None:
-        json_keys = []
-
-    # Try to fetch the data from the URL, and retry after the errors
-    # that can be temporary: lost connections, timeouts, and the HTTP
-    # errors of busy or failing servers.
     error: Exception | None = None
     for attempt in range(1, retries + 1):
         try:
-            if content_type == "csv":
-                # Read the CSV file from the URL.
-                return pd.read_csv(url, **csv_kwargs)
-
-            if content_type == "excel":
-                # Read the Excel file from the URL.
-                return pd.read_excel(url, **excel_kwargs)
-
-            if content_type == "html":
-                if read_with == "urllib.request":
-                    # Only open web URLs, not local files.
-                    if not url.startswith(("http://", "https://")):
-                        raise ValueError(
-                            f"The URL {url} must use HTTP or HTTPS."
-                        )
-
-                    # Read the HTML content from the URL using
-                    # the urllib.request module.
-                    request = urllib.request.Request(url)  # noqa: S310
-                    for key, value in header_params.items():
-                        request.add_header(key, value)
-
-                    # Send the request and return the response
-                    # as a string.
-                    return (
-                        urllib.request.urlopen(  # noqa: S310
-                            request, timeout=timeout
-                        )
-                        .read()
-                        .decode("utf-8")
-                    )
-
-                if read_with in {"requests.get", "requests.post"}:
-                    if get_cookies:
-                        # Create a session to persist cookies.
-                        session = requests.Session()
-
-                        # Send a GET request to the URL to
-                        # retrieve cookies.
-                        session.get(
-                            url,
-                            timeout=timeout,
-                            verify=verify_ssl,
-                            headers=header_params,
-                            params=request_params,
-                        )
-
-                        # Update the header parameters with
-                        # the cookies.
-                        header_params.update(
-                            {
-                                "Cookie": "; ".join(
-                                    [
-                                        f"{key}={value}"
-                                        for key, value in session.cookies.get_dict().items()
-                                    ]
-                                )
-                            }
-                        )
-
-                    if read_with == "requests.get":
-                        # Send a GET request to the URL.
-                        response = requests.get(
-                            url,
-                            timeout=timeout,
-                            verify=verify_ssl,
-                            headers=header_params,
-                            params=request_params,
-                        )
-
-                    elif read_with == "requests.post":
-                        if query_aspx_webpage:
-                            # Read the HTML content from the URL
-                            # using the requests module.
-                            response = requests.get(
-                                url,
-                                timeout=timeout,
-                                verify=verify_ssl,
-                                headers=header_params,
-                                params=request_params,
-                            )
-
-                            # Read the ASPX parameters from the
-                            # response and add them to the POST
-                            # data parameters.
-                            post_data_params = _read_aspx_params(
-                                response, post_data_params
-                            )
-
-                        # Send a POST request to the URL.
-                        response = requests.post(
-                            url,
-                            timeout=timeout,
-                            verify=verify_ssl,
-                            headers=header_params,
-                            params=request_params,
-                            data=post_data_params,
-                            json=post_json,
-                        )
-
-                    # Check if the request was successful.
-                    response.raise_for_status()
-
-                    # Set the encoding if provided.
-                    if encoding_type:
-                        response.encoding = encoding_type
-
-                    if read_as == "csv_table":
-                        # Return the content read as a CSV
-                        # table.
-                        return pd.read_csv(
-                            StringIO(response.text), **csv_kwargs
-                        )
-                    if read_as == "excel_table":
-                        # Return the content read as an Excel
-                        # table.
-                        return pd.read_excel(
-                            BytesIO(response.content), **excel_kwargs
-                        )
-                    if read_as == "excel_file":
-                        # Return the content read as an Excel
-                        # file.
-                        return pd.ExcelFile(BytesIO(response.content))
-                    if read_as == "text":
-                        # Return the content as a string.
-                        return response.text
-                    if read_as == "json":
-                        # Read the content of the response
-                        content = response.json()
-
-                        # Loop over the JSON keys and extract
-                        # the content.
-                        for json_key in json_keys:
-                            content = content[json_key]
-
-                        # Return the content as a DataFrame.
-                        return pd.DataFrame(content)
-                    if read_as == "plain":
-                        # Return just the response.
-                        return response
-                    raise ValueError(
-                        f"The read_as parameter {read_as} is not supported."
-                    )
-
-                raise ValueError(f"Library {read_with} is not supported.")
-
-            raise ValueError(
-                f"The content type {content_type} is not supported."
-            )
+            return fetch()
 
         # The errors are raised again without the original ones, whose
         # messages can have the URL with an API key, and which a
@@ -455,41 +240,356 @@ def fetch_data(  # noqa: C901
     ) from None
 
 
+def _send(
+    url: str,
+    method: Literal["GET", "POST"],
+    timeout: int,
+    verify_ssl: bool | str,
+    header_params: Mapping[str, str] | None,
+    request_params: Mapping[str, str] | None,
+    post_data_params: Mapping[str, str | int] | None,
+    post_json: Mapping[str, Any] | None,
+    query_aspx_webpage: bool,
+    get_cookies: bool,
+    encoding_type: str | None,
+) -> requests.Response:
+    """
+    Send a request and check its response.
+
+    Parameters
+    ----------
+    url : str
+        The URL.
+    method : str
+        "GET" or "POST".
+    timeout : int
+        The timeout of the request in seconds.
+    verify_ssl : bool | str
+        Verify the SSL certificate, with the default certificates or
+        with those in the file at this path.
+    header_params : Mapping[str, str] | None
+        The headers.
+    request_params : Mapping[str, str] | None
+        The parameters of the URL.
+    post_data_params : Mapping[str, str | int] | None
+        The data of a POST request.
+    post_json : Mapping[str, Any] | None
+        The JSON body of a POST request, instead of the data.
+    query_aspx_webpage : bool
+        Whether to read the form parameters of an ASPX page with a GET
+        request first, and send them with the POST request.
+    get_cookies : bool
+        Whether to get the cookies of the page with a GET request
+        first, and send them with the request.
+    encoding_type : str | None
+        The encoding of the text of the response, if not the one that
+        the server gives.
+
+    Returns
+    -------
+    requests.Response
+        The response, whose status is a success.
+    """
+    # Copy the headers, which are updated with cookies below.
+    headers = dict(header_params or {})
+    params = dict(request_params or {})
+    data = dict(post_data_params or {})
+
+    if get_cookies:
+        # Send a GET request to the URL to retrieve the cookies, and
+        # send them with the request.
+        session = requests.Session()
+        session.get(
+            url,
+            timeout=timeout,
+            verify=verify_ssl,
+            headers=headers,
+            params=params,
+        )
+        headers["Cookie"] = "; ".join(
+            f"{key}={value}"
+            for key, value in session.cookies.get_dict().items()
+        )
+
+    if method == "GET":
+        response = requests.get(
+            url,
+            timeout=timeout,
+            verify=verify_ssl,
+            headers=headers,
+            params=params,
+        )
+    else:
+        if query_aspx_webpage:
+            # Read the ASPX parameters of the page and add them to the
+            # data of the POST request.
+            page = requests.get(
+                url,
+                timeout=timeout,
+                verify=verify_ssl,
+                headers=headers,
+                params=params,
+            )
+            data = _read_aspx_params(page, data)
+        response = requests.post(
+            url,
+            timeout=timeout,
+            verify=verify_ssl,
+            headers=headers,
+            params=params,
+            data=data,
+            json=post_json,
+        )
+
+    response.raise_for_status()
+    if encoding_type:
+        response.encoding = encoding_type
+    return response
+
+
+def fetch_response(
+    url: str,
+    method: Literal["GET", "POST"] = "GET",
+    *,
+    timeout: int = 10,
+    retries: int = 5,
+    retry_delay: int = 5,
+    verify_ssl: bool | str = True,
+    header_params: Mapping[str, str] | None = None,
+    request_params: Mapping[str, str] | None = None,
+    post_data_params: Mapping[str, str | int] | None = None,
+    post_json: Mapping[str, Any] | None = None,
+    query_aspx_webpage: bool = False,
+    get_cookies: bool = False,
+    encoding_type: str | None = None,
+) -> requests.Response:
+    """
+    Fetch the response of a request.
+
+    Parameters
+    ----------
+    url : str
+        The URL.
+    method : str, optional
+        "GET" or "POST".
+    timeout : int, optional
+        The timeout of each attempt in seconds.
+    retries : int, optional
+        The number of attempts, in case of temporary errors.
+    retry_delay : int, optional
+        The delay between attempts in seconds.
+    verify_ssl : bool | str, optional
+        Verify the SSL certificate, with the default certificates or
+        with those in the file at this path.
+    header_params : Mapping[str, str], optional
+        The headers.
+    request_params : Mapping[str, str], optional
+        The parameters of the URL.
+    post_data_params : Mapping[str, str | int], optional
+        The data of a POST request.
+    post_json : Mapping[str, Any], optional
+        The JSON body of a POST request, instead of the data.
+    query_aspx_webpage : bool, optional
+        Whether to send the form parameters of the ASPX page with a
+        POST request.
+    get_cookies : bool, optional
+        Whether to send the cookies of the page with the request.
+    encoding_type : str, optional
+        The encoding of the text of the response, if not the one that
+        the server gives.
+
+    Returns
+    -------
+    requests.Response
+        The response, whose status is a success.
+    """
+    return _with_retries(
+        url,
+        lambda: _send(
+            url,
+            method,
+            timeout,
+            verify_ssl,
+            header_params,
+            request_params,
+            post_data_params,
+            post_json,
+            query_aspx_webpage,
+            get_cookies,
+            encoding_type,
+        ),
+        retries,
+        retry_delay,
+    )
+
+
+def fetch_text(
+    url: str, method: Literal["GET", "POST"] = "GET", **kwargs: Any
+) -> str:
+    """
+    Fetch the text of a response.
+
+    Parameters
+    ----------
+    url : str
+        The URL.
+    method : str, optional
+        "GET" or "POST".
+    **kwargs : Any
+        The other options of fetch_response.
+
+    Returns
+    -------
+    str
+        The text of the response.
+    """
+    return fetch_response(url, method, **kwargs).text
+
+
+def fetch_excel_file(
+    url: str, method: Literal["GET", "POST"] = "GET", **kwargs: Any
+) -> pd.ExcelFile:
+    """
+    Fetch an Excel file, to read its sheets.
+
+    Parameters
+    ----------
+    url : str
+        The URL.
+    method : str, optional
+        "GET" or "POST".
+    **kwargs : Any
+        The other options of fetch_response.
+
+    Returns
+    -------
+    pandas.ExcelFile
+        The Excel file.
+    """
+    return pd.ExcelFile(BytesIO(fetch_response(url, method, **kwargs).content))
+
+
+def _check_table_options(
+    content_type: str, read_with: str, read_as: str, kwargs: Mapping[str, Any]
+) -> None:
+    """
+    Check the options of the fetch of a table.
+
+    Parameters
+    ----------
+    content_type : str
+        The type of the content.
+    read_with : str
+        The request of an "html" content.
+    read_as : str
+        How to read the response.
+    kwargs : Mapping[str, Any]
+        The other options of the request.
+
+    Raises
+    ------
+    ValueError
+        If the content type or the way of reading is not supported.
+    TypeError
+        If an option of the request is unknown.
+    """
+    if content_type not in {"csv", "excel", "html"}:
+        raise ValueError(f"The content type {content_type} is not supported.")
+    if read_as not in {"csv_table", "excel_table", "json"}:
+        raise ValueError(f"The read_as parameter {read_as} is not supported.")
+    if read_with not in {"requests.get", "requests.post"}:
+        raise ValueError(f"Library {read_with} is not supported.")
+    unknown = set(kwargs) - set(inspect.signature(fetch_response).parameters)
+    if unknown:
+        raise TypeError(f"Unknown options of the request: {sorted(unknown)}.")
+
+
 def fetch_dataframe(
-    url: str, content_type: str, **kwargs: Any
+    url: str,
+    content_type: Literal["csv", "excel", "html"],
+    *,
+    read_with: Literal["requests.get", "requests.post"] = "requests.get",
+    read_as: Literal["csv_table", "excel_table", "json"] = "csv_table",
+    csv_kwargs: dict[str, Any] | None = None,
+    excel_kwargs: dict[str, Any] | None = None,
+    json_keys: list[str] | None = None,
+    retries: int = 5,
+    retry_delay: int = 5,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """
     Fetch data that is read as a table.
-
-    This function fetches the data with fetch_data and checks that it is
-    a table, as the data sources expect.
 
     Parameters
     ----------
     url : str
         The URL of the data.
     content_type : str
-        The type of content, as for fetch_data.
+        "csv" or "excel" for a file that pandas reads from the URL, or
+        "html" for the response of a request, read as read_as says.
+    read_with : str, optional
+        The request of an "html" content, "requests.get" or
+        "requests.post".
+    read_as : str, optional
+        How to read the response: "csv_table", "excel_table" or "json".
+    csv_kwargs : dict[str, Any], optional
+        The keyword arguments of pandas.read_csv.
+    excel_kwargs : dict[str, Any], optional
+        The keyword arguments of pandas.read_excel.
+    json_keys : list[str], optional
+        The keys of the table in the JSON response.
+    retries : int, optional
+        The number of attempts, in case of temporary errors.
+    retry_delay : int, optional
+        The delay between attempts in seconds.
     **kwargs : Any
-        The other arguments of fetch_data.
+        The other options of the request, as for fetch_response.
 
     Returns
     -------
     pandas.DataFrame
         The data.
-
-    Raises
-    ------
-    TypeError
-        If the data is not a pandas DataFrame.
     """
-    dataset = fetch_data(url, content_type, **kwargs)
-    if not isinstance(dataset, pd.DataFrame):
-        raise TypeError(
-            f"The extracted data is a {type(dataset)} object, "
-            "expected a pandas DataFrame."
+    csv_kwargs = csv_kwargs or {}
+    excel_kwargs = excel_kwargs or {}
+
+    def fetch() -> pd.DataFrame:
+        """
+        Fetch and read the table once.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The data.
+        """
+        if content_type == "csv":
+            return pd.read_csv(url, **csv_kwargs)
+        if content_type == "excel":
+            return pd.read_excel(url, **excel_kwargs)
+        response = _send(
+            url,
+            "POST" if read_with == "requests.post" else "GET",
+            kwargs.get("timeout", 10),
+            kwargs.get("verify_ssl", True),
+            kwargs.get("header_params"),
+            kwargs.get("request_params"),
+            kwargs.get("post_data_params"),
+            kwargs.get("post_json"),
+            kwargs.get("query_aspx_webpage", False),
+            kwargs.get("get_cookies", False),
+            kwargs.get("encoding_type"),
         )
-    return dataset
+        if read_as == "csv_table":
+            return pd.read_csv(StringIO(response.text), **csv_kwargs)
+        if read_as == "excel_table":
+            return pd.read_excel(BytesIO(response.content), **excel_kwargs)
+        content = response.json()
+        for json_key in json_keys or []:
+            content = content[json_key]
+        return pd.DataFrame(content)
+
+    _check_table_options(content_type, read_with, read_as, kwargs)
+    return _with_retries(url, fetch, retries, retry_delay)
 
 
 def find_manual_files(prefix: str) -> list[str]:
@@ -512,9 +612,9 @@ def find_manual_files(prefix: str) -> list[str]:
         electricity demand data whose names start with the prefix, in
         the order of their names.
     """
-    data_directory = utils.config.read_folders_structure()[
-        "manually_downloaded_electricity_demand_folder"
-    ]
+    data_directory = utils.paths.get_electricity_demand_folder(
+        "manual_downloads"
+    )
     if not os.path.isdir(data_directory):
         return []
     return [
@@ -565,9 +665,9 @@ def read_manual_files(
     """
     file_paths = find_manual_files(prefix)
     if not file_paths:
-        data_directory = utils.config.read_folders_structure()[
-            "manually_downloaded_electricity_demand_folder"
-        ]
+        data_directory = utils.paths.get_electricity_demand_folder(
+            "manual_downloads"
+        )
         raise FileNotFoundError(
             f"The data for {data_source_name} has not been found in the "
             f"folder {data_directory}. Please download the data manually "
@@ -707,7 +807,7 @@ def fetch_entsoe_demand(
     # Get the area of ENTSO-E: the ISO Alpha-2 code of the country, if
     # no other area is given.
     if area is None:
-        area = utils.entities.get_iso_alpha_2_code(iso_alpha_3_code)
+        area = utils.codes.get_iso_alpha_2_code(iso_alpha_3_code)
 
     # Define the ENTSO-E API client, which retries after connection
     # errors.

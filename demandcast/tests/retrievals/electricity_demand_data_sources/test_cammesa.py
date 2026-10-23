@@ -8,7 +8,7 @@ Description:
 
 import datetime
 
-import utils.entities
+import utils.data_sources
 from retrievals.electricity_demand_data_sources import cammesa
 
 
@@ -78,7 +78,7 @@ def test_download_and_extract_data_of_a_province(
 
 def test_region_identifiers_of_the_entities():
     """Test that each entity of the data source has a region."""
-    codes = utils.entities.read_codes_in(data_source="cammesa")
+    codes = utils.data_sources.read_codes_in(data_source="cammesa")
 
     assert sorted(codes) == sorted(cammesa.REGION_IDS)
 

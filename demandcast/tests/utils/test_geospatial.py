@@ -8,14 +8,13 @@ Description:
 
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import geopandas
 import numpy as np
-import pandas as pd
 import pytest
-import utils.config
 import utils.geospatial
+import utils.paths
 import xarray
 from shapely import box
 
@@ -125,17 +124,15 @@ def test_get_fraction_of_grid_cells_in_shape(monkeypatch):
     ----------
     monkeypatch : pytest.MonkeyPatch
         A pytest fixture that allows us to modify the behavior of the
-        utils.config.read_folders_structure function to return a
-        temporary directory.
+        folder of the figures to return a temporary directory.
     """
     # Create a temporary directory for figure output.
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Patch the utils.config.read_folders_structure to return
-        # the temp path.
+        # Save the figures in the temporary directory.
         monkeypatch.setattr(
-            utils.config,
-            "read_folders_structure",
-            lambda: {"figures_folder": tmpdir},
+            utils.paths,
+            "get_results_folder",
+            lambda _kind: tmpdir,
         )
 
         # Create a simple xarray.DataArray with made-up data.
@@ -332,201 +329,19 @@ def test_coarsen_function():
     assert result.x[-1] == 180
 
 
-def test_aggregate_gridded_data():
-    """
-    Test the aggregation of gridded data.
-
-    This function tests the aggregate_gridded_data utility function to
-    ensure it correctly aggregates values from a gridded dataset within
-    a specified shape.
-    """
-    with (
-        patch(
-            "utils.geospatial._get_fraction_of_grid_cells_in_shape"
-        ) as mock_fraction,
-        patch("utils.shapes.get_entity_shape") as mock_shape,
-        patch("xarray.open_dataarray") as mock_xarray,
-        patch("importlib.import_module"),
-        patch("os.path.exists") as mock_exists,
-        patch("utils.config.read_folders_structure") as mock_dirs,
-    ):
-        # Setup test parameters.
-        variable = "population"
-        code = "XYZ"
-        year = 2020
-        scenario = "SSP2"
-
-        # Mock the folder structure to return a temporary directory.
-        mock_dirs.return_value = {"gridded_population_folder": "/fake/path"}
-
-        # Mock the existence of the data file, initially True.
-        mock_exists.return_value = False
-
-        # Mock the xarray.DataArray used operations.
-        mock_dataarray = MagicMock()
-        mock_dataarray.__mul__.return_value.sum.return_value.item.return_value = 12345.6
-        mock_xarray.return_value = mock_dataarray
-
-        # Mock the shape retrieval.
-        mock_shape.return_value = "fake_shape"
-
-        # Mock the fraction calculation to be a numpy array.
-        mock_fraction.return_value = np.array([[0.5, 0.5], [0.2, 0.8]])
-
-        # Call the function to test.
-        result = utils.geospatial._aggregate_gridded_data(
-            variable, code, year, scenario
-        )
-
-        # Assert that the returned value matches the mocked result.
-        assert result == 12345.6
-
-
-def test_selected_years():
-    """
-    Test the selection of years for gridded data.
-
-    This function tests the _select_years_of_gridded_data utility
-    function to ensure it correctly selects the available years that
-    match the requested years.
-    """
-    # Define available years and selected years for testing.
-    available_years = [2000, 2005, 2010, 2015]
-    selected_years = [2007, 2008]
-
-    # Define the expected output.
-    expected_years = [2005, 2010]
-
-    # Call the function to test.
-    result = utils.geospatial._select_years_of_gridded_data(
-        available_years, selected_years
+def test_get_total_in_shape():
+    """Test that the cells count for their fraction within the shape."""
+    gridded_data = xarray.DataArray(
+        np.array([[10.0, 20.0], [30.0, 40.0]]),
+        coords={"y": [0.5, 1.5], "x": [0.5, 1.5]},
+        dims=["y", "x"],
     )
-
-    # Assert that the returned years match the expected years.
-    assert result == expected_years
-
-
-def test_get_total_value_from_gridded_data():
-    """
-    Test the aggregation to total value from gridded data.
-
-    This function tests the get_total_value_from_gridded_data utility
-    function to ensure it correctly aggregates values from a gridded
-    dataset within a specified shape and time frame. It also checks that
-    the function reteruns the years needed to cover the selected
-    years. Lastly, it verifies that the values are linearly interpolated
-    between the available years.
-    """
-    # Define test parameters.
-    variable = "population"
-    code = "XYZ"
-    available_years = [2035, 2040, 2045, 2050]
-    extra_available_years = 2030
-    selected_years = [2037, 2038]
-    scenario = "SSP2"
-
-    with (
-        patch("utils.geospatial._aggregate_gridded_data") as mock_aggregate,
+    with patch(
+        "utils.geospatial._get_fraction_of_grid_cells_in_shape",
+        return_value=np.array([[1.0, 0.5], [0.0, 0.25]]),
     ):
-        # Mock the aggregation function to return a series of values.
-        mock_aggregate.side_effect = [10000.0, 12000.0]
-
-        # Call the function to test.
-        result = utils.geospatial.get_total_value_from_gridded_data(
-            variable,
-            code,
-            selected_years,
-            available_years,
-            last_available_historical_years_of_gridded_data=extra_available_years,
-            scenario=scenario,
+        total = utils.geospatial.get_total_in_shape(
+            gridded_data, geopandas.GeoDataFrame()
         )
 
-    # Assert that the returned Series has the correct index and values.
-    assert isinstance(result, pd.Series)
-    assert list(result.index) == [2035, 2036, 2037, 2038, 2039, 2040]
-    assert np.allclose(result.to_numpy(), np.linspace(10000, 12000, 6))
-
-    # Repeat the test with the GDP PPP variable and other selected
-    # years.
-    variable = "gdp_ppp"
-    selected_years = [2033, 2034]
-
-    with (
-        patch("utils.geospatial._aggregate_gridded_data") as mock_aggregate,
-    ):
-        # Mock the aggregation function to return a series of values.
-        mock_aggregate.side_effect = [50000.0, 70000.0]
-
-        # Call the function to test.
-        result = utils.geospatial.get_total_value_from_gridded_data(
-            variable,
-            code,
-            selected_years,
-            available_years,
-            last_available_historical_years_of_gridded_data=extra_available_years,
-            scenario=scenario,
-        )
-
-
-def test_get_total_value_from_gridded_data_errors():
-    """
-    Test error handling in get_total_value_from_gridded_data.
-
-    This function tests the error handling of the
-    get_total_value_from_gridded_data utility function to ensure it
-    raises appropriate exceptions when given invalid input parameters.
-    """
-    variable = "population"
-    code = "XYZ"
-    available_years = [2000, 2005, 2010, 2015]
-    selected_years = [2006, 2007]
-    scenario = "SSP2"
-
-    # Test for ValueError when an unsupported variable is provided.
-    with pytest.raises(
-        ValueError, match="must be either 'population' or 'gdp_ppp'"
-    ):
-        utils.geospatial.get_total_value_from_gridded_data(
-            "variable_not_supported",
-            code,
-            selected_years,
-            available_years,
-        )
-
-    # Test for ValueError when scenario is provided but not the last
-    # available historical year.
-    with pytest.raises(ValueError, match="If scenario is provided"):
-        utils.geospatial.get_total_value_from_gridded_data(
-            variable,
-            code,
-            selected_years,
-            available_years,
-            last_available_historical_years_of_gridded_data=None,
-            scenario=scenario,
-        )
-
-    # Test for ValueError when the last available historical year is
-    # provided but not the scenario.
-    with pytest.raises(ValueError, match="scenario must also be provided"):
-        utils.geospatial.get_total_value_from_gridded_data(
-            variable,
-            code,
-            selected_years,
-            available_years,
-            last_available_historical_years_of_gridded_data=1995,
-            scenario=None,
-        )
-
-    # Test for ValueError when the last available historical year is
-    # greater or equal to the minimum available year.
-    with pytest.raises(
-        ValueError, match="must be less than the minimum available"
-    ):
-        utils.geospatial.get_total_value_from_gridded_data(
-            variable,
-            code,
-            selected_years,
-            available_years,
-            last_available_historical_years_of_gridded_data=2020,
-            scenario=scenario,
-        )
+    assert total == pytest.approx(10.0 + 10.0 + 10.0)

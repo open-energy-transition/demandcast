@@ -7,14 +7,11 @@ Description:
 """
 
 import logging
-import os
 from typing import cast, overload
 
 import pandas as pd
-import utils.config
 import utils.ml
-import yaml
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 from xgboost import XGBRegressor
 
 # The extension of the files of the saved models.
@@ -27,37 +24,6 @@ class ConfigModel(BaseModel):
     random_state: int = 42
     enable_categorical: bool | None = True
     evaluation_metric: str | None = "mape"
-
-
-def _read_configuration() -> ConfigModel:
-    """
-    Read the configuration for XGBoost model training.
-
-    Returns
-    -------
-    ConfigModel
-        Configuration model.
-
-    Raises
-    ------
-    ValueError
-        If the configuration validation fails.
-    """
-    # Read the configuration.
-    config_path = os.path.join(
-        utils.config.read_folders_structure()["config_folder"],
-        "xgboost_config.yaml",
-    )
-
-    # Read the raw configuration.
-    with open(config_path) as f:
-        raw_config = yaml.safe_load(f)
-
-    try:
-        # Validate the configuration.
-        return ConfigModel(**raw_config)
-    except ValidationError as e:
-        raise ValueError(f"Configuration validation error: {e}") from e
 
 
 def load(model_path: str) -> XGBRegressor:
@@ -82,7 +48,7 @@ def load(model_path: str) -> XGBRegressor:
     return xgb_model
 
 
-def save(xgb_model: XGBRegressor, model_name: str) -> None:
+def save(xgb_model: XGBRegressor, file_path: str) -> None:
     """
     Save the trained XGBoost model.
 
@@ -90,39 +56,28 @@ def save(xgb_model: XGBRegressor, model_name: str) -> None:
     ----------
     xgb_model : XGBRegressor
         Trained XGBoost model.
-    model_name : str
-        Name to identify the model when saving.
+    file_path : str
+        The path of the file, with the extension FILE_EXTENSION.
     """
-    # Get the folder where to save the model.
-    model_folder = utils.config.read_folders_structure()[
-        "trained_ml_models_folder"
-    ]
-    os.makedirs(model_folder, exist_ok=True)
+    xgb_model.save_model(file_path)
 
-    # Define the output path for the model.
-    output_path = os.path.join(
-        model_folder,
-        f"{model_name}{FILE_EXTENSION}",
-    )
-
-    # Save the trained model.
-    xgb_model.save_model(output_path)
-
-    logging.info(f"Trained model saved to {output_path}")
+    logging.info(f"Trained model saved to {file_path}")
 
 
-def get_initialized_model() -> XGBRegressor:
+def get_initialized_model(config: ConfigModel) -> XGBRegressor:
     """
     Get an initialized XGBoost model based on the configuration.
+
+    Parameters
+    ----------
+    config : ConfigModel
+        The settings of the model.
 
     Returns
     -------
     XGBRegressor
         Initialized XGBoost model.
     """
-    # Read the algorithm configuration.
-    config = _read_configuration()
-
     # Initialize model with config parameters.
     xgb_model = XGBRegressor(
         random_state=config.random_state,
@@ -137,6 +92,7 @@ def get_initialized_model() -> XGBRegressor:
 
 def train(
     prepared_dataset: dict[str, utils.ml.PreparedDataset],
+    config: ConfigModel,
 ) -> XGBRegressor:
     """
     Train XGBoost model.
@@ -146,6 +102,8 @@ def train(
     prepared_dataset : dict[str, PreparedDataset]
         The prepared datasets for training, validation, and testing,
         produced by ``utils.ml.prepare_split_datasets``.
+    config : ConfigModel
+        The settings of the model.
 
     Returns
     -------
@@ -155,7 +113,7 @@ def train(
     logging.info("Starting XGBoost model training.")
 
     # Get an initialized model.
-    xgb_model = get_initialized_model()
+    xgb_model = get_initialized_model(config)
 
     # Prepare evaluation set if the validation dataset is provided.
     eval_set = None

@@ -8,7 +8,6 @@ Description:
 
 import datetime
 import itertools
-import logging
 
 import numpy as np
 import pandas as pd
@@ -220,78 +219,6 @@ def test_linearly_interpolate(sample_time_series):
     assert np.isnan(interpolated_time_series.iloc[2])
     assert np.isnan(interpolated_time_series.iloc[3])
     assert interpolated_time_series.iloc[10] == 10
-
-
-def test_harmonize_time_series(sample_time_series):
-    """
-    Test if the function harmonizes the time series.
-
-    This test checks if the function correctly harmonizes the time
-    series by adding missing time steps, resampling the time resolution,
-    and interpolating missing values. It ensures that the resulting time
-    series has no missing values and the expected number of time steps
-    (8760 for a one-year-long time series with hourly resolution).
-
-    Parameters
-    ----------
-    sample_time_series : pandas.Series
-        A pandas Series representing a time series with a datetime index
-        and some missing values.
-    """
-    # Harmonize the time series by adding missing time steps, resampling
-    # the time resolution, and interpolating missing values.
-    harmonized_time_series = utils.time_series.harmonize_time_series(
-        sample_time_series, local_time_zone
-    )
-
-    # Should have no missing values.
-    assert harmonized_time_series.isna().sum() == 0
-
-    # Check total number of time steps.
-    assert len(harmonized_time_series) == 8760
-
-    # Test the function when both resample and interpolate are False.
-    not_harmonized_time_series = utils.time_series.harmonize_time_series(
-        sample_time_series,
-        local_time_zone,
-        resample=False,
-        interpolate_missing_values=False,
-    )
-    assert isinstance(not_harmonized_time_series, pd.Series)
-
-
-def test_check_time_series_data_quality_logs(caplog, sample_time_series):
-    """
-    Test the check_time_series_data_quality function.
-
-    This test checks if the function correctly identifies missing values
-    in the time series and logs a warning message. It uses the caplog
-    fixture to capture log messages at the WARNING level.
-
-    Parameters
-    ----------
-    caplog : pytest.LogCaptureFixture
-        A fixture provided by pytest to capture log messages.
-    sample_time_series : pandas.Series
-        A pandas Series representing a time series with a datetime index
-        and some missing values.
-    """
-    # Test if the function logs a warning for missing values.
-    with caplog.at_level(logging.WARNING):
-        utils.time_series.check_time_series_data_quality(sample_time_series)
-        assert "missing values" in caplog.text
-
-    # Add a duplicate index and a zero value for testing.
-    time_series = pd.concat(
-        [
-            sample_time_series,
-            pd.Series([0], index=[sample_time_series.index[5]]),
-        ]
-    )
-
-    with caplog.at_level(logging.WARNING):
-        utils.time_series.check_time_series_data_quality(time_series)
-        assert "missing values" in caplog.text
 
 
 def test_convert_from_yearly_to_hourly():

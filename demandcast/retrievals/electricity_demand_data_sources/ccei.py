@@ -55,8 +55,8 @@ Description:
 import datetime
 
 import pandas as pd
-import utils.entities
 import utils.fetcher
+import utils.time_zones
 
 # The provinces whose data is read in local time, whose times in UTC are
 # wrong.
@@ -202,7 +202,7 @@ def download_and_extract_data_for_request(
         times = (
             pd.DatetimeIndex(local_times)
             .tz_localize(
-                str(utils.entities.get_time_zone(code)),
+                str(utils.time_zones.get_time_zone(code)),
                 ambiguous="NaT",
                 nonexistent="NaT",
             )

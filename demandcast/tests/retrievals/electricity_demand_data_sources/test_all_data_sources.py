@@ -16,13 +16,13 @@ import os
 import socket
 
 import pytest
-import utils.config
-import utils.entities
+import utils.data_sources
 import utils.fetcher
+import utils.paths
 import utils.raw_data
 import yaml
 
-DATA_SOURCES = sorted(utils.entities.read_data_sources())
+DATA_SOURCES = sorted(utils.data_sources.read_data_sources())
 
 # The data sources that read their requests from their website.
 ONLINE_REQUESTS = {"caiso", "krogd", "pgcb"}
@@ -41,9 +41,7 @@ def _read_entities(file_name: str) -> list[dict]:
     list[dict]
         The entities.
     """
-    file_path = os.path.join(
-        utils.config.read_folders_structure()["root_folder"], file_name
-    )
+    file_path = os.path.join(utils.paths.CODE_FOLDER, file_name)
     with open(file_path, encoding="utf-8") as file:
         content = yaml.safe_load(file)
     assert list(content) == ["entities"]
@@ -64,9 +62,7 @@ def _no_network(*args, **_kwargs):
 
 def test_each_data_source_has_a_module():
     """Test that each module of a data source has a YAML file."""
-    folder = utils.config.read_folders_structure()[
-        "electricity_demand_data_sources_folder"
-    ]
+    folder = utils.paths.DATA_SOURCES_FOLDER
     modules = sorted(
         file_name.removesuffix(".py")
         for file_name in os.listdir(folder)
@@ -89,8 +85,10 @@ def test_entities(data_source):
     }
 
     # Reading the entities of a source checks its YAML file, with
-    # utils.entities.DataSourceEntity.
-    for entity in utils.entities._read_entities_info(data_source=data_source):
+    # utils.data_sources.DataSourceEntity.
+    for entity in utils.data_sources.read_entities_info(
+        data_source=data_source
+    ):
         assert entity["country_code"] in countries | CODES_OUTSIDE_ISO_3166
         if "subdivision_code" in entity:
             assert (entity["country_code"], entity["subdivision_code"]) in (
@@ -107,7 +105,7 @@ def test_module(data_source):
 
     # The retrieval code passes the code and the dates of the data of
     # each entity, and then each request with the code.
-    codes = utils.entities.read_codes_in(data_source=data_source)
+    codes = utils.data_sources.read_codes_in(data_source=data_source)
     dates = [datetime.date(2020, 1, 1), datetime.date(2020, 12, 31)]
     inspect.signature(module.get_available_requests).bind(codes[0], *dates)
     inspect.signature(module.download_and_extract_data_for_request).bind(
@@ -130,17 +128,17 @@ def test_module(data_source):
 def test_requests(data_source, monkeypatch):
     """Test that the requests of the source match its download."""
     monkeypatch.setattr(socket.socket, "connect", _no_network)
-    monkeypatch.setattr(utils.fetcher, "fetch_data", _no_network)
+    monkeypatch.setattr(utils.fetcher, "_with_retries", _no_network)
     module = importlib.import_module(
         f"retrievals.electricity_demand_data_sources.{data_source}"
     )
-    codes = utils.entities.read_codes_in(data_source=data_source)
+    codes = utils.data_sources.read_codes_in(data_source=data_source)
 
     # The requests cover the dates of the data in the YAML file, and
     # each one is passed whole, with the code. A source that downloads
     # its data at once has a single request.
     start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+        utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
             data_source
         )[codes[0]]
     )

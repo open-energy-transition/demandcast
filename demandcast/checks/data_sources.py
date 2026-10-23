@@ -10,9 +10,10 @@ Description:
     file, and checks the values: they are numbers, at times with a time
     zone at most one hour apart, they are not negative, and they are
     recent, or within the dates of the YAML file. The results are saved
-    to a JSON file and a Markdown file in the folder of the checks,
-    with the number of checks that each data source has failed in a
-    row, counted from the report of the previous check in that folder.
+    to a JSON file and a Markdown file in the results of the checks
+    (see utils/paths.py), with the number of checks that each data
+    source has failed in a row, counted from the report of the previous
+    check in that folder.
 """
 
 import dataclasses
@@ -25,9 +26,9 @@ import threading
 import time
 
 import pandas as pd
-import utils.config
-import utils.entities
+import utils.data_sources
 import utils.fetcher
+import utils.paths
 import utils.time_series
 
 # The data sources whose files are downloaded manually, and so cannot
@@ -129,7 +130,7 @@ def _download_sample(data_source: str, code: str, result: Result) -> pd.Series:
     )
 
     start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+        utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
             data_source
         )[code]
     )
@@ -255,7 +256,7 @@ def check_data_source(data_source: str, maximum_age_days: int) -> Result:
 
     try:
         # Check the first country or subdivision of the data source.
-        entity = utils.entities.read_entities(data_source)[0]
+        entity = utils.data_sources.read_entities(data_source)[0]
         code = entity.code
         result.code = code
 
@@ -363,7 +364,7 @@ def _read_previous_failures() -> dict[str, int]:
         no report that can be read.
     """
     file_path = os.path.join(
-        utils.config.read_folders_structure()["checks_folder"],
+        utils.paths.get_results_folder("checks"),
         REPORT_NAME + ".json",
     )
     try:
@@ -391,7 +392,7 @@ def _write_report(
     checked_at : datetime.datetime
         The time of the check.
     """
-    checks_directory = utils.config.read_folders_structure()["checks_folder"]
+    checks_directory = utils.paths.get_results_folder("checks")
     os.makedirs(checks_directory, exist_ok=True)
     file_path = os.path.join(checks_directory, REPORT_NAME)
 
@@ -449,7 +450,7 @@ def run_check(
     ValueError
         If a data source is not recognized.
     """
-    all_data_sources = sorted(utils.entities.read_data_sources())
+    all_data_sources = sorted(utils.data_sources.read_data_sources())
     if data_sources is None:
         data_sources = all_data_sources
     unknown_data_sources = sorted(set(data_sources) - set(all_data_sources))

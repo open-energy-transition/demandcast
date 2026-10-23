@@ -17,30 +17,13 @@ Description:
     grow as its country.
 """
 
-import logging
-import os
-
 import pandas as pd
-import utils.config
-import utils.entities
-import utils.geospatial
+import utils.catalogue
 import utils.scenarios
-import utils.time_series
-from tqdm import tqdm
 
+import retrievals.gridded_totals
+import retrievals.indicators
 from retrievals.socio_economic_data_sources import iiasa, world_bank
-
-
-def get_available_scenarios() -> list[str]:
-    """
-    Get the available future scenarios.
-
-    Returns
-    -------
-    list[str]
-        The available scenarios for the population data.
-    """
-    return ["SSP1", "SSP2", "SSP3", "SSP4", "SSP5"]
 
 
 def _extract_historical_population(
@@ -62,7 +45,7 @@ def _extract_historical_population(
         # Extract the historical population for the country or
         # subdivision by aggregating gridded data.
         historical_population = (
-            utils.geospatial.get_total_value_from_gridded_data(
+            retrievals.gridded_totals.get_total_value_from_gridded_data(
                 "population",
                 code,
                 used_historical_years,
@@ -142,13 +125,15 @@ def _extract_future_population(
     else:
         # Extract the future population for the country or subdivision
         # by aggregating gridded data.
-        future_population = utils.geospatial.get_total_value_from_gridded_data(
-            "population",
-            code,
-            future_years,
-            available_future_years_of_gridded_data,
-            available_historical_years_of_gridded_data[-1],
-            scenario,
+        future_population = (
+            retrievals.gridded_totals.get_total_value_from_gridded_data(
+                "population",
+                code,
+                future_years,
+                available_future_years_of_gridded_data,
+                available_historical_years_of_gridded_data[-1],
+                scenario,
+            )
         )
 
     return future_population
@@ -191,38 +176,34 @@ def run_data_retrieval(
         The scenario of the electricity demand per capita data to be
         retrieved.
     """
-    # Get the directory to store the population data.
-    result_directory = utils.config.read_folders_structure()[
-        "population_folder"
-    ]
-    os.makedirs(result_directory, exist_ok=True)
-
     # Download the historical population data.
     global_historical_population = world_bank.download("population")
 
     # Read the future population data.
     global_future_population = iiasa.read("population")
 
-    # Get the list of codes of the countries and subdivisions of
-    # interest.
-    codes = utils.entities.check_and_get_codes_with(
-        "all_data", code=code, file_path=file
+    # Define the available years for gridded population data.
+    available_historical_years_of_gridded_data = list(
+        utils.catalogue.GRIDDED_POPULATION_YEARS
+    )
+    available_future_years_of_gridded_data = list(
+        utils.catalogue.PROJECTION_YEARS
     )
 
-    # Define the available years for gridded population data.
-    available_historical_years_of_gridded_data = list(range(2000, 2021, 5))
-    available_future_years_of_gridded_data = list(range(2025, 2101, 5))
+    def get_request(entity_code: str) -> retrievals.indicators.Request:
+        """
+        Get the years and scenarios of a country or subdivision.
 
-    # Define the available scenarios for the population data.
-    available_scenarios = get_available_scenarios()
+        Parameters
+        ----------
+        entity_code : str
+            The code of the country or subdivision.
 
-    # Loop over the countries and subdivisions.
-    for entity_code in tqdm(codes, desc="Countries and subdivisions"):
-        # Get the time zone of the country or subdivision.
-        time_zone = utils.entities.get_time_zone(entity_code)
-
-        # Get the years and scenarios dictionary for the country or
-        # subdivision of interest.
+        Returns
+        -------
+        retrievals.indicators.Request
+            The request.
+        """
         (
             requested_historical_years,
             used_historical_years,
@@ -234,54 +215,23 @@ def run_data_retrieval(
             start_year,
             end_year,
             scenario,
-            available_scenarios,
+            list(utils.catalogue.SSP_SCENARIOS),
             global_historical_population,
             available_historical_years_of_gridded_data,
         )
-
-        # Define the file path of the population data of the
-        # subdivision.
-        file_path_without_ext = os.path.join(result_directory, entity_code)
-
-        if requested_historical_years:
-            logging.info(
-                f"Extracting historical population data for {entity_code}."
-            )
-
-            # Extract the historical population data for the
-            # country or subdivision of interest.
-            historical_population = _extract_historical_population(
+        return retrievals.indicators.Request(
+            historical_years=requested_historical_years,
+            future_years=future_years,
+            scenarios=scenarios,
+            get_historical_values=lambda: _extract_historical_population(
                 entity_code,
                 global_historical_population,
                 requested_historical_years,
                 used_historical_years,
                 available_historical_years_of_gridded_data,
-            )
-
-            # Save the selected years as hourly values.
-            utils.time_series.save_yearly_values(
-                historical_population,
-                requested_historical_years,
-                "Population",
-                file_path_without_ext,
-                time_zone,
-            )
-
-            logging.info(
-                f"Historical population data for {entity_code} has been "
-                "extracted and saved successfully."
-            )
-
-        if future_years:
-            for selected_scenario in scenarios:
-                logging.info(
-                    f"Extracting future population data for "
-                    f"{entity_code} and scenario {selected_scenario}."
-                )
-
-                # Extract the future population data for the country
-                # or subdivision of interest.
-                future_population = _extract_future_population(
+            ),
+            get_future_values=lambda selected_scenario: (
+                _extract_future_population(
                     entity_code,
                     global_future_population,
                     future_years,
@@ -289,18 +239,9 @@ def run_data_retrieval(
                     available_historical_years_of_gridded_data,
                     selected_scenario,
                 )
+            ),
+        )
 
-                # Save the selected years as hourly values.
-                utils.time_series.save_yearly_values(
-                    future_population,
-                    future_years,
-                    "Population",
-                    f"{file_path_without_ext}_{selected_scenario}",
-                    time_zone,
-                )
-
-                logging.info(
-                    f"Future population data for {entity_code} and "
-                    f"scenario {selected_scenario} has been extracted "
-                    "and saved successfully."
-                )
+    retrievals.indicators.run_retrieval(
+        "population", "Population", "population", code, file, get_request
+    )

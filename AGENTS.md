@@ -11,19 +11,23 @@ DemandCast retrieves hourly electricity demand, weather and socio-economic data 
 Each step is a script in `demandcast/`, configured by `config/<script>_config.yaml` (pass another file with `--config`):
 
 1. `retrieve.py` downloads demand, weather and socio-economic data into `data/<variable>/`.
-2. `assemble.py` merges the retrieved data into one dataset for training or forecasting, in `data/assembled/`.
+2. `assemble.py` merges the retrieved data into one dataset for training or forecasting, in `data/assembled/`. Its inputs are the rows of `DATASETS`: a new input is a new row, with its folder, columns and scenarios.
 3. `train.py` trains a model; `validate.py` evaluates it on each entity's most recent year, and `cross_validate.py` on entities left out of training.
 4. `forecast.py` predicts hourly demand in MW with a trained model.
 5. `plot.py`, `check.py` and `upload.py` draw figures, check data availability and the data sources over the network, and upload data to Google Cloud Storage and Zenodo.
 
-Folder locations are defined in `config/directories_config.yaml`; use `utils.config.read_folders_structure()` instead of hard-coding paths.
+Paths come from `utils/paths.py`; use its functions instead of hard-coding paths. The inputs that come with the code (configuration, shapes, data source YAMLs, flag reviews) stay in the code folder, and everything the scripts write goes under the data folder: `data/`, or the folder named by `DEMANDCAST_DATA_FOLDER`. Each dataset has its own folder there, with its stages (`raw/`, `processed/`, ...), next to `assembled/`, `models/<algorithm>/`, `results/` (validation, cross-validation, forecasts, figures, check reports) and `logs/`.
+
+Dependencies go one way: the scripts use `retrievals/`, `cleaning/`, `checks/`, `figures/` and `ml_models/`, which use `utils/`; `utils/` imports none of them (`tests/utils/test_dependencies.py` checks it).
+
+The scenarios (SSP, IAMC and CMIP6), the climate models and the years of each projection and gridded dataset are listed once, in `utils/catalogue.py`; use it instead of writing them again.
 
 ## Layout
 
 - `demandcast/`: the Python project. Run all Python commands from this folder, because modules are imported as top-level packages (`import utils.config`, not `import demandcast.utils.config`).
-  - `retrievals/`: data retrieval. Each electricity demand source is a module plus a YAML file in `retrievals/electricity_demand_data_sources/`.
+  - `retrievals/`: data retrieval. Each electricity demand source is a module plus a YAML file in `retrievals/electricity_demand_data_sources/`. The indicators (population, GDP PPP per capita, annual electricity demand per capita) save their years and scenarios with `retrievals/indicators.py`, and the gridded data extracts each country and subdivision with `retrievals/gridded.py`.
   - `ml_models/`: the models. `registry.py` lists them and defines the interface of their modules (`ModelModule`).
-  - `utils/`: shared helpers; CI requires at least 95% test coverage.
+  - `utils/`: shared helpers; CI requires at least 95% test coverage. The countries and subdivisions are in `codes.py` (ISO codes, names, continents), `data_sources.py` (the YAML registry of the data sources), `time_zones.py` and `availability.py` (the codes of interest and their data).
   - `tests/`: the pytest suite, in folders that mirror the code: the tests of `utils/ml.py` are in `tests/utils/test_ml.py`, and those of the scripts are at the top of `tests/`.
   - `archive/`: legacy notebooks and scripts; do not modify.
 - `webpage/`: the MkDocs documentation site, a separate uv project.
@@ -47,7 +51,7 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 - Ruff formatting and linting, with lines of at most 79 characters (72 for docstrings and comments), NumPy-style docstrings and type hints, checked by mypy. Import pandas, NumPy and Matplotlib as `pd`, `np` and `plt`.
 - Each script validates its YAML settings with a pydantic `ConfigModel`. Document new options in the YAML file and in `webpage/docs/`.
 - Data source modules return a `pandas.Series` of demand in MW with a time-zone-aware index; stored timestamps are in UTC.
-- Tests must not use the network: mock downloads (for example `utils.fetcher.fetch_data`) and write files to `tmp_path`. Mark the rare tests that need real downloaded data with `@pytest.mark.network`.
+- Tests must not use the network: mock downloads (the `fake_downloads` fixture serves synthetic files to the functions of `utils.fetcher`) and write files to `tmp_path`. Mark the rare tests that need real downloaded data with `@pytest.mark.network`.
 - The code must also work on Windows: build paths with `os.path.join` or `pathlib`, also in tests.
 - Change dependencies in `pyproject.toml` and run `uv lock`; never edit `uv.lock` by hand.
 - `README.md` and `webpage/docs/index.md` share most of their content: update both.
@@ -62,13 +66,13 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 
 ## Adding a data source
 
-1. Add `retrievals/electricity_demand_data_sources/<source>.py` with `get_available_requests(code, start_date, end_date)` and `download_and_extract_data_for_request(request, code)`. The retrieval code passes the code and the dates of the data from the YAML file, and then each request with the code; the requests are in chronological order, and a source that downloads its data at once returns `[None]`. Return the demand in MW with time-zone-aware times that mark the end of each interval. A `get_url` helper is optional. Use the helpers in `utils/` (`fetcher.fetch_dataframe`, `fetcher.read_manual_files`, `config.read_api_key`, `time_series.split_period`, `time_series.localize_interval_starts`) instead of copying their code, and leave the dates of the data to the YAML file, not the docstrings. Follow `ons.py` or `hydroquebec.py`.
+1. Add `retrievals/electricity_demand_data_sources/<source>.py` with `get_available_requests(code, start_date, end_date)` and `download_and_extract_data_for_request(request, code)`. The retrieval code passes the code and the dates of the data from the YAML file, and then each request with the code; the requests are in chronological order, and a source that downloads its data at once returns `[None]`. Return the demand in MW with time-zone-aware times that mark the end of each interval. A `get_url` helper is optional. Use the helpers in `utils/` (`fetcher.fetch_dataframe`, `fetcher.fetch_text`, `fetcher.fetch_excel_file` or `fetcher.fetch_response`, by the type of the result, `fetcher.read_manual_files`, `config.read_api_key`, `time_series.split_period`, `time_series.localize_interval_starts`) instead of copying their code, and leave the dates of the data to the YAML file, not the docstrings. Follow `ons.py` or `hydroquebec.py`.
 2. Add `<source>.yaml` with the `licence` of the data (`redistribute`, `terms` and `url`), its `definition` (periods from a `start_date`, each with the `quantity` and whether the `embedded_generation`, `network_losses`, `storage_charging` and `power_plant_use` are `included`, `added` by DemandCast, `excluded` or `unknown`, with a `note`) and its `entities`: `country_name` and `country_code` (ISO 3166 alpha-3), `subdivision_name`, `subdivision_code` and `time_zone` for subdivisions, and `start_date` and `end_date` (a date or `today`). Keep the YAML file free of comments: explain the format of the data, its quirks and the entities left out in the docstring at the top of the module.
 3. Add shapes for non-standard subdivisions in `shapes/`, and a test that parses a small synthetic fixture of the source's files: `tests/retrievals/electricity_demand_data_sources/test_<source>.py`, with the fixture in its `fixtures/` folder, served by the `fake_downloads` fixture (see `test_aemo_nem.py` and issue #161).
 
 ## Adding a model
 
-1. Add `ml_models/<model>.py` with the interface of `ModelModule` in `ml_models/registry.py`, and its settings in `config/<model>_config.yaml`, validated with pydantic.
+1. Add `ml_models/<model>.py` with the interface of `ModelModule` in `ml_models/registry.py`, and its settings in `config/<model>_config.yaml`, validated by the `ConfigModel` of the module. The scripts read the settings (`ml_models.registry.read_model_configuration`) and pass them in; the module reads no file.
 2. Add the module to `MODEL_MODULES` in `ml_models/registry.py`, and to the modules that mypy checks in `tests/ml_models/test_registry.py`, whose contract test then runs the model.
 3. Put heavy dependencies in an optional extra in `pyproject.toml`, like `lstm`.
 
