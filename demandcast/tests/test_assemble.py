@@ -227,8 +227,9 @@ def test_load_data_for_entity(tmp_path):
     Test the loading of the data of an entity.
 
     The half hours are averaged into the hours they end, the values that
-    are not positive are dropped, the columns of text are left out, and
-    the times are in nanoseconds.
+    are not positive and the hours that cannot be used for training are
+    dropped, the columns of text are left out, and the times are in
+    nanoseconds.
     """
     times = pd.DatetimeIndex(
         [
@@ -236,14 +237,16 @@ def test_load_data_for_entity(tmp_path):
             "2024-01-01 01:00",
             "2024-01-01 02:00",
             "2024-01-01 03:00",
+            "2024-01-01 04:00",
         ],
         name="Time (UTC)",
     ).as_unit("us")
     file_path = str(tmp_path / "FRA.parquet")
     pd.DataFrame(
         {
-            "Load (MW)": [100.0, 200.0, -5.0, 300.0],
-            "Source": pd.array(["a", "a", "a", "b"], dtype="string"),
+            "Load (MW)": [100.0, 200.0, -5.0, 300.0, 400.0],
+            "Source": pd.array(["a", "a", "a", "b", "b"], dtype="string"),
+            "Eligible": [True, True, True, True, False],
         },
         index=times,
     ).to_parquet(file_path)

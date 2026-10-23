@@ -313,8 +313,14 @@ def _load_data_for_entity(
             )
             continue
 
-        # Read the current parquet file.
+        # Read the current parquet file, without the hours of the
+        # electricity demand that cannot be used for training, such as
+        # those of the errors of a data source.
         current_data = pd.read_parquet(file_path)
+        if "Eligible" in current_data:
+            current_data = current_data[current_data["Eligible"]].drop(
+                columns="Eligible"
+            )
 
         # Append to the entity dataframe.
         entity_frames.append(current_data)

@@ -335,14 +335,16 @@ def get_largest_values_in_shape(
     number_of_grid_cells: int,
 ) -> xarray.DataArray:
     """
-    Get the grid cells with the largest values.
+    Get the grid cells with the largest values inside a shape.
 
     This function extracts the grid cells with the largest values from
     the given xarray data within the specified country or subdivision
-    shape. It first calculates the fraction of each grid cell that is
-    contained within the shape, then stacks the xarray data to drop
-    NaN values, and finally returns the grid cells with the largest
-    values based on the specified number of grid cells.
+    shape. The value of a cell inside the shape is its value times the
+    fraction of the cell that is in the shape, which assumes that the
+    value, such as the population, is spread evenly over the cell: a
+    populous cell at the border, mostly outside the shape, ranks by the
+    part of its population inside it. The grid cells with the largest
+    of these values are returned.
 
     Parameters
     ----------
@@ -356,16 +358,18 @@ def get_largest_values_in_shape(
     Returns
     -------
     xarray.DataArray
-        The grid cells with the largest values in the given shape.
+        The grid cells with the largest values inside the given shape,
+        with these values.
     """
     # Calculate the fraction of each grid cell that is in the shapes.
     fraction_of_grid_cells_in_shape = _get_fraction_of_grid_cells_in_shape(
         xarray_data, entity_shape, make_plot=False
     )
 
-    # Rearrange the xarray data.
+    # Rearrange the values inside the shape.
     xarray_data_rearranged = (
-        xarray_data.where(fraction_of_grid_cells_in_shape > 0.0)
+        (xarray_data * fraction_of_grid_cells_in_shape)
+        .where(fraction_of_grid_cells_in_shape > 0.0)
         .stack(z=("y", "x"))
         .dropna(dim="z")
     )
