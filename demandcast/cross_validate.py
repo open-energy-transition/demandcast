@@ -10,18 +10,12 @@ Description:
 
 import logging
 import os
-from typing import Any
 
+import ml_models.evaluation
 import ml_models.registry
-import numpy as np
-import pandas as pd
 import utils.config
 import utils.ml
 from pydantic import BaseModel
-from sklearn.base import BaseEstimator, RegressorMixin
-from sklearn.metrics import get_scorer
-from sklearn.model_selection import LeaveOneGroupOut
-from sklearn.utils.parallel import Parallel, delayed
 
 
 class ConfigModel(BaseModel):
@@ -30,190 +24,6 @@ class ConfigModel(BaseModel):
     scoring_metric: str
     n_jobs: int | None = 1
     data_path: str | None = None
-
-
-def _log_mape_summary(mapes: pd.DataFrame) -> None:
-    """
-    Log average, median, and standard deviation of MAPE values.
-
-    Parameters
-    ----------
-    mapes : pandas.DataFrame
-        DataFrame with "Training MAPE" and "Testing MAPE" columns.
-    """
-    logging.info("Training set:")
-    logging.info(f" - Average MAPE: {mapes['Training MAPE'].mean():.4f}")
-    logging.info(f" - Median MAPE: {mapes['Training MAPE'].median():.4f}")
-    logging.info(f" - Std MAPE: {mapes['Training MAPE'].std():.4f}")
-    logging.info("Testing set:")
-    logging.info(f" - Average MAPE: {mapes['Testing MAPE'].mean():.4f}")
-    logging.info(f" - Median MAPE: {mapes['Testing MAPE'].median():.4f}")
-    logging.info(f" - Std MAPE: {mapes['Testing MAPE'].std():.4f}")
-
-
-class _GroupAwareModel(RegressorMixin, BaseEstimator):
-    """
-    Adapt a trained model for scikit-learn scorers.
-
-    A scorer calls ``predict`` with the features only. This wrapper
-    keeps the entity codes of the rows to predict, so that models that
-    build sequences, such as the LSTM, do not cross the boundaries
-    between entities.
-    """
-
-    def __init__(
-        self, model_module: Any, model: Any, group: pd.Series
-    ) -> None:
-        self.model_module = model_module
-        self.model = model
-        self.group = group
-
-    def predict(self, features: pd.DataFrame) -> pd.Series:
-        """
-        Predict the target of the given rows.
-
-        Parameters
-        ----------
-        features : pandas.DataFrame
-            The features of the rows, in the order of the entity codes
-            of the wrapper.
-
-        Returns
-        -------
-        pandas.Series
-            The predictions, one per row.
-        """
-        return self.model_module.predict(
-            self.model, {"features": features, "group": self.group}
-        )
-
-
-def _score_fold(
-    algorithm: str,
-    model_config: BaseModel,
-    prepared_dataset: utils.ml.PreparedDataset,
-    scoring_metric: str,
-    train_index: np.ndarray,
-    test_index: np.ndarray,
-) -> tuple[str, float, float]:
-    """
-    Train a model on one fold and score it.
-
-    Parameters
-    ----------
-    algorithm : str
-        The machine learning algorithm.
-    model_config : pydantic.BaseModel
-        The settings of the model of the algorithm.
-    prepared_dataset : PreparedDataset
-        The features, target and entity codes of the dataset.
-    scoring_metric : str
-        The scoring metric of scikit-learn.
-    train_index : numpy.ndarray
-        The positions of the training rows.
-    test_index : numpy.ndarray
-        The positions of the rows of the held-out entity.
-
-    Returns
-    -------
-    tuple[str, float, float]
-        The code of the held-out entity, and the scores of the model on
-        the training rows and on the held-out rows.
-    """
-    model_module = ml_models.registry.get_model_module(algorithm)
-    features = prepared_dataset["features"]
-    target = prepared_dataset["target"]
-    group = prepared_dataset["group"]
-
-    # Train the model with the entity codes of the training rows.
-    model = model_module.train(
-        {
-            "training": {
-                "features": features.iloc[train_index],
-                "target": target.iloc[train_index],
-                "group": group.iloc[train_index],
-            }
-        },
-        model_config,
-    )
-
-    # Score the model on the training rows and on the held-out rows.
-    scorer = get_scorer(scoring_metric)
-    train_score, test_score = (
-        scorer(
-            _GroupAwareModel(model_module, model, group.iloc[index]),
-            features.iloc[index],
-            target.iloc[index],
-        )
-        for index in (train_index, test_index)
-    )
-
-    return group.iloc[test_index[0]], train_score, test_score
-
-
-def _cross_validate(
-    prepared_dataset: utils.ml.PreparedDataset,
-    scoring_metric: str,
-    n_jobs: int | None,
-    algorithm: str,
-    model_config: BaseModel,
-) -> pd.DataFrame:
-    """
-    Run Leave-One-Group-Out cross-validation of a model.
-
-    Each entity is held out in turn: a model is trained on the other
-    entities, and scored on its training rows and on the rows of the
-    held-out entity.
-
-    Parameters
-    ----------
-    prepared_dataset : PreparedDataset
-        The features, target and entity codes of the dataset.
-    scoring_metric : str
-        The scoring metric to use for evaluation.
-    n_jobs : int | None
-        The number of folds to run in parallel.
-    algorithm : str
-        The machine learning algorithm to use.
-    model_config : pydantic.BaseModel
-        The settings of the model of the algorithm.
-
-    Returns
-    -------
-    mapes : pandas.DataFrame
-        DataFrame containing MAPE values for each entity.
-    """
-    # Check that the algorithm is supported.
-    ml_models.registry.get_model_module(algorithm)
-
-    folds = Parallel(n_jobs=n_jobs)(
-        delayed(_score_fold)(
-            algorithm,
-            model_config,
-            prepared_dataset,
-            scoring_metric,
-            train,
-            test,
-        )
-        for train, test in LeaveOneGroupOut().split(
-            prepared_dataset["features"],
-            prepared_dataset["target"],
-            prepared_dataset["group"],
-        )
-    )
-
-    logging.info("Cross-validation completed successfully.")
-
-    # The scores of scikit-learn are negative errors, such as the
-    # negative MAPE.
-    mapes = pd.DataFrame(
-        folds, columns=["Entity Code", "Training MAPE", "Testing MAPE"]
-    )
-    mapes[["Training MAPE", "Testing MAPE"]] *= -1
-
-    _log_mape_summary(mapes)
-
-    return mapes
 
 
 def run_model_cross_validation(
@@ -250,7 +60,7 @@ def run_model_cross_validation(
     prepared_dataset = utils.ml.prepare_dataset(data_path, ml_config)
 
     # Run Leave-One-Group-Out cross-validation.
-    mapes = _cross_validate(
+    mapes = ml_models.evaluation.cross_validate(
         prepared_dataset,
         scoring_metric,
         n_jobs,

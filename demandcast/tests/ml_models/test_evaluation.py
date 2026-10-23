@@ -3,15 +3,16 @@ License: AGPL-3.0.
 
 Description:
 
-    Unit tests for the Leave-One-Group-Out cross-validation of
-    cross_validate.py. The entity codes must reach both the training
+    Unit tests of the evaluation of the models: the MAPE of each
+    country or subdivision and of each set, and the Leave-One-Group-Out
+    cross-validation, whose entity codes must reach both the training
     and the predictions, so that the sequences of the LSTM never cross
     the boundaries between entities.
 """
 
 from unittest.mock import patch
 
-import cross_validate
+import ml_models.evaluation
 import ml_models.registry
 import numpy as np
 import pandas as pd
@@ -85,7 +86,7 @@ def _make_prepared_dataset() -> utils.ml.PreparedDataset:
 
 def test_cross_validate_returns_one_row_per_entity(algorithm):
     """Test that there is one row of MAPEs per held-out entity."""
-    mapes = cross_validate._cross_validate(
+    mapes = ml_models.evaluation.cross_validate(
         _make_prepared_dataset(),
         _SCORING_METRIC,
         1,
@@ -122,7 +123,7 @@ def test_cross_validate_forwards_groups(algorithm):
         patch.object(model_module, "train", side_effect=spy_train),
         patch.object(model_module, "predict", side_effect=spy_predict),
     ):
-        cross_validate._cross_validate(
+        ml_models.evaluation.cross_validate(
             _make_prepared_dataset(),
             _SCORING_METRIC,
             1,
@@ -146,11 +147,58 @@ def test_cross_validate_in_parallel():
     """Test that the results are the same with parallel folds."""
     dataset = _make_prepared_dataset()
 
-    sequential_mapes = cross_validate._cross_validate(
+    sequential_mapes = ml_models.evaluation.cross_validate(
         dataset, _SCORING_METRIC, 1, "XGBoost", _model_config("XGBoost")
     )
-    parallel_mapes = cross_validate._cross_validate(
+    parallel_mapes = ml_models.evaluation.cross_validate(
         dataset, _SCORING_METRIC, 2, "XGBoost", _model_config("XGBoost")
     )
 
     pd.testing.assert_frame_equal(parallel_mapes, sequential_mapes)
+
+
+def test_calculate_mape_by_entity():
+    """Test that the MAPE is calculated on the rows of each entity."""
+    actual = pd.Series([1.0, 2.0, 4.0, 4.0])
+    predictions = pd.Series([1.1, 1.8, 4.0, 2.0])
+    entity_codes = pd.Series(["FRA", "FRA", "DEU", "DEU"], name="Entity code")
+
+    mapes = ml_models.evaluation.calculate_mape_by_entity(
+        predictions, actual, entity_codes
+    )
+
+    assert mapes.index.name == "Entity code"
+    assert mapes.to_dict() == pytest.approx({"DEU": 0.25, "FRA": 0.1})
+
+
+def test_calculate_mapes(caplog):
+    """Test that the MAPEs of each set are columns, and are logged."""
+    entity_codes = pd.Series(["FRA", "DEU"], name="Entity code")
+    prepared_dataset: dict[str, utils.ml.PreparedDataset] = {
+        split: {
+            "features": pd.DataFrame({"a": [0.0, 0.0]}),
+            "target": pd.Series([1.0, 2.0]),
+            "group": entity_codes,
+        }
+        for split in ("training", "testing")
+    }
+    predictions = {
+        "training": pd.Series([1.0, 1.0]),
+        "testing": pd.Series([1.5, 2.0]),
+    }
+
+    with caplog.at_level("INFO"):
+        mapes = ml_models.evaluation.calculate_mapes(
+            prepared_dataset, predictions
+        )
+
+    assert mapes.columns.tolist() == [
+        "Entity code",
+        "Training MAPE",
+        "Testing MAPE",
+    ]
+    assert mapes["Entity code"].tolist() == ["DEU", "FRA"]
+    assert mapes["Training MAPE"].tolist() == pytest.approx([0.5, 0.0])
+    assert mapes["Testing MAPE"].tolist() == pytest.approx([0.0, 0.5])
+    assert "Testing set:" in caplog.text
+    assert " - Median MAPE = 0.2500" in caplog.text

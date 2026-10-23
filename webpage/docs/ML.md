@@ -259,7 +259,7 @@ The trained model is saved to `data/models/{algorithm_name}/{algorithm_name}_mod
 
 ### Model Validation
 
-The script `demandcast/validate.py` performs a validation of the trained model on the reserved test set and computes performance metrics (e.g., MAPE).
+The script `demandcast/validate.py` performs a validation of the trained model on the reserved test set and computes performance metrics (e.g., MAPE). The errors of the validation and of the cross-validation are computed by `demandcast/ml_models/evaluation.py`, on the target of the models, the load relative to the annual mean: they measure the error of the hourly profile, not that of the annual demand.
 
 **Usage:**
 ```bash

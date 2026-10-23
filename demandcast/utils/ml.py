@@ -300,6 +300,43 @@ def to_load_fraction_of_annual_total(
     return load_relative / _hours_in_year(local_year)
 
 
+def to_megawatts(
+    load_relative: pd.Series,
+    local_year: pd.Series,
+    scaling_factor: pd.Series,
+) -> pd.Series:
+    """
+    Convert the load relative to the annual mean to MW.
+
+    The load relative to the annual mean is converted back to the
+    fraction of the annual total of its local year, and multiplied by
+    the scaling factor, the annual electricity demand in kWh: the
+    product of the scaling variables of the settings, the annual
+    electricity demand per capita (kWh) and the population.
+
+    Parameters
+    ----------
+    load_relative : pandas.Series
+        The load relative to the annual mean, such as the predictions
+        of a model.
+    local_year : pandas.Series
+        The local year of each row, in the same order.
+    scaling_factor : pandas.Series
+        The scaling factor of each row, the annual electricity demand
+        in kWh.
+
+    Returns
+    -------
+    pandas.Series
+        The load in MW.
+    """
+    return (
+        to_load_fraction_of_annual_total(load_relative, local_year)
+        * scaling_factor
+        / 1000
+    )
+
+
 def _split_temporally(
     dataset: pd.DataFrame,
     testing_set: bool,
