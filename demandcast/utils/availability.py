@@ -5,9 +5,13 @@ Description:
 
     This module gives the codes of the countries and subdivisions of
     interest and checks that they have the data that a step needs: the
-    electricity demand, from the YAML files of the data sources, or all
-    the data, from the summary of the availability of the data
-    (checks/data_availability_summary.csv, written by check.py).
+    electricity demand, from the YAML files of the data sources, or the
+    historical data, or all the data with the projections, from the
+    summary of the availability of the data
+    (checks/data_availability_summary.csv, written by check.py). The
+    codes with the historical data only, such as Kosovo, which IIASA
+    does not project, are retrieved and used for training, but not
+    forecast for future scenarios.
 """
 
 import logging
@@ -17,6 +21,59 @@ import pandas as pd
 
 import utils.data_sources
 import utils.paths
+
+
+def _read_codes(future: bool) -> list[str]:
+    """
+    Get the codes of the countries and subdivisions with their data.
+
+    Parameters
+    ----------
+    future : bool
+        Whether the future population, electricity demand per capita
+        and GDP PPP per capita are needed too, besides the historical
+        ones.
+
+    Returns
+    -------
+    list[str]
+        The codes of the countries and subdivisions with the data: the
+        population, electricity demand per capita and GDP PPP per
+        capita, or the electricity demand per capita of an area of more
+        than 500 km², whose population and GDP PPP per capita are
+        estimated from the gridded data.
+    """
+    # Read the CSV file containing the available data information.
+    data = pd.read_csv(
+        os.path.join(
+            utils.paths.CHECKS_FOLDER,
+            "data_availability_summary.csv",
+        ),
+        index_col=0,
+        na_filter=False,
+    )
+
+    def has(code: str, *columns: str) -> bool:
+        return all(
+            data.loc[code, f"historical_{column}"]
+            and (not future or data.loc[code, f"future_{column}"])
+            for column in columns
+        )
+
+    return [
+        code
+        for code in data.index
+        if has(
+            code,
+            "population",
+            "electricity_demand_per_capita",
+            "gdp_ppp_per_capita",
+        )
+        or (
+            has(code, "electricity_demand_per_capita")
+            and data.loc[code, "area_greater_than_500_km2"]
+        )
+    ]
 
 
 def read_codes_with_all_data() -> list[str]:
@@ -36,41 +93,25 @@ def read_codes_with_all_data() -> list[str]:
         A list of codes of all countries and subdivisions for which all
         required data is available.
     """
-    # Read the CSV file containing the available data information.
-    data = pd.read_csv(
-        os.path.join(
-            utils.paths.CHECKS_FOLDER,
-            "data_availability_summary.csv",
-        ),
-        index_col=0,
-        na_filter=False,
-    )
+    return _read_codes(future=True)
 
-    # Initialize a list to store the codes.
-    all_codes = []
 
-    # Filter the data to get only the countries and subdivisions with
-    # all required data available.
-    for code in data.index:
-        if (
-            data.loc[code, "historical_population"]
-            and data.loc[code, "historical_electricity_demand_per_capita"]
-            and data.loc[code, "historical_gdp_ppp_per_capita"]
-            and data.loc[code, "future_population"]
-            and data.loc[code, "future_electricity_demand_per_capita"]
-            and data.loc[code, "future_gdp_ppp_per_capita"]
-        ):
-            all_codes.append(code)
-        elif (
-            data.loc[code, "historical_electricity_demand_per_capita"]
-            and data.loc[code, "future_electricity_demand_per_capita"]
-            and data.loc[code, "area_greater_than_500_km2"]
-        ):
-            # In this case, the population and GDP PPP per capita data
-            # can be estimated by aggregating gridded data.
-            all_codes.append(code)
+def read_codes_with_historical_data() -> list[str]:
+    """
+    Get the codes of the places with the historical data.
 
-    return all_codes
+    These codes have the historical population, electricity demand per
+    capita and GDP PPP per capita, but not necessarily their
+    projections, such as Kosovo, which IIASA does not cover: their data
+    can be used for training and validation, but not to forecast future
+    scenarios.
+
+    Returns
+    -------
+    list[str]
+        The codes of the countries and subdivisions.
+    """
+    return _read_codes(future=False)
 
 
 def check_and_get_codes_with(  # noqa: C901
@@ -92,7 +133,7 @@ def check_and_get_codes_with(  # noqa: C901
     ----------
     feature : str
         The feature of interest. Available features are
-        "electricity_demand_data" and "all_data".
+        "electricity_demand_data", "historical_data" and "all_data".
     code : str, optional
         The code of the country or subdivision.
     data_source : str, optional
@@ -121,16 +162,21 @@ def check_and_get_codes_with(  # noqa: C901
             )
         else:
             all_codes = utils.data_sources.read_all_codes_with_electricity_demand_data()
-    elif feature == "all_data":
+    elif feature in ("historical_data", "all_data"):
         if data_source is not None:
             raise ValueError(
-                "The 'all_data' feature is not associated with a data source."
+                f"The '{feature}' feature is not associated with a data "
+                "source."
             )
-        all_codes = read_codes_with_all_data()
+        all_codes = (
+            read_codes_with_all_data()
+            if feature == "all_data"
+            else read_codes_with_historical_data()
+        )
     else:
         raise ValueError(
             f"Invalid feature: {feature}. Available features are: "
-            "'electricity_demand_data' and 'all_data'."
+            "'electricity_demand_data', 'historical_data' and 'all_data'."
         )
 
     if code is not None:

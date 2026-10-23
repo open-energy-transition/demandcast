@@ -4,7 +4,7 @@ The data retrieval modules are responsible for fetching and processing raw data 
 
 ## Overview
 
-The data retrieval process is managed through the `retrieve.py` script located in the `demandcast/` directory. This script utilizes a configuration file to specify parameters for data retrieval, such as the type of data, countries or subdivisions of interest, time ranges, and scenarios for future projections.
+The data retrieval process is managed through the `retrieve.py` script located in the `demandcast/` directory. This script utilizes a configuration file to specify parameters for data retrieval, such as the type of data, countries or subdivisions of interest, time ranges, and scenarios for future projections. Without a code or a file of codes, it retrieves the countries and subdivisions with the historical data that the models need, listed in `demandcast/checks/data_availability_summary.csv` (written by `check.py`). Those without projections of the population, GDP PPP and electricity demand per capita of IIASA, such as Kosovo, get only their historical years: they are used for training, but not forecast for future scenarios.
 For the electricity demand, the data goes through four stages, each in its own folder of `data/electricity_demand/` (see [Electricity demand](#electricity-demand)):
 
 1. `raw/`: the responses of the data sources, as they are downloaded, with every version kept;

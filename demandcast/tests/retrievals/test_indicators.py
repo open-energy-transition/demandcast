@@ -21,6 +21,8 @@ import pandas as pd
 import pytest
 
 import retrievals.annual_electricity_demand_per_capita as annual_demand
+import retrievals.indicators
+import utils.availability
 import utils.paths
 import utils.time_zones
 from retrievals import gdp_ppp_per_capita, population
@@ -218,3 +220,36 @@ def test_retrieval_of_indicator(retrieval, code):
     with open(SNAPSHOTS_FILE, encoding="utf-8") as file:
         expected = json.load(file)[f"{retrieval}/{code}"]
     assert _snapshot(retrieval, code) == expected
+
+
+def test_retrieval_without_projections(monkeypatch, caplog):
+    """Test that a code without projections has its historical years."""
+    monkeypatch.setattr(
+        utils.availability,
+        "check_and_get_codes_with",
+        lambda feature, **_: ["XKX"] if feature == "historical_data" else [],
+    )
+    monkeypatch.setattr(utils.availability, "read_codes_with_all_data", list)
+    saved = []
+    monkeypatch.setattr(
+        retrievals.indicators.utils.time_series,
+        "save_yearly_values",
+        lambda values, years, *_: saved.append((values.tolist(), years)),
+    )
+
+    def get_request(_code):
+        return retrievals.indicators.Request(
+            historical_years=[2020],
+            future_years=[2030],
+            scenarios=["SSP2"],
+            get_historical_values=lambda: pd.Series([1.0]),
+            get_future_values=lambda _scenario: pd.Series([2.0]),
+        )
+
+    with caplog.at_level("INFO"):
+        retrievals.indicators.run_retrieval(
+            "population", "Population", "population", None, None, get_request
+        )
+
+    assert saved == [([1.0], [2020])]
+    assert "XKX has no projections" in caplog.text

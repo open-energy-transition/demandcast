@@ -195,7 +195,7 @@ def run_retrieval(
         list(utils.catalogue.SSP_SCENARIOS),
     )
     codes = utils.availability.check_and_get_codes_with(
-        "all_data", code=code, file_path=file
+        "historical_data", code=code, file_path=file
     )
 
     for selected_year, selected_scenario in tqdm(

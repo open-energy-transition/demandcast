@@ -510,7 +510,7 @@ def run_data_retrieval(
     # Get the list of codes of the countries and subdivisions of
     # interest.
     codes = utils.availability.check_and_get_codes_with(
-        "all_data", code=code, file_path=file
+        "historical_data", code=code, file_path=file
     )
 
     if variable not in CDS_VARIABLES:
