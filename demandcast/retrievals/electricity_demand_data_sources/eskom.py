@@ -21,7 +21,12 @@ Description:
     with the morning and afternoon, and the cleaning flags it
     (midday_dip). Eskom does not publish this generation hourly.
 
-    The files have data from 2022-04-01.
+    The data starts on 2021-04-01, in a file downloaded in July 2025
+    that ends on 2025-07-26; a later download starts on 2022-04-01.
+    Where the files overlap, they agree except for about 700 hours from
+    April to July 2025, which Eskom revised, by up to 509 MW. Each hour
+    therefore takes the value of the file whose data ends last, the
+    latest download, unless it has no number for that hour.
 
     Source: https://www.eskom.co.za/dataportal/data-request-form/
 """
@@ -117,12 +122,17 @@ def download_and_extract_data_for_request(
             f"left out, such as {not_numbers.iloc[0]!r}."
         )
 
-    # Extract the electricity demand time series.
-    electricity_demand_time_series = pd.Series(
-        load.to_numpy(),
-        index=pd.to_datetime(
-            dataset["Date Time Hour Beginning"], format="%Y-%m-%d %I:%M:%S %p"
+    # Extract the electricity demand time series, with one value of
+    # each hour from the latest download.
+    electricity_demand_time_series = utils.time_series.keep_latest_download(
+        pd.Series(
+            load.to_numpy(),
+            index=pd.to_datetime(
+                dataset["Date Time Hour Beginning"],
+                format="%Y-%m-%d %I:%M:%S %p",
+            ),
         ),
+        dataset["File"],
     )
 
     # The times are the starts of the hours, as the name of their column
