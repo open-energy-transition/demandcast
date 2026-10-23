@@ -11,7 +11,8 @@ Description:
     which downloads a file named "Yearly Demand Profile.xlsx". The file
     needs a name that starts with "NIT", such as
     "NITI_2024_Assam_Bihar.xlsx". The API of the dashboard encrypts its
-    responses for its own pages.
+    responses for its own pages. Where several files have the same
+    state and hour, the latest download, whose data ends last, is kept.
 
     The files give the hourly demand met in MW of 28 states, 5 union
     territories and the Damodar Valley Corporation (DVC), from the data
@@ -166,6 +167,7 @@ def _read_states_of_files(
         .astype("string")
         .str.contains(r" - \d{4}$", na=False)
     ]
+    file_names = states["File"]
     names = states["State"].str.rsplit(" - ", n=1).str[0]
     years = states["State"].str.rsplit(" - ", n=1).str[1]
     states = pd.DataFrame(
@@ -179,7 +181,17 @@ def _read_states_of_files(
             ].to_numpy(),
         }
     )
-    return states.drop_duplicates(["name", "time"])
+
+    # Keep one value of each state and hour, from the latest download
+    # of the files that overlap.
+    return (
+        utils.time_series.keep_latest_download(
+            states.set_index(["name", "time"])["Hourly Demand Met (in MW)"],
+            file_names,
+        )
+        .rename("Hourly Demand Met (in MW)")
+        .reset_index()
+    )
 
 
 def _read_states() -> pd.DataFrame:

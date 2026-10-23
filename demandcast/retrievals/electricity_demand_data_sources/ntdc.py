@@ -15,7 +15,9 @@ Description:
     latest, so only the files downloaded before can be read. They give
     the hourly system load (SYSLOAD) in MW, with thousands separators,
     by date and hour ending from 1 to 24 in the time of Pakistan, which
-    has no daylight saving time.
+    has no daylight saving time. Where several files have the same
+    hour, the latest download, whose data ends last, is kept, after the
+    days of the rows of each file are corrected (see below).
 
     About 170 rows around midnight have the date of the day before or
     after, such as the hour 24 of 06/01/2015 between the hours 23 of
@@ -282,21 +284,33 @@ def download_and_extract_data_for_request(
     has_number = load.notna().to_numpy()
     dataset, load = dataset[has_number], load[has_number]
 
-    # Define the starts of the hours, with the days of the rows
-    # labelled with another day corrected.
+    # Define the starts of the hours of each file, with the days of the
+    # rows labelled with another day corrected, which depends on the
+    # order of the rows of the file.
     starts = pd.to_datetime(
         dataset.iloc[:, 0].astype(str)
         + " "
         + (dataset.iloc[:, 1].astype(str).astype(int) - 1).astype(str),
         format="%d/%m/%Y %H",
     )
-    starts = _correct_days(starts)
+    files = dataset["File"].to_numpy()
+    starts = pd.concat(
+        [
+            _correct_days(starts[files == file_name])
+            for file_name in pd.unique(files)
+        ]
+    )
 
-    # Define the electricity demand time series, with the days that
-    # slip against their hours moved back to them.
+    # Keep one value of each hour, from the latest download of the
+    # files that overlap, and move the days that slip against their
+    # hours back to them, which compares the days with the other years.
     electricity_demand_time_series = _correct_slipped_days(
-        pd.Series(
-            load.to_numpy(dtype="float64"), index=pd.DatetimeIndex(starts)
+        utils.time_series.keep_latest_download(
+            pd.Series(
+                load.to_numpy(dtype="float64"),
+                index=pd.DatetimeIndex(starts),
+            ),
+            dataset["File"],
         )
     )
 

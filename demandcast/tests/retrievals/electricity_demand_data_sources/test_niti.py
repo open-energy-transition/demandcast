@@ -73,6 +73,31 @@ def test_download_and_extract_data(manual_downloads_folder, assert_demand):
     )
 
 
+def test_download_and_extract_data_of_two_downloads(
+    manual_downloads_folder, assert_demand
+):
+    """Test that each hour of a state takes the latest download."""
+    _write_states_file(
+        manual_downloads_folder / "NITI_2024_Uttarakhand_old.xlsx",
+        {"Uttarakhand": {"01-Jan 12am": 1800.0, "01-Jan 1am": 1700.0}},
+    )
+    # The later download ends later and revises the first hour.
+    _write_states_file(
+        manual_downloads_folder / "NITI_2024_Uttarakhand_new.xlsx",
+        {"Uttarakhand": {"01-Jan 12am": 1850.0, "01-Jan 2am": 1600.0}},
+    )
+
+    assert_demand(
+        niti.download_and_extract_data_for_request(None, "IND_UT"),
+        "Asia/Kolkata",
+        {
+            "2023-12-31 19:30": 1850.0,
+            "2023-12-31 20:30": 1700.0,
+            "2023-12-31 21:30": 1600.0,
+        },
+    )
+
+
 @pytest.mark.usefixtures("manual_downloads_folder")
 def test_download_and_extract_data_without_files():
     """Test that the error says where to put the downloaded files."""

@@ -3,7 +3,7 @@ licence:
   terms: Content may not be used for any commercial and non-private purposes.
   url: https://www.eskom.co.za/wp-content/uploads/2021/10/WEBSITE-TERMS-AND-CONDITIONS_Sep2021.pdf
 definition:
-  - start_date: 2022-04-01
+  - start_date: 2021-04-01
     quantity: RSA contracted demand
     embedded_generation: excluded
     network_losses: unknown
@@ -13,5 +13,5 @@ definition:
 entities:
   - country_name: South Africa
     country_code: ZAF
-    start_date: 2022-04-01
+    start_date: 2021-04-01
     end_date: today

@@ -84,6 +84,31 @@ def test_download_and_extract_data_with_other_days(
     )
 
 
+def test_download_and_extract_data_of_two_downloads(
+    manual_downloads_folder, assert_demand
+):
+    """Test that each hour takes the number of the latest download."""
+    (manual_downloads_folder / "NTDC_2024_old.csv").write_text(
+        "DATE,HOUR,SYSLOAD\n01/01/2024,1,15000\n01/01/2024,2,14000\n",
+        encoding="utf-8",
+    )
+    # The later download ends later and revises the first hour.
+    (manual_downloads_folder / "NTDC_2024_new.csv").write_text(
+        "DATE,HOUR,SYSLOAD\n01/01/2024,1,15500\n01/01/2024,3,13000\n",
+        encoding="utf-8",
+    )
+
+    assert_demand(
+        ntdc.download_and_extract_data_for_request(None, "PAK"),
+        "Asia/Karachi",
+        {
+            "2023-12-31 20:00": 15500.0,
+            "2023-12-31 21:00": 14000.0,
+            "2023-12-31 22:00": 13000.0,
+        },
+    )
+
+
 @pytest.mark.usefixtures("manual_downloads_folder")
 def test_download_and_extract_data_without_files():
     """Test that the error says where to put the downloaded files."""

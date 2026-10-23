@@ -227,6 +227,7 @@ def test_read_manual_files():
     )
 
     assert dataset["load"].tolist() == [1, 2]
+    assert dataset["File"].tolist() == ["ABC_1.csv", "ABC_2.csv"]
 
 
 @pytest.mark.parametrize("exists", [True, False])

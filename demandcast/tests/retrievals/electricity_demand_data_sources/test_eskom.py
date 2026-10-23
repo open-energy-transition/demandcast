@@ -56,6 +56,42 @@ def test_download_and_extract_data_with_text(
     assert "such as 'ast'" in caplog.text
 
 
+def test_download_and_extract_data_of_two_downloads(
+    manual_downloads_folder, assert_demand
+):
+    """Test that each hour takes the number of the latest download."""
+    header = "Date Time Hour Beginning,RSA Contracted Demand\n"
+    # An older download, with an earlier year, a value that Eskom later
+    # revised, and the last hour of its data.
+    (manual_downloads_folder / "ESKOM_2021-2025.csv").write_text(
+        header + "2021-04-01 12:00:00 AM,21000\n"
+        "2025-07-01 12:00:00 AM,23000\n"
+        "2025-07-02 12:00:00 AM,24000\n",
+        encoding="utf-8",
+    )
+    # The latest download, whose data ends later, without a number in
+    # an hour that the older one has.
+    (manual_downloads_folder / "ESK19913.csv").write_text(
+        header + "2025-07-01 12:00:00 AM,23500\n"
+        "2025-07-02 12:00:00 AM,\n"
+        "2026-01-01 12:00:00 AM,25000\n",
+        encoding="utf-8",
+    )
+
+    time_series = eskom.download_and_extract_data_for_request(None, "ZAF")
+
+    assert_demand(
+        time_series,
+        "Africa/Johannesburg",
+        {
+            "2021-03-31 23:00": 21000.0,
+            "2025-06-30 23:00": 23500.0,
+            "2025-07-01 23:00": 24000.0,
+            "2025-12-31 23:00": 25000.0,
+        },
+    )
+
+
 @pytest.mark.usefixtures("manual_downloads_folder")
 def test_download_and_extract_data_without_files():
     """Test that the error says where to put the downloaded files."""
