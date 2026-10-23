@@ -316,3 +316,44 @@ def test_points_give_the_temperature_of_the_grid():
     ):
         assert len(from_points) == 8784
         assert np.allclose(from_points.to_numpy(), from_grid.to_numpy())
+
+
+@pytest.mark.usefixtures("frozen_now")
+def test_reanalysis_of_the_last_complete_year():
+    """
+    Test that the last complete year reads the current one too.
+
+    The reanalysis ends with 2025, but the first hours of 2026 in UTC
+    end the local year 2025 west of UTC, so its grid is retrieved too.
+    """
+    retrieved = []
+    grid = xarray.Dataset(
+        {
+            "t2m": (
+                ("valid_time", "latitude", "longitude"),
+                np.zeros((1, 2, 2)),
+            )
+        },
+        coords={
+            "valid_time": [np.datetime64("2025-01-01T00:00")],
+            "latitude": [34.0, 35.0],
+            "longitude": [-119.0, -118.0],
+        },
+    )
+    with (
+        patch.object(
+            temperature.retrievals.gridded_weather,
+            "retrieve_reanalysis",
+            side_effect=lambda _code, year, *_: retrieved.append(year),
+        ),
+        patch.object(temperature.xarray, "open_mfdataset", return_value=grid),
+    ):
+        temperature._load_gridded_temperature_data(
+            "USA_CAL",
+            2025,
+            temperature.utils.catalogue.get_reanalysis_years(),
+            None,
+            None,
+        )
+
+    assert retrieved == [2024, 2025, 2026]

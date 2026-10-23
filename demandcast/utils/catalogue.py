@@ -118,12 +118,16 @@ def get_reanalysis_years() -> list[int]:
     """
     Get the years of the reanalysis of the weather.
 
+    The current year, incomplete, belongs to the projections only, so
+    that a year is never retrieved both ways, and the statistics of a
+    year, such as its mean temperature, cover the whole year.
+
     Returns
     -------
     list[int]
-        The years from the first one needed to the current one.
+        The years from the first one needed to the last complete one.
     """
-    return list(range(FIRST_REANALYSIS_YEAR, pd.Timestamp.now().year + 1))
+    return list(range(FIRST_REANALYSIS_YEAR, pd.Timestamp.now().year))
 
 
 def get_climate_projection_years() -> list[int]:

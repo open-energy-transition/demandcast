@@ -81,7 +81,9 @@ def _load_gridded_temperature_data(
     year : int
         The year of the temperature data.
     available_climate_years : list[int]
-        The list of available years for the climate data.
+        The list of available years for the climate data. The
+        reanalysis is read until the current year, whose first hours
+        end the last complete year west of UTC.
     climate_model : str | None
         The model of the climate data.
     climate_scenario : str | None
@@ -107,6 +109,11 @@ def _load_gridded_temperature_data(
     # Define the years of interest (the given year, the previous
     # year, and the next year).
     years_of_interest = [year - 1, year, year + 1]
+    if climate_model is None:
+        available_climate_years = [
+            *available_climate_years,
+            pd.Timestamp.now().year,
+        ]
     years_of_interest = [
         y for y in years_of_interest if y in available_climate_years
     ]
@@ -132,10 +139,17 @@ def _load_gridded_temperature_data(
     for file_path, y in zip(
         temperature_data_file_paths, years_of_interest, strict=True
     ):
-        if retrievals.gridded_weather.is_outdated(
+        if not retrievals.gridded_weather.is_outdated(
             file_path, y, climate_model, climate_scenario
         ):
-            # Download the gridded temperature data.
+            continue
+        # Download the gridded temperature data: the reanalysis of the
+        # year, even the current one, or the projections.
+        if climate_model is None:
+            retrievals.gridded_weather.retrieve_reanalysis(
+                code, y, "temperature", source
+            )
+        else:
             retrievals.gridded_weather.run_data_retrieval(
                 code=code,
                 file=None,

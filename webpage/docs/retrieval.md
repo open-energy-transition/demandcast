@@ -304,7 +304,7 @@ The module `demandcast/retrievals/gridded_weather.py` retrieves gridded weather 
 - `cds`: the Copernicus Climate Data Store (CDS), which prepares each request, a year of the globe for more than five codes or of each code otherwise, in a queue of minutes to hours, and gives the data until about a week ago.
 - `arco`: [ARCO-ERA5](https://github.com/google-research/arco-era5), the analysis-ready ERA5 of Google Research on Google Cloud Storage, read without an account and without a queue, a global map an hour, about 40 minutes a year for all the codes at once, until about a week ago. Google gives no commitment to keep it up to date.
 
-The projections of the climate models always come from the CDS. The reanalysis of a year is downloaded again until about a week after the end of the year, when its data is complete.
+The projections of the climate models always come from the CDS. The reanalysis covers the years until the last complete one, and the current year comes from the projections only, so that the statistics of a year, such as its mean temperature, cover the whole year. The reanalysis of a year is downloaded again until about a week after the end of the year, when its data is complete; the first hours of the current year are read only to end the last complete year in local time, west of UTC.
 
 To retrieve weather data from the Copernicus Climate Data Store (CDS), first ensure that you are registered on the website and have your API key stored in the `.env` file. Instructions for the API key can be found [here](https://cds.climate.copernicus.eu/how-to-api). Then run:
 

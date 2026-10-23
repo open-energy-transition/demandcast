@@ -783,6 +783,33 @@ def _retrieve_data_of_each_code(
         )
 
 
+def retrieve_reanalysis(
+    code: str, year: int, variable: str, source: str = "cds"
+) -> None:
+    """
+    Retrieve the reanalysis of a year for a country or subdivision.
+
+    Unlike run_data_retrieval, any year with data can be retrieved, such
+    as the current one, whose first hours end the local year before it
+    west of UTC.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+    year : int
+        The year.
+    variable : str
+        The weather variable.
+    source : str, optional
+        The source of the reanalysis data, "cds" or "arco".
+    """
+    if source == "arco":
+        _retrieve_from_arco(variable, [code], [(year, None, None)])
+    else:
+        _retrieve_data_of_each_code(variable, [code], [(year, None, None)])
+
+
 def _retrieve_from_arco(
     variable: str,
     codes: list[str],
