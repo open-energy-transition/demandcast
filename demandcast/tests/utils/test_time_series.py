@@ -309,3 +309,47 @@ def test_local_years_of_hours(time_zone, first_end):
             hours[[0]] - pd.Timedelta(hours=1), tz
         )
     ) == {2023}
+
+
+def test_keep_latest_download():
+    """Test that each time takes the number of the latest download."""
+    times = pd.to_datetime(
+        [
+            "2021-01-01",
+            "2025-07-01",
+            "2025-07-02",
+            "2025-07-01",
+            "2025-07-02",
+            "2026-01-01",
+            "2026-01-01",
+        ]
+    )
+    values = pd.Series([1.0, 2.0, 3.0, 2.5, None, 4.0, 4.5], index=times)
+    # The old download ends on 2025-07-02, the new one on 2026-01-01,
+    # which has the time 2026-01-01 twice.
+    files = pd.Series(["old.csv"] * 3 + ["new.csv"] * 4)
+
+    kept = utils.time_series.keep_latest_download(values, files)
+
+    assert kept.to_dict() == {
+        pd.Timestamp("2021-01-01"): 1.0,
+        pd.Timestamp("2025-07-01"): 2.5,
+        pd.Timestamp("2025-07-02"): 3.0,
+        pd.Timestamp("2026-01-01"): 4.0,
+    }
+
+
+def test_keep_latest_download_by_key():
+    """Test that the values are kept for each key and time."""
+    index = pd.MultiIndex.from_tuples(
+        [("A", pd.Timestamp("2020-01-01")), ("B", pd.Timestamp("2020-01-01"))]
+        * 2,
+        names=["name", "time"],
+    )
+    values = pd.Series([1.0, 2.0, None, 3.0], index=index)
+    files = pd.Series(["a.xlsx", "a.xlsx", "b.xlsx", "b.xlsx"])
+
+    kept = utils.time_series.keep_latest_download(values, files)
+
+    assert kept.tolist() == [1.0, 3.0]
+    assert kept.index.equals(index[:2])

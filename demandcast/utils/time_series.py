@@ -14,6 +14,7 @@ import itertools
 import os
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 
@@ -303,3 +304,48 @@ def clean_data(time_series: pd.Series, variable_name: str) -> pd.Series:
     time_series = time_series.sort_index()
 
     return time_series
+
+
+def keep_latest_download(values: pd.Series, files: pd.Series) -> pd.Series:
+    """
+    Keep one value of each time, from the latest download of the data.
+
+    The files that were downloaded manually can overlap: a later
+    download repeats times of an earlier one, sometimes with values
+    that the data source revised. The files are ranked by the last time
+    at which they have a number, so that the latest download comes
+    last. Each time takes the number of the latest file that has one,
+    or no number if no file has one; within a file, the first value of
+    a time is kept.
+
+    Parameters
+    ----------
+    values : pandas.Series
+        The values of all the files, indexed by time, or by keys and
+        time, such as the state and the time, with the time last.
+    files : pandas.Series
+        The name of the file of each value, in the same order.
+
+    Returns
+    -------
+    pandas.Series
+        One value of each index, sorted by the index.
+    """
+    times = values.index.get_level_values(-1)
+    file_names = np.asarray(files)
+    has_number = values.notna().to_numpy()
+    last_times = (
+        pd.Series(times[has_number]).groupby(file_names[has_number]).max()
+    )
+    ranks = (
+        pd.Series(file_names)
+        .map(last_times.rank(method="first"))
+        .fillna(0)
+        .to_numpy()
+    )
+    # Sort by whether there is a number, then by the rank of the file,
+    # then by the position in reverse, so that the last row of each
+    # index is the one to keep.
+    order = np.lexsort((-np.arange(len(values)), ranks, has_number))
+    ordered = values.iloc[order]
+    return ordered[~ordered.index.duplicated(keep="last")].sort_index()

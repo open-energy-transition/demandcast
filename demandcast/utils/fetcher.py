@@ -651,7 +651,10 @@ def read_manual_files(
     Returns
     -------
     pandas.DataFrame
-        The data of all the files.
+        The data of all the files, with the name of the file of each row
+        in the column "File", so that a data source can combine several
+        downloads of the same data (see
+        utils.time_series.keep_latest_download).
 
     Raises
     ------
@@ -669,4 +672,9 @@ def read_manual_files(
             f"from {url}{access}. The data files must be named starting "
             f"with '{prefix}'."
         )
-    return pd.concat([read_file(file_path) for file_path in file_paths])
+    return pd.concat(
+        [
+            read_file(file_path).assign(File=os.path.basename(file_path))
+            for file_path in file_paths
+        ]
+    )
