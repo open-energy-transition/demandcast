@@ -8,9 +8,19 @@ Description:
     implements the sklearn estimator interface, enabling direct use
     with ``cross_validate()`` and ``LeaveOneGroupOut()``.
 
-    Sequence construction respects entity boundaries: rows from
-    different entities (identified by the ``"group"`` column of the
-    prepared dataset) never share a lookback window.
+    Sequence construction respects entity boundaries and time gaps:
+    rows from different entities (identified by the ``"group"`` column
+    of the prepared dataset), or separated by more or less than an hour
+    (by the ``"time"`` column), never share a lookback window, which is
+    padded with zeros instead. The windows are built batch by batch,
+    so that the windows of all the rows are never in memory at once.
+
+    The features are standardized with the mean and standard deviation
+    of each feature in the training rows, which are saved with the
+    model: features of different magnitudes, such as the GDP per capita
+    and the temperature, would otherwise saturate the gates of the
+    LSTM. The categorical features, such as the hour of the day, are
+    standardized as the ordinal numbers that they are.
 """
 
 from __future__ import annotations
@@ -147,64 +157,93 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
     # Sequence construction
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _get_run_starts(
+        n_samples: int,
+        groups: pd.Series | np.ndarray | None = None,
+        times: pd.Series | np.ndarray | None = None,
+    ) -> np.ndarray:
+        """
+        Get the first row of the run of consecutive hours of each row.
+
+        A run starts at the first row, at each change of entity, and at
+        each row that is not one hour after the row before it.
+
+        Parameters
+        ----------
+        n_samples : int
+            The number of rows.
+        groups : pandas.Series or np.ndarray or None
+            Entity label per row.
+        times : pandas.Series or np.ndarray or None
+            Time per row.
+
+        Returns
+        -------
+        np.ndarray
+            The position of the first row of the run of each row.
+        """
+        starts = np.zeros(n_samples, dtype=bool)
+        if n_samples:
+            starts[0] = True
+        if groups is not None:
+            labels = np.asarray(groups)
+            starts[1:] |= labels[1:] != labels[:-1]
+        if times is not None:
+            steps = np.diff(pd.DatetimeIndex(times).to_numpy())
+            starts[1:] |= steps != np.timedelta64(1, "h")
+        return np.maximum.accumulate(np.where(starts, np.arange(n_samples), 0))
+
     def _make_sequences(
         self,
         X: np.ndarray,
-        groups: np.ndarray | None = None,
+        run_starts: np.ndarray,
+        rows: np.ndarray,
     ) -> np.ndarray:
         """
-        Build ``(n_samples, n_timesteps, n_features)`` sequences.
+        Build the ``(len(rows), n_timesteps, n_features)`` windows.
 
-        Without groups, prepends ``n_timesteps - 1`` zero rows so
-        every sample maps to exactly one output. With groups, sequences
-        never cross entity boundaries: zero-padding is inserted at the
-        start of each new contiguous run instead of borrowing rows from
-        the preceding entity.
+        The window of a row has the rows of its run before it, at most
+        ``n_timesteps - 1``, and zeros before them.
 
         Parameters
         ----------
         X : np.ndarray
             Shape ``(n_samples, n_features)``.
-        groups : np.ndarray or None
-            Entity label per row. Only contiguous run boundaries are
-            treated as entity boundaries; non-contiguous recurrence of
-            a label starts a fresh run.
+        run_starts : np.ndarray
+            The first row of the run of each row.
+        rows : np.ndarray
+            The positions of the rows whose windows are built.
 
         Returns
         -------
         np.ndarray
-            Shape ``(n_samples, n_timesteps, n_features)``.
+            Shape ``(len(rows), n_timesteps, n_features)``.
         """
-        n_samples, n_features = X.shape
+        offsets = np.arange(-self.n_timesteps + 1, 1)
+        positions = rows[:, None] + offsets[None, :]
+        valid = positions >= run_starts[rows][:, None]
+        windows = X[np.where(valid, positions, 0)]
+        windows[~valid] = 0.0
+        return windows
 
-        if groups is None:
-            pad = np.zeros((self.n_timesteps - 1, n_features), dtype=X.dtype)
-            X_padded = np.concatenate([pad, X], axis=0)
-            idx = (
-                np.arange(n_samples)[:, None]
-                + np.arange(self.n_timesteps)[None, :]
-            )
-            return X_padded[idx]
+    def _standardize(self, X: pd.DataFrame | np.ndarray) -> np.ndarray:
+        """
+        Standardize the features with the statistics of the training.
 
-        groups = np.asarray(groups)
-        run_start = np.empty(n_samples, dtype=int)
-        run_start[0] = 0
-        for i in range(1, n_samples):
-            run_start[i] = (
-                i if groups[i] != groups[i - 1] else run_start[i - 1]
-            )
+        Parameters
+        ----------
+        X : pandas.DataFrame or np.ndarray of shape \
+(n_samples, n_features)
+            The features.
 
-        X_seq = np.zeros(
-            (n_samples, self.n_timesteps, n_features), dtype=X.dtype
-        )
-        # Builds one row at a time: fine for the current 3-country
-        # benchmark, but may be worth vectorizing for full-scale
-        # datasets with 40+ countries.
-        for i in range(n_samples):
-            window_start = max(run_start[i], i - self.n_timesteps + 1)
-            n_valid = i - window_start + 1
-            X_seq[i, self.n_timesteps - n_valid :] = X[window_start : i + 1]
-        return X_seq
+        Returns
+        -------
+        np.ndarray
+            The standardized features, as float32.
+        """
+        X_arr = np.array(X, dtype=np.float32)
+        return ((X_arr - self.mean_) / self.scale_).astype(np.float32)
 
     # ------------------------------------------------------------------
     # sklearn estimator interface
@@ -215,6 +254,7 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
         X: pd.DataFrame | np.ndarray,
         y: pd.Series | np.ndarray,
         groups: pd.Series | np.ndarray | None = None,
+        times: pd.Series | np.ndarray | None = None,
     ) -> LSTMRegressor:
         """
         Fit the LSTM model.
@@ -230,6 +270,9 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
         groups : array-like of shape (n_samples,), optional
             Entity labels per row. When supplied, sequences are
             built without crossing group boundaries.
+        times : array-like of shape (n_samples,), optional
+            Time per row. When supplied, sequences are built without
+            crossing the gaps between rows that are not an hour apart.
 
         Returns
         -------
@@ -239,12 +282,15 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
         if hasattr(X, "columns"):
             self.feature_names_in_ = np.array(X.columns.tolist())
 
-        X_arr = np.array(X, dtype=np.float32)
-        y_arr = np.array(y, dtype=np.float32).ravel()
-        self.n_features_in_ = X_arr.shape[1]
-
-        groups_arr = np.asarray(groups) if groups is not None else None
-        X_seq = self._make_sequences(X_arr, groups_arr)
+        X_raw = np.array(X, dtype=np.float32)
+        self.n_features_in_ = X_raw.shape[1]
+        self.mean_ = X_raw.mean(axis=0)
+        # A constant feature keeps its values, shifted to zero.
+        standard_deviation = X_raw.std(axis=0)
+        self.scale_ = np.where(standard_deviation > 0, standard_deviation, 1)
+        X_arr = self._standardize(X_raw)
+        y_tensor = torch.from_numpy(np.array(y, dtype=np.float32).ravel())
+        run_starts = self._get_run_starts(len(X_arr), groups, times)
 
         torch.manual_seed(self.random_state)
         self.net_ = _LSTMNet(
@@ -257,22 +303,18 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
             self.net_.parameters(), lr=self.learning_rate
         )
         criterion = nn.MSELoss()
-
-        dataset = torch.utils.data.TensorDataset(
-            torch.from_numpy(X_seq), torch.from_numpy(y_arr)
-        )
-        loader = torch.utils.data.DataLoader(
-            dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
-            generator=torch.Generator().manual_seed(self.random_state),
-        )
+        generator = torch.Generator().manual_seed(self.random_state)
 
         self.net_.train()
         for _ in range(self.epochs):
-            for X_batch, y_batch in loader:
+            order = torch.randperm(len(X_arr), generator=generator).numpy()
+            for i in range(0, len(order), self.batch_size):
+                rows = order[i : i + self.batch_size]
+                X_batch = torch.from_numpy(
+                    self._make_sequences(X_arr, run_starts, rows)
+                )
                 optimizer.zero_grad()
-                loss = criterion(self.net_(X_batch), y_batch)
+                loss = criterion(self.net_(X_batch), y_tensor[rows])
                 loss.backward()
                 optimizer.step()
 
@@ -283,6 +325,7 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
         self,
         X: pd.DataFrame | np.ndarray,
         groups: pd.Series | np.ndarray | None = None,
+        times: pd.Series | np.ndarray | None = None,
     ) -> np.ndarray:
         """
         Predict with the trained LSTM.
@@ -295,6 +338,8 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
         groups : array-like of shape (n_samples,), optional
             Entity labels. Pass the same groups used in ``fit`` to
             apply entity-boundary padding during inference.
+        times : array-like of shape (n_samples,), optional
+            Time per row, to break the sequences at the gaps.
 
         Returns
         -------
@@ -303,16 +348,17 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
         """
         check_is_fitted(self, "net_")
 
-        X_arr = np.array(X, dtype=np.float32)
-        groups_arr = np.asarray(groups) if groups is not None else None
-        X_seq = self._make_sequences(X_arr, groups_arr)
-        X_tensor = torch.from_numpy(X_seq)
+        X_arr = self._standardize(X)
+        run_starts = self._get_run_starts(len(X_arr), groups, times)
 
         self.net_.eval()
-        parts: list[np.ndarray] = []
+        parts: list[np.ndarray] = [np.empty(0, dtype=np.float32)]
         with torch.no_grad():
-            for i in range(0, len(X_tensor), self.batch_size):
-                batch = X_tensor[i : i + self.batch_size]
+            for i in range(0, len(X_arr), self.batch_size):
+                rows = np.arange(i, min(i + self.batch_size, len(X_arr)))
+                batch = torch.from_numpy(
+                    self._make_sequences(X_arr, run_starts, rows)
+                )
                 parts.append(self.net_(batch).numpy())
         return np.concatenate(parts).flatten()
 
@@ -363,6 +409,21 @@ def load(model_path: str) -> LSTMRegressor:
 
     lstm_model = LSTMRegressor(**checkpoint["params"])
     lstm_model.n_features_in_ = checkpoint["n_features_in_"]
+    # A model saved before the features were standardized has no
+    # statistics, and takes the features as they are.
+    if "mean_" not in checkpoint:
+        logging.warning(
+            f"The model {model_path} has no statistics of its features, "
+            "which are not standardized."
+        )
+    lstm_model.mean_ = np.array(
+        checkpoint.get("mean_", [0.0] * lstm_model.n_features_in_),
+        dtype=np.float32,
+    )
+    lstm_model.scale_ = np.array(
+        checkpoint.get("scale_", [1.0] * lstm_model.n_features_in_),
+        dtype=np.float32,
+    )
 
     if "feature_names_in_" in checkpoint:
         lstm_model.feature_names_in_ = np.array(
@@ -399,6 +460,8 @@ def save(lstm_model: LSTMRegressor, file_path: str) -> None:
     checkpoint: dict = {
         "params": lstm_model.get_params(),
         "n_features_in_": int(lstm_model.n_features_in_),
+        "mean_": lstm_model.mean_.tolist(),
+        "scale_": lstm_model.scale_.tolist(),
         "state_dict": lstm_model.net_.state_dict(),
     }
     if hasattr(lstm_model, "feature_names_in_"):
@@ -474,6 +537,7 @@ def train(
         training["features"],
         training["target"],
         groups=training.get("group"),
+        times=training.get("time"),
     )
 
     logging.info("LSTM model training completed.")
@@ -535,6 +599,7 @@ def predict(
         preds = lstm_model.predict(
             dataset["features"],
             groups=dataset.get("group"),
+            times=dataset.get("time"),
         )
         return pd.Series(preds)
 
@@ -543,6 +608,7 @@ def predict(
         preds = lstm_model.predict(
             data["features"],
             groups=data.get("group"),
+            times=data.get("time"),
         )
         predictions[split_name] = pd.Series(preds)
         logging.info(

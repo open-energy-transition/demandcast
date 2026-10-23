@@ -12,7 +12,7 @@ Description:
 """
 
 import logging
-from typing import Any, NotRequired, TypedDict
+from typing import Any, NotRequired, TypedDict, cast
 
 import numpy as np
 import pandas as pd
@@ -25,6 +25,10 @@ import utils.paths
 # target as the fraction of the annual total of each entity and local
 # year, so converting it needs the local year of each row.
 LOCAL_YEAR_COLUMN = "Local year"
+
+# The transformation of the target that the models learn, which their
+# manifests record (see ml_models.files).
+TARGET_TRANSFORMATION = "load relative to the annual mean of the local year"
 
 
 class ConfigModel(utils.config.StrictSettings):
@@ -50,6 +54,32 @@ class PreparedDataset(TypedDict):
     target: NotRequired[pd.Series]
     scaling_factor: NotRequired[pd.Series]
     local_year: NotRequired[pd.Series]
+
+
+def select_rows(
+    prepared_dataset: PreparedDataset, positions: np.ndarray
+) -> PreparedDataset:
+    """
+    Select rows of a prepared dataset, with all their fields.
+
+    Parameters
+    ----------
+    prepared_dataset : PreparedDataset
+        The prepared dataset.
+    positions : numpy.ndarray
+        The positions of the rows.
+
+    Returns
+    -------
+    PreparedDataset
+        The rows, with each field of the dataset, such as the features,
+        the entity codes, the times and the local years.
+    """
+    fields = cast(dict[str, pd.Series | pd.DataFrame], prepared_dataset)
+    return cast(
+        PreparedDataset,
+        {name: values.iloc[positions] for name, values in fields.items()},
+    )
 
 
 def read_and_check_ml_configuration() -> ConfigModel:
@@ -180,6 +210,80 @@ def to_load_fraction_of_annual_total(
         The load as a fraction of the annual total.
     """
     return load_relative / _hours_in_year(local_year)
+
+
+def normalize_to_annual_totals(
+    load_relative: pd.Series, group: pd.Series, local_year: pd.Series
+) -> pd.Series:
+    """
+    Make the load of each complete year sum to its annual total.
+
+    The models predict the load relative to the annual mean of each
+    hour, whose mean over a year is not exactly 1. The annual demand of
+    a scenario is the total of its year, so the predictions of each
+    complete local year of each entity, with all its hours, are scaled
+    to a mean of 1, and their MW then sum to the annual demand. The
+    negative predictions are zero, and the years without all their
+    hours are left as they are, which the log reports.
+
+    Parameters
+    ----------
+    load_relative : pandas.Series
+        The load relative to the annual mean, such as the predictions
+        of a model.
+    group : pandas.Series
+        The entity code of each row, in the same order.
+    local_year : pandas.Series
+        The local year of each row, in the same order.
+
+    Returns
+    -------
+    pandas.Series
+        The load relative to the annual mean, with a mean of 1 in each
+        complete year of each entity.
+    """
+    load = pd.Series(np.asarray(load_relative, dtype=float), index=group.index)
+    negative = load < 0
+    if negative.any():
+        logging.warning(
+            f"{int(negative.sum())} negative predictions are set to zero."
+        )
+        load[negative] = 0.0
+
+    keys = [group.to_numpy(), local_year.to_numpy()]
+    hours = load.groupby(keys).transform("size")
+    mean = load.groupby(keys).transform("mean")
+    complete = hours.to_numpy() == _hours_in_year(local_year)
+    complete &= mean.to_numpy() > 0
+
+    if complete.any():
+        means = (
+            mean[complete]
+            .groupby(
+                [group[complete].to_numpy(), local_year[complete].to_numpy()]
+            )
+            .first()
+        )
+        logging.info(
+            "The mean of the predictions of each complete year is scaled "
+            f"to 1, from {means.min():.4f} to {means.max():.4f}."
+        )
+    if not complete.all():
+        incomplete = sorted(
+            {
+                f"{code} {int(year)}"
+                for code, year in zip(
+                    group[~complete], local_year[~complete], strict=True
+                )
+            }
+        )
+        logging.warning(
+            "The predictions of the years without all their hours are not "
+            f"scaled to their annual total: {', '.join(incomplete)}."
+        )
+
+    load[complete] = load[complete] / mean[complete]
+    return load.set_axis(load_relative.index)
 
 
 def to_megawatts(

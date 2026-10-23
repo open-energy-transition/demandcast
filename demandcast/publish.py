@@ -6,15 +6,19 @@ Description:
     This script uploads a release of DemandCast to Zenodo: the trained
     model, its settings and its forecasts, as a draft new version of a
     record, or of a new record, to check and publish on the website of
-    Zenodo (see publishing.zenodo).
+    Zenodo (see publishing.zenodo). The manifest of each file (see
+    utils/manifest.py), which tells how the model was trained and which
+    model and data gave the forecasts, is uploaded with it.
 """
 
+import logging
 import os
 
 from pydantic import field_validator
 
 import publishing.zenodo
 import utils.config
+import utils.manifest
 import utils.paths
 
 
@@ -85,6 +89,35 @@ class ConfigModel(utils.config.StrictSettings):
         return files
 
 
+def _with_manifests(file_paths: list[str]) -> list[str]:
+    """
+    Add the manifests of the files of a release.
+
+    Parameters
+    ----------
+    file_paths : list[str]
+        The paths of the files.
+
+    Returns
+    -------
+    list[str]
+        The paths of the files, each followed by that of its manifest,
+        if it has one.
+    """
+    with_manifests = []
+    for file_path in file_paths:
+        with_manifests.append(file_path)
+        manifest_path = utils.manifest.get_manifest_path(file_path)
+        if file_path.endswith(utils.manifest.MANIFEST_EXTENSION):
+            continue
+        if os.path.exists(manifest_path):
+            if manifest_path not in file_paths:
+                with_manifests.append(manifest_path)
+        else:
+            logging.warning(f"The file {file_path} has no manifest.")
+    return with_manifests
+
+
 def main(config: ConfigModel) -> None:
     """
     Upload the release of the settings to Zenodo.
@@ -101,10 +134,12 @@ def main(config: ConfigModel) -> None:
     utils.config.log_configuration(config)
 
     publishing.zenodo.publish_release(
-        [
-            os.path.join(utils.paths.get_data_folder(), file_path)
-            for file_path in config.files
-        ],
+        _with_manifests(
+            [
+                os.path.join(utils.paths.get_data_folder(), file_path)
+                for file_path in config.files
+            ]
+        ),
         config.version,
         # The settings check that the record is a number or "new".
         config.zenodo_record

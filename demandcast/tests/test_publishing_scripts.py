@@ -69,3 +69,37 @@ def test_publish(monkeypatch, record, expected_record):
             False,
         )
     ]
+
+
+def test_publish_with_the_manifests(monkeypatch, caplog):
+    """Test that the manifest of each file is uploaded with it."""
+    folder = os.path.join(utils.paths.get_data_folder(), "models", "xgboost")
+    os.makedirs(folder)
+    for name in ("model.json", "model.manifest.json", "settings.yaml"):
+        with open(os.path.join(folder, name), "w") as file:
+            file.write("{}")
+    calls = []
+    monkeypatch.setattr(
+        publish.publishing.zenodo,
+        "publish_release",
+        lambda *args: calls.append(args),
+    )
+
+    with caplog.at_level("WARNING"):
+        publish.main(
+            publish.ConfigModel(
+                zenodo_record=1,
+                version="1.1.0",
+                files=[
+                    "models/xgboost/model.json",
+                    "models/xgboost/settings.yaml",
+                ],
+            )
+        )
+
+    assert [os.path.basename(path) for path in calls[0][0]] == [
+        "model.json",
+        "model.manifest.json",
+        "settings.yaml",
+    ]
+    assert "settings.yaml has no manifest" in caplog.text

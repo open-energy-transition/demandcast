@@ -35,7 +35,7 @@ DemandCast models the **gross electricity demand**: the electricity consumed, wh
 ## Current state
 
 <!-- status:start -->
-As of 23 October 2026, DemandCast has retrieval modules for the hourly electricity demand of **58 countries and 130 subdivisions**, in 67 countries, from **42 data sources**, with about **1,591 years of data** in total since 1994.
+As of 23 October 2026, DemandCast has retrieval modules for the hourly electricity demand of **58 countries and 138 subdivisions**, in 67 countries, from **43 data sources**, with about **1,676 years of data** in total since 1994, in the periods that the data sources cover, before the cleaning and the selection of the complete years for training.
 <!-- status:end -->
 
 <picture>

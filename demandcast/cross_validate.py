@@ -15,6 +15,7 @@ import ml_models  # noqa: F401
 # isort: split
 import logging
 import os
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -28,25 +29,25 @@ import utils.config
 class ConfigModel(utils.config.StrictSettings):
     """Settings of cross_validate.py."""
 
-    scoring_metric: str
     n_jobs: int | None = 1
     data_path: str | None = None
+    holdout: Literal["entity", "country"] = "entity"
 
 
 def run_model_cross_validation(
-    scoring_metric: str,
     n_jobs: int | None,
     data_path: str | None,
     ml_config: ml_models.data.ConfigModel,
     model_config: BaseModel,
+    holdout: Literal["entity", "country"] = "entity",
 ) -> None:
     """
     Run cross-validation of the machine learning model and save results.
 
+    The models are scored by their MAPE.
+
     Parameters
     ----------
-    scoring_metric : str
-        The scoring metric of the cross-validation.
     n_jobs : int | None
         The number of jobs to run in parallel.
     data_path : str | None
@@ -57,6 +58,9 @@ def run_model_cross_validation(
         algorithm.
     model_config : pydantic.BaseModel
         The settings of the model of the algorithm.
+    holdout : str, optional
+        What each fold holds out: an "entity", or a "country" with its
+        subdivisions.
     """
     logging.info("Starting cross-validation process.")
 
@@ -69,10 +73,10 @@ def run_model_cross_validation(
     # Run Leave-One-Group-Out cross-validation.
     mapes = ml_models.evaluation.cross_validate(
         prepared_dataset,
-        scoring_metric,
         n_jobs,
         ml_config.algorithm,
         model_config,
+        holdout,
     )
 
     # Save the cross-validation results.
@@ -82,6 +86,7 @@ def run_model_cross_validation(
         ml_config.algorithm.lower(),
         os.path.basename(data_path).split(".")[0],
         "all",
+        {"holdout": holdout},
     )
 
 
@@ -101,11 +106,11 @@ def main(config: ConfigModel) -> None:
     ml_config = ml_models.data.read_and_check_ml_configuration()
 
     run_model_cross_validation(
-        config.scoring_metric,
         config.n_jobs,
         config.data_path,
         ml_config,
         ml_models.registry.read_model_configuration(ml_config.algorithm),
+        config.holdout,
     )
 
 

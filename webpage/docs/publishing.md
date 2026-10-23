@@ -50,6 +50,8 @@ metadata_file: oet_zenodo_metadata.yaml  # the creators of a new record
 sandbox: false           # true uses sandbox.zenodo.org and SANDBOX_ZENODO_API_KEY
 ```
 
+The manifest of each file (see [the manifests](ML.md#manifests)), which tells how the model was trained and which model and data gave the forecasts, is uploaded with it, and the log lists the files without one.
+
 Then run:
 
 ```bash

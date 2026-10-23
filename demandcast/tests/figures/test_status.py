@@ -71,7 +71,9 @@ def test_describe():
         "As of 23 October 2026, DemandCast has retrieval modules for the "
         "hourly electricity demand of **1 countries and 2 subdivisions**, "
         "in 2 countries, from **3 data sources**, with about **1,234 "
-        "years of data** in total since 2015."
+        "years of data** in total since 2015, in the periods that the "
+        "data sources cover, before the cleaning and the selection of the "
+        "complete years for training."
     )
 
 

@@ -5,7 +5,9 @@ Description:
 
     This script produces forecasts using a trained machine learning
     model and input features, saving the predictions to a specified
-    output file.
+    output file. The forecasts of each complete year of each country or
+    subdivision sum to the annual demand of its scenario (see
+    ml_models.data.normalize_to_annual_totals).
 """
 
 # On Windows, PyTorch must be imported before pandas, so the ml_models
@@ -22,6 +24,7 @@ import ml_models.data
 import ml_models.files
 import ml_models.registry
 import utils.config
+import utils.manifest
 
 
 class ConfigModel(utils.config.StrictSettings):
@@ -51,10 +54,15 @@ def _construct_output_dataset(
     output_dataset : pandas.DataFrame
         The output dataset with forecasts.
     """
-    # Convert the predictions from the load relative to the annual mean
-    # to MW.
+    # Scale the predictions of each complete year to the annual demand
+    # of the scenario, and convert them from the load relative to the
+    # annual mean to MW.
     predictions = ml_models.data.to_megawatts(
-        predictions,
+        ml_models.data.normalize_to_annual_totals(
+            predictions,
+            prepared_dataset["group"],
+            prepared_dataset["local_year"],
+        ),
         prepared_dataset["local_year"],
         prepared_dataset["scaling_factor"],
     )
@@ -115,6 +123,9 @@ def run_forecasting(
     )
     model = model_module.load(trained_model_path)
     ml_models.data.check_model_features(model, prepared_dataset["features"])
+    ml_models.files.check_model_manifest(
+        utils.manifest.read_manifest(trained_model_path), ml_config
+    )
 
     # Make predictions.
     predictions = model_module.predict(model, prepared_dataset)
