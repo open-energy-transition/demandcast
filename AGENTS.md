@@ -29,7 +29,6 @@ The scenarios (SSP, IAMC and CMIP6), the climate models and the years of each pr
   - `ml_models/`: the models. `registry.py` lists them and defines the interface of their modules (`ModelModule`).
   - `utils/`: shared helpers; CI requires at least 95% test coverage. The countries and subdivisions are in `codes.py` (ISO codes, names, continents), `data_sources.py` (the YAML registry of the data sources), `time_zones.py` and `availability.py` (the codes of interest and their data).
   - `tests/`: the pytest suite, in folders that mirror the code: the tests of `utils/ml.py` are in `tests/utils/test_ml.py`, and those of the scripts are at the top of `tests/`.
-  - `archive/`: legacy notebooks and scripts; do not modify.
 - `webpage/`: the MkDocs documentation site, a separate uv project.
 
 ## Commands
