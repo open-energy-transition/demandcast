@@ -46,7 +46,7 @@ import os
 from typing import Literal
 
 import pandas as pd
-import utils.entities
+import utils.data_sources
 import utils.paths
 import yaml
 from pydantic import BaseModel, ConfigDict
@@ -198,7 +198,7 @@ def read_flags() -> pd.DataFrame:
         itself, or that of most hours of a combined flag) and code
         ("code").
     """
-    data_sources = utils.entities.read_data_sources()
+    data_sources = utils.data_sources.read_data_sources()
     frames = []
     for file_path in sorted(
         glob.glob(

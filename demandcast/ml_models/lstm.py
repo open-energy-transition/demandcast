@@ -34,8 +34,7 @@ import pandas as pd  # noqa: E402
 # isort: on
 import utils.config  # noqa: E402
 import utils.ml  # noqa: E402
-import yaml  # noqa: E402
-from pydantic import BaseModel, ValidationError  # noqa: E402
+from pydantic import BaseModel  # noqa: E402
 from sklearn.base import BaseEstimator, RegressorMixin  # noqa: E402
 from sklearn.utils.validation import check_is_fitted  # noqa: E402
 
@@ -338,31 +337,6 @@ class ConfigModel(BaseModel):
     random_state: int = 42
 
 
-def _read_configuration() -> ConfigModel:
-    """
-    Read and validate the LSTM configuration file.
-
-    Returns
-    -------
-    ConfigModel
-        Validated configuration model with all LSTM hyperparameters.
-
-    Raises
-    ------
-    ValueError
-        If the configuration file contains invalid values.
-    """
-    config_path = utils.paths.get_config_file("lstm_config.yaml")
-
-    with open(config_path) as f:
-        raw_config = yaml.safe_load(f)
-
-    try:
-        return ConfigModel(**raw_config)
-    except ValidationError as e:
-        raise ValueError(f"Configuration validation error: {e}") from e
-
-
 def load(model_path: str) -> LSTMRegressor:
     """
     Load a trained LSTM model from a checkpoint file.
@@ -409,22 +383,18 @@ def load(model_path: str) -> LSTMRegressor:
     return lstm_model
 
 
-def save(lstm_model: LSTMRegressor, model_name: str) -> None:
+def save(lstm_model: LSTMRegressor, file_path: str) -> None:
     """
-    Save a trained LSTM model to the trained models folder.
+    Save a trained LSTM model to a checkpoint file.
 
     Parameters
     ----------
     lstm_model : LSTMRegressor
         Fitted LSTM model to serialise.
-    model_name : str
-        File stem for the output file (the ``.pt`` extension is
-        appended automatically).
+    file_path : str
+        The path of the file, with the extension FILE_EXTENSION.
     """
-    model_folder = utils.paths.get_models_folder("lstm")
-    os.makedirs(model_folder, exist_ok=True)
-
-    output_path = os.path.join(model_folder, f"{model_name}{FILE_EXTENSION}")
+    output_path = file_path
 
     checkpoint: dict = {
         "params": lstm_model.get_params(),
@@ -439,17 +409,20 @@ def save(lstm_model: LSTMRegressor, model_name: str) -> None:
     logging.info(f"Trained model saved to {output_path}")
 
 
-def get_initialized_model() -> LSTMRegressor:
+def get_initialized_model(config: ConfigModel) -> LSTMRegressor:
     """
-    Return an LSTM model initialised from the YAML configuration.
+    Return an LSTM model initialised from its settings.
+
+    Parameters
+    ----------
+    config : ConfigModel
+        The settings of the model.
 
     Returns
     -------
     LSTMRegressor
         Un-fitted LSTM regressor with config-derived hyperparameters.
     """
-    config = _read_configuration()
-
     lstm_model = LSTMRegressor(
         n_timesteps=config.n_timesteps,
         n_units=config.n_units,
@@ -468,6 +441,7 @@ def get_initialized_model() -> LSTMRegressor:
 
 def train(
     prepared_dataset: dict[str, utils.ml.PreparedDataset],
+    config: ConfigModel,
 ) -> LSTMRegressor:
     """
     Train an LSTM model on the prepared dataset.
@@ -482,6 +456,8 @@ def train(
         Datasets produced by ``utils.ml.prepare_split_datasets`` with at
         least a ``"training"`` key containing ``"features"``,
         ``"target"``, and ``"group"`` sub-keys.
+    config : ConfigModel
+        The settings of the model.
 
     Returns
     -------
@@ -490,7 +466,7 @@ def train(
     """
     logging.info("Starting LSTM model training.")
 
-    lstm_model = get_initialized_model()
+    lstm_model = get_initialized_model(config)
 
     training = prepared_dataset["training"]
     lstm_model.fit(

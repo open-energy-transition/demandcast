@@ -126,9 +126,9 @@ from typing import cast
 
 import numpy as np
 import pandas as pd
-import utils.entities
 import utils.paths
 import utils.shapes
+import utils.time_zones
 
 # The columns of the flags.
 COLUMNS = ["start", "end", "flag", "period", "value", "reference"]
@@ -765,7 +765,7 @@ def flag_data(code: str, data_source: str | None = None) -> pd.DataFrame:
         "cleaned" if data_source else "combined", code, data_source
     )
     cleaned = pd.read_parquet(file_path)["Load (MW)"].sort_index()
-    time_zone = str(utils.entities.get_time_zone(code))
+    time_zone = str(utils.time_zones.get_time_zone(code))
 
     found = [
         _find_midday_changes(cleaned, _get_longitude(code)),

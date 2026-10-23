@@ -251,7 +251,7 @@ def test_combine_all_data(monkeypatch):
     """Test that the codes with cleaned data are combined."""
     _save_cleaned("CYP", "tsoc", _hourly("2021-01-01", "2021-01-31 23:00"))
     monkeypatch.setattr(
-        cleaning.combining.utils.entities,
+        cleaning.combining.utils.data_sources,
         "read_all_codes_with_electricity_demand_data",
         lambda: ["CYP", "USA_NE"],
     )

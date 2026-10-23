@@ -9,7 +9,7 @@ Description:
     the boundaries between entities.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import cross_validate
 import ml_models.registry
@@ -17,25 +17,14 @@ import numpy as np
 import pandas as pd
 import pytest
 import utils.ml
-
-# Small hyperparameters so that the LSTM trains in under a second.
-_FAST_LSTM_CONFIG = MagicMock(
-    n_timesteps=4,
-    n_units=8,
-    n_layers=1,
-    dropout=0.0,
-    epochs=1,
-    batch_size=32,
-    learning_rate=1e-3,
-    random_state=42,
-)
+from pydantic import BaseModel
 
 _ENTITIES = ["DEU", "FRA", "GBR"]
 _SCORING_METRIC = "neg_mean_absolute_percentage_error"
 
 
 @pytest.fixture(params=sorted(ml_models.registry.MODEL_MODULES))
-def algorithm(request, monkeypatch):
+def algorithm(request):
     """
     Get each algorithm, skipping missing optional packages.
 
@@ -44,15 +33,31 @@ def algorithm(request, monkeypatch):
     str
         The name of the algorithm.
     """
-    model_module = pytest.importorskip(
+    pytest.importorskip(
         ml_models.registry.MODEL_MODULES[request.param],
         exc_type=ModuleNotFoundError,
     )
-    if request.param == "lstm":
-        monkeypatch.setattr(
-            model_module, "_read_configuration", lambda: _FAST_LSTM_CONFIG
-        )
     return request.param
+
+
+def _model_config(algorithm: str) -> BaseModel:
+    """
+    Get the settings of a model, small for the LSTM.
+
+    Parameters
+    ----------
+    algorithm : str
+        The algorithm.
+
+    Returns
+    -------
+    pydantic.BaseModel
+        The settings, with which the LSTM trains in under a second.
+    """
+    config_model = ml_models.registry.get_model_module(algorithm).ConfigModel
+    if algorithm.lower() == "lstm":
+        return config_model(n_timesteps=4, n_units=8, epochs=1, batch_size=32)
+    return config_model()
 
 
 def _make_prepared_dataset() -> utils.ml.PreparedDataset:
@@ -81,7 +86,11 @@ def _make_prepared_dataset() -> utils.ml.PreparedDataset:
 def test_cross_validate_returns_one_row_per_entity(algorithm):
     """Test that there is one row of MAPEs per held-out entity."""
     mapes = cross_validate._cross_validate(
-        _make_prepared_dataset(), _SCORING_METRIC, 1, algorithm
+        _make_prepared_dataset(),
+        _SCORING_METRIC,
+        1,
+        algorithm,
+        _model_config(algorithm),
     )
 
     assert mapes["Entity Code"].tolist() == _ENTITIES
@@ -101,9 +110,9 @@ def test_cross_validate_forwards_groups(algorithm):
     training_groups: list[pd.Series] = []
     predicted_datasets: list[utils.ml.PreparedDataset] = []
 
-    def spy_train(prepared_dataset):
+    def spy_train(prepared_dataset, config):
         training_groups.append(prepared_dataset["training"]["group"])
-        return real_train(prepared_dataset)
+        return real_train(prepared_dataset, config)
 
     def spy_predict(model, prepared_dataset):
         predicted_datasets.append(prepared_dataset)
@@ -114,7 +123,11 @@ def test_cross_validate_forwards_groups(algorithm):
         patch.object(model_module, "predict", side_effect=spy_predict),
     ):
         cross_validate._cross_validate(
-            _make_prepared_dataset(), _SCORING_METRIC, 1, algorithm
+            _make_prepared_dataset(),
+            _SCORING_METRIC,
+            1,
+            algorithm,
+            _model_config(algorithm),
         )
 
     # Each model is trained on all the entities but the held-out one.
@@ -134,10 +147,10 @@ def test_cross_validate_in_parallel():
     dataset = _make_prepared_dataset()
 
     sequential_mapes = cross_validate._cross_validate(
-        dataset, _SCORING_METRIC, 1, "XGBoost"
+        dataset, _SCORING_METRIC, 1, "XGBoost", _model_config("XGBoost")
     )
     parallel_mapes = cross_validate._cross_validate(
-        dataset, _SCORING_METRIC, 2, "XGBoost"
+        dataset, _SCORING_METRIC, 2, "XGBoost", _model_config("XGBoost")
     )
 
     pd.testing.assert_frame_equal(parallel_mapes, sequential_mapes)

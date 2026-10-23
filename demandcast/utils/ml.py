@@ -553,7 +553,9 @@ def _prepare(
     return prepared_dataset
 
 
-def prepare_dataset(data_path: str, target: bool = True) -> PreparedDataset:
+def prepare_dataset(
+    data_path: str, ml_config: ConfigModel, target: bool = True
+) -> PreparedDataset:
     """
     Prepare the whole dataset for forecasting or cross-validation.
 
@@ -561,6 +563,8 @@ def prepare_dataset(data_path: str, target: bool = True) -> PreparedDataset:
     ----------
     data_path : str
         The path to the assembled data file.
+    ml_config : ConfigModel
+        The settings of the machine learning models.
     target : bool, optional
         Whether to include the target variable in the prepared dataset.
 
@@ -571,9 +575,6 @@ def prepare_dataset(data_path: str, target: bool = True) -> PreparedDataset:
         factors (if any) of the dataset. The target is the load
         relative to the annual mean.
     """
-    # Read the configuration of the machine learning models.
-    ml_config = read_and_check_ml_configuration()
-
     # Read the dataset.
     dataset = pd.read_parquet(data_path)
 
@@ -582,7 +583,10 @@ def prepare_dataset(data_path: str, target: bool = True) -> PreparedDataset:
 
 
 def prepare_split_datasets(
-    data_path: str, testing_set: bool, validation_set: bool
+    data_path: str,
+    ml_config: ConfigModel,
+    testing_set: bool,
+    validation_set: bool,
 ) -> dict[str, PreparedDataset]:
     """
     Prepare the training, testing, and validation sets.
@@ -591,6 +595,8 @@ def prepare_split_datasets(
     ----------
     data_path : str
         The path to the assembled data file.
+    ml_config : ConfigModel
+        The settings of the machine learning models.
     testing_set : bool
         Whether to have a testing set.
     validation_set : bool
@@ -603,9 +609,6 @@ def prepare_split_datasets(
         used), and 'validation' (if used). Their target is the load
         relative to the annual mean.
     """
-    # Read the configuration of the machine learning models.
-    ml_config = read_and_check_ml_configuration()
-
     # Read the dataset and split it temporally.
     split_dataset = _split_temporally(
         pd.read_parquet(data_path),

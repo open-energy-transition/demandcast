@@ -7,7 +7,6 @@ Description:
     reject misspelt options, and run the step of their settings.
 """
 
-import functools
 import importlib
 import logging
 import os
@@ -15,6 +14,7 @@ import sys
 import types
 
 import check
+import ml_models.registry
 import plot
 import pytest
 import retrieve
@@ -335,25 +335,25 @@ def test_plot_dispatch(monkeypatch, settings, module, arguments):
             "train",
             "run_model_training",
             {"reserve_testing_set": True, "use_validation_set": False},
-            (True, False, None, "xgboost"),
+            (True, False, None, "ml_config", "model_config"),
         ),
         (
             "validate",
             "run_model_validation",
             {"used_validation_set": True, "model_path": "m"},
-            (True, "m", None, "xgboost"),
+            (True, "m", None, "ml_config"),
         ),
         (
             "cross_validate",
             "run_model_cross_validation",
             {"scoring_metric": "r2", "n_jobs": 2},
-            ("r2", 2, None, "xgboost"),
+            ("r2", 2, None, "ml_config", "model_config"),
         ),
         (
             "forecast",
             "run_forecasting",
             {"data_path": "d"},
-            (None, "d", "xgboost"),
+            (None, "d", "ml_config"),
         ),
         (
             "assemble",
@@ -371,10 +371,23 @@ def test_main_of_the_scripts(
     calls = []
     monkeypatch.setattr(module, function, lambda *args: calls.append(args))
     if hasattr(module, "utils") and hasattr(module.utils, "ml"):
+        ml_config = types.SimpleNamespace(algorithm="xgboost")
         monkeypatch.setattr(
             module.utils.ml,
             "read_and_check_ml_configuration",
-            functools.partial(types.SimpleNamespace, algorithm="xgboost"),
+            lambda: ml_config,
+        )
+        monkeypatch.setattr(
+            ml_models.registry,
+            "read_model_configuration",
+            lambda algorithm: f"model_config of {algorithm}",
+        )
+        arguments = tuple(
+            {
+                "ml_config": ml_config,
+                "model_config": "model_config of xgboost",
+            }.get(argument, argument)
+            for argument in arguments
         )
 
     module.main(module.ConfigModel(**settings))

@@ -26,7 +26,7 @@ import threading
 import time
 
 import pandas as pd
-import utils.entities
+import utils.data_sources
 import utils.fetcher
 import utils.paths
 import utils.time_series
@@ -130,7 +130,7 @@ def _download_sample(data_source: str, code: str, result: Result) -> pd.Series:
     )
 
     start_date, end_date = (
-        utils.entities.read_date_ranges_of_electricity_demand_in_data_source(
+        utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
             data_source
         )[code]
     )
@@ -256,7 +256,7 @@ def check_data_source(data_source: str, maximum_age_days: int) -> Result:
 
     try:
         # Check the first country or subdivision of the data source.
-        entity = utils.entities.read_entities(data_source)[0]
+        entity = utils.data_sources.read_entities(data_source)[0]
         code = entity.code
         result.code = code
 
@@ -450,7 +450,7 @@ def run_check(
     ValueError
         If a data source is not recognized.
     """
-    all_data_sources = sorted(utils.entities.read_data_sources())
+    all_data_sources = sorted(utils.data_sources.read_data_sources())
     if data_sources is None:
         data_sources = all_data_sources
     unknown_data_sources = sorted(set(data_sources) - set(all_data_sources))

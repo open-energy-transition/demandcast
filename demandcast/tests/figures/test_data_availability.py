@@ -43,17 +43,17 @@ def synthetic_data(monkeypatch):
     """
     codes = list(CONTINENTS)
     monkeypatch.setattr(
-        data_availability.utils.entities,
+        data_availability.utils.data_sources,
         "read_all_codes_with_electricity_demand_data",
         lambda: codes,
     )
     monkeypatch.setattr(
-        data_availability.utils.entities,
+        data_availability.utils.codes,
         "get_continent_code",
         CONTINENTS.get,
     )
     monkeypatch.setattr(
-        data_availability.utils.entities,
+        data_availability.utils.data_sources,
         "read_all_date_ranges",
         lambda: {
             code: (

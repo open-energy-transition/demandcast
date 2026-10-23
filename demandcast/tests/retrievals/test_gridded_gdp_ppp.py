@@ -41,7 +41,7 @@ def test_run_data_retrieval(monkeypatch):
         return global_grid
 
     monkeypatch.setattr(
-        gridded_gdp_ppp.utils.entities,
+        gridded_gdp_ppp.utils.availability,
         "check_and_get_codes_with",
         lambda *_, **__: ["FRA", "DEU"],
     )

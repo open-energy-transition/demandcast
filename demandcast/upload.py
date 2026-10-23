@@ -13,7 +13,7 @@ from typing import Literal
 
 import pandas as pd
 import utils.config
-import utils.entities
+import utils.data_sources
 import utils.paths
 import utils.uploader
 from pydantic import BaseModel, model_validator
@@ -80,7 +80,7 @@ def _get_data_source(file_name: str) -> str:
     stem = file_name.removesuffix(".parquet")
     data_sources = [
         data_source
-        for data_source in utils.entities.read_data_sources()
+        for data_source in utils.data_sources.read_data_sources()
         if stem.endswith(f"_{data_source}")
     ]
     if not data_sources:
@@ -147,7 +147,7 @@ def main(config: ConfigModel) -> None:
                 # Upload the parquet file of the electricity demand time
                 # series to Zenodo, if the licence of the data source
                 # allows it.
-                if utils.entities.read_licence(data_source).redistribute:
+                if utils.data_sources.read_licence(data_source).redistribute:
                     utils.uploader.upload_to_zenodo(
                         file_path,
                         data_type="actual",

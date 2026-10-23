@@ -24,7 +24,7 @@ import retrievals.population
 import retrievals.temperature
 import utils.catalogue
 import utils.config
-import utils.entities
+import utils.data_sources
 from pydantic import BaseModel, field_validator, model_validator
 
 # The scenarios of the variables of the socio-economic projections.
@@ -86,7 +86,7 @@ class ConfigModel(BaseModel):
             If the data source does not exist.
         """
         if data_source is not None:
-            data_sources = utils.entities.read_data_sources()
+            data_sources = utils.data_sources.read_data_sources()
             if data_source not in data_sources:
                 raise ValueError(
                     f"The data source '{data_source}' is not recognized. "

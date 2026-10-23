@@ -40,7 +40,6 @@ import re
 import zipfile
 
 import pandas as pd
-import requests
 import utils.fetcher
 
 # The first month of the estimates of the rooftop solar of AEMO.
@@ -150,23 +149,11 @@ def _fetch_content(url: str) -> bytes:
     -------
     bytes
         The content of the file.
-
-    Raises
-    ------
-    TypeError
-        If the response is not a requests.Response object.
     """
-    response = utils.fetcher.fetch_data(
+    response = utils.fetcher.fetch_response(
         url,
-        "html",
-        read_as="plain",
         header_params={"User-Agent": "Mozilla/5.0"},
     )
-    if not isinstance(response, requests.Response):
-        raise TypeError(
-            f"The extracted data is a {type(response)} object, "
-            "expected a requests.Response object."
-        )
     return response.content
 
 

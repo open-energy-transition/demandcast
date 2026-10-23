@@ -63,7 +63,6 @@ import logging
 
 import numpy as np
 import pandas as pd
-import requests
 import utils.config
 import utils.fetcher
 import utils.time_series
@@ -184,24 +183,12 @@ def _fetch_day(service: str, day: pd.Timestamp, headers: dict) -> dict:
     -------
     dict
         The data of the day, empty for a day without data.
-
-    Raises
-    ------
-    TypeError
-        If the response is not a requests.Response object.
     """
-    response = utils.fetcher.fetch_data(
+    response = utils.fetcher.fetch_response(
         get_url(service, day),
-        "html",
         timeout=60,
-        read_as="plain",
         header_params=headers,
     )
-    if not isinstance(response, requests.Response):
-        raise TypeError(
-            f"The extracted response is a {type(response)} object, "
-            "expected a requests.Response object."
-        )
     return response.json()
 
 
@@ -316,20 +303,11 @@ def _get_forecast_solar() -> pd.Series:
     pandas.Series
         The estimate of all the distributed solar of New England in MW
         at the end of each hour, in UTC.
-
-    Raises
-    ------
-    TypeError
-        If the extracted data is not a pandas ExcelFile.
     """
-    excel_file = utils.fetcher.fetch_data(
-        BTM_PV_DATA_URL, "html", timeout=120, read_as="excel_file"
+    excel_file = utils.fetcher.fetch_excel_file(
+        BTM_PV_DATA_URL,
+        timeout=120,
     )
-    if not isinstance(excel_file, pd.ExcelFile):
-        raise TypeError(
-            f"The extracted data is a {type(excel_file)} object, "
-            "expected a pandas ExcelFile."
-        )
     dataset = pd.read_excel(excel_file, sheet_name="Normalized BTM PV")
 
     # Localize the starts of the hours, leaving out those that the

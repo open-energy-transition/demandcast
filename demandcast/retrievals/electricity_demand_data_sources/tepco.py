@@ -22,7 +22,6 @@ import logging
 import zipfile
 
 import pandas as pd
-import requests
 import utils.fetcher
 import utils.time_series
 
@@ -204,11 +203,6 @@ def download_and_extract_data_for_request(
     -------
     pandas.Series
         The electricity demand time series in MW.
-
-    Raises
-    ------
-    TypeError
-        If the extracted data is not a requests.Response object.
     """
     year, month = year_and_month
 
@@ -218,19 +212,10 @@ def download_and_extract_data_for_request(
     )
 
     # Fetch the file. The website rejects the user agent of requests.
-    response = utils.fetcher.fetch_data(
+    response = utils.fetcher.fetch_response(
         get_url(year, month),
-        "html",
-        read_as="plain",
         header_params={"User-Agent": "Mozilla/5.0"},
     )
-
-    # Make sure the response is a requests.Response object.
-    if not isinstance(response, requests.Response):
-        raise TypeError(
-            f"The extracted data is a {type(response)} object, "
-            "expected a requests.Response object."
-        )
 
     if month is None:
         values = _read_yearly_file(response.content)

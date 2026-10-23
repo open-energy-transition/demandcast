@@ -41,7 +41,6 @@ import datetime
 import logging
 
 import pandas as pd
-import requests
 import utils.config
 import utils.fetcher
 import utils.time_series
@@ -118,28 +117,16 @@ def _get_ticket() -> str:
     -------
     str
         The ticket granting ticket (TGT).
-
-    Raises
-    ------
-    TypeError
-        If the response is not a requests.Response object.
     """
-    response = utils.fetcher.fetch_data(
+    response = utils.fetcher.fetch_response(
         TICKET_URL,
-        "html",
-        read_with="requests.post",
-        read_as="plain",
+        "POST",
         header_params={"Accept": "text/plain"},
         post_data_params={
             "username": utils.config.read_api_key("EPIAS_USERNAME", "EPIAS"),
             "password": utils.config.read_api_key("EPIAS_PASSWORD", "EPIAS"),
         },
     )
-    if not isinstance(response, requests.Response):
-        raise TypeError(
-            f"The extracted response is a {type(response)} object, "
-            "expected a requests.Response object."
-        )
     return response.text.strip()
 
 

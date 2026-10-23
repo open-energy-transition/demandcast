@@ -13,6 +13,9 @@ from typing import Any, Protocol, cast, overload
 
 import pandas as pd
 import utils.ml
+import utils.paths
+import yaml
+from pydantic import BaseModel, ValidationError
 
 # The modules of the models, by algorithm name in lower case. Each
 # module is imported only when its model is used, so the LSTM needs
@@ -34,13 +37,19 @@ class ModelModule(Protocol):
     # The extension of the files of the saved models, such as ".json".
     FILE_EXTENSION: str
 
-    def get_initialized_model(self) -> Any:
-        """Get an untrained model, set up with its configuration."""
+    @property
+    def ConfigModel(self) -> type[BaseModel]:  # noqa: N802
+        """The settings of the model, in config/<model>_config.yaml."""
+
+    def get_initialized_model(self, config: Any) -> Any:
+        """Get an untrained model, set up with its settings."""
 
     def train(
-        self, prepared_dataset: dict[str, utils.ml.PreparedDataset]
+        self,
+        prepared_dataset: dict[str, utils.ml.PreparedDataset],
+        config: Any,
     ) -> Any:
-        """Train a model on the training set of the datasets."""
+        """Train a model, with its settings, on the training set."""
 
     @overload
     def predict(
@@ -60,8 +69,8 @@ class ModelModule(Protocol):
     ) -> pd.Series | dict[str, pd.Series]:
         """Make predictions for one prepared dataset or several."""
 
-    def save(self, model: Any, model_name: str) -> None:
-        """Save a model to the folder of the trained models."""
+    def save(self, model: Any, file_path: str) -> None:
+        """Save a model to a file, with the extension of the model."""
 
     def load(self, model_path: str) -> Any:
         """Load a model saved by ``save``."""
@@ -90,3 +99,34 @@ def get_model_module(algorithm: str) -> ModelModule:
     if module_name is None:
         raise ValueError(f"Unsupported algorithm: {algorithm}")
     return cast("ModelModule", importlib.import_module(module_name))
+
+
+def read_model_configuration(algorithm: str) -> BaseModel:
+    """
+    Read the settings of a machine learning model.
+
+    Parameters
+    ----------
+    algorithm : str
+        The name of the algorithm, in any case, such as "XGBoost".
+
+    Returns
+    -------
+    pydantic.BaseModel
+        The settings of the model, from config/<algorithm>_config.yaml,
+        validated by the ConfigModel of its module. An empty file gives
+        the default settings.
+
+    Raises
+    ------
+    ValueError
+        If the settings are invalid.
+    """
+    config_model = get_model_module(algorithm).ConfigModel
+    file_path = utils.paths.get_config_file(f"{algorithm.lower()}_config.yaml")
+    with open(file_path, encoding="utf-8") as file:
+        raw_config = yaml.safe_load(file)
+    try:
+        return config_model(**(raw_config or {}))
+    except ValidationError as e:
+        raise ValueError(f"Configuration validation error: {e}") from e

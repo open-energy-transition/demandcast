@@ -8,6 +8,9 @@ Description:
     (issue #145).
 """
 
+from typing import cast
+
+import ml_models.registry
 import ml_models.xgboost
 import numpy as np
 import pandas as pd
@@ -62,7 +65,13 @@ def test_train_splits_on_the_prepared_target():
     """Test that the model splits on the prepared target."""
     dataset = _prepared_dataset()
 
-    model = ml_models.xgboost.train({"training": dataset})
+    model = ml_models.xgboost.train(
+        {"training": dataset},
+        cast(
+            ml_models.xgboost.ConfigModel,
+            ml_models.registry.read_model_configuration("xgboost"),
+        ),
+    )
     trees = model.get_booster().trees_to_dataframe()
     splits = trees[trees["Feature"] != "Leaf"]
 

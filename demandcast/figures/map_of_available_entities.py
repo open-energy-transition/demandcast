@@ -20,7 +20,7 @@ import cartopy.feature
 import matplotlib.cm
 import matplotlib.colors
 import matplotlib.pyplot as plt
-import utils.entities
+import utils.data_sources
 import utils.shapes
 
 # The classes of the years of available data, with their upper bounds.
@@ -74,11 +74,11 @@ def plot(figure_directory: str) -> None:
     """
     # Get the class of the years of available data of all countries
     # and subdivisions.
-    date_ranges = utils.entities.read_all_date_ranges()
+    date_ranges = utils.data_sources.read_all_date_ranges()
     classes_of_years = get_classes_of_years(
         {
             code: date_ranges[code]
-            for code in utils.entities.read_all_codes_with_electricity_demand_data()
+            for code in utils.data_sources.read_all_codes_with_electricity_demand_data()
         }
     )
 

@@ -87,21 +87,22 @@ def test_model_module(model_module):
     """Test that the model trains, saves, loads and predicts."""
     dataset = _prepared_dataset()
 
+    config = ml_models.registry.read_model_configuration(
+        model_module.__name__.rsplit(".", 1)[-1]
+    )
+
     # The initialised model is not trained yet.
     with pytest.raises(NotFittedError):
-        check_is_fitted(model_module.get_initialized_model())
+        check_is_fitted(model_module.get_initialized_model(config))
 
     # The trained model is the same after saving and loading it.
-    model = model_module.train({"training": dataset})
-    model_module.save(model, "model")
-    loaded_model = model_module.load(
-        os.path.join(
-            utils.paths.get_models_folder(
-                model_module.__name__.rsplit(".", 1)[-1]
-            ),
-            f"model{model_module.FILE_EXTENSION}",
-        )
+    model = model_module.train({"training": dataset}, config)
+    file_path = os.path.join(
+        utils.paths.get_data_folder(), f"model{model_module.FILE_EXTENSION}"
     )
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    model_module.save(model, file_path)
+    loaded_model = model_module.load(file_path)
     assert (
         loaded_model.feature_names_in_.tolist()
         == dataset["features"].columns.tolist()
@@ -118,3 +119,9 @@ def test_model_module(model_module):
     assert split_predictions["training"].tolist() == pytest.approx(
         predictions.tolist()
     )
+
+
+def test_read_model_configuration_of_unknown_algorithm():
+    """Test that the settings of an unknown algorithm are refused."""
+    with pytest.raises(ValueError, match="Unsupported algorithm: Unknown"):
+        ml_models.registry.read_model_configuration("Unknown")

@@ -21,7 +21,8 @@ import numpy as np
 import pandas as pd
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
-import utils.entities
+import utils.codes
+import utils.data_sources
 from tailwind_colors import TAILWIND_COLORS_HEX
 
 # The levels of annual electricity demand per capita, in kWh.
@@ -79,7 +80,7 @@ def _get_year_fractions(codes: list[str]) -> dict[str, dict[int, float]]:
         values.
     """
     # Get the data time range for all countries and subdivisions.
-    data_time_ranges = utils.entities.read_all_date_ranges()
+    data_time_ranges = utils.data_sources.read_all_date_ranges()
 
     # Initialize a dictionary to store the fractions of years for which
     # data is available for each country or subdivision.
@@ -420,9 +421,9 @@ def get_data() -> FigureData:
     """
     # Read the codes of all countries and subdivisions, with their
     # continents and the fractions of the years of their data.
-    codes = utils.entities.read_all_codes_with_electricity_demand_data()
+    codes = utils.data_sources.read_all_codes_with_electricity_demand_data()
     continent_codes = {
-        code: utils.entities.get_continent_code(code) for code in codes
+        code: utils.codes.get_continent_code(code) for code in codes
     }
     fractions_of_years = _get_year_fractions(codes)
     available_years = {

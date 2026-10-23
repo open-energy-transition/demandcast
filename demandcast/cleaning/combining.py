@@ -53,7 +53,7 @@ import os
 import checks.flags
 import numpy as np
 import pandas as pd
-import utils.entities
+import utils.data_sources
 import utils.paths
 
 import cleaning.flags
@@ -113,10 +113,10 @@ def _read_cleaned_data(code: str) -> dict[str, pd.Series]:
         UTC, of each data source that has cleaned data of the code.
     """
     cleaned = {}
-    for (
-        data_source
-    ) in utils.entities.get_electricity_demand_data_sources_containing_code(
-        code
+    for data_source in (
+        utils.data_sources.get_electricity_demand_data_sources_containing_code(
+            code
+        )
     ):
         file_path = utils.paths.get_electricity_demand_file(
             "cleaned", code, data_source
@@ -152,10 +152,10 @@ def _get_definition_ranks(
     # The rank of the definition of each period.
     ranks = np.zeros(len(times), dtype=int)
     dates = times.normalize()
-    for period in utils.entities.read_definition(data_source):
+    for period in utils.data_sources.read_definition(data_source):
         started = dates >= pd.Timestamp(period.start_date)
         ranks[started] = EMBEDDED_GENERATION_RANKS[period.embedded_generation]
-    first_period = utils.entities.read_definition(data_source)[0]
+    first_period = utils.data_sources.read_definition(data_source)[0]
     ranks[dates < pd.Timestamp(first_period.start_date)] = (
         EMBEDDED_GENERATION_RANKS[first_period.embedded_generation]
     )
@@ -228,12 +228,12 @@ def _rank_data_sources(
     def key(data_source: str) -> tuple[bool, bool, float, int]:
         entity = next(
             entity
-            for entity in utils.entities.read_entities(data_source)
+            for entity in utils.data_sources.read_entities(data_source)
             if entity.code == code
         )
         return (
             not entity.same_area,
-            utils.entities.read_compiled(data_source),
+            utils.data_sources.read_compiled(data_source),
             float(ranks[data_source].mean()),
             -len(cleaned[data_source]),
         )
@@ -485,7 +485,7 @@ def combine_all_data() -> list[str]:
     """
     combined = [
         code
-        for code in utils.entities.read_all_codes_with_electricity_demand_data()
+        for code in utils.data_sources.read_all_codes_with_electricity_demand_data()
         if combine_data(code) is not None
     ]
     logging.info(f"Combined the electricity demand of {len(combined)} codes.")

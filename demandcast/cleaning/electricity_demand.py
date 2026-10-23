@@ -81,8 +81,8 @@ import os
 
 import numpy as np
 import pandas as pd
-import utils.entities
 import utils.paths
+import utils.time_zones
 
 # The rules, in the order in which they are applied.
 RULES = [
@@ -725,7 +725,7 @@ def clean_data(code: str, data_source: str) -> pd.Series:
         processed,
         resolutions,
         durations,
-        str(utils.entities.get_time_zone(code)),
+        str(utils.time_zones.get_time_zone(code)),
     )
     hourly = _resample_hourly(processed[removed == ""], durations)
     cleaned = hourly.loc[hourly["covered"], "Load (MW)"]
