@@ -103,3 +103,23 @@ def test_returns_empty_list_when_no_directory_matches():
 
     assert tokens == []
     mock_add_dll_directory.assert_not_called()
+
+
+def test_keeps_the_tokens(monkeypatch):
+    """The tokens stay referenced by the module, so they live on."""
+    monkeypatch.setattr(torch_windows_module, "_TOKENS", [])
+    fake_token = object()
+    with (
+        patch.object(torch_windows_module.sys, "platform", "win32"),
+        patch.object(torch_windows_module.sys, "path", ["/site-packages"]),
+        patch.object(
+            torch_windows_module.os,
+            "add_dll_directory",
+            create=True,
+            return_value=fake_token,
+        ),
+        patch.object(torch_windows_module.os.path, "isdir", return_value=True),
+    ):
+        torch_windows_module.enable_torch_dll_directory()
+
+    assert [fake_token] == torch_windows_module._TOKENS

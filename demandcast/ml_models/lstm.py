@@ -24,7 +24,7 @@ from typing import cast, overload
 # the Windows DLL loader state for torch's c10.dll initialisation.
 import ml_models.torch_windows
 
-_dll_dir_tokens = ml_models.torch_windows.enable_torch_dll_directory()
+ml_models.torch_windows.enable_torch_dll_directory()
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 from torch import nn  # noqa: E402
