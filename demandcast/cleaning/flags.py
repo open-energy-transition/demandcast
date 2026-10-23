@@ -58,7 +58,14 @@ Description:
     above the year before too, since a change of what a series has is
     sudden, while the midday demand of some states of India grows
     slowly over the years as their agricultural supply moves to the
-    day.
+    day. A dip or a rise is flagged only if it lasts: if the season
+    before or after it, or the same season of the year before or after
+    it, is flagged too, or if it is in the last year of its season,
+    where a new change can only be seen once. The midday index of a
+    single season is noisy in small systems, such as the small states
+    of India, and moves with single events, such as the lockdowns of
+    2020, while the embedded generation lasts, and shows in the same
+    seasons every year, such as the spring and the autumn in Korea.
 
     The demand follows the clocks, so its daily profile in local time
     stays at the same hours from year to year and across the changes of
@@ -325,7 +332,7 @@ def _find_midday_changes(cleaned: pd.Series, longitude: float) -> pd.DataFrame:
         median of earlier years ("reference").
     """
     quarterly = _get_quarterly_index(_get_midday_index(cleaned, longitude))
-    rows = []
+    found: list[tuple[str, int, int, float, float]] = []
     for quarter in range(4):
         index = quarterly[quarter].dropna()
         reference = index.expanding().median().shift()
@@ -337,18 +344,40 @@ def _find_midday_changes(cleaned: pd.Series, longitude: float) -> pd.DataFrame:
             ("midday_dip", index.index[change < -MIDDAY_CHANGE]),
             ("midday_rise", index.index[rise]),
         ]:
-            for year in years:
-                start, end = _get_quarter_days(int(year), quarter)
-                rows.append(
-                    {
-                        "start": start,
-                        "end": end,
-                        "flag": flag,
-                        "period": f"{QUARTERS[quarter]} {year}",
-                        "value": index[year],
-                        "reference": reference[year],
-                    }
-                )
+            found.extend(
+                (flag, int(year), quarter, index[year], reference[year])
+                for year in years
+            )
+
+    # A change is kept if the season before or after it, or the same
+    # season of the year before or after it, has the same flag, or if
+    # it is in the last year of its season. Each season has a number,
+    # in the order of the seasons, so that the season after the last of
+    # a year is the first of the next year.
+    seasons = {(flag, 4 * year + quarter) for flag, year, quarter, *_ in found}
+    last_years = {
+        quarter: quarterly[quarter].dropna().index.max()
+        for quarter in range(4)
+    }
+    rows = []
+    for flag, year, quarter, value, reference_value in found:
+        season = 4 * year + quarter
+        if not (
+            any((flag, season + step) in seasons for step in (-4, -1, 1, 4))
+            or year == last_years[quarter]
+        ):
+            continue
+        start, end = _get_quarter_days(year, quarter)
+        rows.append(
+            {
+                "start": start,
+                "end": end,
+                "flag": flag,
+                "period": f"{QUARTERS[quarter]} {year}",
+                "value": value,
+                "reference": reference_value,
+            }
+        )
     return pd.DataFrame(rows, columns=COLUMNS)
 
 
