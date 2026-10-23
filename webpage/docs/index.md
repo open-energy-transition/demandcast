@@ -103,9 +103,7 @@ The map below shows the countries and subdivisions for which retrieval modules o
 
 You can find the code that we used to retrieve the data in their respective files inside the [demandcast/retrievals](https://github.com/open-energy-transition/demandcast/tree/main/demandcast/retrievals) folder.
 
-You can find the electricity demand data that we retrieved at different points in time in this [Google Cloud Storage bucket](https://console.cloud.google.com/storage/browser/demandcast_data) (freely accessible with a Google account). Alternatively, the direct links to the data have the following format:
-
-```https://storage.googleapis.com/demandcast_data/{variable}/{country_or_subdivision_code}.parquet```
+The retrieved data is not redistributed, since the licences of many data sources do not allow it: DemandCast retrieves it from the sources, and the people who work on it share their data folders through a private bucket (see [sharing and publishing](publishing.md)). The trained model and its forecasts are published on Zenodo (see below).
 
 ## Dataset of global forecasts
 

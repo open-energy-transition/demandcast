@@ -2,7 +2,7 @@
 # their data, models, results and logs, Python caches and builds, local
 # environments (.env holds the API keys) and editor settings.
 
-demandcast/data/
+demandcast/data
 
 __pycache__/
 *.py[cod]

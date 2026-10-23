@@ -73,19 +73,22 @@ def test_default_configuration_is_valid(script, monkeypatch):
     assert config.model_dump()
 
 
-def test_upload_configuration_needs_a_bucket(monkeypatch):
-    """Test that the default upload.py configuration names no bucket."""
+@pytest.mark.parametrize(
+    ("script", "message"),
+    [("sync", "bucket must be given"), ("publish", "zenodo_record must be")],
+)
+def test_default_configuration_names_no_target(script, message, monkeypatch):
+    """Test that nothing is sent to a bucket or record by default."""
     config_file_path = os.path.join(
-        utils.paths.CONFIG_FOLDER,
-        "upload_config.yaml",
+        utils.paths.CONFIG_FOLDER, f"{script}_config.yaml"
     )
     monkeypatch.setattr(
-        sys, "argv", ["upload.py", "--config", config_file_path]
+        sys, "argv", [f"{script}.py", "--config", config_file_path]
     )
 
-    with pytest.raises(ValueError, match="gcs_bucket_name is required"):
+    with pytest.raises(ValueError, match=message):
         utils.config.read_and_check_configuration(
-            "upload", importlib.import_module("upload").ConfigModel
+            script, importlib.import_module(script).ConfigModel
         )
 
 
@@ -158,12 +161,18 @@ def test_upload_configuration_needs_a_bucket(monkeypatch):
             "'SSP2-45' is not available",
         ),
         ("train", "", "reserve_testing_set"),
+        ("sync", "direction: both\nbucket: b\n", "direction"),
+        ("sync", "direction: upload\nbucket:\n", "bucket must be given"),
         (
-            "upload",
-            "target_platform: zenodo\ndata_directory: d\n",
-            "made_by_oet and publish_to_zenodo are required",
+            "publish",
+            "zenodo_record: latest\nversion: '1.1.0'\nfiles: [m.json]\n",
+            "or 'new' to create a record",
         ),
-        ("upload", "target_platform: s3\ndata_directory: d\n", "gcs"),
+        (
+            "publish",
+            "zenodo_record: 1\nversion: '1.1.0'\nfiles: []\n",
+            "files of the release must be given",
+        ),
     ],
 )
 def test_invalid_configuration(

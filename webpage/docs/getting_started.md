@@ -49,8 +49,8 @@ EPIAS_USERNAME=<your_username>     # For data retrieval from EPIAS, with a free 
 EPIAS_PASSWORD=<your_password>     # For data retrieval from EPIAS
 ISONE_USERNAME=<your_username>     # For data retrieval from ISO New England, with a free ISO Express account
 ISONE_PASSWORD=<your_password>     # For data retrieval from ISO New England
-ZENODO_API_KEY=<your_key>          # For data upload to Zenodo
-SANDBOX_ZENODO_API_KEY=<your_key>  # For data upload to Zenodo Sandbox
+ZENODO_API_KEY=<your_key>          # For releases on Zenodo (publish.py)
+SANDBOX_ZENODO_API_KEY=<your_key>  # For test releases on the Zenodo Sandbox
 ```
 
 Replace `<your_key>`, `<your_username>` and `<your_password>` with your actual API keys and account. You can obtain them by registering on the respective service websites.
@@ -61,7 +61,7 @@ Everything that the scripts write, from the downloaded data to the trained model
 
 ---
 
-**Note**: You can skip this section if you prefer to use the pre-downloaded data available in this [Google Cloud Storage bucket](https://console.cloud.google.com/storage/browser/demandcast_data) (freely accessible with a Google account). Alternatively, the direct links to the data have the following format: `https://storage.googleapis.com/demandcast_data/{variable}/{country_or_subdivision_code}.parquet`
+**Note**: The retrieved data is not redistributed, since the licences of many data sources do not allow it, so this section retrieves it from the sources. If you have access to a bucket with a copy of the data folder, `sync.py` downloads it instead (see [sharing and publishing](publishing.md)).
 
 ---
 
@@ -178,7 +178,7 @@ uv run retrieve.py
 
 ---
 
-**Note**: You can skip this section if you want to use pre-trained models available in this [Google Cloud Storage bucket](https://console.cloud.google.com/storage/browser/demandcast_data) (freely accessible with a Google account).
+**Note**: You can skip this section if you want to use the trained model published on [Zenodo](https://doi.org/10.5281/zenodo.18374351), with its forecasts.
 
 ---
 

@@ -59,7 +59,7 @@ A `get_url` helper that builds the URL of a request is optional, with the parame
 
 The YAML file has no comments, and gives:
 
-- the `licence` of the data: `redistribute`, whether the data can be published on Zenodo, whose dataset of actual data has the CC BY-NC 4.0 licence, `terms`, a summary of the licence, and `url`, its link;
+- the `licence` of the data: `redistribute`, whether its terms allow the data to be redistributed, `terms`, a summary of the licence, and `url`, its link;
 - the `definition` of its demand, what it counts: a list of periods, in the order of their `start_date`, the first one from the start of the data, each with the `quantity` that the source gives, and whether the `embedded_generation`, the `network_losses`, the `storage_charging` and the `power_plant_use` are `included` by the source, `added` by DemandCast from an estimate, `excluded` or `unknown`, with a `note` on the reasons (see [gross demand](https://open-energy-transition.github.io/demandcast/retrieval/#gross-demand));
 - `compiled: true` for a source that republishes the data of the system operators, such as the EIA;
 - its `entities`, each with `country_name` and `country_code` (ISO 3166 alpha-3), and for a subdivision `subdivision_name`, `subdivision_code` and `time_zone`, with the dates of its data, `start_date` and `end_date` (a date or `today`). Standard subdivisions have ISO 3166 codes, and the others a widely accepted name and code, with their shapes made by a script in `demandcast/shapes/`. An entity whose data covers only part of the area of its shape has `same_area: false`.

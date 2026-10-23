@@ -26,8 +26,8 @@ EPIAS_USERNAME=<your_username>     # For data retrieval from EPIAS, with a free 
 EPIAS_PASSWORD=<your_password>     # For data retrieval from EPIAS
 ISONE_USERNAME=<your_username>     # For data retrieval from ISO New England, with a free ISO Express account
 ISONE_PASSWORD=<your_password>     # For data retrieval from ISO New England
-ZENODO_API_KEY=<your_key>          # For data upload to Zenodo
-SANDBOX_ZENODO_API_KEY=<your_key>  # For data upload to Zenodo Sandbox
+ZENODO_API_KEY=<your_key>          # For releases on Zenodo (publish.py)
+SANDBOX_ZENODO_API_KEY=<your_key>  # For test releases on the Zenodo Sandbox
 ```
 
 ## Retrieving data
@@ -94,7 +94,7 @@ The annual electricity demand per capita, which scales the forecasts, comes from
 
 Each data source is a module in the `demandcast/retrievals/electricity_demand_data_sources/` folder, which downloads its data and returns the demand in MW, with time-zone-aware times that mark the end of each interval, and a YAML file with the same name, which describes its data. The [contributing guidelines](https://github.com/open-energy-transition/demandcast/blob/main/CONTRIBUTING.md#adding-an-electricity-demand-data-source) describe the functions of the module and the fields of the YAML file, to add a data source.
 
-The YAML file gives the `licence` of the data, with `redistribute`, whether the data can be published on Zenodo, whose dataset of actual data has the CC BY-NC 4.0 licence, and the countries and subdivisions of the data source, with the ISO 3166 names and codes, the time zone of the subdivisions and the dates of their data.
+The YAML file gives the `licence` of the data, with `redistribute`, whether its terms allow the data to be redistributed, and the countries and subdivisions of the data source, with the ISO 3166 names and codes, the time zone of the subdivisions and the dates of their data.
 
 The `definition` says what the demand of the data source counts, since DemandCast models the gross demand, with the demand that the generation embedded in the distribution networks supplies. It is a list of periods, each with the `quantity` that the source gives, and whether the `embedded_generation` (such as rooftop solar), the `network_losses`, the `storage_charging` and the `power_plant_use` are `included` by the source, `added` by DemandCast from an estimate, `excluded`, or `unknown`, with a `note` on the reasons. For example, the total demand of AEMO for the NEM leaves out the rooftop solar until 2016, and has AEMO's estimate of it added from 2017. `utils.data_sources.get_definition(data_source, date)` gives the period of a date.
 

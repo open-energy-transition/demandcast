@@ -114,8 +114,10 @@ class DataSourceLicence(BaseModel):
     """
     The licence of the data of a data source.
 
-    The terms summarise the licence, which is at the URL. The data is
-    uploaded to Zenodo only if it can be redistributed.
+    The terms summarise the licence, which is at the URL, and
+    redistribute says whether they allow the data to be redistributed.
+    DemandCast publishes only its forecasts and models, and keeps the
+    retrieved data in a private bucket.
     """
 
     model_config = ConfigDict(extra="forbid")

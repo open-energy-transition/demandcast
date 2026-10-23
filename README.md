@@ -46,8 +46,8 @@ As of 23 October 2026, DemandCast has retrieval modules for the hourly electrici
 
 - The [current state](https://open-energy-transition.github.io/demandcast/status/) page shows the data by GDP and electricity demand per capita, and the forecast errors of the models.
 - The [data sources](https://open-energy-transition.github.io/demandcast/#data-sources) of each type of data are listed in the documentation.
-- The electricity demand that we retrieved is in this [Google Cloud Storage bucket](https://console.cloud.google.com/storage/browser/demandcast_data).
-- The forecasted hourly electricity demand of 184 countries from 2000 to 2024 is in this [Zenodo repository](https://doi.org/10.5281/zenodo.18374351).
+- The retrieved electricity demand is not redistributed, since the licences of many data sources do not allow it: DemandCast retrieves it from the sources.
+- The trained model and the forecasted hourly electricity demand of 184 countries from 2000 to 2024 are in this [Zenodo repository](https://doi.org/10.5281/zenodo.18374351).
 
 ## Documentation
 

@@ -18,7 +18,8 @@ The scripts are in the `demandcast/` folder and run from it, with `uv run <scrip
 | `cross_validate.py` | Validates a model on the countries and subdivisions left out of its training | `assembled/` | `results/cross_validation/` |
 | `forecast.py` | Forecasts the hourly electricity demand with a trained model | `assembled/`, `models/` | `results/forecasts/` |
 | `plot.py` | Draws the figures of the data availability and of the results of the models | The data folder | `results/figures/` |
-| `upload.py` | Uploads the data to Google Cloud Storage or Zenodo | The data folder | The bucket or the Zenodo record |
+| `sync.py` | Copies the data folder to or from a private bucket of Google Cloud Storage, without overwriting or deleting files | The data folder or the bucket | The bucket or the data folder |
+| `publish.py` | Uploads a release, the trained model, its settings and its forecasts, to Zenodo as a draft | The files of the release | A draft version of the Zenodo record |
 
 `benchmark/run.py` runs the retrieval and the assembly of the data of the [benchmark](ML.md#benchmark-results) of the models. The [data retrieval](retrieval.md) and [machine learning](ML.md) pages describe each step.
 
@@ -35,6 +36,7 @@ demandcast/                         # the repository
 │   ├── data/                       # Data, models, results and logs written by the scripts (not in the repository)
 │   ├── figures/                    # Figures of the data availability and of the results of the models
 │   ├── ml_models/                  # Machine learning models, their registry, data preparation and evaluation
+│   ├── publishing/                 # Copies to and from Google Cloud Storage, and releases on Zenodo
 │   ├── retrievals/                 # Retrieval of each variable, and the modules and YAML files of the data sources
 │   ├── shapes/                     # Scripts that make the shapes of non-standard subdivisions, and the shapes
 │   ├── tests/                      # Tests, in folders that mirror the code
