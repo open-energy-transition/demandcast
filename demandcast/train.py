@@ -83,9 +83,20 @@ def run_model_training(
     model = model_module.train(prepared_dataset, model_config)
     model_folder = utils.paths.get_models_folder(algorithm.lower())
     os.makedirs(model_folder, exist_ok=True)
-    model_module.save(
+    model_path = os.path.join(
+        model_folder, model_name + model_module.FILE_EXTENSION
+    )
+    model_module.save(model, model_path)
+
+    # Record how the model was trained, for its validations and
+    # forecasts.
+    ml_models.files.write_model_manifest(
+        model_path,
         model,
-        os.path.join(model_folder, model_name + model_module.FILE_EXTENSION),
+        data_path,
+        prepared_dataset,
+        ml_config,
+        model_config,
     )
 
 

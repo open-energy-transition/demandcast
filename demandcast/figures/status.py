@@ -131,7 +131,9 @@ def describe(numbers: Numbers) -> str:
         f"{numbers.countries_covered} countries, from "
         f"**{numbers.data_sources} data sources**, with about "
         f"**{numbers.years:,} years of data** in total since "
-        f"{numbers.first_year}."
+        f"{numbers.first_year}, in the periods that the data sources "
+        "cover, before the cleaning and the selection of the complete "
+        "years for training."
     )
 
 

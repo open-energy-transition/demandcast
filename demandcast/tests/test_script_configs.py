@@ -367,8 +367,8 @@ def test_plot_dispatch(monkeypatch, settings, module, arguments):
         (
             "cross_validate",
             "run_model_cross_validation",
-            {"scoring_metric": "r2", "n_jobs": 2},
-            ("r2", 2, None, "ml_config", "model_config"),
+            {"n_jobs": 2, "holdout": "country"},
+            (2, None, "ml_config", "model_config", "country"),
         ),
         (
             "forecast",

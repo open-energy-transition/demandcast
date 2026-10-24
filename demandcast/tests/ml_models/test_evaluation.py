@@ -22,7 +22,6 @@ import ml_models.evaluation
 import ml_models.registry
 
 _ENTITIES = ["DEU", "FRA", "GBR"]
-_SCORING_METRIC = "neg_mean_absolute_percentage_error"
 
 
 @pytest.fixture(params=sorted(ml_models.registry.MODEL_MODULES))
@@ -62,34 +61,52 @@ def _model_config(algorithm: str) -> BaseModel:
     return config_model()
 
 
-def _make_prepared_dataset() -> ml_models.data.PreparedDataset:
+def _make_prepared_dataset(
+    entities: list[str] | None = None,
+) -> ml_models.data.PreparedDataset:
     """
-    Build a flat prepared dataset spanning three entities.
+    Build a flat prepared dataset spanning several entities.
+
+    Parameters
+    ----------
+    entities : list[str] | None, optional
+        The entity codes, by default three countries.
 
     Returns
     -------
     PreparedDataset
-        The features, target and entity codes, like the output of
-        ``ml_models.data.prepare_dataset()``.
+        The features, target, entity codes and times, like the output
+        of ``ml_models.data.prepare_dataset()``.
     """
+    entities = entities or _ENTITIES
     rng = np.random.default_rng(0)
     n_per = 20
-    total = len(_ENTITIES) * n_per
+    total = len(entities) * n_per
     features = pd.DataFrame(
         rng.standard_normal((total, 3)), columns=["a", "b", "c"]
     )
     target = pd.Series(
         2 + features["a"] + rng.uniform(-0.1, 0.1, total), name="target"
     )
-    group = pd.Series(np.repeat(_ENTITIES, n_per), name="Entity code")
-    return {"features": features, "target": target, "group": group}
+    group = pd.Series(np.repeat(entities, n_per), name="Entity code")
+    time = pd.Series(
+        np.tile(
+            pd.date_range("2024-01-01", periods=n_per, freq="h"), len(entities)
+        ),
+        name="Time (UTC)",
+    )
+    return {
+        "features": features,
+        "target": target,
+        "group": group,
+        "time": time,
+    }
 
 
 def test_cross_validate_returns_one_row_per_entity(algorithm):
     """Test that there is one row of MAPEs per held-out entity."""
     mapes = ml_models.evaluation.cross_validate(
         _make_prepared_dataset(),
-        _SCORING_METRIC,
         1,
         algorithm,
         _model_config(algorithm),
@@ -97,6 +114,38 @@ def test_cross_validate_returns_one_row_per_entity(algorithm):
 
     assert mapes["Entity code"].tolist() == _ENTITIES
     assert (mapes[["Training MAPE", "Testing MAPE"]] >= 0).all().all()
+    assert mapes["Holdout"].eq("entity").all()
+
+
+def test_cross_validate_by_country():
+    """
+    Test that a country is held out with its subdivisions.
+
+    The model scored on Argentina and its provinces is trained on Brazil
+    only, and each held-out entity has its own row.
+    """
+    model_module = ml_models.registry.get_model_module("XGBoost")
+    real_train = model_module.train
+    training_groups: list[list[str]] = []
+
+    def spy_train(prepared_dataset, config):
+        training_groups.append(
+            sorted(set(prepared_dataset["training"]["group"]))
+        )
+        return real_train(prepared_dataset, config)
+
+    with patch.object(model_module, "train", side_effect=spy_train):
+        mapes = ml_models.evaluation.cross_validate(
+            _make_prepared_dataset(["ARG", "ARG_B", "ARG_C", "BRA"]),
+            1,
+            "XGBoost",
+            _model_config("XGBoost"),
+            holdout="country",
+        )
+
+    assert training_groups == [["BRA"], ["ARG", "ARG_B", "ARG_C"]]
+    assert mapes["Entity code"].tolist() == ["ARG", "ARG_B", "ARG_C", "BRA"]
+    assert mapes["Holdout"].eq("country").all()
 
 
 def test_cross_validate_forwards_groups(algorithm):
@@ -114,6 +163,11 @@ def test_cross_validate_forwards_groups(algorithm):
 
     def spy_train(prepared_dataset, config):
         training_groups.append(prepared_dataset["training"]["group"])
+        # The other fields of the rows, such as their times, reach the
+        # training, as in a validation.
+        assert prepared_dataset["training"]["time"].index.equals(
+            prepared_dataset["training"]["group"].index
+        )
         return real_train(prepared_dataset, config)
 
     def spy_predict(model, prepared_dataset):
@@ -126,7 +180,6 @@ def test_cross_validate_forwards_groups(algorithm):
     ):
         ml_models.evaluation.cross_validate(
             _make_prepared_dataset(),
-            _SCORING_METRIC,
             1,
             algorithm,
             _model_config(algorithm),
@@ -138,10 +191,11 @@ def test_cross_validate_forwards_groups(algorithm):
         for held_out in _ENTITIES
     ]
 
-    # Each prediction gets the entity codes of its own rows.
+    # Each prediction gets the entity codes and times of its own rows.
     assert len(predicted_datasets) == 2 * len(_ENTITIES)
     for dataset in predicted_datasets:
         assert dataset["group"].index.equals(dataset["features"].index)
+        assert dataset["time"].index.equals(dataset["features"].index)
 
 
 def test_cross_validate_in_parallel():
@@ -149,10 +203,10 @@ def test_cross_validate_in_parallel():
     dataset = _make_prepared_dataset()
 
     sequential_mapes = ml_models.evaluation.cross_validate(
-        dataset, _SCORING_METRIC, 1, "XGBoost", _model_config("XGBoost")
+        dataset, 1, "XGBoost", _model_config("XGBoost")
     )
     parallel_mapes = ml_models.evaluation.cross_validate(
-        dataset, _SCORING_METRIC, 2, "XGBoost", _model_config("XGBoost")
+        dataset, 2, "XGBoost", _model_config("XGBoost")
     )
 
     pd.testing.assert_frame_equal(parallel_mapes, sequential_mapes)

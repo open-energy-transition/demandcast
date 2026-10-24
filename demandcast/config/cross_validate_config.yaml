@@ -1,13 +1,15 @@
 # Configuration read by the cross_validate.py script.
 
-# REQUIRED.
-# Metric(s) to use for scoring during cross-validation.
-scoring_metric: neg_mean_absolute_percentage_error
-
 # OPTIONAL.
-# Number of parallel jobs to run for cross-validation.
+# Number of parallel jobs to run for cross-validation. The models are
+# scored by their mean absolute percentage error (MAPE).
 n_jobs: 1
 
 # OPTIONAL.
 # The path to the assembled data to be used for cross-validation.
 data_path:
+
+# OPTIONAL.
+# What each fold holds out: "entity", one country or subdivision, or
+# "country", a country with all its subdivisions (default: entity).
+holdout: entity

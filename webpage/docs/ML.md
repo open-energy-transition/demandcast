@@ -19,7 +19,11 @@ The target variable represents normalized hourly electricity consumption. Take e
 
 **What the models learn: Load relative to the annual mean**
 
-The fraction of the annual total of an average hour is about 1/8760, too small for the models: the gain of an XGBoost split scales with the square of the target, so at that magnitude the model barely splits and rarely uses the continuous features ([issue #145](https://github.com/open-energy-transition/demandcast/issues/145)). When preparing the data, `ml_models.data.to_load_relative_to_annual_mean()` therefore multiplies the target by the hours in its local year (8760, or 8784 in leap years), giving the load relative to the annual mean: 1.0 is an average hour, and 1.2 an hour with 20% more demand than average. All models are trained on this target, and `forecast.py` converts their predictions back with `ml_models.data.to_load_fraction_of_annual_total()` before scaling them to MW. The assembled data keeps the fraction of the annual total. Models trained before this conversion was introduced must be retrained.
+The fraction of the annual total of an average hour is about 1/8760, too small for the models: the gain of an XGBoost split scales with the square of the target, so at that magnitude the model barely splits and rarely uses the continuous features. When preparing the data, `ml_models.data.to_load_relative_to_annual_mean()` therefore multiplies the target by the hours in its local year (8760, or 8784 in leap years), giving the load relative to the annual mean, without unit: 1.0 is an average hour, and 1.2 an hour with 20% more demand than average. All models are trained on this target, and the manifest of each model records it (see [the manifests](#manifests)). The assembled data keeps the fraction of the annual total.
+
+**From the predictions to MW**
+
+The annual electricity demand of a forecast, the product of the annual demand per capita (kWh) and the population, is the total of its year, and the hourly profile of the model distributes it. The predictions of a year do not have a mean of exactly 1, so `forecast.py` scales those of each complete local year of each country or subdivision, with all its hours, to a mean of 1 (`ml_models.data.normalize_to_annual_totals()`): their MW then sum to the annual demand. A negative prediction is zero, and the predictions of a year without all its hours are not scaled, which the log reports. The predictions are then converted back to the fraction of the annual total and multiplied by the annual demand in kWh, divided by 1000 for MW. The validation and cross-validation score the predictions as the model gives them.
 
 **Temporal Splitting**
 
@@ -35,7 +39,7 @@ This ensures the model is evaluated on future time periods it hasn't seen during
 
 **Leave-One-Group-Out (LOGO) Cross-Validation**
 
-LOGO cross-validation tests model generalization across regions by training on all regions except one and evaluating on the held-out region. This process is repeated for each region, providing insight into how well the model can forecast electricity demand for new regions or countries without historical data.
+LOGO cross-validation tests model generalization across regions by training on all regions except one and evaluating on the held-out region. This process is repeated for each region. By default, each fold holds out one entity code (`holdout: entity`), so a fold that holds out Argentina still trains on the provinces of Argentina: this measures the error on a held-out entity, not on a country that the model has never seen. With `holdout: country`, each fold holds out a country with all its subdivisions, which measures the error on an unseen country. The results say which holdout they used.
 
 **Feature Types**
 
@@ -90,6 +94,7 @@ The XGBoost-specific configuration is specified in `demandcast/config/xgboost_co
 - Random seed for reproducibility
 - Categorical feature support enablement
 - Evaluation metric (Mean Absolute Percentage Error - MAPE)
+- Optionally, the hyperparameters `n_estimators`, `max_depth`, `learning_rate`, `subsample`, `colsample_bytree`, `min_child_weight`, `reg_alpha` and `reg_lambda`, which keep the defaults of XGBoost when they are not given. Another setting is an error.
 
 ## LSTM Algorithm
 
@@ -105,11 +110,13 @@ The LSTM implementation in DemandCast (`ml_models/lstm.py`) is built on PyTorch'
 
 The `LSTMRegressor` class wraps this network in a scikit-learn-compatible estimator, giving it `fit()` and `predict()` methods that accept `pandas.DataFrame` and `pandas.Series` inputs. Cross-validation trains and scores the LSTM and XGBoost with the same Leave-One-Group-Out loop, which passes the entity codes to both the training and the predictions.
 
-Sequence construction is entity-aware. Each training or inference sample requires a lookback window of `n_timesteps` consecutive rows. Rather than drawing rows across entity (country or region) boundaries, the sequence builder identifies contiguous runs of the same entity label from the `"group"` column of the prepared dataset and zero-pads the leading edge of each new run. This ensures that predictions for the first hours of a new entity are not contaminated by data from the preceding entity in the DataFrame.
+Sequence construction is entity-aware and time-aware. Each training or inference sample requires a lookback window of `n_timesteps` consecutive hours. Rather than drawing rows across entity (country or region) boundaries or across gaps, the sequence builder starts a new run at each change of the entity label of the `"group"` column of the prepared dataset, and at each row of the `"time"` column that is not one hour after the row before it, such as after a missing hour or a missing year, and zero-pads the leading edge of each new run. The windows are built batch by batch, so that the windows of all the rows, which would take tens of gigabytes for the whole dataset, are never in memory at once.
+
+The features are standardized with the mean and standard deviation of each feature in the training rows, which are saved with the model and applied to the rows that it predicts: features of very different magnitudes, such as the GDP per capita and the temperature, would otherwise saturate the gates of the LSTM. A model saved before this standardization takes the features as they are.
 
 ### LSTM Configuration
 
-The LSTM-specific configuration is specified in `demandcast/config/lstm_config.yaml`. All parameters are required; the values listed below are the defaults.
+The LSTM-specific configuration is specified in `demandcast/config/lstm_config.yaml`. The values listed below are the defaults; the dimensions, epochs and batch size must be at least 1, the dropout from 0 to below 1, and the learning rate positive. Another setting is an error.
 
 | Name | Type | Default | Required / Optional | Description |
 |---|---|---|---|---|
@@ -146,7 +153,7 @@ The `predict()` function supports two calling modes that mirror the XGBoost inte
 ### Assumptions and Limitations
 
 - **Zero-padding for the initial lookback**: For the first `n_timesteps - 1` rows of each entity, the lookback window cannot be filled from historical data. These positions are zero-padded, which means the model's effective context is shorter at the start of each entity's time series. This is standard practice for sequence models applied to short or boundary-constrained series.
-- **Categorical features treated as numeric**: The LSTM receives all features as `float32` tensors. Categorical features (hour of day, month, weekend flag, temperature rank) are passed as integer-encoded numbers, the same encoding used by XGBoost. The LSTM does not apply embedding layers to these features.
+- **Categorical features treated as numeric**: The LSTM receives all features as standardized `float32` tensors. Categorical features (hour of day, month, weekend flag, temperature rank) are integer-encoded numbers, the same encoding used by XGBoost, standardized like the other features. The LSTM does not apply embedding layers to these features.
 - **Optional algorithm**: LSTM is not the default algorithm. The default is XGBoost, selected by setting `algorithm: XGBoost` in `ml_config.yaml`. To switch to LSTM, set `algorithm: LSTM`.
 
 ### Benchmark Results
@@ -168,9 +175,9 @@ To compare the two algorithms under identical conditions, both were trained and 
 | Mean | 0.0962 | 0.1648 |
 | Median | 0.0931 | 0.1634 |
 
-On this benchmark, XGBoost outperforms LSTM by a wide margin on every entity. This should not be read as general evidence that sequence models are unsuited to load forecasting — the result is best explained by the small size of this particular benchmark. With only three entities and a few years of hourly data each, there are too few independent sequences for the LSTM to learn its recurrent weights across a `n_timesteps=24` lookback window without underfitting. The training-set MAPE supports this reading: it is close to the testing-set MAPE for LSTM (~0.166–0.167 training vs ~0.155–0.175 testing), rather than substantially lower as would be expected if the model were overfitting. XGBoost, by contrast, benefits from engineered temporal features (hour-of-day, month, weekend flag) that hand it context an LSTM must otherwise learn implicitly from data volume it does not yet have here.
+On this benchmark, XGBoost outperformed LSTM on every entity. These results were measured before the LSTM standardized its features and broke its sequences at the gaps between hours, both of which change its training, so they do not tell how the two algorithms compare now, nor why: the comparison must be run again, on holdouts recorded in the manifests of the models.
 
-**XGBoost remains the recommended default algorithm** for DemandCast, and this benchmark supports that recommendation for datasets of comparable size. LSTM should be treated as an optional alternative, best suited to future benchmarks with more entities and longer historical spans, where enough sequential data exists for the recurrent architecture to learn temporal dependencies without underfitting. Users experimenting with the LSTM algorithm on small datasets should expect it to underperform XGBoost until dataset scale increases substantially.
+**XGBoost remains the default algorithm** for DemandCast. LSTM is an optional alternative.
 
 **Benchmark configuration:**
 
@@ -255,11 +262,21 @@ use_validation_set: false          # Use validation set during training
 data_path:                         # Path to assembled data file
 ```
 
-The trained model is saved to `data/models/{algorithm_name}/{algorithm_name}_model_YYYYMMDD_HHMMSS.json`, with the name of the algorithm in lower case. Model configuration is specified in `ml_config.yaml` and `xgboost_config.yaml`.
+The trained model is saved to `data/models/{algorithm_name}/{algorithm_name}_model_YYYYMMDD_HHMMSS.json` (`.pt` for the LSTM), with the name of the algorithm in lower case, and its manifest to `{algorithm_name}_model_YYYYMMDD_HHMMSS.manifest.json`. Without `data_path`, the latest data assembled for training is used. Model configuration is specified in `ml_config.yaml` and `xgboost_config.yaml`.
+
+### Manifests
+
+Each assembled dataset, trained model and result has a manifest next to it, a JSON file with the same name and the extension `.manifest.json` (`demandcast/utils/manifest.py`), which tells what it is and how it was made: its kind, its checksum, the commit of the code and the checksum of `uv.lock`, and:
+
+- for an assembled dataset, its purpose (training or forecasting), the settings of `assemble.py`, its columns and types, and its countries and subdivisions;
+- for a model, its dataset and its checksum, the settings of `ml_config.yaml` and of the model, its features in their order with their types, its target and the transformation of the target, the statistics of its standardization, if any, and the countries and subdivisions and local years of each of its sets;
+- for a result, its model, its dataset and the metric of its errors (the MAPE, lower is better, of the load relative to the annual mean) or the units of its forecasts.
+
+`validate.py` reads the dataset of the training of the model by default, and stops if the dataset, the target or the sets differ from those of the training; `forecast.py` stops if the target differs. A model trained before the manifests is used without these checks, which the log reports. `publish.py` uploads the manifest of each file of a release with it.
 
 ### Model Validation
 
-The script `demandcast/validate.py` performs a validation of the trained model on the reserved test set and computes performance metrics (e.g., MAPE). The errors of the validation and of the cross-validation are computed by `demandcast/ml_models/evaluation.py`, on the target of the models, the load relative to the annual mean: they measure the error of the hourly profile, not that of the annual demand.
+The script `demandcast/validate.py` performs a validation of the trained model on the reserved test set and computes performance metrics (e.g., MAPE). The errors of the validation and of the cross-validation are computed by `demandcast/ml_models/evaluation.py`, on the target of the models, the load relative to the annual mean: they measure the error of the hourly profile, not that of the annual demand. The metric is the mean absolute percentage error (MAPE), as a fraction.
 
 **Usage:**
 ```bash
@@ -273,7 +290,7 @@ uv run validate.py [--config path/to/config.yaml]
 used_validation_set: false         # Whether validation set was used in training
 
 model_path:                        # Path to trained model file
-data_path:                         # Path to assembled data file
+data_path:                         # Path to assembled data file (default: that of the training of the model)
 ```
 
 Results are saved to `data/results/validation/with_{trained_model_name}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the MAPE of each country and subdivision in each set.
@@ -291,14 +308,14 @@ uv run cross_validate.py [--config path/to/config.yaml]
 **Configuration variables** (`cross_validate_config.yaml`):
 
 ```yaml
-scoring_metric: neg_mean_absolute_percentage_error  # Metric for scoring
-
 n_jobs: 1                          # Number of parallel jobs
 
 data_path:                         # Path to assembled data file
+
+holdout: entity                    # Hold out each entity, or each country with its subdivisions ("country")
 ```
 
-Cross-validation results are saved to `data/results/cross_validation/with_{algorithm}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the MAPE of each held-out country and subdivision.
+Cross-validation results are saved to `data/results/cross_validation/with_{algorithm}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the MAPE of each held-out country and subdivision on the training rows and on its own rows, and the holdout. The models are trained and scored on all the fields of their rows, such as their times, as in a validation.
 
 ### Forecasting
 
@@ -318,7 +335,7 @@ model_path:                        # Path to trained model file
 data_path:                         # Path to assembled data file
 ```
 
-Forecasts are saved to `data/results/forecasts/with_{trained_model_name}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the predicted electricity demand for the forecast period.
+Forecasts are saved to `data/results/forecasts/with_{trained_model_name}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the predicted electricity demand for the forecast period, in MW, whose complete years sum to their annual demand (see [from the predictions to MW](#from-the-predictions-to-mw)).
 
 ## Model Configuration
 

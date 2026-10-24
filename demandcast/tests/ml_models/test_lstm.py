@@ -459,7 +459,11 @@ def test_predict_respects_entity_boundaries():
     probe = lstm_module.LSTMRegressor(
         n_timesteps=n_timesteps, n_units=4, epochs=1, batch_size=16
     )
-    X_seq = probe._make_sequences(X_arr, groups=groups)
+    X_seq = probe._make_sequences(
+        X_arr,
+        probe._get_run_starts(len(X_arr), groups),
+        np.arange(len(X_arr)),
+    )
 
     violations = 0
     for i in range(len(X_arr)):
@@ -473,3 +477,66 @@ def test_predict_respects_entity_boundaries():
     assert violations == 0, (
         f"{violations} sequences contain rows from the wrong entity"
     )
+
+
+def test_sequences_break_at_gaps_in_time():
+    """
+    Sequences must not join rows that are not an hour apart.
+
+    Of four rows of one entity, two in January and two in February, the
+    first February row starts a new window instead of following the
+    last January row.
+    """
+    X_arr = np.array([[1.0], [2.0], [3.0], [4.0]], dtype=np.float32)
+    times = pd.to_datetime(
+        [
+            "2024-01-31 22:00",
+            "2024-01-31 23:00",
+            "2024-02-02 00:00",
+            "2024-02-02 01:00",
+        ]
+    )
+    probe = lstm_module.LSTMRegressor(n_timesteps=3)
+
+    windows = probe._make_sequences(
+        X_arr,
+        probe._get_run_starts(4, np.array(["A"] * 4), times.to_numpy()),
+        np.arange(4),
+    )
+
+    assert windows[:, :, 0].tolist() == [
+        [0.0, 0.0, 1.0],
+        [0.0, 1.0, 2.0],
+        [0.0, 0.0, 3.0],
+        [0.0, 3.0, 4.0],
+    ]
+
+
+def test_features_are_standardized_with_the_training_rows(
+    trained_model_and_dataset,
+):
+    """The statistics of the features are those of the training rows."""
+    model, dataset = trained_model_and_dataset
+    features = dataset["training"]["features"].to_numpy(dtype=np.float32)
+
+    assert model.mean_ == pytest.approx(features.mean(axis=0), rel=1e-5)
+    assert model.scale_ == pytest.approx(features.std(axis=0), rel=1e-5)
+
+
+def test_load_of_a_model_without_statistics(
+    trained_model_and_dataset, tmp_path, caplog
+):
+    """A model saved before the standardization takes raw features."""
+    model, _ = trained_model_and_dataset
+    file_path = str(tmp_path / "model.pt")
+    lstm_module.save(model, file_path)
+    checkpoint = torch.load(file_path, weights_only=True)
+    del checkpoint["mean_"], checkpoint["scale_"]
+    torch.save(checkpoint, file_path)
+
+    with caplog.at_level("WARNING"):
+        loaded = lstm_module.load(file_path)
+
+    assert loaded.mean_.tolist() == [0.0] * model.n_features_in_
+    assert loaded.scale_.tolist() == [1.0] * model.n_features_in_
+    assert "not standardized" in caplog.text

@@ -23,6 +23,7 @@ import forecast
 import ml_models.data
 import ml_models.registry
 import train
+import utils.manifest
 import utils.paths
 import validate
 
@@ -172,6 +173,7 @@ def _read_results(folder: str, model: str, data: str) -> pd.DataFrame:
     results_folder = os.path.join(folder, f"with_{model}", f"using_{data}")
     assert sorted(os.listdir(results_folder)) == [
         f"all_{NOW}.csv",
+        f"all_{NOW}.manifest.json",
         f"all_{NOW}.parquet",
     ]
     return pd.read_parquet(os.path.join(results_folder, f"all_{NOW}.parquet"))
@@ -184,9 +186,33 @@ def test_train(algorithm):
 
     train.run_model_training(True, False, None, *_settings(algorithm))
 
-    assert os.listdir(utils.paths.get_models_folder(algorithm.lower())) == [
-        f"{algorithm.lower()}_model_{NOW}.{MODEL_EXTENSIONS[algorithm]}"
-    ]
+    model_folder = utils.paths.get_models_folder(algorithm.lower())
+    assert set(os.listdir(model_folder)) == {
+        f"{algorithm.lower()}_model_{NOW}.manifest.json",
+        f"{algorithm.lower()}_model_{NOW}.{MODEL_EXTENSIONS[algorithm]}",
+    }
+
+    # The manifest tells how the model was trained.
+    manifest = utils.manifest.read_manifest(
+        os.path.join(
+            model_folder,
+            f"{algorithm.lower()}_model_{NOW}.{MODEL_EXTENSIONS[algorithm]}",
+        )
+    )
+    assert manifest is not None
+    assert manifest["kind"] == "model"
+    assert manifest["dataset"]["path"].endswith(f"{TRAINING_DATA}.parquet")
+    assert [feature["name"] for feature in manifest["features"]] == (
+        _ml_settings(algorithm).features
+    )
+    assert manifest["target"]["transformation"] == (
+        ml_models.data.TARGET_TRANSFORMATION
+    )
+    assert {code for code, _ in manifest["splits"]["testing"]} == set(
+        COUNTRY_CODES
+    )
+    assert {year for _, year in manifest["splits"]["testing"]} == {2023}
+    assert bool(manifest["preprocessing"]) == (algorithm == "LSTM")
 
 
 @pytest.mark.parametrize(
@@ -234,14 +260,14 @@ def test_train(algorithm):
             False,
             {
                 "Testing MAPE": [
-                    0.9659251677481074,
-                    0.9658707283273155,
-                    0.965821612105194,
+                    0.7323228800102046,
+                    0.7550828327979048,
+                    0.7450611854245773,
                 ],
                 "Training MAPE": [
-                    0.9678972519027766,
-                    0.9678046905708463,
-                    0.9677416263625213,
+                    0.7238689119631111,
+                    0.749163476683911,
+                    0.743274791353943,
                 ],
             },
             marks=LSTM_MARKS,
@@ -251,19 +277,19 @@ def test_train(algorithm):
             True,
             {
                 "Testing MAPE": [
-                    1.0258573890175497,
-                    1.0259241419569973,
-                    1.0259747444351635,
+                    0.7906254234521299,
+                    0.8039873565232215,
+                    0.7987837844194811,
                 ],
                 "Validation MAPE": [
-                    1.0258304641969427,
-                    1.0259133891599326,
-                    1.0259612944242598,
+                    0.785605329309006,
+                    0.7988158225378047,
+                    0.8031151302950577,
                 ],
                 "Training MAPE": [
-                    1.0258770658203789,
-                    1.0259421748807742,
-                    1.025970412224275,
+                    0.7768425154450572,
+                    0.7983408163346816,
+                    0.7873581281854193,
                 ],
             },
             marks=LSTM_MARKS,
@@ -316,14 +342,14 @@ def test_validate(algorithm, use_validation_set, expected_mapes):
             "LSTM",
             {
                 "Training MAPE": [
-                    0.9684285947434605,
-                    0.9684671084978124,
-                    0.9684946686332813,
+                    0.7411568301992039,
+                    0.7377058148310733,
+                    0.739130522697593,
                 ],
                 "Testing MAPE": [
-                    0.9685413247711564,
-                    0.9684551619465768,
-                    0.9683938674149077,
+                    0.6621643129666196,
+                    0.7489486769372854,
+                    0.7040997422477315,
                 ],
             },
             marks=LSTM_MARKS,
@@ -334,16 +360,18 @@ def test_cross_validate(algorithm, expected_mapes):
     """Test the MAPEs of the leave-one-country-out cross-validation."""
     _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
 
-    cross_validate.run_model_cross_validation(
-        "neg_mean_absolute_percentage_error", 1, None, *_settings(algorithm)
-    )
+    cross_validate.run_model_cross_validation(1, None, *_settings(algorithm))
 
     mapes = _read_results(
         utils.paths.get_results_folder("cross_validation"),
         algorithm.lower(),
         TRAINING_DATA,
     )
-    assert mapes.columns.tolist() == ["Entity code", *expected_mapes]
+    assert mapes.columns.tolist() == [
+        "Entity code",
+        *expected_mapes,
+        "Holdout",
+    ]
     assert mapes["Entity code"].tolist() == COUNTRY_CODES
     for column, values in expected_mapes.items():
         assert mapes[column].tolist() == pytest.approx(
@@ -365,9 +393,9 @@ def test_cross_validate(algorithm, expected_mapes):
         pytest.param(
             "LSTM",
             {
-                "AUT": 15031.044379059897,
-                "DNK": 32447.968818288035,
-                "PRT": 52250.79152173277,
+                "AUT": 115058.31616976466,
+                "DNK": 226729.43736957505,
+                "PRT": 393383.60769582575,
             },
             marks=LSTM_MARKS,
         ),
@@ -411,7 +439,6 @@ def test_forecast(algorithm, expected_sums):
             False, None, None, _ml_settings("Unknown")
         ),
         lambda: cross_validate.run_model_cross_validation(
-            "neg_mean_absolute_percentage_error",
             1,
             None,
             _ml_settings("Unknown"),
@@ -452,3 +479,50 @@ def test_model_with_other_features(run_script, algorithm):
 
     with pytest.raises(ValueError, match="do not match those used during"):
         run_script(ml_config)
+
+
+def test_validation_uses_the_data_of_the_training():
+    """
+    Test that a validation checks the data and sets of the training.
+
+    By default, it reads the data of the training of the model, even if
+    newer data was assembled since, and it stops with other data, or
+    with other sets.
+    """
+    _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
+    train.run_model_training(True, False, None, *_settings("XGBoost"))
+    newer = "assembled_data_for_training_20250103_000000"
+    _write_assembled_data(newer, [2022, 2023], True)
+
+    validate.run_model_validation(False, None, None, _ml_settings("XGBoost"))
+
+    assert os.path.exists(
+        os.path.join(
+            utils.paths.get_results_folder("validation"),
+            f"with_xgboost_model_{NOW}",
+            f"using_{TRAINING_DATA}",
+        )
+    )
+    newer_path = os.path.join(
+        utils.paths.get_assembled_folder(), f"{newer}.parquet"
+    )
+    with pytest.raises(ValueError, match="not the data of the training"):
+        validate.run_model_validation(
+            False, None, newer_path, _ml_settings("XGBoost")
+        )
+    with pytest.raises(ValueError, match="sets of the validation differ"):
+        validate.run_model_validation(
+            True, None, None, _ml_settings("XGBoost")
+        )
+
+
+def test_forecast_with_another_target():
+    """Test that a model trained on another target is rejected."""
+    _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
+    train.run_model_training(True, False, None, *_settings("XGBoost"))
+    _write_assembled_data(FORECASTING_DATA, [2024], False)
+    ml_config = _ml_settings("XGBoost")
+    ml_config.target = "Load (MW)"
+
+    with pytest.raises(ValueError, match="trained on the target"):
+        forecast.run_forecasting(None, None, ml_config)

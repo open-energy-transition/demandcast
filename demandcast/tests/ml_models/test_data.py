@@ -749,3 +749,40 @@ def test_get_latest_file(tmp_path):
         ml_models.files._get_latest_file(str(tmp_path), "model", ".json")
         is None
     )
+
+
+def test_normalize_to_annual_totals(caplog):
+    """
+    Test that each complete year sums to its annual total.
+
+    A complete year predicted at 1.2 times the annual mean, with an
+    annual demand of 1 billion kWh, gives 1 million MWh, not 1.2. A
+    leap year has 8784 hours, a negative prediction is zero, and a year
+    without all its hours is left as it is.
+    """
+    sizes = {("FRA", 2023): 8760, ("FRA", 2024): 8784, ("DEU", 2023): 100}
+    group = pd.Series(
+        [code for (code, _), size in sizes.items() for _ in range(size)]
+    )
+    local_year = pd.Series(
+        [year for (_, year), size in sizes.items() for _ in range(size)]
+    )
+    predictions = pd.Series(1.2, index=group.index)
+    predictions[8760] = -0.5
+
+    with caplog.at_level("INFO"):
+        normalized = ml_models.data.normalize_to_annual_totals(
+            predictions, group, local_year
+        )
+    megawatts = ml_models.data.to_megawatts(
+        normalized, local_year, pd.Series(1e9, index=group.index)
+    )
+
+    totals = megawatts.groupby([group, local_year]).sum()
+    assert totals[("FRA", 2023)] == pytest.approx(1e6)
+    assert totals[("FRA", 2024)] == pytest.approx(1e6)
+    assert normalized[8760] == 0.0
+    # The incomplete year keeps its predictions.
+    assert normalized[group == "DEU"].eq(1.2).all()
+    assert "1 negative predictions are set to zero" in caplog.text
+    assert "not scaled to their annual total: DEU 2023" in caplog.text

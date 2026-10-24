@@ -21,6 +21,7 @@ import ml_models.evaluation
 import ml_models.files
 import ml_models.registry
 import utils.config
+import utils.manifest
 
 
 class ConfigModel(utils.config.StrictSettings):
@@ -48,8 +49,9 @@ def run_model_validation(
         The path to the trained model file. If None, the latest file
         in the default directory will be used.
     data_path : str | None
-        The path to the assembled data file. If None, the latest file
-        in the default directory will be used.
+        The path to the assembled data file. If None, the data of the
+        training of the model, or for a model without manifest the
+        latest file in the default directory, will be used.
     ml_config : ml_models.data.ConfigModel
         The settings of the machine learning models, with the
         algorithm.
@@ -60,22 +62,29 @@ def run_model_validation(
     algorithm = ml_config.algorithm
     model_module = ml_models.registry.get_model_module(algorithm)
 
-    # Get the assembled data path.
-    data_path = ml_models.files.get_assemble_data_path(data_path)
+    # Load the trained model and its manifest.
+    trained_model_path = ml_models.files.get_trained_model_path(
+        model_path, algorithm.lower(), model_module.FILE_EXTENSION
+    )
+    model = model_module.load(trained_model_path)
+    manifest = utils.manifest.read_manifest(trained_model_path)
+
+    # Get the assembled data path: by default, that of the training of
+    # the model.
+    data_path = ml_models.files.get_validation_data_path(data_path, manifest)
 
     # Read and prepare the dataset.
     prepared_dataset = ml_models.data.prepare_split_datasets(
         data_path, ml_config, True, used_validation_set
     )
 
-    # Load the trained model, and check that it was trained with the
-    # features of the prepared dataset.
-    trained_model_path = ml_models.files.get_trained_model_path(
-        model_path, algorithm.lower(), model_module.FILE_EXTENSION
-    )
-    model = model_module.load(trained_model_path)
+    # Check that the model was trained with the features, target, data
+    # and sets of the prepared dataset.
     ml_models.data.check_model_features(
         model, prepared_dataset["training"]["features"]
+    )
+    ml_models.files.check_model_manifest(
+        manifest, ml_config, data_path, prepared_dataset
     )
 
     # Make predictions.

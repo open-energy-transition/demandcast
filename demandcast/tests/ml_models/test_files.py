@@ -14,6 +14,7 @@ import pandas as pd
 import pytest
 
 import ml_models.files
+import utils.manifest
 
 
 def test_get_trained_model_path_with_provided_path():
@@ -50,6 +51,24 @@ def test_get_trained_model_path_without_provided_path():
         assert result == os.path.join(
             "/models", "xgboost_model_20240102_120000.json"
         )
+
+
+def test_get_trained_model_path_without_the_manifests():
+    """Test that the manifest of a model is not taken for a model."""
+    with (
+        patch("utils.paths.get_models_folder", return_value="/models"),
+        patch("os.listdir") as mock_listdir,
+    ):
+        mock_listdir.return_value = [
+            "xgboost_model_20240101_120000.json",
+            "xgboost_model_20240101_120000.manifest.json",
+        ]
+
+        result = ml_models.files.get_trained_model_path(None, "xgboost")
+
+    assert result == os.path.join(
+        "/models", "xgboost_model_20240101_120000.json"
+    )
 
 
 def test_get_trained_model_path_no_files_found():
@@ -176,96 +195,42 @@ def test_get_assemble_data_path_no_files_found():
             ml_models.files.get_assemble_data_path(None)
 
 
-def test_save_results_validation():
-    """
-    Test save_results for validation case.
-
-    This test mocks the file system operations to check if the function
-    correctly saves validation results.
-    """
-    output_data = pd.DataFrame({"mape": [0.1, 0.2]})
-
-    with (
-        patch("utils.paths.get_results_folder", return_value="/results"),
-        patch("os.makedirs") as mock_makedirs,
-        patch("pandas.DataFrame.to_csv") as mock_to_csv,
-        patch("pandas.DataFrame.to_parquet") as mock_to_parquet,
-        patch("pandas.Timestamp.now") as mock_now,
-    ):
-        mock_now.return_value.strftime.return_value = "20240101-120000"
-
+@pytest.mark.parametrize(
+    ("case", "extra", "expected"),
+    [
+        ("validation", None, {"metric": ml_models.files.METRIC}),
+        (
+            "cross_validation",
+            {"holdout": "country"},
+            {"metric": ml_models.files.METRIC, "holdout": "country"},
+        ),
+        ("forecasts", None, {"units": "MW"}),
+    ],
+)
+def test_save_results(tmp_path, case, extra, expected):
+    """Test that the results are saved with their manifest."""
+    with patch("utils.paths.get_results_folder", return_value=str(tmp_path)):
         ml_models.files.save_results(
-            case="validation",
-            output_dataset=output_data,
-            trained_model_name="xgboost_model",
-            assembled_data_file_name="assembled_data",
-            file_name_prefix="validation",
+            case,
+            pd.DataFrame({"MAPE": [0.1, 0.2]}),
+            "xgboost_model",
+            "assembled_data",
+            "all",
+            extra,
         )
 
-        mock_makedirs.assert_called_once()
-        mock_to_csv.assert_called_once()
-        mock_to_parquet.assert_called_once()
-
-
-def test_save_results_cross_validation():
-    """
-    Test save_results for cross_validation case.
-
-    This test checks if the function correctly saves cross-validation
-    results.
-    """
-    output_data = pd.DataFrame({"mape": [0.1, 0.2]})
-
-    with (
-        patch("utils.paths.get_results_folder", return_value="/results"),
-        patch("os.makedirs") as mock_makedirs,
-        patch("pandas.DataFrame.to_csv") as mock_to_csv,
-        patch("pandas.DataFrame.to_parquet") as mock_to_parquet,
-        patch("pandas.Timestamp.now") as mock_now,
-    ):
-        mock_now.return_value.strftime.return_value = "20240101-120000"
-
-        ml_models.files.save_results(
-            case="cross_validation",
-            output_dataset=output_data,
-            trained_model_name="xgboost_model",
-            assembled_data_file_name="assembled_data",
-            file_name_prefix="cross_validation",
-        )
-
-        mock_makedirs.assert_called_once()
-        mock_to_csv.assert_called_once()
-        mock_to_parquet.assert_called_once()
-
-
-def test_save_results_forecasts():
-    """
-    Test save_results for forecasts case.
-
-    This test checks if the function correctly saves forecast results.
-    """
-    output_data = pd.DataFrame({"forecast": [100, 200]})
-
-    with (
-        patch("utils.paths.get_results_folder", return_value="/results"),
-        patch("os.makedirs") as mock_makedirs,
-        patch("pandas.DataFrame.to_csv") as mock_to_csv,
-        patch("pandas.DataFrame.to_parquet") as mock_to_parquet,
-        patch("pandas.Timestamp.now") as mock_now,
-    ):
-        mock_now.return_value.strftime.return_value = "20240101-120000"
-
-        ml_models.files.save_results(
-            case="forecasts",
-            output_dataset=output_data,
-            trained_model_name="xgboost_model",
-            assembled_data_file_name="assembled_data",
-            file_name_prefix="forecasts",
-        )
-
-        mock_makedirs.assert_called_once()
-        mock_to_csv.assert_called_once()
-        mock_to_parquet.assert_called_once()
+    folder = tmp_path / "with_xgboost_model" / "using_assembled_data"
+    [parquet] = folder.glob("all_*.parquet")
+    assert parquet.with_suffix(".csv").exists()
+    manifest = utils.manifest.read_manifest(str(parquet))
+    assert manifest is not None
+    assert (manifest["kind"], manifest["case"]) == ("results", case)
+    assert manifest["model"] == "xgboost_model"
+    assert manifest["dataset"] == "assembled_data"
+    assert manifest["columns"] == ["MAPE"]
+    assert manifest["sha256"] == utils.manifest.get_checksum(str(parquet))
+    for key, value in expected.items():
+        assert manifest[key] == value
 
 
 def test_save_results_invalid_case():

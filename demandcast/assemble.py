@@ -41,6 +41,7 @@ from tqdm import tqdm
 import utils.availability
 import utils.catalogue
 import utils.config
+import utils.manifest
 import utils.paths
 
 # The shares of the hours of a year, and of each of its months, that
@@ -734,6 +735,37 @@ def run_data_assemply(
     assembled_data.to_parquet(output_path + ".parquet", index=False)
     if coverage is not None:
         coverage.to_csv(output_path + "_coverage.csv", index=False)
+
+    # Tell what the dataset is for and how it was assembled.
+    utils.manifest.write_manifest(
+        output_path + ".parquet",
+        "dataset",
+        {
+            "purpose": target_use,
+            "settings": {
+                "file": file,
+                "start_year": start_year,
+                "end_year": end_year,
+                "scenario_for_annual_electricity_demand_per_capita": (
+                    scenario_for_annual_electricity_demand_per_capita
+                ),
+                "scenario_for_gdp_ppp_per_capita": (
+                    scenario_for_gdp_ppp_per_capita
+                ),
+                "scenario_for_population": scenario_for_population,
+                "scenario_for_temperature": scenario_for_temperature,
+                "climate_model_for_temperature": (
+                    climate_model_for_temperature
+                ),
+            },
+            "columns": {
+                str(column): str(dtype)
+                for column, dtype in assembled_data.dtypes.items()
+            },
+            "rows": len(assembled_data),
+            "entities": sorted(assembled_data["Entity code"].unique()),
+        },
+    )
 
     logging.info(
         f"Assembled data saved to {output_path}.csv and {output_path}.parquet"
