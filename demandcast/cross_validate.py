@@ -25,7 +25,7 @@ import ml_models.registry
 import utils.config
 
 
-class ConfigModel(BaseModel):
+class ConfigModel(utils.config.StrictSettings):
     """Settings of cross_validate.py."""
 
     scoring_metric: str

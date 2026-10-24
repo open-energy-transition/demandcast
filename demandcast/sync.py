@@ -12,19 +12,19 @@ Description:
 
 from typing import Literal
 
-from pydantic import BaseModel, field_validator
+from pydantic import Field, field_validator
 
 import publishing.gcs
 import utils.config
 import utils.paths
 
 
-class ConfigModel(BaseModel):
+class ConfigModel(utils.config.StrictSettings):
     """Settings of sync.py."""
 
     direction: Literal["upload", "download"]
     bucket: str | None
-    excluded_folders: list[str] = ["logs"]
+    excluded_folders: list[str] = Field(default_factory=lambda: ["logs"])
     dry_run: bool = False
 
     @field_validator("bucket")

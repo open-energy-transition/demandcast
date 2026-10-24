@@ -31,11 +31,12 @@ from torch import nn  # noqa: E402
 import pandas as pd  # noqa: E402
 
 # isort: on
-from pydantic import BaseModel  # noqa: E402
+from pydantic import Field  # noqa: E402
 from sklearn.base import BaseEstimator, RegressorMixin  # noqa: E402
 from sklearn.utils.validation import check_is_fitted  # noqa: E402
 
 import ml_models.data  # noqa: E402
+import utils.config  # noqa: E402
 
 # The extension of the files of the saved models.
 FILE_EXTENSION = ".pt"
@@ -323,16 +324,16 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
 # ----------------------------------------------------------------------
 
 
-class ConfigModel(BaseModel):
+class ConfigModel(utils.config.StrictSettings):
     """Settings of the LSTM model."""
 
-    n_timesteps: int = 24
-    n_units: int = 32
-    n_layers: int = 1
-    dropout: float = 0.0
-    epochs: int = 5
-    batch_size: int = 256
-    learning_rate: float = 1e-3
+    n_timesteps: int = Field(default=24, ge=1)
+    n_units: int = Field(default=32, ge=1)
+    n_layers: int = Field(default=1, ge=1)
+    dropout: float = Field(default=0.0, ge=0, lt=1)
+    epochs: int = Field(default=5, ge=1)
+    batch_size: int = Field(default=256, ge=1)
+    learning_rate: float = Field(default=1e-3, gt=0)
     random_state: int = 42
 
 

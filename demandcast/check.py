@@ -10,7 +10,7 @@ Description:
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import Field
 
 import checks.data_availability
 import checks.data_sources
@@ -18,13 +18,13 @@ import checks.flags
 import utils.config
 
 
-class ConfigModel(BaseModel):
+class ConfigModel(utils.config.StrictSettings):
     """Settings of check.py."""
 
     check: Literal["data_availability", "data_sources", "flags"]
     data_sources: list[str] | None = None
     maximum_age_days: int = 60
-    maximum_age_days_by_source: dict[str, int] = {}
+    maximum_age_days_by_source: dict[str, int] = Field(default_factory=dict)
     time_limit_minutes: float = 15
 
 

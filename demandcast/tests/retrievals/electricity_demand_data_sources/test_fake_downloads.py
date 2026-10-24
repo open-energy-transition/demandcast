@@ -51,8 +51,8 @@ def test_fetch_text(fake_downloads):
     assert text.startswith("REGION,SETTLEMENTDATE,TOTALDEMAND")
 
 
-def test_fetch_excel_with_storage_options(fake_downloads, tmp_path):
-    """Test that the storage options of pandas are the headers."""
+def test_fetch_excel_with_the_options_of_the_request(fake_downloads, tmp_path):
+    """Test that an Excel file is downloaded with the options given."""
     file_path = tmp_path / "data.xlsx"
     pd.DataFrame({"TOTALDEMAND": [6000.5]}).to_excel(file_path, index=False)
     fake_downloads.serve(URL, file_path)
@@ -60,13 +60,15 @@ def test_fetch_excel_with_storage_options(fake_downloads, tmp_path):
     table = utils.fetcher.fetch_dataframe(
         URL,
         "excel",
-        excel_kwargs={"storage_options": {"User-Agent": "Mozilla/5.0"}},
+        header_params={"User-Agent": "Mozilla/5.0"},
+        timeout=30,
     )
 
     assert table["TOTALDEMAND"].tolist() == [6000.5]
-    assert fake_downloads.requests == [
-        ("GET", URL, {"headers": {"User-Agent": "Mozilla/5.0"}})
-    ]
+    [(method, url, options)] = fake_downloads.requests
+    assert (method, url) == ("GET", URL)
+    assert options["headers"]["User-Agent"] == "Mozilla/5.0"
+    assert options["timeout"] == 30
 
 
 @pytest.mark.usefixtures("fake_downloads")

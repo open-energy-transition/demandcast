@@ -296,3 +296,55 @@ def test_sync_of_files_written_in_the_meantime(data_folder, monkeypatch):
 
     assert report.different == ["same.csv"]
     assert (data_folder / "same.csv").read_bytes() == b"same"
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "../outside.txt",
+        "electricity_demand/../../outside.txt",
+        "/absolute.txt",
+        "C:/drive.txt",
+        "folder\\file.txt",
+        "./file.txt",
+        "folder//file.txt",
+    ],
+)
+def test_unsafe_names_are_not_downloaded(data_folder, name, caplog):
+    """Test that an object outside the data folder is not downloaded."""
+    bucket = _FakeBucket({name: b"outside"})
+
+    with caplog.at_level("WARNING"):
+        report = gcs.sync(
+            "bucket", "download", str(data_folder), client=_FakeClient(bucket)
+        )
+
+    assert report.unsafe == [name]
+    assert report.copied == []
+    assert not (data_folder.parent / "outside.txt").exists()
+    assert "not paths inside the data folder" in caplog.text
+
+
+def test_symbolic_link_out_of_the_data_folder(data_folder, tmp_path):
+    """Test that a download through a link outside is refused."""
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (data_folder / "linked").symlink_to(outside)
+    bucket = _FakeBucket({"linked/file.csv": b"data"})
+
+    report = gcs.sync(
+        "bucket", "download", str(data_folder), client=_FakeClient(bucket)
+    )
+
+    assert report.unsafe == ["linked/file.csv"]
+    assert not (outside / "file.csv").exists()
+
+
+def test_download_leaves_no_temporary_file(tmp_path):
+    """Test that a download leaves only its file."""
+    bucket = _FakeBucket({"a.csv": b"content"})
+
+    assert gcs._download(bucket.blob("a.csv"), str(tmp_path / "a.csv"))
+
+    assert [path.name for path in tmp_path.iterdir()] == ["a.csv"]
+    assert (tmp_path / "a.csv").read_bytes() == b"content"

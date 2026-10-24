@@ -204,14 +204,14 @@ This will create a file in `data/assembled/` with the training data.
 
 ## 4. Training the Model
 
-Our approach involves using socioeconomic and weather parameters to predict hourly electricity demand. The model learns patterns from all four countries (France, Germany, Italy, and Spain) for the years 2020-2023, which will later be used to forecast Spain's demand for 2024.
+Our approach involves using socioeconomic and weather parameters to predict hourly electricity demand. The model learns patterns from all four countries (France, Germany, Italy, and Spain): with `reserve_testing_set: true`, the latest year of each country, 2023, is kept for testing, and the model is trained on 2020-2022. With `use_validation_set: true`, 2022 would also be kept, for validation, and the model trained on 2020-2021. The model will later be used to forecast Spain's demand for 2024.
 
 Edit `demandcast/config/train_config.yaml` to specify the assembled data file path:
 
 ```yaml
 reserve_testing_set: true
 use_validation_set: false
-data_path: data/assembled/assembled_data_for_training_YYYYMMDD_HHMMSS.parquet  # Use the actual filename
+data_path: data/assembled/assembled_data_for_training_YYYYMMDD_HHMMSS.parquet  # Or leave empty for the latest data assembled for training
 ```
 
 Then run:
@@ -276,7 +276,7 @@ The forecasts will be saved in `data/results/forecasts/` and will contain hourly
 The figure below illustrates the complete workflow for Spain. The top panel shows the retrieved historical electricity demand data for 2023 and 2024. The bottom panels show the input features used for forecasting: annual electricity demand per capita, GDP PPP per capita, and temperature data for the same years.
 
 In this example workflow:
-- The model was trained on data from all four countries (France, Germany, Italy, and Spain) for 2020-2023,
+- The model was trained on data from all four countries (France, Germany, Italy, and Spain) for 2020-2022, with 2023 kept for testing,
 - The model uses the 2024 input features (temperature, GDP PPP per capita, annual electricity demand per capita, and population) to forecast Spain's hourly electricity demand for 2024,
 - This demonstrates how DemandCast can forecast future electricity demand for countries using a model trained on historical data from multiple regions.
 

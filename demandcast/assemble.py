@@ -35,7 +35,7 @@ import dask
 import dask.dataframe
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
 from tqdm import tqdm
 
 import utils.availability
@@ -146,7 +146,7 @@ DATASETS = (
 )
 
 
-class ConfigModel(BaseModel):
+class ConfigModel(utils.config.StrictSettings):
     """Settings of assemble.py."""
 
     target_use: Literal["training", "forecasting"]

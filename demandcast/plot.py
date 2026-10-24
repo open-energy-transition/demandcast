@@ -11,7 +11,7 @@ Description:
 import os
 from typing import Literal
 
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
 
 import figures.data_availability
 import figures.map_of_available_entities
@@ -21,7 +21,7 @@ import utils.config
 import utils.paths
 
 
-class ConfigModel(BaseModel):
+class ConfigModel(utils.config.StrictSettings):
     """Settings of plot.py."""
 
     figure: Literal[

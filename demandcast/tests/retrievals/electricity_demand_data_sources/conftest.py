@@ -108,8 +108,8 @@ def fake_downloads(monkeypatch):
     """
     Replace the downloads with synthetic files.
 
-    The downloads with requests, urllib and pandas get the files that
-    the test serves, and fail for the other URLs.
+    The downloads with requests and urllib get the files that the test
+    serves, and fail for the other URLs.
 
     Returns
     -------
@@ -143,25 +143,10 @@ def fake_downloads(monkeypatch):
             downloads.get_file("GET", request.full_url, **kwargs).read_bytes()
         )
 
-    def read_with(reader):
-        def read(source: Any, *args: Any, **kwargs: Any) -> Any:
-            if isinstance(source, str) and source.startswith("http"):
-                # pandas sends the storage options of a URL as the
-                # headers of its download, and rejects them for a file.
-                download_kwargs: dict[str, Any] = {}
-                if "storage_options" in kwargs:
-                    download_kwargs["headers"] = kwargs.pop("storage_options")
-                source = downloads.get_file("GET", source, **download_kwargs)
-            return reader(source, *args, **kwargs)
-
-        return read
-
     monkeypatch.setattr(requests, "get", send("GET"))
     monkeypatch.setattr(requests, "post", send("POST"))
     monkeypatch.setattr(requests, "Session", Session)
     monkeypatch.setattr(urllib.request, "urlopen", urlopen)
-    monkeypatch.setattr(pd, "read_csv", read_with(pd.read_csv))
-    monkeypatch.setattr(pd, "read_excel", read_with(pd.read_excel))
 
     return downloads
 

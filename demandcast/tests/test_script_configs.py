@@ -162,6 +162,16 @@ def test_default_configuration_names_no_target(script, message, monkeypatch):
             "'SSP2-45' is not available",
         ),
         ("train", "", "reserve_testing_set"),
+        (
+            "retrieve",
+            "variable: population\nstart_yr: 2020\n",
+            "start_yr\n  Extra inputs are not permitted",
+        ),
+        (
+            "sync",
+            "direction: upload\nbucket: b\ndryrun: true\n",
+            "dryrun\n  Extra inputs are not permitted",
+        ),
         ("sync", "direction: both\nbucket: b\n", "direction"),
         ("sync", "direction: upload\nbucket:\n", "bucket must be given"),
         (

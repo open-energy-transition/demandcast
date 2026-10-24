@@ -26,7 +26,7 @@ import utils.config
 import utils.paths
 
 
-class ConfigModel(BaseModel):
+class ConfigModel(utils.config.StrictSettings):
     """Settings of train.py."""
 
     reserve_testing_set: bool

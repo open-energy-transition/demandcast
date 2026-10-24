@@ -176,6 +176,19 @@ def test_read_configuration_raises_on_bad_type():
         ml_models.registry.read_model_configuration("lstm")
 
 
+@pytest.mark.parametrize(
+    "content",
+    ["n_units: 0\n", "n_layers: -1\n", "dropout: 1.0\n", "n_unit: 8\n"],
+)
+def test_read_configuration_raises_on_invalid_value(content):
+    """An invalid dimension, rate or a misspelt setting raises."""
+    with (
+        patch("builtins.open", mock_open(read_data=content)),
+        pytest.raises(ValueError, match="Configuration validation"),
+    ):
+        ml_models.registry.read_model_configuration("lstm")
+
+
 # ----------------------------------------------------------------------
 # get_initialized_model
 # ----------------------------------------------------------------------

@@ -15,10 +15,17 @@ Description:
     A request to the end of a month also gives that month, so the month
     after each one-year period is downloaded twice and kept once.
 
+    Since October 2026, the file of the current year starts with
+    warnings of the PHP code of the website, about 8 for each hour,
+    before the header of the table, whose values are the same as before.
+    The table is read from its header ("Fecha;"). A year takes about 20
+    seconds to be prepared.
+
     Source: https://adme.com.uy/controlpanel.php
 """
 
 import datetime
+import io
 import logging
 
 import pandas as pd
@@ -109,6 +116,11 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Raises
+    ------
+    ValueError
+        If the file has no table.
     """
     start_date, end_date = period
 
@@ -119,12 +131,15 @@ def download_and_extract_data_for_request(
     # Get the URL of the electricity demand data.
     url = get_url(start_date, end_date)
 
-    # Fetch the electricity demand data from the URL.
-    dataset = utils.fetcher.fetch_dataframe(
-        url,
-        content_type="csv",
-        csv_kwargs={"sep": ";"},
-    )
+    # Fetch the electricity demand data from the URL, and read the
+    # table from its header, after the warnings of the website.
+    content = utils.fetcher.fetch_response(
+        url, timeout=utils.fetcher.FILE_TIMEOUT
+    ).content.decode("utf-8", errors="replace")
+    header = content.find("Fecha;")
+    if header < 0:
+        raise ValueError(f"The file of ADME has no table: {url}")
+    dataset = pd.read_csv(io.StringIO(content[header:]), sep=";")
 
     # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
