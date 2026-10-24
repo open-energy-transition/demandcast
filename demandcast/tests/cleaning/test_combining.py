@@ -158,27 +158,39 @@ def test_sources_without_common_hours():
 
 
 @pytest.mark.parametrize(
-    ("common_days", "decision"),
-    [(10, "different quantity"), (6, "fills unverified")],
+    ("common_hours", "value", "decision"),
+    [
+        (10 * 24, 200.0, "different quantity"),
+        (10 * 24, 104.0, "different quantity"),
+        (6 * 24, 200.0, "different quantity"),
+        (24, 200.0, "different quantity"),
+        (6 * 24, 104.0, "fills unverified"),
+        (12, 200.0, "fills unverified"),
+    ],
 )
-def test_short_overlap(common_days, decision):
+def test_short_overlap(common_hours, value, decision):
     """
-    Test that a short overlap is enough to show a different quantity.
+    Test which overlaps are enough to show a different quantity.
 
-    The other source gives twice the demand: from 7 days of common
-    hours, it does not fill, and with less it fills, as unverified.
+    From 7 days of common hours, the median ratio must be within 2% of
+    1. With at least a day, a median ratio more than 10% from 1, such as
+    for twice the demand, shows another quantity. With less, the source
+    fills, as unverified.
     """
     best = _hourly("2023-01-01", "2023-12-31 23:00")
-    start = pd.Timestamp("2024-01-01") - pd.Timedelta(days=common_days)
-    other = _hourly(str(start), "2024-06-30 23:00", 200.0)
+    start = pd.Timestamp("2024-01-01") - pd.Timedelta(hours=common_hours)
+    other = _hourly(str(start), "2024-06-30 23:00", value)
 
-    _, sources = cleaning.combining._combine(
+    combined, sources = cleaning.combining._combine(
         {"best": best, "other": other}, ["best", "other"]
     )
 
-    assert sources.loc[1, "common_hours"] == common_days * 24
-    assert sources.loc[1, "median_ratio"] == pytest.approx(2.0)
+    assert sources.loc[1, "common_hours"] == common_hours
+    assert sources.loc[1, "median_ratio"] == pytest.approx(value / 100)
     assert sources.loc[1, "decision"] == decision
+    assert (combined["Source"] == "other").any() == (
+        decision == "fills unverified"
+    )
 
 
 def test_source_not_needed():
@@ -363,6 +375,7 @@ def test_reviewed_errors_come_last():
     )
     assert sources["decision"].tolist() == ["best", "fills", "reviewed errors"]
     assert sources.loc[2, "used_hours"] == 0
+    assert combined["Eligible"].all()
 
 
 @pytest.mark.usefixtures("error_review")
@@ -377,3 +390,7 @@ def test_reviewed_errors_without_another_source():
     assert combined is not None
     assert len(combined) == 365 * 24
     assert combined["Source"].eq("isone").all()
+    # The errors are kept, but cannot be used for training.
+    spring = (combined.index >= "2023-03-01") & (combined.index < "2023-06-01")
+    assert not combined["Eligible"][spring].any()
+    assert combined["Eligible"][~spring].all()

@@ -44,7 +44,14 @@ Description:
     before the other starts, the ratios cannot show whether it gives the
     same quantity: it fills the hours, as unverified, and the step
     between them shows in the flags of the annual change of the combined
-    series.
+    series. Even then, with at least a day of common hours, a source
+    whose median ratio is more than 10% from 1 gives another quantity,
+    such as twice the demand, and does not fill them.
+
+    The combined series keeps all its hours, and tells whether each can
+    be used to train the models ("Eligible"): the hours of the errors of
+    their source are not, so that the training data has no error that a
+    review has found.
 """
 
 import logging
@@ -80,6 +87,12 @@ SHORTEST_GAP = pd.Timedelta(hours=24)
 SHORTEST_OVERLAP_HOURS = 7 * 24
 LARGEST_MEDIAN_DIFFERENCE = 0.02
 LARGEST_SPREAD = 0.05
+
+# The common hours that show a different quantity, and the largest
+# difference of the median of the ratio from 1 below the shortest
+# overlap.
+SHORTEST_CHECKED_OVERLAP_HOURS = 24
+LARGEST_UNVERIFIED_MEDIAN_DIFFERENCE = 0.10
 
 # The columns of the table of the sources.
 SOURCE_COLUMNS = [
@@ -298,6 +311,30 @@ def _is_same_quantity(comparison: dict[str, float]) -> bool:
     )
 
 
+def _is_other_quantity(comparison: dict[str, float]) -> bool:
+    """
+    Check whether a source gives another quantity than the combined one.
+
+    Parameters
+    ----------
+    comparison : dict[str, float]
+        The comparison of the source with the combined data.
+
+    Returns
+    -------
+    bool
+        Whether the ratios of enough common hours are not close to 1,
+        or, with fewer common hours, their median is far from 1.
+    """
+    if comparison["common_hours"] >= SHORTEST_OVERLAP_HOURS:
+        return not _is_same_quantity(comparison)
+    return (
+        comparison["common_hours"] >= SHORTEST_CHECKED_OVERLAP_HOURS
+        and abs(comparison["median_ratio"] - 1)
+        > LARGEST_UNVERIFIED_MEDIAN_DIFFERENCE
+    )
+
+
 def _get_hours_to_fill(
     combined: pd.Series, hours: pd.DatetimeIndex
 ) -> pd.DatetimeIndex:
@@ -352,8 +389,9 @@ def _combine(
     Returns
     -------
     tuple[pandas.DataFrame, pandas.DataFrame]
-        The combined electricity demand ("Load (MW)") and the data
-        source of each hour ("Source"), and the table of the sources.
+        The combined electricity demand ("Load (MW)"), the data source
+        of each hour ("Source") and whether it can be used for training
+        ("Eligible"), and the table of the sources.
     """
     # The data sources from the best, and then their errors.
     entries = [
@@ -367,16 +405,13 @@ def _combine(
 
     combined = pd.Series(dtype="float64")
     sources = pd.Series(dtype="string")
+    eligible = pd.Series(dtype="bool")
     rows = []
     for rank, (data_source, values, are_errors) in enumerate(entries, start=1):
         comparison = _compare(values, combined)
         if combined.empty:
             used, decision = pd.DatetimeIndex(values.index), "best"
-        elif (
-            not are_errors
-            and comparison["common_hours"] >= SHORTEST_OVERLAP_HOURS
-            and not _is_same_quantity(comparison)
-        ):
+        elif not are_errors and _is_other_quantity(comparison):
             used, decision = pd.DatetimeIndex([]), "different quantity"
         else:
             used = _get_hours_to_fill(combined, pd.DatetimeIndex(values.index))
@@ -394,6 +429,9 @@ def _combine(
             sources = pd.concat(
                 [sources, pd.Series(data_source, index=used, dtype="string")]
             ).sort_index()
+            eligible = pd.concat(
+                [eligible, pd.Series(not are_errors, index=used, dtype="bool")]
+            ).sort_index()
         rows.append(
             {
                 "data_source": data_source,
@@ -407,7 +445,9 @@ def _combine(
             }
         )
 
-    combined_data = pd.DataFrame({"Load (MW)": combined, "Source": sources})
+    combined_data = pd.DataFrame(
+        {"Load (MW)": combined, "Source": sources, "Eligible": eligible}
+    )
     combined_data.index.name = entries[0][1].index.name
     return combined_data, pd.DataFrame(rows, columns=SOURCE_COLUMNS)
 
@@ -424,9 +464,10 @@ def combine_data(code: str) -> pd.DataFrame | None:
     Returns
     -------
     pandas.DataFrame | None
-        The hourly electricity demand in MW ("Load (MW)") and its data
-        source ("Source"), at the ends of the hours in UTC, or None if
-        no data source has cleaned data of the code.
+        The hourly electricity demand in MW ("Load (MW)"), its data
+        source ("Source") and whether it can be used for training
+        ("Eligible"), at the ends of the hours in UTC, or None if no
+        data source has cleaned data of the code.
     """
     cleaned = _read_cleaned_data(code)
     if not cleaned:

@@ -274,7 +274,38 @@ def test_get_largest_values_in_shape():
     # Check the result.
     assert isinstance(result, xarray.DataArray)
     assert result.dims == ("z",)
-    assert np.all(result.to_numpy() == np.array([22, 23, 24]))
+    # The cells of the top row, 20 to 24, are half or a quarter in the
+    # shape, so the largest values inside it are those of the full
+    # cells below them.
+    assert np.all(result.to_numpy() == np.array([16, 17, 18]))
+
+
+def test_border_cell_ranks_by_its_values_inside():
+    """
+    Test that a cell at the border ranks by its part inside the shape.
+
+    A cell of 1,000 people with 1% of its area in the shape has about
+    10 people inside it, fewer than a cell of 100 people half inside it.
+    """
+    # Cells of 1 degree, centred on 0.5, 1.5 and 2.5 degrees, with
+    # people in two of them, and a shape over half of the first and 1%
+    # of the second.
+    values = np.zeros((3, 3))
+    values[1, 0] = 100.0
+    values[1, 1] = 1000.0
+    data = xarray.DataArray(
+        data=values,
+        coords={"y": [0.5, 1.5, 2.5], "x": [0.5, 1.5, 2.5]},
+        dims=["y", "x"],
+    )
+    shape = geopandas.GeoDataFrame(
+        geometry=[box(0.5, 1, 1.01, 2)], crs="EPSG:4326"
+    )
+
+    result = utils.geospatial.get_largest_values_in_shape(shape, data, 1)
+
+    assert result["x"].to_numpy().tolist() == [0.5]
+    assert result.to_numpy() == pytest.approx([50.0], rel=0.05)
 
 
 def test_coarsen_function():
