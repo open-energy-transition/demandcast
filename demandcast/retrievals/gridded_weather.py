@@ -278,8 +278,11 @@ def is_outdated(
         and either written before the data of its year was complete or
         ending before the last hour of a past year. This also completes
         a year retrieved while it was in progress. The end of the data
-        is read from the file, since the time of a file copied from
-        elsewhere, such as from a bucket, is that of its copy.
+        of a netCDF file of the grid is read from the file, since the
+        time of a file copied from elsewhere, such as from a bucket, is
+        that of its copy. Other files, such as the temperature of a
+        local year, which ends before the last hour of the year in UTC
+        east of UTC, are checked by their time only.
     """
     if not os.path.exists(file_path):
         return True
@@ -289,7 +292,8 @@ def is_outdated(
     if written >= pd.Timestamp.now() - REANALYSIS_UPDATE:
         return False
     return written < pd.Timestamp(year + 1, 1, 1) + REANALYSIS_DELAY or (
-        year < pd.Timestamp.now().year
+        file_path.endswith(".nc")
+        and year < pd.Timestamp.now().year
         and _get_last_time(file_path) < pd.Timestamp(year, 12, 31, 23)
     )
 
