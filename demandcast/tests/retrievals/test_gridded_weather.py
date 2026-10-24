@@ -83,6 +83,27 @@ def test_is_outdated(tmp_path, year, written, last, model, outdated):
     )
 
 
+def test_other_files_are_checked_by_their_time(tmp_path, caplog):
+    """
+    Test that a file that is not netCDF is checked by its time only.
+
+    The temperature of a local year is a Parquet file, which xarray
+    cannot read, and which ends before the last hour of the year in UTC
+    east of UTC: a complete year is not retrieved again.
+    """
+    file_path = tmp_path / "JPN_Kantō_2024.parquet"
+    file_path.write_bytes(b"parquet")
+    seconds = pd.Timestamp("2025-01-10 00:00").timestamp()
+    os.utime(file_path, (seconds, seconds))
+
+    with caplog.at_level("WARNING"):
+        assert not gridded_weather.is_outdated(
+            str(file_path), 2024, None, None
+        )
+
+    assert caplog.text == ""
+
+
 def test_broken_file_is_retrieved_again(tmp_path, caplog):
     """Test that a weather file that cannot be read is outdated."""
     file_path = tmp_path / "data.nc"
