@@ -243,8 +243,13 @@ def _get_last_time(file_path: str) -> pd.Timestamp:
             for name in ("valid_time", "time"):
                 if name in dataset.coords and dataset.sizes.get(name, 1):
                     return pd.Timestamp(dataset[name].to_numpy().max())
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as error:
+        # A file that cannot be read, such as one whose download
+        # stopped, has no data, so that it is retrieved again.
+        logging.warning(
+            f"The weather file {file_path} cannot be read, so it is "
+            f"retrieved again: {error}"
+        )
     return pd.Timestamp.min
 
 
