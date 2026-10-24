@@ -83,6 +83,19 @@ def test_is_outdated(tmp_path, year, written, last, model, outdated):
     )
 
 
+def test_broken_file_is_retrieved_again(tmp_path, caplog):
+    """Test that a weather file that cannot be read is outdated."""
+    file_path = tmp_path / "data.nc"
+    file_path.write_bytes(b"not a netCDF file")
+    seconds = pd.Timestamp("2026-01-01 00:00").timestamp()
+    os.utime(file_path, (seconds, seconds))
+
+    with caplog.at_level("WARNING"):
+        assert gridded_weather.is_outdated(str(file_path), 2024, None, None)
+
+    assert "cannot be read, so it is retrieved again" in caplog.text
+
+
 def test_few_codes_complete_the_last_year():
     """
     Test that a year retrieved while in progress is completed.
