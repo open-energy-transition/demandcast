@@ -59,3 +59,21 @@ def test_code_version_without_git(monkeypatch):
     monkeypatch.setattr(utils.manifest.subprocess, "run", run)
 
     assert utils.manifest.get_code_version()["commit"] is None
+
+
+def test_code_version_when_git_fails(monkeypatch):
+    """Test that the commit is unknown if git fails after it."""
+    calls = []
+
+    def run(command, **_kwargs):
+        calls.append(command)
+        if command[1] == "status":
+            raise utils.manifest.subprocess.CalledProcessError(128, command)
+        return utils.manifest.subprocess.CompletedProcess(
+            command, 0, stdout="abc\n"
+        )
+
+    monkeypatch.setattr(utils.manifest.subprocess, "run", run)
+
+    assert utils.manifest.get_code_version()["commit"] is None
+    assert len(calls) == 2

@@ -105,7 +105,9 @@ def get_code_version() -> dict[str, str | None]:
         if changes:
             commit += "+changes"
     except (OSError, subprocess.CalledProcessError):
-        pass
+        # Without git, or outside a repository, such as in a copy of the
+        # code, the commit is unknown, even if only its changes are.
+        commit = None
     lockfile_path = os.path.join(utils.paths.CODE_FOLDER, "uv.lock")
     return {
         "commit": commit,
