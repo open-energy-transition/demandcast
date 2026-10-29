@@ -33,18 +33,18 @@ def _gridded_population(_variable, _code, selected_years, _available_years):
     )
 
 
-def _retrieve(code: str) -> pd.Series:
+def _retrieve(code: str, start_year: int = 2019) -> pd.Series:
     """
-    Retrieve the population of 2019 to 2025 and read it by year.
+    Retrieve the population from a year to 2025 and read it by year.
 
     Returns
     -------
     pandas.Series
         The population of each year.
     """
-    # The World Bank gives India until 2024, 2% more a year from 2018.
+    # The World Bank gives India from 1990 until 2024, 2% more a year.
     national = pd.DataFrame(
-        {year: [1300e6 * 1.02 ** (year - 2018)] for year in range(2018, 2025)},
+        {year: [1300e6 * 1.02 ** (year - 2018)] for year in range(1990, 2025)},
         index=["IND"],
     )
     with (
@@ -60,7 +60,7 @@ def _retrieve(code: str) -> pd.Series:
             code=code,
             file=None,
             year=None,
-            start_year=2019,
+            start_year=start_year,
             end_year=2025,
             scenario=None,
         )
@@ -100,3 +100,20 @@ def test_population_of_subdivision():
     assert yearly[2020] == pytest.approx(50e6)
     assert yearly[2023] == pytest.approx(50e6 * 1.02**3)
     assert yearly[2025] == pytest.approx(50e6 * 1.02**4)
+
+
+def test_population_of_subdivision_before_the_gridded_data():
+    """
+    Test that a subdivision follows its country before the gridded data.
+
+    The gridded data starts in 2000, before which the subdivision has
+    its population of 2000 times the change of its country since then,
+    until 1990, the first year of the country.
+    """
+    yearly = _retrieve("IND_KL", start_year=1985)
+
+    assert yearly.index.min() == 1990
+    assert yearly[1999] == pytest.approx(30e6 / 1.02)
+    assert yearly[1990] == pytest.approx(30e6 / 1.02**10)
+    assert yearly[2000] == pytest.approx(30e6)
+    assert yearly[2001] == pytest.approx(31e6)
