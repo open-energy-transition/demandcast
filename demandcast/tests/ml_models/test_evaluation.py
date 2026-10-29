@@ -257,3 +257,37 @@ def test_calculate_mapes(caplog):
     assert mapes["Testing MAPE"].tolist() == pytest.approx([0.0, 0.5])
     assert "Testing set:" in caplog.text
     assert " - Median MAPE = 0.2500" in caplog.text
+
+
+def test_calculate_mapes_of_the_profile_scaled_to_annual_totals():
+    """
+    Test the MAPE of the profile that forecasting gives.
+
+    A prediction of 1.2 times a target of 1 in a complete year has a
+    MAPE of 20%, but none once scaled to the annual total, as forecasts
+    are. An entity without a complete year has no such MAPE.
+    """
+    hours = pd.date_range("2023-01-01", periods=8760, freq="h")
+    group = pd.Series(["FRA"] * 8760 + ["DEU"] * 10, name="Entity code")
+    prepared_dataset: dict[str, ml_models.data.PreparedDataset] = {
+        "testing": {
+            "features": pd.DataFrame({"a": np.zeros(8770)}),
+            "target": pd.Series(np.ones(8770)),
+            "group": group,
+            "time": pd.Series(list(hours) + list(hours[:10])),
+            "local_year": pd.Series([2023] * 8770),
+        }
+    }
+
+    mapes = ml_models.evaluation.calculate_mapes(
+        prepared_dataset, {"testing": pd.Series(np.full(8770, 1.2))}
+    ).set_index("Entity code")
+
+    assert mapes["Testing MAPE"].to_dict() == pytest.approx(
+        {"DEU": 0.2, "FRA": 0.2}
+    )
+    scaled = mapes[
+        "Testing MAPE of the complete years scaled to their annual totals"
+    ]
+    assert scaled["FRA"] == pytest.approx(0.0)
+    assert np.isnan(scaled["DEU"])

@@ -8,6 +8,7 @@ Description:
 
 from unittest.mock import Mock, mock_open, patch
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -751,28 +752,48 @@ def test_get_latest_file(tmp_path):
     )
 
 
+def _years(sizes: dict[tuple[str, int], int]):
+    """
+    Make the entity codes, local years and hours of some years.
+
+    Returns
+    -------
+    tuple[pandas.Series, pandas.Series, pandas.Series]
+        The entity code, local year and time of each row.
+    """
+    group, local_year, time = [], [], []
+    for (code, year), size in sizes.items():
+        group += [code] * size
+        local_year += [year] * size
+        time += list(pd.date_range(f"{year}-01-01", periods=size, freq="h"))
+    return pd.Series(group), pd.Series(local_year), pd.Series(time)
+
+
 def test_normalize_to_annual_totals(caplog):
     """
     Test that each complete year sums to its annual total.
 
     A complete year predicted at 1.2 times the annual mean, with an
     annual demand of 1 billion kWh, gives 1 million MWh, not 1.2. A
-    leap year has 8784 hours, a negative prediction is zero, and a year
-    without all its hours is left as it is.
+    leap year has 8784 hours, a negative prediction is zero, a year
+    without all its hours is left as it is, and so is a complete year
+    whose predictions are all negative, which has no profile to scale.
     """
-    sizes = {("FRA", 2023): 8760, ("FRA", 2024): 8784, ("DEU", 2023): 100}
-    group = pd.Series(
-        [code for (code, _), size in sizes.items() for _ in range(size)]
-    )
-    local_year = pd.Series(
-        [year for (_, year), size in sizes.items() for _ in range(size)]
+    group, local_year, time = _years(
+        {
+            ("FRA", 2023): 8760,
+            ("FRA", 2024): 8784,
+            ("DEU", 2023): 100,
+            ("ITA", 2023): 8760,
+        }
     )
     predictions = pd.Series(1.2, index=group.index)
     predictions[8760] = -0.5
+    predictions[group == "ITA"] = -1.0
 
     with caplog.at_level("INFO"):
-        normalized = ml_models.data.normalize_to_annual_totals(
-            predictions, group, local_year
+        normalized, status = ml_models.data.normalize_to_annual_totals(
+            predictions, group, local_year, time
         )
     megawatts = ml_models.data.to_megawatts(
         normalized, local_year, pd.Series(1e9, index=group.index)
@@ -784,5 +805,46 @@ def test_normalize_to_annual_totals(caplog):
     assert normalized[8760] == 0.0
     # The incomplete year keeps its predictions.
     assert normalized[group == "DEU"].eq(1.2).all()
-    assert "1 negative predictions are set to zero" in caplog.text
-    assert "not scaled to their annual total: DEU 2023" in caplog.text
+    assert normalized[group == "ITA"].eq(0.0).all()
+    assert status.set_index(["Entity code", "Local year"])[
+        "Status"
+    ].to_dict() == {
+        ("FRA", 2023): "scaled",
+        ("FRA", 2024): "scaled",
+        ("DEU", 2023): "incomplete",
+        ("ITA", 2023): "zero",
+    }
+    assert "negative predictions are set to zero" in caplog.text
+    assert "without all their hours are not scaled" in caplog.text
+    assert "all zero are not scaled to their annual total: ITA" in caplog.text
+
+
+def test_normalize_invalid_predictions():
+    """
+    Test that predictions that are not numbers or a repeated hour stop.
+
+    A repeated hour with one hour missing keeps the number of rows of a
+    complete year, which would otherwise look complete.
+    """
+    group, local_year, time = _years({("FRA", 2023): 8760})
+    predictions = pd.Series(1.0, index=group.index)
+
+    with pytest.raises(ValueError, match="1 predictions are not finite"):
+        ml_models.data.normalize_to_annual_totals(
+            predictions.where(predictions.index != 5), group, local_year, time
+        )
+    with pytest.raises(ValueError, match="1 predictions are not finite"):
+        ml_models.data.normalize_to_annual_totals(
+            predictions.replace({1.0: np.inf}).where(
+                predictions.index == 5, 1.0
+            ),
+            group,
+            local_year,
+            time,
+        )
+    repeated = time.copy()
+    repeated[1] = repeated[0]
+    with pytest.raises(ValueError, match="several predictions"):
+        ml_models.data.normalize_to_annual_totals(
+            predictions, group, local_year, repeated
+        )

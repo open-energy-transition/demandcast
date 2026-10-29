@@ -108,6 +108,12 @@ def calculate_mapes(
     """
     Calculate the MAPEs of each set: training, validation and testing.
 
+    Besides the MAPE of the predictions as the model gives them, the
+    MAPE of the predictions scaled to the annual total of their year,
+    as forecast.py delivers them, is calculated on the complete years
+    of each entity, those with all their hours, and is missing for an
+    entity without one (see ml_models.data.normalize_to_annual_totals).
+
     Parameters
     ----------
     prepared_dataset : dict[str, PreparedDataset]
@@ -119,31 +125,94 @@ def calculate_mapes(
     -------
     mapes : pandas.DataFrame
         The code of each country or subdivision, and its MAPE in each
-        set, in the columns "<Set> MAPE".
+        set, in the columns "<Set> MAPE" and "<Set> MAPE of the complete
+        years scaled to their annual totals".
     """
-    # Initialize a DataFrame to hold MAPE results.
-    mapes = pd.DataFrame()
-
-    for split in prepared_dataset:
-        # Calculate MAPE per entity for the current split.
+    columns: dict[str, pd.Series] = {}
+    for split, data in prepared_dataset.items():
+        name = split.capitalize()
         mapes_of_split = calculate_mape_by_entity(
-            predictions[split],
-            prepared_dataset[split]["target"],
-            prepared_dataset[split]["group"],
+            predictions[split], data["target"], data["group"]
         )
+        columns[f"{name} MAPE"] = mapes_of_split
+        log_summary(name, mapes_of_split)
 
-        # Store the MAPE values in the results DataFrame.
-        mapes[f"{split.capitalize()} MAPE"] = mapes_of_split
-        log_summary(split.capitalize(), mapes_of_split)
+        if "time" in data and "local_year" in data:
+            scaled, status = ml_models.data.normalize_to_annual_totals(
+                predictions[split],
+                data["group"],
+                data["local_year"],
+                data["time"],
+                report=False,
+            )
+            complete = pd.MultiIndex.from_arrays(
+                [data["group"], data["local_year"].astype(int)]
+            ).isin(
+                pd.MultiIndex.from_frame(
+                    status.loc[
+                        status["Status"] == "scaled",
+                        ["Entity code", "Local year"],
+                    ]
+                )
+            )
+            rows = np.flatnonzero(complete)
+            columns[
+                f"{name} MAPE of the complete years scaled to their annual "
+                "totals"
+            ] = calculate_mape_by_entity(
+                scaled.iloc[rows].reset_index(drop=True),
+                data["target"].iloc[rows].reset_index(drop=True),
+                data["group"].iloc[rows].reset_index(drop=True),
+            ).reindex(mapes_of_split.index)
 
-    # Reset the index and reorder columns.
-    mapes = mapes.reset_index()
-    column_order = ["Entity code"] + [
-        f"{split.capitalize()} MAPE" for split in prepared_dataset
-    ]
-    mapes = mapes[column_order]
+    return pd.DataFrame(columns).rename_axis("Entity code").reset_index()
 
-    return mapes
+
+def get_folds(
+    group: pd.Series, holdout: Literal["entity", "country"]
+) -> dict[str, list[str]]:
+    """
+    Get the entities that each fold of a cross-validation holds out.
+
+    Parameters
+    ----------
+    group : pandas.Series
+        The entity code of each row.
+    holdout : str
+        What each fold holds out: an "entity", or a "country" with its
+        subdivisions.
+
+    Returns
+    -------
+    dict[str, list[str]]
+        The entity codes held out by each fold, by the name of the fold:
+        the entity code, or the code of the country.
+    """
+    codes = sorted(group.unique())
+    return {
+        fold: [code for code in codes if _get_fold(code, holdout) == fold]
+        for fold in sorted({_get_fold(code, holdout) for code in codes})
+    }
+
+
+def _get_fold(code: str, holdout: Literal["entity", "country"]) -> str:
+    """
+    Get the fold of an entity in a cross-validation.
+
+    Parameters
+    ----------
+    code : str
+        The entity code.
+    holdout : str
+        What each fold holds out: an "entity", or a "country" with its
+        subdivisions.
+
+    Returns
+    -------
+    str
+        The entity code, or the code of its country.
+    """
+    return code if holdout == "entity" else code.split("_", maxsplit=1)[0]
 
 
 def _score_fold(
@@ -242,7 +311,7 @@ def cross_validate(
     ml_models.registry.get_model_module(algorithm)
 
     group = prepared_dataset["group"]
-    folds = group if holdout == "entity" else group.str.split("_").str[0]
+    folds = group.map(lambda code: _get_fold(code, holdout))
 
     results = Parallel(n_jobs=n_jobs)(
         delayed(_score_fold)(

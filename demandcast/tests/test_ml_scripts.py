@@ -312,7 +312,14 @@ def test_validate(algorithm, use_validation_set, expected_mapes):
         f"{algorithm.lower()}_model_{NOW}",
         TRAINING_DATA,
     )
-    assert mapes.columns.tolist() == ["Entity code", *expected_mapes]
+    scaled = " of the complete years scaled to their annual totals"
+    assert [
+        column for column in mapes.columns if not column.endswith(scaled)
+    ] == ["Entity code", *expected_mapes]
+    # Each set also has the MAPE of the profile that forecasting gives.
+    assert {column for column in mapes.columns if column.endswith(scaled)} == {
+        column + scaled for column in expected_mapes
+    }
     assert mapes["Entity code"].tolist() == COUNTRY_CODES
     for column, values in expected_mapes.items():
         assert mapes[column].tolist() == pytest.approx(
@@ -526,3 +533,124 @@ def test_forecast_with_another_target():
 
     with pytest.raises(ValueError, match="trained on the target"):
         forecast.run_forecasting(None, None, ml_config)
+
+
+def test_replaced_model_is_rejected():
+    """
+    Test that a model replaced after its manifest is rejected.
+
+    Another valid model, trained on all the years, replaces the model
+    whose manifest keeps 2023 for testing: its validation would score it
+    on a year that it was trained on.
+    """
+    _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
+    train.run_model_training(True, False, None, *_settings("XGBoost"))
+    model_path = os.path.join(
+        utils.paths.get_models_folder("xgboost"), f"xgboost_model_{NOW}.json"
+    )
+    model_module = ml_models.registry.get_model_module("XGBoost")
+    prepared = ml_models.data.prepare_dataset(
+        os.path.join(
+            utils.paths.get_assembled_folder(), f"{TRAINING_DATA}.parquet"
+        ),
+        _ml_settings("XGBoost"),
+    )
+    other = model_module.train({"training": prepared}, _settings("XGBoost")[1])
+    model_module.save(other, model_path)
+
+    for run in (
+        lambda: validate.run_model_validation(
+            False, None, None, _ml_settings("XGBoost")
+        ),
+        lambda: forecast.run_forecasting(None, None, _ml_settings("XGBoost")),
+    ):
+        _write_assembled_data(FORECASTING_DATA, [2024], False)
+        with pytest.raises(ValueError, match="changed or replaced"):
+            run()
+
+
+def test_forecast_with_other_scaling_is_rejected():
+    """
+    Test that a forecast that converts to MW otherwise is rejected.
+
+    Without the population in the scaling variables, the annual demand
+    of a forecast would be the demand per capita, 1000 times too small
+    for a million people, with the same model and features.
+    """
+    _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
+    train.run_model_training(True, False, None, *_settings("XGBoost"))
+    _write_assembled_data(FORECASTING_DATA, [2024], False)
+    ml_config = _ml_settings("XGBoost")
+    ml_config.scaling_variables = [
+        "Annual electricity demand per capita (kWh)"
+    ]
+
+    with pytest.raises(ValueError, match="scaling_variables was"):
+        forecast.run_forecasting(None, None, ml_config)
+
+    # The same variables in another order give the same annual demand.
+    ml_config.scaling_variables = list(
+        reversed(_ml_settings("XGBoost").scaling_variables or [])
+    )
+    forecast.run_forecasting(None, None, ml_config)
+
+
+def test_validation_without_the_data_of_the_training():
+    """Test that missing data of the training is not replaced."""
+    _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
+    train.run_model_training(True, False, None, *_settings("XGBoost"))
+    os.rename(
+        os.path.join(
+            utils.paths.get_assembled_folder(), f"{TRAINING_DATA}.parquet"
+        ),
+        os.path.join(
+            utils.paths.get_assembled_folder(),
+            "assembled_data_for_training_20250103_000000.parquet",
+        ),
+    )
+
+    with pytest.raises(FileNotFoundError, match="data of the training"):
+        validate.run_model_validation(
+            False, None, None, _ml_settings("XGBoost")
+        )
+
+
+def test_cross_validation_records_its_settings_and_folds():
+    """Test that a cross-validation records how to repeat it."""
+    _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
+
+    cross_validate.run_model_cross_validation(
+        1, None, *_settings("XGBoost"), "country"
+    )
+
+    folder = os.path.join(
+        utils.paths.get_results_folder("cross_validation"),
+        "with_xgboost",
+        f"using_{TRAINING_DATA}",
+    )
+    manifest = utils.manifest.read_manifest(
+        os.path.join(folder, f"all_{NOW}.parquet")
+    )
+    assert manifest is not None
+    assert manifest["folds"] == {code: [code] for code in COUNTRY_CODES}
+    assert manifest["holdout"] == "country"
+    assert manifest["model_settings"]["random_state"] == 42
+    assert manifest["dataset"]["sha256"] == utils.manifest.get_checksum(
+        os.path.join(
+            utils.paths.get_assembled_folder(), f"{TRAINING_DATA}.parquet"
+        )
+    )
+
+
+def test_forecast_without_annual_demand():
+    """Test that a forecast without a positive annual demand stops."""
+    prepared: ml_models.data.PreparedDataset = {
+        "features": pd.DataFrame({"a": [0.0]}),
+        "group": pd.Series(["AUT"]),
+        "time": pd.Series(pd.to_datetime(["2024-01-01 01:00"])),
+        "local_year": pd.Series([2024]),
+        "scaling_factor": pd.Series([np.nan]),
+    }
+
+    with pytest.raises(ValueError, match="1 rows is not a positive number"):
+        forecast._construct_output_dataset(prepared, pd.Series([1.0]))

@@ -77,3 +77,52 @@ def test_code_version_when_git_fails(monkeypatch):
 
     assert utils.manifest.get_code_version()["commit"] is None
     assert len(calls) == 2
+
+
+def test_verify_file(tmp_path):
+    """
+    Test that a file is checked against its manifest.
+
+    Both formats of the same content are described by the manifest, a
+    file of another kind, not described, or changed is an error, and a
+    file without manifest is not checked.
+    """
+    parquet = tmp_path / "all.parquet"
+    parquet.write_bytes(b"parquet")
+    csv = tmp_path / "all.csv"
+    csv.write_bytes(b"csv")
+    utils.manifest.write_manifest(
+        str(parquet), "results", {}, other_formats=(str(csv),)
+    )
+
+    assert utils.manifest.verify_file(str(csv), "results") is not None
+    assert utils.manifest.verify_file(str(parquet), None) is not None
+    with pytest.raises(ValueError, match="not of a model"):
+        utils.manifest.verify_file(str(parquet), "model")
+    other = tmp_path / "all.json"
+    other.write_bytes(b"json")
+    with pytest.raises(ValueError, match="does not describe it"):
+        utils.manifest.verify_file(str(other), "results")
+    csv.write_bytes(b"changed")
+    with pytest.raises(ValueError, match="changed or replaced"):
+        utils.manifest.verify_file(str(csv), "results")
+    assert utils.manifest.verify_file(str(tmp_path / "x.json"), None) is None
+
+
+def test_data_references(tmp_path, monkeypatch):
+    """Test that the data is referred to relative to the data folder."""
+    data_folder = tmp_path / "data"
+    monkeypatch.setattr(
+        utils.manifest.utils.paths, "get_data_folder", lambda: str(data_folder)
+    )
+    inside = data_folder / "assembled" / "data.parquet"
+    outside = tmp_path / "elsewhere.parquet"
+
+    assert utils.manifest.get_data_reference(str(inside)) == (
+        "assembled/data.parquet"
+    )
+    assert utils.manifest.get_data_reference(str(outside)) == str(outside)
+    assert utils.manifest.resolve_data_reference("assembled/data.parquet") == (
+        str(inside)
+    )
+    assert utils.manifest.resolve_data_reference(str(outside)) == str(outside)

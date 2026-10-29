@@ -23,7 +23,7 @@ The fraction of the annual total of an average hour is about 1/8760, too small f
 
 **From the predictions to MW**
 
-The annual electricity demand of a forecast, the product of the annual demand per capita (kWh) and the population, is the total of its year, and the hourly profile of the model distributes it. The predictions of a year do not have a mean of exactly 1, so `forecast.py` scales those of each complete local year of each country or subdivision, with all its hours, to a mean of 1 (`ml_models.data.normalize_to_annual_totals()`): their MW then sum to the annual demand. A negative prediction is zero, and the predictions of a year without all its hours are not scaled, which the log reports. The predictions are then converted back to the fraction of the annual total and multiplied by the annual demand in kWh, divided by 1000 for MW. The validation and cross-validation score the predictions as the model gives them.
+The annual electricity demand of a forecast, the product of the annual demand per capita (kWh) and the population, is the total of its year, and the hourly profile of the model distributes it. The predictions of a year do not have a mean of exactly 1, so `forecast.py` scales those of each complete local year of each country or subdivision, with all its hours, to a mean of 1 (`ml_models.data.normalize_to_annual_totals()`): their MW then sum to the annual demand. A negative prediction is zero; a prediction that is not a number, or an hour with two predictions, stops the forecast. The predictions of a year without all its hours, and of a complete year whose predictions are all zero, are not scaled, which the log reports, and the manifest of the forecasts gives the status of each year: `scaled`, `incomplete` or `zero`. The predictions are then converted back to the fraction of the annual total and multiplied by the annual demand in kWh, divided by 1000 for MW. The validation and cross-validation score the predictions as the model gives them.
 
 **Temporal Splitting**
 
@@ -266,17 +266,25 @@ The trained model is saved to `data/models/{algorithm_name}/{algorithm_name}_mod
 
 ### Manifests
 
-Each assembled dataset, trained model and result has a manifest next to it, a JSON file with the same name and the extension `.manifest.json` (`demandcast/utils/manifest.py`), which tells what it is and how it was made: its kind, its checksum, the commit of the code and the checksum of `uv.lock`, and:
+Each assembled dataset, trained model and result has a manifest next to it, a JSON file with the same name and the extension `.manifest.json` (`demandcast/utils/manifest.py`), which tells what it is and how it was made: its kind, the checksum of each of its files (both the CSV and the Parquet file of a dataset or of results), the commit of the code and the checksum of `uv.lock`, and:
 
-- for an assembled dataset, its purpose (training or forecasting), the settings of `assemble.py`, its columns and types, and its countries and subdivisions;
+- for an assembled dataset, its purpose (training or forecasting), the settings of `assemble.py`, its columns and types, its countries and subdivisions, and for each input, such as the combined electricity demand or the temperature, the number of files read and a checksum of their paths and contents;
 - for a model, its dataset and its checksum, the settings of `ml_config.yaml` and of the model, its features in their order with their types, its target and the transformation of the target, the statistics of its standardization, if any, and the countries and subdivisions and local years of each of its sets;
-- for a result, its model, its dataset and the metric of its errors (the MAPE, lower is better, of the load relative to the annual mean) or the units of its forecasts.
+- for a result, the name and checksum of its model and of its dataset, and the metric of its errors (the MAPE, lower is better, of the load relative to the annual mean) or, for forecasts, their units and the scaling of each year to its annual demand; for a cross-validation, also the settings of `ml_config.yaml` and of the model, the holdout and the entities held out by each fold.
 
-`validate.py` reads the dataset of the training of the model by default, and stops if the dataset, the target or the sets differ from those of the training; `forecast.py` stops if the target differs. A model trained before the manifests is used without these checks, which the log reports. `publish.py` uploads the manifest of each file of a release with it.
+The paths of the data in the manifests are relative to the data folder, so they stay valid in a copy of it. What is checked:
+
+| Step | Checks |
+|---|---|
+| `validate.py` | The model file is the one of its manifest (its checksum). The dataset is that of the training, by default, and stops if it is missing rather than using another one; the dataset, the target and its transformation, the preparation of the data and the sets are those of the training. |
+| `forecast.py` | The model file is the one of its manifest. The target and its transformation and the preparation of the data are those of the training: the features in their order, the categorical features and the scaling variables, which convert the predictions to MW, in any order. |
+| `publish.py` | Each file with a manifest is the one of its manifest, each manifest is uploaded once, and results are those of the model of the release; otherwise nothing is uploaded. |
+
+A model trained before the manifests is used without these checks, which the log reports.
 
 ### Model Validation
 
-The script `demandcast/validate.py` performs a validation of the trained model on the reserved test set and computes performance metrics (e.g., MAPE). The errors of the validation and of the cross-validation are computed by `demandcast/ml_models/evaluation.py`, on the target of the models, the load relative to the annual mean: they measure the error of the hourly profile, not that of the annual demand. The metric is the mean absolute percentage error (MAPE), as a fraction.
+The script `demandcast/validate.py` performs a validation of the trained model on the reserved test set and computes performance metrics (e.g., MAPE). The errors of the validation and of the cross-validation are computed by `demandcast/ml_models/evaluation.py`, on the target of the models, the load relative to the annual mean: they measure the error of the hourly profile, not that of the annual demand. The metric is the mean absolute percentage error (MAPE), as a fraction. The validation gives two MAPEs for each set: that of the predictions as the model gives them, and that of the complete years scaled to their annual totals, as `forecast.py` delivers them (see [from the predictions to MW](#from-the-predictions-to-mw)), which is missing for an entity without a complete year. A constant prediction of 1.2 times a target of 1 has a MAPE of 20%, but none once scaled.
 
 **Usage:**
 ```bash
