@@ -213,18 +213,24 @@ def to_load_fraction_of_annual_total(
 
 
 def normalize_to_annual_totals(
-    load_relative: pd.Series, group: pd.Series, local_year: pd.Series
-) -> pd.Series:
+    load_relative: pd.Series,
+    group: pd.Series,
+    local_year: pd.Series,
+    time: pd.Series,
+    report: bool = True,
+) -> tuple[pd.Series, pd.DataFrame]:
     """
     Make the load of each complete year sum to its annual total.
 
     The models predict the load relative to the annual mean of each
     hour, whose mean over a year is not exactly 1. The annual demand of
     a scenario is the total of its year, so the predictions of each
-    complete local year of each entity, with all its hours, are scaled
-    to a mean of 1, and their MW then sum to the annual demand. The
-    negative predictions are zero, and the years without all their
-    hours are left as they are, which the log reports.
+    complete local year of each entity, with each of its hours once, are
+    scaled to a mean of 1, and their MW then sum to the annual demand.
+    The negative predictions are zero. A year without all its hours is
+    left as it is, and so is a complete year whose predictions are all
+    zero, which has no profile to scale: the status of each year tells
+    which ones are scaled, and the log reports the others.
 
     Parameters
     ----------
@@ -235,16 +241,38 @@ def normalize_to_annual_totals(
         The entity code of each row, in the same order.
     local_year : pandas.Series
         The local year of each row, in the same order.
+    time : pandas.Series
+        The time of each row, in the same order.
+    report : bool, optional
+        Whether to log the years that are not scaled and the range of
+        the means of the others.
 
     Returns
     -------
-    pandas.Series
+    tuple[pandas.Series, pandas.DataFrame]
         The load relative to the annual mean, with a mean of 1 in each
-        complete year of each entity.
+        complete year of each entity, and the status of each year of
+        each entity: its entity code ("Entity code"), local year ("Local
+        year"), number of distinct hours ("Hours"), mean of the
+        predictions before the scaling ("Mean before scaling") and
+        status ("Status"): "scaled", "incomplete" or "zero".
+
+    Raises
+    ------
+    ValueError
+        If a prediction is not a finite number, or an hour of an entity
+        has several rows.
     """
     load = pd.Series(np.asarray(load_relative, dtype=float), index=group.index)
+    not_finite = ~np.isfinite(load.to_numpy())
+    if not_finite.any():
+        raise ValueError(
+            f"{int(not_finite.sum())} predictions are not finite numbers."
+        )
+    if pd.DataFrame({"group": group, "time": time}).duplicated().any():
+        raise ValueError("An hour of an entity has several predictions.")
     negative = load < 0
-    if negative.any():
+    if negative.any() and report:
         logging.warning(
             f"{int(negative.sum())} negative predictions are set to zero."
         )
@@ -254,36 +282,51 @@ def normalize_to_annual_totals(
     hours = load.groupby(keys).transform("size")
     mean = load.groupby(keys).transform("mean")
     complete = hours.to_numpy() == _hours_in_year(local_year)
-    complete &= mean.to_numpy() > 0
+    scaled = complete & (mean.to_numpy() > 0)
+    load[scaled] = load[scaled] / mean[scaled]
 
-    if complete.any():
-        means = (
-            mean[complete]
-            .groupby(
-                [group[complete].to_numpy(), local_year[complete].to_numpy()]
-            )
-            .first()
-        )
-        logging.info(
-            "The mean of the predictions of each complete year is scaled "
-            f"to 1, from {means.min():.4f} to {means.max():.4f}."
-        )
-    if not complete.all():
-        incomplete = sorted(
+    status = (
+        pd.DataFrame(
             {
-                f"{code} {int(year)}"
-                for code, year in zip(
-                    group[~complete], local_year[~complete], strict=True
-                )
+                "Entity code": group.to_numpy(),
+                "Local year": local_year.to_numpy().astype(int),
+                "Hours": hours.to_numpy(),
+                "Mean before scaling": mean.to_numpy(),
+                "Status": np.where(
+                    scaled, "scaled", np.where(complete, "zero", "incomplete")
+                ),
             }
         )
-        logging.warning(
-            "The predictions of the years without all their hours are not "
-            f"scaled to their annual total: {', '.join(incomplete)}."
+        .drop_duplicates(["Entity code", "Local year"])
+        .reset_index(drop=True)
+    )
+    for name, description in (
+        ("incomplete", "without all their hours"),
+        ("zero", "whose predictions are all zero"),
+    ):
+        years = status[status["Status"] == name]
+        if len(years) and report:
+            logging.warning(
+                f"The predictions of the years {description} are not "
+                "scaled to their annual total: "
+                + ", ".join(
+                    f"{code} {year}"
+                    for code, year in zip(
+                        years["Entity code"], years["Local year"], strict=True
+                    )
+                )
+                + "."
+            )
+    scaled_means = status.loc[
+        status["Status"] == "scaled", "Mean before scaling"
+    ]
+    if len(scaled_means) and report:
+        logging.info(
+            "The mean of the predictions of each complete year is scaled "
+            f"to 1, from {scaled_means.min():.4f} to "
+            f"{scaled_means.max():.4f}."
         )
-
-    load[complete] = load[complete] / mean[complete]
-    return load.set_axis(load_relative.index)
+    return load.set_axis(load_relative.index), status
 
 
 def to_megawatts(

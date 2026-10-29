@@ -25,6 +25,7 @@ import dataclasses
 import datetime
 import functools
 import glob
+import hashlib
 import logging
 import os
 from collections.abc import Callable
@@ -405,6 +406,7 @@ def _load_dataset(
     selected_scenario: str | None = None,
     selected_model: str | None = None,
     file_path: str | None = None,
+    read_files: list[str] | None = None,
 ) -> dask.dataframe.DataFrame:
     """
     Load an input of all the countries and subdivisions.
@@ -423,6 +425,8 @@ def _load_dataset(
         The climate model, none for historical data.
     file_path : str | None, optional
         The file with the codes to load, all of them if none.
+    read_files : list[str] | None, optional
+        A list to which the paths of the files read are added.
 
     Returns
     -------
@@ -448,13 +452,16 @@ def _load_dataset(
         # sources, so that its eligibility for training is current.
         if dataset.name == "electricity_demand":
             cleaning.combining.ensure_current_combination(entity_code)
-        entity_data = _load_data_for_entity(
-            entity_code,
-            _get_file_paths(
-                dataset, entity_code, selected_scenario, selected_model
-            ),
-            list(dataset.columns),
+        entity_file_paths = _get_file_paths(
+            dataset, entity_code, selected_scenario, selected_model
         )
+        entity_data = _load_data_for_entity(
+            entity_code, entity_file_paths, list(dataset.columns)
+        )
+        if read_files is not None:
+            read_files.extend(
+                path for path in entity_file_paths if os.path.exists(path)
+            )
         if entity_data is not None:
             result_data.append(entity_data)
 
@@ -465,6 +472,34 @@ def _load_dataset(
         "successfully."
     )
     return combined_data
+
+
+def _get_inputs_identity(file_paths: list[str]) -> dict[str, int | str]:
+    """
+    Get the identity of the files of an input of the assembly.
+
+    Parameters
+    ----------
+    file_paths : list[str]
+        The paths of the files read.
+
+    Returns
+    -------
+    dict[str, int | str]
+        The number of files ("files"), and the SHA-256 checksum of their
+        paths relative to the data folder and of their checksums, in the
+        order of the paths ("sha256"), which changes if any of them
+        does.
+    """
+    checksum = hashlib.sha256()
+    references = sorted(
+        (utils.manifest.get_data_reference(path), path) for path in file_paths
+    )
+    for reference, path in references:
+        checksum.update(
+            f"{reference} {utils.manifest.get_checksum(path)}\n".encode()
+        )
+    return {"files": len(references), "sha256": checksum.hexdigest()}
 
 
 def _merge_datasets(
@@ -706,15 +741,18 @@ def run_data_assemply(
     selected_models = {"temperature": climate_model_for_temperature}
 
     datasets_to_merge = []
+    read_files: dict[str, list[str]] = {}
     for dataset in DATASETS:
         if dataset.training_only and target_use != "training":
             continue
+        read_files[dataset.name] = []
         data = _load_dataset(
             dataset,
             target_use,
             selected_scenarios.get(dataset.name),
             selected_models.get(dataset.name),
             file,
+            read_files[dataset.name],
         )
         if dataset.by_year and start_year and end_year:
             # Keep the specified year range, before the merges: the
@@ -789,6 +827,10 @@ def run_data_assemply(
             },
             "rows": len(assembled_data),
             "entities": sorted(assembled_data["Entity code"].unique()),
+            "inputs": {
+                name: _get_inputs_identity(file_paths)
+                for name, file_paths in read_files.items()
+            },
         },
     )
 

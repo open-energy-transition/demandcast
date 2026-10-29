@@ -91,7 +91,13 @@ class ConfigModel(utils.config.StrictSettings):
 
 def _with_manifests(file_paths: list[str]) -> list[str]:
     """
-    Add the manifests of the files of a release.
+    Add the manifests of the files of a release, after checking them.
+
+    Each file with a manifest is checked against it (see
+    utils.manifest.verify_file), and each manifest is added once, even
+    for the CSV and Parquet files of the same results, which share it.
+    The results whose model is not the model of the release, if the
+    release has one, stop the release before anything is uploaded.
 
     Parameters
     ----------
@@ -102,19 +108,49 @@ def _with_manifests(file_paths: list[str]) -> list[str]:
     -------
     list[str]
         The paths of the files, each followed by that of its manifest,
-        if it has one.
+        if it has one and it is not already in the release.
+
+    Raises
+    ------
+    ValueError
+        If a file differs from its manifest, or results are not those of
+        the model of the release.
     """
-    with_manifests = []
+    with_manifests: list[str] = []
+    manifests: dict[str, dict] = {}
     for file_path in file_paths:
-        with_manifests.append(file_path)
-        manifest_path = utils.manifest.get_manifest_path(file_path)
+        if file_path not in with_manifests:
+            with_manifests.append(file_path)
         if file_path.endswith(utils.manifest.MANIFEST_EXTENSION):
             continue
-        if os.path.exists(manifest_path):
-            if manifest_path not in file_paths:
-                with_manifests.append(manifest_path)
-        else:
+        manifest = utils.manifest.verify_file(file_path, None)
+        if manifest is None:
             logging.warning(f"The file {file_path} has no manifest.")
+            continue
+        manifest_path = utils.manifest.get_manifest_path(file_path)
+        manifests[file_path] = manifest
+        if manifest_path not in with_manifests:
+            with_manifests.append(manifest_path)
+
+    # The results must be those of the model of the release.
+    models = {
+        manifest["sha256"]
+        for manifest in manifests.values()
+        if manifest["kind"] == "model"
+    }
+    for file_path, manifest in manifests.items():
+        model = manifest.get("model")
+        if (
+            models
+            and manifest["kind"] == "results"
+            and isinstance(model, dict)
+            and model.get("sha256")
+            and model["sha256"] not in models
+        ):
+            raise ValueError(
+                f"The results {file_path} are not those of the model of the "
+                "release."
+            )
     return with_manifests
 
 

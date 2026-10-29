@@ -62,12 +62,12 @@ def run_model_validation(
     algorithm = ml_config.algorithm
     model_module = ml_models.registry.get_model_module(algorithm)
 
-    # Load the trained model and its manifest.
+    # Load the trained model, after checking it against its manifest.
     trained_model_path = ml_models.files.get_trained_model_path(
         model_path, algorithm.lower(), model_module.FILE_EXTENSION
     )
+    manifest = utils.manifest.verify_file(trained_model_path, "model")
     model = model_module.load(trained_model_path)
-    manifest = utils.manifest.read_manifest(trained_model_path)
 
     # Get the assembled data path: by default, that of the training of
     # the model.
@@ -100,6 +100,8 @@ def run_model_validation(
         os.path.basename(trained_model_path).split(".")[0],
         os.path.basename(data_path).split(".")[0],
         "all",
+        model_path=trained_model_path,
+        data_path=data_path,
     )
 
 

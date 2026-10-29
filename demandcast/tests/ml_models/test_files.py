@@ -208,7 +208,16 @@ def test_get_assemble_data_path_no_files_found():
     ],
 )
 def test_save_results(tmp_path, case, extra, expected):
-    """Test that the results are saved with their manifest."""
+    """
+    Test that the results are saved with their manifest.
+
+    The manifest describes both the CSV and the Parquet files, and the
+    checksums of the model and of the data of the results.
+    """
+    model_path = tmp_path / "xgboost_model.json"
+    model_path.write_text("{}")
+    data_path = tmp_path / "assembled_data.parquet"
+    data_path.write_bytes(b"data")
     with patch("utils.paths.get_results_folder", return_value=str(tmp_path)):
         ml_models.files.save_results(
             case,
@@ -217,18 +226,31 @@ def test_save_results(tmp_path, case, extra, expected):
             "assembled_data",
             "all",
             extra,
+            model_path=str(model_path),
+            data_path=str(data_path),
         )
 
     folder = tmp_path / "with_xgboost_model" / "using_assembled_data"
     [parquet] = folder.glob("all_*.parquet")
-    assert parquet.with_suffix(".csv").exists()
+    csv = parquet.with_suffix(".csv")
     manifest = utils.manifest.read_manifest(str(parquet))
     assert manifest is not None
     assert (manifest["kind"], manifest["case"]) == ("results", case)
-    assert manifest["model"] == "xgboost_model"
-    assert manifest["dataset"] == "assembled_data"
+    assert manifest["model"] == {
+        "name": "xgboost_model",
+        "sha256": utils.manifest.get_checksum(str(model_path)),
+    }
+    assert manifest["dataset"]["name"] == "assembled_data"
+    assert manifest["dataset"]["sha256"] == utils.manifest.get_checksum(
+        str(data_path)
+    )
     assert manifest["columns"] == ["MAPE"]
-    assert manifest["sha256"] == utils.manifest.get_checksum(str(parquet))
+    assert manifest["files"] == {
+        parquet.name: utils.manifest.get_checksum(str(parquet)),
+        csv.name: utils.manifest.get_checksum(str(csv)),
+    }
+    # Both formats are described by the manifest.
+    assert utils.manifest.verify_file(str(csv), "results") == manifest
     for key, value in expected.items():
         assert manifest[key] == value
 

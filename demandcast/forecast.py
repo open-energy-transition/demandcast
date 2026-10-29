@@ -18,6 +18,7 @@ import ml_models  # noqa: F401
 import logging
 import os
 
+import numpy as np
 import pandas as pd
 
 import ml_models.data
@@ -37,7 +38,7 @@ class ConfigModel(utils.config.StrictSettings):
 def _construct_output_dataset(
     prepared_dataset: ml_models.data.PreparedDataset,
     predictions: pd.Series,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Construct the output dataset containing forecasts.
 
@@ -51,20 +52,38 @@ def _construct_output_dataset(
 
     Returns
     -------
-    output_dataset : pandas.DataFrame
-        The output dataset with forecasts.
+    tuple[pandas.DataFrame, pandas.DataFrame]
+        The output dataset with forecasts, and the status of the scaling
+        of each year of each entity to its annual demand (see
+        ml_models.data.normalize_to_annual_totals).
+
+    Raises
+    ------
+    ValueError
+        If the annual demand of a row, the scaling factor, is not a
+        positive number.
     """
+    scaling_factor = prepared_dataset["scaling_factor"]
+    invalid = ~(np.isfinite(scaling_factor.to_numpy()) & (scaling_factor > 0))
+    if invalid.any():
+        raise ValueError(
+            f"The annual demand of {int(invalid.sum())} rows is not a "
+            "positive number."
+        )
+
     # Scale the predictions of each complete year to the annual demand
     # of the scenario, and convert them from the load relative to the
     # annual mean to MW.
-    predictions = ml_models.data.to_megawatts(
-        ml_models.data.normalize_to_annual_totals(
-            predictions,
-            prepared_dataset["group"],
-            prepared_dataset["local_year"],
-        ),
+    normalized, annual_totals = ml_models.data.normalize_to_annual_totals(
+        predictions,
+        prepared_dataset["group"],
         prepared_dataset["local_year"],
-        prepared_dataset["scaling_factor"],
+        prepared_dataset["time"],
+    )
+    predictions = ml_models.data.to_megawatts(
+        normalized,
+        prepared_dataset["local_year"],
+        scaling_factor,
     )
 
     # Construct the output dataset.
@@ -77,7 +96,7 @@ def _construct_output_dataset(
         columns.append(prepared_dataset["others"])
     columns.append(predictions.rename("Forecast load (MW)"))
 
-    return pd.concat(columns, axis=1)
+    return pd.concat(columns, axis=1), annual_totals
 
 
 def run_forecasting(
@@ -121,18 +140,18 @@ def run_forecasting(
     trained_model_path = ml_models.files.get_trained_model_path(
         model_path, algorithm.lower(), model_module.FILE_EXTENSION
     )
+    manifest = utils.manifest.verify_file(trained_model_path, "model")
     model = model_module.load(trained_model_path)
     ml_models.data.check_model_features(model, prepared_dataset["features"])
-    ml_models.files.check_model_manifest(
-        utils.manifest.read_manifest(trained_model_path), ml_config
-    )
+    ml_models.files.check_model_manifest(manifest, ml_config)
 
     # Make predictions.
     predictions = model_module.predict(model, prepared_dataset)
     logging.info("Forecasting completed successfully.")
 
-    # Construct the output dataset.
-    output_dataset = _construct_output_dataset(
+    # Construct the output dataset, and the reconciliation of each
+    # year with its annual demand.
+    output_dataset, annual_totals = _construct_output_dataset(
         prepared_dataset,
         predictions,
     )
@@ -144,6 +163,9 @@ def run_forecasting(
         os.path.basename(trained_model_path).split(".")[0],
         os.path.basename(data_path).split(".")[0],
         "all",
+        {"annual_totals": annual_totals.to_dict("records")},
+        model_path=trained_model_path,
+        data_path=data_path,
     )
 
 

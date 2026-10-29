@@ -178,9 +178,15 @@ def save_results(
     assembled_data_file_name: str,
     file_name_prefix: str,
     extra: dict[str, Any] | None = None,
+    *,
+    model_path: str | None = None,
+    data_path: str | None = None,
 ) -> None:
     """
     Save the model results to CSV and Parquet files, with a manifest.
+
+    The manifest describes both files, and records the checksums of the
+    model and of the data of the results, if their paths are given.
 
     Parameters
     ----------
@@ -197,6 +203,10 @@ def save_results(
     extra : dict[str, Any] | None, optional
         What else the manifest of the results tells, such as the
         holdout of a cross-validation.
+    model_path : str | None, optional
+        The path of the trained model of the results.
+    data_path : str | None, optional
+        The path of the assembled data of the results.
 
     Raises
     ------
@@ -238,8 +248,21 @@ def save_results(
         "results",
         {
             "case": case,
-            "model": trained_model_name,
-            "dataset": assembled_data_file_name,
+            "model": {
+                "name": trained_model_name,
+                "sha256": utils.manifest.get_checksum(model_path)
+                if model_path
+                else None,
+            },
+            "dataset": {
+                "name": assembled_data_file_name,
+                "path": utils.manifest.get_data_reference(data_path)
+                if data_path
+                else None,
+                "sha256": utils.manifest.get_checksum(data_path)
+                if data_path
+                else None,
+            },
             "columns": [str(column) for column in output_dataset.columns],
             **(
                 {"metric": METRIC}
@@ -254,6 +277,7 @@ def save_results(
             ),
             **(extra or {}),
         },
+        other_formats=(results_file_name + ".csv",),
     )
 
     logging.info(
@@ -336,7 +360,7 @@ def write_model_manifest(
         {
             "algorithm": ml_config.algorithm,
             "dataset": {
-                "path": os.path.abspath(data_path),
+                "path": utils.manifest.get_data_reference(data_path),
                 "sha256": utils.manifest.get_checksum(data_path),
             },
             "ml_settings": ml_config.model_dump(),
@@ -353,6 +377,54 @@ def write_model_manifest(
             "splits": get_split_membership(prepared_dataset),
         },
     )
+
+
+# The settings of the preparation of the data that a model must keep,
+# and whether their order matters: the features are given to the model
+# in their order, while the categorical features are a set, and the
+# scaling variables are multiplied into the annual demand that converts
+# the predictions to MW.
+PREPARATION_SETTINGS = {
+    "features": True,
+    "categorical_features": False,
+    "scaling_variables": False,
+    "target": True,
+    "group": True,
+    "time": True,
+    "splitter": True,
+}
+
+
+def _get_preparation_differences(
+    recorded: dict[str, Any], ml_config: ml_models.data.ConfigModel
+) -> list[str]:
+    """
+    Compare the preparation of the data with that of the training.
+
+    Parameters
+    ----------
+    recorded : dict[str, Any]
+        The settings of the machine learning models of the training, as
+        in the manifest of the model.
+    ml_config : ml_models.data.ConfigModel
+        The current settings of the machine learning models.
+
+    Returns
+    -------
+    list[str]
+        A description of each setting that differs.
+    """
+    current = ml_config.model_dump()
+    differences = []
+    for name, ordered in PREPARATION_SETTINGS.items():
+        if name not in recorded:
+            continue
+        before, now = recorded[name], current.get(name)
+        if not ordered:
+            before, now = sorted(before or []), sorted(now or [])
+        if before != now:
+            differences.append(f"{name} was {before}, and is {now}")
+    return differences
 
 
 def check_model_manifest(
@@ -381,8 +453,8 @@ def check_model_manifest(
     Raises
     ------
     ValueError
-        If the target, its transformation, the dataset or the sets
-        differ from those of the training.
+        If the target, its transformation, the preparation of the data,
+        the dataset or the sets differ from those of the training.
     """
     if manifest is None:
         logging.warning(
@@ -398,6 +470,15 @@ def check_model_manifest(
             f"The model was trained on the target {target['column']} as "
             f"the {target['transformation']}, not on {ml_config.target} as "
             f"the {ml_models.data.TARGET_TRANSFORMATION}."
+        )
+    differences = _get_preparation_differences(
+        manifest.get("ml_settings", {}), ml_config
+    )
+    if differences:
+        raise ValueError(
+            "The data is not prepared as for the training of the model: "
+            + "; ".join(differences)
+            + "."
         )
     if data_path is not None and (
         utils.manifest.get_checksum(data_path) != manifest["dataset"]["sha256"]
@@ -437,9 +518,22 @@ def get_validation_data_path(
         The path given, or the data of the training of the model, or
         the latest data assembled for training for a model without
         manifest.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the data of the training of the model is not found, which is
+        not replaced by other data.
     """
     if data_path is None and manifest is not None:
-        data_path = manifest["dataset"]["path"]
+        data_path = utils.manifest.resolve_data_reference(
+            manifest["dataset"]["path"]
+        )
+        if not os.path.exists(data_path):
+            raise FileNotFoundError(
+                f"The data of the training of the model, {data_path}, is "
+                "not found: give the path of a copy in data_path."
+            )
         logging.info(
             f"Using the data of the training of the model: {data_path}"
         )

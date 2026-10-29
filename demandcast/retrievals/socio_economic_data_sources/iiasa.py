@@ -22,6 +22,7 @@ import pycountry
 import yaml
 
 import utils.catalogue
+import utils.paths
 
 
 def _map_from_region_to_country(
@@ -275,10 +276,19 @@ def read(variable: str) -> pd.DataFrame:
         # Convert the region names to ISO Alpha-3 codes.
         iiasa_data = _map_from_region_to_country(iiasa_data)
     elif variable == "gdp_ppp_per_capita":
-        # Define the path to the GDP PPP per capita file.
+        # The GDP PPP per capita is calculated from the GDP PPP and the
+        # population, which takes a while and downloads the price
+        # indices. The repository has it, next to its inputs; without
+        # it, it is calculated and kept in the data folder, since the
+        # scripts write only there.
         gdp_ppp_per_capita_file_path = os.path.join(
             base_file_path, "IAM_national_gdp_ppp_per_capita.csv"
         )
+        if not os.path.exists(gdp_ppp_per_capita_file_path):
+            gdp_ppp_per_capita_file_path = os.path.join(
+                utils.paths.get_indicator_folder("gdp_ppp_per_capita"),
+                "IAM_national_gdp_ppp_per_capita.csv",
+            )
 
         if not os.path.exists(gdp_ppp_per_capita_file_path):
             logging.info(
@@ -301,16 +311,14 @@ def read(variable: str) -> pd.DataFrame:
 
             # Save the GDP PPP per capita data to a CSV file for future
             # use.
-            iiasa_data.to_csv(
-                os.path.join(gdp_ppp_per_capita_file_path),
-                index=False,
+            os.makedirs(
+                os.path.dirname(gdp_ppp_per_capita_file_path), exist_ok=True
             )
+            iiasa_data.to_csv(gdp_ppp_per_capita_file_path, index=False)
         else:
             logging.info("Loading future GDP PPP per capita data from IIASA.")
             # Read the GDP PPP per capita data.
-            iiasa_data = pd.read_csv(
-                os.path.join(gdp_ppp_per_capita_file_path),
-            )
+            iiasa_data = pd.read_csv(gdp_ppp_per_capita_file_path)
 
         # Convert the region names to ISO Alpha-3 codes.
         for region in iiasa_data["Region"]:

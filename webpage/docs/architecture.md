@@ -58,7 +58,7 @@ The API keys go in `demandcast/.env`, which is not in the repository (see [getti
 
 ## Data folder
 
-Everything that the scripts write is in the data folder: `demandcast/data/`, or the folder named by the environment variable `DEMANDCAST_DATA_FOLDER`. Each dataset has its own folder, with its stages:
+Everything that the scripts write is in the data folder: `demandcast/data/`, or the folder named by the environment variable `DEMANDCAST_DATA_FOLDER`, except two summaries that are part of the repository and that they update on purpose: `check.py` writes the summary of the data availability in `demandcast/checks/`, and `plot.py` with `figure: status` the numbers and figures of the current state in the README and `webpage/docs/status/`. The source inputs in the code, such as the files downloaded by hand next to the retrieval modules, are only read. Each dataset has its own folder, with its stages:
 
 ```
 data/

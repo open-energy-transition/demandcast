@@ -86,7 +86,15 @@ def run_model_cross_validation(
         ml_config.algorithm.lower(),
         os.path.basename(data_path).split(".")[0],
         "all",
-        {"holdout": holdout},
+        {
+            "holdout": holdout,
+            "ml_settings": ml_config.model_dump(),
+            "model_settings": model_config.model_dump(),
+            "folds": ml_models.evaluation.get_folds(
+                prepared_dataset["group"], holdout
+            ),
+        },
+        data_path=data_path,
     )
 
 

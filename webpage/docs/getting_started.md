@@ -221,7 +221,24 @@ cd demandcast
 uv run train.py
 ```
 
-The trained model will be saved in `data/models/xgboost/` with a timestamp in the filename.
+The trained model will be saved in `data/models/xgboost/` with a timestamp in the filename, with its manifest.
+
+Before using the model, validate it on the year kept for testing, 2023. Edit `demandcast/config/validate_config.yaml`:
+
+```yaml
+used_validation_set: false   # as use_validation_set in the training
+model_path:                  # empty for the latest model
+data_path:                   # empty for the data of the training of the model
+```
+
+Then run:
+
+```bash
+cd demandcast
+uv run validate.py
+```
+
+The MAPE of each country in the training and testing sets is saved in `data/results/validation/` (see [ML](ML.md#model-validation)).
 
 ## 5. Assembling Forecasting Data
 

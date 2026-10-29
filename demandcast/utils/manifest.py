@@ -12,8 +12,20 @@ Description:
     inputs, and the settings of the script, so that a model, its data
     and its results can be checked to belong together.
 
+    A file saved in several formats, such as a CSV and a Parquet file of
+    the same results, has one manifest for all of them, with the
+    checksum of each ("files"). Before a file with a manifest is used or
+    published, verify_file checks that the manifest describes it and
+    that its checksum is the recorded one, so that a file replaced after
+    its manifest was written is not taken for the recorded one.
+
+    The paths of the data in the manifests are relative to the data
+    folder, so that they stay valid in another copy of the data folder,
+    such as one synchronized from a bucket.
+
     The manifests have a version (MANIFEST_VERSION), which grows when
-    their content changes in a way that older code cannot read.
+    their content changes in a way that older code cannot read. Version
+    2 adds the checksum of each format of the file.
 """
 
 import datetime
@@ -26,7 +38,7 @@ from typing import Any
 import utils.paths
 
 # The version of the content of the manifests.
-MANIFEST_VERSION = 1
+MANIFEST_VERSION = 2
 
 # The extension of the manifests, after the name of their file without
 # its extension.
@@ -117,7 +129,53 @@ def get_code_version() -> dict[str, str | None]:
     }
 
 
-def write_manifest(file_path: str, kind: str, content: dict[str, Any]) -> str:
+def get_data_reference(file_path: str) -> str:
+    """
+    Get the reference of a file in a manifest.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the file.
+
+    Returns
+    -------
+    str
+        Its path relative to the data folder, with forward slashes, or
+        its absolute path if it is outside the data folder.
+    """
+    absolute_path = os.path.abspath(file_path)
+    data_folder = os.path.abspath(utils.paths.get_data_folder())
+    if os.path.commonpath([absolute_path, data_folder]) != data_folder:
+        return absolute_path
+    return os.path.relpath(absolute_path, data_folder).replace(os.sep, "/")
+
+
+def resolve_data_reference(reference: str) -> str:
+    """
+    Get the path of a file from its reference in a manifest.
+
+    Parameters
+    ----------
+    reference : str
+        The path relative to the data folder, or an absolute path.
+
+    Returns
+    -------
+    str
+        The path of the file.
+    """
+    if os.path.isabs(reference):
+        return reference
+    return os.path.join(utils.paths.get_data_folder(), *reference.split("/"))
+
+
+def write_manifest(
+    file_path: str,
+    kind: str,
+    content: dict[str, Any],
+    other_formats: tuple[str, ...] = (),
+) -> str:
     """
     Write the manifest of a file.
 
@@ -130,17 +188,25 @@ def write_manifest(file_path: str, kind: str, content: dict[str, Any]) -> str:
     content : dict[str, Any]
         What the manifest tells about the file, which can be written as
         JSON, such as its settings and inputs.
+    other_formats : tuple[str, ...], optional
+        The paths of the same content in other formats, such as the CSV
+        file of a Parquet file, which share the manifest.
 
     Returns
     -------
     str
         The path of the manifest.
     """
+    checksums = {
+        os.path.basename(path): get_checksum(path)
+        for path in (file_path, *other_formats)
+    }
     manifest = {
         "manifest_version": MANIFEST_VERSION,
         "kind": kind,
         "file": os.path.basename(file_path),
-        "sha256": get_checksum(file_path),
+        "sha256": checksums[os.path.basename(file_path)],
+        "files": checksums,
         "created": datetime.datetime.now(datetime.UTC).isoformat(
             timespec="seconds"
         ),
@@ -184,5 +250,53 @@ def read_manifest(file_path: str) -> dict[str, Any] | None:
             f"The manifest {manifest_path} has the version "
             f"{manifest['manifest_version']}, newer than the version "
             f"{MANIFEST_VERSION} that this code reads."
+        )
+    return manifest
+
+
+def verify_file(file_path: str, kind: str | None) -> dict[str, Any] | None:
+    """
+    Check a file against its manifest.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the file.
+    kind : str | None
+        The kind that the manifest must have, such as "model", or None
+        for any kind.
+
+    Returns
+    -------
+    dict[str, Any] | None
+        The manifest, or None if the file has none, such as a file made
+        before the manifests, whose origin cannot be checked.
+
+    Raises
+    ------
+    ValueError
+        If the manifest is of another kind, does not describe the file,
+        or records another checksum than that of the file.
+    """
+    manifest = read_manifest(file_path)
+    if manifest is None:
+        return None
+    if kind is not None and manifest.get("kind") != kind:
+        raise ValueError(
+            f"The manifest of {file_path} is that of a {manifest.get('kind')}"
+            f", not of a {kind}."
+        )
+    name = os.path.basename(file_path)
+    checksums = manifest.get("files") or {manifest["file"]: manifest["sha256"]}
+    if name not in checksums:
+        raise ValueError(
+            f"The manifest of {file_path} does not describe it, but "
+            f"{', '.join(checksums)}."
+        )
+    if get_checksum(file_path) != checksums[name]:
+        raise ValueError(
+            f"The file {file_path} differs from the one that its manifest "
+            "records: it was changed or replaced after the manifest was "
+            "written."
         )
     return manifest
