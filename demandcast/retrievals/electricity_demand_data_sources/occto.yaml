@@ -6,11 +6,11 @@ compiled: true
 definition:
   - start_date: 2016-04-01
     quantity: area demand
-    embedded_generation: included
+    embedded_generation: partial
     network_losses: unknown
     storage_charging: excluded
     power_plant_use: unknown
-    note: OCCTO republishes the area demand of the general transmission operators, in their national format, which lists the pumping of storage and the transmission to other areas apart. It counts the solar fed into the networks, but not the solar that the consumers of the surplus purchase scheme use themselves, as Kyushu explains for the same format.
+    note: OCCTO republishes the area demand of the general transmission operators, in their national format, which lists the pumping of storage and the transmission to other areas apart. It counts the solar fed into the networks, but not the solar that the consumers of the surplus purchase scheme use themselves, which lowers the area demand, as Kyushu states for the same format.
 entities:
   - subdivision_name: Hokkaidō
     subdivision_code: Hokkaidō

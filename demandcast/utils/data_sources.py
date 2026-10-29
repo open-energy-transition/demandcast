@@ -128,8 +128,11 @@ class DataSourceLicence(BaseModel):
 
 
 # What a part of the demand can be in the data of a data source:
-# counted by the source, added by DemandCast, left out, or not known.
-DefinitionValue = Literal["included", "added", "excluded", "unknown"]
+# counted by the source, added by DemandCast, counted only in part,
+# left out, or not known.
+DefinitionValue = Literal[
+    "included", "added", "partial", "excluded", "unknown"
+]
 
 
 class DataSourceDefinition(BaseModel):
@@ -140,7 +143,10 @@ class DataSourceDefinition(BaseModel):
     the demand that the generation embedded in the distribution networks
     supplies, such as rooftop solar. Each part says whether the source
     counts it (included), DemandCast adds an estimate of it (added), the
-    demand leaves it out (excluded), or it is not known (unknown).
+    source counts only part of it (partial), such as the rooftop solar
+    fed into the networks without the solar that consumers use
+    themselves, the demand leaves it out (excluded), or it is not known
+    (unknown).
     """
 
     model_config = ConfigDict(extra="forbid")

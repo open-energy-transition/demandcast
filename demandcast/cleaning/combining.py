@@ -21,9 +21,10 @@ Description:
        definition differs by province.
     3. By the definition of their demand, on average over their hours:
        the gross demand (with the embedded generation included or
-       added) before the one whose embedded generation is unknown,
-       before the net demand. The seasons flagged with a midday dip that
-       the reviews find to be net demand count as net.
+       added) before the one that counts only part of it, before the
+       one whose embedded generation is unknown, before the net demand.
+       The seasons flagged with a midday dip that the reviews find to be
+       net demand count as net.
     4. The longer data before the shorter.
 
     The ranking is of whole sources, not hour by hour: a source keeps
@@ -52,8 +53,19 @@ Description:
     be used to train the models ("Eligible"): the hours of the errors of
     their source are not, so that the training data has no error that a
     review has found.
+
+    A combined series records the fingerprint of what decided it: the
+    version of the combination (COMBINATION_VERSION), the reviews of the
+    flags and the YAML files of its data sources. A series without it,
+    with another one, or older than the cleaned data of one of its data
+    sources is not current, and the assembly of the training data
+    combines it again from the cleaned data (see
+    ensure_current_combination), so that a series made by older code or
+    before a review, such as one copied from a bucket, does not become
+    training data.
 """
 
+import hashlib
 import logging
 import os
 
@@ -69,14 +81,15 @@ import utils.paths
 EMBEDDED_GENERATION_RANKS = {
     "included": 0,
     "added": 0,
-    "unknown": 1,
-    "excluded": 2,
+    "partial": 1,
+    "unknown": 2,
+    "excluded": 3,
 }
 
 # The rank of the hours of the seasons that the reviews of the flags
 # find to be net demand, or errors.
-NET_DEMAND_RANK = 2
-ERROR_RANK = 3
+NET_DEMAND_RANK = 3
+ERROR_RANK = 4
 ERROR_VERDICTS = ("source_error", "reading_error")
 
 # The shortest gap that another source fills.
@@ -93,6 +106,13 @@ LARGEST_SPREAD = 0.05
 # overlap.
 SHORTEST_CHECKED_OVERLAP_HOURS = 24
 LARGEST_UNVERIFIED_MEDIAN_DIFFERENCE = 0.10
+
+# The version of the combination, which changes when the code changes
+# what a combined series is, such as its columns or its rules.
+COMBINATION_VERSION = 1
+
+# The key of the attributes of a combined series with its fingerprint.
+FINGERPRINT_KEY = "demandcast_combination"
 
 # The columns of the table of the sources.
 SOURCE_COLUMNS = [
@@ -159,8 +179,9 @@ def _get_definition_ranks(
     Returns
     -------
     numpy.ndarray
-        The rank of each hour: 0 for the gross demand, 1 for unknown
-        embedded generation, 2 for the net demand and 3 for the errors.
+        The rank of each hour: 0 for the gross demand, 1 for the
+        embedded generation counted in part, 2 for unknown embedded
+        generation, 3 for the net demand and 4 for the errors.
     """
     # The rank of the definition of each period.
     ranks = np.zeros(len(times), dtype=int)
@@ -452,6 +473,100 @@ def _combine(
     return combined_data, pd.DataFrame(rows, columns=SOURCE_COLUMNS)
 
 
+def get_fingerprint(code: str) -> str:
+    """
+    Get the fingerprint of what decides the combined series of a code.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+
+    Returns
+    -------
+    str
+        The SHA-256 checksum of the version of the combination, of the
+        reviews of the flags and of the YAML files of the data sources
+        of the code.
+    """
+    checksum = hashlib.sha256(f"version {COMBINATION_VERSION}".encode())
+    file_paths = [
+        os.path.join(
+            utils.paths.CHECKS_FOLDER, checks.flags.REVIEWS_NAME + ".yaml"
+        )
+    ] + [
+        os.path.join(utils.paths.DATA_SOURCES_FOLDER, f"{data_source}.yaml")
+        for data_source in sorted(
+            utils.data_sources.get_electricity_demand_data_sources_containing_code(
+                code
+            )
+        )
+    ]
+    for file_path in file_paths:
+        with open(file_path, "rb") as file:
+            checksum.update(file.read())
+    return checksum.hexdigest()
+
+
+def is_current(code: str) -> bool:
+    """
+    Check whether the combined series of a code is current.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+
+    Returns
+    -------
+    bool
+        Whether the combined series exists, has the column "Eligible"
+        and the current fingerprint, and is not older than the cleaned
+        data of its data sources.
+    """
+    file_path = utils.paths.get_electricity_demand_file("combined", code)
+    if not os.path.exists(file_path):
+        return False
+    combined = pd.read_parquet(file_path)
+    if "Eligible" not in combined.columns or combined.attrs.get(
+        FINGERPRINT_KEY
+    ) != get_fingerprint(code):
+        return False
+    written = os.path.getmtime(file_path)
+    return all(
+        os.path.getmtime(cleaned_path) <= written
+        for data_source in (
+            utils.data_sources.get_electricity_demand_data_sources_containing_code(
+                code
+            )
+        )
+        if os.path.exists(
+            cleaned_path := utils.paths.get_electricity_demand_file(
+                "cleaned", code, data_source
+            )
+        )
+    )
+
+
+def ensure_current_combination(code: str) -> None:
+    """
+    Combine the electricity demand of a code again if it is not current.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+    """
+    if is_current(code):
+        return
+    logging.info(
+        f"The combined electricity demand of {code} is not current, such "
+        "as after a change of the reviews of the flags or of the data "
+        "sources, so it is combined again from the cleaned data."
+    )
+    combine_data(code)
+
+
 def combine_data(code: str) -> pd.DataFrame | None:
     """
     Combine and save the cleaned electricity demand of a code.
@@ -500,6 +615,7 @@ def combine_data(code: str) -> pd.DataFrame | None:
         sound_ranks,
     )
     combined, sources = _combine(sound, ranked, errors)
+    combined.attrs[FINGERPRINT_KEY] = get_fingerprint(code)
 
     file_path = utils.paths.get_electricity_demand_file("combined", code)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)

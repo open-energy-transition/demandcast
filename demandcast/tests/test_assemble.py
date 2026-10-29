@@ -18,6 +18,7 @@ import pandas as pd
 import pytest
 
 import assemble
+import cleaning.combining
 import retrievals.temperature
 import utils.paths
 import utils.time_series
@@ -109,7 +110,8 @@ def _write_inputs(codes: list[str], years: list[int]) -> None:
     they have the times and the local years that the retrievals give.
     The electricity demand of each code is 1000 MW plus its hour of the
     day in UTC, in the combined folder, with its data source, and the
-    cleaned folder has another demand, which the assembly does not read.
+    cleaned folder has another demand, which the assembly does not read
+    while the combined demand is current.
 
     Parameters
     ----------
@@ -156,22 +158,27 @@ def _write_inputs(codes: list[str], years: list[int]) -> None:
                 ),
             )
         _save(
-            utils.paths.get_electricity_demand_folder("combined"),
-            code,
-            pd.DataFrame(
-                {
-                    "Load (MW)": 1000.0 + hours.hour,
-                    "Source": pd.array(
-                        ["entsoe"] * len(hours), dtype="string"
-                    ),
-                },
-                index=hours,
-            ),
-        )
-        _save(
             utils.paths.get_electricity_demand_folder("cleaned"),
             f"{code}_entsoe",
             pd.DataFrame({"Load (MW)": 1.0}, index=hours),
+        )
+        # The combined demand is current: written after the cleaned one,
+        # with the fingerprint of the current reviews and data sources.
+        combined = pd.DataFrame(
+            {
+                "Load (MW)": 1000.0 + hours.hour,
+                "Source": pd.array(["entsoe"] * len(hours), dtype="string"),
+                "Eligible": True,
+            },
+            index=hours,
+        )
+        combined.attrs[cleaning.combining.FINGERPRINT_KEY] = (
+            cleaning.combining.get_fingerprint(code)
+        )
+        _save(
+            utils.paths.get_electricity_demand_folder("combined"),
+            code,
+            combined,
         )
 
 
@@ -523,3 +530,57 @@ def test_file_paths_of_inputs(caplog):
     ]
     assert assemble._get_file_paths(temperature, "DEU", None, None) == []
     assert "No temperature files found for entity code DEU." in caplog.text
+
+
+@pytest.mark.usefixtures("assembly_inputs")
+@pytest.mark.parametrize("change", ["legacy file", "changed review"])
+def test_assembly_combines_stale_demand_again(change, monkeypatch):
+    """
+    Test that a combined demand that is not current is combined again.
+
+    A combined file without its fingerprint, such as one made by older
+    code or copied from a bucket, or one made before a change of the
+    reviews, is combined again from the cleaned demand of 1 MW.
+    """
+    file_path = os.path.join(
+        utils.paths.get_electricity_demand_folder("combined"), "FRA.parquet"
+    )
+    if change == "legacy file":
+        demand = pd.read_parquet(file_path).drop(columns="Eligible")
+        demand.attrs = {}
+        demand.to_parquet(file_path)
+    else:
+        fingerprint = cleaning.combining.get_fingerprint
+        monkeypatch.setattr(
+            cleaning.combining,
+            "get_fingerprint",
+            lambda code: fingerprint(code) + "-reviews-changed",
+        )
+    assert not cleaning.combining.is_current("FRA")
+
+    assemble.run_data_assemply("training")
+
+    assert cleaning.combining.is_current("FRA")
+    assembled = _read_assembled("training")
+    loads = assembled.groupby("Entity code")["Load (MW)"].max()
+    assert loads["FRA"] < 1000.0
+
+
+@pytest.mark.usefixtures("assembly_inputs")
+def test_assembly_without_eligibility_stops():
+    """Test that a demand that cannot be combined again stops it."""
+    combined_path = os.path.join(
+        utils.paths.get_electricity_demand_folder("combined"), "FRA.parquet"
+    )
+    demand = pd.read_parquet(combined_path).drop(columns="Eligible")
+    demand.attrs = {}
+    demand.to_parquet(combined_path)
+    os.remove(
+        os.path.join(
+            utils.paths.get_electricity_demand_folder("cleaned"),
+            "FRA_entsoe.parquet",
+        )
+    )
+
+    with pytest.raises(ValueError, match="does not say which hours"):
+        assemble.run_data_assemply("training")
