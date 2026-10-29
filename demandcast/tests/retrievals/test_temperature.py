@@ -358,3 +358,82 @@ def test_reanalysis_of_the_last_complete_year():
         )
 
     assert retrieved == [2024, 2025, 2026]
+
+
+def test_processing_of_a_temperature_file(tmp_path):
+    """Test that a temperature file records its processing."""
+    data = pd.DataFrame({"Temperature - Top 1 (K)": [280.0]})
+    current = tmp_path / "current.parquet"
+    data.attrs[temperature.PROCESSING_KEY] = {
+        "version": temperature.PROCESSING_VERSION
+    }
+    data.to_parquet(current)
+    other = tmp_path / "other.parquet"
+    data.attrs[temperature.PROCESSING_KEY] = {"version": 0}
+    data.to_parquet(other)
+    legacy = tmp_path / "legacy.parquet"
+    data.attrs = {}
+    data.to_parquet(legacy)
+    broken = tmp_path / "broken.parquet"
+    broken.write_bytes(b"not parquet")
+
+    assert temperature.has_current_processing(str(current))
+    assert not temperature.has_current_processing(str(other))
+    assert not temperature.has_current_processing(str(legacy))
+    assert not temperature.has_current_processing(str(broken))
+    assert not temperature.has_current_processing(str(tmp_path / "none"))
+
+
+def test_files_of_another_processing_are_extracted_again():
+    """
+    Test that only the files of another processing are extracted again.
+
+    A file of the current processing is reused, and one without its
+    version, such as one made before the cells were ranked by their
+    population inside the shape, is extracted again.
+    """
+    times = pd.date_range("2023-01-01 01:00", periods=8760, freq="h")
+    series = pd.Series(280.0, index=times)
+    calls = []
+
+    def extract(*_args, **_kwargs):
+        calls.append(1)
+        return series, series
+
+    def retrieve():
+        with (
+            patch.object(
+                temperature.utils.availability,
+                "check_and_get_codes_with",
+                return_value=["FRA"],
+            ),
+            patch.object(
+                temperature,
+                "_get_temperature_in_most_populous_cells",
+                side_effect=extract,
+            ),
+        ):
+            temperature.run_data_retrieval(
+                code="FRA",
+                file=None,
+                year=2023,
+                start_year=None,
+                end_year=None,
+                model=None,
+                scenario=None,
+            )
+
+    retrieve()
+    retrieve()
+    assert len(calls) == 1
+
+    file_path = temperature.os.path.join(
+        temperature.utils.paths.get_indicator_folder("temperature"),
+        "FRA_2023.parquet",
+    )
+    legacy = pd.read_parquet(file_path)
+    legacy.attrs = {}
+    legacy.to_parquet(file_path)
+    retrieve()
+    assert len(calls) == 2
+    assert temperature.has_current_processing(file_path)

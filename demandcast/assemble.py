@@ -38,6 +38,7 @@ import pandas as pd
 from pydantic import model_validator
 from tqdm import tqdm
 
+import cleaning.combining
 import utils.availability
 import utils.catalogue
 import utils.config
@@ -302,6 +303,12 @@ def _load_data_for_entity(
     entity_data : dask.dataframe.DataFrame | None
         Dataframe with processed data for the entity code, or None if
         no data was loaded.
+
+    Raises
+    ------
+    ValueError
+        If the electricity demand does not say which hours can be used
+        for training.
     """
     # Initialize a list to hold the data for the entity.
     entity_frames: list[pd.DataFrame] = []
@@ -316,9 +323,23 @@ def _load_data_for_entity(
 
         # Read the current parquet file, without the hours of the
         # electricity demand that cannot be used for training, such as
-        # those of the errors of a data source.
+        # those of the errors of a data source. The demand must say
+        # which hours can be used.
         current_data = pd.read_parquet(file_path)
+        if "Load (MW)" in numeric_columns and "Eligible" not in current_data:
+            raise ValueError(
+                f"The electricity demand of {entity_code} in {file_path} "
+                "does not say which hours can be used for training: "
+                "combine it again (see cleaning/combining.py)."
+            )
         if "Eligible" in current_data:
+            excluded = int((~current_data["Eligible"]).sum())
+            if excluded:
+                logging.info(
+                    f"{excluded} hours of the electricity demand of "
+                    f"{entity_code} cannot be used for training and are "
+                    "left out."
+                )
             current_data = current_data[current_data["Eligible"]].drop(
                 columns="Eligible"
             )
@@ -423,6 +444,10 @@ def _load_dataset(
     for entity_code in tqdm(
         entity_codes, desc=f"Loading {dataset.description} data"
     ):
+        # The combined demand must follow the current reviews and data
+        # sources, so that its eligibility for training is current.
+        if dataset.name == "electricity_demand":
+            cleaning.combining.ensure_current_combination(entity_code)
         entity_data = _load_data_for_entity(
             entity_code,
             _get_file_paths(

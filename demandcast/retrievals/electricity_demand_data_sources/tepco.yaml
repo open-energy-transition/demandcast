@@ -5,11 +5,11 @@ licence:
 definition:
   - start_date: 2016-04-01
     quantity: actual demand of the service area
-    embedded_generation: included
+    embedded_generation: partial
     network_losses: unknown
     storage_charging: excluded
     power_plant_use: unknown
-    note: The area demand follows the national format of the general transmission operators, which lists the pumping of storage and the transmission to other areas apart. It counts the solar fed into the networks, but not the solar that the consumers of the surplus purchase scheme use themselves, as Kyushu explains for the same format. The midday of the demand does not fall from 2016 while the solar of Japan grows.
+    note: The area demand follows the national format of the general transmission operators, which lists the pumping of storage and the transmission to other areas apart. It counts the solar fed into the networks, but not the solar that the consumers of the surplus purchase scheme use themselves, which lowers the area demand, as Kyushu states for the same format. The midday of the demand does not fall from 2016 while the solar of Japan grows.
 entities:
   - subdivision_name: Kantō
     subdivision_code: Kantō

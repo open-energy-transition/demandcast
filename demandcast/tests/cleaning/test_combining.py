@@ -300,8 +300,8 @@ def test_ranks_of_the_seasons_of_net_demand():
     )
 
     spring = (values.index >= "2023-03-01") & (values.index < "2023-06-01")
-    assert (ranks[spring] == 2).all()
-    assert (ranks[~spring] == 1).all()
+    assert (ranks[spring] == cleaning.combining.NET_DEMAND_RANK).all()
+    assert (ranks[~spring] == 2).all()
 
 
 def _review_errors(code: str, data_source: str, values: pd.Series) -> None:
@@ -394,3 +394,57 @@ def test_reviewed_errors_without_another_source():
     spring = (combined.index >= "2023-03-01") & (combined.index < "2023-06-01")
     assert not combined["Eligible"][spring].any()
     assert combined["Eligible"][~spring].all()
+
+
+def test_partial_embedded_generation_ranks_after_gross_demand():
+    """
+    Test the rank of a source counting part of the embedded generation.
+
+    It ranks after the gross demand and before the unknown definitions.
+    """
+    times = pd.DatetimeIndex(["2024-01-01 01:00"])
+
+    ranks = {
+        data_source: cleaning.combining._get_definition_ranks(
+            code, data_source, times
+        )[0]
+        for code, data_source in [
+            ("USA_NE", "isone"),
+            ("JPN_Kantō", "occto"),
+            ("DEU", "entsoe"),
+            ("USA_NE", "eia"),
+        ]
+    }
+
+    assert ranks == {"isone": 0, "occto": 1, "entsoe": 2, "eia": 3}
+
+
+def test_combined_demand_is_current_until_its_inputs_change():
+    """
+    Test that a combined demand records what decided it.
+
+    It is current after its combination, and not once the cleaned data
+    of a data source is newer, or without its fingerprint.
+    """
+    _save_cleaned("CYP", "tsoc", _hourly("2021-01-01", "2021-01-31 23:00"))
+    assert not cleaning.combining.is_current("CYP")
+
+    cleaning.combining.combine_data("CYP")
+
+    file_path = utils.paths.get_electricity_demand_file("combined", "CYP")
+    combined = pd.read_parquet(file_path)
+    assert combined.attrs[cleaning.combining.FINGERPRINT_KEY] == (
+        cleaning.combining.get_fingerprint("CYP")
+    )
+    assert cleaning.combining.is_current("CYP")
+
+    # The cleaned data changes after the combination.
+    cleaned_path = utils.paths.get_electricity_demand_file(
+        "cleaned", "CYP", "tsoc"
+    )
+    cleaned = os.path.getmtime(cleaned_path)
+    os.utime(file_path, (cleaned - 10, cleaned - 10))
+    assert not cleaning.combining.is_current("CYP")
+
+    cleaning.combining.ensure_current_combination("CYP")
+    assert cleaning.combining.is_current("CYP")

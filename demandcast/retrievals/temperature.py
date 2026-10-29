@@ -29,6 +29,13 @@ Description:
     hour, and its local hour, day, month and year are those of its
     start, so that the hour from 23:00 to midnight on a Friday is on a
     Friday and that before midnight on January 1 in the year before.
+
+    Each Parquet file records the version of the processing that made it
+    (PROCESSING_VERSION), which changes when the extraction changes what
+    it gives for the same weather, such as the choice of the cells. A
+    file of another version, or without one, is extracted again, from
+    the weather already downloaded: the reanalysis is not downloaded
+    again, and neither are the projections.
 """
 
 import datetime
@@ -51,6 +58,14 @@ import utils.scenarios
 import utils.shapes
 import utils.time_series
 import utils.time_zones
+
+# The version of the processing of the temperature files. Version 1
+# ranks the cells by their population inside the shape of the country
+# or subdivision.
+PROCESSING_VERSION = 1
+
+# The key of the attributes of a temperature file with its processing.
+PROCESSING_KEY = "demandcast_temperature"
 
 # The sources of the temperature of the reanalysis.
 REANALYSIS_SOURCES = ("points", *retrievals.gridded_weather.SOURCES)
@@ -507,6 +522,30 @@ def _get_temperature_in_most_populous_cells(
     return temperatures
 
 
+def has_current_processing(file_path: str) -> bool:
+    """
+    Check whether a temperature file was made by the current processing.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the Parquet file.
+
+    Returns
+    -------
+    bool
+        Whether the file records the current PROCESSING_VERSION, False
+        if it records another one, none, or cannot be read.
+    """
+    try:
+        # The attributes are read without the columns.
+        attributes = pd.read_parquet(file_path, columns=[]).attrs
+    except (OSError, ValueError):
+        return False
+    processing = attributes.get(PROCESSING_KEY) or {}
+    return processing.get("version") == PROCESSING_VERSION
+
+
 def _build_temperature_database(
     temperature_time_series_top_1: pd.Series,
     temperature_time_series_top_3: pd.Series,
@@ -753,14 +792,19 @@ def run_data_retrieval(
             )
 
             # Extract the temperature time series if it does not exist,
-            # or if the reanalysis data may have been updated since.
-            if not os.path.exists(
-                file_path_without_ext + ".csv"
-            ) or retrievals.gridded_weather.is_outdated(
-                file_path_without_ext + ".parquet",
-                selected_year,
-                selected_model,
-                selected_scenario,
+            # if it was made by another processing, or if the reanalysis
+            # data may have been updated since.
+            if (
+                not os.path.exists(file_path_without_ext + ".csv")
+                or not has_current_processing(
+                    file_path_without_ext + ".parquet"
+                )
+                or retrievals.gridded_weather.is_outdated(
+                    file_path_without_ext + ".parquet",
+                    selected_year,
+                    selected_model,
+                    selected_scenario,
+                )
             ):
                 # Get the temperature data for the most populous grid
                 # cell and for the 3 most populous grid cells in the
@@ -788,7 +832,13 @@ def run_data_retrieval(
                     entity_time_zone,
                 )
 
-                # Save the temperature time series.
+                # Save the temperature time series, with its processing.
+                temperature_database.attrs[PROCESSING_KEY] = {
+                    "version": PROCESSING_VERSION,
+                    "reanalysis_source": None
+                    if selected_model
+                    else reanalysis_source,
+                }
                 temperature_database.to_parquet(
                     file_path_without_ext + ".parquet"
                 )

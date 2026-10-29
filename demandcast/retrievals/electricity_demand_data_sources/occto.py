@@ -40,8 +40,16 @@ Description:
     The terms of use of the system information service were not found,
     so the data is not redistributed.
 
+    The area demand counts the solar fed into the networks, but not the
+    solar that the consumers of the surplus purchase scheme use
+    themselves, which lowers the area demand: Kyushu states it for the
+    national format ("「エリア需要」および「太陽光」には、
+    余剰買取による太陽光発電の自家消費分は含んでいません"), so the
+    embedded generation is partial in the YAML file.
+
     Source: https://occtonet3.occto.or.jp/public/dfw/RP11/OCCTO/SD/LOGIN_login
     Source: https://www.occto.or.jp/assets/occtosystem2/files/250306_keitoujouhou.pdf
+    Source: https://www.kyuden.co.jp/td_area_jukyu/jukyu.html
 """
 
 import datetime
