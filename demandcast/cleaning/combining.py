@@ -50,9 +50,12 @@ Description:
     such as twice the demand, and does not fill them.
 
     The combined series keeps all its hours, and tells whether each can
-    be used to train the models ("Eligible"): the hours of the errors of
-    their source are not, so that the training data has no error that a
-    review has found.
+    be used to train the models ("Eligible"), and why not ("Exclusion"):
+    the hours of the errors of their source are not, so that the
+    training data has no error that a review has found, and neither are
+    those of the seasons that the reviews find to be net demand, whose
+    profile leaves out the demand that the embedded generation supplies
+    and would teach the models the wrong shape of the gross demand.
 
     A combined series records the fingerprint of what decided it: the
     version of the combination (COMBINATION_VERSION), the reviews of the
@@ -109,7 +112,7 @@ LARGEST_UNVERIFIED_MEDIAN_DIFFERENCE = 0.10
 
 # The version of the combination, which changes when the code changes
 # what a combined series is, such as its columns or its rules.
-COMBINATION_VERSION = 1
+COMBINATION_VERSION = 2
 
 # The key of the attributes of a combined series with its fingerprint.
 FINGERPRINT_KEY = "demandcast_combination"
@@ -196,46 +199,70 @@ def _get_definition_ranks(
 
     # The seasons of the flags that the reviews find to be net demand,
     # or errors.
+    verdicts = _get_reviewed_verdicts(code, data_source, times)
+    ranks[verdicts == "net_demand"] = np.maximum(
+        ranks[verdicts == "net_demand"], NET_DEMAND_RANK
+    )
+    ranks[verdicts == "error"] = ERROR_RANK
+
+    return ranks
+
+
+def _get_reviewed_verdicts(
+    code: str, data_source: str, times: pd.DatetimeIndex
+) -> np.ndarray:
+    """
+    Get the verdict of the reviews of the flags of a source, by hour.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+    data_source : str
+        The data source.
+    times : pandas.DatetimeIndex
+        The hours of its data, in UTC.
+
+    Returns
+    -------
+    numpy.ndarray
+        For each hour, "error" if a review of a flag of its period finds
+        an error of the source or of its reading, else "net_demand" if
+        one finds net demand, else an empty string.
+    """
+    verdicts = np.full(len(times), "", dtype=object)
     flags_path = utils.paths.get_electricity_demand_file(
         "cleaned", code, data_source
     ).removesuffix(".parquet")
     flags_path += "_flags.parquet"
-    if os.path.exists(flags_path):
-        reviews = checks.flags.read_reviews()
-        flags = pd.read_parquet(flags_path)
-        for start, end, flag, period in zip(
-            flags["start"].tolist(),
-            flags["end"].tolist(),
-            flags["flag"].tolist(),
-            flags["period"].tolist(),
-            strict=True,
-        ):
-            review = next(
-                (
-                    review
-                    for review in reviews
-                    if review.matches(
-                        data_source, code, str(flag), str(period)
-                    )
-                ),
-                None,
-            )
-            if review is None:
-                continue
-            rank = (
-                ERROR_RANK
-                if review.verdict in ERROR_VERDICTS
-                else NET_DEMAND_RANK
-                if review.verdict == "net_demand"
-                else None
-            )
-            if rank is not None:
-                flagged = (dates >= pd.Timestamp(start)) & (
-                    dates <= pd.Timestamp(end)
-                )
-                ranks[flagged] = np.maximum(ranks[flagged], rank)
-
-    return ranks
+    if not os.path.exists(flags_path):
+        return verdicts
+    dates = times.normalize()
+    reviews = checks.flags.read_reviews()
+    flags = pd.read_parquet(flags_path)
+    for start, end, flag, period in zip(
+        flags["start"].tolist(),
+        flags["end"].tolist(),
+        flags["flag"].tolist(),
+        flags["period"].tolist(),
+        strict=True,
+    ):
+        review = next(
+            (
+                review
+                for review in reviews
+                if review.matches(data_source, code, str(flag), str(period))
+            ),
+            None,
+        )
+        if review is None:
+            continue
+        flagged = (dates >= pd.Timestamp(start)) & (dates <= pd.Timestamp(end))
+        if review.verdict in ERROR_VERDICTS:
+            verdicts[flagged] = "error"
+        elif review.verdict == "net_demand":
+            verdicts[flagged & (verdicts != "error")] = "net_demand"
+    return verdicts
 
 
 def _rank_data_sources(
@@ -393,6 +420,7 @@ def _combine(
     cleaned: dict[str, pd.Series],
     ranked: list[str],
     errors: dict[str, pd.Series] | None = None,
+    net_demand: dict[str, pd.DatetimeIndex] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Combine the electricity demand of the ranked data sources.
@@ -406,13 +434,18 @@ def _combine(
     errors : dict[str, pandas.Series] | None, optional
         The hours of each data source that the reviews of its flags find
         to be errors, taken out of its cleaned demand.
+    net_demand : dict[str, pandas.DatetimeIndex] | None, optional
+        The hours of each data source that the reviews of its flags find
+        to be net demand, which are combined but cannot be used for
+        training.
 
     Returns
     -------
     tuple[pandas.DataFrame, pandas.DataFrame]
         The combined electricity demand ("Load (MW)"), the data source
-        of each hour ("Source") and whether it can be used for training
-        ("Eligible"), and the table of the sources.
+        of each hour ("Source"), whether it can be used for training
+        ("Eligible") and why not ("Exclusion": "reviewed error" or "net
+        demand", empty if it can), and the table of the sources.
     """
     # The data sources from the best, and then their errors.
     entries = [
@@ -426,7 +459,7 @@ def _combine(
 
     combined = pd.Series(dtype="float64")
     sources = pd.Series(dtype="string")
-    eligible = pd.Series(dtype="bool")
+    exclusions = pd.Series(dtype="string")
     rows = []
     for rank, (data_source, values, are_errors) in enumerate(entries, start=1):
         comparison = _compare(values, combined)
@@ -450,9 +483,14 @@ def _combine(
             sources = pd.concat(
                 [sources, pd.Series(data_source, index=used, dtype="string")]
             ).sort_index()
-            eligible = pd.concat(
-                [eligible, pd.Series(not are_errors, index=used, dtype="bool")]
-            ).sort_index()
+            exclusion = pd.Series("", index=used, dtype="string")
+            if are_errors:
+                exclusion[:] = "reviewed error"
+            else:
+                exclusion[
+                    used.isin((net_demand or {}).get(data_source, []))
+                ] = "net demand"
+            exclusions = pd.concat([exclusions, exclusion]).sort_index()
         rows.append(
             {
                 "data_source": data_source,
@@ -467,7 +505,12 @@ def _combine(
         )
 
     combined_data = pd.DataFrame(
-        {"Load (MW)": combined, "Source": sources, "Eligible": eligible}
+        {
+            "Load (MW)": combined,
+            "Source": sources,
+            "Eligible": exclusions == "",
+            "Exclusion": exclusions,
+        }
     )
     combined_data.index.name = entries[0][1].index.name
     return combined_data, pd.DataFrame(rows, columns=SOURCE_COLUMNS)
@@ -614,7 +657,16 @@ def combine_data(code: str) -> pd.DataFrame | None:
         {source: values for source, values in sound.items() if len(values)},
         sound_ranks,
     )
-    combined, sources = _combine(sound, ranked, errors)
+    net_demand = {
+        data_source: pd.DatetimeIndex(values.index)[
+            _get_reviewed_verdicts(
+                code, data_source, pd.DatetimeIndex(values.index)
+            )
+            == "net_demand"
+        ]
+        for data_source, values in sound.items()
+    }
+    combined, sources = _combine(sound, ranked, errors, net_demand)
     combined.attrs[FINGERPRINT_KEY] = get_fingerprint(code)
 
     file_path = utils.paths.get_electricity_demand_file("combined", code)

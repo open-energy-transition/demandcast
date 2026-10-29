@@ -465,3 +465,32 @@ def test_daylight_saving_against_other_years(
 
     daylight_saving = flags[flags["flag"] == "daylight_saving"]
     assert daylight_saving[["period", "value"]].to_numpy().tolist() == expected
+
+
+def test_low_values(monkeypatch):
+    """
+    Test that the days with hours far below their year are flagged.
+
+    The demand is 1000 MW, except 5 MW in two hours of June 2023, as a
+    net demand that its solar nearly covers at midday, and 200 MW, a
+    fifth of the median, in an hour of July, which is not flagged.
+    """
+    times = pd.date_range("2023-01-01 01:00", "2024-01-01", freq="h", tz="UTC")
+    demand = pd.Series(1000.0, index=times.tz_localize(None), name="Load (MW)")
+    demand["2023-06-04 10:00"] = 5.0
+    demand["2023-06-05 10:00"] = 5.0
+    demand["2023-07-01 10:00"] = 200.0
+
+    flags = _flag(demand, monkeypatch)
+
+    low = flags[flags["flag"] == "low_value"]
+    assert low["period"].tolist() == ["2023-06-04", "2023-06-05"]
+    assert low["value"].tolist() == pytest.approx([0.005, 0.005])
+    assert (
+        low["start"].tolist()
+        == low["end"].tolist()
+        == [
+            pd.Timestamp("2023-06-04"),
+            pd.Timestamp("2023-06-05"),
+        ]
+    )

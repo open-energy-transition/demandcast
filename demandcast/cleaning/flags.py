@@ -23,6 +23,8 @@ Description:
     - annual_change: the demand of a year, and its ratio to its annual
       demand per capita times its population, change by more than 10%
       (20% for a subdivision) from the year before.
+    - low_value: in a day, hours fall below 10% of the median of their
+      local year.
 
     The combined electricity demand of a code (see
     cleaning/combining.py) is flagged in the same way, and its flags are
@@ -125,6 +127,17 @@ Description:
     missing for a year. The demand of a small subdivision changes more,
     such as with the national shocks that hit the regions unequally, so
     their changes are flagged from 20%.
+
+    The demand of a whole country or subdivision rarely falls below a
+    tenth of its usual level: an hour that does is a blackout, an error
+    of the source, or a net demand whose embedded solar nearly covers
+    the demand at midday, as in North Macedonia in 2025, down to 0.005
+    MW against a median of 590 MW. The cleaning removes only the values
+    that are not positive, so the days with such hours are flagged, to
+    be reviewed: the days of an error are then left out of the training
+    (see cleaning/combining.py), and a blackout stays as a real event.
+    The flag gives the lowest share of the median of the day, and the
+    share that is flagged.
 """
 
 import logging
@@ -140,6 +153,10 @@ import utils.time_zones
 
 # The columns of the flags.
 COLUMNS = ["start", "end", "flag", "period", "value", "reference"]
+
+# The share of the median of its local year below which an hour is
+# flagged as a low value.
+LOW_VALUE_SHARE = 0.1
 
 # The names of the quarters, from December to February.
 QUARTERS = ["DJF", "MAM", "JJA", "SON"]
@@ -772,6 +789,57 @@ def _find_annual_errors(cleaned: pd.Series, code: str) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=COLUMNS)
 
 
+def _find_low_values(cleaned: pd.Series, time_zone: str) -> pd.DataFrame:
+    """
+    Find the days with hours far below the level of their year.
+
+    Parameters
+    ----------
+    cleaned : pandas.Series
+        The cleaned electricity demand, at times in UTC.
+    time_zone : str
+        The time zone of the country or subdivision.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The flags of the days, local days, with hours below
+        LOW_VALUE_SHARE of the median of their local year, with the
+        lowest share ("value") and LOW_VALUE_SHARE ("reference").
+    """
+    if cleaned.empty:
+        return pd.DataFrame(columns=COLUMNS)
+    # The local start of each hour, which gives its year and month.
+    starts = (
+        (pd.DatetimeIndex(cleaned.index) - pd.Timedelta(hours=1))
+        .tz_localize("UTC")
+        .tz_convert(time_zone)
+        .tz_localize(None)
+    )
+    shares = pd.Series(
+        cleaned.to_numpy()
+        / cleaned.groupby(starts.year).transform("median").to_numpy(),
+        index=starts,
+    )
+    low = shares[shares < LOW_VALUE_SHARE]
+    if low.empty:
+        return pd.DataFrame(columns=COLUMNS)
+    rows = [
+        {
+            "start": day,
+            "end": day,
+            "flag": "low_value",
+            "period": f"{day:%Y-%m-%d}",
+            "value": float(day_shares.min()),
+            "reference": LOW_VALUE_SHARE,
+        }
+        for day, day_shares in low.groupby(
+            pd.DatetimeIndex(low.index).normalize()
+        )
+    ]
+    return pd.DataFrame(rows, columns=COLUMNS)
+
+
 def flag_data(code: str, data_source: str | None = None) -> pd.DataFrame:
     """
     Flag and save the changes of the cleaned electricity demand.
@@ -802,6 +870,7 @@ def flag_data(code: str, data_source: str | None = None) -> pd.DataFrame:
         _find_time_lags(cleaned, time_zone),
         _find_daylight_saving_errors(cleaned, time_zone),
         _find_annual_errors(cleaned, code),
+        _find_low_values(cleaned, time_zone),
     ]
     flags = pd.concat(
         [flags for flags in found if not flags.empty] or found[:1],

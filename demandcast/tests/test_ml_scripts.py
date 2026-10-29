@@ -314,12 +314,20 @@ def test_validate(algorithm, use_validation_set, expected_mapes):
     )
     scaled = " of the complete years scaled to their annual totals"
     assert [
-        column for column in mapes.columns if not column.endswith(scaled)
+        column
+        for column in mapes.columns
+        if not column.endswith((scaled, "WAPE"))
     ] == ["Entity code", *expected_mapes]
-    # Each set also has the MAPE of the profile that forecasting gives.
+    # Each set also has its WAPE, and the MAPE of the profile that
+    # forecasting gives.
     assert {column for column in mapes.columns if column.endswith(scaled)} == {
         column + scaled for column in expected_mapes
     }
+    assert {column for column in mapes.columns if column.endswith("WAPE")} == {
+        column.replace("MAPE", "WAPE") for column in expected_mapes
+    }
+    wapes = [column for column in mapes.columns if column.endswith("WAPE")]
+    assert (mapes[wapes] > 0).all(axis=None)
     assert mapes["Entity code"].tolist() == COUNTRY_CODES
     for column, values in expected_mapes.items():
         assert mapes[column].tolist() == pytest.approx(
@@ -377,6 +385,8 @@ def test_cross_validate(algorithm, expected_mapes):
     assert mapes.columns.tolist() == [
         "Entity code",
         *expected_mapes,
+        "Training WAPE",
+        "Testing WAPE",
         "Holdout",
     ]
     assert mapes["Entity code"].tolist() == COUNTRY_CODES

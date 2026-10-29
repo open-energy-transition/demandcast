@@ -393,7 +393,9 @@ def test_reviewed_errors_without_another_source():
     # The errors are kept, but cannot be used for training.
     spring = (combined.index >= "2023-03-01") & (combined.index < "2023-06-01")
     assert not combined["Eligible"][spring].any()
+    assert combined["Exclusion"][spring].eq("reviewed error").all()
     assert combined["Eligible"][~spring].all()
+    assert combined["Exclusion"][~spring].eq("").all()
 
 
 def test_partial_embedded_generation_ranks_after_gross_demand():
@@ -448,3 +450,35 @@ def test_combined_demand_is_current_until_its_inputs_change():
 
     cleaning.combining.ensure_current_combination("CYP")
     assert cleaning.combining.is_current("CYP")
+
+
+def test_reviewed_net_demand_is_not_for_training(monkeypatch):
+    """
+    Test that the seasons reviewed as net demand are not for training.
+
+    They stay in the combined demand, from their source, but cannot be
+    used to train the models, which learn the gross demand.
+    """
+    review = cleaning.combining.checks.flags.Review(
+        data_source="isone",
+        code="USA_NE",
+        flag="midday_dip",
+        periods=["MAM 2023"],
+        verdict="net_demand",
+        note="The rooftop solar is left out.",
+    )
+    monkeypatch.setattr(
+        cleaning.combining.checks.flags, "read_reviews", lambda: [review]
+    )
+    _review_errors(
+        "USA_NE", "isone", _hourly("2023-01-01", "2023-12-31 23:00")
+    )
+
+    combined = cleaning.combining.combine_data("USA_NE")
+
+    assert combined is not None
+    assert combined["Source"].eq("isone").all()
+    spring = (combined.index >= "2023-03-01") & (combined.index < "2023-06-01")
+    assert not combined["Eligible"][spring].any()
+    assert combined["Exclusion"][spring].eq("net demand").all()
+    assert combined["Eligible"][~spring].all()

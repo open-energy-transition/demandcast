@@ -15,6 +15,12 @@ Description:
     provinces, which measures the error on a held-out entity, not on an
     unseen country. Its results say which holdout they used.
 
+    Each error is given as the mean absolute percentage error (MAPE)
+    and as the weighted absolute percentage error (WAPE), the sum of the
+    absolute errors over the sum of the actual values, which is not
+    dominated by the hours whose actual value is close to zero, as the
+    net demand of North Macedonia at midday in 2025.
+
     The errors are those of the target of the models, the load relative
     to the annual mean of its local year (see ml_models.data), so they
     measure the error of the hourly profile, not that of the annual
@@ -23,7 +29,7 @@ Description:
 """
 
 import logging
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -53,6 +59,34 @@ def log_summary(name: str, mapes: pd.Series) -> None:
     logging.info(f" - Std MAPE = {mapes.std():.4f}")
 
 
+def weighted_absolute_percentage_error(
+    actual: pd.Series | np.ndarray, predictions: pd.Series | np.ndarray
+) -> float:
+    """
+    Calculate the weighted absolute percentage error (WAPE).
+
+    The WAPE is the sum of the absolute errors divided by the sum of the
+    absolute actual values. Unlike the MAPE, whose error of each hour is
+    divided by its own actual value, it is not dominated by the hours
+    whose actual value is close to zero.
+
+    Parameters
+    ----------
+    actual : pandas.Series | numpy.ndarray
+        The actual values.
+    predictions : pandas.Series | numpy.ndarray
+        The predictions, in the same order.
+
+    Returns
+    -------
+    float
+        The WAPE, as a fraction.
+    """
+    actual_values = np.asarray(actual, dtype=float)
+    errors = np.abs(np.asarray(predictions, dtype=float) - actual_values)
+    return float(errors.sum() / np.abs(actual_values).sum())
+
+
 def calculate_mape_by_entity(
     predictions: pd.Series,
     actual: pd.Series,
@@ -76,26 +110,85 @@ def calculate_mape_by_entity(
     mapes : pandas.Series
         The MAPE of each country or subdivision, indexed by its code.
     """
-    # Initialize lists to hold entity codes and their MAPE values.
+    return _calculate_by_entity(
+        predictions, actual, entity_codes, mean_absolute_percentage_error
+    ).rename("MAPE")
+
+
+def calculate_wape_by_entity(
+    predictions: pd.Series,
+    actual: pd.Series,
+    entity_codes: pd.Series,
+) -> pd.Series:
+    """
+    Calculate the WAPE of each country or subdivision.
+
+    Parameters
+    ----------
+    predictions : pandas.Series
+        The predictions of the model.
+    actual : pandas.Series
+        The actual values of the target, in the same order.
+    entity_codes : pandas.Series
+        The code of the country or subdivision of each row, named
+        "Entity code".
+
+    Returns
+    -------
+    pandas.Series
+        The WAPE of each country or subdivision, indexed by its code.
+    """
+    return _calculate_by_entity(
+        predictions, actual, entity_codes, weighted_absolute_percentage_error
+    ).rename("WAPE")
+
+
+def _calculate_by_entity(
+    predictions: pd.Series,
+    actual: pd.Series,
+    entity_codes: pd.Series,
+    metric: Any,
+) -> pd.Series:
+    """
+    Calculate an error of each country or subdivision.
+
+    Parameters
+    ----------
+    predictions : pandas.Series
+        The predictions of the model.
+    actual : pandas.Series
+        The actual values of the target, in the same order.
+    entity_codes : pandas.Series
+        The code of the country or subdivision of each row, named
+        "Entity code".
+    metric : Any
+        The function of the error, of the actual values and of the
+        predictions.
+
+    Returns
+    -------
+    pandas.Series
+        The error of each country or subdivision, indexed by its code.
+    """
+    # Initialize lists to hold entity codes and their errors.
     list_entity_codes = []
     list_mapes_values = []
 
-    # Calculate MAPE for each entity.
+    # Calculate the error of each entity.
     for entity_code, entity_group in pd.DataFrame(entity_codes).groupby(
         "Entity code"
     ):
-        current_mape = mean_absolute_percentage_error(
+        current_mape = metric(
             actual.iloc[entity_group.index],
             predictions.iloc[entity_group.index],
         )
         list_entity_codes.append(entity_code)
         list_mapes_values.append(current_mape)
 
-    # Create a Series for MAPE values indexed by entity codes.
+    # Create a Series of the errors indexed by entity codes.
     mapes = pd.Series(
         data=list_mapes_values,
         index=list_entity_codes,
-        name="MAPE",
     ).rename_axis("Entity code")
 
     return mapes
@@ -124,9 +217,10 @@ def calculate_mapes(
     Returns
     -------
     mapes : pandas.DataFrame
-        The code of each country or subdivision, and its MAPE in each
-        set, in the columns "<Set> MAPE" and "<Set> MAPE of the complete
-        years scaled to their annual totals".
+        The code of each country or subdivision, and its MAPE and WAPE
+        in each set, in the columns "<Set> MAPE", "<Set> WAPE" and
+        "<Set> MAPE of the complete years scaled to their annual
+        totals".
     """
     columns: dict[str, pd.Series] = {}
     for split, data in prepared_dataset.items():
@@ -135,7 +229,13 @@ def calculate_mapes(
             predictions[split], data["target"], data["group"]
         )
         columns[f"{name} MAPE"] = mapes_of_split
+        columns[f"{name} WAPE"] = calculate_wape_by_entity(
+            predictions[split], data["target"], data["group"]
+        )
         log_summary(name, mapes_of_split)
+        logging.info(
+            f" - Median WAPE = {columns[f'{name} WAPE'].median():.4f}"
+        )
 
         if "time" in data and "local_year" in data:
             scaled, status = ml_models.data.normalize_to_annual_totals(
@@ -221,7 +321,7 @@ def _score_fold(
     prepared_dataset: ml_models.data.PreparedDataset,
     train_index: np.ndarray,
     test_index: np.ndarray,
-) -> list[tuple[str, float, float]]:
+) -> list[tuple[str, float, float, float, float]]:
     """
     Train a model on one fold and score it.
 
@@ -241,9 +341,10 @@ def _score_fold(
 
     Returns
     -------
-    list[tuple[str, float, float]]
+    list[tuple[str, float, float, float, float]]
         The code of each held-out entity, the MAPE of the model on the
-        training rows, and its MAPE on the rows of the entity.
+        training rows and on the rows of the entity, and its WAPE on
+        them.
     """
     model_module = ml_models.registry.get_model_module(algorithm)
     training = ml_models.data.select_rows(prepared_dataset, train_index)
@@ -251,8 +352,12 @@ def _score_fold(
 
     model = model_module.train({"training": training}, model_config)
 
+    training_predictions = model_module.predict(model, training)
     training_mape = mean_absolute_percentage_error(
-        training["target"], model_module.predict(model, training)
+        training["target"], training_predictions
+    )
+    training_wape = weighted_absolute_percentage_error(
+        training["target"], training_predictions
     )
     predictions = pd.Series(
         np.asarray(model_module.predict(model, held_out)),
@@ -263,6 +368,10 @@ def _score_fold(
             str(entity_code),
             training_mape,
             mean_absolute_percentage_error(
+                held_out["target"][rows], predictions[rows]
+            ),
+            training_wape,
+            weighted_absolute_percentage_error(
                 held_out["target"][rows], predictions[rows]
             ),
         )
@@ -325,7 +434,13 @@ def cross_validate(
 
     mapes = pd.DataFrame(
         [row for fold in results for row in fold],
-        columns=["Entity code", "Training MAPE", "Testing MAPE"],
+        columns=[
+            "Entity code",
+            "Training MAPE",
+            "Testing MAPE",
+            "Training WAPE",
+            "Testing WAPE",
+        ],
     )
     mapes["Holdout"] = holdout
     log_summary("Training", mapes["Training MAPE"])
