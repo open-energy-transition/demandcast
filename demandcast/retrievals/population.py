@@ -11,10 +11,13 @@ Description:
 
     The gridded population of the past (Gridded Population of the World,
     version 4.11, of SEDAC) ends in 2020, and version 5 is not released
-    yet. The population of a subdivision after 2020 is that of 2020
-    times the growth of the population of its country since 2020, from
-    the World Bank, until its last year: the subdivision is assumed to
-    grow as its country.
+    yet, and starts in 2000. The population of a subdivision after 2020
+    is that of 2020 times the growth of the population of its country
+    since 2020, from the World Bank, until its last year, and before
+    2000 that of 2000 times the change of the population of its country
+    since then, from its first year: the subdivision is assumed to grow
+    as its country. The demand of Ontario since 1994 and of the regions
+    of the Australian market since 1998 can then be used for training.
 """
 
 import pandas as pd
@@ -59,8 +62,8 @@ def _extract_historical_population(
         historical_population.reindex(used_historical_years)
     ).set_axis(requested_historical_years)
 
-    # Grow the population of a subdivision after the gridded data as its
-    # country, until the last year of the country.
+    # Grow the population of a subdivision before and after the gridded
+    # data as its country, within the years of the country.
     country_code = code.split("_", maxsplit=1)[0]
     if (
         code not in global_historical_population.index

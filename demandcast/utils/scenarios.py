@@ -434,6 +434,11 @@ def get_years_and_scenarios(
     to 2023. In this case, the used historical years will be 2020 to
     2023, and 2023 will be used for 2024.
 
+    The historical years of a subdivision are those of the gridded data,
+    and, if its country has historical data, also the years of the
+    country before them, for which the first year of the gridded data is
+    used: the data of the subdivision then follows its country.
+
     Parameters
     ----------
     iso_alpha_3_code : str
@@ -487,11 +492,24 @@ def get_years_and_scenarios(
                 available_historical_years_of_gridded_data[-1] + 1,
             )
         )
+    # The years of the country of a subdivision before the gridded data,
+    # which use the first year of the gridded data.
+    country_code = iso_alpha_3_code.split("_", maxsplit=1)[0]
+    earlier_years = []
+    if (
+        iso_alpha_3_code not in global_historical_data.index
+        and country_code in global_historical_data.index
+    ):
+        earlier_years = [
+            int(y)
+            for y in global_historical_data.loc[country_code].dropna().index
+            if int(y) < available_historical_years[0]
+        ]
 
     # Get the years of available historical data, extended if needed,
     # and the years of available future data.
-    extended_available_historical_years = _extend_historical_years(
-        available_historical_years
+    extended_available_historical_years = earlier_years + (
+        _extend_historical_years(available_historical_years)
     )
     available_future_years = list(
         range(
@@ -522,6 +540,8 @@ def get_years_and_scenarios(
     used_historical_years = [
         y
         if y in available_historical_years
+        else available_historical_years[0]
+        if y < available_historical_years[0]
         else available_historical_years[-1]
         for y in requested_historical_years
     ]

@@ -616,3 +616,28 @@ def test_get_years_and_scenarios():
     assert result[1] == [2021, 2022]  # used historical years
     assert result[2] == []  # future years
     assert result[3] == []  # scenarios
+
+
+def test_years_of_a_subdivision_before_the_gridded_data():
+    """
+    Test that a subdivision has the years of its country before them.
+
+    The years before the gridded data use its first year, and the
+    country has no year before 1998.
+    """
+    national = pd.DataFrame(
+        {year: [1.0] for year in range(1998, 2024)}, index=["CAN"]
+    )
+
+    requested, used, _, _ = utils.scenarios.get_years_and_scenarios(
+        "CAN_ON", None, 1995, 2002, None, [], national, [2000, 2005, 2010]
+    )
+
+    assert requested == list(range(1998, 2003))
+    assert used == [2000, 2000, 2000, 2001, 2002]
+
+    # A subdivision of a country without data has the gridded years.
+    requested, used, _, _ = utils.scenarios.get_years_and_scenarios(
+        "XYZ_A", None, 1995, 2002, None, [], national, [2000, 2005, 2010]
+    )
+    assert requested == [2000, 2001, 2002]
