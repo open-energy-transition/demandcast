@@ -250,7 +250,9 @@ def test_calculate_mapes(caplog):
     assert mapes.columns.tolist() == [
         "Entity code",
         "Training MAPE",
+        "Training WAPE",
         "Testing MAPE",
+        "Testing WAPE",
     ]
     assert mapes["Entity code"].tolist() == ["DEU", "FRA"]
     assert mapes["Training MAPE"].tolist() == pytest.approx([0.5, 0.0])
@@ -291,3 +293,24 @@ def test_calculate_mapes_of_the_profile_scaled_to_annual_totals():
     ]
     assert scaled["FRA"] == pytest.approx(0.0)
     assert np.isnan(scaled["DEU"])
+
+
+def test_wape_is_not_dominated_by_values_close_to_zero():
+    """
+    Test that the WAPE weighs each error by the size of the demand.
+
+    An hour whose actual value is close to zero gives a huge MAPE, but
+    adds only its small error to the WAPE.
+    """
+    actual = pd.Series([1.0, 1.0, 1.0, 0.001])
+    predictions = pd.Series([1.1, 0.9, 1.0, 0.101])
+
+    wape = ml_models.evaluation.weighted_absolute_percentage_error(
+        actual, predictions
+    )
+    mape = ml_models.evaluation.mean_absolute_percentage_error(
+        actual, predictions
+    )
+
+    assert wape == pytest.approx(0.3 / 3.001)
+    assert mape > 20

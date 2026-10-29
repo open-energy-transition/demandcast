@@ -169,6 +169,7 @@ def test_reviews_of_the_repository():
         "daylight_saving",
         "annual_total",
         "annual_change",
+        "low_value",
     ]
     for review in reviews:
         assert review.flag in flags

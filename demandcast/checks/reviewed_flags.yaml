@@ -544,3 +544,239 @@ reviews:
       - "2016"
     verdict: definition_change
     note: The demand is modelled as the demand without the load shedding, so it is higher than the consumption that was supplied.
+  - data_source: aemo_nem
+    code: AUS_SA
+    flag: low_value
+    periods:
+      - "2016-09-28"
+    verdict: real_event
+    note: The blackout of South Australia of 28 September 2016, after storms damaged the transmission lines.
+  - data_source: ons
+    code: BRA_NE
+    flag: low_value
+    periods:
+      - "2012-10-26"
+    verdict: real_event
+    note: The blackout of the north-east of Brazil of 26 October 2012.
+  - data_source: ons
+    code: BRA_NE
+    flag: low_value
+    periods:
+      - "2018-03-21"
+    verdict: real_event
+    note: The blackout of the north and north-east of Brazil of 21 March 2018, after the failure of the Xingu substation.
+  - data_source: ccei
+    code: CAN_PE
+    flag: low_value
+    periods:
+      - "2022-09-24"
+      - "2022-09-25"
+    verdict: real_event
+    note: Hurricane Fiona, which cut the power of most of Prince Edward Island from 24 September 2022.
+  - data_source: ccei
+    code: CAN_PE
+    flag: low_value
+    periods:
+      - "2018-11-29"
+    verdict: source_error
+    note: Two hours of the morning near zero, without a known blackout, between hours at the usual level.
+  - data_source: cen
+    code: CHL
+    flag: low_value
+    periods:
+      - "2025-02-25"
+    verdict: real_event
+    note: The national blackout of Chile of 25 February 2025, from 15:16.
+  - data_source: xm
+    code: COL
+    flag: low_value
+    periods:
+      - "2007-04-26"
+    verdict: real_event
+    note: The national blackout of Colombia of 26 April 2007, from about 10:15.
+  - data_source: occto
+    code: JPN_Hokkaidō
+    flag: low_value
+    periods:
+      - "2018-09-06"
+    verdict: real_event
+    note: The blackout of the whole of Hokkaidō after the Hokkaido Eastern Iburi earthquake of 6 September 2018.
+  - data_source: pucsl
+    code: LKA
+    flag: low_value
+    periods:
+      - "2023-12-09"
+    verdict: real_event
+    note: The island-wide blackout of Sri Lanka of 9 December 2023.
+  - data_source: pucsl
+    code: LKA
+    flag: low_value
+    periods:
+      - "2025-02-09"
+    verdict: real_event
+    note: The island-wide blackout of Sri Lanka of 9 February 2025.
+  - data_source: ntdc
+    code: PAK
+    flag: low_value
+    periods:
+      - "2015-01-24"
+      - "2015-01-25"
+    verdict: real_event
+    note: The national blackout of Pakistan of the night of 24 to 25 January 2015.
+  - data_source: entsoe
+    code: PRT
+    flag: low_value
+    periods:
+      - "2025-04-28"
+    verdict: real_event
+    note: The blackout of the Iberian Peninsula of 28 April 2025, from 11:33.
+  - data_source: cenace
+    code: MEX_PEN
+    flag: low_value
+    periods:
+      - "2025-09-26"
+    verdict: real_event
+    note: The blackout of the Yucatán Peninsula of 26 September 2025.
+  - data_source: cenace
+    code: MEX_PEN
+    flag: low_value
+    periods:
+      - "2016-02-10"
+      - "2016-02-14"
+      - "2016-02-15"
+      - "2018-03-09"
+      - "2019-03-23"
+    verdict: source_error
+    note: Hours near zero, at night and in the evening, without a known blackout of the peninsula, between hours at the usual level.
+  - data_source: entsoe
+    code: MKD
+    flag: low_value
+    periods:
+      - "2020-04-04"
+      - "2022-12-08"
+    verdict: source_error
+    note: Single hours of the night near zero, between hours at the usual level.
+  - data_source: entsoe
+    code: MKD
+    flag: low_value
+    verdict: net_demand
+    note: The load falls near zero at midday, from 8:00 to 16:00, from 2024, as the rooftop solar of the prosumers that it leaves out covers the demand.
+  - data_source: entsoe
+    code: BIH
+    flag: low_value
+    periods:
+      - "2018-07-11"
+      - "2020-07-24"
+      - "2021-03-11"
+      - "2021-07-13"
+      - "2022-07-31"
+      - "2022-10-30"
+    verdict: source_error
+    note: Single hours near zero, between hours at the usual level.
+  - data_source: entsoe
+    code: BIH
+    flag: low_value
+    verdict: net_demand
+    note: The load falls near zero at midday, from 10:00 to 14:00, from April 2026, as the embedded solar that it leaves out covers the demand.
+  - data_source: entsoe
+    code: AUT
+    flag: low_value
+    periods:
+      - "2015-11-29"
+    verdict: source_error
+    note: A single hour at a tenth of the usual load, between hours at the usual level.
+  - data_source: entsoe
+    code: GBR_GB
+    flag: low_value
+    periods:
+      - "2014-12-31"
+      - "2018-12-14"
+      - "2018-12-15"
+      - "2019-05-21"
+      - "2019-06-13"
+      - "2019-06-23"
+      - "2019-07-24"
+      - "2019-07-25"
+    verdict: source_error
+    note: Hours far below the load of Great Britain, without a known blackout (that of 9 August 2019 is not one of them), between hours at the usual level.
+  - data_source: entsoe
+    code: GRC
+    flag: low_value
+    periods:
+      - "2022-10-31"
+    verdict: source_error
+    note: A single hour far below the usual load, between hours at the usual level.
+  - data_source: entsoe
+    code: MNE
+    flag: low_value
+    periods:
+      - "2015-07-17"
+      - "2015-10-07"
+      - "2015-10-08"
+      - "2015-11-04"
+    verdict: source_error
+    note: Single hours near zero, between hours at the usual level.
+  - data_source: entsoe
+    code: SVN
+    flag: low_value
+    periods:
+      - "2023-11-07"
+      - "2026-02-04"
+    verdict: source_error
+    note: Hours far below the usual load, between hours at the usual level.
+  - data_source: entsoe
+    code: XKX
+    flag: low_value
+    periods:
+      - "2021-08-24"
+    verdict: source_error
+    note: A single hour far below the usual load, between hours at the usual level.
+  - data_source: cnd
+    code: PAN
+    flag: low_value
+    periods:
+      - "2019-01-20"
+    verdict: source_error
+    note: A single hour far below the usual load, without a known blackout.
+  - data_source: cammesa
+    code: ARG_H
+    flag: low_value
+    periods:
+      - "2026-09-23"
+    verdict: source_error
+    note: Three separate hours far below the usual load of the province.
+  - data_source: niti
+    code: IND_AR
+    flag: low_value
+    verdict: source_error
+    note: Hours far below the usual load of the small state, mostly at night and alone, between hours at the usual level, without a known blackout.
+  - data_source: niti
+    code: IND_JKLA
+    flag: low_value
+    verdict: source_error
+    note: Hours far below the usual load, without a known blackout, between hours at the usual level.
+  - data_source: niti
+    code: IND_MN
+    flag: low_value
+    verdict: source_error
+    note: Hours far below the usual load of the small state, mostly at night and alone, between hours at the usual level, without a known blackout.
+  - data_source: niti
+    code: IND_MZ
+    flag: low_value
+    verdict: source_error
+    note: Hours far below the usual load of the small state, mostly at night and alone, between hours at the usual level, without a known blackout.
+  - data_source: niti
+    code: IND_NL
+    flag: low_value
+    verdict: source_error
+    note: Hours far below the usual load of the small state, mostly at night and alone, between hours at the usual level, without a known blackout.
+  - data_source: niti
+    code: IND_SK
+    flag: low_value
+    verdict: source_error
+    note: Hours far below the usual load of the small state, mostly at night and alone, between hours at the usual level, without a known blackout.
+  - data_source: niti
+    code: IND_TR
+    flag: low_value
+    verdict: source_error
+    note: Hours far below the usual load of the small state, mostly at night and alone, between hours at the usual level, without a known blackout.
