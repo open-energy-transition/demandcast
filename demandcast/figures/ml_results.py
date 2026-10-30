@@ -870,9 +870,9 @@ def _plot_groups_of_codes(
     # The errors span from a few percent to more than a hundred, so
     # they are in a logarithmic scale, with plain numbers.
     axs[0, 0].set_yscale("log")
-    axs[0, 0].yaxis.set_major_formatter(
-        plt.FuncFormatter(lambda value, _: f"{value:g}")
-    )
+    plain = plt.FuncFormatter(lambda value, _: f"{value:g}")
+    axs[0, 0].yaxis.set_major_formatter(plain)
+    axs[0, 0].yaxis.set_minor_formatter(plain)
     axs[0, 0].set_ylabel(
         f"Testing {metric} (%, logarithmic scale)", weight="bold"
     )

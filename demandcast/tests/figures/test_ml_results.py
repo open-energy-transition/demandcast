@@ -269,6 +269,11 @@ def test_plot_described_results(tmp_path, metric):
         "Medium\n(1)",
         "Large\n(2)",
     ]
+    # The errors are labelled as plain numbers, also between the powers
+    # of ten.
+    axis = groups.axes[0].yaxis
+    assert axis.get_minor_formatter()(20.0, 0) == "20"
+    assert axis.get_major_formatter()(10.0, 0) == "10"
     # The WAPE of each group, weighted by energy, is marked.
     markers = [
         np.asarray(collection.get_offsets())[:, 1]
