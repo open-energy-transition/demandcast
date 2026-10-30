@@ -23,6 +23,7 @@ import ml_models.data
 import ml_models.evaluation
 import ml_models.files
 import ml_models.registry
+import ml_models.reporting
 import utils.config
 
 
@@ -79,10 +80,22 @@ def run_model_cross_validation(
         holdout,
     )
 
+    # Describe the held-out countries and subdivisions, and summarize
+    # their errors by group.
+    results = mapes.merge(
+        ml_models.reporting.describe_entities(prepared_dataset),
+        on="Entity code",
+        how="left",
+    )
+    summary = ml_models.reporting.summarize(results, "Testing")
+    ml_models.reporting.log_summary(
+        summary, f"Held-out entities, holding out each {holdout}"
+    )
+
     # Save the cross-validation results.
     ml_models.files.save_results(
         "cross_validation",
-        mapes,
+        results,
         ml_config.algorithm.lower(),
         os.path.basename(data_path).split(".")[0],
         "all",
@@ -95,6 +108,7 @@ def run_model_cross_validation(
             ),
         },
         data_path=data_path,
+        summary=summary,
     )
 
 

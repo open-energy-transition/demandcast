@@ -301,7 +301,21 @@ model_path:                        # Path to trained model file
 data_path:                         # Path to assembled data file (default: that of the training of the model)
 ```
 
-Results are saved to `data/results/validation/with_{trained_model_name}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the MAPE of each country and subdivision in each set.
+Results are saved to `data/results/validation/with_{trained_model_name}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the MAPE and WAPE of each country and subdivision in each set, and its description in the testing set (see [reporting by group](#reporting-by-group)).
+
+#### Reporting by group
+
+An average error hides where a model fails: in the first validation of the retraining of 2026, the codes that the model never saw in training had a median MAPE of 12%, against 7% for the others, and the systems below 300 MW of 15%. So `demandcast/ml_models/reporting.py` describes each scored country and subdivision, and the results of `validate.py` and `cross_validate.py` have, after its errors:
+
+| Column | Meaning |
+| --- | --- |
+| `Seen in training`, `Training years` | Whether the model saw other years of the code in training, and how many (only in a validation: the held-out codes of a cross-validation are never seen) |
+| `Scored years`, `Scored hours` | The local years and hours on which the code is scored |
+| `Mean load (MW)`, `Size class` | The mean load of the scored hours, and its class: small (below 300 MW), medium (below 5 GW) or large |
+| `Continent` | The continent of the code |
+| `Data source`, `Embedded generation` | The data source of most of the scored hours, in the combined demand, and what its demand counts of the embedded generation on the middle scored day (see the definitions of the data sources) |
+
+The errors are also summarized by group of codes, in `summary_YYYYMMDD_HHMMSS.csv` next to the results, which their manifest records, and in the log: for all the codes, and for each value of `Seen in training`, `Size class`, `Continent` and `Embedded generation`, the number of codes, their median WAPE, the WAPE of the group as a whole, which weights the WAPE of each code by its energy (its mean load times its scored hours), and their median MAPE. The median tells how well a typical code is modelled, and the weighted WAPE how well the demand of the group is.
 
 ### Cross-Validation
 
@@ -323,7 +337,7 @@ data_path:                         # Path to assembled data file
 holdout: entity                    # Hold out each entity, or each country with its subdivisions ("country")
 ```
 
-Cross-validation results are saved to `data/results/cross_validation/with_{algorithm}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the MAPE of each held-out country and subdivision on the training rows and on its own rows, and the holdout. The models are trained and scored on all the fields of their rows, such as their times, as in a validation.
+Cross-validation results are saved to `data/results/cross_validation/with_{algorithm}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the MAPE and WAPE of each held-out country and subdivision on the training rows and on its own rows, the holdout, and its description, with their summary by group (see [reporting by group](#reporting-by-group)). The models are trained and scored on all the fields of their rows, such as their times, as in a validation.
 
 ### Forecasting
 

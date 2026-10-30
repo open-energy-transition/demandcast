@@ -38,9 +38,22 @@ MODEL_EXTENSIONS = {"XGBoost": "json", "LSTM": "pt"}
 RELATIVE_TOLERANCES = {"XGBoost": 1e-6, "LSTM": 1e-4}
 
 COUNTRY_CODES = ["AUT", "DNK", "PRT"]
+# The mean loads of the countries, in MW, one of each size class.
+MEAN_LOADS = [200.0, 2000.0, 20000.0]
 TRAINING_DATA = "assembled_data_for_training_20250101_000000"
 FORECASTING_DATA = "assembled_data_for_forecasting_20250102_000000"
 NOW = "20260102_030405"
+
+# The columns that describe the scored countries, after their errors.
+DESCRIPTION_COLUMNS = [
+    "Scored years",
+    "Scored hours",
+    "Mean load (MW)",
+    "Size class",
+    "Continent",
+    "Data source",
+    "Embedded generation",
+]
 
 # Freeze the time that the scripts put in the names of files.
 pytestmark = pytest.mark.usefixtures("frozen_now")
@@ -150,6 +163,11 @@ def _write_assembled_data(
                     + 0.2 * np.sin(2 * np.pi * time.hour.to_numpy() / 24)
                     + 0.005 * np.abs(temperature - 288)
                 ) / 8760
+                dataset["Load (MW)"] = (
+                    dataset["Load (fraction of annual total)"]
+                    * 8760
+                    * MEAN_LOADS[country_number]
+                )
             datasets.append(dataset)
 
     os.makedirs(utils.paths.get_assembled_folder(), exist_ok=True)
@@ -159,6 +177,21 @@ def _write_assembled_data(
         ),
         index=False,
     )
+
+
+def _write_combined_demand() -> None:
+    """Write the combined demand of the countries, from ENTSO-E."""
+    time = pd.date_range("2021-01-01 01:00", "2024-01-01", freq="h")
+    os.makedirs(
+        utils.paths.get_electricity_demand_folder("combined"), exist_ok=True
+    )
+    for country_code in COUNTRY_CODES:
+        pd.DataFrame(
+            {"Load (MW)": 1000.0, "Source": "entsoe", "Eligible": True},
+            index=pd.DatetimeIndex(time, name="Time (UTC)"),
+        ).to_parquet(
+            utils.paths.get_electricity_demand_file("combined", country_code)
+        )
 
 
 def _read_results(folder: str, model: str, data: str) -> pd.DataFrame:
@@ -177,6 +210,35 @@ def _read_results(folder: str, model: str, data: str) -> pd.DataFrame:
         f"all_{NOW}.parquet",
     ]
     return pd.read_parquet(os.path.join(results_folder, f"all_{NOW}.parquet"))
+
+
+def _read_scores(
+    folder: str, model: str, data: str
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Read the scores of a validation, with their summary.
+
+    Returns
+    -------
+    tuple[pandas.DataFrame, pandas.DataFrame]
+        The scores, and their summary by group of countries.
+    """
+    results_folder = os.path.join(folder, f"with_{model}", f"using_{data}")
+    assert sorted(os.listdir(results_folder)) == [
+        f"all_{NOW}.csv",
+        f"all_{NOW}.manifest.json",
+        f"all_{NOW}.parquet",
+        f"summary_{NOW}.csv",
+    ]
+    manifest = utils.manifest.read_manifest(
+        os.path.join(results_folder, f"all_{NOW}.parquet")
+    )
+    assert manifest is not None
+    assert manifest["summary"]["file"] == f"summary_{NOW}.csv"
+    return (
+        pd.read_parquet(os.path.join(results_folder, f"all_{NOW}.parquet")),
+        pd.read_csv(os.path.join(results_folder, f"summary_{NOW}.csv")),
+    )
 
 
 @pytest.mark.parametrize("algorithm", ALGORITHMS)
@@ -299,6 +361,7 @@ def test_train(algorithm):
 def test_validate(algorithm, use_validation_set, expected_mapes):
     """Test the MAPEs of the trained model on each set."""
     _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
+    _write_combined_demand()
     train.run_model_training(
         True, use_validation_set, None, *_settings(algorithm)
     )
@@ -307,11 +370,39 @@ def test_validate(algorithm, use_validation_set, expected_mapes):
         use_validation_set, None, None, _ml_settings(algorithm)
     )
 
-    mapes = _read_results(
+    results, summary = _read_scores(
         utils.paths.get_results_folder("validation"),
         f"{algorithm.lower()}_model_{NOW}",
         TRAINING_DATA,
     )
+    # The countries of the testing set are described after their errors.
+    description_columns = [
+        "Seen in training",
+        "Training years",
+        *DESCRIPTION_COLUMNS,
+    ]
+    assert results.columns[-len(description_columns) :].tolist() == (
+        description_columns
+    )
+    assert results["Seen in training"].all()
+    assert results["Size class"].tolist() == ["Small", "Medium", "Large"]
+    assert results["Continent"].tolist() == ["Europe"] * 3
+    assert results["Data source"].tolist() == ["entsoe"] * 3
+    assert results["Embedded generation"].tolist() == ["unknown"] * 3
+    assert summary[["Group", "Value", "Codes"]].to_numpy().tolist() == [
+        ["All", "All", 3],
+        ["Seen in training", "Yes", 3],
+        ["Size class", "Small", 1],
+        ["Size class", "Medium", 1],
+        ["Size class", "Large", 1],
+        ["Continent", "Europe", 3],
+        ["Embedded generation", "unknown", 3],
+    ]
+    assert summary.loc[0, "Median WAPE"] == pytest.approx(
+        results["Testing WAPE"].median()
+    )
+
+    mapes = results.drop(columns=description_columns)
     scaled = " of the complete years scaled to their annual totals"
     assert [
         column
@@ -374,20 +465,32 @@ def test_validate(algorithm, use_validation_set, expected_mapes):
 def test_cross_validate(algorithm, expected_mapes):
     """Test the MAPEs of the leave-one-country-out cross-validation."""
     _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
+    _write_combined_demand()
 
     cross_validate.run_model_cross_validation(1, None, *_settings(algorithm))
 
-    mapes = _read_results(
+    mapes, summary = _read_scores(
         utils.paths.get_results_folder("cross_validation"),
         algorithm.lower(),
         TRAINING_DATA,
     )
+    # The held-out countries were not seen in training, by design.
     assert mapes.columns.tolist() == [
         "Entity code",
         *expected_mapes,
         "Training WAPE",
         "Testing WAPE",
         "Holdout",
+        *DESCRIPTION_COLUMNS,
+    ]
+    assert mapes["Scored years"].tolist() == [3, 3, 3]
+    assert summary["Group"].tolist() == [
+        "All",
+        "Size class",
+        "Size class",
+        "Size class",
+        "Continent",
+        "Embedded generation",
     ]
     assert mapes["Entity code"].tolist() == COUNTRY_CODES
     for column, values in expected_mapes.items():
