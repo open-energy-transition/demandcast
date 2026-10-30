@@ -18,6 +18,7 @@ dependencies = [
     "gcsfs>=2025.3.0",
     "geopandas>=1.0.1",
     "google-cloud-storage>=3.1.0",
+    "holidays>=0.80",
     "matplotlib>=3.10.0",
     "nepali-datetime>=1.0.8.4",
     "netcdf4>=1.7.3",

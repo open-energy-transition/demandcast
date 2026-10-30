@@ -45,6 +45,7 @@ import utils.catalogue
 import utils.config
 import utils.manifest
 import utils.paths
+import utils.public_holidays
 
 # The shares of the hours of a year, and of each of its months, that
 # the training needs.
@@ -769,6 +770,18 @@ def run_data_assemply(
         datasets_to_merge,
         ["Time (UTC)", "Entity code"],
     )
+
+    # Tell which hours are on a public holiday of their country or
+    # subdivision, which the other calendar features cannot see.
+    assembled_data["Local holiday indicator"] = 0
+    for entity_code, rows in assembled_data.groupby(
+        "Entity code"
+    ).groups.items():
+        assembled_data.loc[rows, "Local holiday indicator"] = (
+            utils.public_holidays.get_holiday_indicator(
+                assembled_data.loc[rows, "Time (UTC)"], str(entity_code)
+            )
+        )
 
     coverage = None
     if target_use == "training":

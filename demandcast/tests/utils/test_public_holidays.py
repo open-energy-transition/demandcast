@@ -1,0 +1,59 @@
+"""
+License: AGPL-3.0.
+
+Description:
+
+    Tests of the public holidays of the countries and subdivisions.
+"""
+
+import pandas as pd
+
+import utils.public_holidays
+
+
+def test_holiday_indicator_in_local_time():
+    """
+    Test that an hour is on a holiday by its start in local time.
+
+    In Paris (UTC+1 in winter), the hour that ends at 23:00 UTC on 24
+    December starts at 23:00 local time, before Christmas; the next one
+    starts at midnight, on Christmas.
+    """
+    times = pd.Series(
+        pd.to_datetime(
+            ["2025-12-24 23:00", "2025-12-25 00:00", "2025-12-26 12:00"]
+        )
+    )
+
+    assert utils.public_holidays.get_holiday_indicator(
+        times, "FRA"
+    ).tolist() == [0, 1, 0]
+
+
+def test_holidays_of_subdivisions():
+    """
+    Test that only official subdivisions have their own holidays.
+
+    Ontario and Punjab are the provinces and states of the same codes,
+    while New England (USA_NE) has the code of Nebraska, and only has
+    the holidays of the United States.
+    """
+    subdivisions = {
+        code: getattr(
+            utils.public_holidays.get_holiday_calendar(code), "subdiv", "none"
+        )
+        for code in ("CAN_ON", "IND_PB", "USA_NE")
+    }
+
+    assert subdivisions == {"CAN_ON": "ON", "IND_PB": "PB", "USA_NE": None}
+
+
+def test_country_without_holidays(caplog):
+    """Test that a country that the package does not know has none."""
+    times = pd.Series(pd.to_datetime(["2025-12-25 12:00"]))
+
+    with caplog.at_level("WARNING"):
+        indicator = utils.public_holidays.get_holiday_indicator(times, "XXX")
+
+    assert indicator.tolist() == [0]
+    assert "public holidays of XXX are not known" in caplog.text
