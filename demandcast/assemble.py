@@ -772,16 +772,19 @@ def run_data_assemply(
     )
 
     # Tell which hours are on a public holiday of their country or
-    # subdivision, which the other calendar features cannot see.
-    assembled_data["Local holiday indicator"] = 0
-    for entity_code, rows in assembled_data.groupby(
+    # subdivision, which the other calendar features cannot see. The
+    # rows are taken by their positions: the index of the merge repeats
+    # the labels of each of its partitions.
+    holiday_indicator = np.zeros(len(assembled_data), dtype=int)
+    for entity_code, positions in assembled_data.groupby(
         "Entity code"
-    ).groups.items():
-        assembled_data.loc[rows, "Local holiday indicator"] = (
+    ).indices.items():
+        holiday_indicator[positions] = (
             utils.public_holidays.get_holiday_indicator(
-                assembled_data.loc[rows, "Time (UTC)"], str(entity_code)
+                assembled_data["Time (UTC)"].iloc[positions], str(entity_code)
             )
         )
+    assembled_data["Local holiday indicator"] = holiday_indicator
 
     coverage = None
     if target_use == "training":
