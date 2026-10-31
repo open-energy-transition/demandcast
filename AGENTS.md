@@ -50,6 +50,7 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 ## Conventions
 
 - Ruff formatting and linting, with lines of at most 79 characters (72 for docstrings and comments), NumPy-style docstrings and type hints, checked by mypy. Import pandas, NumPy and Matplotlib as `pd`, `np` and `plt`.
+- Each file starts with a descriptive, concise, clear and simple docstring (or comment, for files that are not Python); inline comments only explain what is not obvious. Comments, docstrings and documentation state what the code does and the data behind it, with no history of changes and no comparisons with other code: those belong in commit messages and pull requests.
 - Each script validates its YAML settings with a pydantic `ConfigModel`. Document new options in the YAML file and in `webpage/docs/`.
 - Data source modules return a `pandas.Series` of demand in MW with a time-zone-aware index; stored timestamps are in UTC.
 - Tests must not use the network: mock downloads (the `fake_downloads` fixture serves synthetic files to the functions of `utils.fetcher`) and write files to `tmp_path`. Mark the rare tests that need real downloaded data with `@pytest.mark.network`.
