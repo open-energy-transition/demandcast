@@ -779,10 +779,9 @@ def run_data_assemply(
     for entity_code, positions in assembled_data.groupby(
         "Entity code"
     ).indices.items():
-        holiday_indicator[positions] = (
-            utils.public_holidays.get_holiday_indicator(
-                assembled_data["Time (UTC)"].iloc[positions], str(entity_code)
-            )
+        rows = np.asarray(positions)
+        holiday_indicator[rows] = utils.public_holidays.get_holiday_indicator(
+            assembled_data["Time (UTC)"].iloc[rows], str(entity_code)
         )
     assembled_data["Local holiday indicator"] = holiday_indicator
 
