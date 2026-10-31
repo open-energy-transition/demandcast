@@ -14,10 +14,15 @@ Description:
     2026-10-19, from 2026-03-01. The earlier days give an empty list,
     which the module reads as a day without data. The same request
     gives the demand of the regions, provinces and distributors of the
-    regions file below, by their identifier. The module retrieves
-    Argentina, 21 of its provinces, and Buenos Aires with its autonomous
-    city, which CAMMESA splits into Greater Buenos Aires and the rest of
-    the province. Tierra del Fuego is not connected.
+    regions file below, by their identifier. The module retrieves 21
+    provinces of Argentina, and Buenos Aires with its autonomous city,
+    which CAMMESA splits into Greater Buenos Aires and the rest of the
+    province. Tierra del Fuego is not connected.
+
+    As for the other countries whose subdivisions all have data, the
+    national system is not retrieved: from March to October 2026, the
+    demand of the provinces added up to 98.9% of that of the national
+    system (median of the hours, from 95.4% to 100.6% for 98% of them).
 
     Source: https://api.cammesa.com/demanda-svc/swagger-ui.html#/demanda-ws
     Source: https://api.cammesa.com/demanda-svc/demanda/RegionesDemanda
@@ -32,14 +37,13 @@ import pandas as pd
 import utils.fetcher
 
 # The identifiers of the regions of CAMMESA whose demand makes up each
-# country or subdivision: the national system (SADI) for Argentina, and
-# the provinces. CAMMESA splits Buenos Aires and its autonomous city
+# province of Argentina. The national system (SADI) is region 1002.
+# CAMMESA splits Buenos Aires and its autonomous city
 # into Greater Buenos Aires (426), with the city and the municipalities
 # around it, and the rest of the province (425), so only their sum
 # matches the two of them. The other regions, such as 422 for Centro,
 # group several provinces.
 REGION_IDS = {
-    "ARG": (1002,),
     "ARG_BA": (426, 425),  # Buenos Aires and its autonomous city
     "ARG_A": (1933,),  # Salta
     "ARG_D": (1944,),  # San Luis
