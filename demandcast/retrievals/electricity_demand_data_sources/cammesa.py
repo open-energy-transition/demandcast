@@ -19,10 +19,10 @@ Description:
     which CAMMESA splits into Greater Buenos Aires and the rest of the
     province. Tierra del Fuego is not connected.
 
-    As for the other countries whose subdivisions all have data, the
-    national system is not retrieved: from March to October 2026, the
-    demand of the provinces added up to 98.9% of that of the national
-    system (median of the hours, from 95.4% to 100.6% for 98% of them).
+    The provinces make up the national system, whose demand is not
+    retrieved: from March to October 2026, their demand added up to
+    98.9% of it (median of the hours, from 95.4% to 100.6% for 98% of
+    them).
 
     Source: https://api.cammesa.com/demanda-svc/swagger-ui.html#/demanda-ws
     Source: https://api.cammesa.com/demanda-svc/demanda/RegionesDemanda
@@ -37,12 +37,11 @@ import pandas as pd
 import utils.fetcher
 
 # The identifiers of the regions of CAMMESA whose demand makes up each
-# province of Argentina. The national system (SADI) is region 1002.
-# CAMMESA splits Buenos Aires and its autonomous city
-# into Greater Buenos Aires (426), with the city and the municipalities
-# around it, and the rest of the province (425), so only their sum
-# matches the two of them. The other regions, such as 422 for Centro,
-# group several provinces.
+# province of Argentina. CAMMESA splits Buenos Aires and its autonomous
+# city into Greater Buenos Aires (426), with the city and the
+# municipalities around it, and the rest of the province (425), so only
+# their sum matches the two of them. The other regions, such as 422 for
+# Centro, group several provinces.
 REGION_IDS = {
     "ARG_BA": (426, 425),  # Buenos Aires and its autonomous city
     "ARG_A": (1933,),  # Salta
