@@ -34,18 +34,49 @@ def test_holidays_of_subdivisions():
     """
     Test that only official subdivisions have their own holidays.
 
-    Ontario and Punjab are the provinces and states of the same codes,
-    while New England (USA_NE) has the code of Nebraska, and only has
-    the holidays of the United States.
+    Ontario and New South Wales are the provinces and states of the
+    same codes, while New England (USA_NE) has the code of Nebraska, and
+    only has the holidays of the United States. Punjab (IND_PB) is a
+    state of India, which has only selected national holidays.
     """
     subdivisions = {
         code: getattr(
             utils.public_holidays.get_holiday_calendar(code), "subdiv", "none"
         )
-        for code in ("CAN_ON", "IND_PB", "USA_NE")
+        for code in ("CAN_ON", "AUS_NSW", "USA_NE", "IND_PB")
     }
 
-    assert subdivisions == {"CAN_ON": "ON", "IND_PB": "PB", "USA_NE": None}
+    assert subdivisions == {
+        "CAN_ON": "ON",
+        "AUS_NSW": "NSW",
+        "USA_NE": None,
+        "IND_PB": None,
+    }
+
+
+def test_selected_holidays_of_india():
+    """
+    Test that India and its states have only the selected holidays.
+
+    In 2024, Republic Day (26 January) and Diwali (31 October) are
+    holidays, but not Christmas, of the central list, nor the birthday
+    of Guru Gobind Singh (17 January), of Punjab.
+    """
+    times = pd.Series(
+        pd.to_datetime(
+            [
+                "2024-01-26 12:00",
+                "2024-10-31 12:00",
+                "2024-12-25 12:00",
+                "2024-01-17 12:00",
+            ]
+        )
+    )
+
+    for code in ("IND", "IND_PB"):
+        assert utils.public_holidays.get_holiday_indicator(
+            times, code
+        ).tolist() == [1, 1, 0, 0]
 
 
 def test_country_without_holidays(caplog):

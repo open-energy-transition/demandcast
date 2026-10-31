@@ -9,6 +9,19 @@ Description:
     many of them, for the past and future years, including those whose
     date moves, such as Easter, the Chinese New Year or Diwali.
 
+    Some countries have only the holidays that lower their demand
+    (SELECTED_HOLIDAYS), in all their subdivisions. India has many
+    public holidays, of the central government and of each state, but
+    its demand drops on few of them: from 2017 to 2025, the daily
+    demand of its states on a weekday holiday, against the same weekday
+    one and two weeks around it, dropped by a median of 5 to 7% on its
+    three national days (Republic Day, Independence Day and the birthday
+    of Mahatma Gandhi) and on Holi, Diwali and Dussehra, but by less
+    than 3% on the other days of the central list, and not at all on
+    some, such as Christmas or Eid al-Fitr. With all of them, the first
+    model with the public holidays underestimated the demand of India
+    on its holidays by 3.6%.
+
     A subdivision has the public holidays of its country, and its own
     ones if the package knows it and it is the official subdivision of
     the same code (ISO 3166-2), with the same name: many subdivisions of
@@ -37,6 +50,21 @@ import pycountry
 
 import utils.codes
 import utils.time_zones
+
+# The only public holidays of some countries, by their ISO alpha-3
+# code, as the holidays package names them in the national calendar.
+SELECTED_HOLIDAYS = {
+    "IND": frozenset(
+        {
+            "Republic Day",
+            "Independence Day",
+            "Mahatma Gandhi's Birthday",
+            "Holi",
+            "Diwali",
+            "Dussehra",
+        }
+    ),
+}
 
 
 def _normalize(name: str) -> str:
@@ -74,8 +102,9 @@ def get_holiday_calendar(code: str) -> holidays.HolidayBase | None:
     -------
     holidays.HolidayBase | None
         The public holidays of the country, and of the subdivision if it
-        is an official subdivision that the package knows, or None if
-        the package does not know the country.
+        is an official subdivision that the package knows and the
+        country has not selected holidays, or None if the package does
+        not know the country.
     """
     country_code, _, subdivision_code = code.partition("_")
     try:
@@ -90,7 +119,10 @@ def get_holiday_calendar(code: str) -> holidays.HolidayBase | None:
         return None
 
     subdivision = None
-    if subdivision_code in supported[alpha_2]:
+    if (
+        country_code not in SELECTED_HOLIDAYS
+        and subdivision_code in supported[alpha_2]
+    ):
         official = pycountry.subdivisions.get(
             code=f"{alpha_2}-{subdivision_code}"
         )
@@ -116,9 +148,11 @@ def get_holiday_indicator(times: pd.Series, code: str) -> np.ndarray:
     -------
     numpy.ndarray
         1 for the hours that start on a public holiday in local time,
-        0 for the others.
+        only a selected one for a country with selected holidays, 0 for
+        the others.
     """
     calendar = get_holiday_calendar(code)
+    selected = SELECTED_HOLIDAYS.get(code.split("_", maxsplit=1)[0])
     if calendar is None:
         return np.zeros(len(times), dtype=int)
     days = (
@@ -128,7 +162,12 @@ def get_holiday_indicator(times: pd.Series, code: str) -> np.ndarray:
         .date
     )
     unique_days = pd.unique(days)
-    holiday_days = {day for day in unique_days if day in calendar}
+    holiday_days = {
+        day
+        for day in unique_days
+        if day in calendar
+        and (selected is None or selected & set(calendar.get_list(day)))
+    }
     return np.fromiter(
         (day in holiday_days for day in days), dtype=int, count=len(days)
     )

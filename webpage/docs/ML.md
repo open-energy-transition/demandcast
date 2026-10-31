@@ -59,7 +59,7 @@ The ML models use the following features to predict electricity demand:
 - Local hour of the day (0-23)
 - Local month of the year (1-12)
 - Local weekend indicator (1 if Saturday or Sunday, 0 otherwise)
-- Local holiday indicator (1 on a public holiday of the country, or of the state or province if the [holidays](https://pypi.org/project/holidays/) package knows it, 0 otherwise), added by `assemble.py` (`demandcast/utils/public_holidays.py`)
+- Local holiday indicator (1 on a public holiday of the country, or of the state or province if the [holidays](https://pypi.org/project/holidays/) package knows it, 0 otherwise), added by `assemble.py` (`demandcast/utils/public_holidays.py`). India and its states have only the holidays on which their demand drops: Republic Day, Independence Day, the birthday of Mahatma Gandhi, Holi, Diwali and Dussehra
 
 **Weather Features:**
 
