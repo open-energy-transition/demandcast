@@ -18,9 +18,7 @@ Description:
     three national days (Republic Day, Independence Day and the birthday
     of Mahatma Gandhi) and on Holi, Diwali and Dussehra, but by less
     than 3% on the other days of the central list, and not at all on
-    some, such as Christmas or Eid al-Fitr. With all of them, the first
-    model with the public holidays underestimated the demand of India
-    on its holidays by 3.6%.
+    some, such as Christmas or Eid al-Fitr.
 
     A subdivision has the public holidays of its country, and its own
     ones if the package knows it and it is the official subdivision of
@@ -31,12 +29,9 @@ Description:
     of Sergipe. A country that the package does not know has no public
     holidays, which the log reports.
 
-    The demand drops on a public holiday as on a Sunday, while the
-    other calendar features of the models (the hour, the weekend and
-    the month) cannot see it: the first validation of the retraining of
-    2026 overestimated the demand of 27 European countries by 18% on
-    1 January, 1 May, 25 and 26 December, and that of the provinces of
-    China by 48% in the week of the Spring Festival.
+    The indicator tells the models the days on which the demand drops
+    as on a Sunday, which their other calendar features (the hour, the
+    weekend and the month) cannot tell.
 """
 
 import functools
