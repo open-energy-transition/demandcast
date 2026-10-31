@@ -305,7 +305,7 @@ Results are saved to `data/results/validation/with_{trained_model_name}/using_{d
 
 #### Reporting by group
 
-An average error hides where a model fails: in the first validation of the retraining of 2026, the codes that the model never saw in training had a median MAPE of 12%, against 7% for the others, and the systems below 300 MW of 15%. So `demandcast/ml_models/reporting.py` describes each scored country and subdivision, and the results of `validate.py` and `cross_validate.py` have, after its errors:
+`demandcast/ml_models/reporting.py` describes each scored country and subdivision, so that the results tell where a model fails, not only how much. The results of `validate.py` and `cross_validate.py` have, after its errors:
 
 | Column | Meaning |
 | --- | --- |

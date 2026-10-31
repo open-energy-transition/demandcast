@@ -14,12 +14,11 @@ Description:
     embedded generation (see utils.data_sources), read from its
     combined demand.
 
-    The groups are those that the first validation of the retraining
-    of 2026 showed to matter: the codes that the model never saw had
-    a median MAPE of 12%, against 7% for the others, and the small
-    systems, below 300 MW, of 15%. The summary of each group gives its
-    median WAPE, its WAPE weighted by the energy of each code, which
-    is that of the group as a whole, and its median MAPE.
+    The summary groups the codes by whether the model saw them, by
+    size class, by continent and by what their demand counts of the
+    embedded generation, and gives for each group its median WAPE, its
+    WAPE weighted by the energy of each code, which is that of the
+    group as a whole, and its median MAPE.
 """
 
 import logging
