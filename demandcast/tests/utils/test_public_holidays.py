@@ -6,6 +6,8 @@ Description:
     Tests of the public holidays of the countries and subdivisions.
 """
 
+import datetime
+
 import pandas as pd
 
 import utils.public_holidays
@@ -77,6 +79,25 @@ def test_selected_holidays_of_india():
         assert utils.public_holidays.get_holiday_indicator(
             times, code
         ).tolist() == [1, 1, 0, 0]
+
+
+def test_names_of_holidays_in_any_language_of_the_system(monkeypatch):
+    """
+    Test that the holidays have the same names in any system.
+
+    Without a language, the package names the holidays of India in the
+    language of the system: "Diwali" in American English, and "Diwali
+    (Deepavali)" in Indian English, which the selection would miss.
+    """
+    utils.public_holidays.get_holiday_calendar.cache_clear()
+    monkeypatch.setenv("LANG", "C.UTF-8")
+    monkeypatch.setenv("LC_ALL", "C.UTF-8")
+
+    calendar = utils.public_holidays.get_holiday_calendar("IND")
+    utils.public_holidays.get_holiday_calendar.cache_clear()
+
+    assert calendar is not None
+    assert calendar.get_list(datetime.date(2024, 10, 31)) == ["Diwali"]
 
 
 def test_country_without_holidays(caplog):

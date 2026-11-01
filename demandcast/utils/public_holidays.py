@@ -34,8 +34,13 @@ import pycountry
 import utils.codes
 import utils.time_zones
 
+# The language of the names of the holidays. The package otherwise
+# names them in the language of the system, if it has it.
+LANGUAGE = "en_US"
+
 # The only public holidays of some countries, by their ISO alpha-3
-# code, as the holidays package names them in the national calendar.
+# code, as the holidays package names them in the national calendar,
+# in LANGUAGE.
 SELECTED_HOLIDAYS = {
     "IND": frozenset(
         {
@@ -113,7 +118,9 @@ def get_holiday_calendar(code: str) -> holidays.HolidayBase | None:
             utils.codes.get_name_from_code(code)
         ):
             subdivision = subdivision_code
-    return holidays.country_holidays(alpha_2, subdiv=subdivision)
+    return holidays.country_holidays(
+        alpha_2, subdiv=subdivision, language=LANGUAGE
+    )
 
 
 def get_holiday_indicator(times: pd.Series, code: str) -> np.ndarray:
