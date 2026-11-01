@@ -45,6 +45,7 @@ import utils.catalogue
 import utils.config
 import utils.manifest
 import utils.paths
+import utils.public_holidays
 
 # The shares of the hours of a year, and of each of its months, that
 # the training needs.
@@ -769,6 +770,18 @@ def run_data_assemply(
         datasets_to_merge,
         ["Time (UTC)", "Entity code"],
     )
+
+    # The rows are taken by their positions: the index of the merge
+    # repeats the labels of each of its partitions.
+    holiday_indicator = np.zeros(len(assembled_data), dtype=int)
+    for entity_code, positions in assembled_data.groupby(
+        "Entity code"
+    ).indices.items():
+        rows = np.asarray(positions)
+        holiday_indicator[rows] = utils.public_holidays.get_holiday_indicator(
+            assembled_data["Time (UTC)"].iloc[rows], str(entity_code)
+        )
+    assembled_data["Local holiday indicator"] = holiday_indicator
 
     coverage = None
     if target_use == "training":

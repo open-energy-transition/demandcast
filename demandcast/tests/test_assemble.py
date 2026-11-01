@@ -387,6 +387,43 @@ def test_assembly_for_training():
 
 
 @pytest.mark.usefixtures("assembly_inputs")
+def test_assembly_adds_the_public_holidays(monkeypatch):
+    """
+    Test that each hour is on a public holiday of its own country.
+
+    The merge of the inputs repeats the labels of the index of each of
+    its partitions, so the rows of a country are not taken by label.
+    """
+    merge_datasets = assemble._merge_datasets
+
+    def _merge_with_repeated_labels(*args, **kwargs):
+        merged = merge_datasets(*args, **kwargs)
+        merged.index = np.arange(len(merged)) % 1000
+        return merged
+
+    monkeypatch.setattr(
+        assemble, "_merge_datasets", _merge_with_repeated_labels
+    )
+
+    assemble.run_data_assemply("training")
+
+    assembled = _read_assembled("training").set_index(
+        ["Entity code", "Time (UTC)"]
+    )["Local holiday indicator"]
+    # The national days of France (14 July) and of Germany (3 October),
+    # at noon in UTC.
+    assert assembled[("FRA", pd.Timestamp("2024-07-14 12:00"))] == 1
+    assert assembled[("FRA", pd.Timestamp("2024-10-03 12:00"))] == 0
+    assert assembled[("DEU", pd.Timestamp("2024-07-14 12:00"))] == 0
+    assert assembled[("DEU", pd.Timestamp("2024-10-03 12:00"))] == 1
+    # The 24 hours of 14 July in Paris (UTC+2) end from 23:00 on 13 July
+    # to 22:00 on 14 July in UTC.
+    assert (
+        assembled.loc["FRA"]["2024-07-13 23:00":"2024-07-14 22:00"].sum() == 24
+    )
+
+
+@pytest.mark.usefixtures("assembly_inputs")
 def test_assembly_for_forecasting_of_some_years():
     """Test the assembly for forecasting, without the demand."""
     assemble.run_data_assemply("forecasting", start_year=2024, end_year=2024)
