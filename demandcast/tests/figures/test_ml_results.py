@@ -157,7 +157,7 @@ def test_read_saved_results(tmp_path):
         (
             "cross_validation",
             "xgboost",
-            "Cross-validation of XGBoost, country holdout, 20261029_161733",
+            "Cross-validation of XGBoost 20261029_161733",
             "wape_cross_validation_xgboost_country_20261029_161733.png",
         ),
     ],
@@ -193,6 +193,14 @@ def test_plot_saved_results(tmp_path, case, version, title, file_name):
     )
 
     assert (tmp_path / file_name).exists()
+    # The figure of the bars and that of the distribution have the same
+    # title, the second with a line on what it shows.
+    assert [
+        plt.figure(number).get_suptitle() for number in plt.get_fignums()
+    ] == [
+        title,
+        f"{title}\nDistribution of the WAPE of the countries and subdivisions",
+    ]
 
 
 def test_validation_of_another_version(tmp_path):
@@ -352,24 +360,3 @@ def test_size_class_labels():
         "Medium": "Medium\n300 MW \u2013 5 GW",
         "Large": "Large\n\u2265 5 GW",
     }
-
-
-def test_distribution_title_without_holdout(tmp_path):
-    """Test that a distribution leaves out the holdout of its title."""
-    results = pd.DataFrame(
-        {"Testing MAPE": [0.1], "Testing WAPE": [0.1]},
-        index=pd.Index(["FRA"], name="entity_code"),
-    )
-
-    with patch.object(plt, "savefig"):
-        ml_results._plot_distribution(
-            str(tmp_path),
-            results,
-            ("Cross-validation of XGBoost, country holdout, 20261031", "x"),
-            "WAPE",
-        )
-
-    assert plt.gcf().get_suptitle() == (
-        "Cross-validation of XGBoost, 20261031\nDistribution of the WAPE of "
-        "the countries and subdivisions"
-    )

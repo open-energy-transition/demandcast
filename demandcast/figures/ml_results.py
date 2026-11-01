@@ -32,7 +32,6 @@ Description:
 
 import glob
 import os
-import re
 from typing import Literal
 
 import matplotlib.pyplot as plt
@@ -101,7 +100,8 @@ def describe_version(results_directory: str, version: str) -> tuple[str, str]:
     The description tells whether the results are those of a validation
     or of a cross-validation, from the folder of the results, and the
     algorithm and version of the model: the time of the training of a
-    validated model, and the holdout and the time of a cross-validation.
+    validated model, and the time of a cross-validation, whose holdout
+    is in the names of the files only.
 
     Parameters
     ----------
@@ -130,11 +130,10 @@ def describe_version(results_directory: str, version: str) -> tuple[str, str]:
         results_time = os.path.basename(file_path)[
             len("all_") : -len(".parquet")
         ]
-        title = (
-            f"Cross-validation of {algorithm_name}, {holdout} holdout, "
-            f"{results_time}"
+        return (
+            f"Cross-validation of {algorithm_name} {results_time}",
+            f"cross_validation_{version}_{holdout}_{results_time}",
         )
-        return title, f"cross_validation_{version}_{holdout}_{results_time}"
     if not model_time:
         return f"Validation of {version}", f"validation_{version}"
     return (
@@ -970,10 +969,8 @@ def _plot_distribution(
             )
         )
     fig.legend(handles=handles, loc="outside lower center", ncols=2)
-    # The holdout of a cross-validation is left out of the title.
-    title = re.sub(r", \w+ holdout", "", description[0])
     fig.suptitle(
-        f"{title}\nDistribution of the {metric} of the countries "
+        f"{description[0]}\nDistribution of the {metric} of the countries "
         "and subdivisions",
         weight="bold",
         fontsize=11,
