@@ -771,10 +771,8 @@ def run_data_assemply(
         ["Time (UTC)", "Entity code"],
     )
 
-    # Tell which hours are on a public holiday of their country or
-    # subdivision, which the other calendar features cannot see. The
-    # rows are taken by their positions: the index of the merge repeats
-    # the labels of each of its partitions.
+    # The rows are taken by their positions: the index of the merge
+    # repeats the labels of each of its partitions.
     holiday_indicator = np.zeros(len(assembled_data), dtype=int)
     for entity_code, positions in assembled_data.groupby(
         "Entity code"

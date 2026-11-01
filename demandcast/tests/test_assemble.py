@@ -416,7 +416,8 @@ def test_assembly_adds_the_public_holidays(monkeypatch):
     assert assembled[("FRA", pd.Timestamp("2024-10-03 12:00"))] == 0
     assert assembled[("DEU", pd.Timestamp("2024-07-14 12:00"))] == 0
     assert assembled[("DEU", pd.Timestamp("2024-10-03 12:00"))] == 1
-    # The hours of 14 July in Paris, from 22:00 to 22:00 in UTC.
+    # The 24 hours of 14 July in Paris (UTC+2) end from 23:00 on 13 July
+    # to 22:00 on 14 July in UTC.
     assert (
         assembled.loc["FRA"]["2024-07-13 23:00":"2024-07-14 22:00"].sum() == 24
     )
