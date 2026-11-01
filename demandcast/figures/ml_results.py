@@ -3,37 +3,31 @@ License: AGPL-3.0.
 
 Description:
 
-    This module contains functions to plot the errors of machine
-    learning model predictions: the weighted absolute percentage error
-    (WAPE) by default, or the mean absolute percentage error (MAPE).
-    The errors are plotted for all countries and subdivisions, and can
-    also be plotted by group (income level and continent) or compared
-    between two versions of the model.
+    This module plots the testing errors of the machine learning
+    models: the weighted absolute percentage error (WAPE) by default, or
+    the mean absolute percentage error (MAPE).
 
-    The bars of the codes that the model never saw in training are
-    hatched, and the results that describe their codes (see
-    ml_models.reporting) are also plotted by group of codes: whether
-    the model saw them, their size, their continent and what their
-    demand counts of the embedded generation, with a box of the errors
-    of the codes of each group, in a logarithmic scale, and the WAPE
-    of the group as a whole, weighted by the energy of its codes.
+    The errors of a version are plotted in two figures: a bar for each
+    country or subdivision, hatched if the model never saw it in
+    training, and the distribution of the errors of all the codes, by
+    whether the model saw them and by their size class (see
+    ml_models.reporting), with the WAPE of each group weighted by the
+    energy of its codes. The errors of two versions can also be
+    compared, and those of the models trained on the data of each
+    income group and continent plotted against those of the model
+    trained on all the data.
 
     A version is a trained model, such as xgboost_model_20261029_144400,
-    or the algorithm of a cross-validation, such as xgboost. Its MAPE
-    values are the testing MAPE of each country and subdivision in the
-    latest results that validate.py or cross_validate.py saved for it,
-    in the folders data/results/<case>/with_<version>/using_<data>/
-    (all_<time>.parquet, with the columns "Entity code", "Testing
-    MAPE" and "Testing WAPE"). For the plots by group, the results of
-    the model trained on
-    the data of each group are named after the group, such as
-    AF_<time>.parquet or high_income_<time>.parquet.
+    or the algorithm of a cross-validation, such as xgboost. Its errors
+    are those of the latest results that validate.py or
+    cross_validate.py saved for it, as all_<time>.parquet in
+    data/results/<case>/with_<version>/using_<data>/. The results of the
+    models trained on the data of a group are named after the group,
+    such as high_income_<time>.
 
-    The MAPE values of earlier versions, before validate.py saved its
-    results, are in a folder of the version, such as
-    data/results/validation/<version>/all.csv, with the columns
-    entity_code and MAPE_test, and they are read from there if it
-    exists. They have no WAPE, so they are plotted with the MAPE.
+    The results of earlier versions are in a folder of the version, such
+    as data/results/validation/<version>/all.csv, with the columns
+    entity_code and MAPE_test, so they are plotted with the MAPE.
 """
 
 import glob
@@ -322,7 +316,6 @@ def _add_box_and_bar_plot(
     marker_size: int = 10,
     line_width: float = 2.0,
     fontsize: float = 5.0,
-    unseen: pd.Series | None = None,
 ) -> None:
     """
     Add a box and whisker plot and a bar plot to the given axes.
@@ -340,9 +333,6 @@ def _add_box_and_bar_plot(
         The width of the lines in the box plot.
     fontsize : float, optional
         The font size for the x-tick labels.
-    unseen : pandas.Series | None, optional
-        Whether the model never saw each country or subdivision in
-        training, whose bars are hatched.
 
     Raises
     ------
@@ -404,26 +394,47 @@ def _add_box_and_bar_plot(
 
     # Add the bars to the axes.
     for i, series in enumerate(data):
-        bars = axs[1].bar(
+        axs[1].bar(
             indices,
             series,
             width=0.8 if len(data) == 1 else -0.4 if i == 0 else 0.4,
             align="edge" if len(data) == 2 else "center",
             color=colors[i],
         )
-        if unseen is not None:
-            for bar, is_unseen in zip(
-                bars,
-                unseen.reindex(series.index, fill_value=False),
-                strict=True,
-            ):
-                if is_unseen:
-                    bar.set_hatch(UNSEEN_HATCH)
-                    bar.set_edgecolor("white")
 
     # Set the x-ticks, x-tick labels, and x-axis limits.
     axs[1].set_xticks(indices)
     axs[1].set_xticklabels(data[0].index, rotation=90, fontsize=fontsize)
+
+
+def _add_bar_plot(
+    ax: plt.Axes, series: pd.Series, unseen: pd.Series | None
+) -> None:
+    """
+    Add a bar of the error of each country or subdivision.
+
+    Parameters
+    ----------
+    ax : matplotlib.pyplot.Axes
+        The axes of the bars.
+    series : pandas.Series
+        The error of each country or subdivision, by its code.
+    unseen : pandas.Series | None
+        Whether the model never saw each country or subdivision in
+        training, whose bars are hatched.
+    """
+    indices = np.arange(len(series))
+    bars = ax.bar(indices, series, width=0.8, color="tab:blue")
+    if unseen is not None:
+        for bar, is_unseen in zip(
+            bars, unseen.reindex(series.index, fill_value=False), strict=True
+        ):
+            if is_unseen:
+                bar.set_hatch(UNSEEN_HATCH)
+                bar.set_edgecolor("white")
+    ax.set_xticks(indices)
+    ax.set_xticklabels(series.index, rotation=90, fontsize=7.0)
+    ax.set_xlim(-1, len(series))
 
 
 def _add_legend(
@@ -509,7 +520,7 @@ def _plot_overall(
     unseen: pd.Series | None = None,
 ) -> None:
     """
-    Plot the overall errors.
+    Plot the error of each country or subdivision, as a bar.
 
     Parameters
     ----------
@@ -534,31 +545,15 @@ def _plot_overall(
     )
 
     # Initialize the plot, wide enough for the names of the bars.
-    width = _get_figure_width(len(mape_to_plot))
-    fig, axs = plt.subplots(
-        1,
-        2,
-        figsize=(width, 5),
+    fig, ax = plt.subplots(
+        figsize=(_get_figure_width(len(mape_to_plot)), 5),
         layout="constrained",
-        sharey=True,
-        gridspec_kw={"width_ratios": [1, width / 2 - 1]},
     )
-
-    # Add a box and whisker plot and a bar plot.
-    _add_box_and_bar_plot(
-        [axs[0], axs[1]],
-        [mape_to_plot[f"{version}_all"]],
-        fontsize=7.0,
-        unseen=unseen,
-    )
-    axs[0].set_ylabel(METRIC_NAMES[metric], weight="bold", fontsize=12)
-    axs[1].set_xlabel(
-        "Country or subdivision",
-        weight="bold",
-        fontsize=12,
-    )
+    _add_bar_plot(ax, mape_to_plot[f"{version}_all"], unseen)
+    ax.set_ylabel(METRIC_NAMES[metric], weight="bold", fontsize=12)
+    ax.set_xlabel("Country or subdivision", weight="bold", fontsize=12)
     if unseen is not None and unseen.reindex(mape_to_plot.index).any():
-        axs[1].legend(
+        ax.legend(
             handles=[
                 Patch(facecolor="tab:blue", label="Seen in training"),
                 Patch(
@@ -781,19 +776,61 @@ def _plot_by_group(
         )
 
 
-def _plot_groups_of_codes(
+def _format_load(load: float) -> str:
+    """
+    Format a load in MW, or in GW from 1 GW.
+
+    Parameters
+    ----------
+    load : float
+        The load, in MW.
+
+    Returns
+    -------
+    str
+        The load and its unit, such as "300 MW" or "5 GW".
+    """
+    return f"{load:g} MW" if load < 1000 else f"{load / 1000:g} GW"
+
+
+def get_size_class_labels() -> dict[str, str]:
+    """
+    Get the labels of the size classes, with their ranges of mean load.
+
+    Returns
+    -------
+    dict[str, str]
+        The label of each size class, by its name: its name and, on a
+        second line, its range of mean load, such as "300 MW - 5 GW".
+    """
+    labels = {}
+    lower = 0.0
+    for name, upper in ml_models.reporting.SIZE_CLASSES.items():
+        if lower == 0:
+            limits = f"< {_format_load(upper)}"
+        elif np.isinf(upper):
+            limits = f"\u2265 {_format_load(lower)}"
+        else:
+            limits = f"{_format_load(lower)} \u2013 {_format_load(upper)}"
+        labels[name] = f"{name}\n{limits}"
+        lower = upper
+    return labels
+
+
+def _plot_distribution(
     figure_directory: str,
     results: pd.DataFrame,
     description: tuple[str, str],
     metric: Literal["WAPE", "MAPE"],
 ) -> None:
     """
-    Plot the errors by group of codes of their description.
+    Plot the distribution of the errors of the codes, also by group.
 
-    Each column of the description that groups the codes (see
-    ml_models.reporting) has a panel, with a box of the errors of the
-    codes of each of its values, the number of these codes, and, for
-    the WAPE, the WAPE of all their hours, weighted by their energy.
+    The figure has a panel of all the codes and, if the results describe
+    the codes (see ml_models.reporting), a panel by whether the model
+    saw them in training and one by their size class. Each group has a
+    box of the errors of its codes, their number, and, for the WAPE, the
+    WAPE of all their hours, weighted by their energy.
 
     Parameters
     ----------
@@ -801,7 +838,7 @@ def _plot_groups_of_codes(
         The directory where the figure will be saved.
     results : pandas.DataFrame
         The results of each country and subdivision, with their
-        description.
+        description if known.
     description : tuple[str, str]
         The title of the version and the part of the name of the file
         (see describe_version).
@@ -809,19 +846,24 @@ def _plot_groups_of_codes(
         The metric of the errors, "WAPE" or "MAPE".
     """
     scored = results.dropna(subset=[f"Testing {metric}"]).reset_index()
-    panels = {
-        column: groups
-        for column in ml_models.reporting.GROUPING_COLUMNS
-        if column in scored
-        and (groups := ml_models.reporting.group_codes(scored, column))
-    }
-    if not panels:
-        return
+    size_labels = get_size_class_labels()
+    panels = {"All codes": [("All", "All", scored)]}
+    for column, title in (
+        ("Seen in training", "Seen in training"),
+        ("Size class", "Demand size (mean load)"),
+    ):
+        if column in scored:
+            panels[title] = [
+                (value, size_labels.get(value, value), rows)
+                for value, rows in ml_models.reporting.group_codes(
+                    scored, column
+                )
+            ]
     weighted = (
         ml_models.reporting.summarize(scored, "Testing").set_index(
             ["Group", "Value"]
         )["Energy-weighted WAPE"]
-        if metric == "WAPE"
+        if metric == "WAPE" and "Mean load (MW)" in scored
         else None
     )
 
@@ -829,7 +871,7 @@ def _plot_groups_of_codes(
     fig, axs = plt.subplots(
         1,
         len(panels),
-        figsize=(max(8.0, 2.0 + 0.9 * number_of_boxes), 4.5),
+        figsize=(max(6.0, 2.0 + 1.3 * number_of_boxes), 4.5),
         sharey=True,
         layout="constrained",
         gridspec_kw={
@@ -838,10 +880,11 @@ def _plot_groups_of_codes(
         squeeze=False,
     )
     overall_median = scored[f"Testing {metric}"].median() * 100
-    for ax, (column, groups) in zip(axs[0], panels.items(), strict=True):
+    columns = {"All codes": "All", "Demand size (mean load)": "Size class"}
+    for ax, (title, groups) in zip(axs[0], panels.items(), strict=True):
         positions = np.arange(len(groups))
         ax.boxplot(
-            [rows[f"Testing {metric}"] * 100 for _, rows in groups],
+            [rows[f"Testing {metric}"] * 100 for _, _, rows in groups],
             positions=positions,
             widths=0.6,
             medianprops={"color": "tab:red", "linewidth": 2},
@@ -851,9 +894,10 @@ def _plot_groups_of_codes(
             flierprops={"markeredgecolor": "tab:blue", "markersize": 3},
         )
         if weighted is not None:
+            group = columns.get(title, title)
             ax.scatter(
                 positions,
-                [weighted[(column, value)] * 100 for value, _ in groups],
+                [weighted[(group, value)] * 100 for value, _, _ in groups],
                 marker="D",
                 color="tab:green",
                 edgecolor="black",
@@ -862,20 +906,17 @@ def _plot_groups_of_codes(
         ax.axhline(overall_median, color="grey", linestyle="--", linewidth=1)
         ax.set_xticks(
             positions,
-            [f"{value}\n({len(rows)})" for value, rows in groups],
+            [
+                f"{label}\n({len(rows)} code{'s' if len(rows) != 1 else ''})"
+                for _, label, rows in groups
+            ],
             fontsize=8,
         )
-        ax.set_title(column, weight="bold", fontsize=10)
+        ax.set_xlim(-0.6, len(groups) - 0.4)
+        ax.set_title(title, weight="bold", fontsize=10)
 
-    # The errors span from a few percent to more than a hundred, so
-    # they are in a logarithmic scale, with plain numbers.
-    axs[0, 0].set_yscale("log")
-    plain = plt.FuncFormatter(lambda value, _: f"{value:g}")
-    axs[0, 0].yaxis.set_major_formatter(plain)
-    axs[0, 0].yaxis.set_minor_formatter(plain)
-    axs[0, 0].set_ylabel(
-        f"Testing {metric} (%, logarithmic scale)", weight="bold"
-    )
+    axs[0, 0].set_ylim(bottom=0)
+    axs[0, 0].set_ylabel(f"Testing {metric} (%)", weight="bold")
     handles = [
         plt.Line2D([], [], color="tab:red", linewidth=2, label="Median"),
         plt.Line2D(
@@ -900,17 +941,17 @@ def _plot_groups_of_codes(
         )
     fig.legend(handles=handles, loc="outside lower center", ncols=3)
     fig.suptitle(
-        f"{description[0]}: testing {metric} by group of codes "
-        "(number of codes)",
+        f"{description[0]}\nDistribution of the testing {metric} of the "
+        "countries and subdivisions",
         weight="bold",
-        fontsize=12,
+        fontsize=11,
     )
 
     # Save the plot to a file.
     plt.savefig(
         os.path.join(
             figure_directory,
-            f"{metric.lower()}_{description[1]}_by_group_of_codes.png",
+            f"{metric.lower()}_{description[1]}_distribution.png",
         ),
         dpi=300,
         bbox_inches="tight",
@@ -1000,8 +1041,6 @@ def plot(
             metric,
         )
     else:
-        # The results that describe their codes are also plotted by
-        # group of codes, with the codes never seen in training hatched.
         results = _read_results(results_directory, version, "all")
         unseen = (
             ~results["Seen in training"].astype(bool)
@@ -1011,4 +1050,4 @@ def plot(
         _plot_overall(
             figure_directory, version, errors, description, metric, unseen
         )
-        _plot_groups_of_codes(figure_directory, results, description, metric)
+        _plot_distribution(figure_directory, results, description, metric)

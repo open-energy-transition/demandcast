@@ -76,7 +76,7 @@ def test_read_mape():
 @pytest.mark.parametrize(
     ("compare_with_version", "by_group", "file_names"),
     [
-        (None, False, ["mape_example1.png"]),
+        (None, False, ["mape_example1.png", "mape_example1_distribution.png"]),
         ("example2", False, ["mape_example1_vs_example2.png"]),
         (
             None,
@@ -105,7 +105,7 @@ def test_plot_reads_validation_results(tmp_path):
         patch.object(ml_results, "_read_errors") as read_mape,
         patch.object(ml_results, "_read_results"),
         patch.object(ml_results, "_plot_overall"),
-        patch.object(ml_results, "_plot_groups_of_codes"),
+        patch.object(ml_results, "_plot_distribution"),
     ):
         ml_results.plot(str(tmp_path), "a")
 
@@ -219,9 +219,9 @@ def test_plot_described_results(tmp_path, metric):
     """
     Test the figures of results that describe their codes.
 
-    The codes never seen in training are hatched, and the errors are
-    also plotted by group of codes, without the codes whose value of a
-    group is not known.
+    The bars of the codes never seen in training are hatched, and the
+    distribution of the errors is that of all the codes, by whether the
+    model saw them, and by size class, labelled with its mean loads.
     """
     folder = tmp_path / "with_xgboost_model_1" / "using_data_1"
     folder.mkdir(parents=True)
@@ -235,7 +235,6 @@ def test_plot_described_results(tmp_path, metric):
             "Mean load (MW)": [50000.0, 5000.0, 250.0, 30000.0],
             "Size class": ["Large", "Medium", "Small", "Large"],
             "Continent": ["Europe", "Asia", "Europe", "North America"],
-            "Embedded generation": ["unknown", None, "included", "unknown"],
         }
     ).to_parquet(folder / "all_20261029_161733.parquet")
 
@@ -246,50 +245,59 @@ def test_plot_described_results(tmp_path, metric):
             results_directory=str(tmp_path),
             metric=metric,
         )
-        overall, groups = (plt.figure(number) for number in plt.get_fignums())
+        bars, distribution = (
+            plt.figure(number) for number in plt.get_fignums()
+        )
 
-    bars = overall.axes[1].patches
-    assert [bar.get_hatch() for bar in bars] == [None, None, None, "////"]
-    legend = overall.axes[1].get_legend()
+    # The figure of the bars has no panel of their distribution.
+    [ax] = bars.axes
+    assert [bar.get_hatch() for bar in ax.patches] == [
+        None,
+        None,
+        None,
+        "////",
+    ]
+    legend = ax.get_legend()
     assert legend is not None
     assert [text.get_text() for text in legend.texts] == [
         "Seen in training",
         "Not seen in training",
     ]
-    assert [ax.get_title() for ax in groups.axes] == [
+
+    assert [ax.get_title() for ax in distribution.axes] == [
+        "All codes",
         "Seen in training",
-        "Size class",
-        "Continent",
-        "Embedded generation",
+        "Demand size (mean load)",
     ]
     assert [
-        label.get_text() for label in groups.axes[1].get_xticklabels()
+        label.get_text() for label in distribution.axes[2].get_xticklabels()
     ] == [
-        "Small\n(1)",
-        "Medium\n(1)",
-        "Large\n(2)",
+        "Small\n< 300 MW\n(1 code)",
+        "Medium\n300 MW \u2013 5 GW\n(1 code)",
+        "Large\n\u2265 5 GW\n(2 codes)",
     ]
-    # The errors are labelled as plain numbers, also between the powers
-    # of ten.
-    axis = groups.axes[0].yaxis
-    assert axis.get_minor_formatter()(20.0, 0) == "20"
-    assert axis.get_major_formatter()(10.0, 0) == "10"
-    # The WAPE of each group, weighted by energy, is marked.
+    assert distribution.axes[0].get_yscale() == "linear"
+    assert distribution.axes[0].get_ylim()[0] == 0
+    # The WAPE of all the codes, weighted by energy, is marked.
     markers = [
         np.asarray(collection.get_offsets())[:, 1]
-        for collection in groups.axes[0].collections
+        for collection in distribution.axes[0].collections
     ]
     if metric == "WAPE":
-        energy = np.array([50000.0 * 100, 250.0 * 50, 30000.0 * 100])
+        energy = np.array([50000.0 * 100, 5000.0 * 100, 250.0 * 50, 3e6])
         assert markers[0].tolist() == pytest.approx(
-            [25.0, (np.array([5.0, 15.0, 7.0]) * energy).sum() / energy.sum()]
+            [(np.array([5.0, 25.0, 15.0, 7.0]) * energy).sum() / energy.sum()]
         )
     else:
         assert markers == []
 
 
 def test_plot_results_without_description(tmp_path):
-    """Test that results without description have no group figure."""
+    """
+    Test the figures of results that do not describe their codes.
+
+    Their distribution has only the panel of all the codes.
+    """
     folder = tmp_path / "with_xgboost" / "using_data_1"
     folder.mkdir(parents=True)
     pd.DataFrame(
@@ -298,6 +306,18 @@ def test_plot_results_without_description(tmp_path):
 
     ml_results.plot(str(tmp_path), "xgboost", results_directory=str(tmp_path))
 
-    assert [
+    assert sorted(
         name for name in os.listdir(tmp_path) if name.endswith(".png")
-    ] == ["wape_validation_xgboost.png"]
+    ) == [
+        "wape_validation_xgboost.png",
+        "wape_validation_xgboost_distribution.png",
+    ]
+
+
+def test_size_class_labels():
+    """Test that the size classes are labelled with their mean loads."""
+    assert ml_results.get_size_class_labels() == {
+        "Small": "Small\n< 300 MW",
+        "Medium": "Medium\n300 MW \u2013 5 GW",
+        "Large": "Large\n\u2265 5 GW",
+    }
