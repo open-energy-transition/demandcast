@@ -276,6 +276,16 @@ def test_plot_described_results(tmp_path, metric):
         "Medium\n300 MW \u2013 5 GW\n(1 code)",
         "Large\n\u2265 5 GW\n(2 codes)",
     ]
+    # Both figures tell, next to their last panel, that a lower error is
+    # better, and the distribution has no line of the median of all the
+    # codes.
+    for figure in (bars, distribution):
+        assert [text.get_text() for text in figure.axes[-1].texts] == [
+            f"Lower {metric} is better"
+        ]
+    assert [text.get_text() for text in distribution.legends[0].texts] == [
+        "Median"
+    ] + (["WAPE of the group, weighted by energy"] if metric == "WAPE" else [])
     assert distribution.axes[0].get_yscale() == "linear"
     assert distribution.axes[0].get_ylim()[0] == 0
     # The WAPE of all the codes, weighted by energy, is marked.

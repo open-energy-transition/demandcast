@@ -38,6 +38,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.patches import Patch
+from matplotlib.transforms import offset_copy
 
 import ml_models.reporting
 import utils.manifest
@@ -481,24 +482,39 @@ def _add_legend(
 
 
 def _add_explanatory_text(
-    fig: plt.Figure, metric: Literal["WAPE", "MAPE"] = "MAPE"
+    target: plt.Axes | plt.Figure, metric: Literal["WAPE", "MAPE"] = "MAPE"
 ) -> None:
     """
-    Add explanatory text to the figure.
+    Add an arrow that tells that a lower error is better.
 
     Parameters
     ----------
-    fig : matplotlib.pyplot.Figure
-        The figure where to add the explanatory text.
+    target : matplotlib.pyplot.Axes | matplotlib.pyplot.Figure
+        The axes, next to whose right side the arrow is centred on their
+        height, or the figure, on whose right side it is.
     metric : str, optional
         The metric of the errors, "WAPE" or "MAPE".
     """
-    # Add a text to indicate that a lower error is better.
-    fig.text(
-        1.035,
+    if isinstance(target, plt.Axes):
+        # A fixed gap in points, whatever the width of the axes.
+        x, transform, alignment = (
+            1.0,
+            offset_copy(
+                target.transAxes,
+                fig=target.get_figure(root=True),
+                x=16,
+                units="points",
+            ),
+            "left",
+        )
+    else:
+        x, transform, alignment = 1.045, target.transFigure, "center"
+    target.text(
+        x,
         0.5,
         f"Lower {metric} is better",
-        ha="center",
+        transform=transform,
+        ha=alignment,
         va="center",
         weight="bold",
         fontsize=12,
@@ -567,8 +583,7 @@ def _plot_overall(
             fontsize=10,
         )
 
-    # Add a text to indicate that a lower error is better.
-    _add_explanatory_text(fig, metric)
+    _add_explanatory_text(ax, metric)
 
     # Add a legend.
     _add_legend(fig, [description[0]])
@@ -637,8 +652,7 @@ def _plot_comparison(
     axs[0].set_ylabel(METRIC_NAMES[metric], weight="bold", fontsize=12)
     axs[1].set_xlabel("Country or subdivision", weight="bold", fontsize=12)
 
-    # Add a text to indicate that a lower error is better.
-    _add_explanatory_text(fig, metric)
+    _add_explanatory_text(axs[1], metric)
 
     # Add a legend.
     _add_legend(fig, [descriptions[0][0], descriptions[1][0]])
@@ -879,7 +893,6 @@ def _plot_distribution(
         },
         squeeze=False,
     )
-    overall_median = scored[f"Testing {metric}"].median() * 100
     columns = {"All codes": "All", "Demand size (mean load)": "Size class"}
     for ax, (title, groups) in zip(axs[0], panels.items(), strict=True):
         positions = np.arange(len(groups))
@@ -903,7 +916,6 @@ def _plot_distribution(
                 edgecolor="black",
                 zorder=3,
             )
-        ax.axhline(overall_median, color="grey", linestyle="--", linewidth=1)
         ax.set_xticks(
             positions,
             [
@@ -917,15 +929,9 @@ def _plot_distribution(
 
     axs[0, 0].set_ylim(bottom=0)
     axs[0, 0].set_ylabel(f"Testing {metric} (%)", weight="bold")
+    _add_explanatory_text(axs[0, -1], metric)
     handles = [
         plt.Line2D([], [], color="tab:red", linewidth=2, label="Median"),
-        plt.Line2D(
-            [],
-            [],
-            color="grey",
-            linestyle="--",
-            label="Median of all the codes",
-        ),
     ]
     if weighted is not None:
         handles.append(
@@ -939,7 +945,7 @@ def _plot_distribution(
                 label="WAPE of the group, weighted by energy",
             )
         )
-    fig.legend(handles=handles, loc="outside lower center", ncols=3)
+    fig.legend(handles=handles, loc="outside lower center", ncols=2)
     fig.suptitle(
         f"{description[0]}\nDistribution of the testing {metric} of the "
         "countries and subdivisions",
