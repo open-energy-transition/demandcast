@@ -10,14 +10,16 @@ DemandCast retrieves hourly electricity demand, weather and socio-economic data 
 
 Each step is a script in `demandcast/`, configured by `config/<script>_config.yaml` (pass another file with `--config`):
 
-1. `retrieve.py` downloads demand, weather and socio-economic data into `data/<variable>/`.
+1. `retrieve.py` downloads demand, weather and socio-economic data into `data/<variable>/`. It also cleans the electricity demand of each data source and combines the sources of each country or subdivision into one hourly series, in the stages `raw/`, `processed/`, `cleaned/` and `combined/`.
 2. `assemble.py` merges the retrieved data into one dataset for training or forecasting, in `data/assembled/`. Its inputs are the rows of `DATASETS`: a new input is a new row, with its folder, columns and scenarios.
 3. `train.py` trains a model; `validate.py` evaluates it on each entity's most recent year, and `cross_validate.py` on entities left out of training.
 4. `forecast.py` predicts hourly demand in MW with a trained model.
-5. `plot.py` and `check.py` draw figures, and check data availability and the data sources over the network.
+5. `plot.py` draws figures, and `check.py` checks the data availability and the data sources over the network, and gathers the flags of the cleaned electricity demand into a report.
 6. `sync.py` copies the data folder to or from a private bucket of Google Cloud Storage, never overwriting or deleting files, and `publish.py` uploads a release (trained model, settings, forecasts) to Zenodo as a draft; their code is in `publishing/`.
 
 Paths come from `utils/paths.py`; use its functions instead of hard-coding paths. The inputs that come with the code (configuration, shapes, data source YAMLs, flag reviews) stay in the code folder, and everything the scripts write goes under the data folder: `data/`, or the folder named by `DEMANDCAST_DATA_FOLDER`. Each dataset has its own folder there, with its stages (`raw/`, `processed/`, ...), next to `assembled/`, `models/<algorithm>/`, `results/` (validation, cross-validation, forecasts, figures, check reports) and `logs/`.
+
+The assembled datasets, the trained models and the results have a manifest next to them (`<name>.manifest.json`, see `utils/manifest.py`), with the checksums of the file and of its inputs, the version of the code and the settings; the scripts check it before they use a file.
 
 Dependencies go one way: the scripts use `retrievals/`, `cleaning/`, `checks/`, `figures/` and `ml_models/`, which use `utils/`; `utils/` imports none of them (`tests/utils/test_dependencies.py` checks it).
 
@@ -27,7 +29,10 @@ The scenarios (SSP, IAMC and CMIP6), the climate models and the years of each pr
 
 - `demandcast/`: the Python project. Run all Python commands from this folder, because modules are imported as top-level packages (`import utils.config`, not `import demandcast.utils.config`).
   - `retrievals/`: data retrieval. Each electricity demand source is a module plus a YAML file in `retrievals/electricity_demand_data_sources/`. The indicators (population, GDP PPP per capita, annual electricity demand per capita) save their years and scenarios with `retrievals/indicators.py`, and the gridded data extracts each country and subdivision with `retrievals/gridded.py`.
-  - `ml_models/`: the models. `registry.py` lists them and defines the interface of their modules (`ModelModule`), `data.py` holds the settings of `config/ml_config.yaml` and prepares the data (target conversions, splits), `files.py` finds the latest model and assembled data and saves the results, and `evaluation.py` computes the errors (the MAPE of each entity and set, and the cross-validation).
+  - `cleaning/`: the cleaning of the electricity demand of each data source (`electricity_demand.py`), its flags (`flags.py`), and the combination of the data sources of each code into one hourly series, with the data source of each hour and whether it can be used for training (`combining.py`).
+  - `checks/`: the checks of `check.py`, and the reviews of the flags (`reviewed_flags.yaml`), which tell whether flagged hours are errors of the source, real events or net demand.
+  - `figures/` and `publishing/`: the figures of `plot.py`, and the code of `sync.py` and `publish.py`.
+  - `ml_models/`: the models. `registry.py` lists them and defines the interface of their modules (`ModelModule`), `data.py` holds the settings of `config/ml_config.yaml` and prepares the data (target conversions, splits), `files.py` finds the latest model and assembled data and saves the results, and `evaluation.py` computes the errors (the MAPE and WAPE of each entity and set, and the cross-validation).
   - `utils/`: shared helpers; CI requires at least 95% test coverage. The countries and subdivisions are in `codes.py` (ISO codes, names, continents), `data_sources.py` (the YAML registry of the data sources), `time_zones.py` and `availability.py` (the codes of interest and their data).
   - `benchmark/`: the configuration files of the data of the benchmark of the models and `run.py`, which retrieves and assembles it.
   - `tests/`: the pytest suite, in folders that mirror the code: the tests of `utils/fetcher.py` are in `tests/utils/test_fetcher.py`, and those of the scripts are at the top of `tests/`.
@@ -50,13 +55,14 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 ## Conventions
 
 - Ruff formatting and linting, with lines of at most 79 characters (72 for docstrings and comments), NumPy-style docstrings and type hints, checked by mypy. Import pandas, NumPy and Matplotlib as `pd`, `np` and `plt`.
-- Each script validates its YAML settings with a pydantic `ConfigModel`. Document new options in the YAML file and in `webpage/docs/`.
+- Each file starts with a descriptive, concise, clear and simple docstring (or comment, for files that are not Python); inline comments only explain what is not obvious. Comments, docstrings and documentation state what the code does and the data behind it, with no history of changes and no comparisons with other code: those belong in commit messages and pull requests.
+- Each script validates its YAML settings with a pydantic `ConfigModel`, a subclass of `utils.config.StrictSettings`, which rejects the settings that it does not have. Document new options in the YAML file and in `webpage/docs/`.
 - Data source modules return a `pandas.Series` of demand in MW with a time-zone-aware index; stored timestamps are in UTC.
 - Tests must not use the network: mock downloads (the `fake_downloads` fixture serves synthetic files to the functions of `utils.fetcher`) and write files to `tmp_path`. Mark the rare tests that need real downloaded data with `@pytest.mark.network`.
 - The code must also work on Windows: build paths with `os.path.join` or `pathlib`, also in tests.
 - Change dependencies in `pyproject.toml` and run `uv lock`; never edit `uv.lock` by hand.
 - `README.md` is short and links to the documentation site, whose home page, `webpage/docs/index.md`, has the full text; `webpage/docs/architecture.md` describes the scripts, the folders and the dependency rule: update it when they change.
-- Never commit data files (`data/`, `*.parquet`, `*.csv`; the small synthetic fixtures of the tests are fine) or `.env` files, which hold the API keys (`CDS_API_KEY`, `ENTSOE_API_KEY`, `EIA_API_KEY`, `ZENODO_API_KEY`, `SANDBOX_ZENODO_API_KEY`).
+- Never commit data files (`data/`, `*.parquet`, `*.csv`; the small synthetic fixtures of the tests are fine) or `.env` files, which hold the API keys and credentials (`CDS_API_KEY`, `ENTSOE_API_KEY`, `EIA_API_KEY`, `EPIAS_USERNAME`, `EPIAS_PASSWORD`, `ISONE_USERNAME`, `ISONE_PASSWORD`, `ZENODO_API_KEY`, `SANDBOX_ZENODO_API_KEY`).
 
 ## pandas 3 pitfalls
 
