@@ -294,6 +294,19 @@ def test_plot_described_results(tmp_path, metric):
             for line in ax.yaxis.get_gridlines()
         )
         assert not any(line.get_visible() for line in ax.xaxis.get_gridlines())
+    # The title of the bars has no background, and the distribution says
+    # what its metric stands for.
+    title = bars.get_suptitle()
+    assert title == "Validation of the XGBoost model 1"
+    [title_text] = [text for text in bars.texts if text.get_text() == title]
+    assert title_text.get_bbox_patch() is None
+    assert (
+        distribution.axes[0].get_ylabel()
+        == {
+            "WAPE": "Testing Weighted Absolute\nPercentage Error (WAPE, %)",
+            "MAPE": "Testing Mean Absolute\nPercentage Error (MAPE, %)",
+        }[metric]
+    )
     assert distribution.axes[0].get_yscale() == "linear"
     assert distribution.axes[0].get_ylim()[0] == 0
     # The WAPE of all the codes, weighted by energy, is marked.
@@ -339,3 +352,24 @@ def test_size_class_labels():
         "Medium": "Medium\n300 MW \u2013 5 GW",
         "Large": "Large\n\u2265 5 GW",
     }
+
+
+def test_distribution_title_without_holdout(tmp_path):
+    """Test that a distribution leaves out the holdout of its title."""
+    results = pd.DataFrame(
+        {"Testing MAPE": [0.1], "Testing WAPE": [0.1]},
+        index=pd.Index(["FRA"], name="entity_code"),
+    )
+
+    with patch.object(plt, "savefig"):
+        ml_results._plot_distribution(
+            str(tmp_path),
+            results,
+            ("Cross-validation of XGBoost, country holdout, 20261031", "x"),
+            "WAPE",
+        )
+
+    assert plt.gcf().get_suptitle() == (
+        "Cross-validation of XGBoost, 20261031\nDistribution of the testing "
+        "WAPE of the countries and subdivisions"
+    )

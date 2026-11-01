@@ -32,6 +32,8 @@ Description:
 
 import glob
 import os
+import re
+import textwrap
 from typing import Literal
 
 import matplotlib.pyplot as plt
@@ -602,9 +604,7 @@ def _plot_overall(
         )
 
     _add_explanatory_text(ax, metric)
-
-    # Add a legend.
-    _add_legend(fig, [description[0]])
+    fig.suptitle(description[0], weight="bold", fontsize=12)
 
     _add_grid(fig)
 
@@ -952,7 +952,12 @@ def _plot_distribution(
         ax.set_title(title, weight="bold", fontsize=10)
 
     axs[0, 0].set_ylim(bottom=0)
-    axs[0, 0].set_ylabel(f"Testing {metric} (%)", weight="bold")
+    axs[0, 0].set_ylabel(
+        textwrap.fill(
+            f"Testing {METRIC_NAMES[metric].removesuffix(')')}, %)", 30
+        ),
+        weight="bold",
+    )
     _add_explanatory_text(axs[0, -1], metric)
     handles = [
         plt.Line2D([], [], color="tab:red", linewidth=2, label="Median"),
@@ -970,9 +975,11 @@ def _plot_distribution(
             )
         )
     fig.legend(handles=handles, loc="outside lower center", ncols=2)
+    # The holdout of a cross-validation is left out of the title.
+    title = re.sub(r", \w+ holdout", "", description[0])
     fig.suptitle(
-        f"{description[0]}\nDistribution of the testing {metric} of the "
-        "countries and subdivisions",
+        f"{title}\nDistribution of the testing {metric} of the countries "
+        "and subdivisions",
         weight="bold",
         fontsize=11,
     )
