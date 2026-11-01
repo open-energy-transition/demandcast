@@ -383,7 +383,7 @@ def _add_bar_chart(
         cumulative_height += np.array(list(continent_occurrence.values()))
 
     # Set the title and labels.
-    ax.set_xlabel(xlabel, fontsize=14)
+    ax.set_xlabel(xlabel, fontsize=14, weight="bold")
     ax.set_xticks(
         range(len(levels)),
         [
@@ -543,7 +543,7 @@ def draw(data: FigureData, figure_directory: str) -> None:
     # Set the y-axis limit to the maximum cumulative height and the
     # label.
     ax.set_ylim(0, height)
-    ax.set_ylabel("Number of years", fontsize=14)
+    ax.set_ylabel("Number of years", fontsize=14, weight="bold")
 
     # Add the bar chart for the GDP coverage.
     ax = fig.add_axes((0.25, 0.0, 0.2, 1))
@@ -732,8 +732,16 @@ def draw(data: FigureData, figure_directory: str) -> None:
         )
 
     # Add the axis titles.
-    ax.set_xlabel("GDP per capita, PPP (2021 international k$)", fontsize=14)
-    ax.set_ylabel("Annual electricity demand per capita (MWh)", fontsize=14)
+    ax.set_xlabel(
+        "GDP per capita, PPP (2021 international k$)",
+        fontsize=14,
+        weight="bold",
+    )
+    ax.set_ylabel(
+        "Annual electricity demand per capita (MWh)",
+        fontsize=14,
+        weight="bold",
+    )
 
     # Add a title to the figure.
     plt.suptitle(
