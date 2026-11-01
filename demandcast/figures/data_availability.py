@@ -650,22 +650,22 @@ def draw(data: FigureData, figure_directory: str) -> None:
     ax.annotate(
         text="Peru",
         xy=(
-            data.gdp_points["PER"].iloc[0] / 1000,
-            data.electricity_demand_points["PER"].iloc[0] * 0.92 / 1000,
+            data.gdp_points["PER"].iloc[0] * 1.10 / 1000,
+            data.electricity_demand_points["PER"].iloc[0] / 1000,
         ),
-        ha="center",
-        va="top",
+        ha="left",
+        va="center",
         fontsize=12,
         color=COLORS["SA"],
     )
     ax.annotate(
-        "Pakistan",
+        text="Nepal",
         xy=(
-            data.gdp_points["PAK"].iloc[0] * 1.1 / 1000,
-            data.electricity_demand_points["PAK"].iloc[0] * 0.9 / 1000,
+            data.gdp_points["NPL"].iloc[-1] * 1.08 / 1000,
+            data.electricity_demand_points["NPL"].iloc[-1] / 1000,
         ),
-        ha="center",
-        va="top",
+        ha="left",
+        va="center",
         fontsize=12,
         color=COLORS["AS"],
     )
@@ -694,13 +694,14 @@ def draw(data: FigureData, figure_directory: str) -> None:
     ax.annotate(
         text="Luxembourg",
         xy=(
-            data.gdp_points["LUX"].iloc[0] * 1.10 / 1000,
+            data.gdp_points["LUX"].iloc[0] * 1.15 / 1000,
             data.electricity_demand_points["LUX"].iloc[0] * 1.10 / 1000,
         ),
         ha="right",
         va="bottom",
         fontsize=12,
         color=COLORS["EU"],
+        annotation_clip=False,
     )
 
     # Add a legend to the plot.

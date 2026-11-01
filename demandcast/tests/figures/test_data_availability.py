@@ -19,7 +19,7 @@ from figures import data_availability
 CONTINENTS = {
     "NGA": "AF",
     "PER": "SA",
-    "PAK": "AS",
+    "NPL": "AS",
     "CAN": "NA",
     "CAN_ON": "NA",
     "NOR": "EU",
@@ -102,7 +102,7 @@ def test_get_data(synthetic_data):
     assert list(data.gdp_points) == [
         "NGA",
         "PER",
-        "PAK",
+        "NPL",
         "CAN",
         "NOR",
         "LUX",
