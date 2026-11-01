@@ -945,12 +945,16 @@ def _plot_distribution(
         ax.boxplot(
             [rows[f"Testing {metric}"] * 100 for _, _, rows in groups],
             positions=positions,
-            widths=0.6,
-            medianprops={"color": "tab:red", "linewidth": 2},
-            boxprops={"color": "tab:blue"},
-            whiskerprops={"color": "tab:blue"},
-            capprops={"color": "tab:blue"},
-            flierprops={"markeredgecolor": "tab:blue", "markersize": 3},
+            widths=0.5,
+            medianprops={"color": "tab:red", "linewidth": 2.5},
+            boxprops={"color": "tab:blue", "linewidth": 1.5},
+            whiskerprops={"color": "tab:blue", "linewidth": 1.5},
+            capprops={"color": "tab:blue", "linewidth": 1.5},
+            flierprops={
+                "markeredgecolor": "tab:blue",
+                "markeredgewidth": 1.5,
+                "markersize": 3,
+            },
         )
         if weighted is not None:
             ax.scatter(
