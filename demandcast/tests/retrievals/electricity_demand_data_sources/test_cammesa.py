@@ -15,7 +15,7 @@ from retrievals.electricity_demand_data_sources import cammesa
 def test_get_available_requests():
     """Test that the requests are the days of the last eight months."""
     requests = cammesa.get_available_requests(
-        "ARG", datetime.date(2025, 1, 1), datetime.date(2025, 12, 28)
+        "ARG_X", datetime.date(2025, 1, 1), datetime.date(2025, 12, 28)
     )
 
     assert requests[0] == "2025-04-01"
@@ -26,7 +26,7 @@ def test_get_available_requests():
 def test_get_available_requests_from_a_later_start():
     """Test that the requests start at a start date in the months."""
     requests = cammesa.get_available_requests(
-        "ARG", datetime.date(2025, 12, 1), datetime.date(2025, 12, 28)
+        "ARG_X", datetime.date(2025, 12, 1), datetime.date(2025, 12, 28)
     )
 
     assert requests[0] == "2025-12-01"
@@ -34,16 +34,21 @@ def test_get_available_requests_from_a_later_start():
 
 
 def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
-    """Test that the missing values and the next day are removed."""
+    """
+    Test that the missing values and the next day are removed.
+
+    The day of the API is that of the national system, served for
+    Santa Fe.
+    """
     fake_downloads.serve(
         "https://api.cammesa.com/demanda-svc/demanda/"
         "ObtieneDemandaYTemperaturaRegionByFecha?"
-        "id_region=1002&fecha=2025-12-01",
+        "id_region=2540&fecha=2025-12-01",
         "cammesa.json",
     )
 
     time_series = cammesa.download_and_extract_data_for_request(
-        "2025-12-01", "ARG"
+        "2025-12-01", "ARG_S"
     )
 
     assert_demand(
@@ -116,12 +121,12 @@ def test_download_and_extract_data_of_a_day_without_data(fake_downloads):
     fake_downloads.serve(
         "https://api.cammesa.com/demanda-svc/demanda/"
         "ObtieneDemandaYTemperaturaRegionByFecha?"
-        "id_region=1002&fecha=2026-02-01",
+        "id_region=1945&fecha=2026-02-01",
         "cammesa_empty.json",
     )
 
     time_series = cammesa.download_and_extract_data_for_request(
-        "2026-02-01", "ARG"
+        "2026-02-01", "ARG_X"
     )
 
     assert time_series.empty

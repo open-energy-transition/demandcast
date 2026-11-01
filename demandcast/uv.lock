@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.15' and platform_machine == 'ARM64' and sys_platform == 'win32'",
@@ -966,6 +966,7 @@ dependencies = [
     { name = "gcsfs" },
     { name = "geopandas" },
     { name = "google-cloud-storage" },
+    { name = "holidays" },
     { name = "matplotlib" },
     { name = "nepali-datetime" },
     { name = "netcdf4" },
@@ -1028,6 +1029,7 @@ requires-dist = [
     { name = "gcsfs", specifier = ">=2025.3.0" },
     { name = "geopandas", specifier = ">=1.0.1" },
     { name = "google-cloud-storage", specifier = ">=3.1.0" },
+    { name = "holidays", specifier = ">=0.80" },
     { name = "matplotlib", specifier = ">=3.10.0" },
     { name = "nepali-datetime", specifier = ">=1.0.8.4" },
     { name = "netcdf4", specifier = ">=1.7.3" },
@@ -1585,6 +1587,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/df/ea/5855e53982027669880453392f0092003f750194e9ed4661f23d20dbf0c6/h3-4.4.1-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:59b52973f45a70f1f6f47c022787322fda1b6a2ae0dfa973571a23dee89fa81c", size = 863278, upload-time = "2025-12-15T22:15:09.317Z" },
     { url = "https://files.pythonhosted.org/packages/01/a5/2d4f8f3d46307225f19e66b4ec425e43a61020da0121e9aefc1cad081d09/h3-4.4.1-cp314-cp314t-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:e3e7a4c543fe162e5e511faecafa755ad4def0d06c84bdb66eaa5dd0831c1909", size = 989635, upload-time = "2025-12-15T22:15:10.411Z" },
     { url = "https://files.pythonhosted.org/packages/49/61/e3e8bdcd7b665865455567fa9582beff1f11c80788c87883d6ab09c9e4fa/h3-4.4.1-cp314-cp314t-win_amd64.whl", hash = "sha256:6b79466c2d8b063ffc9baa536b8fbe424c1b5d887a1ddecfbebb1e538ce6d078", size = 898486, upload-time = "2025-12-15T22:15:11.811Z" },
+]
+
+[[package]]
+name = "holidays"
+version = "0.107"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/27/f2/7aa646c4ecb198a3af80a9b3dd727cf9f2659e52cee598dcd5b8ed6d9087/holidays-0.107.tar.gz", hash = "sha256:2f02cdfbe41a5f14e053590f2385a932fe42f0c692aed75cb55601ad37cebb4d", size = 1077660, upload-time = "2026-10-19T23:35:18.493Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ac/6d/ec046c6d998d32b08cd344b8c80fad7d77d3297586e2a3f8a1b3d4476b85/holidays-0.107-py3-none-any.whl", hash = "sha256:5e4582d543b145d8ebb80ce8943e60ea5c8b6a30b74201ad0f95af0cbe67cb14", size = 1694848, upload-time = "2026-10-19T23:35:16.486Z" },
 ]
 
 [[package]]

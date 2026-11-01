@@ -4,17 +4,13 @@ licence:
   url: https://cammesaweb.cammesa.com/politicas-de-acceso/
 definition:
   - start_date: 2025-01-01
-    quantity: demand of the national system (SADI)
+    quantity: demand of the provinces in the national system (SADI)
     embedded_generation: unknown
     network_losses: unknown
     storage_charging: unknown
     power_plant_use: unknown
     note: CAMMESA does not define the demand in its API, which keeps only the last months, too few to follow the midday over the years.
 entities:
-  - country_name: Argentina
-    country_code: ARG
-    start_date: 2025-01-01
-    end_date: today
   - subdivision_name: Salta
     subdivision_code: A
     country_name: Argentina

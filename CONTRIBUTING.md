@@ -35,7 +35,8 @@ uvx pre-commit run --all-files  # run them on the whole repository
 
 1. Create a branch from `main` in your fork.
 2. Follow the existing style: [Ruff](https://docs.astral.sh/ruff/) formatting and linting (lines of at most 79 characters), NumPy-style docstrings and type hints, checked by mypy. The pre-commit hooks check this for you.
-3. Add or update tests for your changes in `demandcast/tests/`, whose folders mirror the code (the tests of `utils/fetcher.py` are in `tests/utils/test_fetcher.py`), and run them from the `demandcast/` folder:
+3. Start each file with a descriptive, concise, clear and simple docstring (or comment, for files that are not Python), and add inline comments only where something is not obvious. Comments, docstrings and documentation state what the code does and the data behind it, with no history of changes and no comparisons with other code: those belong in commit messages and pull requests.
+4. Add or update tests for your changes in `demandcast/tests/`, whose folders mirror the code (the tests of `utils/fetcher.py` are in `tests/utils/test_fetcher.py`), and run them from the `demandcast/` folder:
 
    ```bash
    uv run --extra lstm pytest
@@ -43,8 +44,8 @@ uvx pre-commit run --all-files  # run them on the whole repository
 
    CI also checks that the lines you change are covered by tests.
 
-4. Build paths with `utils/paths.py` and take scenarios, climate models and years from `utils/catalogue.py`, instead of writing them again. The modules of `utils/` import none of the other packages (`tests/utils/test_dependencies.py` checks it).
-5. Update the documentation in `webpage/docs/` if you change how something works.
+5. Build paths with `utils/paths.py` and take scenarios, climate models and years from `utils/catalogue.py`, instead of writing them again. The modules of `utils/` import none of the other packages (`tests/utils/test_dependencies.py` checks it).
+6. Update the documentation in `webpage/docs/` if you change how something works.
 
 ### Adding an electricity demand data source
 

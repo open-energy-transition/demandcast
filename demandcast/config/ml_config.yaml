@@ -13,6 +13,7 @@ group: "Entity code"
 features:
   - "Local hour of the day"
   - "Local weekend indicator"
+  - "Local holiday indicator"
   - "Local month of the year"
   - "Temperature - Top 1 (K)"
   - "Temperature - Top 3 (K)"
@@ -41,6 +42,7 @@ time: "Time (UTC)"
 categorical_features:
   - "Local hour of the day"
   - "Local weekend indicator"
+  - "Local holiday indicator"
   - "Local month of the year"
   - "Monthly average temperature rank - Top 1"
 
