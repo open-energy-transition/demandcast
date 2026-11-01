@@ -3,35 +3,23 @@ License: AGPL-3.0.
 
 Description:
 
-    This module tells which days are public holidays in a country or
-    subdivision, from the holidays package, which knows the public
-    holidays of most countries, and of the states and provinces of
-    many of them, for the past and future years, including those whose
-    date moves, such as Easter, the Chinese New Year or Diwali.
+    This module tells which hours fall on a public holiday of a country
+    or subdivision, in local time, from the holidays package. The models
+    use it to see the days on which the demand drops as on a Sunday,
+    which their hour, weekend and month features cannot tell.
 
-    Some countries have only the holidays that lower their demand
-    (SELECTED_HOLIDAYS), in all their subdivisions. India has many
-    public holidays, of the central government and of each state, but
-    its demand drops on few of them: from 2017 to 2025, the daily
-    demand of its states on a weekday holiday, against the same weekday
-    one and two weeks around it, dropped by a median of 5 to 7% on its
-    three national days (Republic Day, Independence Day and the birthday
-    of Mahatma Gandhi) and on Holi, Diwali and Dussehra, but by less
-    than 3% on the other days of the central list, and not at all on
-    some, such as Christmas or Eid al-Fitr.
+    A subdivision also has its own holidays if it is the official
+    subdivision (ISO 3166-2) of the same code and name. Many
+    subdivisions are regions of system operators that use the code of
+    another subdivision, such as New England (USA_NE, the code of
+    Nebraska), and have only the holidays of their country. A country
+    that the package does not know has none, which the log reports.
 
-    A subdivision has the public holidays of its country, and its own
-    ones if the package knows it and it is the official subdivision of
-    the same code (ISO 3166-2), with the same name: many subdivisions of
-    DemandCast are regions of system operators whose codes are those of
-    other subdivisions, such as New England (USA_NE), whose code is that
-    of Nebraska, or the Southeast of Brazil (BRA_SE), whose code is that
-    of Sergipe. A country that the package does not know has no public
-    holidays, which the log reports.
-
-    The indicator tells the models the days on which the demand drops
-    as on a Sunday, which their other calendar features (the hour, the
-    weekend and the month) cannot tell.
+    India and its states have only the holidays in SELECTED_HOLIDAYS.
+    From 2017 to 2025, the weekday demand of its states dropped by a
+    median of 5 to 7% on these six days, against the same weekday one
+    and two weeks around them, and by less than 3%, or not at all, on
+    its other public holidays.
 """
 
 import functools
