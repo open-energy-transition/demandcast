@@ -276,8 +276,8 @@ def test_plot_described_results(tmp_path, metric):
 
     assert [ax.get_title() for ax in distribution.axes] == [
         "All codes",
-        "Seen in training",
-        "Demand size (mean load)",
+        "Grouped by whether seen in training",
+        "Grouped by mean demand",
     ]
     assert [
         label.get_text() for label in distribution.axes[2].get_xticklabels()

@@ -902,18 +902,26 @@ def _plot_distribution(
     """
     scored = results.dropna(subset=[f"Testing {metric}"]).reset_index()
     size_labels = get_size_class_labels()
-    panels = {"All codes": [("All", "All", scored)]}
+    # Each panel has its group of the summary, its title and the value,
+    # label and results of each of its boxes.
+    panels = [("All", "All codes", [("All", "All", scored)])]
     for column, title in (
-        ("Seen in training", "Seen in training"),
-        ("Size class", "Demand size (mean load)"),
+        ("Seen in training", "Grouped by whether seen in training"),
+        ("Size class", "Grouped by mean demand"),
     ):
         if column in scored:
-            panels[title] = [
-                (value, size_labels.get(value, value), rows)
-                for value, rows in ml_models.reporting.group_codes(
-                    scored, column
+            panels.append(
+                (
+                    column,
+                    title,
+                    [
+                        (value, size_labels.get(value, value), rows)
+                        for value, rows in ml_models.reporting.group_codes(
+                            scored, column
+                        )
+                    ],
                 )
-            ]
+            )
     weighted = (
         ml_models.reporting.summarize(scored, "Testing").set_index(
             ["Group", "Value"]
@@ -922,20 +930,17 @@ def _plot_distribution(
         else None
     )
 
-    number_of_boxes = sum(len(groups) for groups in panels.values())
+    number_of_boxes = sum(len(groups) for _, _, groups in panels)
     fig, axs = plt.subplots(
         1,
         len(panels),
         figsize=(max(6.0, 2.0 + 1.3 * number_of_boxes), 4.5),
         sharey=True,
         layout="constrained",
-        gridspec_kw={
-            "width_ratios": [len(groups) for groups in panels.values()]
-        },
+        gridspec_kw={"width_ratios": [len(groups) for _, _, groups in panels]},
         squeeze=False,
     )
-    columns = {"All codes": "All", "Demand size (mean load)": "Size class"}
-    for ax, (title, groups) in zip(axs[0], panels.items(), strict=True):
+    for ax, (group, title, groups) in zip(axs[0], panels, strict=True):
         positions = np.arange(len(groups))
         ax.boxplot(
             [rows[f"Testing {metric}"] * 100 for _, _, rows in groups],
@@ -948,7 +953,6 @@ def _plot_distribution(
             flierprops={"markeredgecolor": "tab:blue", "markersize": 3},
         )
         if weighted is not None:
-            group = columns.get(title, title)
             ax.scatter(
                 positions,
                 [weighted[(group, value)] * 100 for value, _, _ in groups],
