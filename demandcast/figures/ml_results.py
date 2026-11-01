@@ -33,7 +33,6 @@ Description:
 import glob
 import os
 import re
-import textwrap
 from typing import Literal
 
 import matplotlib.pyplot as plt
@@ -952,12 +951,8 @@ def _plot_distribution(
         ax.set_title(title, weight="bold", fontsize=10)
 
     axs[0, 0].set_ylim(bottom=0)
-    axs[0, 0].set_ylabel(
-        textwrap.fill(
-            f"Testing {METRIC_NAMES[metric].removesuffix(')')}, %)", 30
-        ),
-        weight="bold",
-    )
+    name, abbreviation = METRIC_NAMES[metric].removesuffix(")").split(" (")
+    axs[0, 0].set_ylabel(f"{name}\n({abbreviation}, %)", weight="bold")
     _add_explanatory_text(axs[0, -1], metric)
     handles = [
         plt.Line2D([], [], color="tab:red", linewidth=2, label="Median"),
@@ -978,7 +973,7 @@ def _plot_distribution(
     # The holdout of a cross-validation is left out of the title.
     title = re.sub(r", \w+ holdout", "", description[0])
     fig.suptitle(
-        f"{title}\nDistribution of the testing {metric} of the countries "
+        f"{title}\nDistribution of the {metric} of the countries "
         "and subdivisions",
         weight="bold",
         fontsize=11,

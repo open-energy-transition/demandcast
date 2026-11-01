@@ -303,8 +303,8 @@ def test_plot_described_results(tmp_path, metric):
     assert (
         distribution.axes[0].get_ylabel()
         == {
-            "WAPE": "Testing Weighted Absolute\nPercentage Error (WAPE, %)",
-            "MAPE": "Testing Mean Absolute\nPercentage Error (MAPE, %)",
+            "WAPE": "Weighted Absolute Percentage Error\n(WAPE, %)",
+            "MAPE": "Mean Absolute Percentage Error\n(MAPE, %)",
         }[metric]
     )
     assert distribution.axes[0].get_yscale() == "linear"
@@ -370,6 +370,6 @@ def test_distribution_title_without_holdout(tmp_path):
         )
 
     assert plt.gcf().get_suptitle() == (
-        "Cross-validation of XGBoost, 20261031\nDistribution of the testing "
-        "WAPE of the countries and subdivisions"
+        "Cross-validation of XGBoost, 20261031\nDistribution of the WAPE of "
+        "the countries and subdivisions"
     )
