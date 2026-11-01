@@ -601,27 +601,22 @@ def _plot_overall(
     _add_bar_plot(ax, mape_to_plot[f"{version}_all"], unseen, small)
     ax.set_ylabel(METRIC_NAMES[metric], weight="bold", fontsize=12)
     ax.set_xlabel("Country or subdivision", weight="bold", fontsize=12)
-    handles = []
-    if unseen is not None and unseen.reindex(mape_to_plot.index).any():
-        handles += [
-            Patch(facecolor="tab:blue", label="Seen in training"),
-            Patch(
-                facecolor="tab:blue",
-                edgecolor="white",
-                hatch=UNSEEN_HATCH,
-                label="Not seen in training",
-            ),
-        ]
-    if small is not None and small.reindex(mape_to_plot.index).any():
-        limits = get_size_class_labels()["Small"].split("\n")[1]
-        handles.append(
-            Patch(
-                facecolor="tab:blue",
-                edgecolor="white",
-                hatch=SMALL_HATCH,
-                label=f"Small ({limits})",
-            )
+    # The legend has the hatches of the figure, in the same order in
+    # every figure.
+    handles = [
+        Patch(
+            facecolor="tab:blue", edgecolor="white", hatch=hatch, label=label
         )
+        for flags, hatch, label in (
+            (unseen, UNSEEN_HATCH, "Not seen in training"),
+            (
+                small,
+                SMALL_HATCH,
+                f"Mean demand {get_size_class_labels()['Small']}",
+            ),
+        )
+        if flags is not None and flags.reindex(mape_to_plot.index).any()
+    ]
     if handles:
         ax.legend(handles=handles, loc="upper left", fontsize=10)
 
@@ -855,13 +850,13 @@ def _format_load(load: float) -> str:
 
 def get_size_class_labels() -> dict[str, str]:
     """
-    Get the labels of the size classes, with their ranges of mean load.
+    Get the labels of the size classes: their ranges of mean load.
 
     Returns
     -------
     dict[str, str]
-        The label of each size class, by its name: its name and, on a
-        second line, its range of mean load, such as "300 MW - 5 GW".
+        The range of mean load of each size class, such as "300 MW -
+        5 GW", by its name.
     """
     labels = {}
     lower = 0.0
@@ -872,7 +867,7 @@ def get_size_class_labels() -> dict[str, str]:
             limits = f"\u2265 {_format_load(lower)}"
         else:
             limits = f"{_format_load(lower)} \u2013 {_format_load(upper)}"
-        labels[name] = f"{name}\n{limits}"
+        labels[name] = limits
         lower = upper
     return labels
 

@@ -270,9 +270,8 @@ def test_plot_described_results(tmp_path, metric):
     legend = ax.get_legend()
     assert legend is not None
     assert [text.get_text() for text in legend.texts] == [
-        "Seen in training",
         "Not seen in training",
-        "Small (< 300 MW)",
+        "Mean demand < 300 MW",
     ]
 
     assert [ax.get_title() for ax in distribution.axes] == [
@@ -283,9 +282,9 @@ def test_plot_described_results(tmp_path, metric):
     assert [
         label.get_text() for label in distribution.axes[2].get_xticklabels()
     ] == [
-        "Small\n< 300 MW\n(1 code)",
-        "Medium\n300 MW \u2013 5 GW\n(1 code)",
-        "Large\n\u2265 5 GW\n(2 codes)",
+        "< 300 MW\n(1 code)",
+        "300 MW \u2013 5 GW\n(1 code)",
+        "\u2265 5 GW\n(2 codes)",
     ]
     # Both figures tell, next to their last panel, that a lower error is
     # better, and the distribution has no line of the median of all the
@@ -359,9 +358,9 @@ def test_plot_results_without_description(tmp_path):
 def test_size_class_labels():
     """Test that the size classes are labelled with their mean loads."""
     assert ml_results.get_size_class_labels() == {
-        "Small": "Small\n< 300 MW",
-        "Medium": "Medium\n300 MW \u2013 5 GW",
-        "Large": "Large\n\u2265 5 GW",
+        "Small": "< 300 MW",
+        "Medium": "300 MW \u2013 5 GW",
+        "Large": "\u2265 5 GW",
     }
 
 
