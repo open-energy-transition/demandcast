@@ -383,7 +383,8 @@ def _add_bar_chart(
         cumulative_height += np.array(list(continent_occurrence.values()))
 
     # Set the title and labels.
-    ax.set_xlabel(xlabel, fontsize=14, weight="bold")
+    ax.set_xlabel(xlabel, fontsize=16, weight="bold")
+    ax.tick_params(labelsize=13)
     ax.set_xticks(
         range(len(levels)),
         [
@@ -543,7 +544,7 @@ def draw(data: FigureData, figure_directory: str) -> None:
     # Set the y-axis limit to the maximum cumulative height and the
     # label.
     ax.set_ylim(0, height)
-    ax.set_ylabel("Number of years", fontsize=14, weight="bold")
+    ax.set_ylabel("Number of years", fontsize=16, weight="bold")
 
     # Add the bar chart for the GDP coverage.
     ax = fig.add_axes((0.25, 0.0, 0.2, 1))
@@ -566,6 +567,7 @@ def draw(data: FigureData, figure_directory: str) -> None:
     ax.set_yscale("log", base=2)
     ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
     ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+    ax.tick_params(labelsize=13)
 
     for iso_alpha_3_code, gdp_points in data.gdp_points.items():
         electricity_demand_points = data.electricity_demand_points[
@@ -632,8 +634,12 @@ def draw(data: FigureData, figure_directory: str) -> None:
             "headlength": 8,
         },
     )
-    ax.annotate(text="First year\nof data", xy=(60, 0.36), ha="center")
-    ax.annotate(text="Last year\nof data", xy=(110, 0.36), ha="center")
+    ax.annotate(
+        text="First year\nof data", xy=(60, 0.36), ha="center", fontsize=13
+    )
+    ax.annotate(
+        text="Last year\nof data", xy=(110, 0.36), ha="center", fontsize=13
+    )
 
     # Add the names of a few countries to the plot.
     ax.annotate(
@@ -644,7 +650,7 @@ def draw(data: FigureData, figure_directory: str) -> None:
         ),
         ha="left",
         va="center",
-        fontsize=12,
+        fontsize=13,
         color=COLORS["AF"],
     )
     ax.annotate(
@@ -655,7 +661,7 @@ def draw(data: FigureData, figure_directory: str) -> None:
         ),
         ha="left",
         va="center",
-        fontsize=12,
+        fontsize=13,
         color=COLORS["SA"],
     )
     ax.annotate(
@@ -666,7 +672,7 @@ def draw(data: FigureData, figure_directory: str) -> None:
         ),
         ha="left",
         va="center",
-        fontsize=12,
+        fontsize=13,
         color=COLORS["AS"],
     )
     ax.annotate(
@@ -677,7 +683,7 @@ def draw(data: FigureData, figure_directory: str) -> None:
         ),
         ha="left",
         va="bottom",
-        fontsize=12,
+        fontsize=13,
         color=COLORS["NA"],
     )
     ax.annotate(
@@ -688,7 +694,7 @@ def draw(data: FigureData, figure_directory: str) -> None:
         ),
         ha="right",
         va="center",
-        fontsize=12,
+        fontsize=13,
         color=COLORS["EU"],
     )
     ax.annotate(
@@ -699,7 +705,7 @@ def draw(data: FigureData, figure_directory: str) -> None:
         ),
         ha="right",
         va="bottom",
-        fontsize=12,
+        fontsize=13,
         color=COLORS["EU"],
         annotation_clip=False,
     )
@@ -712,7 +718,7 @@ def draw(data: FigureData, figure_directory: str) -> None:
                     0.02,
                     0.925 - 0.25 * (count) / (len(CONTINENT_NAMES) - 1),
                 ),
-                0.24,
+                0.28,
                 0.05,
                 facecolor=COLORS[continent_code],
                 edgecolor="none",
@@ -728,18 +734,18 @@ def draw(data: FigureData, figure_directory: str) -> None:
             ),
             xycoords="axes fraction",
             color=(0, 0, 0, 1),
-            fontsize=14,
+            fontsize=16,
         )
 
     # Add the axis titles.
     ax.set_xlabel(
         "GDP per capita, PPP (2021 international k$)",
-        fontsize=14,
+        fontsize=16,
         weight="bold",
     )
     ax.set_ylabel(
         "Annual electricity demand per capita (MWh)",
-        fontsize=14,
+        fontsize=16,
         weight="bold",
     )
 
@@ -751,7 +757,7 @@ def draw(data: FigureData, figure_directory: str) -> None:
         ),
         x=0.5,
         y=1.13,
-        fontsize=18,
+        fontsize=20,
         weight="bold",
     )
 
