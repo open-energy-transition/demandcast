@@ -54,6 +54,9 @@ METRIC_NAMES = {
     "MAPE": "Mean Absolute Percentage Error (MAPE)",
 }
 
+# The colour of the horizontal grid lines.
+GRID_COLOR = "#e6e6e6"
+
 # The hatch of the bars of the codes that the model never saw.
 UNSEEN_HATCH = "////"
 
@@ -438,6 +441,21 @@ def _add_bar_plot(
     ax.set_xlim(-1, len(series))
 
 
+def _add_grid(fig: plt.Figure) -> None:
+    """
+    Add horizontal grid lines, in a very light grey, behind the data.
+
+    Parameters
+    ----------
+    fig : matplotlib.pyplot.Figure
+        The figure, whose visible axes get the grid lines.
+    """
+    for ax in fig.axes:
+        if ax.axison:
+            ax.set_axisbelow(True)
+            ax.yaxis.grid(True, color=GRID_COLOR, linewidth=0.8)
+
+
 def _add_legend(
     fig: plt.Figure,
     versions: list[str],
@@ -588,6 +606,8 @@ def _plot_overall(
     # Add a legend.
     _add_legend(fig, [description[0]])
 
+    _add_grid(fig)
+
     # Save the plot to a file.
     plt.savefig(
         os.path.join(
@@ -656,6 +676,8 @@ def _plot_comparison(
 
     # Add a legend.
     _add_legend(fig, [descriptions[0][0], descriptions[1][0]])
+
+    _add_grid(fig)
 
     # Save the plot to a file.
     plt.savefig(
@@ -778,6 +800,8 @@ def _plot_by_group(
         _add_explanatory_text(fig, metric)
 
         fig.supylabel(METRIC_NAMES[metric], weight="bold", x=-0.03)
+
+        _add_grid(fig)
 
         # Save the plot to a file.
         plt.savefig(
@@ -952,6 +976,8 @@ def _plot_distribution(
         weight="bold",
         fontsize=11,
     )
+
+    _add_grid(fig)
 
     # Save the plot to a file.
     plt.savefig(

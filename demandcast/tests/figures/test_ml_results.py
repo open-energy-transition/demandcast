@@ -286,6 +286,14 @@ def test_plot_described_results(tmp_path, metric):
     assert [text.get_text() for text in distribution.legends[0].texts] == [
         "Median"
     ] + (["WAPE of the group, weighted by energy"] if metric == "WAPE" else [])
+    # Every panel has light grey horizontal grid lines, and no vertical
+    # ones.
+    for ax in (*bars.axes, *distribution.axes):
+        assert all(
+            line.get_visible() and line.get_color() == ml_results.GRID_COLOR
+            for line in ax.yaxis.get_gridlines()
+        )
+        assert not any(line.get_visible() for line in ax.xaxis.get_gridlines())
     assert distribution.axes[0].get_yscale() == "linear"
     assert distribution.axes[0].get_ylim()[0] == 0
     # The WAPE of all the codes, weighted by energy, is marked.
