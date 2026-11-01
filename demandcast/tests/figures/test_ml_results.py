@@ -259,10 +259,12 @@ def test_plot_described_results(tmp_path, metric):
 
     # The figure of the bars has no panel of their distribution.
     [ax] = bars.axes
+    # The bars, by error: France, the United States in California, Malta
+    # (small) and Punjab (not seen in training).
     assert [bar.get_hatch() for bar in ax.patches] == [
         None,
         None,
-        None,
+        "....",
         "////",
     ]
     legend = ax.get_legend()
@@ -270,6 +272,7 @@ def test_plot_described_results(tmp_path, metric):
     assert [text.get_text() for text in legend.texts] == [
         "Seen in training",
         "Not seen in training",
+        "Small (< 300 MW)",
     ]
 
     assert [ax.get_title() for ax in distribution.axes] == [
@@ -360,3 +363,21 @@ def test_size_class_labels():
         "Medium": "Medium\n300 MW \u2013 5 GW",
         "Large": "Large\n\u2265 5 GW",
     }
+
+
+def test_bars_of_small_codes_not_seen_in_training():
+    """Test that a small code not seen in training has both hatches."""
+    _, ax = plt.subplots()
+    codes = pd.Index(["FRA", "MLT"])
+
+    ml_results._add_bar_plot(
+        ax,
+        pd.Series([5.0, 15.0], index=codes),
+        pd.Series([False, True], index=codes),
+        pd.Series([False, True], index=codes),
+    )
+
+    assert [bar.get_hatch() for bar in ax.patches] == [
+        None,
+        ml_results.UNSEEN_HATCH + ml_results.SMALL_HATCH,
+    ]

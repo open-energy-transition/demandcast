@@ -9,10 +9,10 @@ Description:
 
     The errors of a version are plotted in two figures: a bar for each
     country or subdivision, hatched if the model never saw it in
-    training, and the distribution of the errors of all the codes, by
-    whether the model saw them and by their size class (see
-    ml_models.reporting), with the WAPE of each group weighted by the
-    energy of its codes. The errors of two versions can also be
+    training or if it is small, and the distribution of the errors of
+    all the codes, by whether the model saw them and by their size class
+    (see ml_models.reporting), with the WAPE of each group weighted by
+    the energy of its codes. The errors of two versions can also be
     compared, and those of the models trained on the data of each
     income group and continent plotted against those of the model
     trained on all the data.
@@ -59,6 +59,9 @@ GRID_COLOR = "#e6e6e6"
 
 # The hatch of the bars of the codes that the model never saw.
 UNSEEN_HATCH = "////"
+
+# The hatch of the bars of the codes of the small size class.
+SMALL_HATCH = "...."
 
 
 def _find_latest_results(
@@ -412,7 +415,10 @@ def _add_box_and_bar_plot(
 
 
 def _add_bar_plot(
-    ax: plt.Axes, series: pd.Series, unseen: pd.Series | None
+    ax: plt.Axes,
+    series: pd.Series,
+    unseen: pd.Series | None,
+    small: pd.Series | None,
 ) -> None:
     """
     Add a bar of the error of each country or subdivision.
@@ -425,16 +431,21 @@ def _add_bar_plot(
         The error of each country or subdivision, by its code.
     unseen : pandas.Series | None
         Whether the model never saw each country or subdivision in
-        training, whose bars are hatched.
+        training, whose bars are hatched with lines.
+    small : pandas.Series | None
+        Whether each country or subdivision is of the small size class,
+        whose bars are hatched with dots.
     """
     indices = np.arange(len(series))
     bars = ax.bar(indices, series, width=0.8, color="tab:blue")
-    if unseen is not None:
-        for bar, is_unseen in zip(
-            bars, unseen.reindex(series.index, fill_value=False), strict=True
+    for flags, hatch in ((unseen, UNSEEN_HATCH), (small, SMALL_HATCH)):
+        if flags is None:
+            continue
+        for bar, flagged in zip(
+            bars, flags.reindex(series.index, fill_value=False), strict=True
         ):
-            if is_unseen:
-                bar.set_hatch(UNSEEN_HATCH)
+            if flagged:
+                bar.set_hatch((bar.get_hatch() or "") + hatch)
                 bar.set_edgecolor("white")
     ax.set_xticks(indices)
     ax.set_xticklabels(series.index, rotation=90, fontsize=7.0)
@@ -552,6 +563,7 @@ def _plot_overall(
     description: tuple[str, str],
     metric: Literal["WAPE", "MAPE"] = "MAPE",
     unseen: pd.Series | None = None,
+    small: pd.Series | None = None,
 ) -> None:
     """
     Plot the error of each country or subdivision, as a bar.
@@ -571,7 +583,10 @@ def _plot_overall(
         The metric of the errors, "WAPE" or "MAPE".
     unseen : pandas.Series | None, optional
         Whether the model never saw each country or subdivision in
-        training, whose bars are hatched.
+        training, whose bars are hatched with lines.
+    small : pandas.Series | None, optional
+        Whether each country or subdivision is of the small size class,
+        whose bars are hatched with dots.
     """
     # Sort the entities by their errors for better visualization.
     mape_to_plot = mape.dropna(subset=[f"{version}_all"]).sort_values(
@@ -583,23 +598,32 @@ def _plot_overall(
         figsize=(_get_figure_width(len(mape_to_plot)), 5),
         layout="constrained",
     )
-    _add_bar_plot(ax, mape_to_plot[f"{version}_all"], unseen)
+    _add_bar_plot(ax, mape_to_plot[f"{version}_all"], unseen, small)
     ax.set_ylabel(METRIC_NAMES[metric], weight="bold", fontsize=12)
     ax.set_xlabel("Country or subdivision", weight="bold", fontsize=12)
+    handles = []
     if unseen is not None and unseen.reindex(mape_to_plot.index).any():
-        ax.legend(
-            handles=[
-                Patch(facecolor="tab:blue", label="Seen in training"),
-                Patch(
-                    facecolor="tab:blue",
-                    edgecolor="white",
-                    hatch=UNSEEN_HATCH,
-                    label="Not seen in training",
-                ),
-            ],
-            loc="upper left",
-            fontsize=10,
+        handles += [
+            Patch(facecolor="tab:blue", label="Seen in training"),
+            Patch(
+                facecolor="tab:blue",
+                edgecolor="white",
+                hatch=UNSEEN_HATCH,
+                label="Not seen in training",
+            ),
+        ]
+    if small is not None and small.reindex(mape_to_plot.index).any():
+        limits = get_size_class_labels()["Small"].split("\n")[1]
+        handles.append(
+            Patch(
+                facecolor="tab:blue",
+                edgecolor="white",
+                hatch=SMALL_HATCH,
+                label=f"Small ({limits})",
+            )
         )
+    if handles:
+        ax.legend(handles=handles, loc="upper left", fontsize=10)
 
     _add_explanatory_text(ax, metric)
     fig.suptitle(description[0], weight="bold", fontsize=12)
@@ -1078,7 +1102,18 @@ def plot(
             if "Seen in training" in results
             else None
         )
+        small = (
+            results["Size class"] == "Small"
+            if "Size class" in results
+            else None
+        )
         _plot_overall(
-            figure_directory, version, errors, description, metric, unseen
+            figure_directory,
+            version,
+            errors,
+            description,
+            metric,
+            unseen,
+            small,
         )
         _plot_distribution(figure_directory, results, description, metric)
