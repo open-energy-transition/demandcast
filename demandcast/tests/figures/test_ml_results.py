@@ -5,15 +5,19 @@ Description:
 
     Tests for the figures of the results of the machine learning
     models. They read the MAPE files of two example versions, in the
-    folder mape_examples.
+    folder mape_examples, and results saved as validate.py and
+    cross_validate.py save them.
 """
 
 import os
 from unittest.mock import patch
 
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import pytest
 
+import utils.manifest
 import utils.paths
 from figures import ml_results
 
@@ -31,7 +35,7 @@ def _close_figures():
 def test_plot_by_group_and_comparison(tmp_path):
     """Test that the two options are refused before any file is read."""
     with (
-        patch.object(ml_results, "_read_mape") as read_mape,
+        patch.object(ml_results, "_read_errors") as read_mape,
         pytest.raises(ValueError, match="cannot be used together"),
     ):
         ml_results.plot(str(tmp_path), "a", "b", by_group=True)
@@ -43,16 +47,16 @@ def test_read_mape():
     """Test that the MAPE values are read in percent, by version."""
     groups = {"income": ["high_income"], "continent": ["AF"]}
 
-    mape = ml_results._read_mape(
-        EXAMPLES_FOLDER, "example1", "example2", False, groups
+    mape = ml_results._read_errors(
+        EXAMPLES_FOLDER, "example1", "example2", False, groups, "MAPE"
     )
     assert list(mape.columns) == ["example1_all", "example2_all"]
     assert len(mape) == 95
     assert mape.loc["AT", "example1_all"] == pytest.approx(8.104806914070335)
     assert mape.loc["AT", "example2_all"] == pytest.approx(9.574320937012813)
 
-    mape = ml_results._read_mape(
-        EXAMPLES_FOLDER, "example1", None, True, groups
+    mape = ml_results._read_errors(
+        EXAMPLES_FOLDER, "example1", None, True, groups, "MAPE"
     )
     assert list(mape.columns) == [
         "example1_all",
@@ -62,11 +66,17 @@ def test_read_mape():
     assert mape.loc["DZ", "example1_AF"] == pytest.approx(4.378211941703889)
     assert mape["example1_AF"].notna().sum() == 3
 
+    # The earlier versions have no WAPE.
+    with pytest.raises(ValueError, match="have no WAPE"):
+        ml_results._read_errors(
+            EXAMPLES_FOLDER, "example1", None, False, groups, "WAPE"
+        )
+
 
 @pytest.mark.parametrize(
     ("compare_with_version", "by_group", "file_names"),
     [
-        (None, False, ["mape_example1.png"]),
+        (None, False, ["mape_example1.png", "mape_example1_distribution.png"]),
         ("example2", False, ["mape_example1_vs_example2.png"]),
         (
             None,
@@ -83,6 +93,7 @@ def test_plot(tmp_path, compare_with_version, by_group, file_names):
         compare_with_version,
         by_group,
         results_directory=EXAMPLES_FOLDER,
+        metric="MAPE",
     )
 
     assert sorted(os.listdir(tmp_path)) == file_names
@@ -91,11 +102,281 @@ def test_plot(tmp_path, compare_with_version, by_group, file_names):
 def test_plot_reads_validation_results(tmp_path):
     """Test that the MAPE files are read from the validation results."""
     with (
-        patch.object(ml_results, "_read_mape") as read_mape,
+        patch.object(ml_results, "_read_errors") as read_mape,
+        patch.object(ml_results, "_read_results"),
         patch.object(ml_results, "_plot_overall"),
+        patch.object(ml_results, "_plot_distribution"),
     ):
         ml_results.plot(str(tmp_path), "a")
 
     assert read_mape.call_args.args[0] == utils.paths.get_results_folder(
         "validation"
     )
+
+
+def test_read_saved_results(tmp_path):
+    """
+    Test that the latest results of a model are read as saved.
+
+    validate.py saves them in with_<model>/using_<data>/ with the
+    columns "Entity code" and "Testing MAPE"; the latest file is read.
+    """
+    folder = tmp_path / "with_xgboost_model_1" / "using_data_1"
+    folder.mkdir(parents=True)
+    old = folder / "all_20260101_000000.parquet"
+    pd.DataFrame({"Entity code": ["FRA"], "Testing MAPE": [0.5]}).to_parquet(
+        old
+    )
+    os.utime(old, (0, 0))
+    pd.DataFrame(
+        {"Entity code": ["FRA", "DEU"], "Testing MAPE": [0.1, 0.2]}
+    ).to_parquet(folder / "all_20260102_000000.parquet")
+
+    mape = ml_results._read_errors(
+        str(tmp_path), "xgboost_model_1", None, False, {}, "MAPE"
+    )
+
+    assert mape["xgboost_model_1_all"].to_dict() == pytest.approx(
+        {"FRA": 10.0, "DEU": 20.0}
+    )
+    with pytest.raises(FileNotFoundError, match="has no results all"):
+        ml_results._read_errors(
+            str(tmp_path), "other_model", None, False, {}, "MAPE"
+        )
+
+
+@pytest.mark.parametrize(
+    ("case", "version", "title", "file_name"),
+    [
+        (
+            "validation",
+            "xgboost_model_20261029_144400",
+            "Validation of the XGBoost model 20261029_144400",
+            "wape_validation_xgboost_model_20261029_144400.png",
+        ),
+        (
+            "cross_validation",
+            "xgboost",
+            "Cross-validation of XGBoost 20261029_161733",
+            "wape_cross_validation_xgboost_country_20261029_161733.png",
+        ),
+    ],
+)
+def test_plot_saved_results(tmp_path, case, version, title, file_name):
+    """
+    Test that the figure of saved results names what it shows.
+
+    Its title and the name of its file tell whether the results are
+    those of a validation or of a cross-validation, and the algorithm
+    and version of the model.
+    """
+    folder = tmp_path / case / f"with_{version}" / "using_data_1"
+    folder.mkdir(parents=True)
+    results = folder / "all_20261029_161733.parquet"
+    pd.DataFrame(
+        {
+            "Entity code": ["FRA", "DEU", "ITA"],
+            "Testing MAPE": [0.1, 0.2, 0.3],
+            "Testing WAPE": [0.1, 0.2, 0.3],
+        }
+    ).to_parquet(results)
+    utils.manifest.write_manifest(
+        str(results), "results", {"holdout": "country"}
+    )
+
+    assert ml_results.describe_version(str(tmp_path / case), version) == (
+        title,
+        file_name.removeprefix("wape_").removesuffix(".png"),
+    )
+    ml_results.plot(
+        str(tmp_path), version, results_directory=str(tmp_path / case)
+    )
+
+    assert (tmp_path / file_name).exists()
+    # The figure of the bars and that of the distribution have the same
+    # title, the second with a line on what it shows.
+    assert [
+        plt.figure(number).get_suptitle() for number in plt.get_fignums()
+    ] == [
+        title,
+        f"{title}\nDistribution of the WAPE of the countries and subdivisions",
+    ]
+
+
+def test_validation_of_another_version(tmp_path):
+    """Test the description of a validation without a model time."""
+    folder = tmp_path / "validation" / "with_model" / "using_data_1"
+    folder.mkdir(parents=True)
+    pd.DataFrame({"Entity code": ["FRA"], "Testing MAPE": [0.1]}).to_parquet(
+        folder / "all_20261029_161733.parquet"
+    )
+
+    assert ml_results.describe_version(
+        str(tmp_path / "validation"), "model"
+    ) == ("Validation of model", "validation_model")
+
+
+def test_figure_width():
+    """Test that a figure of many bars is wide enough for its names."""
+    assert ml_results._get_figure_width(30) == 10.0
+    assert ml_results._get_figure_width(168) == pytest.approx(21.48)
+
+
+@pytest.mark.parametrize("metric", ["WAPE", "MAPE"])
+def test_plot_described_results(tmp_path, metric):
+    """
+    Test the figures of results that describe their codes.
+
+    The bars of the codes never seen in training are hatched, and the
+    distribution of the errors is that of all the codes, by whether the
+    model saw them, and by size class, labelled with its mean loads.
+    """
+    folder = tmp_path / "with_xgboost_model_1" / "using_data_1"
+    folder.mkdir(parents=True)
+    pd.DataFrame(
+        {
+            "Entity code": ["FRA", "IND_PB", "MLT", "USA_CA"],
+            "Testing MAPE": [0.06, 0.30, 0.20, 0.08],
+            "Testing WAPE": [0.05, 0.25, 0.15, 0.07],
+            "Seen in training": [True, False, True, True],
+            "Scored hours": [100, 100, 50, 100],
+            "Mean load (MW)": [50000.0, 5000.0, 250.0, 30000.0],
+            "Size class": ["Large", "Medium", "Small", "Large"],
+            "Continent": ["Europe", "Asia", "Europe", "North America"],
+        }
+    ).to_parquet(folder / "all_20261029_161733.parquet")
+
+    with patch.object(plt, "savefig"):
+        ml_results.plot(
+            str(tmp_path),
+            "xgboost_model_1",
+            results_directory=str(tmp_path),
+            metric=metric,
+        )
+        bars, distribution = (
+            plt.figure(number) for number in plt.get_fignums()
+        )
+
+    # The figure of the bars has no panel of their distribution.
+    [ax] = bars.axes
+    # The bars, by error: France, the United States in California, Malta
+    # (small) and Punjab (not seen in training).
+    assert [bar.get_hatch() for bar in ax.patches] == [
+        None,
+        None,
+        "....",
+        "////",
+    ]
+    legend = ax.get_legend()
+    assert legend is not None
+    assert [text.get_text() for text in legend.texts] == [
+        "Not seen in training",
+        "Mean demand < 300 MW",
+    ]
+
+    assert [ax.get_title() for ax in distribution.axes] == [
+        "All codes",
+        "Grouped by whether seen in training",
+        "Grouped by mean demand",
+    ]
+    assert [
+        label.get_text() for label in distribution.axes[2].get_xticklabels()
+    ] == [
+        "< 300 MW\n(1 code)",
+        "300 MW \u2013 5 GW\n(1 code)",
+        "\u2265 5 GW\n(2 codes)",
+    ]
+    # Both figures tell, next to their last panel, that a lower error is
+    # better, and the distribution has no line of the median of all the
+    # codes.
+    for figure in (bars, distribution):
+        assert [text.get_text() for text in figure.axes[-1].texts] == [
+            f"Lower {metric} is better"
+        ]
+    assert [text.get_text() for text in distribution.legends[0].texts] == [
+        "Median"
+    ] + (["WAPE of the group, weighted by energy"] if metric == "WAPE" else [])
+    # Every panel has light grey horizontal grid lines, and no vertical
+    # ones.
+    for ax in (*bars.axes, *distribution.axes):
+        assert all(
+            line.get_visible() and line.get_color() == ml_results.GRID_COLOR
+            for line in ax.yaxis.get_gridlines()
+        )
+        assert not any(line.get_visible() for line in ax.xaxis.get_gridlines())
+    # The title of the bars has no background, and the distribution says
+    # what its metric stands for.
+    title = bars.get_suptitle()
+    assert title == "Validation of the XGBoost model 1"
+    [title_text] = [text for text in bars.texts if text.get_text() == title]
+    assert title_text.get_bbox_patch() is None
+    assert (
+        distribution.axes[0].get_ylabel()
+        == {
+            "WAPE": "Weighted Absolute Percentage Error\n(WAPE, %)",
+            "MAPE": "Mean Absolute Percentage Error\n(MAPE, %)",
+        }[metric]
+    )
+    assert distribution.axes[0].get_yscale() == "linear"
+    assert distribution.axes[0].get_ylim()[0] == 0
+    # The WAPE of all the codes, weighted by energy, is marked.
+    markers = [
+        np.asarray(collection.get_offsets())[:, 1]
+        for collection in distribution.axes[0].collections
+    ]
+    if metric == "WAPE":
+        energy = np.array([50000.0 * 100, 5000.0 * 100, 250.0 * 50, 3e6])
+        assert markers[0].tolist() == pytest.approx(
+            [(np.array([5.0, 25.0, 15.0, 7.0]) * energy).sum() / energy.sum()]
+        )
+    else:
+        assert markers == []
+
+
+def test_plot_results_without_description(tmp_path):
+    """
+    Test the figures of results that do not describe their codes.
+
+    Their distribution has only the panel of all the codes.
+    """
+    folder = tmp_path / "with_xgboost" / "using_data_1"
+    folder.mkdir(parents=True)
+    pd.DataFrame(
+        {"Entity code": ["FRA"], "Testing MAPE": [0.1], "Testing WAPE": [0.1]}
+    ).to_parquet(folder / "all_20261029_161733.parquet")
+
+    ml_results.plot(str(tmp_path), "xgboost", results_directory=str(tmp_path))
+
+    assert sorted(
+        name for name in os.listdir(tmp_path) if name.endswith(".png")
+    ) == [
+        "wape_validation_xgboost.png",
+        "wape_validation_xgboost_distribution.png",
+    ]
+
+
+def test_size_class_labels():
+    """Test that the size classes are labelled with their mean loads."""
+    assert ml_results.get_size_class_labels() == {
+        "Small": "< 300 MW",
+        "Medium": "300 MW \u2013 5 GW",
+        "Large": "\u2265 5 GW",
+    }
+
+
+def test_bars_of_small_codes_not_seen_in_training():
+    """Test that a small code not seen in training has both hatches."""
+    _, ax = plt.subplots()
+    codes = pd.Index(["FRA", "MLT"])
+
+    ml_results._add_bar_plot(
+        ax,
+        pd.Series([5.0, 15.0], index=codes),
+        pd.Series([False, True], index=codes),
+        pd.Series([False, True], index=codes),
+    )
+
+    assert [bar.get_hatch() for bar in ax.patches] == [
+        None,
+        ml_results.UNSEEN_HATCH + ml_results.SMALL_HATCH,
+    ]

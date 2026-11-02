@@ -22,6 +22,10 @@ import retrieve
 import utils.config
 import utils.paths
 
+# The folder of the cross-validation results among the arguments of a
+# figure, which depends on the data folder of each test.
+RESULTS_FOLDER = object()
+
 SCRIPTS = [
     "assemble",
     "check",
@@ -327,9 +331,15 @@ def test_check_dispatch(monkeypatch, caplog, name):
             (),
         ),
         (
-            {"figure": "ml_results", "version": "v1", "by_group": True},
+            {
+                "figure": "ml_results",
+                "version": "v1",
+                "by_group": True,
+                "results": "cross_validation",
+                "metric": "MAPE",
+            },
             "ml_results",
-            ("v1", None, True),
+            ("v1", None, True, RESULTS_FOLDER, "MAPE"),
         ),
         ({"figure": "status"}, "status", ()),
     ],
@@ -345,6 +355,12 @@ def test_plot_dispatch(monkeypatch, settings, module, arguments):
 
     plot.main(plot.ConfigModel(**settings))
 
+    arguments = tuple(
+        utils.paths.get_results_folder("cross_validation")
+        if argument is RESULTS_FOLDER
+        else argument
+        for argument in arguments
+    )
     assert calls == [(utils.paths.get_results_folder("figures"), *arguments)]
     assert os.path.isdir(utils.paths.get_results_folder("figures"))
 

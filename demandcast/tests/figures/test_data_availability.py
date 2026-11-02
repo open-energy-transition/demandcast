@@ -19,7 +19,7 @@ from figures import data_availability
 CONTINENTS = {
     "NGA": "AF",
     "PER": "SA",
-    "PAK": "AS",
+    "NPL": "AS",
     "CAN": "NA",
     "CAN_ON": "NA",
     "NOR": "EU",
@@ -35,7 +35,7 @@ def synthetic_data(monkeypatch):
     """
     Give each code a date range and each country random annual data.
 
-    Canada has data from 2016, and Ontario from 2015.
+    Canada has data from 2018 to 2022, and Ontario from 2015 to 2023.
 
     Returns
     -------
@@ -94,16 +94,15 @@ def test_get_data(synthetic_data):
     """
     Test the counts of years and the first and last points.
 
-    A country with a subdivision has the points of the code with the
-    most years, and the counts add the fractions of the years of all
-    the codes.
+    A country with a subdivision counts the days of either once, and its
+    points are those of its first and last years of data.
     """
     data = data_availability.get_data()
 
     assert list(data.gdp_points) == [
         "NGA",
         "PER",
-        "PAK",
+        "NPL",
         "CAN",
         "NOR",
         "LUX",
@@ -111,24 +110,23 @@ def test_get_data(synthetic_data):
         "IND",
         "AUS",
     ]
-    # Ontario has data from 2015, Canada from 2016.
+    # Ontario has data from 2015 to 2023, and Canada from 2018 to 2022.
     assert data.gdp_points["CAN"].index.tolist() == [2015, 2023]
     assert data.gdp_points["CAN"].tolist() == (
         synthetic_data.loc["CAN", [2015, 2023]].tolist()
     )
     assert data.continents["CAN"] == "NA"
-    gdp_years = sum(
-        sum(levels.values()) for levels in data.gdp_occurrence.values()
+    fractions = data_availability._get_year_fractions(
+        {"CAN": ["CAN", "CAN_ON"]}
+    )["CAN"]
+    assert list(fractions) == list(range(2015, 2024))
+    assert fractions[2016] == 1.0
+    assert sum(data.gdp_occurrence["NA"].values()) == pytest.approx(
+        sum(fractions.values())
     )
-    demand_years = sum(
-        sum(levels.values())
-        for levels in data.electricity_demand_occurrence.values()
-    )
-    fractions = data_availability._get_year_fractions(list(CONTINENTS))
-    assert gdp_years == pytest.approx(
-        sum(sum(years.values()) for years in fractions.values())
-    )
-    assert demand_years == pytest.approx(gdp_years)
+    assert sum(
+        data.electricity_demand_occurrence["NA"].values()
+    ) == pytest.approx(sum(fractions.values()))
 
 
 def test_plot(tmp_path):
