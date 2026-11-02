@@ -634,7 +634,7 @@ def _build_temperature_database(
     # year to the DataFrame.
     temperature_database["Local hour of the day"] = local_time.hour
     temperature_database["Local weekend indicator"] = (
-        local_time.dayofweek >= 5
+        local_time.day_of_week >= 5
     ).astype(int)
     temperature_database["Local month of the year"] = local_time.month
     temperature_database["Local year"] = local_time.year

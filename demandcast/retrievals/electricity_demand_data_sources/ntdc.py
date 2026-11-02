@@ -171,7 +171,7 @@ def _correct_slipped_days(load: pd.Series) -> pd.Series:
     other_days = pd.DatetimeIndex(others.index)
     moves: dict[pd.Timestamp, int] = {}
     for day in days[slipping]:
-        apart = (other_days.dayofyear - day.dayofyear + 182) % 365 - 182
+        apart = (other_days.day_of_year - day.day_of_year + 182) % 365 - 182
         usual = others[np.abs(apart) <= PROFILE_DAYS]
         if len(usual) >= MIN_PROFILE_DAYS:
             moves[day] = -_get_slip(

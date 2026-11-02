@@ -44,9 +44,10 @@ def _write_sheet(writer, sheet_name, first_load, empty_hour=None):
         if empty_hour is not None and day == 1:
             loads[empty_hour - 1] = None
         rows.append([date, *loads, None, None])
-    pd.DataFrame(rows).to_excel(
-        writer, sheet_name=sheet_name, header=False, index=False
-    )
+    width = max(len(row) for row in rows)
+    pd.DataFrame(
+        [[*row, *[None] * (width - len(row))] for row in rows]
+    ).to_excel(writer, sheet_name=sheet_name, header=False, index=False)
 
 
 def test_download_and_extract_data(fake_downloads, assert_demand, tmp_path):
