@@ -10,8 +10,10 @@
 figure: data_availability
 
 # OPTIONAL - REQUIRED for ml_results figure.
-# The version of the ML model whose results are to be plotted: the name of its
-# folder of MAPE files in data/results/validation.
+# The version of the ML model whose results are to be plotted: the trained model
+# of a validation (such as xgboost_model_20261029_144400) or the algorithm of a
+# cross-validation (such as xgboost), whose latest results are read, or the name
+# of the folder of MAPE files of an earlier version.
 version:
 
 # OPTIONAL.
@@ -21,3 +23,14 @@ compare_with_version:
 # OPTIONAL.
 # Whether to plot the results by group (income level and continent).
 by_group: false
+
+# OPTIONAL - only for the ml_results figure.
+# The results to plot: those of the validations ("validation") or of the
+# cross-validations ("cross_validation") (default: validation).
+results: validation
+
+# OPTIONAL - only for the ml_results figure.
+# The metric of the errors: the weighted absolute percentage error ("WAPE") or
+# the mean absolute percentage error ("MAPE"), the only one of the results of
+# earlier versions (default: WAPE).
+metric: WAPE
