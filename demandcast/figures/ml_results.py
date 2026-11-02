@@ -3,40 +3,267 @@ License: AGPL-3.0.
 
 Description:
 
-    This module contains functions to plot the mean absolute percentage
-    error (MAPE) of machine learning model predictions. The MAPE values
-    are plotted for all countries and subdivisions, and can also be
-    plotted by group (income level and continent) or compared between
-    two versions of the model.
+    This module plots the testing errors of the machine learning
+    models: the weighted absolute percentage error (WAPE) by default, or
+    the mean absolute percentage error (MAPE).
 
-    The MAPE values of a version are read from the CSV files of its
-    folder, by default in the validation results
-    (data/results/validation/<version>/): all.csv, with the testing
-    MAPE of each country and subdivision in the columns entity_code and
-    MAPE_test, and, for the plots by group, a file of the same columns
-    for each group, such as AF.csv or high_income.csv, with the MAPE of
-    the model trained on the data of the group. validate.py does not
-    write these files: they are copied into the folder by hand.
+    The errors of a version are plotted in two figures: a bar for each
+    country or subdivision, hatched if the model never saw it in
+    training or if it is small, and the distribution of the errors of
+    all the codes, by whether the model saw them and by their size class
+    (see ml_models.reporting), with the WAPE of each group weighted by
+    the energy of its codes. The errors of two versions can also be
+    compared, and those of the models trained on the data of each
+    income group and continent plotted against those of the model
+    trained on all the data.
+
+    A version is a trained model, such as xgboost_model_20261029_144400,
+    or the algorithm of a cross-validation, such as xgboost. Its errors
+    are those of the latest results that validate.py or
+    cross_validate.py saved for it, as all_<time>.parquet in
+    data/results/<case>/with_<version>/using_<data>/. The results of the
+    models trained on the data of a group are named after the group,
+    such as high_income_<time>.
+
+    The results of earlier versions are in a folder of the version, such
+    as data/results/validation/<version>/all.csv, with the columns
+    entity_code and MAPE_test, so they are plotted with the MAPE.
 """
 
+import glob
 import os
+from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.patches import Patch
+from matplotlib.transforms import offset_copy
 
+import ml_models.reporting
+import utils.manifest
 import utils.paths
 
+# The names of the algorithms in the titles of the figures, by the start
+# of the names of their models and of their cross-validations.
+ALGORITHM_NAMES = {"xgboost": "XGBoost", "lstm": "LSTM"}
 
-def _read_mape(
+# The names of the metrics in the labels of the figures.
+METRIC_NAMES = {
+    "WAPE": "Weighted Absolute Percentage Error (WAPE)",
+    "MAPE": "Mean Absolute Percentage Error (MAPE)",
+}
+
+# The colour of the horizontal grid lines.
+GRID_COLOR = "#e6e6e6"
+
+# The hatch of the bars of the codes that the model never saw.
+UNSEEN_HATCH = "////"
+
+# The hatch of the bars of the codes of the small size class.
+SMALL_HATCH = "...."
+
+
+def _find_latest_results(
+    results_directory: str, version: str, name: str
+) -> str | None:
+    """
+    Find the latest results of a version that a script saved.
+
+    Parameters
+    ----------
+    results_directory : str
+        The folder of the results, such as that of the validations.
+    version : str
+        The trained model, or the algorithm of a cross-validation.
+    name : str
+        The name of the results: "all", or the name of a group.
+
+    Returns
+    -------
+    str | None
+        The path of the latest Parquet file of the results, or None if
+        there is none.
+    """
+    file_paths = sorted(
+        glob.glob(
+            os.path.join(
+                results_directory, f"with_{version}", "*", f"{name}_*.parquet"
+            )
+        ),
+        key=os.path.getmtime,
+    )
+    return file_paths[-1] if file_paths else None
+
+
+def describe_version(results_directory: str, version: str) -> tuple[str, str]:
+    """
+    Describe a version in the titles and in the names of the figures.
+
+    The description tells whether the results are those of a validation
+    or of a cross-validation, from the folder of the results, and the
+    algorithm and version of the model: the time of the training of a
+    validated model, and the time of a cross-validation, whose holdout
+    is in the names of the files only.
+
+    Parameters
+    ----------
+    results_directory : str
+        The folder of the results, that of the validations or of the
+        cross-validations.
+    version : str
+        The trained model, or the algorithm of a cross-validation, or
+        the folder of the MAPE files of an earlier version.
+
+    Returns
+    -------
+    tuple[str, str]
+        The title, such as "Validation of the XGBoost model
+        20261029_144400", and the part of the names of the files, such
+        as "validation_xgboost_model_20261029_144400".
+    """
+    file_path = _find_latest_results(results_directory, version, "all")
+    if file_path is None:
+        return f"Version {version}", version
+    algorithm, _, model_time = version.partition("_model_")
+    algorithm_name = ALGORITHM_NAMES.get(algorithm, algorithm)
+    if os.path.basename(results_directory) == "cross_validation":
+        manifest = utils.manifest.read_manifest(file_path) or {}
+        holdout = manifest.get("holdout", "entity")
+        results_time = os.path.basename(file_path)[
+            len("all_") : -len(".parquet")
+        ]
+        return (
+            f"Cross-validation of {algorithm_name} {results_time}",
+            f"cross_validation_{version}_{holdout}_{results_time}",
+        )
+    if not model_time:
+        return f"Validation of {version}", f"validation_{version}"
+    return (
+        f"Validation of the {algorithm_name} model {model_time}",
+        f"validation_{version}",
+    )
+
+
+def _get_figure_width(number_of_entities: int) -> float:
+    """
+    Get the width of a figure, so that the names of its bars are read.
+
+    Parameters
+    ----------
+    number_of_entities : int
+        The number of countries and subdivisions, one bar each.
+
+    Returns
+    -------
+    float
+        The width in inches: about a tenth of an inch for each bar, and
+        at least 10.
+    """
+    return max(10.0, 3.0 + 0.11 * number_of_entities)
+
+
+def _read_results(
+    results_directory: str, version: str, name: str
+) -> pd.DataFrame:
+    """
+    Read the results of each country and subdivision of a version.
+
+    Parameters
+    ----------
+    results_directory : str
+        The folder of the results, such as that of the validations.
+    version : str
+        The trained model, or the algorithm of a cross-validation, or
+        the folder of the MAPE files of an earlier version.
+    name : str
+        The name of the results: "all", or the name of a group.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The results of each country and subdivision, indexed by their
+        code: only the column "Testing MAPE" for an earlier version.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the version has no results of the name.
+    """
+    legacy_path = os.path.join(results_directory, version, f"{name}.csv")
+    if os.path.exists(legacy_path):
+        return pd.read_csv(
+            legacy_path,
+            usecols=["entity_code", "MAPE_test"],
+            index_col="entity_code",
+        ).rename(columns={"MAPE_test": "Testing MAPE"})
+    file_path = _find_latest_results(results_directory, version, name)
+    if file_path is None:
+        raise FileNotFoundError(
+            f"The version {version} has no results {name} in "
+            f"{results_directory}: no with_{version}/*/{name}_*.parquet, "
+            f"and no {version}/{name}.csv."
+        )
+    return (
+        pd.read_parquet(file_path)
+        .set_index("Entity code")
+        .rename_axis("entity_code")
+    )
+
+
+def _read_testing_error(
+    results_directory: str,
+    version: str,
+    name: str,
+    metric: Literal["WAPE", "MAPE"],
+) -> pd.Series:
+    """
+    Read the testing error of each country and subdivision of a version.
+
+    Parameters
+    ----------
+    results_directory : str
+        The folder of the results, such as that of the validations.
+    version : str
+        The trained model, or the algorithm of a cross-validation, or
+        the folder of the MAPE files of an earlier version.
+    name : str
+        The name of the results: "all", or the name of a group.
+    metric : str
+        The metric of the error, "WAPE" or "MAPE".
+
+    Returns
+    -------
+    pandas.Series
+        The testing error of each country and subdivision, as a
+        fraction, indexed by their code.
+
+    Raises
+    ------
+    ValueError
+        If the results have no error of the metric, such as the WAPE
+        of an earlier version.
+    """
+    results = _read_results(results_directory, version, name)
+    column = f"Testing {metric}"
+    if column not in results:
+        raise ValueError(
+            f"The results {name} of the version {version} have no {metric}: "
+            "plot them with the MAPE."
+        )
+    return results[column]
+
+
+def _read_errors(
     results_directory: str,
     version: str,
     compare_with_version: str | None,
     by_group: bool,
     groups: dict[str, list[str]],
+    metric: Literal["WAPE", "MAPE"],
 ) -> pd.DataFrame:
     """
-    Read MAPE values from CSV files.
+    Read the testing errors of the versions, in percent.
 
     Parameters
     ----------
@@ -52,45 +279,35 @@ def _read_mape(
         continent).
     groups : dict[str, list[str]]
         Dictionary mapping case names to their respective groups.
+    metric : str
+        The metric of the errors, "WAPE" or "MAPE".
 
     Returns
     -------
-    mape : pandas.DataFrame
-        A DataFrame containing MAPE values.
+    errors : pandas.DataFrame
+        The errors of each country and subdivision, in percent, in a
+        column "<version>_<name>" for each version and results.
     """
     # Initialize a DataFrame to hold the data.
-    mape = pd.DataFrame()
-
-    # Read the MAPE values for all countries and subdivisions.
-    mape[f"{version}_all"] = pd.read_csv(
-        os.path.join(results_directory, version, "all.csv"),
-        usecols=["entity_code", "MAPE_test"],
-        index_col="entity_code",
+    errors = pd.DataFrame()
+    errors[f"{version}_all"] = _read_testing_error(
+        results_directory, version, "all", metric
     )
 
     if compare_with_version is not None:
-        # Read the MAPE values for all countries and subdivisions for
-        # the version to compare with.
-        mape[f"{compare_with_version}_all"] = pd.read_csv(
-            os.path.join(results_directory, compare_with_version, "all.csv"),
-            usecols=["entity_code", "MAPE_test"],
-            index_col="entity_code",
+        errors[f"{compare_with_version}_all"] = _read_testing_error(
+            results_directory, compare_with_version, "all", metric
         )
 
     if by_group:
         for case_groups in groups.values():
             for group in case_groups:
-                # Read the MAPE values for the current group.
-                mape[f"{version}_{group}"] = pd.read_csv(
-                    os.path.join(results_directory, version, f"{group}.csv"),
-                    usecols=["entity_code", "MAPE_test"],
-                    index_col="entity_code",
+                errors[f"{version}_{group}"] = _read_testing_error(
+                    results_directory, version, group, metric
                 )
+    errors = errors * 100
 
-    # Multiply the MAPE values by 100 to convert them to percentages.
-    mape = mape * 100
-
-    return mape
+    return errors
 
 
 def _add_box_and_bar_plot(
@@ -190,6 +407,59 @@ def _add_box_and_bar_plot(
     axs[1].set_xticklabels(data[0].index, rotation=90, fontsize=fontsize)
 
 
+def _add_bar_plot(
+    ax: plt.Axes,
+    series: pd.Series,
+    unseen: pd.Series | None,
+    small: pd.Series | None,
+) -> None:
+    """
+    Add a bar of the error of each country or subdivision.
+
+    Parameters
+    ----------
+    ax : matplotlib.pyplot.Axes
+        The axes of the bars.
+    series : pandas.Series
+        The error of each country or subdivision, by its code.
+    unseen : pandas.Series | None
+        Whether the model never saw each country or subdivision in
+        training, whose bars are hatched with lines.
+    small : pandas.Series | None
+        Whether each country or subdivision is of the small size class,
+        whose bars are hatched with dots.
+    """
+    indices = np.arange(len(series))
+    bars = ax.bar(indices, series, width=0.8, color="tab:blue")
+    for flags, hatch in ((unseen, UNSEEN_HATCH), (small, SMALL_HATCH)):
+        if flags is None:
+            continue
+        for bar, flagged in zip(
+            bars, flags.reindex(series.index, fill_value=False), strict=True
+        ):
+            if flagged:
+                bar.set_hatch((bar.get_hatch() or "") + hatch)
+                bar.set_edgecolor("white")
+    ax.set_xticks(indices)
+    ax.set_xticklabels(series.index, rotation=90, fontsize=7.0)
+    ax.set_xlim(-1, len(series))
+
+
+def _add_grid(fig: plt.Figure) -> None:
+    """
+    Add horizontal grid lines, in a very light grey, behind the data.
+
+    Parameters
+    ----------
+    fig : matplotlib.pyplot.Figure
+        The figure, whose visible axes get the grid lines.
+    """
+    for ax in fig.axes:
+        if ax.axison:
+            ax.set_axisbelow(True)
+            ax.yaxis.grid(True, color=GRID_COLOR, linewidth=0.8)
+
+
 def _add_legend(
     fig: plt.Figure,
     versions: list[str],
@@ -234,22 +504,39 @@ def _add_legend(
 
 
 def _add_explanatory_text(
-    fig: plt.Figure,
+    target: plt.Axes | plt.Figure, metric: Literal["WAPE", "MAPE"] = "MAPE"
 ) -> None:
     """
-    Add explanatory text to the figure.
+    Add an arrow that tells that a lower error is better.
 
     Parameters
     ----------
-    fig : matplotlib.pyplot.Figure
-        The figure where to add the explanatory text.
+    target : matplotlib.pyplot.Axes | matplotlib.pyplot.Figure
+        The axes, next to whose right side the arrow is centred on their
+        height, or the figure, on whose right side it is.
+    metric : str, optional
+        The metric of the errors, "WAPE" or "MAPE".
     """
-    # Add a text to indicate that lower MAPE is better.
-    fig.text(
-        1.035,
+    if isinstance(target, plt.Axes):
+        # A fixed gap in points, whatever the width of the axes.
+        x, transform, alignment = (
+            1.0,
+            offset_copy(
+                target.transAxes,
+                fig=target.get_figure(root=True),
+                x=16,
+                units="points",
+            ),
+            "left",
+        )
+    else:
+        x, transform, alignment = 1.045, target.transFigure, "center"
+    target.text(
+        x,
         0.5,
-        "Lower MAPE is better",
-        ha="center",
+        f"Lower {metric} is better",
+        transform=transform,
+        ha=alignment,
         va="center",
         weight="bold",
         fontsize=12,
@@ -266,9 +553,13 @@ def _plot_overall(
     figure_directory: str,
     version: str,
     mape: pd.DataFrame,
+    description: tuple[str, str],
+    metric: Literal["WAPE", "MAPE"] = "MAPE",
+    unseen: pd.Series | None = None,
+    small: pd.Series | None = None,
 ) -> None:
     """
-    Plot the overall MAPE values.
+    Plot the error of each country or subdivision, as a bar.
 
     Parameters
     ----------
@@ -277,41 +568,58 @@ def _plot_overall(
     version : str
         The version of the ML model whose results are to be plotted.
     mape : pandas.DataFrame
-        A DataFrame containing MAPE values.
+        The errors of each country and subdivision, in percent.
+    description : tuple[str, str]
+        The title of the version and the part of the name of the file
+        (see describe_version).
+    metric : str, optional
+        The metric of the errors, "WAPE" or "MAPE".
+    unseen : pandas.Series | None, optional
+        Whether the model never saw each country or subdivision in
+        training, whose bars are hatched with lines.
+    small : pandas.Series | None, optional
+        Whether each country or subdivision is of the small size class,
+        whose bars are hatched with dots.
     """
-    # Sort the entities by their MAPE values for better visualization.
-    mape_to_plot = mape.sort_values(by=f"{version}_all")
+    mape_to_plot = mape.dropna(subset=[f"{version}_all"]).sort_values(
+        by=f"{version}_all"
+    )
 
-    # Initialize the plot.
-    fig, axs = plt.subplots(
-        1,
-        2,
-        figsize=(10, 5),
+    # Initialize the plot, wide enough for the names of the bars.
+    fig, ax = plt.subplots(
+        figsize=(_get_figure_width(len(mape_to_plot)), 5),
         layout="constrained",
-        sharey=True,
-        gridspec_kw={"width_ratios": [1, 5]},
     )
+    _add_bar_plot(ax, mape_to_plot[f"{version}_all"], unseen, small)
+    ax.set_ylabel(METRIC_NAMES[metric], weight="bold", fontsize=12)
+    ax.set_xlabel("Country or subdivision", weight="bold", fontsize=12)
+    # The legend has the hatches of the figure, in the same order in
+    # every figure.
+    handles = [
+        Patch(
+            facecolor="tab:blue", edgecolor="white", hatch=hatch, label=label
+        )
+        for flags, hatch, label in (
+            (unseen, UNSEEN_HATCH, "Not seen in training"),
+            (
+                small,
+                SMALL_HATCH,
+                f"Mean demand {get_size_class_labels()['Small']}",
+            ),
+        )
+        if flags is not None and flags.reindex(mape_to_plot.index).any()
+    ]
+    if handles:
+        ax.legend(handles=handles, loc="upper left", fontsize=10)
 
-    # Add a box and whisker plot and a bar plot.
-    _add_box_and_bar_plot([axs[0], axs[1]], [mape_to_plot[f"{version}_all"]])
-    axs[0].set_ylabel(
-        "Mean Absolute Percentage Error (MAPE)", weight="bold", fontsize=12
-    )
-    axs[1].set_xlabel(
-        "Country or subdivision",
-        weight="bold",
-        fontsize=12,
-    )
+    _add_explanatory_text(ax, metric)
+    fig.suptitle(description[0], weight="bold", fontsize=12)
 
-    # Add a text to indicate that lower MAPE is better.
-    _add_explanatory_text(fig)
-
-    # Add a legend.
-    _add_legend(fig, [f"Version {version}"])
-
-    # Save the plot to a file.
+    _add_grid(fig)
     plt.savefig(
-        os.path.join(figure_directory, f"mape_{version}.png"),
+        os.path.join(
+            figure_directory, f"{metric.lower()}_{description[1]}.png"
+        ),
         dpi=300,
         bbox_inches="tight",
     )
@@ -322,9 +630,11 @@ def _plot_comparison(
     version: str,
     compare_with_version: str,
     mape: pd.DataFrame,
+    descriptions: tuple[tuple[str, str], tuple[str, str]],
+    metric: Literal["WAPE", "MAPE"] = "MAPE",
 ) -> None:
     """
-    Plot the comparison of MAPE values between two versions.
+    Plot the comparison of the errors of two versions.
 
     Parameters
     ----------
@@ -336,19 +646,24 @@ def _plot_comparison(
         The version of the ML model whose results are to be considered
         in the comparison.
     mape : pandas.DataFrame
-        A DataFrame containing MAPE values.
+        The errors of each country and subdivision, in percent.
+    descriptions : tuple[tuple[str, str], tuple[str, str]]
+        The title and the part of the name of the file of each version
+        (see describe_version).
+    metric : str, optional
+        The metric of the errors, "WAPE" or "MAPE".
     """
-    # Sort the entities by their MAPE values for better visualization.
     mape_to_plot = mape.sort_values(by=f"{version}_all")
 
-    # Initialize the plot.
+    # Initialize the plot, wide enough for the names of the bars.
+    width = _get_figure_width(len(mape_to_plot))
     fig, axs = plt.subplots(
         1,
         2,
-        figsize=(10, 5),
+        figsize=(width, 5),
         layout="constrained",
         sharey=True,
-        gridspec_kw={"width_ratios": [1, 5]},
+        gridspec_kw={"width_ratios": [1, width / 2 - 1]},
     )
 
     # Add a box and whisker plot and a bar plot.
@@ -358,22 +673,22 @@ def _plot_comparison(
             mape_to_plot[f"{version}_all"],
             mape_to_plot[f"{compare_with_version}_all"],
         ],
+        fontsize=7.0,
     )
-    axs[0].set_ylabel(
-        "Mean Absolute Percentage Error (MAPE)", weight="bold", fontsize=12
-    )
+    axs[0].set_ylabel(METRIC_NAMES[metric], weight="bold", fontsize=12)
     axs[1].set_xlabel("Country or subdivision", weight="bold", fontsize=12)
 
-    # Add a text to indicate that lower MAPE is better.
-    _add_explanatory_text(fig)
+    _add_explanatory_text(axs[1], metric)
 
     # Add a legend.
-    _add_legend(fig, [f"Version {version}", f"Version {compare_with_version}"])
+    _add_legend(fig, [descriptions[0][0], descriptions[1][0]])
 
-    # Save the plot to a file.
+    _add_grid(fig)
     plt.savefig(
         os.path.join(
-            figure_directory, f"mape_{version}_vs_{compare_with_version}.png"
+            figure_directory,
+            f"{metric.lower()}_{descriptions[0][1]}_vs_"
+            f"{descriptions[1][1]}.png",
         ),
         dpi=300,
         bbox_inches="tight",
@@ -385,9 +700,11 @@ def _plot_by_group(
     version: str,
     mape: pd.DataFrame,
     groups: dict[str, list[str]],
+    description: tuple[str, str],
+    metric: Literal["WAPE", "MAPE"] = "MAPE",
 ) -> None:
     """
-    Plot the MAPE values by group.
+    Plot the errors of the models trained on the data of each group.
 
     Parameters
     ----------
@@ -396,9 +713,14 @@ def _plot_by_group(
     version : str
         The version of the ML model whose results are to be plotted.
     mape : pandas.DataFrame
-        A DataFrame containing MAPE values.
+        The errors of each country and subdivision, in percent.
     groups : dict[str, list[str]]
         Dictionary mapping case names to their respective groups.
+    description : tuple[str, str]
+        The title of the version and the part of the name of the file
+        (see describe_version).
+    metric : str, optional
+        The metric of the errors, "WAPE" or "MAPE".
     """
     # Define the group labels for the legend.
     group_labels = {
@@ -471,20 +793,210 @@ def _plot_by_group(
             ["Trained on all data", "Trained on data in group"],
             y_pos=1.06 if case == "continent" else 1.15,
         )
-
-        # Add a text to indicate that lower MAPE is better.
-        _add_explanatory_text(fig)
-
-        fig.supylabel(
-            "Mean Absolute Percentage Error (MAPE)", weight="bold", x=-0.03
+        fig.suptitle(
+            description[0],
+            y=1.12 if case == "continent" else 1.3,
+            weight="bold",
+            fontsize=12,
         )
 
-        # Save the plot to a file.
+        # Add a text to indicate that a lower error is better.
+        _add_explanatory_text(fig, metric)
+
+        fig.supylabel(METRIC_NAMES[metric], weight="bold", x=-0.03)
+
+        _add_grid(fig)
         plt.savefig(
-            os.path.join(figure_directory, f"mape_{version}_by_{case}.png"),
+            os.path.join(
+                figure_directory,
+                f"{metric.lower()}_{description[1]}_by_{case}.png",
+            ),
             dpi=300,
             bbox_inches="tight",
         )
+
+
+def _format_load(load: float) -> str:
+    """
+    Format a load in MW, or in GW from 1 GW.
+
+    Parameters
+    ----------
+    load : float
+        The load, in MW.
+
+    Returns
+    -------
+    str
+        The load and its unit, such as "300 MW" or "5 GW".
+    """
+    return f"{load:g} MW" if load < 1000 else f"{load / 1000:g} GW"
+
+
+def get_size_class_labels() -> dict[str, str]:
+    """
+    Get the labels of the size classes: their ranges of mean load.
+
+    Returns
+    -------
+    dict[str, str]
+        The range of mean load of each size class, such as "300 MW -
+        5 GW", by its name.
+    """
+    labels = {}
+    lower = 0.0
+    for name, upper in ml_models.reporting.SIZE_CLASSES.items():
+        if lower == 0:
+            limits = f"< {_format_load(upper)}"
+        elif np.isinf(upper):
+            limits = f"\u2265 {_format_load(lower)}"
+        else:
+            limits = f"{_format_load(lower)} \u2013 {_format_load(upper)}"
+        labels[name] = limits
+        lower = upper
+    return labels
+
+
+def _plot_distribution(
+    figure_directory: str,
+    results: pd.DataFrame,
+    description: tuple[str, str],
+    metric: Literal["WAPE", "MAPE"],
+) -> None:
+    """
+    Plot the distribution of the errors of the codes, also by group.
+
+    The figure has a panel of all the codes and, if the results describe
+    the codes (see ml_models.reporting), a panel by whether the model
+    saw them in training and one by their size class. Each group has a
+    box of the errors of its codes, their number, and, for the WAPE, the
+    WAPE of all their hours, weighted by their energy.
+
+    Parameters
+    ----------
+    figure_directory : str
+        The directory where the figure will be saved.
+    results : pandas.DataFrame
+        The results of each country and subdivision, with their
+        description if known.
+    description : tuple[str, str]
+        The title of the version and the part of the name of the file
+        (see describe_version).
+    metric : str
+        The metric of the errors, "WAPE" or "MAPE".
+    """
+    scored = results.dropna(subset=[f"Testing {metric}"]).reset_index()
+    size_labels = get_size_class_labels()
+    # Each panel has its group of the summary, its title and the value,
+    # label and results of each of its boxes.
+    panels = [("All", "All codes", [("All", "All", scored)])]
+    for column, title in (
+        ("Seen in training", "Grouped by whether seen in training"),
+        ("Size class", "Grouped by mean demand"),
+    ):
+        if column in scored:
+            panels.append(
+                (
+                    column,
+                    title,
+                    [
+                        (value, size_labels.get(value, value), rows)
+                        for value, rows in ml_models.reporting.group_codes(
+                            scored, column
+                        )
+                    ],
+                )
+            )
+    weighted = (
+        ml_models.reporting.summarize(scored, "Testing").set_index(
+            ["Group", "Value"]
+        )["Energy-weighted WAPE"]
+        if metric == "WAPE" and "Mean load (MW)" in scored
+        else None
+    )
+
+    number_of_boxes = sum(len(groups) for _, _, groups in panels)
+    fig, axs = plt.subplots(
+        1,
+        len(panels),
+        figsize=(max(6.0, 2.0 + 1.3 * number_of_boxes), 4.5),
+        sharey=True,
+        layout="constrained",
+        gridspec_kw={"width_ratios": [len(groups) for _, _, groups in panels]},
+        squeeze=False,
+    )
+    for ax, (group, title, groups) in zip(axs[0], panels, strict=True):
+        positions = np.arange(len(groups))
+        ax.boxplot(
+            [rows[f"Testing {metric}"] * 100 for _, _, rows in groups],
+            positions=positions,
+            widths=0.5,
+            medianprops={"color": "tab:red", "linewidth": 2.5},
+            boxprops={"color": "tab:blue", "linewidth": 1.5},
+            whiskerprops={"color": "tab:blue", "linewidth": 1.5},
+            capprops={"color": "tab:blue", "linewidth": 1.5},
+            flierprops={
+                "markeredgecolor": "tab:blue",
+                "markeredgewidth": 1.5,
+                "markersize": 3,
+            },
+        )
+        if weighted is not None:
+            ax.scatter(
+                positions,
+                [weighted[(group, value)] * 100 for value, _, _ in groups],
+                marker="D",
+                color="tab:green",
+                edgecolor="black",
+                zorder=3,
+            )
+        ax.set_xticks(
+            positions,
+            [
+                f"{label}\n({len(rows)} code{'s' if len(rows) != 1 else ''})"
+                for _, label, rows in groups
+            ],
+            fontsize=8,
+        )
+        ax.set_xlim(-0.6, len(groups) - 0.4)
+        ax.set_title(title, weight="bold", fontsize=10)
+
+    axs[0, 0].set_ylim(bottom=0)
+    name, abbreviation = METRIC_NAMES[metric].removesuffix(")").split(" (")
+    axs[0, 0].set_ylabel(f"{name}\n({abbreviation}, %)", weight="bold")
+    _add_explanatory_text(axs[0, -1], metric)
+    handles = [
+        plt.Line2D([], [], color="tab:red", linewidth=2, label="Median"),
+    ]
+    if weighted is not None:
+        handles.append(
+            plt.Line2D(
+                [],
+                [],
+                marker="D",
+                color="tab:green",
+                markeredgecolor="black",
+                linestyle="none",
+                label="WAPE of the group, weighted by energy",
+            )
+        )
+    fig.legend(handles=handles, loc="outside lower center", ncols=2)
+    fig.suptitle(
+        f"{description[0]}\nDistribution of the {metric} of the countries "
+        "and subdivisions",
+        weight="bold",
+        fontsize=11,
+    )
+
+    _add_grid(fig)
+    plt.savefig(
+        os.path.join(
+            figure_directory,
+            f"{metric.lower()}_{description[1]}_distribution.png",
+        ),
+        dpi=300,
+        bbox_inches="tight",
+    )
 
 
 def plot(
@@ -493,6 +1005,7 @@ def plot(
     compare_with_version: str | None = None,
     by_group: bool = False,
     results_directory: str | None = None,
+    metric: Literal["WAPE", "MAPE"] = "WAPE",
 ) -> None:
     """
     Plot the machine learning results.
@@ -507,11 +1020,13 @@ def plot(
         The version of the ML model whose results are to be considered
         in the comparison.
     by_group : bool, optional
-        Whether to plot the results by group (income level and
-        continent).
+        Whether to plot the results of the models trained on the data
+        of each group (income level and continent).
     results_directory : str | None, optional
         The folder with a folder of MAPE files for each version, by
         default that of the validation results.
+    metric : str, optional
+        The metric of the errors, "WAPE" or "MAPE".
 
     Raises
     ------
@@ -539,14 +1054,50 @@ def plot(
             "The --by_group and --compare_with_version options cannot be "
             "used together at the moment."
         )
-
-    # Read the MAPE values from the CSV files.
-    mape = _read_mape(
-        results_directory, version, compare_with_version, by_group, groups
+    errors = _read_errors(
+        results_directory,
+        version,
+        compare_with_version,
+        by_group,
+        groups,
+        metric,
     )
+    description = describe_version(results_directory, version)
     if by_group:
-        _plot_by_group(figure_directory, version, mape, groups)
+        _plot_by_group(
+            figure_directory, version, errors, groups, description, metric
+        )
     elif compare_with_version is not None:
-        _plot_comparison(figure_directory, version, compare_with_version, mape)
+        _plot_comparison(
+            figure_directory,
+            version,
+            compare_with_version,
+            errors,
+            (
+                description,
+                describe_version(results_directory, compare_with_version),
+            ),
+            metric,
+        )
     else:
-        _plot_overall(figure_directory, version, mape)
+        results = _read_results(results_directory, version, "all")
+        unseen = (
+            ~results["Seen in training"].astype(bool)
+            if "Seen in training" in results
+            else None
+        )
+        small = (
+            results["Size class"] == "Small"
+            if "Size class" in results
+            else None
+        )
+        _plot_overall(
+            figure_directory,
+            version,
+            errors,
+            description,
+            metric,
+            unseen,
+            small,
+        )
+        _plot_distribution(figure_directory, results, description, metric)

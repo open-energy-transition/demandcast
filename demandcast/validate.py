@@ -20,6 +20,7 @@ import ml_models.data
 import ml_models.evaluation
 import ml_models.files
 import ml_models.registry
+import ml_models.reporting
 import utils.config
 import utils.manifest
 
@@ -93,15 +94,26 @@ def run_model_validation(
     # Calculate MAPEs.
     mapes = ml_models.evaluation.calculate_mapes(prepared_dataset, predictions)
 
+    results = mapes.merge(
+        ml_models.reporting.describe_entities(
+            prepared_dataset["testing"], prepared_dataset["training"]
+        ),
+        on="Entity code",
+        how="left",
+    )
+    summary = ml_models.reporting.summarize(results, "Testing")
+    ml_models.reporting.log_summary(summary, "Testing set")
+
     # Save the MAPEs.
     ml_models.files.save_results(
         "validation",
-        mapes,
+        results,
         os.path.basename(trained_model_path).split(".")[0],
         os.path.basename(data_path).split(".")[0],
         "all",
         model_path=trained_model_path,
         data_path=data_path,
+        summary=summary,
     )
 
 
