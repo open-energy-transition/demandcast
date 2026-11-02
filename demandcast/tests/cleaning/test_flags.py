@@ -326,7 +326,11 @@ def test_annual_errors(monkeypatch, code):
         "Asia/Kolkata", "2020-01-01 01:00", "2024-01-01 00:00"
     )
     demand[:] = 1000.0
-    starts = pd.DatetimeIndex(demand.index) - pd.Timedelta(hours=1)
+    starts = (
+        (pd.DatetimeIndex(demand.index) - pd.Timedelta(hours=1))
+        .tz_localize("UTC")
+        .tz_convert("Asia/Kolkata")
+    )
     demand[starts.year == 2022] *= 1.5
     _save_annual_values(code, per_capita=8760, population=1e6)
 
