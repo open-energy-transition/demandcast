@@ -21,7 +21,7 @@ The scripts are in the `demandcast/` folder and run from it, with `uv run <scrip
 | `sync.py` | Copies the data folder to or from a private bucket of Google Cloud Storage, without overwriting or deleting files | The data folder or the bucket | The bucket or the data folder |
 | `publish.py` | Uploads a release, the trained model, its settings and its forecasts, to Zenodo as a draft | The files of the release | A draft version of the Zenodo record |
 
-`benchmark/run.py` runs the retrieval and the assembly of the data of the [benchmark](ML.md#benchmark-results) of the models. The [data retrieval](retrieval.md) and [machine learning](ML.md) pages describe each step.
+`benchmark/run.py` runs the retrieval and the assembly of the data of the [benchmark](ML.md#benchmark) of the models. The [data retrieval](retrieval.md) and [machine learning](ML.md) pages describe each step.
 
 ## Code folder
 

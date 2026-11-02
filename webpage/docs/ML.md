@@ -13,19 +13,19 @@ The machine learning process in DemandCast follows a structured pipeline that tr
 
 ### Key Concepts
 
-**Target Variable: Load (fraction of annual total)**
+#### Target Variable: Load (fraction of annual total)
 
 The target variable represents normalized hourly electricity consumption. Take each hour's electricity demand (in MW) and divide it by the total yearly electricity demand for that region. This produces a fraction of the year's electricity consumed in that hour. For example, 0.00015 means this hour consumed 0.015% of the year's total electricity. This normalization allows the model to learn patterns across regions of different sizes—a small country and a large country both have values in a comparable range.
 
-**What the models learn: Load relative to the annual mean**
+#### What the models learn: Load relative to the annual mean
 
 The fraction of the annual total of an average hour is about 1/8760, too small for the models: the gain of an XGBoost split scales with the square of the target, so at that magnitude the model barely splits and rarely uses the continuous features. When preparing the data, `ml_models.data.to_load_relative_to_annual_mean()` therefore multiplies the target by the hours in its local year (8760, or 8784 in leap years), giving the load relative to the annual mean, without unit: 1.0 is an average hour, and 1.2 an hour with 20% more demand than average. All models are trained on this target, and the manifest of each model records it (see [the manifests](#manifests)). The assembled data keeps the fraction of the annual total.
 
-**From the predictions to MW**
+#### From the predictions to MW
 
 The annual electricity demand of a forecast, the product of the annual demand per capita (kWh) and the population, is the total of its year, and the hourly profile of the model distributes it. The predictions of a year do not have a mean of exactly 1, so `forecast.py` scales those of each complete local year of each country or subdivision, with all its hours, to a mean of 1 (`ml_models.data.normalize_to_annual_totals()`): their MW then sum to the annual demand. A negative prediction is zero; a prediction that is not a number, or an hour with two predictions, stops the forecast. The predictions of a year without all its hours, and of a complete year whose predictions are all zero, are not scaled, which the log reports, and the manifest of the forecasts gives the status of each year: `scaled`, `incomplete` or `zero`. The predictions are then converted back to the fraction of the annual total and multiplied by the annual demand in kWh, divided by 1000 for MW. The validation and cross-validation score the predictions as the model gives them.
 
-**Temporal Splitting**
+#### Temporal Splitting
 
 Unlike typical machine learning where data is randomly split, temporal splitting is required for time-series forecasting. Random splitting would "leak" future information into training, making results unrealistically good. The dataset is split using the following logic:
 
@@ -37,11 +37,11 @@ The years are those that the region has, so a missing year is skipped: with data
 
 This ensures the model is evaluated on future time periods it hasn't seen during training, which is critical for time-series forecasting.
 
-**Leave-One-Group-Out (LOGO) Cross-Validation**
+#### Leave-One-Group-Out (LOGO) Cross-Validation
 
 LOGO cross-validation tests model generalization across regions by training on all regions except one and evaluating on the held-out region. This process is repeated for each region. By default, each fold holds out one entity code (`holdout: entity`), so a fold that holds out Argentina still trains on the provinces of Argentina: this measures the error on a held-out entity, not on a country that the model has never seen. With `holdout: country`, each fold holds out a country with all its subdivisions, which measures the error on an unseen country. The results say which holdout they used.
 
-**Feature Types**
+#### Feature Types
 
 Machine learning features can be classified as either categorical or continuous:
 
