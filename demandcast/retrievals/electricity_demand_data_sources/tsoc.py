@@ -127,7 +127,7 @@ def _solar_noon(days: pd.DatetimeIndex) -> np.ndarray:
         in UTC.
     """
     # The approximation of the equation of time of NOAA, in minutes.
-    angle = 2 * np.pi / 365 * (days.dayofyear.to_numpy() - 1)
+    angle = 2 * np.pi / 365 * (days.day_of_year.to_numpy() - 1)
     equation_of_time = 229.18 * (
         0.000075
         + 0.001868 * np.cos(angle)

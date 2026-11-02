@@ -130,8 +130,10 @@ def download_and_extract_data_for_request(
 
     # Read and process each sheet individually.
     for region in regions:
-        dataset = excel_file.parse(
-            sheet_names[region], skiprows=rows_to_skip[region]
+        dataset = pd.read_excel(
+            excel_file,
+            sheet_name=sheet_names[region],
+            skiprows=rows_to_skip[region],
         )
 
         # Make sure the dataset is a pandas DataFrame.

@@ -109,7 +109,7 @@ def _daily_temperatures(calendar: str) -> xarray.DataArray:
             use_cftime=True,
         )
     days_in_year = 360 if calendar == "360_day" else 365.25
-    share_of_year = np.asarray(times.dayofyear - 1) / days_in_year
+    share_of_year = np.asarray(times.day_of_year - 1) / days_in_year
     values = 280 + 10 * np.sin(2 * np.pi * share_of_year)
     return xarray.DataArray(
         values[:, None, None],

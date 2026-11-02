@@ -112,7 +112,7 @@ def _write_assembled_data(
             time = pd.date_range(f"{year}-01-01", periods=120, freq="73h")
             temperature = (
                 280
-                + 10 * np.sin(2 * np.pi * time.dayofyear.to_numpy() / 365)
+                + 10 * np.sin(2 * np.pi * time.day_of_year.to_numpy() / 365)
                 + rng.normal(0, 2, len(time))
                 + country_number
             )
@@ -122,7 +122,7 @@ def _write_assembled_data(
                     "Entity code": country_code,
                     "Local year": year,
                     "Local hour of the day": time.hour,
-                    "Local weekend indicator": (time.dayofweek >= 5).astype(
+                    "Local weekend indicator": (time.day_of_week >= 5).astype(
                         int
                     ),
                     "Local holiday indicator": (

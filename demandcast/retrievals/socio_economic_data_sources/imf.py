@@ -11,6 +11,7 @@ Description:
 """
 
 import logging
+from typing import cast
 
 import pandas as pd
 import sdmx
@@ -33,8 +34,11 @@ def download_gdp_ppp_per_capita() -> pd.DataFrame:
     # Download the GDP PPP per capita data from the IMF.
     imf_gdp_ppp_per_capita = imf_client.data("WEO", key="*.NGDPRPPPPC.A")
 
-    # Convert the data to a pandas DataFrame.
-    imf_gdp_ppp_per_capita = sdmx.to_pandas(imf_gdp_ppp_per_capita)
+    # Convert the data to a pandas Series, indexed by the dimensions of
+    # the data.
+    imf_gdp_ppp_per_capita = cast(
+        pd.Series, sdmx.to_pandas(imf_gdp_ppp_per_capita)
+    )
 
     # Reshape the DataFrame, drop NaN values, and set the index to
     # the country code.
