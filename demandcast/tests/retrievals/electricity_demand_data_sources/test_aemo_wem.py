@@ -7,7 +7,7 @@ Description:
     the Wholesale Electricity Market (WEM).
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 import pytest
@@ -25,7 +25,7 @@ DAILY_URL = (
 def test_get_available_requests():
     """Test that the requests are years, then months after 2023."""
     requests = aemo_wem.get_available_requests(
-        "AUS_WA", datetime.date(2006, 9, 20), datetime.date(2025, 12, 28)
+        "AUS_WA", dt.date(2006, 9, 20), dt.date(2025, 12, 28)
     )
 
     assert requests[:2] == [(True, 2006, None, None), (True, 2007, None, None)]
@@ -41,7 +41,7 @@ def test_get_available_requests():
 def test_get_available_requests_of_the_last_week():
     """Test that a month ending in the last week has its last day."""
     requests = aemo_wem.get_available_requests(
-        "AUS_WA", datetime.date(2006, 9, 20), datetime.date(2026, 1, 5)
+        "AUS_WA", dt.date(2006, 9, 20), dt.date(2026, 1, 5)
     )
 
     assert requests[-3:] == [

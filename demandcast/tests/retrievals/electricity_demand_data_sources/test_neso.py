@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from NESO.
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 import pytest
@@ -26,7 +26,7 @@ URL_2025 = (
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
     requests = neso.get_available_requests(
-        "GBR_GB", datetime.date(2009, 1, 1), datetime.date(2025, 12, 28)
+        "GBR_GB", dt.date(2009, 1, 1), dt.date(2025, 12, 28)
     )
 
     assert requests == list(range(2009, 2026))

@@ -6,7 +6,7 @@ Description:
     Tests of the public holidays of the countries and subdivisions.
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 
@@ -97,7 +97,7 @@ def test_names_of_holidays_in_any_language_of_the_system(monkeypatch):
     utils.public_holidays.get_holiday_calendar.cache_clear()
 
     assert calendar is not None
-    assert calendar.get_list(datetime.date(2024, 10, 31)) == ["Diwali"]
+    assert calendar.get_list(dt.date(2024, 10, 31)) == ["Diwali"]
 
 
 def test_country_without_holidays(caplog):

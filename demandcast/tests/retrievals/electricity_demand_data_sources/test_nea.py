@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from NEA.
 """
 
-import datetime
+import datetime as dt
 
 from retrievals.electricity_demand_data_sources import nea
 
@@ -14,7 +14,7 @@ from retrievals.electricity_demand_data_sources import nea
 def test_get_available_requests():
     """Test that the requests are the months of the Nepali year."""
     requests = nea.get_available_requests(
-        "NPL", datetime.date(2017, 4, 14), datetime.date(2018, 4, 13)
+        "NPL", dt.date(2017, 4, 14), dt.date(2018, 4, 13)
     )
 
     assert requests == list(range(1, 13))

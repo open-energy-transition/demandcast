@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from PUCSL.
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 
@@ -16,7 +16,7 @@ from retrievals.electricity_demand_data_sources import pucsl
 def test_get_available_requests():
     """Test that the requests are the weeks of the data."""
     requests = pucsl.get_available_requests(
-        "LKA", datetime.date(2023, 1, 1), datetime.date(2025, 12, 28)
+        "LKA", dt.date(2023, 1, 1), dt.date(2025, 12, 28)
     )
 
     assert requests[0] == (

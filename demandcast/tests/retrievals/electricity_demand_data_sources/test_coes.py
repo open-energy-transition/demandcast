@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from COES.
 """
 
-import datetime
+import datetime as dt
 
 from retrievals.electricity_demand_data_sources import coes
 
@@ -14,7 +14,7 @@ from retrievals.electricity_demand_data_sources import coes
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
     requests = coes.get_available_requests(
-        "PER", datetime.date(1997, 1, 1), datetime.date(2025, 12, 28)
+        "PER", dt.date(1997, 1, 1), dt.date(2025, 12, 28)
     )
 
     assert requests == list(range(1997, 2026))

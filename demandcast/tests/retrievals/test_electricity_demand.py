@@ -9,7 +9,7 @@ Description:
     data and the saved files.
 """
 
-import datetime
+import datetime as dt
 import io
 import os
 import sys
@@ -59,7 +59,7 @@ def add_data_source(tmp_path, monkeypatch):
             entity = {
                 "country_name": f"Country {country_code}",
                 "country_code": country_code,
-                "start_date": datetime.date(2020, 1, 1),
+                "start_date": dt.date(2020, 1, 1),
                 "end_date": "today",
             }
             if subdivision_code:
@@ -81,7 +81,7 @@ def add_data_source(tmp_path, monkeypatch):
                     },
                     "definition": [
                         {
-                            "start_date": datetime.date(2000, 1, 1),
+                            "start_date": dt.date(2000, 1, 1),
                             "quantity": "demand",
                             "embedded_generation": "unknown",
                             "network_losses": "unknown",
@@ -187,7 +187,7 @@ def test_one_entity_with_the_code_and_the_dates(add_data_source):
     # data in the YAML file: from 2020-01-01 to five days before today.
     # The source downloads its data at once, with a single request.
     get_available_requests.assert_called_once_with(
-        "FRA", datetime.date(2020, 1, 1), datetime.date(2025, 12, 28)
+        "FRA", dt.date(2020, 1, 1), dt.date(2025, 12, 28)
     )
     download_and_extract_data_for_request.assert_called_once_with(None, "FRA")
     assert _read_saved_data("FRA", "single") == {
@@ -223,7 +223,7 @@ def test_several_entities_with_the_code_and_the_dates(add_data_source):
     )
 
     get_available_requests.assert_called_once_with(
-        "USA_CAL", datetime.date(2020, 1, 1), datetime.date(2025, 12, 28)
+        "USA_CAL", dt.date(2020, 1, 1), dt.date(2025, 12, 28)
     )
     assert download_and_extract_data_for_request.call_args_list == [
         call((2024, 1), "USA_CAL"),
@@ -242,7 +242,7 @@ def test_several_entities_with_the_code_and_the_dates(add_data_source):
     )
 
 
-DATES = (datetime.date(2020, 1, 1), datetime.date(2025, 12, 28))
+DATES = (dt.date(2020, 1, 1), dt.date(2025, 12, 28))
 
 
 def test_values_that_are_not_numbers(add_data_source):

@@ -9,7 +9,7 @@ Description:
     hourly ones and their saving, and the cleaning of the data.
 """
 
-import datetime
+import datetime as dt
 import itertools
 import os
 from typing import Any
@@ -19,8 +19,8 @@ import pandas as pd
 
 
 def split_period(
-    start_date: datetime.date,
-    end_date: datetime.date,
+    start_date: dt.date,
+    end_date: dt.date,
     frequency: str,
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """
@@ -54,7 +54,7 @@ def split_period(
 
 def localize_interval_starts(
     time_series: pd.Series,
-    time_zone: str | datetime.tzinfo,
+    time_zone: str | dt.tzinfo,
     interval: pd.Timedelta,
     ambiguous: Any = "raise",
     nonexistent: str = "raise",
@@ -98,7 +98,7 @@ def localize_interval_starts(
 
 
 def get_local_year_bounds(
-    year: int, time_zone: datetime.tzinfo
+    year: int, time_zone: dt.tzinfo
 ) -> tuple[pd.Timestamp, pd.Timestamp]:
     """
     Get the start and the end of a year in local time.
@@ -133,9 +133,7 @@ def get_local_year_bounds(
     return new_year(year), new_year(year + 1)
 
 
-def get_local_years(
-    times: pd.DatetimeIndex, time_zone: datetime.tzinfo
-) -> pd.Index:
+def get_local_years(times: pd.DatetimeIndex, time_zone: dt.tzinfo) -> pd.Index:
     """
     Get the local year of the hours that end at the given times.
 
@@ -161,7 +159,7 @@ def get_local_years(
 
 
 def convert_from_yearly_to_hourly(
-    time_series: pd.Series, time_zone: datetime.tzinfo
+    time_series: pd.Series, time_zone: dt.tzinfo
 ) -> pd.Series:
     """
     Convert a yearly time series to an hourly time series.
@@ -200,7 +198,7 @@ def save_yearly_values(
     years: list[int],
     variable_name: str,
     file_path_without_ext: str,
-    time_zone: datetime.tzinfo,
+    time_zone: dt.tzinfo,
 ) -> None:
     """
     Save yearly values as hourly values, keeping the other saved years.

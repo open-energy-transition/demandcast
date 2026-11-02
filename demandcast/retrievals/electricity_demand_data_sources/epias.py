@@ -37,7 +37,7 @@ Description:
     Source: https://seffaflik.epias.com.tr/electricity-service/technical/en/index.html
 """
 
-import datetime
+import datetime as dt
 import logging
 
 import pandas as pd
@@ -58,7 +58,7 @@ LICENCE_EXEMPT_INCLUDED = pd.Timestamp("2020-12-30", tz="Europe/Istanbul")
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """
     Get the available requests.

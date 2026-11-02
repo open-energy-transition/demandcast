@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from CAISO.
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 import pytest
@@ -24,7 +24,7 @@ def test_get_available_requests(fake_downloads):
     # The years until 2023, then the months of the page until the end
     # of 2025: the months of 2026 are after today.
     requests = caiso.get_available_requests(
-        "USA_CAL", datetime.date(2019, 1, 1), datetime.date(2025, 12, 28)
+        "USA_CAL", dt.date(2019, 1, 1), dt.date(2025, 12, 28)
     )
     assert requests == [
         (2019, None),

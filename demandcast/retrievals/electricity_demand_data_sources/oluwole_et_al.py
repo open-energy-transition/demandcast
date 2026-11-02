@@ -23,7 +23,7 @@ Description:
             used to generate the data but a related one)
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 
@@ -32,7 +32,7 @@ import utils.time_series
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[None]:
     """
     Get the available requests.

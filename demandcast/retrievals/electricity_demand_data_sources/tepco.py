@@ -29,7 +29,7 @@ Description:
     Source: https://www.kyuden.co.jp/td_area_jukyu/jukyu.html
 """
 
-import datetime
+import datetime as dt
 import io
 import logging
 import zipfile
@@ -48,7 +48,7 @@ HOURLY_HEADER = "DATE,TIME,当日実績(万kW)"
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[tuple[int, int | None]]:
     """
     Get the available requests.

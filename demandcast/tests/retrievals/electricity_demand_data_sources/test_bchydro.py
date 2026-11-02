@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from BC Hydro.
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 import pytest
@@ -23,7 +23,7 @@ URL_FOLDER = (
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
     requests = bchydro.get_available_requests(
-        "CAN_BC", datetime.date(2001, 4, 1), datetime.date(2025, 12, 28)
+        "CAN_BC", dt.date(2001, 4, 1), dt.date(2025, 12, 28)
     )
 
     assert requests == list(range(2001, 2026))

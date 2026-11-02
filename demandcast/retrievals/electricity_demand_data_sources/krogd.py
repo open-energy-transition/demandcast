@@ -22,7 +22,7 @@ Description:
     Source: https://www.data.go.kr/data/15065266/fileData.do
 """
 
-import datetime
+import datetime as dt
 import logging
 import re
 
@@ -115,7 +115,7 @@ def _read_versions() -> dict[str, str]:
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[tuple[pd.Timestamp, pd.Timestamp, str]]:
     """
     Get the available requests.

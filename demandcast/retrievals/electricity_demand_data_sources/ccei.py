@@ -52,7 +52,7 @@ Description:
     Source: https://energy-information.canada.ca/en/resources/high-frequency-electricity-data
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 
@@ -69,7 +69,7 @@ LATE_PERIOD_OF_NL = (pd.Timestamp("2023-03-12"), pd.Timestamp("2023-11-05"))
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[None]:
     """
     Get the available requests.
