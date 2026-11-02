@@ -31,10 +31,13 @@ import ml_models.data
 import utils.manifest
 import utils.paths
 
-# The metric of the errors of the validations and cross-validations.
+# The metrics of the errors of the validations and cross-validations.
 METRIC = {
-    "name": "MAPE",
-    "description": "mean absolute percentage error, as a fraction",
+    "name": "MAPE and WAPE",
+    "description": (
+        "mean absolute percentage error, and weighted absolute percentage "
+        "error, as fractions"
+    ),
     "direction": "lower is better",
     "of": ml_models.data.TARGET_TRANSFORMATION,
 }
@@ -181,12 +184,16 @@ def save_results(
     *,
     model_path: str | None = None,
     data_path: str | None = None,
+    summary: pd.DataFrame | None = None,
 ) -> None:
     """
     Save the model results to CSV and Parquet files, with a manifest.
 
     The manifest describes both files, and records the checksums of the
-    model and of the data of the results, if their paths are given.
+    model and of the data of the results, if their paths are given, and
+    of the summary of the results, saved to a CSV file whose name
+    starts with "summary" instead of the start of the names of the
+    results.
 
     Parameters
     ----------
@@ -207,6 +214,9 @@ def save_results(
         The path of the trained model of the results.
     data_path : str | None, optional
         The path of the assembled data of the results.
+    summary : pandas.DataFrame | None, optional
+        The summary of the results, such as their errors by group of
+        countries and subdivisions (see ml_models.reporting).
 
     Raises
     ------
@@ -234,15 +244,27 @@ def save_results(
     os.makedirs(model_results_folder, exist_ok=True)
 
     # Construct the results file name.
+    timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
     results_file_name = os.path.join(
-        model_results_folder,
-        f"{file_name_prefix}_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}",
+        model_results_folder, f"{file_name_prefix}_{timestamp}"
     )
 
-    # Save the results to CSV and Parquet files, with the manifest of
-    # their model, data and metric.
+    # Save the results to CSV and Parquet files, and their summary, with
+    # the manifest of their model, data and metric.
     output_dataset.to_csv(results_file_name + ".csv", index=False)
     output_dataset.to_parquet(results_file_name + ".parquet", index=False)
+    summary_content = {}
+    if summary is not None:
+        summary_path = os.path.join(
+            model_results_folder, f"summary_{timestamp}.csv"
+        )
+        summary.to_csv(summary_path, index=False)
+        summary_content = {
+            "summary": {
+                "file": os.path.basename(summary_path),
+                "sha256": utils.manifest.get_checksum(summary_path),
+            }
+        }
     utils.manifest.write_manifest(
         results_file_name + ".parquet",
         "results",
@@ -275,6 +297,7 @@ def save_results(
                     ),
                 }
             ),
+            **summary_content,
             **(extra or {}),
         },
         other_formats=(results_file_name + ".csv",),
