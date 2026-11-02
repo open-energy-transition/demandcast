@@ -540,3 +540,131 @@ def test_load_of_a_model_without_statistics(
     assert loaded.mean_.tolist() == [0.0] * model.n_features_in_
     assert loaded.scale_.tolist() == [1.0] * model.n_features_in_
     assert "not standardized" in caplog.text
+
+
+# ----------------------------------------------------------------------
+# Cyclical features and padding indicator
+# ----------------------------------------------------------------------
+
+
+def _calendar_features(n_rows: int) -> pd.DataFrame:
+    """
+    Make features with the local hour and month, and a temperature.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The features of hourly rows from 1 January 2024.
+    """
+    times = pd.date_range("2024-01-01", periods=n_rows, freq="h")
+    return pd.DataFrame(
+        {
+            "Local hour of the day": times.hour,
+            "Temperature - Top 1 (K)": np.linspace(270.0, 300.0, n_rows),
+            "Local month of the year": times.month,
+        }
+    )
+
+
+def test_hour_and_month_are_given_as_sine_and_cosine():
+    """
+    Test the encoding of the local hour and month.
+
+    23:00 is as close to midnight as 1:00, and December is as close to
+    January as February, while the temperature is kept.
+    """
+    features = _calendar_features(48)
+    model = lstm_module.LSTMRegressor(n_timesteps=2, n_units=4, epochs=1)
+    model.fit(features, pd.Series(np.ones(48)))
+
+    assert model.cyclical_features_ == [
+        "Local hour of the day",
+        "Local month of the year",
+    ]
+    assert model.n_features_in_ == 3
+    assert len(model.mean_) == 5
+    assert model.net_.lstm.input_size == 6
+
+    rows = pd.DataFrame(
+        {
+            "Local hour of the day": [23, 0, 1, 0, 0, 0],
+            "Temperature - Top 1 (K)": [280.0] * 6,
+            "Local month of the year": [1, 1, 1, 12, 1, 2],
+        }
+    )
+    encoded = model._encode(rows)
+    assert encoded[:, 0].tolist() == [280.0] * 6
+    hour = encoded[:, [1, 3]]
+    month = encoded[:, [2, 4]]
+    assert np.linalg.norm(hour[0] - hour[1]) == pytest.approx(
+        np.linalg.norm(hour[2] - hour[1])
+    )
+    assert np.linalg.norm(month[3] - month[4]) == pytest.approx(
+        np.linalg.norm(month[5] - month[4])
+    )
+    assert hour[1].tolist() == pytest.approx([0.0, 1.0])
+
+
+def test_windows_have_a_padding_indicator():
+    """Test that each step tells whether it is a row or padding."""
+    X_arr = np.array([[1.0], [2.0], [3.0]], dtype=np.float32)
+    probe = lstm_module.LSTMRegressor(n_timesteps=3)
+
+    windows = probe._make_sequences(
+        X_arr,
+        probe._get_run_starts(3, np.array(["A", "A", "B"])),
+        np.arange(3),
+    )
+
+    assert windows[:, :, 1].tolist() == [
+        [0.0, 0.0, 1.0],
+        [0.0, 1.0, 1.0],
+        [0.0, 0.0, 1.0],
+    ]
+    assert probe._make_sequences(
+        X_arr,
+        probe._get_run_starts(3, np.array(["A", "A", "B"])),
+        np.arange(3),
+        padding_indicator=False,
+    ).shape == (3, 3, 1)
+
+
+def test_load_keeps_the_cyclical_features(tmp_path):
+    """Test that a loaded model predicts as the trained one."""
+    features = _calendar_features(48)
+    model = lstm_module.LSTMRegressor(n_timesteps=4, n_units=4, epochs=1)
+    model.fit(features, pd.Series(np.linspace(0.5, 1.5, 48)))
+    file_path = str(tmp_path / "model.pt")
+    lstm_module.save(model, file_path)
+
+    loaded = lstm_module.load(file_path)
+
+    assert loaded.cyclical_features_ == model.cyclical_features_
+    assert loaded.padding_indicator_
+    np.testing.assert_allclose(
+        loaded.predict(features), model.predict(features), rtol=1e-6
+    )
+
+
+def test_load_of_a_model_without_encoding(tmp_path):
+    """
+    Test a model saved without cyclical features and padding indicator.
+
+    It takes the features as they are, without the indicator.
+    """
+    model = lstm_module.LSTMRegressor(n_timesteps=2, n_units=4, epochs=1)
+    model.fit(_calendar_features(24), pd.Series(np.ones(24)))
+    file_path = str(tmp_path / "model.pt")
+    lstm_module.save(model, file_path)
+    checkpoint = torch.load(file_path, weights_only=True)
+    for key in ("cyclical_features", "padding_indicator", "mean_", "scale_"):
+        del checkpoint[key]
+    checkpoint["state_dict"] = lstm_module._LSTMNet(3, 4, 1, 0.0).state_dict()
+    torch.save(checkpoint, file_path)
+
+    loaded = lstm_module.load(file_path)
+
+    assert loaded.cyclical_features_ == []
+    assert not loaded.padding_indicator_
+    assert loaded.net_.lstm.input_size == 3
+    assert loaded.predict(_calendar_features(24)).shape == (24,)
