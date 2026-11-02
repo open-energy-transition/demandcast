@@ -4,11 +4,15 @@
 
 FROM ghcr.io/astral-sh/uv:0.13.6@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0 AS uv
 
-FROM python:3.12-slim@sha256:05cda9777409a9c3ffddd94a4c476b79f0769a0b4857f0c7ed9226b6800b0d6f
+FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
 
 ARG INSTALL_GCLOUD=false
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# uv installs and runs the environment, so the pip of the base image is
+# removed.
+RUN python -m pip uninstall --yes pip
 
 # hadolint ignore=DL3008
 RUN if [ "${INSTALL_GCLOUD}" = "true" ]; then \
