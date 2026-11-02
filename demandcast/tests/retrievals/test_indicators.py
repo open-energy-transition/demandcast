@@ -8,8 +8,8 @@ Description:
     demand per capita. Each runs on synthetic national and gridded
     data, for a country and a subdivision, in historical years and two
     scenarios, and the names and values of the files that it writes
-    are compared with those that it wrote before the retrievals shared
-    their code.
+    are compared with stored snapshots. The population of the
+    subdivision is its share of the population of its country.
 """
 
 import json
@@ -76,9 +76,11 @@ def _future(_data, code, scenario, *_args) -> pd.Series:
     )
 
 
-def _gridded(variable, _code, selected_years, *_args) -> pd.Series:
+def _gridded(variable, code, selected_years, *_args) -> pd.Series:
     """
-    Give the total of a gridded variable of a subdivision.
+    Give the total of a gridded variable of a subdivision or country.
+
+    India has ten times the total of its subdivision, Kerala.
 
     Returns
     -------
@@ -86,6 +88,8 @@ def _gridded(variable, _code, selected_years, *_args) -> pd.Series:
         The total of each selected year.
     """
     base = {"population": 30e6, "gdp_ppp": 9e11}[variable]
+    if code == "IND":
+        base *= 10
     return pd.Series(
         {year: base * (1 + 0.01 * (year - 2000)) for year in selected_years}
     )
