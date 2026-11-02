@@ -9,7 +9,7 @@ Description:
     arguments that it passes.
 """
 
-import datetime
+import datetime as dt
 import importlib
 import inspect
 import os
@@ -107,7 +107,7 @@ def test_module(data_source):
     # The retrieval code passes the code and the dates of the data of
     # each entity, and then each request with the code.
     codes = utils.data_sources.read_codes_in(data_source=data_source)
-    dates = [datetime.date(2020, 1, 1), datetime.date(2020, 12, 31)]
+    dates = [dt.date(2020, 1, 1), dt.date(2020, 12, 31)]
     inspect.signature(module.get_available_requests).bind(codes[0], *dates)
     inspect.signature(module.download_and_extract_data_for_request).bind(
         None, codes[0]

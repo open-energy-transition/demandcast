@@ -7,23 +7,25 @@ Description:
     documentation.
 """
 
-import datetime
+import datetime as dt
 import os
 from unittest.mock import patch
 
+import pandas as pd
 import pytest
 
+import utils.paths
 from figures import status
 
 DATE_RANGES = {
-    "FRA": (datetime.date(2015, 1, 1), datetime.date(2024, 12, 31)),
-    "USA_TEX": (datetime.date(2019, 1, 1), datetime.date(2024, 12, 31)),
-    "USA_CAL": (datetime.date(2019, 1, 1), datetime.date(2024, 12, 31)),
-    "DEU": (datetime.date(2010, 1, 1), datetime.date(2010, 12, 31)),
+    "FRA": (dt.date(2015, 1, 1), dt.date(2024, 12, 31)),
+    "USA_TEX": (dt.date(2019, 1, 1), dt.date(2024, 12, 31)),
+    "USA_CAL": (dt.date(2019, 1, 1), dt.date(2024, 12, 31)),
+    "DEU": (dt.date(2010, 1, 1), dt.date(2010, 12, 31)),
 }
 
 NUMBERS = status.Numbers(
-    date=datetime.date(2026, 10, 23),
+    date=dt.date(2026, 10, 23),
     countries=1,
     subdivisions=2,
     countries_covered=2,
@@ -52,10 +54,10 @@ def test_get_numbers():
             return_value=["eia", "entsoe", "caiso"],
         ),
     ):
-        numbers = status.get_numbers(datetime.date(2026, 10, 23))
+        numbers = status.get_numbers(dt.date(2026, 10, 23))
 
     assert numbers == status.Numbers(
-        date=datetime.date(2026, 10, 23),
+        date=dt.date(2026, 10, 23),
         countries=1,
         subdivisions=2,
         countries_covered=2,
@@ -137,11 +139,111 @@ def test_plot(tmp_path):
             str(figure_directory), str(status_folder), str(readme_file)
         )
 
+    # Without results of the models, the page says so.
     assert sorted(os.listdir(status_folder)) == sorted(
-        [*status.FIGURE_FILES, status.NUMBERS_FILE]
+        [*status.FIGURE_FILES, status.NUMBERS_FILE, status.ML_RESULTS_FILE]
     )
+    assert (status_folder / status.ML_RESULTS_FILE).read_text(
+        encoding="utf-8"
+    ) == "The models have no results yet.\n"
     text = status.describe(NUMBERS)
     assert (status_folder / status.NUMBERS_FILE).read_text(
         encoding="utf-8"
     ) == text + "\n"
     assert text in readme_file.read_text(encoding="utf-8")
+
+
+def _summary(medians: dict[tuple[str, str], float]) -> pd.DataFrame:
+    """
+    Make a summary of results with the median WAPE of some groups.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The summary, with the columns "Group", "Value" and "Median
+        WAPE".
+    """
+    return pd.DataFrame(
+        [
+            {"Group": group, "Value": value, "Median WAPE": median}
+            for (group, value), median in medians.items()
+        ]
+    )
+
+
+def test_describe_ml_results():
+    """Test the paragraph of the errors of the models."""
+    validation = _summary(
+        {
+            ("All", "All"): 0.071,
+            ("Seen in training", "Yes"): 0.066,
+            ("Seen in training", "No"): 0.112,
+        }
+    )
+    cross_validation = _summary({("All", "All"): 0.1})
+
+    assert status.describe_ml_results(
+        ("xgboost_model_20261031_212342", validation),
+        ("xgboost", cross_validation),
+    ) == (
+        "In the validation of the XGBoost model 20261031_212342, the "
+        "median WAPE of the countries and subdivisions is **7.1%**: 6.6% "
+        "for those whose other years the model saw in training, and 11.2% "
+        "for those that it never saw. In the cross-validation of XGBoost, "
+        "which leaves each country out of the training in turn, it is "
+        "**10.0%**, the error to expect for a country without data."
+    )
+    assert status.describe_ml_results(None, None) == (
+        "The models have no results yet."
+    )
+
+
+def test_plot_ml_results(tmp_path):
+    """
+    Test that the latest results of the models go to the page.
+
+    The figures of the latest validation are copied with fixed names,
+    and a case without results, here the cross-validation, has none.
+    """
+    folder = os.path.join(
+        utils.paths.get_results_folder("validation"),
+        "with_xgboost_model_1",
+        "using_data_1",
+    )
+    os.makedirs(folder)
+    pd.DataFrame(
+        {"Entity code": ["FRA"], "Testing MAPE": [0.1], "Testing WAPE": [0.1]}
+    ).to_parquet(os.path.join(folder, "all_20261031_000000.parquet"))
+    summary = _summary({("All", "All"): 0.1})
+    summary.to_csv(
+        os.path.join(folder, "summary_20261031_000000.csv"), index=False
+    )
+    status_folder = tmp_path / "status"
+    status_folder.mkdir()
+
+    validation, cross_validation = status._plot_ml_results(
+        str(tmp_path), str(status_folder)
+    )
+
+    assert validation is not None
+    assert validation[0] == "xgboost_model_1"
+    pd.testing.assert_frame_equal(validation[1], summary)
+    assert cross_validation is None
+    assert sorted(os.listdir(status_folder)) == sorted(
+        status.ML_FIGURE_FILES["validation"]
+    )
+
+
+def test_latest_results_without_summary():
+    """Test that results without a summary are not described."""
+    folder = os.path.join(
+        utils.paths.get_results_folder("cross_validation"),
+        "with_xgboost",
+        "using_data_1",
+    )
+    os.makedirs(folder)
+    pd.DataFrame({"Entity code": ["FRA"]}).to_parquet(
+        os.path.join(folder, "all_20261031_000000.parquet")
+    )
+
+    assert status._find_latest_results("cross_validation") is None

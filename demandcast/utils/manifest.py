@@ -28,7 +28,7 @@ Description:
     2 adds the checksum of each format of the file.
 """
 
-import datetime
+import datetime as dt
 import hashlib
 import json
 import os
@@ -207,9 +207,7 @@ def write_manifest(
         "file": os.path.basename(file_path),
         "sha256": checksums[os.path.basename(file_path)],
         "files": checksums,
-        "created": datetime.datetime.now(datetime.UTC).isoformat(
-            timespec="seconds"
-        ),
+        "created": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
         "code": get_code_version(),
         **content,
     }

@@ -22,7 +22,7 @@ Description:
 """
 
 import dataclasses
-import datetime
+import datetime as dt
 import functools
 import glob
 import hashlib
@@ -798,7 +798,7 @@ def run_data_assemply(
     output_path = os.path.join(
         assembled_data_folder,
         f"assembled_data_for_{target_use}_"
-        f"{datetime.datetime.now().astimezone():%Y%m%d_%H%M%S}",
+        f"{dt.datetime.now().astimezone():%Y%m%d_%H%M%S}",
     )
 
     # Sort the dataset in the order of the entities and of the times,

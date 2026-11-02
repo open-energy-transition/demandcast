@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from EIA.
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 import pytest
@@ -18,7 +18,7 @@ from retrievals.electricity_demand_data_sources import eia
 def test_get_available_requests():
     """Test that the requests are the half years of the data."""
     requests = eia.get_available_requests(
-        "USA_CAL", datetime.date(2020, 1, 1), datetime.date(2025, 12, 28)
+        "USA_CAL", dt.date(2020, 1, 1), dt.date(2025, 12, 28)
     )
 
     assert requests[0] == (

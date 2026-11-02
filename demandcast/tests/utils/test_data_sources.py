@@ -7,7 +7,7 @@ Description:
     utils/data_sources.py.
 """
 
-import datetime
+import datetime as dt
 from unittest.mock import patch
 
 import pytest
@@ -26,7 +26,7 @@ LICENCE = {
 
 
 DEFINITION_PERIOD = {
-    "start_date": datetime.date(2015, 1, 1),
+    "start_date": dt.date(2015, 1, 1),
     "quantity": "demand",
     "embedded_generation": "unknown",
     "network_losses": "unknown",
@@ -39,7 +39,7 @@ DEFINITION_PERIOD = {
 FRANCE = {
     "country_name": "France",
     "country_code": "FRA",
-    "start_date": datetime.date(2014, 12, 15),
+    "start_date": dt.date(2014, 12, 15),
     "end_date": "today",
 }
 
@@ -50,8 +50,8 @@ TEXAS = {
     "subdivision_name": "Texas",
     "subdivision_code": "TEX",
     "time_zone": "America/Chicago",
-    "start_date": datetime.date(2020, 1, 1),
-    "end_date": datetime.date(2024, 12, 31),
+    "start_date": dt.date(2020, 1, 1),
+    "end_date": dt.date(2024, 12, 31),
 }
 
 
@@ -94,7 +94,7 @@ def test_read_codes():
         {
             "country_name": "France",
             "country_code": "FRA",
-            "start_date": datetime.date(2014, 12, 15).isoformat(),
+            "start_date": dt.date(2014, 12, 15).isoformat(),
             "end_date": "today",
         },
         {
@@ -102,7 +102,7 @@ def test_read_codes():
             "subdivision_code": "TEX",
             "country_name": "United States",
             "country_code": "USA",
-            "start_date": datetime.date(2020, 1, 1).isoformat(),
+            "start_date": dt.date(2020, 1, 1).isoformat(),
             "end_date": "today",
             "time_zone": "America/Chicago",
         },
@@ -167,7 +167,7 @@ def test_date_ranges():
         {
             "country_name": "France",
             "country_code": "FRA",
-            "start_date": datetime.date(2014, 12, 15),
+            "start_date": dt.date(2014, 12, 15),
             "end_date": "today",
         },
         {
@@ -175,7 +175,7 @@ def test_date_ranges():
             "subdivision_code": "TEX",
             "country_name": "United States",
             "country_code": "USA",
-            "start_date": datetime.date(2020, 1, 1),
+            "start_date": dt.date(2020, 1, 1),
             "end_date": "today",
             "time_zone": "America/Chicago",
         },
@@ -196,10 +196,8 @@ def test_date_ranges():
 
     # Check if the date ranges are read correctly.
     assert date_ranges["FRA"] == (
-        datetime.date(2014, 12, 15),
-        (
-            datetime.datetime.now().astimezone() - datetime.timedelta(days=5)
-        ).date(),
+        dt.date(2014, 12, 15),
+        (dt.datetime.now().astimezone() - dt.timedelta(days=5)).date(),
     )
 
 
@@ -215,8 +213,8 @@ def test_date_ranges_errors():
         {
             "country_name": "France",
             "country_code": "FRA",
-            "start_date": datetime.date(2014, 12, 15).isoformat(),
-            "end_date": datetime.date(2012, 1, 1).isoformat(),
+            "start_date": dt.date(2014, 12, 15).isoformat(),
+            "end_date": dt.date(2012, 1, 1).isoformat(),
         }
     ]
 
@@ -248,7 +246,7 @@ def test_read_data_source_with_dates_as_text(write_data_source):
         )["FRA"]
     )
 
-    assert start_date == datetime.date(2020, 1, 1)
+    assert start_date == dt.date(2020, 1, 1)
 
 
 def test_read_data_source(write_data_source):
@@ -341,9 +339,7 @@ def test_codes_of_entities(write_data_source, entity, code):
         (
             {
                 "licence": LICENCE,
-                "entities": [
-                    TEXAS | {"end_date": datetime.date(2019, 12, 31)}
-                ],
+                "entities": [TEXAS | {"end_date": dt.date(2019, 12, 31)}],
             },
             "USA_TEX: the start date is after the end date",
         ),
@@ -370,8 +366,8 @@ def test_read_definition():
     periods = utils.data_sources.read_definition("aemo_nem")
 
     assert [period.start_date for period in periods] == [
-        datetime.date(1998, 12, 7),
-        datetime.date(2017, 1, 1),
+        dt.date(1998, 12, 7),
+        dt.date(2017, 1, 1),
     ]
     assert [period.embedded_generation for period in periods] == [
         "excluded",
@@ -382,10 +378,10 @@ def test_read_definition():
 @pytest.mark.parametrize(
     ("date", "embedded_generation"),
     [
-        (datetime.date(1990, 1, 1), "excluded"),
-        (datetime.date(2016, 12, 31), "excluded"),
-        (datetime.date(2017, 1, 1), "added"),
-        (datetime.date(2025, 6, 1), "added"),
+        (dt.date(1990, 1, 1), "excluded"),
+        (dt.date(2016, 12, 31), "excluded"),
+        (dt.date(2017, 1, 1), "added"),
+        (dt.date(2025, 6, 1), "added"),
     ],
 )
 def test_get_definition(date, embedded_generation):
@@ -403,8 +399,7 @@ def test_definition_with_periods_out_of_order():
                 "licence": LICENCE,
                 "definition": [
                     DEFINITION_PERIOD,
-                    DEFINITION_PERIOD
-                    | {"start_date": datetime.date(2010, 1, 1)},
+                    DEFINITION_PERIOD | {"start_date": dt.date(2010, 1, 1)},
                 ],
                 "entities": [],
             }

@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from KROGD.
 """
 
-import datetime
+import datetime as dt
 import logging
 
 import pandas as pd
@@ -29,7 +29,7 @@ def test_get_available_requests(fake_downloads):
     )
 
     requests = krogd.get_available_requests(
-        "KOR", datetime.date(2013, 1, 1), datetime.date(2025, 12, 31)
+        "KOR", dt.date(2013, 1, 1), dt.date(2025, 12, 31)
     )
 
     # The version that ends in July 2024 is left out for the one that

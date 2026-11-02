@@ -38,7 +38,7 @@ Description:
     again, and neither are the projections.
 """
 
-import datetime
+import datetime as dt
 import logging
 import os
 
@@ -314,7 +314,7 @@ def _extract_temperature_in_most_populous_cells(
 def _extract_temperature_in_local_year(
     temperature_data: xarray.DataArray,
     year: int,
-    entity_time_zone: datetime.tzinfo,
+    entity_time_zone: dt.tzinfo,
     projections: bool,
 ) -> xarray.DataArray:
     """
@@ -408,7 +408,7 @@ def _get_temperature_in_most_populous_cells(
     available_climate_years: list[int],
     climate_model: str | None,
     climate_scenario: str | None,
-    entity_time_zone: datetime.tzinfo,
+    entity_time_zone: dt.tzinfo,
     numbers_of_grid_cells: tuple[int, ...] = (1,),
     reanalysis_source: str = "points",
 ) -> list[pd.Series]:
@@ -549,7 +549,7 @@ def has_current_processing(file_path: str) -> bool:
 def _build_temperature_database(
     temperature_time_series_top_1: pd.Series,
     temperature_time_series_top_3: pd.Series,
-    entity_time_zone: datetime.tzinfo,
+    entity_time_zone: dt.tzinfo,
 ) -> pd.DataFrame:
     """
     Build the temperature database for the given country or subdivision.

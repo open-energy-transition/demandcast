@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from IESO.
 """
 
-import datetime
+import datetime as dt
 
 import pytest
 
@@ -16,7 +16,7 @@ from retrievals.electricity_demand_data_sources import ieso
 def test_get_available_requests():
     """Test that the requests are the old file and the years after."""
     assert ieso.get_available_requests(
-        "CAN_ON", datetime.date(1994, 1, 1), datetime.date(2025, 12, 28)
+        "CAN_ON", dt.date(1994, 1, 1), dt.date(2025, 12, 28)
     ) == [(None, True)] + [(year, False) for year in range(2002, 2026)]
 
 

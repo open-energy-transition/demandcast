@@ -22,7 +22,7 @@ Description:
     Source: https://zenodo.org/records/7537890
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 
@@ -30,7 +30,7 @@ import utils.fetcher
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[None]:
     """
     Get the available requests.

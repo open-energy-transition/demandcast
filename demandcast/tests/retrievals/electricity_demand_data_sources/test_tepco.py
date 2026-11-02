@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from TEPCO.
 """
 
-import datetime
+import datetime as dt
 import zipfile
 
 import pandas as pd
@@ -52,7 +52,7 @@ def _daily_file(day: str, values: list[int]) -> bytes:
 def test_get_available_requests():
     """Test that the requests are the years until 2024, then months."""
     requests = tepco.get_available_requests(
-        "JPN_Kantō", datetime.date(2016, 4, 1), datetime.date(2025, 12, 28)
+        "JPN_Kantō", dt.date(2016, 4, 1), dt.date(2025, 12, 28)
     )
 
     assert requests[:2] == [(2016, None), (2017, None)]

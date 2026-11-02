@@ -7,7 +7,7 @@ Description:
     as JSON, the responses recorded and replayed, and their versions.
 """
 
-import datetime
+import datetime as dt
 import os
 import pathlib
 import urllib.request
@@ -54,7 +54,7 @@ def server(monkeypatch):
         "FILE_123",
         (pd.Timestamp("2024-01-01"), pd.Timestamp("2024-01-31"), "FILE_1"),
         (2025, None),
-        [datetime.date(2024, 1, 1), 1.5],
+        [dt.date(2024, 1, 1), 1.5],
     ],
 )
 def test_encode_and_decode_request(request_):

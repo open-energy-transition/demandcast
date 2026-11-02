@@ -8,7 +8,7 @@ Description:
     synthetic file of its estimate of the solar behind the meters.
 """
 
-import datetime
+import datetime as dt
 import json
 
 import pandas as pd
@@ -117,7 +117,7 @@ def _serve_forecast_solar(fake_downloads, tmp_path, day, outputs):
 def test_get_available_requests():
     """Test that the data is retrieved one year at a time."""
     requests = isone.get_available_requests(
-        "USA_NE", datetime.date(2019, 5, 31), datetime.date(2026, 10, 21)
+        "USA_NE", dt.date(2019, 5, 31), dt.date(2026, 10, 21)
     )
 
     assert requests[0] == (

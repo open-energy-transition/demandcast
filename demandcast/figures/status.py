@@ -7,8 +7,10 @@ Description:
     state of DemandCast, which the "Current state" page of the
     documentation shows: the countries and subdivisions with retrieval
     modules of electricity demand data, on a map and by GDP PPP and
-    annual electricity demand per capita, and how many countries,
-    subdivisions, data sources and years of data there are.
+    annual electricity demand per capita, how many countries,
+    subdivisions, data sources and years of data there are, and the
+    errors of the latest validation and cross-validation of the models
+    (see figures.ml_results), with their median WAPE in ml_results.md.
 
     The figures are drawn into the folder of the figures and copied
     into webpage/docs/status/, with the numbers in numbers.md, which the
@@ -21,12 +23,17 @@ Description:
 """
 
 import dataclasses
-import datetime
+import datetime as dt
+import glob
 import os
 import shutil
+from typing import Literal
+
+import pandas as pd
 
 import figures.data_availability
 import figures.map_of_available_entities
+import figures.ml_results
 import utils.data_sources
 import utils.paths
 
@@ -40,6 +47,21 @@ FIGURE_FILES = (
 
 # The file of the numbers, in the folder of the page.
 NUMBERS_FILE = "numbers.md"
+
+# The figures of the errors of the models on the page, the bars of the
+# codes and their distribution, by case of the results.
+ML_FIGURE_FILES: dict[
+    Literal["validation", "cross_validation"], tuple[str, str]
+] = {
+    "validation": ("wape_validation.png", "wape_validation_distribution.png"),
+    "cross_validation": (
+        "wape_cross_validation.png",
+        "wape_cross_validation_distribution.png",
+    ),
+}
+
+# The file of the description of the errors, in the folder of the page.
+ML_RESULTS_FILE = "ml_results.md"
 
 # The markers of the block of the numbers in the README.
 STATUS_START = "<!-- status:start -->"
@@ -70,7 +92,7 @@ class Numbers:
         The first year of data.
     """
 
-    date: datetime.date
+    date: dt.date
     countries: int
     subdivisions: int
     countries_covered: int
@@ -79,7 +101,7 @@ class Numbers:
     first_year: int
 
 
-def get_numbers(date: datetime.date) -> Numbers:
+def get_numbers(date: dt.date) -> Numbers:
     """
     Count the countries, subdivisions, data sources and years of data.
 
@@ -169,6 +191,163 @@ def update_readme(readme_file: str, text: str) -> None:
         file.write(readme)
 
 
+def _find_latest_results(
+    case: Literal["validation", "cross_validation"],
+) -> tuple[str, pd.DataFrame] | None:
+    """
+    Find the latest results of a case, with their summary.
+
+    Parameters
+    ----------
+    case : str
+        The case of the results, "validation" or "cross_validation".
+
+    Returns
+    -------
+    tuple[str, pandas.DataFrame] | None
+        The version of the results, the trained model of a validation or
+        the algorithm of a cross-validation, and their summary by group
+        of codes (see ml_models.reporting), or None if the case has no
+        results with a summary.
+    """
+    file_paths = sorted(
+        glob.glob(
+            os.path.join(
+                utils.paths.get_results_folder(case),
+                "with_*",
+                "*",
+                "all_*.parquet",
+            )
+        ),
+        key=os.path.getmtime,
+    )
+    if not file_paths:
+        return None
+    folder, file_name = os.path.split(file_paths[-1])
+    summary_path = os.path.join(
+        folder, file_name.replace("all_", "summary_", 1)
+    ).removesuffix(".parquet")
+    if not os.path.exists(summary_path + ".csv"):
+        return None
+    version = os.path.basename(os.path.dirname(folder)).removeprefix("with_")
+    return version, pd.read_csv(summary_path + ".csv")
+
+
+def _get_median_wape(
+    summary: pd.DataFrame, group: str = "All", value: str = "All"
+) -> float:
+    """
+    Get the median WAPE of a group of codes, in percent.
+
+    Parameters
+    ----------
+    summary : pandas.DataFrame
+        The summary of the results by group of codes.
+    group : str, optional
+        The group, such as "Seen in training".
+    value : str, optional
+        The value of the group, such as "Yes".
+
+    Returns
+    -------
+    float
+        The median WAPE of the codes of the group, in percent.
+    """
+    rows = summary[(summary["Group"] == group) & (summary["Value"] == value)]
+    return float(rows["Median WAPE"].iloc[0]) * 100
+
+
+def describe_ml_results(
+    validation: tuple[str, pd.DataFrame] | None,
+    cross_validation: tuple[str, pd.DataFrame] | None,
+) -> str:
+    """
+    Describe the errors of the models in a paragraph of Markdown.
+
+    Parameters
+    ----------
+    validation : tuple[str, pandas.DataFrame] | None
+        The trained model of the latest validation and its summary, or
+        None if there is none.
+    cross_validation : tuple[str, pandas.DataFrame] | None
+        The algorithm of the latest cross-validation and its summary, or
+        None if there is none.
+
+    Returns
+    -------
+    str
+        The paragraph.
+    """
+    sentences = []
+    if validation is not None:
+        version, summary = validation
+        algorithm, _, model_time = version.partition("_model_")
+        name = figures.ml_results.ALGORITHM_NAMES.get(algorithm, algorithm)
+        sentences.append(
+            f"In the validation of the {name} model {model_time}, the "
+            "median WAPE of the countries and subdivisions is "
+            f"**{_get_median_wape(summary):.1f}%**: "
+            f"{_get_median_wape(summary, 'Seen in training', 'Yes'):.1f}% "
+            "for those whose other years the model saw in training, and "
+            f"{_get_median_wape(summary, 'Seen in training', 'No'):.1f}% "
+            "for those that it never saw."
+        )
+    if cross_validation is not None:
+        algorithm, summary = cross_validation
+        name = figures.ml_results.ALGORITHM_NAMES.get(algorithm, algorithm)
+        sentences.append(
+            f"In the cross-validation of {name}, which leaves each country "
+            "out of the training in turn, it is "
+            f"**{_get_median_wape(summary):.1f}%**, the error to expect for "
+            "a country without data."
+        )
+    return " ".join(sentences) or "The models have no results yet."
+
+
+def _plot_ml_results(
+    figure_directory: str, status_folder: str
+) -> tuple[tuple[str, pd.DataFrame] | None, ...]:
+    """
+    Draw the figures of the latest errors of the models into the page.
+
+    Parameters
+    ----------
+    figure_directory : str
+        The directory where the figures are drawn.
+    status_folder : str
+        The folder of the files of the "Current state" page.
+
+    Returns
+    -------
+    tuple[tuple[str, pandas.DataFrame] | None, ...]
+        The version and summary of the latest validation and of the
+        latest cross-validation, or None for a case without results.
+    """
+    latest = []
+    for case, file_names in ML_FIGURE_FILES.items():
+        results = _find_latest_results(case)
+        latest.append(results)
+        if results is None:
+            continue
+        results_directory = utils.paths.get_results_folder(case)
+        figures.ml_results.plot(
+            figure_directory, results[0], results_directory=results_directory
+        )
+        _, stem = figures.ml_results.describe_version(
+            results_directory, results[0]
+        )
+        for drawn, file_name in zip(
+            (f"wape_{stem}.png", f"wape_{stem}_distribution.png"),
+            file_names,
+            strict=True,
+        ):
+            shutil.copyfile(
+                os.path.join(figure_directory, drawn),
+                os.path.join(status_folder, file_name),
+            )
+    return tuple(latest)
+
+
 def plot(
     figure_directory: str,
     status_folder: str = utils.paths.STATUS_FOLDER,
@@ -196,9 +375,17 @@ def plot(
             os.path.join(status_folder, file_name),
         )
 
-    text = describe(get_numbers(datetime.datetime.now().astimezone().date()))
+    text = describe(get_numbers(dt.datetime.now().astimezone().date()))
     with open(
         os.path.join(status_folder, NUMBERS_FILE), "w", encoding="utf-8"
     ) as file:
         file.write(text + "\n")
     update_readme(readme_file, text)
+
+    validation, cross_validation = _plot_ml_results(
+        figure_directory, status_folder
+    )
+    with open(
+        os.path.join(status_folder, ML_RESULTS_FILE), "w", encoding="utf-8"
+    ) as file:
+        file.write(describe_ml_results(validation, cross_validation) + "\n")

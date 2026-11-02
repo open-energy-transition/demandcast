@@ -36,7 +36,7 @@ Description:
 from __future__ import annotations
 
 import contextlib
-import datetime
+import datetime as dt
 import email.message
 import hashlib
 import io
@@ -106,7 +106,7 @@ def encode_request(request: Any) -> Any:
         return request
     if isinstance(request, pd.Timestamp):
         return {"timestamp": request.isoformat()}
-    if isinstance(request, datetime.date):
+    if isinstance(request, dt.date):
         return {"date": request.isoformat()}
     if isinstance(request, tuple):
         return {"tuple": [encode_request(item) for item in request]}
@@ -135,7 +135,7 @@ def decode_request(encoded: Any) -> Any:
         if "timestamp" in encoded:
             return pd.Timestamp(encoded["timestamp"])
         if "date" in encoded:
-            return datetime.date.fromisoformat(encoded["date"])
+            return dt.date.fromisoformat(encoded["date"])
         return tuple(decode_request(item) for item in encoded["tuple"])
     return encoded
 

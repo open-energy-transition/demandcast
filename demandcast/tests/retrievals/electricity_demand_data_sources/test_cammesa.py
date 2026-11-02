@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from CAMMESA.
 """
 
-import datetime
+import datetime as dt
 
 import utils.data_sources
 from retrievals.electricity_demand_data_sources import cammesa
@@ -15,7 +15,7 @@ from retrievals.electricity_demand_data_sources import cammesa
 def test_get_available_requests():
     """Test that the requests are the days of the last eight months."""
     requests = cammesa.get_available_requests(
-        "ARG_X", datetime.date(2025, 1, 1), datetime.date(2025, 12, 28)
+        "ARG_X", dt.date(2025, 1, 1), dt.date(2025, 12, 28)
     )
 
     assert requests[0] == "2025-04-01"
@@ -26,7 +26,7 @@ def test_get_available_requests():
 def test_get_available_requests_from_a_later_start():
     """Test that the requests start at a start date in the months."""
     requests = cammesa.get_available_requests(
-        "ARG_X", datetime.date(2025, 12, 1), datetime.date(2025, 12, 28)
+        "ARG_X", dt.date(2025, 12, 1), dt.date(2025, 12, 28)
     )
 
     assert requests[0] == "2025-12-01"

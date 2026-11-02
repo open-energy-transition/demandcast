@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from Grupo ICE.
 """
 
-import datetime
+import datetime as dt
 
 from retrievals.electricity_demand_data_sources import grupoice
 
@@ -14,7 +14,7 @@ from retrievals.electricity_demand_data_sources import grupoice
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
     requests = grupoice.get_available_requests(
-        "CRI", datetime.date(2012, 3, 1), datetime.date(2025, 12, 28)
+        "CRI", dt.date(2012, 3, 1), dt.date(2025, 12, 28)
     )
 
     assert requests == list(range(2012, 2026))

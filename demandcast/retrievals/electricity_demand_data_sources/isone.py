@@ -58,7 +58,7 @@ Description:
 """
 
 import base64
-import datetime
+import datetime as dt
 import logging
 
 import numpy as np
@@ -105,7 +105,7 @@ TIME_ZONE = "America/New_York"
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """
     Get the available requests.
@@ -126,7 +126,7 @@ def get_available_requests(
         the data, in local time.
     """
     return utils.time_series.split_period(
-        start_date, end_date + datetime.timedelta(days=1), "YS"
+        start_date, end_date + dt.timedelta(days=1), "YS"
     )
 
 

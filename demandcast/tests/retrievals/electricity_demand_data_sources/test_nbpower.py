@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from NB Power.
 """
 
-import datetime
+import datetime as dt
 
 from retrievals.electricity_demand_data_sources import nbpower
 
@@ -16,7 +16,7 @@ URL = "https://tso.nbpower.com/Public/en/system_information_archive.aspx"
 def test_get_available_requests():
     """Test that the requests are the months of the archive."""
     requests = nbpower.get_available_requests(
-        "CAN_NB", datetime.date(2019, 1, 1), datetime.date(2025, 12, 28)
+        "CAN_NB", dt.date(2019, 1, 1), dt.date(2025, 12, 28)
     )
 
     # The archive starts in 2019: the form rejects earlier years. The
