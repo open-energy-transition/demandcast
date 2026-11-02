@@ -19,6 +19,13 @@ Description:
     represent the year: the training keeps only the years with at least
     90% of their hours and half of the hours of each month, and lists
     the coverage of all the years next to the assembled data.
+
+    The training data also lists, next to it, the hours of each data
+    source and of each definition of its demand (what it counts of the
+    embedded generation) in each local year of each entity, from the
+    combined demand at the time of the assembly, so that the
+    description of the rows of a dataset does not change with later
+    retrievals or reviews.
 """
 
 import dataclasses
@@ -624,6 +631,59 @@ def _select_complete_years(
     return merged_dataset[kept], coverage.reset_index()
 
 
+def _get_provenance(assembled_data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Get the data sources and definitions of the assembled demand.
+
+    Parameters
+    ----------
+    assembled_data : pandas.DataFrame
+        The assembled data, with the entity code, the time and the local
+        year of each hour.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The hours ("Hours") of each data source ("Source") and of each
+        definition of its demand ("Definition", what it counts of the
+        embedded generation) in each local year ("Local year") of each
+        entity ("Entity code"), from its combined demand, empty where
+        it does not give them.
+    """
+    counts = []
+    for entity_code, rows in assembled_data.groupby("Entity code"):
+        file_path = utils.paths.get_electricity_demand_file(
+            "combined", str(entity_code)
+        )
+        combined = (
+            pd.read_parquet(file_path)
+            if os.path.exists(file_path)
+            else pd.DataFrame(index=pd.DatetimeIndex([]))
+        ).reindex(columns=["Source", "Definition"])
+        combined.index = pd.DatetimeIndex(combined.index).as_unit("ns")
+        times = pd.DatetimeIndex(rows["Time (UTC)"]).as_unit("ns")
+        labels = combined.reindex(times).astype("string").fillna("")
+        counts.append(
+            pd.DataFrame(
+                {
+                    "Entity code": entity_code,
+                    "Local year": rows["Local year"].to_numpy(),
+                    "Source": labels["Source"].to_numpy(),
+                    "Definition": labels["Definition"].to_numpy(),
+                }
+            )
+            .value_counts(sort=False)
+            .rename("Hours")
+            .reset_index()
+        )
+    columns = ["Entity code", "Local year", "Source", "Definition", "Hours"]
+    if not counts:
+        return pd.DataFrame(columns=columns)
+    return pd.concat(counts, ignore_index=True)[columns].sort_values(
+        columns[:4], ignore_index=True
+    )
+
+
 def _calculate_load_fraction(merged_dataset: pd.DataFrame) -> pd.DataFrame:
     """
     Calculate the fraction of load at each timestamp.
@@ -783,12 +843,13 @@ def run_data_assemply(
         )
     assembled_data["Local holiday indicator"] = holiday_indicator
 
-    coverage = None
+    coverage = provenance = None
     if target_use == "training":
         # Keep the years with enough hours, and calculate the load
         # fraction for training data.
         assembled_data, coverage = _select_complete_years(assembled_data)
         assembled_data = _calculate_load_fraction(assembled_data)
+        provenance = _get_provenance(assembled_data)
 
     # Get the assembled data folder path.
     assembled_data_folder = utils.paths.get_assembled_folder()
@@ -811,6 +872,16 @@ def run_data_assemply(
     assembled_data.to_parquet(output_path + ".parquet", index=False)
     if coverage is not None:
         coverage.to_csv(output_path + "_coverage.csv", index=False)
+    provenance_content = {}
+    if provenance is not None:
+        provenance_path = output_path + "_provenance.csv"
+        provenance.to_csv(provenance_path, index=False)
+        provenance_content = {
+            "provenance": {
+                "file": os.path.basename(provenance_path),
+                "sha256": utils.manifest.get_checksum(provenance_path),
+            }
+        }
 
     # Tell what the dataset is for and how it was assembled.
     utils.manifest.write_manifest(
@@ -844,6 +915,7 @@ def run_data_assemply(
                 name: _get_inputs_identity(file_paths)
                 for name, file_paths in read_files.items()
             },
+            **provenance_content,
         },
     )
 

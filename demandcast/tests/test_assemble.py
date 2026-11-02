@@ -20,6 +20,7 @@ import pytest
 import assemble
 import cleaning.combining
 import retrievals.temperature
+import utils.manifest
 import utils.paths
 import utils.time_series
 import utils.time_zones
@@ -168,6 +169,9 @@ def _write_inputs(codes: list[str], years: list[int]) -> None:
             {
                 "Load (MW)": 1000.0 + hours.hour,
                 "Source": pd.array(["entsoe"] * len(hours), dtype="string"),
+                "Definition": pd.array(
+                    ["unknown"] * len(hours), dtype="string"
+                ),
                 "Eligible": True,
             },
             index=hours,
@@ -384,6 +388,45 @@ def test_assembly_for_training():
         "Load (fraction of annual total)"
     ].sum()
     assert sums.to_numpy() == pytest.approx(1.0)
+
+
+@pytest.mark.usefixtures("assembly_inputs")
+def test_assembly_records_the_sources_of_the_demand():
+    """
+    Test that the training data lists its data sources and definitions.
+
+    Each local year of each entity has all its hours from ENTSO-E, whose
+    definition is unknown, and the manifest of the dataset has the
+    checksum of the list.
+    """
+    assemble.run_data_assemply("training")
+
+    parquet_path = next(
+        path
+        for path in glob.glob(
+            os.path.join(
+                utils.paths.get_assembled_folder(),
+                "assembled_data_for_training_*.parquet",
+            )
+        )
+    )
+    provenance_path = parquet_path.removesuffix(".parquet") + "_provenance.csv"
+    provenance = pd.read_csv(provenance_path)
+    assembled = _read_assembled("training")
+    hours = assembled.groupby(["Entity code", "Local year"]).size()
+    assert provenance["Source"].eq("entsoe").all()
+    assert provenance["Definition"].eq("unknown").all()
+    assert (
+        provenance.set_index(["Entity code", "Local year"])["Hours"]
+        .sort_index()
+        .equals(hours.sort_index())
+    )
+    manifest = utils.manifest.read_manifest(parquet_path)
+    assert manifest is not None
+    assert manifest["provenance"] == {
+        "file": os.path.basename(provenance_path),
+        "sha256": utils.manifest.get_checksum(provenance_path),
+    }
 
 
 @pytest.mark.usefixtures("assembly_inputs")

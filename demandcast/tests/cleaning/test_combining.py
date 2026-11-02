@@ -13,6 +13,7 @@ import pandas as pd
 import pytest
 
 import cleaning.combining
+import cleaning.flags
 import utils.paths
 
 pytestmark = pytest.mark.usefixtures("longitude")
@@ -299,7 +300,10 @@ def test_ranks_of_the_seasons_of_net_demand():
         "DEU", "entsoe", pd.DatetimeIndex(values.index)
     )
 
-    spring = (values.index >= "2023-03-01") & (values.index < "2023-06-01")
+    # The hours whose starts are in the local days of the spring.
+    spring = (values.index >= "2023-03-01 00:00") & (
+        values.index <= "2023-05-31 22:00"
+    )
     assert (ranks[spring] == cleaning.combining.NET_DEMAND_RANK).all()
     assert (ranks[~spring] == 2).all()
 
@@ -390,8 +394,11 @@ def test_reviewed_errors_without_another_source():
     assert combined is not None
     assert len(combined) == 365 * 24
     assert combined["Source"].eq("isone").all()
-    # The errors are kept, but cannot be used for training.
-    spring = (combined.index >= "2023-03-01") & (combined.index < "2023-06-01")
+    # The errors are kept, but cannot be used for training, in the hours
+    # whose starts are in the local days of the spring.
+    spring = (combined.index >= "2023-03-01 06:00") & (
+        combined.index <= "2023-06-01 04:00"
+    )
     assert not combined["Eligible"][spring].any()
     assert combined["Exclusion"][spring].eq("reviewed error").all()
     assert combined["Eligible"][~spring].all()
@@ -478,7 +485,146 @@ def test_reviewed_net_demand_is_not_for_training(monkeypatch):
 
     assert combined is not None
     assert combined["Source"].eq("isone").all()
-    spring = (combined.index >= "2023-03-01") & (combined.index < "2023-06-01")
+    # The hours whose starts are in the local days of the spring.
+    spring = (combined.index >= "2023-03-01 06:00") & (
+        combined.index <= "2023-06-01 04:00"
+    )
     assert not combined["Eligible"][spring].any()
     assert combined["Exclusion"][spring].eq("net demand").all()
     assert combined["Eligible"][~spring].all()
+
+
+@pytest.mark.parametrize(
+    ("code", "first_hour", "last_hour"),
+    [
+        ("JPN", "2023-01-01 16:00", "2023-01-02 15:00"),
+        ("USA_NE", "2023-01-02 06:00", "2023-01-03 05:00"),
+        ("IND", "2023-01-01 20:00", "2023-01-02 19:00"),
+    ],
+)
+def test_reviews_apply_to_the_local_days_of_their_flags(
+    monkeypatch, code, first_hour, last_hour
+):
+    """
+    Test that the review of a flag applies to the hours of its day.
+
+    The hours are given by their ends in UTC, and a flag of 2 January
+    covers the hours that start on that day in local time: in Japan
+    (UTC+9), in New England (UTC-5) and in India (UTC+5:30).
+    """
+    values = _hourly("2023-01-01", "2023-01-03 23:00")
+    _save_cleaned(code, "entsoe", values)
+    flags_path = utils.paths.get_electricity_demand_file(
+        "cleaned", code, "entsoe"
+    ).removesuffix(".parquet")
+    pd.DataFrame(
+        {
+            "start": [pd.Timestamp("2023-01-02")],
+            "end": [pd.Timestamp("2023-01-02")],
+            "flag": ["low_value"],
+            "period": ["2023-01-02"],
+            "value": [0.01],
+            "reference": [0.1],
+        }
+    ).to_parquet(flags_path + "_flags.parquet")
+    review = cleaning.combining.checks.flags.Review(
+        data_source="entsoe",
+        code=code,
+        flag="low_value",
+        periods=["2023-01-02"],
+        verdict="source_error",
+        note="Wrong data.",
+    )
+    monkeypatch.setattr(
+        cleaning.combining.checks.flags, "read_reviews", lambda: [review]
+    )
+
+    verdicts = cleaning.combining._get_reviewed_verdicts(
+        code, "entsoe", pd.DatetimeIndex(values.index)
+    )
+
+    flagged = (values.index >= first_hour) & (values.index <= last_hour)
+    assert flagged.sum() == 24
+    assert (verdicts[flagged] == "error").all()
+    assert (verdicts[~flagged] == "").all()
+
+
+def test_reviewed_low_value_is_excluded(monkeypatch):
+    """
+    Test that a low value reviewed as an error is not for training.
+
+    The low hour of Kanto ends at 17:00 UTC on 1 January, and starts at
+    1:00 on 2 January in local time (UTC+9), the day that its flag
+    gives.
+    """
+    values = _hourly("2023-01-01", "2023-12-31 23:00")
+    values.loc["2023-01-01 17:00"] = 1.0
+    _save_cleaned("JPN_Kantō", "occto", values)
+    flags = cleaning.flags.flag_data("JPN_Kantō", "occto")
+    assert flags.loc[flags["flag"] == "low_value", "period"].tolist() == [
+        "2023-01-02"
+    ]
+    review = cleaning.combining.checks.flags.Review(
+        data_source="occto",
+        code="JPN_Kantō",
+        flag="low_value",
+        periods=["2023-01-02"],
+        verdict="source_error",
+        note="Wrong data.",
+    )
+    monkeypatch.setattr(
+        cleaning.combining.checks.flags, "read_reviews", lambda: [review]
+    )
+
+    combined = cleaning.combining.combine_data("JPN_Kantō")
+
+    assert combined is not None
+    assert not combined.loc["2023-01-01 17:00", "Eligible"]
+    assert combined.loc["2023-01-01 17:00", "Exclusion"] == "reviewed error"
+    assert combined.loc["2023-01-01 15:00", "Eligible"]
+    assert not combined.loc["2023-01-01 16:00", "Eligible"]
+
+
+@pytest.mark.parametrize(
+    ("code", "data_source", "definition"),
+    [
+        ("JPN_Kantō", "occto", "partial"),
+        ("USA_NE", "eia", "excluded"),
+        ("DEU", "entsoe", "unknown"),
+    ],
+)
+def test_declared_definitions_are_kept_and_eligible(
+    code, data_source, definition
+):
+    """
+    Test that the combined demand gives the declared definition.
+
+    The demand declared as net, or with the embedded generation counted
+    in part or unknown, can be used for training until a review finds
+    net demand.
+    """
+    _save_cleaned(code, data_source, _hourly("2023-01-01", "2023-12-31 23:00"))
+
+    combined = cleaning.combining.combine_data(code)
+
+    assert combined is not None
+    assert combined["Definition"].eq(definition).all()
+    assert combined["Eligible"].all()
+
+
+def test_definition_changes_on_its_local_day():
+    """
+    Test that a definition starts on the local day of its period.
+
+    The demand of EPIAS includes the embedded generation from 30
+    December 2020, which starts at 21:00 UTC on 29 December in Türkiye
+    (UTC+3).
+    """
+    times = pd.DatetimeIndex(
+        ["2020-12-29 21:00", "2020-12-29 22:00", "2020-12-30 22:00"]
+    )
+
+    definitions = cleaning.combining._get_definitions("TUR", "epias", times)
+
+    assert definitions[0] == "added"
+    assert definitions[1] == definitions[2] == "included"

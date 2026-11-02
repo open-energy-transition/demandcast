@@ -29,6 +29,11 @@ Description:
     The combined electricity demand of a code (see
     cleaning/combining.py) is flagged in the same way, and its flags are
     saved next to it.
+    Each flag gives its first and last day, and its year or day, in
+    local time, by the local time of the start of each hour, so that the
+    review of a flag applies to the hours of its local days. The days of
+    the midday index are solar days, which are the local days of the
+    hours of the morning, midday and afternoon that it uses.
 
     The midday dip is the sign of a demand that leaves out the
     generation embedded in the distribution networks, such as rooftop
@@ -108,8 +113,8 @@ Description:
 
     The annual demand per capita and the population are those that
     DemandCast retrieves, and the annual flags are skipped if they have
-    not been retrieved. The demand of a year, with at least 90% of its
-    hours, is its mean demand times its hours. The demand that the
+    not been retrieved. The demand of a local year, with at least 90% of
+    its hours, is its mean demand times its hours. The demand that the
     system operators measure differs from that of the statistics by the
     demand of the consumers that are not on their networks, such as
     with their own generation, and by the losses and the use of the
@@ -151,7 +156,8 @@ import utils.paths
 import utils.shapes
 import utils.time_zones
 
-# The columns of the flags.
+# The columns of the flags, whose first and last days ("start" and
+# "end") are local days.
 COLUMNS = ["start", "end", "flag", "period", "value", "reference"]
 
 # The share of the median of its local year below which an hour is
@@ -689,7 +695,9 @@ def _read_annual_values(
     return values.groupby(pd.DatetimeIndex(values.index).year).median()
 
 
-def _find_annual_errors(cleaned: pd.Series, code: str) -> pd.DataFrame:
+def _find_annual_errors(
+    cleaned: pd.Series, code: str, time_zone: str
+) -> pd.DataFrame:
     """
     Find the years whose demand is far from or changes from expected.
 
@@ -699,14 +707,16 @@ def _find_annual_errors(cleaned: pd.Series, code: str) -> pd.DataFrame:
         The hourly demand, at the ends of the hours in UTC.
     code : str
         The code of the country or subdivision.
+    time_zone : str
+        The time zone of the country or subdivision.
 
     Returns
     -------
     pandas.DataFrame
-        The flagged years, with their demand and expected demand in TWh
-        ("value" and "reference") for the annual totals, and their ratio
-        to the expected demand and that of the year before for the
-        annual changes.
+        The flagged local years, with their demand and expected demand
+        in TWh ("value" and "reference") for the annual totals, and
+        their ratio to the expected demand and that of the year before
+        for the annual changes.
     """
     per_capita = _read_annual_values(
         "annual_electricity_demand_per_capita",
@@ -721,8 +731,8 @@ def _find_annual_errors(cleaned: pd.Series, code: str) -> pd.DataFrame:
         )
         return pd.DataFrame(columns=COLUMNS)
 
-    # The demand of the years with enough hours, in TWh.
-    starts = pd.DatetimeIndex(cleaned.index) - pd.Timedelta(hours=1)
+    # The demand of the local years with enough hours, in TWh.
+    starts = pd.DatetimeIndex(_to_local_time(cleaned, time_zone).index)
     by_year = cleaned.groupby(starts.year)
     years = by_year.size().index
     hours_of_years = pd.Series(
@@ -855,9 +865,10 @@ def flag_data(code: str, data_source: str | None = None) -> pd.DataFrame:
     Returns
     -------
     pandas.DataFrame
-        The first and last day ("start" and "end"), the flag ("flag"),
-        the name of the period ("period"), and the value and reference
-        of the flag ("value" and "reference") of each flagged period.
+        The first and last local day ("start" and "end"), the flag
+        ("flag"), the name of the period ("period"), and the value and
+        reference of the flag ("value" and "reference") of each flagged
+        period.
     """
     file_path = utils.paths.get_electricity_demand_file(
         "cleaned" if data_source else "combined", code, data_source
@@ -869,7 +880,7 @@ def flag_data(code: str, data_source: str | None = None) -> pd.DataFrame:
         _find_midday_changes(cleaned, _get_longitude(code)),
         _find_time_lags(cleaned, time_zone),
         _find_daylight_saving_errors(cleaned, time_zone),
-        _find_annual_errors(cleaned, code),
+        _find_annual_errors(cleaned, code, time_zone),
         _find_low_values(cleaned, time_zone),
     ]
     flags = pd.concat(

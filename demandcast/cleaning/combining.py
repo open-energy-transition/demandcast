@@ -56,6 +56,24 @@ Description:
     those of the seasons that the reviews find to be net demand, whose
     profile leaves out the demand that the embedded generation supplies
     and would teach the models the wrong shape of the gross demand.
+    The periods of the definitions and the days of the flags are local
+    days, so the hours are matched to them by the local day of their
+    start.
+
+    The combined series also tells what the demand of each hour counts
+    of the embedded generation ("Definition"), from the definition of
+    its source on its local day. The hours of a demand declared as net,
+    or whose embedded generation is unknown or counted in part, can be
+    used for training: most system operators measure the demand on
+    their transmission network, and the embedded generation of most
+    countries is too small to change the shape of the demand. Where it
+    does, the profile shows a midday dip that the flags find, and the
+    review of the flag makes the season net demand. A dip shows only
+    when the embedded generation grows, against the earlier years of
+    the series: the generation that a series already leaves out in its
+    first years, as in California, is not found, and its hours are
+    known only by their declared definition, which the reports of the
+    errors of the models give (see ml_models.reporting).
 
     A combined series records the fingerprint of what decided it: the
     version of the combination (COMBINATION_VERSION), the reviews of the
@@ -79,6 +97,7 @@ import checks.flags
 import cleaning.flags
 import utils.data_sources
 import utils.paths
+import utils.time_zones
 
 # The rank of the definitions of the embedded generation.
 EMBEDDED_GENERATION_RANKS = {
@@ -112,7 +131,7 @@ LARGEST_UNVERIFIED_MEDIAN_DIFFERENCE = 0.10
 
 # The version of the combination, which changes when the code changes
 # what a combined series is, such as its columns or its rules.
-COMBINATION_VERSION = 2
+COMBINATION_VERSION = 3
 
 # The key of the attributes of a combined series with its fingerprint.
 FINGERPRINT_KEY = "demandcast_combination"
@@ -164,6 +183,65 @@ def _read_cleaned_data(code: str) -> dict[str, pd.Series]:
     return cleaned
 
 
+def _get_local_days(code: str, times: pd.DatetimeIndex) -> pd.DatetimeIndex:
+    """
+    Get the local day of each hour of a code.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+    times : pandas.DatetimeIndex
+        The hours, by their ends in UTC.
+
+    Returns
+    -------
+    pandas.DatetimeIndex
+        The local day of the start of each hour.
+    """
+    return (
+        (times - pd.Timedelta(hours=1))
+        .tz_localize("UTC")
+        .tz_convert(utils.time_zones.get_time_zone(code))
+        .tz_localize(None)
+        .normalize()
+    )
+
+
+def _get_definitions(
+    code: str, data_source: str, times: pd.DatetimeIndex
+) -> np.ndarray:
+    """
+    Get the definition of the demand of a source, by hour.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+    data_source : str
+        The data source.
+    times : pandas.DatetimeIndex
+        The hours of its data, by their ends in UTC.
+
+    Returns
+    -------
+    numpy.ndarray
+        What the demand of each hour counts of the embedded generation
+        (see utils.data_sources), from the period of its definition
+        that its local day is in, or the first period before it starts.
+    """
+    periods = utils.data_sources.read_definition(data_source)
+    definitions = np.full(
+        len(times), periods[0].embedded_generation, dtype=object
+    )
+    days = _get_local_days(code, times)
+    for period in periods:
+        definitions[days >= pd.Timestamp(period.start_date)] = (
+            period.embedded_generation
+        )
+    return definitions
+
+
 def _get_definition_ranks(
     code: str, data_source: str, times: pd.DatetimeIndex
 ) -> np.ndarray:
@@ -177,7 +255,7 @@ def _get_definition_ranks(
     data_source : str
         The data source.
     times : pandas.DatetimeIndex
-        The hours of its data, in UTC.
+        The hours of its data, by their ends in UTC.
 
     Returns
     -------
@@ -186,15 +264,12 @@ def _get_definition_ranks(
         embedded generation counted in part, 2 for unknown embedded
         generation, 3 for the net demand and 4 for the errors.
     """
-    # The rank of the definition of each period.
-    ranks = np.zeros(len(times), dtype=int)
-    dates = times.normalize()
-    for period in utils.data_sources.read_definition(data_source):
-        started = dates >= pd.Timestamp(period.start_date)
-        ranks[started] = EMBEDDED_GENERATION_RANKS[period.embedded_generation]
-    first_period = utils.data_sources.read_definition(data_source)[0]
-    ranks[dates < pd.Timestamp(first_period.start_date)] = (
-        EMBEDDED_GENERATION_RANKS[first_period.embedded_generation]
+    ranks = np.array(
+        [
+            EMBEDDED_GENERATION_RANKS[definition]
+            for definition in _get_definitions(code, data_source, times)
+        ],
+        dtype=int,
     )
 
     # The seasons of the flags that the reviews find to be net demand,
@@ -221,14 +296,14 @@ def _get_reviewed_verdicts(
     data_source : str
         The data source.
     times : pandas.DatetimeIndex
-        The hours of its data, in UTC.
+        The hours of its data, by their ends in UTC.
 
     Returns
     -------
     numpy.ndarray
-        For each hour, "error" if a review of a flag of its period finds
-        an error of the source or of its reading, else "net_demand" if
-        one finds net demand, else an empty string.
+        For each hour, "error" if the review of a flag whose days have
+        its local day finds an error of the source or of its reading,
+        else "net_demand" if one finds net demand, else an empty string.
     """
     verdicts = np.full(len(times), "", dtype=object)
     flags_path = utils.paths.get_electricity_demand_file(
@@ -237,7 +312,7 @@ def _get_reviewed_verdicts(
     flags_path += "_flags.parquet"
     if not os.path.exists(flags_path):
         return verdicts
-    dates = times.normalize()
+    days = _get_local_days(code, times)
     reviews = checks.flags.read_reviews()
     flags = pd.read_parquet(flags_path)
     for start, end, flag, period in zip(
@@ -257,7 +332,7 @@ def _get_reviewed_verdicts(
         )
         if review is None:
             continue
-        flagged = (dates >= pd.Timestamp(start)) & (dates <= pd.Timestamp(end))
+        flagged = (days >= pd.Timestamp(start)) & (days <= pd.Timestamp(end))
         if review.verdict in ERROR_VERDICTS:
             verdicts[flagged] = "error"
         elif review.verdict == "net_demand":
@@ -421,6 +496,7 @@ def _combine(
     ranked: list[str],
     errors: dict[str, pd.Series] | None = None,
     net_demand: dict[str, pd.DatetimeIndex] | None = None,
+    definitions: dict[str, pd.Series] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Combine the electricity demand of the ranked data sources.
@@ -438,14 +514,19 @@ def _combine(
         The hours of each data source that the reviews of its flags find
         to be net demand, which are combined but cannot be used for
         training.
+    definitions : dict[str, pandas.Series] | None, optional
+        What the demand of each hour of each data source counts of the
+        embedded generation, by hour.
 
     Returns
     -------
     tuple[pandas.DataFrame, pandas.DataFrame]
         The combined electricity demand ("Load (MW)"), the data source
-        of each hour ("Source"), whether it can be used for training
-        ("Eligible") and why not ("Exclusion": "reviewed error" or "net
-        demand", empty if it can), and the table of the sources.
+        of each hour ("Source"), what its demand counts of the embedded
+        generation ("Definition", empty if not given), whether it can
+        be used for training ("Eligible") and why not ("Exclusion":
+        "reviewed error" or "net demand", empty if it can), and the
+        table of the sources.
     """
     # The data sources from the best, and then their errors.
     entries = [
@@ -459,6 +540,7 @@ def _combine(
 
     combined = pd.Series(dtype="float64")
     sources = pd.Series(dtype="string")
+    hour_definitions = pd.Series(dtype="string")
     exclusions = pd.Series(dtype="string")
     rows = []
     for rank, (data_source, values, are_errors) in enumerate(entries, start=1):
@@ -482,6 +564,18 @@ def _combine(
             combined = pd.concat([combined, values[used]]).sort_index()
             sources = pd.concat(
                 [sources, pd.Series(data_source, index=used, dtype="string")]
+            ).sort_index()
+            hour_definitions = pd.concat(
+                [
+                    hour_definitions,
+                    (
+                        (definitions or {})
+                        .get(data_source, pd.Series(dtype="string"))
+                        .reindex(used)
+                        .fillna("")
+                        .astype("string")
+                    ),
+                ]
             ).sort_index()
             exclusion = pd.Series("", index=used, dtype="string")
             if are_errors:
@@ -508,6 +602,7 @@ def _combine(
         {
             "Load (MW)": combined,
             "Source": sources,
+            "Definition": hour_definitions,
             "Eligible": exclusions == "",
             "Exclusion": exclusions,
         }
@@ -623,9 +718,10 @@ def combine_data(code: str) -> pd.DataFrame | None:
     -------
     pandas.DataFrame | None
         The hourly electricity demand in MW ("Load (MW)"), its data
-        source ("Source") and whether it can be used for training
-        ("Eligible"), at the ends of the hours in UTC, or None if no
-        data source has cleaned data of the code.
+        source ("Source"), what its demand counts of the embedded
+        generation ("Definition"), whether it can be used for training
+        ("Eligible") and why not ("Exclusion"), at the ends of the hours
+        in UTC, or None if no data source has cleaned data of the code.
     """
     cleaned = _read_cleaned_data(code)
     if not cleaned:
@@ -666,7 +762,18 @@ def combine_data(code: str) -> pd.DataFrame | None:
         ]
         for data_source, values in sound.items()
     }
-    combined, sources = _combine(sound, ranked, errors, net_demand)
+    definitions = {
+        data_source: pd.Series(
+            _get_definitions(
+                code, data_source, pd.DatetimeIndex(values.index)
+            ),
+            index=values.index,
+        )
+        for data_source, values in cleaned.items()
+    }
+    combined, sources = _combine(
+        sound, ranked, errors, net_demand, definitions
+    )
     combined.attrs[FINGERPRINT_KEY] = get_fingerprint(code)
 
     file_path = utils.paths.get_electricity_demand_file("combined", code)
