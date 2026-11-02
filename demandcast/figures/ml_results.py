@@ -290,15 +290,11 @@ def _read_errors(
     """
     # Initialize a DataFrame to hold the data.
     errors = pd.DataFrame()
-
-    # Read the errors of all countries and subdivisions.
     errors[f"{version}_all"] = _read_testing_error(
         results_directory, version, "all", metric
     )
 
     if compare_with_version is not None:
-        # Read the errors of all countries and subdivisions for the
-        # version to compare with.
         errors[f"{compare_with_version}_all"] = _read_testing_error(
             results_directory, compare_with_version, "all", metric
         )
@@ -306,12 +302,9 @@ def _read_errors(
     if by_group:
         for case_groups in groups.values():
             for group in case_groups:
-                # Read the errors for the current group.
                 errors[f"{version}_{group}"] = _read_testing_error(
                     results_directory, version, group, metric
                 )
-
-    # Multiply the errors by 100 to convert them to percentages.
     errors = errors * 100
 
     return errors
@@ -588,7 +581,6 @@ def _plot_overall(
         Whether each country or subdivision is of the small size class,
         whose bars are hatched with dots.
     """
-    # Sort the entities by their errors for better visualization.
     mape_to_plot = mape.dropna(subset=[f"{version}_all"]).sort_values(
         by=f"{version}_all"
     )
@@ -624,8 +616,6 @@ def _plot_overall(
     fig.suptitle(description[0], weight="bold", fontsize=12)
 
     _add_grid(fig)
-
-    # Save the plot to a file.
     plt.savefig(
         os.path.join(
             figure_directory, f"{metric.lower()}_{description[1]}.png"
@@ -663,7 +653,6 @@ def _plot_comparison(
     metric : str, optional
         The metric of the errors, "WAPE" or "MAPE".
     """
-    # Sort the entities by their errors for better visualization.
     mape_to_plot = mape.sort_values(by=f"{version}_all")
 
     # Initialize the plot, wide enough for the names of the bars.
@@ -695,8 +684,6 @@ def _plot_comparison(
     _add_legend(fig, [descriptions[0][0], descriptions[1][0]])
 
     _add_grid(fig)
-
-    # Save the plot to a file.
     plt.savefig(
         os.path.join(
             figure_directory,
@@ -819,8 +806,6 @@ def _plot_by_group(
         fig.supylabel(METRIC_NAMES[metric], weight="bold", x=-0.03)
 
         _add_grid(fig)
-
-        # Save the plot to a file.
         plt.savefig(
             os.path.join(
                 figure_directory,
@@ -1004,8 +989,6 @@ def _plot_distribution(
     )
 
     _add_grid(fig)
-
-    # Save the plot to a file.
     plt.savefig(
         os.path.join(
             figure_directory,
@@ -1071,8 +1054,6 @@ def plot(
             "The --by_group and --compare_with_version options cannot be "
             "used together at the moment."
         )
-
-    # Read the errors of the versions.
     errors = _read_errors(
         results_directory,
         version,

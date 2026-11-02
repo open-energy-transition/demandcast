@@ -80,8 +80,6 @@ def run_model_cross_validation(
         holdout,
     )
 
-    # Describe the held-out countries and subdivisions, and summarize
-    # their errors by group.
     results = mapes.merge(
         ml_models.reporting.describe_entities(prepared_dataset),
         on="Entity code",

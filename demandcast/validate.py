@@ -94,8 +94,6 @@ def run_model_validation(
     # Calculate MAPEs.
     mapes = ml_models.evaluation.calculate_mapes(prepared_dataset, predictions)
 
-    # Describe the countries and subdivisions of the testing set, and
-    # summarize their errors by group.
     results = mapes.merge(
         ml_models.reporting.describe_entities(
             prepared_dataset["testing"], prepared_dataset["training"]
