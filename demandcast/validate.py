@@ -96,7 +96,9 @@ def run_model_validation(
 
     results = mapes.merge(
         ml_models.reporting.describe_entities(
-            prepared_dataset["testing"], prepared_dataset["training"]
+            prepared_dataset["testing"],
+            prepared_dataset["training"],
+            ml_models.reporting.read_provenance(data_path),
         ),
         on="Entity code",
         how="left",

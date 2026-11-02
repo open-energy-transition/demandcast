@@ -4,8 +4,8 @@ License: AGPL-3.0.
 Description:
 
     Unit tests of the reporting of the models: the description of the
-    scored countries and subdivisions, from their rows and their
-    combined demand, and the summary of their errors by group.
+    scored countries and subdivisions, from their rows and the data
+    sources of their dataset, and the summary of their errors by group.
 """
 
 import logging
@@ -16,6 +16,7 @@ import pandas as pd
 import pytest
 
 import ml_models.reporting
+import utils.manifest
 import utils.paths
 
 
@@ -54,22 +55,17 @@ def _prepared(codes: list[str], years: list[int], loads: list[float]):
     }
 
 
-def _write_combined(code: str, sources: dict[str, str]) -> None:
-    """Write the combined demand of a code, from a source per period."""
-    os.makedirs(
-        utils.paths.get_electricity_demand_folder("combined"), exist_ok=True
-    )
-    pd.concat(
-        [
-            pd.DataFrame(
-                {"Load (MW)": 1.0, "Source": source, "Eligible": True},
-                index=pd.date_range(
-                    start, periods=24, freq="h", name="Time (UTC)"
-                ),
-            )
-            for start, source in sources.items()
-        ]
-    ).to_parquet(utils.paths.get_electricity_demand_file("combined", code))
+# The hours of each data source and definition in each local year of
+# Great Britain.
+PROVENANCE = pd.DataFrame(
+    {
+        "Entity code": ["GBR_GB", "GBR_GB", "GBR_GB"],
+        "Local year": [2023, 2024, 2024],
+        "Source": ["entsoe", "entsoe", "neso"],
+        "Definition": ["unknown", "unknown", "added"],
+        "Hours": [24, 4, 20],
+    }
+)
 
 
 @pytest.mark.parametrize(
@@ -81,22 +77,20 @@ def test_get_size_class(mean_load, expected):
     assert ml_models.reporting.get_size_class(mean_load) == expected
 
 
-def test_describe_entities(caplog):
+def test_describe_entities():
     """
     Test the description of the scored codes.
 
-    The data source is that of the scored hours, not of the other
-    hours of the combined demand, and a code without combined demand
-    has no data source.
+    The data source and definition are those of most of the hours of
+    the scored years, not of the other years, and a code that the list
+    of the data sources does not have has none.
     """
-    _write_combined(
-        "GBR_GB", {"2023-06-01 01:00": "entsoe", "2024-06-01 01:00": "neso"}
-    )
     training = _prepared(["GBR_GB"], [2023], [25000.0])
     scored = _prepared(["GBR_GB", "IND_PB"], [2024], [25000.0, 100.0])
 
-    with caplog.at_level(logging.WARNING):
-        description = ml_models.reporting.describe_entities(scored, training)
+    description = ml_models.reporting.describe_entities(
+        scored, training, PROVENANCE
+    )
 
     assert description.drop(
         columns=["Data source", "Embedded generation"]
@@ -127,38 +121,95 @@ def test_describe_entities(caplog):
     assert (
         description.loc[1, ["Data source", "Embedded generation"]].isna().all()
     )
-    assert "IND_PB has no combined demand to describe." in caplog.text
 
 
 def test_describe_entities_without_load():
     """
     Test that codes without load and training rows have no size.
 
-    The combined demand of the code has none of the scored hours.
+    The list of the data sources has none of the scored years.
     """
-    _write_combined("FRA", {"2020-01-01 01:00": "entsoe"})
-    scored = _prepared(["FRA"], [2024], [1.0])
+    provenance = PROVENANCE.assign(**{"Entity code": "FRA"})
+    scored = _prepared(["FRA"], [2025], [1.0])
     del scored["others"]
 
-    description = ml_models.reporting.describe_entities(scored)
+    description = ml_models.reporting.describe_entities(
+        scored, provenance=provenance
+    )
 
     assert "Seen in training" not in description
     assert pd.isna(description.loc[0, "Mean load (MW)"])
     assert description.loc[0, ["Size class", "Data source"]].isna().all()
 
 
+def _write_dataset(provenance: pd.DataFrame | None) -> str:
+    """
+    Write an assembled dataset, with its list of data sources if given.
+
+    Returns
+    -------
+    str
+        The path of the dataset.
+    """
+    folder = utils.paths.get_assembled_folder()
+    os.makedirs(folder, exist_ok=True)
+    data_path = os.path.join(folder, "assembled_data_for_training_1.parquet")
+    pd.DataFrame({"Entity code": ["GBR_GB"]}).to_parquet(data_path)
+    content = {}
+    if provenance is not None:
+        provenance_path = data_path.removesuffix(".parquet") + (
+            "_provenance.csv"
+        )
+        provenance.to_csv(provenance_path, index=False)
+        content = {
+            "provenance": {
+                "file": os.path.basename(provenance_path),
+                "sha256": utils.manifest.get_checksum(provenance_path),
+            }
+        }
+    utils.manifest.write_manifest(data_path, "dataset", content)
+    return data_path
+
+
+def test_read_provenance(caplog):
+    """
+    Test the list of the data sources of a dataset.
+
+    It is read as written, a dataset without it has none, and a list
+    changed after the assembly is not read.
+    """
+    data_path = _write_dataset(PROVENANCE)
+    provenance = ml_models.reporting.read_provenance(data_path)
+    assert provenance is not None
+    pd.testing.assert_frame_equal(provenance, PROVENANCE)
+
+    PROVENANCE.assign(Source="eia").to_csv(
+        data_path.removesuffix(".parquet") + "_provenance.csv", index=False
+    )
+    with pytest.raises(ValueError, match="differs from the one"):
+        ml_models.reporting.read_provenance(data_path)
+
+    data_path = _write_dataset(None)
+    with caplog.at_level(logging.WARNING):
+        assert ml_models.reporting.read_provenance(data_path) is None
+    assert "does not list the data sources" in caplog.text
+
+
 def test_summarize(caplog):
     """
     Test the summary of the errors by group of codes.
 
-    The energy-weighted WAPE weights each code by its mean load and its
-    scored hours, and the codes without errors in the set are left out.
+    The pooled WAPE is the sum of the absolute errors of the codes in
+    MWh over the sum of their demand, and the codes without errors in
+    the set are left out.
     """
     results = pd.DataFrame(
         {
             "Entity code": ["DEU", "IND_PB", "MLT", "USA_CA"],
             "Testing MAPE": [0.06, 0.30, 0.20, np.nan],
             "Testing WAPE": [0.05, 0.25, 0.15, np.nan],
+            "Testing absolute error (MWh)": [3e5, 1.25e5, 2000.0, np.nan],
+            "Testing demand (MWh)": [5e6, 5e5, 12500.0, np.nan],
             "Seen in training": [True, False, True, True],
             "Scored hours": [100, 100, 50, 100],
             "Mean load (MW)": [50000.0, 5000.0, 250.0, 30000.0],
@@ -179,9 +230,8 @@ def test_summarize(caplog):
         ["Continent", "Asia", 1],
         ["Continent", "Europe", 2],
     ]
-    energy = np.array([50000.0 * 100, 5000.0 * 100, 250.0 * 50])
-    assert summary.loc[0, "Energy-weighted WAPE"] == pytest.approx(
-        (np.array([0.05, 0.25, 0.15]) * energy).sum() / energy.sum()
+    assert summary.loc[0, "Pooled WAPE"] == pytest.approx(
+        (3e5 + 1.25e5 + 2000.0) / (5e6 + 5e5 + 12500.0)
     )
     assert summary.loc[0, "Median WAPE"] == pytest.approx(0.15)
     assert summary.loc[0, "Median MAPE"] == pytest.approx(0.20)
@@ -191,12 +241,12 @@ def test_summarize(caplog):
     assert "Testing set, by group of codes:" in caplog.text
     assert (
         "Seen in training: No (1 codes): median WAPE 25.0%, "
-        "energy-weighted WAPE 25.0%, median MAPE 30.0%"
+        "pooled WAPE 25.0%, median MAPE 30.0%"
     ) in caplog.text
 
 
 def test_summarize_without_energy():
-    """Test that a group without known loads has no weighted WAPE."""
+    """Test that a group without errors in MWh has no pooled WAPE."""
     results = pd.DataFrame(
         {
             "Testing MAPE": [0.1],
@@ -208,4 +258,4 @@ def test_summarize_without_energy():
 
     summary = ml_models.reporting.summarize(results, "Testing")
 
-    assert pd.isna(summary.loc[0, "Energy-weighted WAPE"])
+    assert pd.isna(summary.loc[0, "Pooled WAPE"])

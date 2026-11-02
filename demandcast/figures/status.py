@@ -9,8 +9,12 @@ Description:
     modules of electricity demand data, on a map and by GDP PPP and
     annual electricity demand per capita, how many countries,
     subdivisions, data sources and years of data there are, and the
-    errors of the latest validation and cross-validation of the models
-    (see figures.ml_results), with their median WAPE in ml_results.md.
+    errors of a validation and of a cross-validation of the models (see
+    figures.ml_results), with their median WAPE in ml_results.md. The
+    results are those of the given files, or the latest of each case by
+    the time in their names, checked against their manifests, and the
+    description of the cross-validation follows the holdout that its
+    manifest records.
 
     The figures are drawn into the folder of the figures and copied
     into webpage/docs/status/, with the numbers in numbers.md, which the
@@ -24,16 +28,16 @@ Description:
 
 import dataclasses
 import datetime as dt
-import glob
 import os
 import shutil
-from typing import Literal
+from typing import Literal, cast
 
 import pandas as pd
 
 import figures.data_availability
 import figures.map_of_available_entities
 import figures.ml_results
+import ml_models.files
 import utils.data_sources
 import utils.paths
 
@@ -191,46 +195,47 @@ def update_readme(readme_file: str, text: str) -> None:
         file.write(readme)
 
 
-def _find_latest_results(
+def _find_results(
     case: Literal["validation", "cross_validation"],
-) -> tuple[str, pd.DataFrame] | None:
+    file_path: str | None = None,
+) -> tuple[str, ml_models.files.Results] | None:
     """
-    Find the latest results of a case, with their summary.
+    Find the results of a case to publish, checked with their summary.
 
     Parameters
     ----------
     case : str
         The case of the results, "validation" or "cross_validation".
+    file_path : str | None, optional
+        The Parquet file of the results, by default the latest of all
+        the versions of the case, by the time in their names.
 
     Returns
     -------
-    tuple[str, pandas.DataFrame] | None
+    tuple[str, ml_models.files.Results] | None
         The version of the results, the trained model of a validation or
-        the algorithm of a cross-validation, and their summary by group
-        of codes (see ml_models.reporting), or None if the case has no
-        results with a summary.
+        the algorithm of a cross-validation, and the results checked
+        against their manifest (see ml_models.files.read_results), or
+        None if the case has no results.
+
+    Raises
+    ------
+    ValueError
+        If the results have no summary in their manifest.
     """
-    file_paths = sorted(
-        glob.glob(
-            os.path.join(
-                utils.paths.get_results_folder(case),
-                "with_*",
-                "*",
-                "all_*.parquet",
-            )
-        ),
-        key=os.path.getmtime,
+    file_path = file_path or ml_models.files.find_latest_results(
+        utils.paths.get_results_folder(case), "*"
     )
-    if not file_paths:
+    if file_path is None:
         return None
-    folder, file_name = os.path.split(file_paths[-1])
-    summary_path = os.path.join(
-        folder, file_name.replace("all_", "summary_", 1)
-    ).removesuffix(".parquet")
-    if not os.path.exists(summary_path + ".csv"):
-        return None
-    version = os.path.basename(os.path.dirname(folder)).removeprefix("with_")
-    return version, pd.read_csv(summary_path + ".csv")
+    results = ml_models.files.read_results(file_path)
+    if results.summary is None:
+        raise ValueError(
+            f"The results {file_path} have no summary in their manifest, "
+            "so they cannot be described."
+        )
+    version = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
+    return version.removeprefix("with_"), results
 
 
 def _get_median_wape(
@@ -258,20 +263,23 @@ def _get_median_wape(
 
 
 def describe_ml_results(
-    validation: tuple[str, pd.DataFrame] | None,
-    cross_validation: tuple[str, pd.DataFrame] | None,
+    validation: tuple[str, ml_models.files.Results] | None,
+    cross_validation: tuple[str, ml_models.files.Results] | None,
 ) -> str:
     """
     Describe the errors of the models in a paragraph of Markdown.
 
+    The cross-validation is described by the holdout that its manifest
+    records, a held-out entity by default.
+
     Parameters
     ----------
-    validation : tuple[str, pandas.DataFrame] | None
-        The trained model of the latest validation and its summary, or
-        None if there is none.
-    cross_validation : tuple[str, pandas.DataFrame] | None
-        The algorithm of the latest cross-validation and its summary, or
-        None if there is none.
+    validation : tuple[str, ml_models.files.Results] | None
+        The trained model of the validation and its results, or None if
+        there is none.
+    cross_validation : tuple[str, ml_models.files.Results] | None
+        The algorithm of the cross-validation and its results, or None
+        if there is none.
 
     Returns
     -------
@@ -280,7 +288,8 @@ def describe_ml_results(
     """
     sentences = []
     if validation is not None:
-        version, summary = validation
+        version, results = validation
+        summary = cast(pd.DataFrame, results.summary)
         algorithm, _, model_time = version.partition("_model_")
         name = figures.ml_results.ALGORITHM_NAMES.get(algorithm, algorithm)
         sentences.append(
@@ -293,22 +302,38 @@ def describe_ml_results(
             "for those that it never saw."
         )
     if cross_validation is not None:
-        algorithm, summary = cross_validation
+        algorithm, results = cross_validation
+        summary = cast(pd.DataFrame, results.summary)
         name = figures.ml_results.ALGORITHM_NAMES.get(algorithm, algorithm)
+        holdout = (results.manifest or {}).get("holdout", "entity")
+        codes = int(summary.loc[summary["Group"] == "All", "Codes"].iloc[0])
         sentences.append(
-            f"In the cross-validation of {name}, which leaves each country "
-            "out of the training in turn, it is "
-            f"**{_get_median_wape(summary):.1f}%**, the error to expect for "
-            "a country without data."
+            f"In the cross-validation of {name}, which leaves "
+            + (
+                "each country, with its subdivisions,"
+                if holdout == "country"
+                else "each country or subdivision"
+            )
+            + " out of the training in turn, the median WAPE of the "
+            f"{codes} held-out countries and subdivisions is "
+            f"**{_get_median_wape(summary):.1f}%**, an estimate of the "
+            + (
+                "error for a country without data."
+                if holdout == "country"
+                else "error for a country or subdivision without data, "
+                "whose country can have data of its other subdivisions."
+            )
         )
     return " ".join(sentences) or "The models have no results yet."
 
 
 def _plot_ml_results(
-    figure_directory: str, status_folder: str
-) -> tuple[tuple[str, pd.DataFrame] | None, ...]:
+    figure_directory: str,
+    status_folder: str,
+    results_files: dict[str, str | None] | None = None,
+) -> tuple[tuple[str, ml_models.files.Results] | None, ...]:
     """
-    Draw the figures of the latest errors of the models into the page.
+    Draw the figures of the errors of the models into the page.
 
     Parameters
     ----------
@@ -316,25 +341,32 @@ def _plot_ml_results(
         The directory where the figures are drawn.
     status_folder : str
         The folder of the files of the "Current state" page.
+    results_files : dict[str, str | None] | None, optional
+        The Parquet file of the results of each case, by default the
+        latest.
 
     Returns
     -------
-    tuple[tuple[str, pandas.DataFrame] | None, ...]
-        The version and summary of the latest validation and of the
-        latest cross-validation, or None for a case without results.
+    tuple[tuple[str, ml_models.files.Results] | None, ...]
+        The version and results of the validation and of the
+        cross-validation, or None for a case without results.
     """
-    latest = []
+    published = []
     for case, file_names in ML_FIGURE_FILES.items():
-        results = _find_latest_results(case)
-        latest.append(results)
-        if results is None:
+        found = _find_results(case, (results_files or {}).get(case))
+        published.append(found)
+        if found is None:
             continue
+        version, results = found
         results_directory = utils.paths.get_results_folder(case)
         figures.ml_results.plot(
-            figure_directory, results[0], results_directory=results_directory
+            figure_directory,
+            version,
+            results_directory=results_directory,
+            results_file=results.file_path,
         )
         _, stem = figures.ml_results.describe_version(
-            results_directory, results[0]
+            results_directory, version, results.file_path
         )
         for drawn, file_name in zip(
             (f"wape_{stem}.png", f"wape_{stem}_distribution.png"),
@@ -345,13 +377,14 @@ def _plot_ml_results(
                 os.path.join(figure_directory, drawn),
                 os.path.join(status_folder, file_name),
             )
-    return tuple(latest)
+    return tuple(published)
 
 
 def plot(
     figure_directory: str,
     status_folder: str = utils.paths.STATUS_FOLDER,
     readme_file: str = utils.paths.README_FILE,
+    results_files: dict[str, str | None] | None = None,
 ) -> None:
     """
     Draw the figures and write the numbers of the current state.
@@ -364,6 +397,10 @@ def plot(
         The folder of the files of the "Current state" page.
     readme_file : str, optional
         The path of the README.
+    results_files : dict[str, str | None] | None, optional
+        The Parquet file of the results of the validation and of the
+        cross-validation to publish ("validation" and
+        "cross_validation"), by default the latest of each.
     """
     figures.map_of_available_entities.plot(figure_directory)
     figures.data_availability.plot(figure_directory)
@@ -383,7 +420,7 @@ def plot(
     update_readme(readme_file, text)
 
     validation, cross_validation = _plot_ml_results(
-        figure_directory, status_folder
+        figure_directory, status_folder, results_files
     )
     with open(
         os.path.join(status_folder, ML_RESULTS_FILE), "w", encoding="utf-8"

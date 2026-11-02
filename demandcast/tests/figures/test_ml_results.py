@@ -238,6 +238,8 @@ def test_plot_described_results(tmp_path, metric):
             "Entity code": ["FRA", "IND_PB", "MLT", "USA_CA"],
             "Testing MAPE": [0.06, 0.30, 0.20, 0.08],
             "Testing WAPE": [0.05, 0.25, 0.15, 0.07],
+            "Testing absolute error (MWh)": [3e5, 1e5, 2000.0, 2e5],
+            "Testing demand (MWh)": [5e6, 5e5, 12500.0, 3e6],
             "Seen in training": [True, False, True, True],
             "Scored hours": [100, 100, 50, 100],
             "Mean load (MW)": [50000.0, 5000.0, 250.0, 30000.0],
@@ -295,7 +297,11 @@ def test_plot_described_results(tmp_path, metric):
         ]
     assert [text.get_text() for text in distribution.legends[0].texts] == [
         "Median"
-    ] + (["WAPE of the group, weighted by energy"] if metric == "WAPE" else [])
+    ] + (
+        ["WAPE of all the hours of the group in MW"]
+        if metric == "WAPE"
+        else []
+    )
     # Every panel has light grey horizontal grid lines, and no vertical
     # ones.
     for ax in (*bars.axes, *distribution.axes):
@@ -319,15 +325,14 @@ def test_plot_described_results(tmp_path, metric):
     )
     assert distribution.axes[0].get_yscale() == "linear"
     assert distribution.axes[0].get_ylim()[0] == 0
-    # The WAPE of all the codes, weighted by energy, is marked.
+    # The WAPE of all the hours of all the codes in MW is marked.
     markers = [
         np.asarray(collection.get_offsets())[:, 1]
         for collection in distribution.axes[0].collections
     ]
     if metric == "WAPE":
-        energy = np.array([50000.0 * 100, 5000.0 * 100, 250.0 * 50, 3e6])
         assert markers[0].tolist() == pytest.approx(
-            [(np.array([5.0, 25.0, 15.0, 7.0]) * energy).sum() / energy.sum()]
+            [100 * (3e5 + 1e5 + 2000.0 + 2e5) / (5e6 + 5e5 + 12500.0 + 3e6)]
         )
     else:
         assert markers == []

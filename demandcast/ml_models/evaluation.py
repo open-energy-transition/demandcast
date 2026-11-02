@@ -24,8 +24,13 @@ Description:
     The errors are those of the target of the models, the load relative
     to the annual mean of its local year (see ml_models.data), so they
     measure the error of the hourly profile, not that of the annual
-    demand. The models are trained and scored on all the fields of their
-    rows, such as their times, as in a validation.
+    demand, and each year of an entity counts the same, whatever its
+    demand. The results also give the sum of the absolute errors of
+    each entity and of its demand in MWh, with the error of each hour
+    in MW, its error times the mean load of its local year, so that the
+    WAPE of a group of entities is that of all their hours in MW (see
+    ml_models.reporting). The models are trained and scored on all the
+    fields of their rows, such as their times, as in a validation.
 """
 
 import logging
@@ -194,6 +199,56 @@ def _calculate_by_entity(
     return mapes
 
 
+def calculate_energy_errors_by_entity(
+    predictions: pd.Series, data: ml_models.data.PreparedDataset
+) -> pd.DataFrame | None:
+    """
+    Calculate the absolute errors and the demand of each entity in MWh.
+
+    The target of each hour is its load divided by the mean load of its
+    local year among the rows, so its error times that mean is its
+    error in MW, and in MWh over the hour.
+
+    Parameters
+    ----------
+    predictions : pandas.Series
+        The predictions of the model, in the order of the rows.
+    data : PreparedDataset
+        The rows, with their target, entity code and local year, and
+        their load in MW among their other fields.
+
+    Returns
+    -------
+    pandas.DataFrame | None
+        The sum of the absolute errors ("Absolute error (MWh)") and of
+        the demand ("Demand (MWh)") of each entity, indexed by its code,
+        or None if the rows have no load in MW or no local year.
+    """
+    others = data.get("others")
+    if others is None or "Load (MW)" not in others or "local_year" not in data:
+        return None
+    rows = pd.DataFrame(
+        {
+            "Entity code": data["group"].to_numpy(),
+            "Local year": data["local_year"].to_numpy(),
+            "Load (MW)": others["Load (MW)"].to_numpy(dtype=float),
+            "Target": data["target"].to_numpy(dtype=float),
+        }
+    )
+    sums = rows.groupby(["Entity code", "Local year"])[
+        ["Load (MW)", "Target"]
+    ].transform("sum")
+    mean_load = sums["Load (MW)"] / sums["Target"]
+    rows["Absolute error (MWh)"] = (
+        np.abs(np.asarray(predictions, dtype=float) - rows["Target"])
+        * mean_load
+    )
+    rows["Demand (MWh)"] = rows["Load (MW)"]
+    return rows.groupby("Entity code")[
+        ["Absolute error (MWh)", "Demand (MWh)"]
+    ].sum()
+
+
 def calculate_mapes(
     prepared_dataset: dict[str, ml_models.data.PreparedDataset],
     predictions: dict[str, pd.Series],
@@ -220,7 +275,9 @@ def calculate_mapes(
         The code of each country or subdivision, and its MAPE and WAPE
         in each set, in the columns "<Set> MAPE", "<Set> WAPE" and
         "<Set> MAPE of the complete years scaled to their annual
-        totals".
+        totals", and, if the rows have their load in MW, the sums of its
+        absolute errors and of its demand in "<Set> absolute error
+        (MWh)" and "<Set> demand (MWh)".
     """
     columns: dict[str, pd.Series] = {}
     for split, data in prepared_dataset.items():
@@ -236,6 +293,12 @@ def calculate_mapes(
         logging.info(
             f" - Median WAPE = {columns[f'{name} WAPE'].median():.4f}"
         )
+        energy = calculate_energy_errors_by_entity(predictions[split], data)
+        if energy is not None:
+            columns[f"{name} absolute error (MWh)"] = energy[
+                "Absolute error (MWh)"
+            ]
+            columns[f"{name} demand (MWh)"] = energy["Demand (MWh)"]
 
         if "time" in data and "local_year" in data:
             scaled, status = ml_models.data.normalize_to_annual_totals(
@@ -321,7 +384,7 @@ def _score_fold(
     prepared_dataset: ml_models.data.PreparedDataset,
     train_index: np.ndarray,
     test_index: np.ndarray,
-) -> list[tuple[str, float, float, float, float]]:
+) -> list[tuple[str, float, float, float, float, float, float]]:
     """
     Train a model on one fold and score it.
 
@@ -341,10 +404,11 @@ def _score_fold(
 
     Returns
     -------
-    list[tuple[str, float, float, float, float]]
+    list[tuple[str, float, float, float, float, float, float]]
         The code of each held-out entity, the MAPE of the model on the
-        training rows and on the rows of the entity, and its WAPE on
-        them.
+        training rows and on the rows of the entity, its WAPE on them,
+        and the sums of the absolute errors and of the demand of the
+        entity in MWh, not numbers if its rows have no load in MW.
     """
     model_module = ml_models.registry.get_model_module(algorithm)
     training = ml_models.data.select_rows(prepared_dataset, train_index)
@@ -363,6 +427,8 @@ def _score_fold(
         np.asarray(model_module.predict(model, held_out)),
         index=held_out["target"].index,
     )
+    energy = calculate_energy_errors_by_entity(predictions, held_out)
+    errors_in_mwh = {} if energy is None else energy.to_dict("index")
     return [
         (
             str(entity_code),
@@ -373,6 +439,14 @@ def _score_fold(
             training_wape,
             weighted_absolute_percentage_error(
                 held_out["target"][rows], predictions[rows]
+            ),
+            float(
+                errors_in_mwh.get(entity_code, {}).get(
+                    "Absolute error (MWh)", np.nan
+                )
+            ),
+            float(
+                errors_in_mwh.get(entity_code, {}).get("Demand (MWh)", np.nan)
             ),
         )
         for entity_code, rows in held_out["group"]
@@ -413,8 +487,10 @@ def cross_validate(
     Returns
     -------
     mapes : pandas.DataFrame
-        The code of each held-out entity, the MAPE of its model on the
-        training rows and on the rows of the entity, and the holdout.
+        The code of each held-out entity, the MAPE and WAPE of its model
+        on the training rows and on the rows of the entity, the sums of
+        the absolute errors and of the demand of the entity in MWh, and
+        the holdout.
     """
     # Check that the algorithm is supported.
     ml_models.registry.get_model_module(algorithm)
@@ -440,6 +516,8 @@ def cross_validate(
             "Testing MAPE",
             "Training WAPE",
             "Testing WAPE",
+            "Testing absolute error (MWh)",
+            "Testing demand (MWh)",
         ],
     )
     mapes["Holdout"] = holdout

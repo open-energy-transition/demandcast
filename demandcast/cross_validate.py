@@ -81,7 +81,10 @@ def run_model_cross_validation(
     )
 
     results = mapes.merge(
-        ml_models.reporting.describe_entities(prepared_dataset),
+        ml_models.reporting.describe_entities(
+            prepared_dataset,
+            provenance=ml_models.reporting.read_provenance(data_path),
+        ),
         on="Entity code",
         how="left",
     )

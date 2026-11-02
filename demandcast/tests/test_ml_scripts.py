@@ -182,19 +182,35 @@ def _write_assembled_data(
     )
 
 
-def _write_combined_demand() -> None:
-    """Write the combined demand of the countries, from ENTSO-E."""
-    time = pd.date_range("2021-01-01 01:00", "2024-01-01", freq="h")
-    os.makedirs(
-        utils.paths.get_electricity_demand_folder("combined"), exist_ok=True
+def _write_provenance(file_name: str) -> None:
+    """
+    List the data sources of an assembled dataset in its manifest.
+
+    All the hours of the countries come from ENTSO-E, whose definition
+    is unknown.
+    """
+    data_path = os.path.join(
+        utils.paths.get_assembled_folder(), f"{file_name}.parquet"
     )
-    for country_code in COUNTRY_CODES:
-        pd.DataFrame(
-            {"Load (MW)": 1000.0, "Source": "entsoe", "Eligible": True},
-            index=pd.DatetimeIndex(time, name="Time (UTC)"),
-        ).to_parquet(
-            utils.paths.get_electricity_demand_file("combined", country_code)
-        )
+    provenance = (
+        pd.read_parquet(data_path, columns=["Entity code", "Local year"])
+        .value_counts(sort=False)
+        .rename("Hours")
+        .reset_index()
+        .assign(Source="entsoe", Definition="unknown")
+    )
+    provenance_path = data_path.removesuffix(".parquet") + "_provenance.csv"
+    provenance.to_csv(provenance_path, index=False)
+    utils.manifest.write_manifest(
+        data_path,
+        "dataset",
+        {
+            "provenance": {
+                "file": os.path.basename(provenance_path),
+                "sha256": utils.manifest.get_checksum(provenance_path),
+            }
+        },
+    )
 
 
 def _read_results(folder: str, model: str, data: str) -> pd.DataFrame:
@@ -364,7 +380,7 @@ def test_train(algorithm):
 def test_validate(algorithm, use_validation_set, expected_mapes):
     """Test the MAPEs of the trained model on each set."""
     _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
-    _write_combined_demand()
+    _write_provenance(TRAINING_DATA)
     train.run_model_training(
         True, use_validation_set, None, *_settings(algorithm)
     )
@@ -410,8 +426,17 @@ def test_validate(algorithm, use_validation_set, expected_mapes):
     assert [
         column
         for column in mapes.columns
-        if not column.endswith((scaled, "WAPE"))
+        if not column.endswith((scaled, "WAPE", "(MWh)"))
     ] == ["Entity code", *expected_mapes]
+    # Each set also has the sums of its absolute errors and of its
+    # demand in MWh.
+    assert {
+        column for column in mapes.columns if column.endswith("(MWh)")
+    } == {
+        column.replace("MAPE", name)
+        for column in expected_mapes
+        for name in ("absolute error (MWh)", "demand (MWh)")
+    }
     # Each set also has its WAPE, and the MAPE of the profile that
     # forecasting gives.
     assert {column for column in mapes.columns if column.endswith(scaled)} == {
@@ -468,7 +493,7 @@ def test_validate(algorithm, use_validation_set, expected_mapes):
 def test_cross_validate(algorithm, expected_mapes):
     """Test the MAPEs of the leave-one-country-out cross-validation."""
     _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
-    _write_combined_demand()
+    _write_provenance(TRAINING_DATA)
 
     cross_validate.run_model_cross_validation(1, None, *_settings(algorithm))
 
@@ -483,9 +508,12 @@ def test_cross_validate(algorithm, expected_mapes):
         *expected_mapes,
         "Training WAPE",
         "Testing WAPE",
+        "Testing absolute error (MWh)",
+        "Testing demand (MWh)",
         "Holdout",
         *DESCRIPTION_COLUMNS,
     ]
+    assert (mapes["Testing demand (MWh)"] > 0).all()
     assert mapes["Scored years"].tolist() == [3, 3, 3]
     assert summary["Group"].tolist() == [
         "All",

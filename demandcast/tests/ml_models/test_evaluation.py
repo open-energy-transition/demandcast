@@ -295,6 +295,62 @@ def test_calculate_mapes_of_the_profile_scaled_to_annual_totals():
     assert np.isnan(scaled["DEU"])
 
 
+def test_errors_in_mwh_weigh_each_year_by_its_demand():
+    """
+    Test the absolute errors and the demand of an entity in MWh.
+
+    Two years of 10 hours have mean loads of 100 and 1000 MW, and the
+    predictions are twice the target in the first and right in the
+    second: the WAPE of the profile is 50%, each year counting the same,
+    while the error in MW is 1000 MWh of a demand of 11000 MWh, 9.1%.
+    """
+    load = np.array([100.0] * 10 + [1000.0] * 10)
+    data: ml_models.data.PreparedDataset = {
+        "features": pd.DataFrame({"a": np.zeros(20)}),
+        "target": pd.Series(np.ones(20)),
+        "group": pd.Series(["FRA"] * 20, name="Entity code"),
+        "local_year": pd.Series([2023] * 10 + [2024] * 10),
+        "others": pd.DataFrame({"Load (MW)": load}),
+    }
+    predictions = pd.Series([2.0] * 10 + [1.0] * 10)
+
+    results = ml_models.evaluation.calculate_mapes(
+        {"testing": data}, {"testing": predictions}
+    ).set_index("Entity code")
+
+    assert results.loc["FRA", "Testing WAPE"] == pytest.approx(0.5)
+    assert results.loc["FRA", "Testing absolute error (MWh)"] == (
+        pytest.approx(1000.0)
+    )
+    assert results.loc["FRA", "Testing demand (MWh)"] == pytest.approx(11000.0)
+
+
+def test_cross_validation_gives_the_errors_in_mwh():
+    """
+    Test that the cross-validation gives the errors in MWh.
+
+    With a single year, the sum of the absolute errors in MWh over the
+    demand is the WAPE of the profile.
+    """
+    dataset = _make_prepared_dataset()
+    dataset["target"] = dataset["target"].abs()
+    dataset["local_year"] = pd.Series([2024] * len(dataset["target"]))
+    dataset["others"] = pd.DataFrame({"Load (MW)": dataset["target"] * 1000.0})
+
+    results = ml_models.evaluation.cross_validate(
+        dataset, 1, "XGBoost", _model_config("XGBoost")
+    )
+
+    demand = (dataset["target"] * 1000.0).groupby(dataset["group"]).sum()
+    assert results.set_index("Entity code")[
+        "Testing demand (MWh)"
+    ].to_dict() == (pytest.approx(demand.to_dict()))
+    assert (
+        results["Testing absolute error (MWh)"]
+        / results["Testing demand (MWh)"]
+    ).tolist() == pytest.approx(results["Testing WAPE"].tolist())
+
+
 def test_wape_is_not_dominated_by_values_close_to_zero():
     """
     Test that the WAPE weighs each error by the size of the demand.
