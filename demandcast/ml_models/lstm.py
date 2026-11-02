@@ -12,15 +12,26 @@ Description:
     rows from different entities (identified by the ``"group"`` column
     of the prepared dataset), or separated by more or less than an hour
     (by the ``"time"`` column), never share a lookback window, which is
-    padded with zeros instead. The windows are built batch by batch,
-    so that the windows of all the rows are never in memory at once.
+    padded with zeros instead. Each step of a window also has a padding
+    indicator, 1 for a row and 0 for the padding, since the zeros of
+    the standardized features are also their mean values. The windows
+    are built batch by batch, so that the windows of all the rows are
+    never in memory at once.
+
+    The local hour of the day and the local month of the year are given
+    as the sine and the cosine of their angle in the day and in the
+    year (CYCLICAL_FEATURES), so that 23:00 is next to midnight and
+    December next to January, as they are for the demand. The other
+    categorical features, such as the weekend indicator, are taken as
+    the numbers that they are.
 
     The features are standardized with the mean and standard deviation
-    of each feature in the training rows, which are saved with the
+    of each of them in the training rows, which are saved with the
     model: features of different magnitudes, such as the GDP per capita
     and the temperature, would otherwise saturate the gates of the
-    LSTM. The categorical features, such as the hour of the day, are
-    standardized as the ordinal numbers that they are.
+    LSTM. A saved model also records its cyclical features and whether
+    it has the padding indicator, and one without them takes the
+    features as they are, without the indicator.
 """
 
 from __future__ import annotations
@@ -50,6 +61,13 @@ import utils.config  # noqa: E402
 
 # The extension of the files of the saved models.
 FILE_EXTENSION = ".pt"
+
+# The features that repeat in a cycle, with their period and their
+# first value.
+CYCLICAL_FEATURES = {
+    "Local hour of the day": (24, 0),
+    "Local month of the year": (12, 1),
+}
 
 # ----------------------------------------------------------------------
 # Private PyTorch network
@@ -199,9 +217,10 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
         X: np.ndarray,
         run_starts: np.ndarray,
         rows: np.ndarray,
+        padding_indicator: bool = True,
     ) -> np.ndarray:
         """
-        Build the ``(len(rows), n_timesteps, n_features)`` windows.
+        Build the windows of some rows.
 
         The window of a row has the rows of its run before it, at most
         ``n_timesteps - 1``, and zeros before them.
@@ -214,22 +233,68 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
             The first row of the run of each row.
         rows : np.ndarray
             The positions of the rows whose windows are built.
+        padding_indicator : bool, optional
+            Whether each step has, after the features, 1 for a row and
+            0 for the padding.
 
         Returns
         -------
         np.ndarray
-            Shape ``(len(rows), n_timesteps, n_features)``.
+            Shape ``(len(rows), n_timesteps, n_features)``, or with one
+            more feature, the padding indicator.
         """
         offsets = np.arange(-self.n_timesteps + 1, 1)
         positions = rows[:, None] + offsets[None, :]
         valid = positions >= run_starts[rows][:, None]
         windows = X[np.where(valid, positions, 0)]
         windows[~valid] = 0.0
+        if padding_indicator:
+            windows = np.concatenate(
+                [windows, valid[:, :, None].astype(np.float32)], axis=2
+            )
         return windows
+
+    def _encode(self, X: pd.DataFrame | np.ndarray) -> np.ndarray:
+        """
+        Encode the cyclical features as the sine and cosine of an angle.
+
+        Parameters
+        ----------
+        X : pandas.DataFrame or np.ndarray of shape \
+(n_samples, n_features)
+            The features, in the order of ``feature_names_in_``.
+
+        Returns
+        -------
+        np.ndarray
+            The other features, then the sine and the cosine of each
+            cyclical feature, as float32.
+        """
+        X_arr = np.array(X, dtype=np.float32)
+        if not self.cyclical_features_:
+            return X_arr
+        names = list(self.feature_names_in_)
+        positions = [names.index(name) for name in self.cyclical_features_]
+        angles = [
+            2
+            * np.pi
+            * (X_arr[:, position] - CYCLICAL_FEATURES[name][1])
+            / CYCLICAL_FEATURES[name][0]
+            for name, position in zip(
+                self.cyclical_features_, positions, strict=True
+            )
+        ]
+        return np.column_stack(
+            [
+                np.delete(X_arr, positions, axis=1),
+                *[np.sin(angle) for angle in angles],
+                *[np.cos(angle) for angle in angles],
+            ]
+        ).astype(np.float32)
 
     def _standardize(self, X: pd.DataFrame | np.ndarray) -> np.ndarray:
         """
-        Standardize the features with the statistics of the training.
+        Encode and standardize the features, as in the training.
 
         Parameters
         ----------
@@ -240,10 +305,27 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
         Returns
         -------
         np.ndarray
-            The standardized features, as float32.
+            The encoded and standardized features, as float32.
         """
-        X_arr = np.array(X, dtype=np.float32)
+        X_arr = self._encode(X)
         return ((X_arr - self.mean_) / self.scale_).astype(np.float32)
+
+    def _make_network(self) -> _LSTMNet:
+        """
+        Make the network for the encoded features.
+
+        Returns
+        -------
+        _LSTMNet
+            The untrained network, whose inputs are the encoded
+            features and, if any, the padding indicator.
+        """
+        return _LSTMNet(
+            len(self.mean_) + int(self.padding_indicator_),
+            self.n_units,
+            self.n_layers,
+            self.dropout,
+        )
 
     # ------------------------------------------------------------------
     # sklearn estimator interface
@@ -281,24 +363,25 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
         """
         if hasattr(X, "columns"):
             self.feature_names_in_ = np.array(X.columns.tolist())
+        self.cyclical_features_ = [
+            str(name)
+            for name in getattr(self, "feature_names_in_", [])
+            if name in CYCLICAL_FEATURES
+        ]
+        self.padding_indicator_ = True
 
-        X_raw = np.array(X, dtype=np.float32)
-        self.n_features_in_ = X_raw.shape[1]
+        self.n_features_in_ = np.shape(X)[1]
+        X_raw = self._encode(X)
         self.mean_ = X_raw.mean(axis=0)
         # A constant feature keeps its values, shifted to zero.
         standard_deviation = X_raw.std(axis=0)
         self.scale_ = np.where(standard_deviation > 0, standard_deviation, 1)
-        X_arr = self._standardize(X_raw)
+        X_arr = ((X_raw - self.mean_) / self.scale_).astype(np.float32)
         y_tensor = torch.from_numpy(np.array(y, dtype=np.float32).ravel())
         run_starts = self._get_run_starts(len(X_arr), groups, times)
 
         torch.manual_seed(self.random_state)
-        self.net_ = _LSTMNet(
-            self.n_features_in_,
-            self.n_units,
-            self.n_layers,
-            self.dropout,
-        )
+        self.net_ = self._make_network()
         optimizer = torch.optim.Adam(
             self.net_.parameters(), lr=self.learning_rate
         )
@@ -311,7 +394,9 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
             for i in range(0, len(order), self.batch_size):
                 rows = order[i : i + self.batch_size]
                 X_batch = torch.from_numpy(
-                    self._make_sequences(X_arr, run_starts, rows)
+                    self._make_sequences(
+                        X_arr, run_starts, rows, self.padding_indicator_
+                    )
                 )
                 optimizer.zero_grad()
                 loss = criterion(self.net_(X_batch), y_tensor[rows])
@@ -357,7 +442,9 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
             for i in range(0, len(X_arr), self.batch_size):
                 rows = np.arange(i, min(i + self.batch_size, len(X_arr)))
                 batch = torch.from_numpy(
-                    self._make_sequences(X_arr, run_starts, rows)
+                    self._make_sequences(
+                        X_arr, run_starts, rows, self.padding_indicator_
+                    )
                 )
                 parts.append(self.net_(batch).numpy())
         return np.concatenate(parts).flatten()
@@ -409,20 +496,25 @@ def load(model_path: str) -> LSTMRegressor:
 
     lstm_model = LSTMRegressor(**checkpoint["params"])
     lstm_model.n_features_in_ = checkpoint["n_features_in_"]
-    # A model saved before the features were standardized has no
-    # statistics, and takes the features as they are.
+    # A model saved without statistics, cyclical features or padding
+    # indicator takes the features as they are, without the indicator.
     if "mean_" not in checkpoint:
         logging.warning(
             f"The model {model_path} has no statistics of its features, "
             "which are not standardized."
         )
+    lstm_model.cyclical_features_ = list(
+        checkpoint.get("cyclical_features", [])
+    )
+    lstm_model.padding_indicator_ = bool(
+        checkpoint.get("padding_indicator", False)
+    )
+    width = lstm_model.n_features_in_ + len(lstm_model.cyclical_features_)
     lstm_model.mean_ = np.array(
-        checkpoint.get("mean_", [0.0] * lstm_model.n_features_in_),
-        dtype=np.float32,
+        checkpoint.get("mean_", [0.0] * width), dtype=np.float32
     )
     lstm_model.scale_ = np.array(
-        checkpoint.get("scale_", [1.0] * lstm_model.n_features_in_),
-        dtype=np.float32,
+        checkpoint.get("scale_", [1.0] * width), dtype=np.float32
     )
 
     if "feature_names_in_" in checkpoint:
@@ -430,12 +522,7 @@ def load(model_path: str) -> LSTMRegressor:
             checkpoint["feature_names_in_"]
         )
 
-    lstm_model.net_ = _LSTMNet(
-        lstm_model.n_features_in_,
-        lstm_model.n_units,
-        lstm_model.n_layers,
-        lstm_model.dropout,
-    )
+    lstm_model.net_ = lstm_model._make_network()
     lstm_model.net_.load_state_dict(checkpoint["state_dict"])
     lstm_model.net_.eval()
 
@@ -462,6 +549,8 @@ def save(lstm_model: LSTMRegressor, file_path: str) -> None:
         "n_features_in_": int(lstm_model.n_features_in_),
         "mean_": lstm_model.mean_.tolist(),
         "scale_": lstm_model.scale_.tolist(),
+        "cyclical_features": list(lstm_model.cyclical_features_),
+        "padding_indicator": bool(lstm_model.padding_indicator_),
         "state_dict": lstm_model.net_.state_dict(),
     }
     if hasattr(lstm_model, "feature_names_in_"):

@@ -13,19 +13,19 @@ The machine learning process in DemandCast follows a structured pipeline that tr
 
 ### Key Concepts
 
-**Target Variable: Load (fraction of annual total)**
+#### Target Variable: Load (fraction of annual total)
 
 The target variable represents normalized hourly electricity consumption. Take each hour's electricity demand (in MW) and divide it by the total yearly electricity demand for that region. This produces a fraction of the year's electricity consumed in that hour. For example, 0.00015 means this hour consumed 0.015% of the year's total electricity. This normalization allows the model to learn patterns across regions of different sizes—a small country and a large country both have values in a comparable range.
 
-**What the models learn: Load relative to the annual mean**
+#### What the models learn: Load relative to the annual mean
 
 The fraction of the annual total of an average hour is about 1/8760, too small for the models: the gain of an XGBoost split scales with the square of the target, so at that magnitude the model barely splits and rarely uses the continuous features. When preparing the data, `ml_models.data.to_load_relative_to_annual_mean()` therefore multiplies the target by the hours in its local year (8760, or 8784 in leap years), giving the load relative to the annual mean, without unit: 1.0 is an average hour, and 1.2 an hour with 20% more demand than average. All models are trained on this target, and the manifest of each model records it (see [the manifests](#manifests)). The assembled data keeps the fraction of the annual total.
 
-**From the predictions to MW**
+#### From the predictions to MW
 
 The annual electricity demand of a forecast, the product of the annual demand per capita (kWh) and the population, is the total of its year, and the hourly profile of the model distributes it. The predictions of a year do not have a mean of exactly 1, so `forecast.py` scales those of each complete local year of each country or subdivision, with all its hours, to a mean of 1 (`ml_models.data.normalize_to_annual_totals()`): their MW then sum to the annual demand. A negative prediction is zero; a prediction that is not a number, or an hour with two predictions, stops the forecast. The predictions of a year without all its hours, and of a complete year whose predictions are all zero, are not scaled, which the log reports, and the manifest of the forecasts gives the status of each year: `scaled`, `incomplete` or `zero`. The predictions are then converted back to the fraction of the annual total and multiplied by the annual demand in kWh, divided by 1000 for MW. The validation and cross-validation score the predictions as the model gives them.
 
-**Temporal Splitting**
+#### Temporal Splitting
 
 Unlike typical machine learning where data is randomly split, temporal splitting is required for time-series forecasting. Random splitting would "leak" future information into training, making results unrealistically good. The dataset is split using the following logic:
 
@@ -37,11 +37,11 @@ The years are those that the region has, so a missing year is skipped: with data
 
 This ensures the model is evaluated on future time periods it hasn't seen during training, which is critical for time-series forecasting.
 
-**Leave-One-Group-Out (LOGO) Cross-Validation**
+#### Leave-One-Group-Out (LOGO) Cross-Validation
 
 LOGO cross-validation tests model generalization across regions by training on all regions except one and evaluating on the held-out region. This process is repeated for each region. By default, each fold holds out one entity code (`holdout: entity`), so a fold that holds out Argentina still trains on the provinces of Argentina: this measures the error on a held-out entity, not on a country that the model has never seen. With `holdout: country`, each fold holds out a country with all its subdivisions, which measures the error on an unseen country. The results say which holdout they used.
 
-**Feature Types**
+#### Feature Types
 
 Machine learning features can be classified as either categorical or continuous:
 
@@ -111,9 +111,9 @@ The LSTM implementation in DemandCast (`ml_models/lstm.py`) is built on PyTorch'
 
 The `LSTMRegressor` class wraps this network in a scikit-learn-compatible estimator, giving it `fit()` and `predict()` methods that accept `pandas.DataFrame` and `pandas.Series` inputs. Cross-validation trains and scores the LSTM and XGBoost with the same Leave-One-Group-Out loop, which passes the entity codes to both the training and the predictions.
 
-Sequence construction is entity-aware and time-aware. Each training or inference sample requires a lookback window of `n_timesteps` consecutive hours. Rather than drawing rows across entity (country or region) boundaries or across gaps, the sequence builder starts a new run at each change of the entity label of the `"group"` column of the prepared dataset, and at each row of the `"time"` column that is not one hour after the row before it, such as after a missing hour or a missing year, and zero-pads the leading edge of each new run. The windows are built batch by batch, so that the windows of all the rows, which would take tens of gigabytes for the whole dataset, are never in memory at once.
+Sequence construction is entity-aware and time-aware. Each training or inference sample requires a lookback window of `n_timesteps` consecutive hours. Rather than drawing rows across entity (country or region) boundaries or across gaps, the sequence builder starts a new run at each change of the entity label of the `"group"` column of the prepared dataset, and at each row of the `"time"` column that is not one hour after the row before it, such as after a missing hour or a missing year, and zero-pads the leading edge of each new run. Each step of a window also has a padding indicator, 1 for a row and 0 for the padding, since zero is also the mean value of each standardized feature. The windows are built batch by batch, so that the windows of all the rows, which would take tens of gigabytes for the whole dataset, are never in memory at once.
 
-The features are standardized with the mean and standard deviation of each feature in the training rows, which are saved with the model and applied to the rows that it predicts: features of very different magnitudes, such as the GDP per capita and the temperature, would otherwise saturate the gates of the LSTM. A model saved before this standardization takes the features as they are.
+The features are standardized with the mean and standard deviation of each feature in the training rows, which are saved with the model and applied to the rows that it predicts: features of very different magnitudes, such as the GDP per capita and the temperature, would otherwise saturate the gates of the LSTM. The local hour of the day and the local month of the year are given as the sine and the cosine of their angle in the day and in the year, so that 23:00 is next to midnight and December next to January, as they are for the demand; XGBoost keeps them as categories. A saved model records its statistics, its cyclical features and whether it has the padding indicator, and a model saved without them takes the features as they are, without the indicator.
 
 ### LSTM Configuration
 
@@ -153,32 +153,15 @@ The `predict()` function supports two calling modes that mirror the XGBoost inte
 
 ### Assumptions and Limitations
 
-- **Zero-padding for the initial lookback**: For the first `n_timesteps - 1` rows of each entity, the lookback window cannot be filled from historical data. These positions are zero-padded, which means the model's effective context is shorter at the start of each entity's time series. This is standard practice for sequence models applied to short or boundary-constrained series.
-- **Categorical features treated as numeric**: The LSTM receives all features as standardized `float32` tensors. Categorical features (hour of day, month, weekend flag, temperature rank) are integer-encoded numbers, the same encoding used by XGBoost, standardized like the other features. The LSTM does not apply embedding layers to these features.
+- **Zero-padding for the initial lookback**: For the first `n_timesteps - 1` rows of each run of consecutive hours, the lookback window cannot be filled from earlier rows. These positions are zero-padded, with a padding indicator of 0, so the model's context is shorter at the start of each run.
+- **Other categorical features treated as numeric**: The weekend and holiday indicators and the monthly temperature rank are taken as the numbers that they are, standardized like the other features. The LSTM does not apply embedding layers to them.
 - **Optional algorithm**: LSTM is not the default algorithm. The default is XGBoost, selected by setting `algorithm: XGBoost` in `ml_config.yaml`. To switch to LSTM, set `algorithm: LSTM`.
 
-### Benchmark Results
+### Benchmark
 
-To compare the two algorithms under identical conditions, both were trained and validated on a benchmark dataset covering three countries (Denmark, Austria, Portugal) with electricity demand, temperature, population, and GDP data for 2021-2023. The most recent year of each entity was reserved as the testing set (`reserve_testing_set: true`), consistent with the temporal splitting described above.
+The two algorithms can be compared under identical conditions on a benchmark dataset of three countries (Denmark, Austria, Portugal) with electricity demand, temperature, population, and GDP data for 2021-2023. The most recent year of each entity is the testing set (`reserve_testing_set: true`), consistent with the temporal splitting described above.
 
-**Per-entity testing set MAPE:**
-
-| Entity | XGBoost | LSTM |
-|---|---|---|
-| DNK | 0.0931 | 0.1555 |
-| AUT | 0.1085 | 0.1754 |
-| PRT | 0.0869 | 0.1634 |
-
-**Overall testing set MAPE:**
-
-| Metric | XGBoost | LSTM |
-|---|---|---|
-| Mean | 0.0962 | 0.1648 |
-| Median | 0.0931 | 0.1634 |
-
-On this benchmark, XGBoost outperformed LSTM on every entity. These results were measured before the LSTM standardized its features and broke its sequences at the gaps between hours, both of which change its training, so they do not tell how the two algorithms compare now, nor why: the comparison must be run again, on holdouts recorded in the manifests of the models.
-
-**XGBoost remains the default algorithm** for DemandCast. LSTM is an optional alternative.
+**XGBoost is the default algorithm** for DemandCast. LSTM is an optional alternative.
 
 **Benchmark configuration:**
 
