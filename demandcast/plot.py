@@ -33,6 +33,8 @@ class ConfigModel(utils.config.StrictSettings):
     version: str | None = None
     compare_with_version: str | None = None
     by_group: bool = False
+    results: Literal["validation", "cross_validation"] = "validation"
+    metric: Literal["WAPE", "MAPE"] = "WAPE"
 
     @model_validator(mode="after")
     def _check_settings_of_figure(self) -> "ConfigModel":
@@ -101,6 +103,8 @@ def main(config: ConfigModel) -> None:
             str(config.version),
             config.compare_with_version,
             config.by_group,
+            utils.paths.get_results_folder(config.results),
+            config.metric,
         )
 
 
