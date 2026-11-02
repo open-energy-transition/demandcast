@@ -131,6 +131,11 @@ def test_default_configuration_names_no_target(script, message, monkeypatch):
             "figure: data_availability\nby_group: true\n",
             "must not be provided",
         ),
+        (
+            "plot",
+            "figure: ml_results\nversion: a\nvalidation_results: b\n",
+            "only for the status figures",
+        ),
         ("assemble", "target_use: testing\n", "target_use"),
         (
             "retrieve",
@@ -341,7 +346,11 @@ def test_check_dispatch(monkeypatch, caplog, name):
             "ml_results",
             ("v1", None, True, RESULTS_FOLDER, "MAPE"),
         ),
-        ({"figure": "status"}, "status", ()),
+        (
+            {"figure": "status", "validation_results": "a.parquet"},
+            "status",
+            ({"validation": "a.parquet", "cross_validation": None},),
+        ),
     ],
 )
 def test_plot_dispatch(monkeypatch, settings, module, arguments):
@@ -350,7 +359,7 @@ def test_plot_dispatch(monkeypatch, settings, module, arguments):
     monkeypatch.setattr(
         getattr(plot.figures, module),
         "plot",
-        lambda *args: calls.append(args),
+        lambda *args, **kwargs: calls.append(args + tuple(kwargs.values())),
     )
 
     plot.main(plot.ConfigModel(**settings))

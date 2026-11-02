@@ -9,27 +9,31 @@ Description:
 
     Each country or subdivision is described by whether the model saw
     other years of it in training, its number of years, its mean load
-    and its size class, its continent, and the data source of most of
-    its scored hours with what the demand of that source counts of the
-    embedded generation (see utils.data_sources), read from its
-    combined demand.
+    and its size class, its continent, the data source of most of its
+    scored hours, and what the demand of most of them counts of the
+    embedded generation (see utils.data_sources). The data sources and
+    definitions are those that the assembly of the dataset listed (see
+    assemble.py), checked against the manifest of the dataset, so that
+    they are those of the scored rows, whatever was retrieved or
+    reviewed after the assembly.
 
     The summary groups the codes by whether the model saw them, by
     size class, by continent and by what their demand counts of the
-    embedded generation, and gives for each group its median WAPE, its
-    WAPE weighted by the energy of each code, which is that of the
-    group as a whole, and its median MAPE.
+    embedded generation, and gives for each group its median WAPE, the
+    WAPE of all the hours of its codes in MW (the sum of their absolute
+    errors over the sum of their demand, see ml_models.evaluation),
+    which weighs each year by its demand, and its median MAPE.
 """
 
 import logging
+import os
 
 import numpy as np
 import pandas as pd
 
 import ml_models.data
 import utils.codes
-import utils.data_sources
-import utils.paths
+import utils.manifest
 
 # The upper limits of the mean load of the size classes, in MW.
 SIZE_CLASSES = {"Small": 300.0, "Medium": 5000.0, "Large": np.inf}
@@ -76,46 +80,89 @@ def get_size_class(mean_load: float) -> str:
     )
 
 
-def _get_main_source(
-    code: str, times: pd.Series
-) -> tuple[str | None, str | None]:
+def read_provenance(data_path: str) -> pd.DataFrame | None:
     """
-    Get the data source of most of the scored hours of a code.
+    Read the data sources and definitions of an assembled dataset.
 
     Parameters
     ----------
+    data_path : str
+        The path of the assembled dataset.
+
+    Returns
+    -------
+    pandas.DataFrame | None
+        The hours of each data source and definition in each local year
+        of each entity (see assemble.py), or None if the manifest of the
+        dataset does not list them.
+
+    Raises
+    ------
+    ValueError
+        If the list differs from the one that the manifest records.
+    """
+    manifest = utils.manifest.read_manifest(data_path) or {}
+    if "provenance" not in manifest:
+        logging.warning(
+            f"The dataset {data_path} does not list the data sources of its "
+            "demand, so they are not described."
+        )
+        return None
+    file_path = os.path.join(
+        os.path.dirname(data_path), manifest["provenance"]["file"]
+    )
+    if (
+        utils.manifest.get_checksum(file_path)
+        != (manifest["provenance"]["sha256"])
+    ):
+        raise ValueError(
+            f"The list of the data sources {file_path} differs from the one "
+            f"that the manifest of {data_path} records."
+        )
+    return pd.read_csv(file_path, keep_default_na=False)
+
+
+def _get_main_source(
+    provenance: pd.DataFrame | None, code: str, years: pd.Series
+) -> tuple[str | None, str | None]:
+    """
+    Get the data source and definition of most of the hours of a code.
+
+    Parameters
+    ----------
+    provenance : pandas.DataFrame | None
+        The hours of each data source and definition in each local year
+        of each entity, or None if unknown.
     code : str
         The code of the country or subdivision.
-    times : pandas.Series
-        The scored hours, by their ends in UTC.
+    years : pandas.Series
+        The local years of its scored hours.
 
     Returns
     -------
     tuple[str | None, str | None]
-        The data source, and what its demand counts of the embedded
-        generation on the middle scored day, or None if the code has no
-        combined demand at those hours.
+        The data source of most of the hours of the local years, and
+        what the demand of most of them counts of the embedded
+        generation, or None if unknown.
     """
-    file_path = utils.paths.get_electricity_demand_file("combined", code)
-    try:
-        sources = pd.read_parquet(file_path, columns=["Source"])["Source"]
-    except FileNotFoundError:
-        logging.warning(f"{code} has no combined demand to describe.")
+    if provenance is None:
         return None, None
-    scored_sources = sources[
-        sources.index.isin(pd.DatetimeIndex(times).as_unit("us"))
-    ].dropna()
-    if scored_sources.empty:
-        return None, None
-    data_source = str(scored_sources.value_counts().index[0])
-    middle_day = pd.Timestamp(times.median()).date()
-    definition = utils.data_sources.get_definition(data_source, middle_day)
-    return data_source, definition.embedded_generation
+    rows = provenance[
+        (provenance["Entity code"] == code)
+        & provenance["Local year"].isin(years.unique())
+    ]
+
+    def most_hours(column: str) -> str | None:
+        hours = rows[rows[column] != ""].groupby(column)["Hours"].sum()
+        return str(hours.idxmax()) if not hours.empty else None
+
+    return most_hours("Source"), most_hours("Definition")
 
 
 def describe_entities(
     scored: ml_models.data.PreparedDataset,
     training: ml_models.data.PreparedDataset | None = None,
+    provenance: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """
     Describe the countries and subdivisions of a scored set.
@@ -129,6 +176,10 @@ def describe_entities(
         The training rows of the model, to tell which codes it saw.
         None if it saw none of the scored codes, as in a
         cross-validation.
+    provenance : pandas.DataFrame | None, optional
+        The hours of each data source and definition in each local year
+        of each entity of the dataset (see read_provenance), None if
+        unknown.
 
     Returns
     -------
@@ -159,7 +210,7 @@ def describe_entities(
             description["Training years"] = training_years
         mean_load = float(entity_rows["Load (MW)"].mean())
         data_source, embedded_generation = _get_main_source(
-            str(code), entity_rows["Time"]
+            provenance, str(code), entity_rows["Local year"]
         )
         description |= {
             "Scored years": entity_rows["Local year"].nunique(),
@@ -222,7 +273,8 @@ def summarize(results: pd.DataFrame, set_name: str) -> pd.DataFrame:
     ----------
     results : pandas.DataFrame
         The errors of each code, in the columns "<Set> MAPE" and "<Set>
-        WAPE", with its description (see describe_entities).
+        WAPE", and, if known, "<Set> absolute error (MWh)" and "<Set>
+        demand (MWh)", with its description (see describe_entities).
     set_name : str
         The name of the set, such as "Testing".
 
@@ -230,9 +282,9 @@ def summarize(results: pd.DataFrame, set_name: str) -> pd.DataFrame:
     -------
     pandas.DataFrame
         For all the codes and for each group ("Group" and "Value"), the
-        number of codes ("Codes"), their "Median WAPE", their WAPE
-        weighted by their energy ("Energy-weighted WAPE") and their
-        "Median MAPE".
+        number of codes ("Codes"), their "Median WAPE", the WAPE of all
+        their hours in MW ("Pooled WAPE", not a number if unknown) and
+        their "Median MAPE".
     """
     scored = results.dropna(subset=[f"{set_name} WAPE"])
     groups = [("All", "All", scored)]
@@ -243,20 +295,22 @@ def summarize(results: pd.DataFrame, set_name: str) -> pd.DataFrame:
                 for value, rows in group_codes(scored, column)
             ]
 
+    error_column = f"{set_name} absolute error (MWh)"
+    demand_column = f"{set_name} demand (MWh)"
     summary = []
     for group, value, rows in groups:
-        energy = rows["Mean load (MW)"] * rows["Scored hours"]
+        pooled = (
+            float(rows[error_column].sum() / rows[demand_column].sum())
+            if error_column in rows and rows[demand_column].sum() > 0
+            else np.nan
+        )
         summary.append(
             {
                 "Group": group,
                 "Value": value,
                 "Codes": len(rows),
                 "Median WAPE": rows[f"{set_name} WAPE"].median(),
-                "Energy-weighted WAPE": float(
-                    (rows[f"{set_name} WAPE"] * energy).sum() / energy.sum()
-                )
-                if energy.sum() > 0
-                else np.nan,
+                "Pooled WAPE": pooled,
                 "Median MAPE": rows[f"{set_name} MAPE"].median(),
             }
         )
@@ -278,7 +332,7 @@ def log_summary(summary: pd.DataFrame, title: str) -> None:
     for row in summary.to_dict("records"):
         logging.info(
             f" - {row['Group']}: {row['Value']} ({row['Codes']} codes): "
-            f"median WAPE {row['Median WAPE']:.1%}, energy-weighted WAPE "
-            f"{row['Energy-weighted WAPE']:.1%}, median MAPE "
+            f"median WAPE {row['Median WAPE']:.1%}, pooled WAPE "
+            f"{row['Pooled WAPE']:.1%}, median MAPE "
             f"{row['Median MAPE']:.1%}"
         )

@@ -9,11 +9,13 @@ Description:
 
 import datetime as dt
 import os
+from typing import Literal
 from unittest.mock import patch
 
 import pandas as pd
 import pytest
 
+import ml_models.files
 import utils.paths
 from figures import status
 
@@ -153,26 +155,77 @@ def test_plot(tmp_path):
     assert text in readme_file.read_text(encoding="utf-8")
 
 
-def _summary(medians: dict[tuple[str, str], float]) -> pd.DataFrame:
+def _summary(
+    medians: dict[tuple[str, str], float], codes: int = 3
+) -> pd.DataFrame:
     """
     Make a summary of results with the median WAPE of some groups.
 
     Returns
     -------
     pandas.DataFrame
-        The summary, with the columns "Group", "Value" and "Median
-        WAPE".
+        The summary, with the columns "Group", "Value", "Codes" and
+        "Median WAPE".
     """
     return pd.DataFrame(
         [
-            {"Group": group, "Value": value, "Median WAPE": median}
+            {
+                "Group": group,
+                "Value": value,
+                "Codes": codes,
+                "Median WAPE": median,
+            }
             for (group, value), median in medians.items()
         ]
     )
 
 
-def test_describe_ml_results():
-    """Test the paragraph of the errors of the models."""
+def _results(
+    summary: pd.DataFrame, manifest: dict | None = None
+) -> ml_models.files.Results:
+    """
+    Make checked results with their summary and manifest.
+
+    Returns
+    -------
+    ml_models.files.Results
+        The results, without rows.
+    """
+    return ml_models.files.Results(
+        "all_20261031_000000.parquet", pd.DataFrame(), summary, manifest
+    )
+
+
+@pytest.mark.parametrize(
+    ("holdout", "description"),
+    [
+        (
+            "country",
+            (
+                "which leaves each country, with its subdivisions, out of "
+                "the training in turn, the median WAPE of the 3 held-out "
+                "countries and subdivisions is **10.0%**, an estimate of the "
+                "error for a country without data."
+            ),
+        ),
+        (
+            "entity",
+            (
+                "which leaves each country or subdivision out of the "
+                "training in turn, the median WAPE of the 3 held-out "
+                "countries and subdivisions is **10.0%**, an estimate of the "
+                "error for a country or subdivision without data, whose "
+                "country can have data of its other subdivisions."
+            ),
+        ),
+    ],
+)
+def test_describe_ml_results(holdout, description):
+    """
+    Test the paragraph of the errors of the models.
+
+    The cross-validation is described by the holdout of its manifest.
+    """
     validation = _summary(
         {
             ("All", "All"): 0.071,
@@ -183,41 +236,63 @@ def test_describe_ml_results():
     cross_validation = _summary({("All", "All"): 0.1})
 
     assert status.describe_ml_results(
-        ("xgboost_model_20261031_212342", validation),
-        ("xgboost", cross_validation),
+        ("xgboost_model_20261031_212342", _results(validation)),
+        ("xgboost", _results(cross_validation, {"holdout": holdout})),
     ) == (
         "In the validation of the XGBoost model 20261031_212342, the "
         "median WAPE of the countries and subdivisions is **7.1%**: 6.6% "
         "for those whose other years the model saw in training, and 11.2% "
         "for those that it never saw. In the cross-validation of XGBoost, "
-        "which leaves each country out of the training in turn, it is "
-        "**10.0%**, the error to expect for a country without data."
+        + description
     )
     assert status.describe_ml_results(None, None) == (
         "The models have no results yet."
     )
 
 
+def _save_results(
+    case: Literal["validation", "cross_validation"],
+    version: str,
+    summary: pd.DataFrame,
+) -> str:
+    """
+    Save results of a case with their summary and manifest.
+
+    Returns
+    -------
+    str
+        The path of the Parquet file of the results.
+    """
+    ml_models.files.save_results(
+        case,
+        pd.DataFrame(
+            {
+                "Entity code": ["FRA"],
+                "Testing MAPE": [0.1],
+                "Testing WAPE": [0.1],
+            }
+        ),
+        version,
+        "data_1",
+        "all",
+        summary=summary,
+    )
+    return str(
+        ml_models.files.find_latest_results(
+            utils.paths.get_results_folder(case), version
+        )
+    )
+
+
 def test_plot_ml_results(tmp_path):
     """
-    Test that the latest results of the models go to the page.
+    Test that the results of the models go to the page.
 
-    The figures of the latest validation are copied with fixed names,
-    and a case without results, here the cross-validation, has none.
+    The figures of the validation are copied with fixed names, and a
+    case without results, here the cross-validation, has none.
     """
-    folder = os.path.join(
-        utils.paths.get_results_folder("validation"),
-        "with_xgboost_model_1",
-        "using_data_1",
-    )
-    os.makedirs(folder)
-    pd.DataFrame(
-        {"Entity code": ["FRA"], "Testing MAPE": [0.1], "Testing WAPE": [0.1]}
-    ).to_parquet(os.path.join(folder, "all_20261031_000000.parquet"))
     summary = _summary({("All", "All"): 0.1})
-    summary.to_csv(
-        os.path.join(folder, "summary_20261031_000000.csv"), index=False
-    )
+    file_path = _save_results("validation", "xgboost_model_1", summary)
     status_folder = tmp_path / "status"
     status_folder.mkdir()
 
@@ -227,14 +302,61 @@ def test_plot_ml_results(tmp_path):
 
     assert validation is not None
     assert validation[0] == "xgboost_model_1"
-    pd.testing.assert_frame_equal(validation[1], summary)
+    assert validation[1].file_path == file_path
+    assert validation[1].summary is not None
+    pd.testing.assert_frame_equal(validation[1].summary, summary)
     assert cross_validation is None
     assert sorted(os.listdir(status_folder)) == sorted(
         status.ML_FIGURE_FILES["validation"]
     )
 
 
-def test_latest_results_without_summary():
+def test_given_results_are_published(monkeypatch):
+    """
+    Test that the given results are published, not the latest.
+
+    The latest results are those with the latest time in their names.
+    """
+    monkeypatch.setattr(
+        ml_models.files.pd.Timestamp,
+        "now",
+        lambda: pd.Timestamp("2026-11-01 00:00:00"),
+    )
+    latest = _save_results(
+        "validation", "xgboost_model_2", _summary({("All", "All"): 0.2})
+    )
+    monkeypatch.setattr(
+        ml_models.files.pd.Timestamp,
+        "now",
+        lambda: pd.Timestamp("2026-10-31 00:00:00"),
+    )
+    given = _save_results(
+        "validation", "xgboost_model_1", _summary({("All", "All"): 0.1})
+    )
+
+    found = status._find_results("validation")
+    assert found is not None
+    assert (found[0], found[1].file_path) == ("xgboost_model_2", latest)
+    found = status._find_results("validation", given)
+    assert found is not None
+    assert (found[0], found[1].file_path) == ("xgboost_model_1", given)
+
+
+def test_changed_summary_is_not_published():
+    """Test that a summary changed after its results is not read."""
+    file_path = _save_results(
+        "cross_validation", "xgboost", _summary({("All", "All"): 0.1})
+    )
+    summary_path = file_path.replace("all_", "summary_").replace(
+        ".parquet", ".csv"
+    )
+    _summary({("All", "All"): 0.01}).to_csv(summary_path, index=False)
+
+    with pytest.raises(ValueError, match="differs from the one"):
+        status._find_results("cross_validation")
+
+
+def test_results_without_summary():
     """Test that results without a summary are not described."""
     folder = os.path.join(
         utils.paths.get_results_folder("cross_validation"),
@@ -246,4 +368,5 @@ def test_latest_results_without_summary():
         os.path.join(folder, "all_20261031_000000.parquet")
     )
 
-    assert status._find_latest_results("cross_validation") is None
+    with pytest.raises(ValueError, match="no summary"):
+        status._find_results("cross_validation")

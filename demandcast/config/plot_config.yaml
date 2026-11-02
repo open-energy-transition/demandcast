@@ -34,3 +34,11 @@ results: validation
 # the mean absolute percentage error ("MAPE"), the only one of the results of
 # earlier versions (default: WAPE).
 metric: WAPE
+
+# OPTIONAL - only for the status figures.
+# The Parquet files of the results of the validation and of the cross-validation
+# to publish on the Current state page, such as
+# data/results/validation/with_<model>/using_<data>/all_<time>.parquet (default:
+# the latest of each, by the time in their names).
+validation_results:
+cross_validation_results:

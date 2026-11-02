@@ -11,8 +11,8 @@ Description:
     country or subdivision, hatched if the model never saw it in
     training or if it is small, and the distribution of the errors of
     all the codes, by whether the model saw them and by their size class
-    (see ml_models.reporting), with the WAPE of each group weighted by
-    the energy of its codes. The errors of two versions can also be
+    (see ml_models.reporting), with the WAPE of all the hours of each
+    group in MW. The errors of two versions can also be
     compared, and those of the models trained on the data of each
     income group and continent plotted against those of the model
     trained on all the data.
@@ -21,16 +21,17 @@ Description:
     or the algorithm of a cross-validation, such as xgboost. Its errors
     are those of the latest results that validate.py or
     cross_validate.py saved for it, as all_<time>.parquet in
-    data/results/<case>/with_<version>/using_<data>/. The results of the
-    models trained on the data of a group are named after the group,
-    such as high_income_<time>.
+    data/results/<case>/with_<version>/using_<data>/, by the time in
+    their names, or those of a given file, checked against their
+    manifest (see ml_models.files). The results of the models trained
+    on the data of a group are named after the group, such as
+    high_income_<time>.
 
     The results of earlier versions are in a folder of the version, such
     as data/results/validation/<version>/all.csv, with the columns
     entity_code and MAPE_test, so they are plotted with the MAPE.
 """
 
-import glob
 import os
 from typing import Literal
 
@@ -40,6 +41,7 @@ import pandas as pd
 from matplotlib.patches import Patch
 from matplotlib.transforms import offset_copy
 
+import ml_models.files
 import ml_models.reporting
 import utils.manifest
 import utils.paths
@@ -64,39 +66,9 @@ UNSEEN_HATCH = "////"
 SMALL_HATCH = "...."
 
 
-def _find_latest_results(
-    results_directory: str, version: str, name: str
-) -> str | None:
-    """
-    Find the latest results of a version that a script saved.
-
-    Parameters
-    ----------
-    results_directory : str
-        The folder of the results, such as that of the validations.
-    version : str
-        The trained model, or the algorithm of a cross-validation.
-    name : str
-        The name of the results: "all", or the name of a group.
-
-    Returns
-    -------
-    str | None
-        The path of the latest Parquet file of the results, or None if
-        there is none.
-    """
-    file_paths = sorted(
-        glob.glob(
-            os.path.join(
-                results_directory, f"with_{version}", "*", f"{name}_*.parquet"
-            )
-        ),
-        key=os.path.getmtime,
-    )
-    return file_paths[-1] if file_paths else None
-
-
-def describe_version(results_directory: str, version: str) -> tuple[str, str]:
+def describe_version(
+    results_directory: str, version: str, file_path: str | None = None
+) -> tuple[str, str]:
     """
     Describe a version in the titles and in the names of the figures.
 
@@ -114,6 +86,9 @@ def describe_version(results_directory: str, version: str) -> tuple[str, str]:
     version : str
         The trained model, or the algorithm of a cross-validation, or
         the folder of the MAPE files of an earlier version.
+    file_path : str | None, optional
+        The Parquet file of the results, by default the latest of the
+        version.
 
     Returns
     -------
@@ -122,7 +97,9 @@ def describe_version(results_directory: str, version: str) -> tuple[str, str]:
         20261029_144400", and the part of the names of the files, such
         as "validation_xgboost_model_20261029_144400".
     """
-    file_path = _find_latest_results(results_directory, version, "all")
+    file_path = file_path or ml_models.files.find_latest_results(
+        results_directory, version
+    )
     if file_path is None:
         return f"Version {version}", version
     algorithm, _, model_time = version.partition("_model_")
@@ -164,7 +141,10 @@ def _get_figure_width(number_of_entities: int) -> float:
 
 
 def _read_results(
-    results_directory: str, version: str, name: str
+    results_directory: str,
+    version: str,
+    name: str,
+    file_path: str | None = None,
 ) -> pd.DataFrame:
     """
     Read the results of each country and subdivision of a version.
@@ -178,12 +158,16 @@ def _read_results(
         the folder of the MAPE files of an earlier version.
     name : str
         The name of the results: "all", or the name of a group.
+    file_path : str | None, optional
+        The Parquet file of the results, by default the latest of the
+        version and name.
 
     Returns
     -------
     pandas.DataFrame
         The results of each country and subdivision, indexed by their
-        code: only the column "Testing MAPE" for an earlier version.
+        code, checked against their manifest: only the column "Testing
+        MAPE" for an earlier version.
 
     Raises
     ------
@@ -197,7 +181,9 @@ def _read_results(
             usecols=["entity_code", "MAPE_test"],
             index_col="entity_code",
         ).rename(columns={"MAPE_test": "Testing MAPE"})
-    file_path = _find_latest_results(results_directory, version, name)
+    file_path = file_path or ml_models.files.find_latest_results(
+        results_directory, version, name
+    )
     if file_path is None:
         raise FileNotFoundError(
             f"The version {version} has no results {name} in "
@@ -205,8 +191,8 @@ def _read_results(
             f"and no {version}/{name}.csv."
         )
     return (
-        pd.read_parquet(file_path)
-        .set_index("Entity code")
+        ml_models.files.read_results(file_path)
+        .results.set_index("Entity code")
         .rename_axis("entity_code")
     )
 
@@ -216,6 +202,7 @@ def _read_testing_error(
     version: str,
     name: str,
     metric: Literal["WAPE", "MAPE"],
+    file_path: str | None = None,
 ) -> pd.Series:
     """
     Read the testing error of each country and subdivision of a version.
@@ -231,6 +218,9 @@ def _read_testing_error(
         The name of the results: "all", or the name of a group.
     metric : str
         The metric of the error, "WAPE" or "MAPE".
+    file_path : str | None, optional
+        The Parquet file of the results, by default the latest of the
+        version and name.
 
     Returns
     -------
@@ -244,7 +234,7 @@ def _read_testing_error(
         If the results have no error of the metric, such as the WAPE
         of an earlier version.
     """
-    results = _read_results(results_directory, version, name)
+    results = _read_results(results_directory, version, name, file_path)
     column = f"Testing {metric}"
     if column not in results:
         raise ValueError(
@@ -261,6 +251,7 @@ def _read_errors(
     by_group: bool,
     groups: dict[str, list[str]],
     metric: Literal["WAPE", "MAPE"],
+    file_path: str | None = None,
 ) -> pd.DataFrame:
     """
     Read the testing errors of the versions, in percent.
@@ -281,6 +272,9 @@ def _read_errors(
         Dictionary mapping case names to their respective groups.
     metric : str
         The metric of the errors, "WAPE" or "MAPE".
+    file_path : str | None, optional
+        The Parquet file of the results of the version, by default the
+        latest.
 
     Returns
     -------
@@ -291,7 +285,7 @@ def _read_errors(
     # Initialize a DataFrame to hold the data.
     errors = pd.DataFrame()
     errors[f"{version}_all"] = _read_testing_error(
-        results_directory, version, "all", metric
+        results_directory, version, "all", metric, file_path
     )
 
     if compare_with_version is not None:
@@ -870,7 +864,7 @@ def _plot_distribution(
     the codes (see ml_models.reporting), a panel by whether the model
     saw them in training and one by their size class. Each group has a
     box of the errors of its codes, their number, and, for the WAPE, the
-    WAPE of all their hours, weighted by their energy.
+    WAPE of all their hours in MW.
 
     Parameters
     ----------
@@ -907,11 +901,11 @@ def _plot_distribution(
                     ],
                 )
             )
-    weighted = (
+    pooled = (
         ml_models.reporting.summarize(scored, "Testing").set_index(
             ["Group", "Value"]
-        )["Energy-weighted WAPE"]
-        if metric == "WAPE" and "Mean load (MW)" in scored
+        )["Pooled WAPE"]
+        if metric == "WAPE" and "Testing demand (MWh)" in scored
         else None
     )
 
@@ -941,10 +935,10 @@ def _plot_distribution(
                 "markersize": 3,
             },
         )
-        if weighted is not None:
+        if pooled is not None:
             ax.scatter(
                 positions,
-                [weighted[(group, value)] * 100 for value, _, _ in groups],
+                [pooled[(group, value)] * 100 for value, _, _ in groups],
                 marker="D",
                 color="tab:green",
                 edgecolor="black",
@@ -968,7 +962,7 @@ def _plot_distribution(
     handles = [
         plt.Line2D([], [], color="tab:red", linewidth=2, label="Median"),
     ]
-    if weighted is not None:
+    if pooled is not None:
         handles.append(
             plt.Line2D(
                 [],
@@ -977,7 +971,7 @@ def _plot_distribution(
                 color="tab:green",
                 markeredgecolor="black",
                 linestyle="none",
-                label="WAPE of the group, weighted by energy",
+                label="WAPE of all the hours of the group in MW",
             )
         )
     fig.legend(handles=handles, loc="outside lower center", ncols=2)
@@ -1006,6 +1000,7 @@ def plot(
     by_group: bool = False,
     results_directory: str | None = None,
     metric: Literal["WAPE", "MAPE"] = "WAPE",
+    results_file: str | None = None,
 ) -> None:
     """
     Plot the machine learning results.
@@ -1027,6 +1022,9 @@ def plot(
         default that of the validation results.
     metric : str, optional
         The metric of the errors, "WAPE" or "MAPE".
+    results_file : str | None, optional
+        The Parquet file of the results of the version, by default the
+        latest.
 
     Raises
     ------
@@ -1061,8 +1059,9 @@ def plot(
         by_group,
         groups,
         metric,
+        results_file,
     )
-    description = describe_version(results_directory, version)
+    description = describe_version(results_directory, version, results_file)
     if by_group:
         _plot_by_group(
             figure_directory, version, errors, groups, description, metric
@@ -1080,7 +1079,9 @@ def plot(
             metric,
         )
     else:
-        results = _read_results(results_directory, version, "all")
+        results = _read_results(
+            results_directory, version, "all", results_file
+        )
         unseen = (
             ~results["Seen in training"].astype(bool)
             if "Seen in training" in results

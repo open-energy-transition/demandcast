@@ -35,6 +35,8 @@ class ConfigModel(utils.config.StrictSettings):
     by_group: bool = False
     results: Literal["validation", "cross_validation"] = "validation"
     metric: Literal["WAPE", "MAPE"] = "WAPE"
+    validation_results: str | None = None
+    cross_validation_results: str | None = None
 
     @model_validator(mode="after")
     def _check_settings_of_figure(self) -> "ConfigModel":
@@ -72,6 +74,14 @@ class ConfigModel(utils.config.StrictSettings):
                 "'by_group' must not be provided when plotting data "
                 "availability, map of available entities or status figures."
             )
+        if self.figure != "status" and (
+            self.validation_results is not None
+            or self.cross_validation_results is not None
+        ):
+            raise ValueError(
+                "The variables 'validation_results' and "
+                "'cross_validation_results' are only for the status figures."
+            )
         return self
 
 
@@ -96,7 +106,13 @@ def main(config: ConfigModel) -> None:
     elif config.figure == "map_of_available_entities":
         figures.map_of_available_entities.plot(figure_directory)
     elif config.figure == "status":
-        figures.status.plot(figure_directory)
+        figures.status.plot(
+            figure_directory,
+            results_files={
+                "validation": config.validation_results,
+                "cross_validation": config.cross_validation_results,
+            },
+        )
     else:
         figures.ml_results.plot(
             figure_directory,

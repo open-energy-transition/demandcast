@@ -18,8 +18,15 @@ Description:
     if the dataset, the target or the sets differ from those of the
     training; a forecast stops if the target differs. That of a result
     records its model and dataset, and the metric of the errors.
+
+    The results of a version are read from the latest of its files by
+    the time in their names, and are checked against their manifest,
+    with their summary, so that a copied or changed file is neither
+    taken for the latest nor read.
 """
 
+import dataclasses
+import glob
 import logging
 import os
 from typing import Any, Literal
@@ -79,6 +86,103 @@ def _get_latest_file(folder: str, prefix: str, extension: str) -> str | None:
             latest_path = os.path.join(folder, file_name)
 
     return latest_path
+
+
+@dataclasses.dataclass(frozen=True)
+class Results:
+    """
+    The results of a validation or cross-validation, checked.
+
+    Attributes
+    ----------
+    file_path : str
+        The path of the Parquet file of the results.
+    results : pandas.DataFrame
+        The results of each country and subdivision.
+    summary : pandas.DataFrame | None
+        Their summary by group of codes (see ml_models.reporting), or
+        None if the manifest has none.
+    manifest : dict[str, Any] | None
+        Their manifest, or None for results without one.
+    """
+
+    file_path: str
+    results: pd.DataFrame
+    summary: pd.DataFrame | None
+    manifest: dict[str, Any] | None
+
+
+def find_latest_results(
+    results_directory: str, version: str, name: str = "all"
+) -> str | None:
+    """
+    Find the latest results of a version, by the time in their names.
+
+    Parameters
+    ----------
+    results_directory : str
+        The folder of the results, such as that of the validations.
+    version : str
+        The trained model, or the algorithm of a cross-validation, or
+        "*" for all of them.
+    name : str, optional
+        The name of the results: "all", or the name of a group.
+
+    Returns
+    -------
+    str | None
+        The path of the Parquet file of the latest results, those with
+        the latest time and then the last path, or None if there is
+        none.
+    """
+    file_paths = glob.glob(
+        os.path.join(
+            results_directory, f"with_{version}", "*", f"{name}_*.parquet"
+        )
+    )
+    return max(
+        file_paths,
+        key=lambda path: (path.removesuffix(".parquet")[-15:], path),
+        default=None,
+    )
+
+
+def read_results(file_path: str) -> Results:
+    """
+    Read results, checked against their manifest, with their summary.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the Parquet file of the results.
+
+    Returns
+    -------
+    Results
+        The results, their summary and their manifest.
+
+    Raises
+    ------
+    ValueError
+        If the results or their summary differ from those that the
+        manifest records.
+    """
+    manifest = utils.manifest.verify_file(file_path, "results")
+    summary = None
+    if manifest is not None and "summary" in manifest:
+        summary_path = os.path.join(
+            os.path.dirname(file_path), manifest["summary"]["file"]
+        )
+        if (
+            utils.manifest.get_checksum(summary_path)
+            != (manifest["summary"]["sha256"])
+        ):
+            raise ValueError(
+                f"The summary {summary_path} differs from the one that the "
+                f"manifest of {file_path} records."
+            )
+        summary = pd.read_csv(summary_path)
+    return Results(file_path, pd.read_parquet(file_path), summary, manifest)
 
 
 def get_trained_model_path(
