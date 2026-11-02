@@ -56,7 +56,7 @@ Description:
     Source: https://www.kaggle.com/datasets/tentative/ntdc-dataset
 """
 
-import datetime
+import datetime as dt
 import logging
 
 import numpy as np
@@ -200,7 +200,7 @@ def _correct_slipped_days(load: pd.Series) -> pd.Series:
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[None]:
     """
     Get the available requests.

@@ -8,7 +8,7 @@ Description:
     the time zone of its capital or of the centre of its shape.
 """
 
-import datetime
+import datetime as dt
 
 import pytz
 from countryinfo import CountryInfo, CountryNotFoundError
@@ -26,7 +26,7 @@ CAPITAL_TIME_ZONES = {
 }
 
 
-def _get_time_zone_of_country(iso_alpha_3_code: str) -> datetime.tzinfo:
+def _get_time_zone_of_country(iso_alpha_3_code: str) -> dt.tzinfo:
     """
     Get the time zone of a country.
 
@@ -109,7 +109,7 @@ def _get_time_zone_of_country(iso_alpha_3_code: str) -> datetime.tzinfo:
 
 def _get_time_zones_in_data_source(
     data_source: str,
-) -> dict[str, datetime.tzinfo]:
+) -> dict[str, dt.tzinfo]:
     """
     Get the time zones of countries and subdivisions in a data source.
 
@@ -139,7 +139,7 @@ def _get_time_zones_in_data_source(
 
     # Define a dictionary to store the time zones of the countries and
     # subdivisions.
-    time_zones: dict[str, datetime.tzinfo] = {}
+    time_zones: dict[str, dt.tzinfo] = {}
 
     # Iterate over the entities and extract the time zones.
     for entity in entities:
@@ -149,7 +149,7 @@ def _get_time_zones_in_data_source(
         # If the code specifies a subdivision, extract the time zone
         # from the file.
         if "time_zone" in entity and "_" in entity_code:
-            time_zone: datetime.tzinfo = pytz.timezone(entity["time_zone"])
+            time_zone: dt.tzinfo = pytz.timezone(entity["time_zone"])
 
         # If the code specifies a country, get the time zone based on
         # the country code.
@@ -183,7 +183,7 @@ def _get_time_zones_in_data_source(
     return time_zones
 
 
-def _get_defined_time_zone_for_code(code: str) -> datetime.tzinfo:
+def _get_defined_time_zone_for_code(code: str) -> dt.tzinfo:
     """
     Get the defined time zone of a country or subdivision.
 
@@ -220,7 +220,7 @@ def _get_defined_time_zone_for_code(code: str) -> datetime.tzinfo:
 
     # Initialize a list of potential time zones from different data
     # sources.
-    time_zones: list[datetime.tzinfo] = []
+    time_zones: list[dt.tzinfo] = []
 
     # Iterate over the data sources and read the time zones.
     for data_source in data_sources:
@@ -243,7 +243,7 @@ def _get_defined_time_zone_for_code(code: str) -> datetime.tzinfo:
     return time_zones[0]
 
 
-def _get_time_zone_of_subdivision(code: str) -> datetime.tzinfo:
+def _get_time_zone_of_subdivision(code: str) -> dt.tzinfo:
     """
     Get the time zone of a subdivision.
 
@@ -323,7 +323,7 @@ def _get_time_zone_of_subdivision(code: str) -> datetime.tzinfo:
     raise ValueError(f"Code {code} is not recognized or not available.")
 
 
-def get_time_zone(code: str) -> datetime.tzinfo:
+def get_time_zone(code: str) -> dt.tzinfo:
     """
     Get the time zone of a country or subdivision.
 

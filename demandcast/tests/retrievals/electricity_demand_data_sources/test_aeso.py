@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from AESO.
 """
 
-import datetime
+import datetime as dt
 
 import pytest
 
@@ -22,18 +22,18 @@ URL_FOLDER = (
     ("start_date", "end_date", "periods"),
     [
         (
-            datetime.date(2001, 1, 1),
-            datetime.date(2025, 7, 31),
+            dt.date(2001, 1, 1),
+            dt.date(2025, 7, 31),
             ["2001-2009", "2010-2019", "2020-Jul2025"],
         ),
         (
-            datetime.date(2015, 6, 1),
-            datetime.date(2020, 1, 1),
+            dt.date(2015, 6, 1),
+            dt.date(2020, 1, 1),
             ["2010-2019", "2020-Jul2025"],
         ),
         (
-            datetime.date(2012, 1, 1),
-            datetime.date(2012, 12, 31),
+            dt.date(2012, 1, 1),
+            dt.date(2012, 12, 31),
             ["2010-2019"],
         ),
     ],

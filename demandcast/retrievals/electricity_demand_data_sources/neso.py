@@ -35,7 +35,7 @@ Description:
     Source: https://www.neso.energy/data-portal/historic-demand-data
 """
 
-import datetime
+import datetime as dt
 import logging
 
 import pandas as pd
@@ -84,7 +84,7 @@ def _read_dates(dates: pd.Series) -> pd.DatetimeIndex:
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[int]:
     """
     Get the available requests.

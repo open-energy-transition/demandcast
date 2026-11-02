@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from PGCB.
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 import pytest
@@ -38,7 +38,7 @@ def test_get_available_requests(fake_downloads, caplog, tmp_path):
     fake_downloads.serve(PAGE_URL + "3", "pgcb_empty_page.html")
 
     requests = pgcb.get_available_requests(
-        "BGD", datetime.date(2014, 1, 1), datetime.date(2025, 12, 28)
+        "BGD", dt.date(2014, 1, 1), dt.date(2025, 12, 28)
     )
 
     # The reports are in chronological order, the date with a typo is
@@ -84,8 +84,8 @@ def _write_report(file_path, times_and_totals):
         # objects. The summary rows below have no time.
         (
             [
-                (datetime.time(0, 0), 6365.0),
-                (datetime.time(0, 30), 6385.0),
+                (dt.time(0, 0), 6365.0),
+                (dt.time(0, 30), 6385.0),
                 ("01:00", 6405.0),
                 ("23:30", 6576.5),
                 ("24:00", 6365.0),

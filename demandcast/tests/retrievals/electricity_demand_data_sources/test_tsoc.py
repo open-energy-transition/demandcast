@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from TSOC.
 """
 
-import datetime
+import datetime as dt
 
 import numpy as np
 import pandas as pd
@@ -77,15 +77,15 @@ def _write_yearly_file(file_path, first_day, minutes_early):
     ("end_date", "last_year"),
     [
         # The year of today, 2026-01-02, has not ended.
-        (datetime.date(2026, 1, 2), 2025),
-        (datetime.date(2025, 12, 28), 2025),
-        (datetime.date(2024, 6, 30), 2024),
+        (dt.date(2026, 1, 2), 2025),
+        (dt.date(2025, 12, 28), 2025),
+        (dt.date(2024, 6, 30), 2024),
     ],
 )
 def test_get_available_requests(end_date, last_year):
     """Test that the requests are the years that have ended."""
     requests = tsoc.get_available_requests(
-        "CYP", datetime.date(2018, 1, 1), end_date
+        "CYP", dt.date(2018, 1, 1), end_date
     )
 
     assert requests == list(range(2018, last_year + 1))

@@ -21,7 +21,7 @@ Description:
     Source: https://opendatanepal.com/datasets/electricity-load-profile-of-nepal-in-2073-nepal-electricity-authority
 """
 
-import datetime
+import datetime as dt
 import logging
 
 import nepali_datetime
@@ -37,7 +37,7 @@ MIDNIGHT_HOUR = 24
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[int]:
     """
     Get the available requests.
@@ -192,16 +192,16 @@ def download_and_extract_data_for_request(
     # Initialize a list to store Gregorian dates.
     index = []
 
-    for dt in nepali_date_and_time:
+    for date_and_time in nepali_date_and_time:
         # Define the Bikram Sambat date.
-        bs_date = nepali_datetime.date(dt[0], dt[1], dt[2])
+        bs_date = nepali_datetime.date(*date_and_time[:3])
 
         # Convert to Gregorian date.
         gregorian_date = bs_date.to_datetime_date()
 
         # Combine date and time to form a complete datetime.
         gregorian_datetime = pd.to_datetime(gregorian_date) + pd.Timedelta(
-            hours=dt[3], minutes=dt[4]
+            hours=date_and_time[3], minutes=date_and_time[4]
         )
 
         # Append to the index.
@@ -210,7 +210,9 @@ def download_and_extract_data_for_request(
     # Define the electricity demand time series.
     electricity_demand_time_series = pd.Series(
         dataset["Demand"].astype(float).to_numpy(),
-        index=pd.DatetimeIndex([dt[0] for dt in index], tz="Asia/Kathmandu"),
+        index=pd.DatetimeIndex(
+            [timestamp[0] for timestamp in index], tz="Asia/Kathmandu"
+        ),
     ).sort_index()
 
     return electricity_demand_time_series

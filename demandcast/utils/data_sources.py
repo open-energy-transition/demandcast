@@ -9,7 +9,7 @@ Description:
     their time zones and the dates of their data.
 """
 
-import datetime
+import datetime as dt
 import os
 import zoneinfo
 from collections.abc import Mapping
@@ -60,8 +60,8 @@ class DataSourceEntity(BaseModel):
     subdivision_name: str | None = None
     subdivision_code: str | None = None
     time_zone: str | None = None
-    start_date: datetime.date
-    end_date: datetime.date | Literal["today"]
+    start_date: dt.date
+    end_date: dt.date | Literal["today"]
     same_area: bool = True
 
     @property
@@ -151,7 +151,7 @@ class DataSourceDefinition(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    start_date: datetime.date
+    start_date: dt.date
     quantity: str
     embedded_generation: DefinitionValue
     network_losses: DefinitionValue
@@ -373,9 +373,7 @@ def read_definition(data_source: str) -> list[DataSourceDefinition]:
     return _read_data_source_file(data_source).definition
 
 
-def get_definition(
-    data_source: str, date: datetime.date
-) -> DataSourceDefinition:
+def get_definition(data_source: str, date: dt.date) -> DataSourceDefinition:
     """
     Get what the demand of a data source counts on a date.
 
@@ -569,7 +567,7 @@ def read_all_codes_with_electricity_demand_data() -> list[str]:
 
 def read_date_ranges_of_electricity_demand_in_data_source(
     data_source: str,
-) -> dict[str, tuple[datetime.date, datetime.date]]:
+) -> dict[str, tuple[dt.date, dt.date]]:
     """
     Read the start and end dates of the available data.
 
@@ -602,7 +600,7 @@ def read_date_ranges_of_electricity_demand_in_data_source(
 
     # Define a dictionary to store the start and end dates of the
     # available data for the countries and subdivisions.
-    start_and_end_dates: dict[str, tuple[datetime.date, datetime.date]] = {}
+    start_and_end_dates: dict[str, tuple[dt.date, dt.date]] = {}
 
     # Iterate over the entities and extract the start and end dates.
     for entity in entities:
@@ -633,7 +631,7 @@ def read_date_ranges_of_electricity_demand_in_data_source(
     return start_and_end_dates
 
 
-def read_all_date_ranges() -> dict[str, tuple[datetime.date, datetime.date]]:
+def read_all_date_ranges() -> dict[str, tuple[dt.date, dt.date]]:
     """
     Read the all start and end dates of the available data.
 
@@ -655,7 +653,7 @@ def read_all_date_ranges() -> dict[str, tuple[datetime.date, datetime.date]]:
 
     # Define a dictionary to store the start and end dates of the
     # available data for the countries and subdivisions.
-    start_and_end_dates: dict[str, tuple[datetime.date, datetime.date]] = {}
+    start_and_end_dates: dict[str, tuple[dt.date, dt.date]] = {}
 
     # Iterate over the yaml files and read the start and end dates from
     # each file.

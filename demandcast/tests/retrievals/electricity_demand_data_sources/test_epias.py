@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from EPIAS.
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 import pytest
@@ -18,7 +18,7 @@ from retrievals.electricity_demand_data_sources import epias
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
     requests = epias.get_available_requests(
-        "TUR", datetime.date(2015, 12, 31), datetime.date(2025, 12, 28)
+        "TUR", dt.date(2015, 12, 31), dt.date(2025, 12, 28)
     )
 
     assert requests[0] == (

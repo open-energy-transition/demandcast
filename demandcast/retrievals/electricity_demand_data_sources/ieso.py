@@ -20,7 +20,7 @@ Description:
     Source: https://www.ieso.ca/power-data
 """
 
-import datetime
+import datetime as dt
 import logging
 
 import pandas as pd
@@ -29,11 +29,11 @@ import utils.fetcher
 import utils.time_series
 
 # Eastern Standard Time, the time of IESO all year.
-EASTERN_STANDARD_TIME = datetime.timezone(datetime.timedelta(hours=-5))
+EASTERN_STANDARD_TIME = dt.timezone(dt.timedelta(hours=-5))
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[tuple[int | None, bool]]:
     """
     Get the available requests.

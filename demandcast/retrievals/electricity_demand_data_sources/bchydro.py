@@ -18,7 +18,7 @@ Description:
     Source: https://www.bchydro.com/energy-in-bc/operations/transmission/transmission-system/balancing-authority-load-data/historical-transmission-data.html
 """
 
-import datetime
+import datetime as dt
 import logging
 
 import numpy as np
@@ -28,7 +28,7 @@ import utils.fetcher
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[int]:
     """
     Get the available requests.

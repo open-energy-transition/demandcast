@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from ADME.
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 import pytest
@@ -17,7 +17,7 @@ from retrievals.electricity_demand_data_sources import adme
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
     requests = adme.get_available_requests(
-        "URY", datetime.date(2019, 1, 1), datetime.date(2025, 12, 28)
+        "URY", dt.date(2019, 1, 1), dt.date(2025, 12, 28)
     )
 
     assert requests[0] == (

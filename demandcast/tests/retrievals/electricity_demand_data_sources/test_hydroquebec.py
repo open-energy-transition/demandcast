@@ -7,7 +7,7 @@ Description:
     Hydro-Québec.
 """
 
-import datetime
+import datetime as dt
 
 from retrievals.electricity_demand_data_sources import hydroquebec
 
@@ -15,7 +15,7 @@ from retrievals.electricity_demand_data_sources import hydroquebec
 def test_get_available_requests():
     """Test that the data is retrieved with a single request."""
     requests = hydroquebec.get_available_requests(
-        "CAN_QC", datetime.date(2019, 1, 1), datetime.date(2024, 12, 31)
+        "CAN_QC", dt.date(2019, 1, 1), dt.date(2024, 12, 31)
     )
 
     assert requests == [None]

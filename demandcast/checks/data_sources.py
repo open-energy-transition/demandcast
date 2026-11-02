@@ -17,7 +17,7 @@ Description:
 """
 
 import dataclasses
-import datetime
+import datetime as dt
 import importlib
 import json
 import logging
@@ -161,7 +161,7 @@ def _download_sample(data_source: str, code: str, result: Result) -> pd.Series:
 
 def _check_sample(
     time_series: pd.Series,
-    end_date: datetime.date | str,
+    end_date: dt.date | str,
     maximum_age_days: int,
     result: Result,
 ) -> None:
@@ -275,9 +275,7 @@ def check_data_source(data_source: str, maximum_age_days: int) -> Result:
     return result
 
 
-def _format_report(
-    results: list[Result], checked_at: datetime.datetime
-) -> str:
+def _format_report(results: list[Result], checked_at: dt.datetime) -> str:
     """
     Format the results of the check as a Markdown text.
 
@@ -380,9 +378,7 @@ def _read_previous_failures() -> dict[str, int]:
         return {}
 
 
-def _write_report(
-    results: list[Result], checked_at: datetime.datetime
-) -> None:
+def _write_report(results: list[Result], checked_at: dt.datetime) -> None:
     """
     Write the results of the check to a JSON file and a Markdown file.
 
@@ -462,7 +458,7 @@ def run_check(
         )
     maximum_age_days_by_source = maximum_age_days_by_source or {}
 
-    checked_at = datetime.datetime.now(datetime.UTC)
+    checked_at = dt.datetime.now(dt.UTC)
     results: dict[str, Result] = {}
 
     def check(data_source: str) -> None:

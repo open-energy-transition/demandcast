@@ -59,7 +59,7 @@ Description:
     Source: https://data.mendeley.com/datasets/y58jknpgs8/2
 """
 
-import datetime
+import datetime as dt
 import functools
 import hashlib
 import os
@@ -209,7 +209,7 @@ def _read_states() -> pd.DataFrame:
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[None]:
     """
     Get the available requests.

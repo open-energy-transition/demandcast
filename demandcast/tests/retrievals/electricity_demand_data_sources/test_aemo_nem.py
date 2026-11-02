@@ -7,7 +7,7 @@ Description:
     the National Electricity Market (NEM).
 """
 
-import datetime
+import datetime as dt
 
 from retrievals.electricity_demand_data_sources import aemo_nem
 
@@ -15,7 +15,7 @@ from retrievals.electricity_demand_data_sources import aemo_nem
 def test_get_available_requests():
     """Test that the requests are the months of the data, to the end."""
     requests = aemo_nem.get_available_requests(
-        "AUS_NSW", datetime.date(1998, 12, 7), datetime.date(2025, 12, 28)
+        "AUS_NSW", dt.date(1998, 12, 7), dt.date(2025, 12, 28)
     )
 
     assert requests[0] == (1998, 12)

@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from EMA.
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 
@@ -51,7 +51,7 @@ def _write_weekly_file(file_path, first_day):
 def test_get_available_requests():
     """Test that the requests are the published weeks of the data."""
     requests = ema.get_available_requests(
-        "SGP", datetime.date(2014, 1, 6), datetime.date(2025, 12, 28)
+        "SGP", dt.date(2014, 1, 6), dt.date(2025, 12, 28)
     )
 
     assert requests[0] == (2014, 1, 6)

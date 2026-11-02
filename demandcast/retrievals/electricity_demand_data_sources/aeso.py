@@ -18,7 +18,7 @@ Description:
     Source: https://www.aeso.ca/market/market-and-system-reporting/data-requests/hourly-generation-metered-volumes-and-pool-price-and-ail-data-2001-to-july-2025/
 """
 
-import datetime
+import datetime as dt
 import logging
 
 import pandas as pd
@@ -35,7 +35,7 @@ FILE_PERIODS = {
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[str]:
     """
     Get the available requests.

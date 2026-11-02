@@ -7,7 +7,7 @@ Description:
     utils/time_zones.py.
 """
 
-import datetime
+import datetime as dt
 from unittest.mock import patch
 
 import pytest
@@ -45,7 +45,7 @@ def test_time_zones():
         {
             "country_name": "France",
             "country_code": "FRA",
-            "start_date": datetime.date(2014, 12, 15).isoformat(),
+            "start_date": dt.date(2014, 12, 15).isoformat(),
             "end_date": "today",
         }
     ]
@@ -176,7 +176,7 @@ def test_time_zones_errors():
         {
             "country_name": "France",
             "country_code": "FRA",
-            "start_date": datetime.date(2014, 12, 15).isoformat(),
+            "start_date": dt.date(2014, 12, 15).isoformat(),
             "end_date": "today",
             "time_zone": "America/Chicago",
         }
@@ -201,7 +201,7 @@ def test_time_zones_errors():
             "subdivision_code": "TEX",
             "country_name": "United States",
             "country_code": "USA",
-            "start_date": datetime.date(2020, 1, 1).isoformat(),
+            "start_date": dt.date(2020, 1, 1).isoformat(),
             "end_date": "today",
         }
     ]
@@ -244,8 +244,8 @@ def test_time_zones_errors():
         mock_get_data_sources.return_value = ["source1", "source2"]
 
         # Define two different time zones.
-        time_zone1 = datetime.UTC
-        time_zone2 = datetime.timezone(datetime.timedelta(hours=-1))
+        time_zone1 = dt.UTC
+        time_zone2 = dt.timezone(dt.timedelta(hours=-1))
 
         # Mock the return value of _get_time_zones to return different
         # time zones for each data source.

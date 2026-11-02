@@ -11,7 +11,7 @@ Description:
     scripts.
 """
 
-import datetime
+import datetime as dt
 import os
 from collections.abc import Mapping
 
@@ -29,7 +29,7 @@ YEAR_CLASSES = {"0-4": 5, "5-9": 10, "10-19": 20, "20+": float("inf")}
 
 
 def get_classes_of_years(
-    date_ranges: Mapping[str, tuple[datetime.date, datetime.date]],
+    date_ranges: Mapping[str, tuple[dt.date, dt.date]],
 ) -> dict[str, int]:
     """
     Get the class of the years of available data of each code.

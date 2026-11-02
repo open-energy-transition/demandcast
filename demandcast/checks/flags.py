@@ -39,7 +39,7 @@ Description:
     section.
 """
 
-import datetime
+import datetime as dt
 import glob
 import logging
 import os
@@ -349,7 +349,7 @@ def _table(rows: list[list[str]], header: list[str]) -> str:
 
 
 def _format_report(
-    flags: pd.DataFrame, unmatched: list[Review], checked_at: datetime.datetime
+    flags: pd.DataFrame, unmatched: list[Review], checked_at: dt.datetime
 ) -> str:
     """
     Format the flags and their reviews as a Markdown text.
@@ -491,7 +491,7 @@ def run_check() -> pd.DataFrame:
     os.makedirs(checks_directory, exist_ok=True)
     file_path = os.path.join(checks_directory, REPORT_NAME)
     flags.to_csv(file_path + ".csv", index=False)
-    checked_at = datetime.datetime.now(datetime.UTC)
+    checked_at = dt.datetime.now(dt.UTC)
     with open(file_path + ".md", "w", encoding="utf-8") as file:
         file.write(_format_report(flags, unmatched, checked_at))
 

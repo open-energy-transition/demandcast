@@ -8,7 +8,7 @@ Description:
     information download screen as the real one does.
 """
 
-import datetime
+import datetime as dt
 import json
 from typing import ClassVar
 
@@ -148,7 +148,7 @@ def fake_service(monkeypatch):
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
     requests = occto.get_available_requests(
-        "JPN_Kansai", datetime.date(2016, 4, 1), datetime.date(2018, 3, 1)
+        "JPN_Kansai", dt.date(2016, 4, 1), dt.date(2018, 3, 1)
     )
 
     assert requests == [

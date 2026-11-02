@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from CENACE.
 """
 
-import datetime
+import datetime as dt
 import zipfile
 
 import pandas as pd
@@ -140,7 +140,7 @@ def _serve_march_2024(fake_downloads, tmp_path) -> None:
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
     requests = cenace.get_available_requests(
-        "MEX_BCA", datetime.date(2016, 1, 27), datetime.date(2025, 12, 28)
+        "MEX_BCA", dt.date(2016, 1, 27), dt.date(2025, 12, 28)
     )
 
     # The data ends 15 days before today, and each request ends on the

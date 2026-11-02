@@ -29,7 +29,7 @@ Description:
     Source: https://microfe.cammesa.com/demandaregionchart/assets/data/regionesCammesa.geojson.json
 """
 
-import datetime
+import datetime as dt
 import logging
 
 import pandas as pd
@@ -69,7 +69,7 @@ REGION_IDS = {
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[str]:
     """
     Get the available requests.

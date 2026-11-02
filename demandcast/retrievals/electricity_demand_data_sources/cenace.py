@@ -38,7 +38,7 @@ Description:
     Source: https://www.eia.gov/opendata/browser/electricity/rto/interchange-data
 """
 
-import datetime
+import datetime as dt
 import logging
 import zipfile
 import zoneinfo
@@ -55,7 +55,7 @@ CENTRAL_MEXICO_TIME = zoneinfo.ZoneInfo("America/Mexico_City")
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """
     Get the available requests.
