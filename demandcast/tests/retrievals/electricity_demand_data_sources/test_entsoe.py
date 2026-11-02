@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from ENTSO-E.
 """
 
-import datetime
+import datetime as dt
 import traceback
 import zoneinfo
 from unittest.mock import patch
@@ -24,7 +24,7 @@ from retrievals.electricity_demand_data_sources import entsoe
 def test_get_available_requests():
     """Test that the requests are periods of one year at most."""
     requests = entsoe.get_available_requests(
-        "BEL", datetime.date(2014, 11, 24), datetime.date(2025, 12, 28)
+        "BEL", dt.date(2014, 11, 24), dt.date(2025, 12, 28)
     )
 
     assert requests[0] == (

@@ -6,7 +6,7 @@ Description:
     This file contains unit tests for the time_series module.
 """
 
-import datetime
+import datetime as dt
 import itertools
 
 import pandas as pd
@@ -54,24 +54,24 @@ def sample_time_series():
     ("start_date", "end_date", "frequency", "boundaries"),
     [
         (
-            datetime.date(2023, 3, 17),
-            datetime.date(2025, 1, 1),
+            dt.date(2023, 3, 17),
+            dt.date(2025, 1, 1),
             "YS",
             ["2023-03-17", "2024-01-01", "2025-01-01"],
         ),
         (
-            datetime.date(2024, 1, 1),
-            datetime.date(2024, 2, 20),
+            dt.date(2024, 1, 1),
+            dt.date(2024, 2, 20),
             "MS",
             ["2024-01-01", "2024-02-01", "2024-02-20"],
         ),
         (
-            datetime.date(2024, 1, 1),
-            datetime.date(2024, 1, 10),
+            dt.date(2024, 1, 1),
+            dt.date(2024, 1, 10),
             "7D",
             ["2024-01-01", "2024-01-08", "2024-01-10"],
         ),
-        (datetime.date(2024, 1, 1), datetime.date(2024, 1, 1), "YS", []),
+        (dt.date(2024, 1, 1), dt.date(2024, 1, 1), "YS", []),
     ],
 )
 def test_split_period(start_date, end_date, frequency, boundaries):

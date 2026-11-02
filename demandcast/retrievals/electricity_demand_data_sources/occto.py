@@ -52,7 +52,7 @@ Description:
     Source: https://www.kyuden.co.jp/td_area_jukyu/jukyu.html
 """
 
-import datetime
+import datetime as dt
 import io
 from html.parser import HTMLParser
 
@@ -140,7 +140,7 @@ class _FormFields(HTMLParser):
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """
     Get the available requests.
@@ -222,9 +222,7 @@ def _post(
     return response
 
 
-def _download(
-    first_day: datetime.date, last_day: datetime.date, code: str
-) -> bytes:
+def _download(first_day: dt.date, last_day: dt.date, code: str) -> bytes:
     """
     Download the daily actual demand of an area.
 

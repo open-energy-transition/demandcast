@@ -7,7 +7,7 @@ Description:
     documentation.
 """
 
-import datetime
+import datetime as dt
 import os
 from unittest.mock import patch
 
@@ -18,14 +18,14 @@ import utils.paths
 from figures import status
 
 DATE_RANGES = {
-    "FRA": (datetime.date(2015, 1, 1), datetime.date(2024, 12, 31)),
-    "USA_TEX": (datetime.date(2019, 1, 1), datetime.date(2024, 12, 31)),
-    "USA_CAL": (datetime.date(2019, 1, 1), datetime.date(2024, 12, 31)),
-    "DEU": (datetime.date(2010, 1, 1), datetime.date(2010, 12, 31)),
+    "FRA": (dt.date(2015, 1, 1), dt.date(2024, 12, 31)),
+    "USA_TEX": (dt.date(2019, 1, 1), dt.date(2024, 12, 31)),
+    "USA_CAL": (dt.date(2019, 1, 1), dt.date(2024, 12, 31)),
+    "DEU": (dt.date(2010, 1, 1), dt.date(2010, 12, 31)),
 }
 
 NUMBERS = status.Numbers(
-    date=datetime.date(2026, 10, 23),
+    date=dt.date(2026, 10, 23),
     countries=1,
     subdivisions=2,
     countries_covered=2,
@@ -54,10 +54,10 @@ def test_get_numbers():
             return_value=["eia", "entsoe", "caiso"],
         ),
     ):
-        numbers = status.get_numbers(datetime.date(2026, 10, 23))
+        numbers = status.get_numbers(dt.date(2026, 10, 23))
 
     assert numbers == status.Numbers(
-        date=datetime.date(2026, 10, 23),
+        date=dt.date(2026, 10, 23),
         countries=1,
         subdivisions=2,
         countries_covered=2,

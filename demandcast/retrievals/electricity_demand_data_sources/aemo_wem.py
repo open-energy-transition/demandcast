@@ -39,7 +39,7 @@ Description:
     Source: https://data.wa.aemo.com.au/public/public-data/datafiles/estimated-dpv-csv/
 """
 
-import datetime
+import datetime as dt
 import logging
 
 import pandas as pd
@@ -58,14 +58,14 @@ FIRST_YEAR_OF_DPV = 2020
 DAYS_NOT_PUBLISHED = 7
 
 # The time zone of the WEM, UTC+8 all year.
-AWST = datetime.timezone(datetime.timedelta(hours=8))
+AWST = dt.timezone(dt.timedelta(hours=8))
 
 # The URL of the public data files of the WEM.
 DATA_FILES_URL = "https://data.wa.aemo.com.au/public/public-data/datafiles/"
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[tuple[bool, int, int | None, int | None]]:
     """
     Get the available requests.
@@ -308,7 +308,7 @@ def download_and_extract_data_for_request(
         electricity_demand_time_series = (
             utils.time_series.localize_interval_starts(
                 electricity_demand_time_series,
-                datetime.timezone(datetime.timedelta(hours=8)),
+                dt.timezone(dt.timedelta(hours=8)),
                 pd.Timedelta(minutes=30),
             ).tz_convert("UTC")
         )

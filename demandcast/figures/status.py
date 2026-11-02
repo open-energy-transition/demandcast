@@ -23,7 +23,7 @@ Description:
 """
 
 import dataclasses
-import datetime
+import datetime as dt
 import glob
 import os
 import shutil
@@ -92,7 +92,7 @@ class Numbers:
         The first year of data.
     """
 
-    date: datetime.date
+    date: dt.date
     countries: int
     subdivisions: int
     countries_covered: int
@@ -101,7 +101,7 @@ class Numbers:
     first_year: int
 
 
-def get_numbers(date: datetime.date) -> Numbers:
+def get_numbers(date: dt.date) -> Numbers:
     """
     Count the countries, subdivisions, data sources and years of data.
 
@@ -375,7 +375,7 @@ def plot(
             os.path.join(status_folder, file_name),
         )
 
-    text = describe(get_numbers(datetime.datetime.now().astimezone().date()))
+    text = describe(get_numbers(dt.datetime.now().astimezone().date()))
     with open(
         os.path.join(status_folder, NUMBERS_FILE), "w", encoding="utf-8"
     ) as file:

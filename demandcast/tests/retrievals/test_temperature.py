@@ -7,7 +7,7 @@ Description:
     grid cells, with synthetic gridded data.
 """
 
-import datetime
+import datetime as dt
 from unittest.mock import patch
 
 import numpy as np
@@ -154,7 +154,7 @@ def _projected_temperature(calendar: str) -> pd.Series:
             list(range(2026, 2101)),
             "CESM2",
             "SSP2-4.5",
-            datetime.UTC,
+            dt.UTC,
         )
     return series
 

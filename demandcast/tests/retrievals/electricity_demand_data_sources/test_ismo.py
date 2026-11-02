@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from ISMO.
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 
@@ -16,7 +16,7 @@ from retrievals.electricity_demand_data_sources import ismo
 def test_get_available_requests():
     """Test that the requests are the fiscal years with files."""
     requests = ismo.get_available_requests(
-        "PAK", datetime.date(2015, 1, 1), datetime.date(2026, 12, 31)
+        "PAK", dt.date(2015, 1, 1), dt.date(2026, 12, 31)
     )
 
     assert requests == [2025]
@@ -25,7 +25,7 @@ def test_get_available_requests():
 def test_get_available_requests_outside_files():
     """Test that a fiscal year without a file has no request."""
     requests = ismo.get_available_requests(
-        "PAK", datetime.date(2025, 7, 1), datetime.date(2026, 6, 30)
+        "PAK", dt.date(2025, 7, 1), dt.date(2026, 6, 30)
     )
 
     assert requests == []

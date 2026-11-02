@@ -21,7 +21,7 @@ Description:
     Source: https://tsoc.org.cy/electrical-system/archive-total-daily-system-generation-on-the-transmission-system/
 """
 
-import datetime
+import datetime as dt
 import logging
 import urllib.parse
 
@@ -61,7 +61,7 @@ MINIMUM_CLEAR_DAYS = 5
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[int]:
     """
     Get the available requests.

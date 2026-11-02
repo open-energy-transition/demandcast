@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from EGAT.
 """
 
-import datetime
+import datetime as dt
 
 from retrievals.electricity_demand_data_sources import egat
 
@@ -14,7 +14,7 @@ from retrievals.electricity_demand_data_sources import egat
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
     requests = egat.get_available_requests(
-        "THA", datetime.date(2023, 1, 1), datetime.date(2024, 12, 31)
+        "THA", dt.date(2023, 1, 1), dt.date(2024, 12, 31)
     )
 
     assert requests == [2023, 2024]

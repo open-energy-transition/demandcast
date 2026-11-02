@@ -20,7 +20,7 @@ Description:
     Source: https://www.coordinador.cl/operacion/graficos/operacion-real/demanda-real/
 """
 
-import datetime
+import datetime as dt
 import logging
 
 import pandas as pd
@@ -30,7 +30,7 @@ import utils.time_series
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """
     Get the available requests.

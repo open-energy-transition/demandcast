@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from ONS.
 """
 
-import datetime
+import datetime as dt
 
 import numpy as np
 
@@ -16,7 +16,7 @@ from retrievals.electricity_demand_data_sources import ons
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
     requests = ons.get_available_requests(
-        "BRA_SE", datetime.date(2000, 1, 1), datetime.date(2025, 12, 28)
+        "BRA_SE", dt.date(2000, 1, 1), dt.date(2025, 12, 28)
     )
 
     assert requests == list(range(2000, 2026))

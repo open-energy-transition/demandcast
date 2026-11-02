@@ -6,7 +6,7 @@ Description:
     Tests for the retrieval of electricity demand data from EMI.
 """
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 
@@ -16,7 +16,7 @@ from retrievals.electricity_demand_data_sources import emi
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
     requests = emi.get_available_requests(
-        "NZL", datetime.date(2005, 1, 1), datetime.date(2025, 12, 28)
+        "NZL", dt.date(2005, 1, 1), dt.date(2025, 12, 28)
     )
 
     assert requests[0] == (

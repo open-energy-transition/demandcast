@@ -33,7 +33,7 @@ Description:
     Source: https://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/
 """
 
-import datetime
+import datetime as dt
 import io
 import logging
 import re
@@ -50,11 +50,11 @@ FIRST_MONTH_OF_ROOFTOP_SOLAR = (2017, 1)
 ROOFTOP_SOLAR_TYPES = ["MEASUREMENT", "DAILY", "SATELLITE"]
 
 # The time zone of the NEM, UTC+10 all year.
-NEM_TIME = datetime.timezone(datetime.timedelta(hours=10))
+NEM_TIME = dt.timezone(dt.timedelta(hours=10))
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[tuple[int, int]]:
     """
     Get the available requests.

@@ -25,7 +25,7 @@ Description:
     Source: https://www.eia.gov/opendata/browser/electricity/rto/region-data
 """
 
-import datetime
+import datetime as dt
 import logging
 
 import pandas as pd
@@ -43,7 +43,7 @@ CISO_LATE_PERIOD = (
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """
     Get the available requests.

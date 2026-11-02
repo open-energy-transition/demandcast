@@ -31,7 +31,7 @@ Description:
     Source: https://www.ismo.gov.pk/library/hourly-system-demand
 """
 
-import datetime
+import datetime as dt
 import logging
 
 import pandas as pd
@@ -50,7 +50,7 @@ FILE_URLS = {
 
 
 def get_available_requests(
-    code: str, start_date: datetime.date, end_date: datetime.date
+    code: str, start_date: dt.date, end_date: dt.date
 ) -> list[int]:
     """
     Get the available requests.
@@ -76,8 +76,8 @@ def get_available_requests(
     return [
         fiscal_year
         for fiscal_year in sorted(FILE_URLS)
-        if datetime.date(fiscal_year - 1, 7, 1) <= end_date
-        and start_date <= datetime.date(fiscal_year, 6, 30)
+        if dt.date(fiscal_year - 1, 7, 1) <= end_date
+        and start_date <= dt.date(fiscal_year, 6, 30)
     ]
 
 

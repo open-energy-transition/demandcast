@@ -7,7 +7,7 @@ Description:
     Transmission and Distribution (Kansai TD).
 """
 
-import datetime
+import datetime as dt
 
 import pytest
 
@@ -17,7 +17,7 @@ from retrievals.electricity_demand_data_sources import kansaitd
 def test_get_available_requests():
     """Test that the requests are years, then months from March 2024."""
     requests = kansaitd.get_available_requests(
-        "JPN_Kansai", datetime.date(2016, 4, 1), datetime.date(2025, 12, 28)
+        "JPN_Kansai", dt.date(2016, 4, 1), dt.date(2025, 12, 28)
     )
 
     # The years are fiscal years, from April to March, the first one
