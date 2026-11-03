@@ -11,7 +11,7 @@ The map shows the countries and subdivisions for which retrieval modules of elec
 ![Countries and subdivisions for which retrieval modules of electricity demand data are available](status/available_entities_light_mode.png#only-light)
 ![Countries and subdivisions for which retrieval modules of electricity demand data are available](status/available_entities_dark_mode.png#only-dark)
 
-The figure below shows the years of data by GDP PPP per capita and by annual electricity demand per capita, by continent, and how they changed in each country between its first and last year of data. It shows which kinds of countries the training data covers, and therefore where the models extrapolate when they forecast the demand of the countries without data.
+The figure below shows the years of data of the countries and subdivisions by GDP PPP per capita and by annual electricity demand per capita of their country, by continent, and how these changed in each country between its first and last year of data. It shows which kinds of countries the training data covers, and therefore where the models extrapolate when they forecast the demand of the countries without data.
 
 ![Years of hourly and sub-hourly electricity demand data by GDP PPP and annual electricity demand per capita](status/data_availability_by_gpd_ppp_and_electricity_demand.png)
 

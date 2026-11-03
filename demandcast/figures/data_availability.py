@@ -9,9 +9,12 @@ Description:
     Ember, the World Bank and the IMF to visualize the coverage of
     electricity demand data across different countries and continents.
 
-    Each country counts each of its years of data once, whether the data
-    is its own or that of its subdivisions, so that a country with many
-    subdivisions weighs as much as the others.
+    The bar charts count the years of data of each country and of each
+    subdivision, with the GDP PPP and the annual electricity demand per
+    capita of its country, since the subdivisions with data are large
+    systems, often as large as a whole country. The arrows show each
+    country once, from the first to the last year of its own data or of
+    that of its subdivisions.
 """
 
 import dataclasses
@@ -71,22 +74,21 @@ def _get_year_fractions(
     codes_of_countries: dict[str, list[str]],
 ) -> dict[str, dict[int, float]]:
     """
-    Get the fractions of the years of each country with data.
+    Get the fractions of the years of groups of codes with data.
 
-    A day of a country has data if its own data or that of one of its
-    subdivisions covers it, so that each year of a country counts once,
-    however many subdivisions have data.
+    A day of a group has data if the data of one of its codes covers it,
+    such as a country with its own data or that of its subdivisions.
 
     Parameters
     ----------
     codes_of_countries : dict[str, list[str]]
-        The codes with data of each country, its own and those of its
-        subdivisions, by its ISO alpha-3 code.
+        The codes with data of each group, such as the codes of a
+        country, its own and those of its subdivisions, by its name.
 
     Returns
     -------
     dict[str, dict[int, float]]
-        The fraction of each year with data, by year, of each country.
+        The fraction of each year with data, by year, of each group.
     """
     data_time_ranges = utils.data_sources.read_all_date_ranges()
 
@@ -408,11 +410,11 @@ class FigureData:
     Attributes
     ----------
     gdp_occurrence : dict[str, dict[str, float]]
-        The years of data of the countries of each continent in each
-        level of GDP PPP per capita.
+        The years of data of the countries and subdivisions of each
+        continent in each level of GDP PPP per capita.
     electricity_demand_occurrence : dict[str, dict[str, float]]
-        The years of data of the countries of each continent in each
-        level of annual electricity demand per capita.
+        The years of data of the countries and subdivisions of each
+        continent in each level of annual electricity demand per capita.
     gdp_points : dict[str, pandas.Series]
         The GDP PPP per capita of the first and last years of data of
         each country, of its own data or of that of its subdivisions.
@@ -433,10 +435,10 @@ def get_data() -> FigureData:
     """
     Get the data of the figure of the availability of the data.
 
-    The years of electricity demand data of each country, of its own
-    data or of that of its subdivisions, are counted once, by continent
-    and by level of GDP PPP and of annual electricity demand per capita,
-    from Ember, the World Bank and the IMF.
+    The years of electricity demand data of each country and of each
+    subdivision are counted by continent and by level of GDP PPP and of
+    annual electricity demand per capita of its country, from Ember, the
+    World Bank and the IMF.
 
     Returns
     -------
@@ -444,36 +446,42 @@ def get_data() -> FigureData:
         The data of the figure.
     """
     # Read the codes of all countries and subdivisions, by country, and
-    # the continent and the fractions of the years of data of each
-    # country.
+    # the continent and the fractions of the years of data of each code.
     codes = utils.data_sources.read_all_codes_with_electricity_demand_data()
     codes_of_countries: dict[str, list[str]] = {}
     for code in codes:
         codes_of_countries.setdefault(code.split("_")[0], []).append(code)
     countries = list(codes_of_countries)
     continent_codes = {
-        country: utils.codes.get_continent_code(country)
-        for country in countries
+        code: utils.codes.get_continent_code(code.split("_")[0])
+        for code in codes
     }
-    fractions_of_years = _get_year_fractions(codes_of_countries)
+    fractions_of_years = _get_year_fractions({code: [code] for code in codes})
     available_years = {
-        country: list(fractions_of_years[country]) for country in countries
+        code: list(fractions) for code, fractions in fractions_of_years.items()
     }
 
     # Get the electricity demand data from Ember and the World Bank,
-    # and the GDP PPP per capita data from the World Bank and the IMF.
+    # and the GDP PPP per capita data from the World Bank and the IMF,
+    # those of its country for a subdivision.
     electricity_data = _get_electricity_demand_per_capita(
-        countries, available_years
+        codes, available_years
     )
-    gdp_data = _get_gdp_ppp_per_capita(countries, available_years)
+    gdp_data = _get_gdp_ppp_per_capita(codes, available_years)
 
-    # Get the first and last years of data of each country, in the years
-    # with both values.
+    # Get the first and last years of data of each country, of its own
+    # data or of that of its subdivisions, in the years with both
+    # values.
     gdp_points = {}
     electricity_demand_points = {}
     for country in countries:
-        country_gdp = gdp_data[country][country]
-        country_electricity = electricity_data[country][country]
+        country_gdp, country_electricity = (
+            pd.concat(list(data[country].values()))
+            .groupby(level=0)
+            .first()
+            .sort_index()
+            for data in (gdp_data, electricity_data)
+        )
         common_index = country_gdp.index.intersection(
             country_electricity.index
         )
@@ -487,7 +495,7 @@ def get_data() -> FigureData:
     return FigureData(
         gdp_occurrence=_get_occurrences(
             gdp_data,
-            countries,
+            codes,
             continent_codes,
             CONTINENT_NAMES,
             fractions_of_years,
@@ -495,7 +503,7 @@ def get_data() -> FigureData:
         ),
         electricity_demand_occurrence=_get_occurrences(
             electricity_data,
-            countries,
+            codes,
             continent_codes,
             CONTINENT_NAMES,
             fractions_of_years,
@@ -503,7 +511,10 @@ def get_data() -> FigureData:
         ),
         gdp_points=gdp_points,
         electricity_demand_points=electricity_demand_points,
-        continents=continent_codes,
+        continents={
+            country: utils.codes.get_continent_code(country)
+            for country in countries
+        },
     )
 
 

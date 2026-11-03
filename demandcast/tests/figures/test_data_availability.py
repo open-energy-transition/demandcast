@@ -94,8 +94,9 @@ def test_get_data(synthetic_data):
     """
     Test the counts of years and the first and last points.
 
-    A country with a subdivision counts the days of either once, and its
-    points are those of its first and last years of data.
+    Each code counts its own years, with the data of its country, and
+    the points of a country are those of the first and last years of its
+    own data or of that of its subdivisions.
     """
     data = data_availability.get_data()
 
@@ -116,17 +117,18 @@ def test_get_data(synthetic_data):
         synthetic_data.loc["CAN", [2015, 2023]].tolist()
     )
     assert data.continents["CAN"] == "NA"
+    # The years of Canada and those of Ontario both count in North
+    # America.
     fractions = data_availability._get_year_fractions(
-        {"CAN": ["CAN", "CAN_ON"]}
-    )["CAN"]
-    assert list(fractions) == list(range(2015, 2024))
-    assert fractions[2016] == 1.0
-    assert sum(data.gdp_occurrence["NA"].values()) == pytest.approx(
-        sum(fractions.values())
+        {"CAN": ["CAN"], "CAN_ON": ["CAN_ON"]}
     )
+    assert list(fractions["CAN_ON"]) == list(range(2015, 2024))
+    assert fractions["CAN_ON"][2016] == 1.0
+    years = sum(fractions["CAN"].values()) + sum(fractions["CAN_ON"].values())
+    assert sum(data.gdp_occurrence["NA"].values()) == pytest.approx(years)
     assert sum(
         data.electricity_demand_occurrence["NA"].values()
-    ) == pytest.approx(sum(fractions.values()))
+    ) == pytest.approx(years)
 
 
 def test_plot(tmp_path):
