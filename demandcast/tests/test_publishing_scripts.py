@@ -24,18 +24,29 @@ def test_sync(monkeypatch):
     """Test that the data folder is copied with the settings."""
     calls = []
     monkeypatch.setattr(
-        sync.publishing.gcs, "sync", lambda *args: calls.append(args)
+        sync.publishing.gcs,
+        "sync",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
     )
 
-    sync.main(sync.ConfigModel(direction="download", bucket="demandcast-data"))
+    sync.main(
+        sync.ConfigModel(
+            direction="download",
+            bucket="demandcast-data",
+            included_folders=["assembled"],
+        )
+    )
 
     assert calls == [
         (
-            "demandcast-data",
-            "download",
-            utils.paths.get_data_folder(),
-            ["logs"],
-            False,
+            (
+                "demandcast-data",
+                "download",
+                utils.paths.get_data_folder(),
+                ["logs"],
+                False,
+            ),
+            {"included_folders": ["assembled"]},
         )
     ]
 

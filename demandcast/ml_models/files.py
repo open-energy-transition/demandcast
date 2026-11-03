@@ -6,8 +6,10 @@ Description:
     This module finds and writes the files of the machine learning
     models: the latest trained model of an algorithm and the latest
     assembled data, unless a path is given, and the results of the
-    validation, cross-validation and forecasts, in CSV and Parquet
-    files named after the model, the data and the time.
+    validation, cross-validation and forecasts, in Parquet files named
+    after the model, the data and the time, and also in CSV files for
+    the errors of the validation and cross-validation, which are small
+    tables.
 
     Each trained model and each result has a manifest (see
     utils/manifest.py). That of a model records its dataset and its
@@ -327,13 +329,14 @@ def save_results(
     models_folder: str | None = None,
 ) -> None:
     """
-    Save the model results to CSV and Parquet files, with a manifest.
+    Save the model results to Parquet files, with a manifest.
 
-    The manifest describes both files, and records the checksums of the
-    model and of the data of the results, if their paths are given, and
-    of the summary of the results, saved to a CSV file whose name
-    starts with "summary" instead of the start of the names of the
-    results, of the predictions of the scored rows, saved to a
+    The errors of a validation or cross-validation are also saved to a
+    CSV file, which the manifest also describes. The manifest records
+    the checksums of the model and of the data of the results, if their
+    paths are given, of the summary of the results, saved to a CSV file
+    whose name starts with "summary" instead of the start of the names
+    of the results, of the predictions of the scored rows, saved to a
     Parquet file whose name starts with "predictions", and of the models
     of the folds of a cross-validation, in a ZIP archive whose name
     starts with "models", with the checksum of each model.
@@ -398,10 +401,13 @@ def save_results(
         model_results_folder, f"{file_name_prefix}_{timestamp}"
     )
 
-    # Save the results to CSV and Parquet files, and their summary, with
-    # the manifest of their model, data and metric.
-    output_dataset.to_csv(results_file_name + ".csv", index=False)
+    # Save the results, and their summary, with the manifest of their
+    # model, data and metric.
     output_dataset.to_parquet(results_file_name + ".parquet", index=False)
+    other_formats: tuple[str, ...] = ()
+    if case != "forecasts":
+        output_dataset.to_csv(results_file_name + ".csv", index=False)
+        other_formats = (results_file_name + ".csv",)
     # The files that the manifest records besides the results.
     companion_files: dict[str, dict[str, Any]] = {}
     if summary is not None:
@@ -477,13 +483,10 @@ def save_results(
             **companion_files,
             **(extra or {}),
         },
-        other_formats=(results_file_name + ".csv",),
+        other_formats=other_formats,
     )
 
-    logging.info(
-        f"Model {case} saved to {results_file_name}.csv and "
-        f"{results_file_name}.parquet"
-    )
+    logging.info(f"Model {case} saved to {results_file_name}.parquet.")
 
 
 def get_split_membership(

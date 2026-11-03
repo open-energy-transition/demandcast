@@ -23,7 +23,18 @@ direction: upload        # or download
 bucket: demandcast-data  # the name of your bucket
 excluded_folders:
   - logs
+included_folders:        # empty copies all the folders that are not excluded
 dry_run: false           # true lists the files to copy, without copying them
+```
+
+To copy only some folders, list them in `included_folders`, relative to the data folder. For example, to download only the assembled data, or also the forecasts:
+
+```yaml
+direction: download
+bucket: demandcast-data
+included_folders:
+  - assembled
+  - results/forecasts
 ```
 
 Then, in the `demandcast` folder:

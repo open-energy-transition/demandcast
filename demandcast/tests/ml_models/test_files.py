@@ -213,8 +213,10 @@ def test_save_results(tmp_path, case, extra, expected):
     """
     Test that the results are saved with their manifest.
 
-    The manifest describes both the CSV and the Parquet files, and the
-    checksums of the model and of the data of the results.
+    The manifest describes the Parquet file, and the CSV file of the
+    errors of a validation or cross-validation, and the checksums of
+    the model and of the data of the results. The forecasts have no CSV
+    file.
     """
     model_path = tmp_path / "xgboost_model.json"
     model_path.write_text("{}")
@@ -247,12 +249,13 @@ def test_save_results(tmp_path, case, extra, expected):
         str(data_path)
     )
     assert manifest["columns"] == ["MAPE"]
-    assert manifest["files"] == {
-        parquet.name: utils.manifest.get_checksum(str(parquet)),
-        csv.name: utils.manifest.get_checksum(str(csv)),
-    }
-    # Both formats are described by the manifest.
-    assert utils.manifest.verify_file(str(csv), "results") == manifest
+    files = {parquet.name: utils.manifest.get_checksum(str(parquet))}
+    if case == "forecasts":
+        assert not csv.exists()
+    else:
+        files[csv.name] = utils.manifest.get_checksum(str(csv))
+        assert utils.manifest.verify_file(str(csv), "results") == manifest
+    assert manifest["files"] == files
     for key, value in expected.items():
         assert manifest[key] == value
 
