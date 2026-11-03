@@ -8,6 +8,7 @@ Each file has a manifest, `<file>.manifest.json`, with its checksum, the version
 
 - `xgboost_model_<time>.json`: the model that gives the forecasts, trained on all the years of the training data. Its manifest lists the countries, subdivisions and local years of the training.
 - `all_<time>.parquet` and `.csv` of the forecasts: the forecasted hourly electricity demand in MW of each country and subdivision, by the end of each hour in UTC, with the inputs of the model.
+- `forecasts_on_historical_period.parquet`: the same forecasts with three columns: the time, by the end of each hour in UTC, the code of the country or subdivision and the forecasted demand in MW. It has the name and the columns of the file of the first release.
 - `assembled_data_for_forecasting_<time>.parquet`: the inputs of the forecasts, by hour: the local calendar and public holidays, the temperature, the GDP PPP per capita, the annual electricity demand per capita and the population.
 - The validation: the model trained without the most recent year of each country and subdivision, `xgboost_model_<time>.json`, its error on that year for each country and subdivision, `all_<time>.parquet` and `.csv`, and their summary by group, `summary_<time>.csv`.
 - The cross-validation: the error of each country and subdivision, held out of the training in turn, `all_<time>.parquet` and `.csv`, their summary, `summary_<time>.csv`, and the model of each fold, named after the country or subdivision that it holds out, in `models_<time>.zip`.

@@ -9,6 +9,7 @@ Description:
 
 import os
 
+import pandas as pd
 import pytest
 
 import publish
@@ -222,6 +223,83 @@ def test_release_without_the_demand(monkeypatch, file_name):
             publish.ConfigModel(
                 zenodo_record=1, version="2.0.0", files=[file_name]
             )
+        )
+
+    assert calls == []
+
+
+def test_release_with_the_compact_forecasts(monkeypatch):
+    """
+    Test that a release with forecasts has their compact file.
+
+    The file has the time, the code and the forecast of each country
+    and subdivision, without the inputs of the model.
+    """
+    folder = os.path.join(utils.paths.get_data_folder(), "forecasts")
+    os.makedirs(folder)
+    forecasts_path = os.path.join(folder, "all.parquet")
+    pd.DataFrame(
+        {
+            "Time (UTC)": pd.to_datetime(["2024-01-01 01:00"] * 3),
+            "Entity code": ["FRA", "USA", "USA_CA"],
+            "Temperature - Top 1 (K)": [280.0, 270.0, 290.0],
+            "Forecast load (MW)": [50000.0, 450000.0, 30000.0],
+        }
+    ).to_parquet(forecasts_path, index=False)
+    utils.manifest.write_manifest(
+        forecasts_path, "results", {"case": "forecasts"}
+    )
+    uploads: list[tuple[str, pd.DataFrame]] = []
+
+    def publish_release(file_paths, *_args):
+        uploads.extend(
+            (os.path.basename(path), pd.read_parquet(path))
+            for path in file_paths
+            if path.endswith(publish.COMPACT_FORECASTS_FILE)
+        )
+
+    monkeypatch.setattr(
+        publish.publishing.zenodo, "publish_release", publish_release
+    )
+
+    publish.main(
+        publish.ConfigModel(
+            zenodo_record=1,
+            version="2.0.0",
+            files=["forecasts/all.parquet"],
+        )
+    )
+
+    [(name, compact_forecasts)] = uploads
+    assert name == "forecasts_on_historical_period.parquet"
+    assert list(compact_forecasts.columns) == [
+        "Time (UTC)",
+        "Entity code",
+        "Forecast load (MW)",
+    ]
+    assert list(compact_forecasts["Entity code"]) == ["FRA", "USA", "USA_CA"]
+
+
+def test_release_with_several_forecasts(monkeypatch):
+    """Test that a release with several forecasts stops."""
+    folder = os.path.join(utils.paths.get_data_folder(), "forecasts")
+    os.makedirs(folder)
+    files = []
+    for name in ("all_1.parquet", "all_2.parquet"):
+        path = os.path.join(folder, name)
+        pd.DataFrame({"Entity code": ["FRA"]}).to_parquet(path)
+        utils.manifest.write_manifest(path, "results", {"case": "forecasts"})
+        files.append(f"forecasts/{name}")
+    calls = []
+    monkeypatch.setattr(
+        publish.publishing.zenodo,
+        "publish_release",
+        lambda *args: calls.append(args),
+    )
+
+    with pytest.raises(ValueError, match="several files of forecasts"):
+        publish.main(
+            publish.ConfigModel(zenodo_record=1, version="2.0.0", files=files)
         )
 
     assert calls == []

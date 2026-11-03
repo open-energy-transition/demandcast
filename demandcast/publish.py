@@ -13,6 +13,13 @@ Description:
     sources, licences and attributions of the data and how to replicate
     the results.
 
+    A release with forecasts also has their compact file
+    (COMPACT_FORECASTS_FILE), made from them at the upload, with the
+    time, the code and the forecast of each hour of each country and
+    subdivision, without the inputs of the model. It has the name and
+    the columns of the file of the first release of DemandCast, which
+    PyPSA-Earth downloads.
+
     A release cannot have the electricity demand, whose redistribution
     the licences of many data sources do not allow: the files of the
     electricity demand, the assembled data for training and the
@@ -23,7 +30,9 @@ Description:
 
 import logging
 import os
+import tempfile
 
+import pandas as pd
 from pydantic import field_validator
 
 import publishing.zenodo
@@ -38,6 +47,10 @@ README_FILE = os.path.join(
 
 # The starts of the names of the files with the electricity demand.
 DEMAND_FILE_PREFIXES = ("assembled_data_for_training_", "predictions_")
+
+# The compact file of the forecasts, and its columns.
+COMPACT_FORECASTS_FILE = "forecasts_on_historical_period.parquet"
+COMPACT_FORECASTS_COLUMNS = ["Time (UTC)", "Entity code", "Forecast load (MW)"]
 
 
 class ConfigModel(utils.config.StrictSettings):
@@ -206,6 +219,54 @@ def _with_manifests(file_paths: list[str]) -> list[str]:
     return with_manifests
 
 
+def _write_compact_forecasts(file_paths: list[str], folder: str) -> list[str]:
+    """
+    Write the compact file of the forecasts of a release.
+
+    Parameters
+    ----------
+    file_paths : list[str]
+        The paths of the files of the release.
+    folder : str
+        The folder where to write the compact file.
+
+    Returns
+    -------
+    list[str]
+        The path of the compact file, or none if the
+        release has no forecasts in a Parquet file.
+
+    Raises
+    ------
+    ValueError
+        If the release has the forecasts of several Parquet files.
+    """
+    forecasts = []
+    for file_path in file_paths:
+        if not file_path.endswith(".parquet"):
+            continue
+        manifest = utils.manifest.read_manifest(file_path)
+        if (
+            manifest is not None
+            and manifest["kind"] == "results"
+            and manifest.get("case") == "forecasts"
+        ):
+            forecasts.append(file_path)
+    if not forecasts:
+        return []
+    if len(forecasts) > 1:
+        raise ValueError(
+            f"The release has several files of forecasts: {forecasts}."
+        )
+
+    file_path = os.path.join(folder, COMPACT_FORECASTS_FILE)
+    pd.read_parquet(
+        forecasts[0], columns=COMPACT_FORECASTS_COLUMNS
+    ).to_parquet(file_path, index=False)
+    logging.info(f"The forecasts of {forecasts[0]} are in {file_path}.")
+    return [file_path]
+
+
 def main(config: ConfigModel) -> None:
     """
     Upload the release of the settings to Zenodo.
@@ -226,16 +287,22 @@ def main(config: ConfigModel) -> None:
         for file_path in config.files
     ]
     _check_publishable(file_paths)
-    publishing.zenodo.publish_release(
-        [*_with_manifests(file_paths), README_FILE],
-        config.version,
-        # The settings check that the record is a number or "new".
-        config.zenodo_record
-        if isinstance(config.zenodo_record, int)
-        else None,
-        config.metadata_file,
-        config.sandbox,
-    )
+    release_files = _with_manifests(file_paths)
+    with tempfile.TemporaryDirectory() as folder:
+        publishing.zenodo.publish_release(
+            [
+                *release_files,
+                *_write_compact_forecasts(file_paths, folder),
+                README_FILE,
+            ],
+            config.version,
+            # The settings check that the record is a number or "new".
+            config.zenodo_record
+            if isinstance(config.zenodo_record, int)
+            else None,
+            config.metadata_file,
+            config.sandbox,
+        )
 
 
 if __name__ == "__main__":
