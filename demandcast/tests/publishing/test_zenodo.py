@@ -69,6 +69,7 @@ class _FakeZenodo:
             },
             "metadata": {
                 "title": "Forecasts",
+                "creators": [{"name": "Antonini, Enrico"}],
                 "version": "1.0.0",
                 "doi": "10.5281/zenodo.100",
                 "prereserve_doi": {"doi": "10.5281/zenodo.200"},
@@ -136,9 +137,12 @@ def test_publish_a_new_version(fake_zenodo, release_files):
         ("PUT", f"{BUCKET}/model.json"),
         ("PUT", f"{BUCKET}/forecasts.parquet"),
     ]
-    # The metadata of the record is kept, with the new version, and the
-    # draft is not published.
-    assert fake_zenodo.metadata["title"] == "Forecasts"
+    # The new version has the title and description of the release, and
+    # keeps the creators of the record, and the draft is not published.
+    release_metadata = zenodo.read_release_metadata()
+    for key, value in release_metadata.items():
+        assert fake_zenodo.metadata[key] == value
+    assert fake_zenodo.metadata["creators"] == [{"name": "Antonini, Enrico"}]
     assert fake_zenodo.metadata["version"] == "1.1.0"
     assert "doi" not in fake_zenodo.metadata
     assert fake_zenodo.uploaded == {
@@ -153,12 +157,27 @@ def test_publish_a_new_record(fake_zenodo, release_files):
     zenodo.publish_release(release_files, "1.0.0", None)
 
     assert fake_zenodo.requests[0] == ("POST", "")
-    assert fake_zenodo.metadata["title"] == zenodo.TITLE
+    assert (
+        fake_zenodo.metadata["title"]
+        == (zenodo.read_release_metadata()["title"])
+    )
     assert fake_zenodo.metadata["license"] == "cc-by-4.0"
     assert fake_zenodo.metadata["creators"][0]["affiliation"] == (
         "Open Energy Transition"
     )
     assert set(fake_zenodo.uploaded) == {"model.json", "forecasts.parquet"}
+
+
+def test_release_metadata(tmp_path):
+    """Test that the metadata of the release has its four keys only."""
+    metadata = zenodo.read_release_metadata()
+    assert metadata["title"].startswith("Global Dataset of Forecasted")
+    assert "forecasts_on_historical_period.parquet" in metadata["description"]
+
+    metadata_file = tmp_path / "metadata.yaml"
+    metadata_file.write_text("title: Forecasts\nversion: 2.0.0\n")
+    with pytest.raises(ValueError, match="must have title"):
+        zenodo.read_release_metadata(str(metadata_file))
 
 
 def test_publish_with_wrong_files(fake_zenodo, tmp_path, release_files):
