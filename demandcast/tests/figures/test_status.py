@@ -257,12 +257,11 @@ def test_describe_model():
         ("xgboost_model_20261102_194204", _results(summary)),
         ("xgboost", _results(summary)),
     ) == (
-        "The results below are those of XGBoost models, trained on the "
-        "data of the countries and subdivisions above, without the data "
-        "that each evaluation leaves out, which its section describes."
+        "Each trains XGBoost models on the data above, without the data "
+        "that it scores them on, which its section describes."
     )
     assert status.describe_model(None, ("lstm", _results(summary))).startswith(
-        "The results below are those of LSTM models"
+        "Each trains LSTM models"
     )
     assert status.describe_model(None, None) == ""
 

@@ -318,10 +318,9 @@ def describe_model(
     if not names:
         return ""
     return (
-        f"The results below are those of {' and '.join(names)} models, "
-        "trained on the data of the countries and subdivisions above, "
-        "without the data that each evaluation leaves out, which its "
-        "section describes."
+        f"Each trains {' and '.join(names)} models on the data above, "
+        "without the data that it scores them on, which its section "
+        "describes."
     )
 
 
