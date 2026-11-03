@@ -10,6 +10,7 @@ Description:
 import io
 import os
 import zipfile
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import numpy as np
@@ -72,28 +73,60 @@ def test_run_data_retrieval_of_future_scenario():
 
 
 def test_download_of_ember(monkeypatch):
-    """Test that the demand per capita of Ember is read in kWh."""
-    long_format = pd.DataFrame(
-        {
-            "ISO 3 code": ["FRA", "FRA", "FRA", "DEU"],
-            "Year": [2020, 2021, 2021, 2021],
-            "Variable": [
-                "Demand per capita",
-                "Demand per capita",
-                "Demand",
-                "Demand per capita",
-            ],
-            "Value": [7.0, 7.1, 460.0, 6.7],
-        }
-    )
-    monkeypatch.setattr(ember.pd, "read_csv", lambda _url: long_format)
+    """
+    Test that the demand per capita of Ember is read from its API.
+
+    The request has the key of EMBER_API_KEY and asks for the countries
+    only, and the values in kWh are by country code and year.
+    """
+    records = {
+        "data": [
+            {
+                "entity_code": "FRA",
+                "date": "2020",
+                "demand_kwh_per_capita": 7000.0,
+            },
+            {
+                "entity_code": "FRA",
+                "date": "2021",
+                "demand_kwh_per_capita": 7100.0,
+            },
+            {
+                "entity_code": "DEU",
+                "date": "2021",
+                "demand_kwh_per_capita": 6700.0,
+            },
+        ]
+    }
+    requests = []
+
+    def fetch_response(url, **kwargs):
+        requests.append((url, kwargs["request_params"]))
+        return SimpleNamespace(json=lambda: records)
+
+    monkeypatch.setenv("EMBER_API_KEY", "test-key")
+    monkeypatch.setattr(ember.utils.fetcher, "fetch_response", fetch_response)
 
     demand = ember.download_electricity_demand_per_capita()
 
-    # The values in MWh become kWh, by country code and year.
+    assert requests == [
+        (
+            ember.API_URL,
+            {"is_aggregate_entity": "false", "api_key": "test-key"},
+        )
+    ]
     assert demand.loc["FRA"].to_dict() == {2020: 7000.0, 2021: 7100.0}
     assert demand.loc["DEU", 2021] == 6700.0
     assert pd.isna(demand.loc["DEU", 2020])
+
+
+def test_download_of_ember_without_a_key(monkeypatch):
+    """Test that Ember asks for its API key if it is not set."""
+    monkeypatch.setattr(ember.utils.config, "load_dotenv", lambda **_: None)
+    monkeypatch.delenv("EMBER_API_KEY", raising=False)
+
+    with pytest.raises(ValueError, match="EMBER_API_KEY"):
+        ember.download_electricity_demand_per_capita()
 
 
 def test_download_of_world_bank(monkeypatch):
