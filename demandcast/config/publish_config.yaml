@@ -19,6 +19,12 @@ version:
 files: []
 
 # OPTIONAL.
+# The files of each folder of the release, such as validation and
+# cross_validation, relative to the data folder unless absolute. Zenodo
+# has no folders, so each is uploaded as a ZIP archive named after it.
+folders: {}
+
+# OPTIONAL.
 # The file in the config folder with the creators and contributors of a
 # new record.
 metadata_file: oet_zenodo_metadata.yaml

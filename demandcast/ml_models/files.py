@@ -31,6 +31,7 @@ import dataclasses
 import glob
 import logging
 import os
+import zipfile
 from typing import Any, Literal
 
 import pandas as pd
@@ -325,6 +326,7 @@ def save_results(
     data_path: str | None = None,
     summary: pd.DataFrame | None = None,
     predictions: pd.DataFrame | None = None,
+    models_folder: str | None = None,
 ) -> None:
     """
     Save the model results to Parquet files, with a manifest.
@@ -332,10 +334,12 @@ def save_results(
     The errors of a validation or cross-validation are also saved to a
     CSV file, which the manifest also describes. The manifest records
     the checksums of the model and of the data of the results, if their
-    paths are given, and of the summary of the results, saved to a CSV
-    file whose name starts with "summary" instead of the start of the
-    names of the results, and of the predictions of the scored rows,
-    saved to a Parquet file whose name starts with "predictions".
+    paths are given, of the summary of the results, saved to a CSV file
+    whose name starts with "summary" instead of the start of the names
+    of the results, of the predictions of the scored rows, saved to a
+    Parquet file whose name starts with "predictions", and of the models
+    of the folds of a cross-validation, in a ZIP archive whose name
+    starts with "models", with the checksum of each model.
 
     Parameters
     ----------
@@ -362,6 +366,9 @@ def save_results(
     predictions : pandas.DataFrame | None, optional
         The predictions of the scored rows in MW (see
         ml_models.evaluation.get_scored_predictions).
+    models_folder : str | None, optional
+        The folder of the models of the folds of a cross-validation, to
+        archive with the results.
 
     Raises
     ------
@@ -402,7 +409,7 @@ def save_results(
         output_dataset.to_csv(results_file_name + ".csv", index=False)
         other_formats = (results_file_name + ".csv",)
     # The files that the manifest records besides the results.
-    companion_files: dict[str, dict[str, str]] = {}
+    companion_files: dict[str, dict[str, Any]] = {}
     if summary is not None:
         summary_path = os.path.join(
             model_results_folder, f"summary_{timestamp}.csv"
@@ -420,6 +427,26 @@ def save_results(
         companion_files["predictions"] = {
             "file": os.path.basename(predictions_path),
             "sha256": utils.manifest.get_checksum(predictions_path),
+        }
+    if models_folder is not None:
+        archive_path = os.path.join(
+            model_results_folder, f"models_{timestamp}.zip"
+        )
+        model_names = sorted(os.listdir(models_folder))
+        with zipfile.ZipFile(
+            archive_path, "w", zipfile.ZIP_DEFLATED
+        ) as archive:
+            for name in model_names:
+                archive.write(os.path.join(models_folder, name), name)
+        companion_files["models"] = {
+            "file": os.path.basename(archive_path),
+            "sha256": utils.manifest.get_checksum(archive_path),
+            "models": {
+                name: utils.manifest.get_checksum(
+                    os.path.join(models_folder, name)
+                )
+                for name in model_names
+            },
         }
     utils.manifest.write_manifest(
         results_file_name + ".parquet",

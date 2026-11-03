@@ -10,6 +10,7 @@ Description:
     the boundaries between entities.
 """
 
+import os
 from unittest.mock import patch
 
 import numpy as np
@@ -389,3 +390,18 @@ def test_wape_is_not_dominated_by_values_close_to_zero():
 
     assert wape == pytest.approx(0.3 / 3.001)
     assert mape > 20
+
+
+def test_cross_validation_saves_the_model_of_each_fold(tmp_path):
+    """Test that each fold saves its model, named after the fold."""
+    ml_models.evaluation.cross_validate(
+        _make_prepared_dataset(),
+        1,
+        "XGBoost",
+        _model_config("XGBoost"),
+        models_folder=str(tmp_path),
+    )
+
+    assert sorted(os.listdir(tmp_path)) == sorted(
+        f"{code}.json" for code in _ENTITIES
+    )

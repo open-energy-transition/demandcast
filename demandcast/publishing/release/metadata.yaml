@@ -1,0 +1,52 @@
+title: Global Dataset of Forecasted Hourly Electricity Demand from 2000 to 2025 Using DemandCast
+
+keywords:
+  - Global forecasts
+  - Electricity demand
+  - Hourly resolution
+  - Subnational
+  - Machine learning
+
+related_identifiers:
+  - relation: isDerivedFrom
+    identifier: https://github.com/open-energy-transition/demandcast
+    resource_type: software
+  - relation: isDocumentedBy
+    identifier: https://arxiv.org/abs/2510.08000
+    resource_type: publication-conferencepaper
+  - relation: isDocumentedBy
+    identifier: https://open-energy-transition.github.io/demandcast/
+    resource_type: other
+
+description: |
+  <p>This dataset provides forecasted hourly electricity demand for 184 countries and 135 subdivisions of Argentina, Australia, Brazil, Canada, China, Great Britain, India, Japan, Mexico and the United States, from 2000 to 2025, with the machine learning models that produce and validate the forecasts and their inputs.</p>
+  <p>The forecasts are generated with DemandCast, using an XGBoost model trained on hourly electricity demand from public data sources (168 countries and subdivisions), ERA5 temperature, GDP per capita, population, annual electricity demand per capita and public holidays. The forecasts of each complete year sum to the annual electricity demand of the country or subdivision: its annual demand per capita (Ember, or the World Bank where Ember has no data) times its population. Times are in UTC and mark the end of each hour. The code and its documentation are in the GitHub repository <a href="https://github.com/open-energy-transition/demandcast">open-energy-transition/demandcast</a>.</p>
+  <h3>Accuracy</h3>
+  <p>On the most recent year of each country and subdivision, left out of the training, the median weighted absolute percentage error (WAPE) of the hourly demand is 7.2%. When each country or subdivision is left out of the training entirely, the median WAPE is 8.5%. The <a href="https://open-energy-transition.github.io/demandcast/status/">current state</a> page has the errors of each country and subdivision.</p>
+  <h3>Coverage</h3>
+  <ul>
+  <li>2025: forecasts for 226 of the 319 countries and subdivisions; the other 93 have no annual demand data for 2025 yet.</li>
+  <li>Shorter periods: Central African Republic, Comoros and Vanuatu end in 2023; Western Sahara covers 2000–2009; Montenegro starts in 2005, Timor-Leste in 2003, South Sudan in 2012 and Yemen in 2014.</li>
+  <li>No forecasts: 52 territories and small states without the needed inputs (AIA, ALA, AND, ASM, ATA, ATF, ATG, BLM, BMU, COK, CUW, CYM, DMA, FLK, FRO, FSM, GGY, GRL, GUM, HMD, IMN, IOT, JEY, KIR, KNA, LCA, LIE, MAF, MCO, MHL, MNP, MSR, NFK, NIU, NRU, PCN, PLW, SGS, SHN, SMR, SPM, STP, SXM, SYC, TCA, TON, TUV, VAT, VCT, VGB, VIR, WLF).</li>
+  </ul>
+  <h3>Files</h3>
+  <ul>
+  <li><em>forecasts_on_historical_period.parquet</em>: the hourly forecasts, with the time (UTC, end of each hour), the code of the country or subdivision (ISO 3166-1 alpha-3, with the subdivision after an underscore, such as USA_CA) and the demand in MW.</li>
+  <li><em>assembled_data_for_forecasting_20261102_201544.parquet</em>: the inputs of the forecasts at each hour.</li>
+  <li><em>xgboost_model_20261103_143736.json</em>: the model that produces the forecasts, trained on all the training data.</li>
+  <li><em>validation.zip</em>: the model trained without the most recent year of each country and subdivision, and its errors on that year.</li>
+  <li><em>cross_validation.zip</em>: the errors of each country and subdivision left out of the training in turn, and the model of each fold.</li>
+  <li><em>README.md</em>: the files, how to reproduce the forecasts and the errors, and the sources, licences and attributions of the inputs.</li>
+  </ul>
+  <p>Each file has a manifest, <em>.manifest.json</em>, with its checksum, the version of the code that made it, its settings and its inputs. The historical electricity demand used for training is not included, since the licences of many of its sources do not allow its redistribution.</p>
+  <h3>Licence</h3>
+  <p>The forecasts and the models are licensed under CC BY 4.0. The inputs keep the terms of their sources (README.md). In particular, the GDP of the World Economic Outlook of the International Monetary Fund needs the permission of the IMF for commercial reuse.</p>
+  <h3>Changes from version 1.0.0</h3>
+  <ul>
+  <li>The forecasts cover 135 subdivisions, and 2025.</li>
+  <li>The model is retrained on more data, cleaned with new rules, with public holidays among its inputs. On the most recent year of the 84 countries and subdivisions that both versions score this way, the median mean absolute percentage error (MAPE) of the hourly demand is 6.4%, against 8.9% reported in the paper that documents version 1.0.0 (lower for 68 of them).</li>
+  <li><em>forecasts_on_historical_period.parquet</em> keeps its name and columns, and also has the subdivisions.</li>
+  <li>The inputs of the forecasts are in <em>assembled_data_for_forecasting_20261102_201544.parquet</em>.</li>
+  <li>The validation and the cross-validation are new.</li>
+  <li>The countries without forecasts are listed in this description.</li>
+  </ul>

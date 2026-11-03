@@ -321,7 +321,7 @@ data_path:                         # Path to assembled data file
 holdout: entity                    # Hold out each entity, or each country with its subdivisions ("country")
 ```
 
-Cross-validation results are saved to `data/results/cross_validation/with_{algorithm}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the MAPE and WAPE of each held-out country and subdivision on the training rows and on its own rows, the holdout, and its description, with their summary by group (see [reporting by group](#reporting-by-group)), and the actual and predicted load in MW of each held-out hour in `predictions_YYYYMMDD_HHMMSS.parquet`, as for a validation. The models are trained and scored on all the fields of their rows, such as their times, as in a validation.
+Cross-validation results are saved to `data/results/cross_validation/with_{algorithm}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the MAPE and WAPE of each held-out country and subdivision on the training rows and on its own rows, the holdout, and its description, with their summary by group (see [reporting by group](#reporting-by-group)), and the actual and predicted load in MW of each held-out hour in `predictions_YYYYMMDD_HHMMSS.parquet`, as for a validation. The model of each fold is in `models_YYYYMMDD_HHMMSS.zip`, named after the country or subdivision that it holds out, and the manifest of the results has the checksum of the archive and of each model. The models are trained and scored on all the fields of their rows, such as their times, as in a validation.
 
 ### Forecasting
 

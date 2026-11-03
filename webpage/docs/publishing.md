@@ -1,6 +1,6 @@
 # Sharing and publishing
 
-DemandCast keeps the retrieved data in a private bucket of Google Cloud Storage, to share it between the people who work on it and their computers, and publishes on Zenodo only its trained models and their forecasts: the licences of many data sources do not allow their data to be redistributed.
+DemandCast keeps the retrieved data in a private bucket of Google Cloud Storage, to share it between the people who work on it and their computers, and publishes on Zenodo its trained models, their forecasts and the inputs of the forecasts, without the electricity demand: the licences of many data sources do not allow their data to be redistributed.
 
 ## Copying the data folder to and from a bucket
 
@@ -47,7 +47,7 @@ The bucket is empty in the configuration of the repository, so nothing is copied
 
 ## Publishing a release on Zenodo
 
-`publish.py` uploads a release, the trained model, its settings and its forecasts, as a new version of a record on Zenodo, so that the DOI of all its versions stays the same (that of DemandCast is [10.5281/zenodo.18374351](https://doi.org/10.5281/zenodo.18374351)). The new version is a draft, without the files of the previous version, which stay in it: check it on the website of Zenodo, and publish it there.
+`publish.py` uploads a release, the trained model, its settings and its forecasts, and the files to replicate them and the errors of the models, as a new version of a record on Zenodo, so that the DOI of all its versions stays the same (that of DemandCast is [10.5281/zenodo.18374351](https://doi.org/10.5281/zenodo.18374351)). The new version is a draft, without the files of the previous version, which stay in it: check it on the website of Zenodo, and publish it there.
 
 Set the API key of your Zenodo account in `ZENODO_API_KEY` in the `.env` file, which `publish.py` sends only to Zenodo, in the header of its requests, (see [getting started](getting_started.md#13-configure-environment-variables)), and the release in `config/publish_config.yaml`:
 
@@ -57,11 +57,23 @@ version: "1.1.0"
 files:                   # relative to the data folder, unless absolute
   - models/xgboost/xgboost_model_20261101_120000.json
   - results/forecasts/with_xgboost_model_20261101_120000/using_assembled_data_for_forecasting_20261101_100000/all_20261101_130000.parquet
+  - assembled/assembled_data_for_forecasting_20261101_100000.parquet
+folders:                 # each uploaded as <folder>.zip
+  validation:
+    - models/xgboost/xgboost_model_20261101_110000.json
+    - results/validation/with_xgboost_model_20261101_110000/using_assembled_data_for_training_20261101_090000/all_20261101_113000.parquet
+    - results/validation/with_xgboost_model_20261101_110000/using_assembled_data_for_training_20261101_090000/summary_20261101_113000.csv
+  cross_validation:
+    - results/cross_validation/with_xgboost/using_assembled_data_for_training_20261101_090000/all_20261101_140000.parquet
+    - results/cross_validation/with_xgboost/using_assembled_data_for_training_20261101_090000/summary_20261101_140000.csv
+    - results/cross_validation/with_xgboost/using_assembled_data_for_training_20261101_090000/models_20261101_140000.zip
 metadata_file: oet_zenodo_metadata.yaml  # the creators of a new record
 sandbox: false           # true uses sandbox.zenodo.org and SANDBOX_ZENODO_API_KEY
 ```
 
-The manifest of each file (see [the manifests](ML.md#manifests)), which tells how the model was trained and which model and data gave the forecasts, is uploaded with it, and the log lists the files without one.
+The manifest of each file (see [the manifests](ML.md#manifests)), which tells how the model was trained and which model and data gave the forecasts, is uploaded with it, and the log lists the files without one. A release can also have the assembled data for forecasting, which has the inputs of the forecasts without the electricity demand, and the models and results of a validation and of a cross-validation, whose models are in `models_YYYYMMDD_HHMMSS.zip`. The forecasts are uploaded as `forecasts_on_historical_period.parquet`, made from them at the upload, with the time, the code and the forecast of each hour of each country and subdivision, without the inputs of the model, which the assembled data for forecasting has: the name and the columns of the file of the first release, which PyPSA-Earth downloads. Its manifest names the model, the data and the code version of the forecasts. Zenodo has no folders, so the files of each folder in `folders`, such as those of the validation and of the cross-validation, are uploaded with their manifests in a ZIP archive named after the folder, `validation.zip` and `cross_validation.zip`, whose files are in a folder of the same name; Zenodo shows the files of an archive in its preview. Every release has `demandcast/publishing/release/README.md`, which describes its files, how to replicate them, and the sources, licences and attributions of the inputs. A file with the electricity demand stops the release before anything is uploaded: the files of `data/electricity_demand/`, the assembled data for training and the `predictions_` files of the validations and cross-validations, which have the actual demand of their hours.
+
+The title, the description, the keywords and the related identifiers of the release are in `demandcast/publishing/release/metadata.yaml`: update them for each release, since the description names its files and gives its errors. A new version takes them, and keeps the creators, contributors and communities of the record; a new record takes its creators and contributors from `metadata_file`.
 
 Then run:
 
