@@ -21,6 +21,11 @@ Description:
     file of the first release of DemandCast, which PyPSA-Earth
     downloads.
 
+    Zenodo has no folders, so the files of each folder of the settings,
+    such as those of a validation, are uploaded with their manifests in
+    a ZIP archive named after the folder, whose files are in a folder of
+    the same name.
+
     A release cannot have the electricity demand, whose redistribution
     the licences of many data sources do not allow: the files of the
     electricity demand, the assembled data for training and the
@@ -31,10 +36,12 @@ Description:
 
 import logging
 import os
+import re
 import tempfile
+import zipfile
 
 import pandas as pd
-from pydantic import field_validator
+from pydantic import Field, field_validator
 
 import publishing.zenodo
 import utils.config
@@ -60,6 +67,7 @@ class ConfigModel(utils.config.StrictSettings):
     zenodo_record: int | str | None
     version: str
     files: list[str]
+    folders: dict[str, list[str]] = Field(default_factory=dict)
     metadata_file: str = "oet_zenodo_metadata.yaml"
     sandbox: bool = False
 
@@ -119,6 +127,40 @@ class ConfigModel(utils.config.StrictSettings):
                 "model, its settings and its forecasts."
             )
         return files
+
+    @field_validator("folders")
+    @classmethod
+    def _check_folders(
+        cls, folders: dict[str, list[str]]
+    ) -> dict[str, list[str]]:
+        """
+        Check that each folder has a simple name and files.
+
+        Parameters
+        ----------
+        folders : dict[str, list[str]]
+            The files of each folder of the release.
+
+        Returns
+        -------
+        dict[str, list[str]]
+            The folders.
+
+        Raises
+        ------
+        ValueError
+            If a name has other characters than letters, digits, "_" and
+            "-", or a folder has no file.
+        """
+        for name, files in folders.items():
+            if not re.fullmatch(r"[A-Za-z0-9_-]+", name):
+                raise ValueError(
+                    f"The name of the folder {name!r} must have only "
+                    "letters, digits, '_' and '-'."
+                )
+            if not files:
+                raise ValueError(f"The folder {name} has no file.")
+        return folders
 
 
 def _check_publishable(file_paths: list[str]) -> None:
@@ -299,12 +341,50 @@ def _use_compact_forecasts(file_paths: list[str], folder: str) -> list[str]:
     ]
 
 
+def _archive_folder(name: str, file_paths: list[str], folder: str) -> str:
+    """
+    Write the files of a folder of a release to a ZIP archive.
+
+    Parameters
+    ----------
+    name : str
+        The name of the folder, which is that of the archive and of the
+        folder of the files in it.
+    file_paths : list[str]
+        The paths of the files, with their manifests.
+    folder : str
+        The folder where to write the archive.
+
+    Returns
+    -------
+    str
+        The path of the archive.
+
+    Raises
+    ------
+    ValueError
+        If two files have the same name.
+    """
+    names = [os.path.basename(file_path) for file_path in file_paths]
+    if len(set(names)) < len(names):
+        raise ValueError(
+            f"The files of the folder {name} have the same names: {names}."
+        )
+    archive_path = os.path.join(folder, f"{name}.zip")
+    with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as archive:
+        for file_path, file_name in zip(file_paths, names, strict=True):
+            archive.write(file_path, f"{name}/{file_name}")
+    logging.info(f"The files of the folder {name} are in {archive_path}.")
+    return archive_path
+
+
 def main(config: ConfigModel) -> None:
     """
     Upload the release of the settings to Zenodo.
 
     The paths of the files are relative to the data folder, unless they
-    are absolute.
+    are absolute. The files of each folder are uploaded in a ZIP archive
+    named after it.
 
     Parameters
     ----------
@@ -314,17 +394,30 @@ def main(config: ConfigModel) -> None:
     utils.config.set_up_logging("publication")
     utils.config.log_configuration(config)
 
+    data_folder = utils.paths.get_data_folder()
     file_paths = [
-        os.path.join(utils.paths.get_data_folder(), file_path)
-        for file_path in config.files
+        os.path.join(data_folder, file_path) for file_path in config.files
     ]
-    _check_publishable(file_paths)
+    folder_paths = {
+        name: [os.path.join(data_folder, file_path) for file_path in files]
+        for name, files in config.folders.items()
+    }
+    _check_publishable(
+        [
+            *file_paths,
+            *(path for paths in folder_paths.values() for path in paths),
+        ]
+    )
     with tempfile.TemporaryDirectory() as folder:
+        release_files = _with_manifests(
+            _use_compact_forecasts(file_paths, folder)
+        )
+        for name, paths in folder_paths.items():
+            release_files.append(
+                _archive_folder(name, _with_manifests(paths), folder)
+            )
         publishing.zenodo.publish_release(
-            [
-                *_with_manifests(_use_compact_forecasts(file_paths, folder)),
-                README_FILE,
-            ],
+            [*release_files, README_FILE],
             config.version,
             # The settings check that the record is a number or "new".
             config.zenodo_record

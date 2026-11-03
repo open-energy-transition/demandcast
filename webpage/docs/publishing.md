@@ -47,11 +47,20 @@ files:                   # relative to the data folder, unless absolute
   - models/xgboost/xgboost_model_20261101_120000.json
   - results/forecasts/with_xgboost_model_20261101_120000/using_assembled_data_for_forecasting_20261101_100000/all_20261101_130000.parquet
   - assembled/assembled_data_for_forecasting_20261101_100000.parquet
+folders:                 # each uploaded as <folder>.zip
+  validation:
+    - models/xgboost/xgboost_model_20261101_110000.json
+    - results/validation/with_xgboost_model_20261101_110000/using_assembled_data_for_training_20261101_090000/all_20261101_113000.parquet
+    - results/validation/with_xgboost_model_20261101_110000/using_assembled_data_for_training_20261101_090000/summary_20261101_113000.csv
+  cross_validation:
+    - results/cross_validation/with_xgboost/using_assembled_data_for_training_20261101_090000/all_20261101_140000.parquet
+    - results/cross_validation/with_xgboost/using_assembled_data_for_training_20261101_090000/summary_20261101_140000.csv
+    - results/cross_validation/with_xgboost/using_assembled_data_for_training_20261101_090000/models_20261101_140000.zip
 metadata_file: oet_zenodo_metadata.yaml  # the creators of a new record
 sandbox: false           # true uses sandbox.zenodo.org and SANDBOX_ZENODO_API_KEY
 ```
 
-The manifest of each file (see [the manifests](ML.md#manifests)), which tells how the model was trained and which model and data gave the forecasts, is uploaded with it, and the log lists the files without one. A release can also have the assembled data for forecasting, which has the inputs of the forecasts without the electricity demand, and the models and results of a validation and of a cross-validation, whose models are in `models_YYYYMMDD_HHMMSS.zip`. The forecasts are uploaded as `forecasts_on_historical_period.parquet`, made from them at the upload, with the time, the code and the forecast of each hour of each country and subdivision, without the inputs of the model, which the assembled data for forecasting has: the name and the columns of the file of the first release, which PyPSA-Earth downloads. Its manifest names the model, the data and the code version of the forecasts. Every release has `demandcast/publishing/release/README.md`, which describes its files, how to replicate them, and the sources, licences and attributions of the inputs. A file with the electricity demand stops the release before anything is uploaded: the files of `data/electricity_demand/`, the assembled data for training and the `predictions_` files of the validations and cross-validations, which have the actual demand of their hours.
+The manifest of each file (see [the manifests](ML.md#manifests)), which tells how the model was trained and which model and data gave the forecasts, is uploaded with it, and the log lists the files without one. A release can also have the assembled data for forecasting, which has the inputs of the forecasts without the electricity demand, and the models and results of a validation and of a cross-validation, whose models are in `models_YYYYMMDD_HHMMSS.zip`. The forecasts are uploaded as `forecasts_on_historical_period.parquet`, made from them at the upload, with the time, the code and the forecast of each hour of each country and subdivision, without the inputs of the model, which the assembled data for forecasting has: the name and the columns of the file of the first release, which PyPSA-Earth downloads. Its manifest names the model, the data and the code version of the forecasts. Zenodo has no folders, so the files of each folder in `folders`, such as those of the validation and of the cross-validation, are uploaded with their manifests in a ZIP archive named after the folder, `validation.zip` and `cross_validation.zip`, whose files are in a folder of the same name; Zenodo shows the files of an archive in its preview. Every release has `demandcast/publishing/release/README.md`, which describes its files, how to replicate them, and the sources, licences and attributions of the inputs. A file with the electricity demand stops the release before anything is uploaded: the files of `data/electricity_demand/`, the assembled data for training and the `predictions_` files of the validations and cross-validations, which have the actual demand of their hours.
 
 Then run:
 

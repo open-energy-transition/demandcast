@@ -8,6 +8,7 @@ Description:
 """
 
 import os
+import zipfile
 from typing import Any
 
 import pandas as pd
@@ -130,6 +131,10 @@ def _write_release(folder):
             ],
         ),
         (["all.csv"], ["all.csv", "all.manifest.json", "README.md"]),
+        (
+            ["model.json", "model.manifest.json"],
+            ["model.json", "model.manifest.json", "README.md"],
+        ),
     ],
 )
 def test_publish_with_the_manifests(monkeypatch, caplog, files, expected):
@@ -323,6 +328,147 @@ def test_release_with_several_forecasts(monkeypatch):
     with pytest.raises(ValueError, match="several files of forecasts"):
         publish.main(
             publish.ConfigModel(zenodo_record=1, version="2.0.0", files=files)
+        )
+
+    assert calls == []
+
+
+def test_release_with_folders(monkeypatch):
+    """
+    Test that the files of each folder are uploaded in a ZIP archive.
+
+    The archive is named after the folder, and has its files, with their
+    manifests, in a folder of the same name.
+    """
+    _write_release(os.path.join(utils.paths.get_data_folder(), "release"))
+    calls = []
+    monkeypatch.setattr(
+        publish.publishing.zenodo,
+        "publish_release",
+        lambda file_paths, *_args: calls.append(
+            {
+                os.path.basename(path): (
+                    sorted(zipfile.ZipFile(path).namelist())
+                    if path.endswith(".zip")
+                    else None
+                )
+                for path in file_paths
+            }
+        ),
+    )
+
+    publish.main(
+        publish.ConfigModel(
+            zenodo_record=1,
+            version="2.0.0",
+            files=["release/other_model.json"],
+            folders={
+                "validation": [
+                    "release/model.json",
+                    "release/all.parquet",
+                    "release/settings.yaml",
+                ]
+            },
+        )
+    )
+
+    assert calls == [
+        {
+            "other_model.json": None,
+            "other_model.manifest.json": None,
+            "validation.zip": [
+                "validation/all.manifest.json",
+                "validation/all.parquet",
+                "validation/model.json",
+                "validation/model.manifest.json",
+                "validation/settings.yaml",
+            ],
+            "README.md": None,
+        }
+    ]
+
+
+@pytest.mark.parametrize(
+    ("folders", "message"),
+    [
+        ({"validation/2026": ["release/model.json"]}, "must have only"),
+        ({"validation": []}, "has no file"),
+    ],
+)
+def test_release_with_invalid_folders(folders, message):
+    """Test that a folder needs a simple name and files."""
+    with pytest.raises(ValueError, match=message):
+        publish.ConfigModel(
+            zenodo_record=1,
+            version="2.0.0",
+            files=["release/model.json"],
+            folders=folders,
+        )
+
+
+def test_release_without_the_demand_in_a_folder(monkeypatch):
+    """Test that a file with the demand in a folder stops a release."""
+    paths = _write_release(
+        os.path.join(utils.paths.get_data_folder(), "release")
+    )
+    file_name = (
+        "results/validation/with_model/using_data/predictions_1.parquet"
+    )
+    file_path = os.path.join(utils.paths.get_data_folder(), file_name)
+    os.makedirs(os.path.dirname(file_path))
+    with open(file_path, "w") as file:
+        file.write("demand")
+    calls = []
+    monkeypatch.setattr(
+        publish.publishing.zenodo,
+        "publish_release",
+        lambda *args: calls.append(args),
+    )
+
+    with pytest.raises(ValueError, match="has the electricity demand"):
+        publish.main(
+            publish.ConfigModel(
+                zenodo_record=1,
+                version="2.0.0",
+                files=[paths["model.json"]],
+                folders={"validation": [file_name]},
+            )
+        )
+
+    assert calls == []
+
+
+def test_release_with_files_of_the_same_name_in_a_folder(monkeypatch):
+    """Test that a folder with two files of the same name stops."""
+    paths = _write_release(
+        os.path.join(utils.paths.get_data_folder(), "release")
+    )
+    os.makedirs(os.path.join(utils.paths.get_data_folder(), "other"))
+    with open(
+        os.path.join(utils.paths.get_data_folder(), "other", "settings.yaml"),
+        "w",
+    ) as file:
+        file.write("other")
+    calls = []
+    monkeypatch.setattr(
+        publish.publishing.zenodo,
+        "publish_release",
+        lambda *args: calls.append(args),
+    )
+
+    with pytest.raises(ValueError, match="have the same names"):
+        publish.main(
+            publish.ConfigModel(
+                zenodo_record=1,
+                version="2.0.0",
+                files=[paths["model.json"]],
+                folders={
+                    "validation": [
+                        "release/settings.yaml",
+                        "other/settings.yaml",
+                    ]
+                },
+            )
         )
 
     assert calls == []
