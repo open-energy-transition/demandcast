@@ -19,6 +19,8 @@ The [data retrieval](retrieval.md) page describes the data sources, and how thei
 
 ## Forecast errors
 
+--8<-- "status/ml_model.md"
+
 The models forecast the hourly electricity demand of each year of a country or subdivision. Their error is the weighted absolute percentage error (WAPE): the sum of the absolute differences between the forecast and the actual hourly demand, divided by the sum of the actual demand. Lower is better. The models are scored in two ways: a validation, on the most recent year of the countries and subdivisions with data, and a cross-validation, on countries and subdivisions whose data the model never saw.
 
 ### Validation

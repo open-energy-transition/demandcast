@@ -73,9 +73,10 @@ ML_FIGURE_FILES: dict[
     for case in ("validation", "cross_validation")
 }
 
-# The files of the description of the errors of each case, in the folder
-# of the page.
+# The files of the description of the model and of the errors of each
+# case, in the folder of the page.
 ML_RESULTS_FILES = {
+    "model": "ml_model.md",
     "validation": "ml_validation.md",
     "cross_validation": "ml_cross_validation.md",
 }
@@ -278,6 +279,67 @@ def _get_median_wape(
     return float(rows["Median WAPE"].iloc[0]) * 100
 
 
+def describe_model(
+    validation: tuple[str, ml_models.files.Results] | None,
+    cross_validation: tuple[str, ml_models.files.Results] | None,
+) -> str:
+    """
+    Describe the model and the data of the results in a paragraph.
+
+    Parameters
+    ----------
+    validation : tuple[str, ml_models.files.Results] | None
+        The trained model of the validation and its results, or None if
+        there is none.
+    cross_validation : tuple[str, ml_models.files.Results] | None
+        The algorithm of the cross-validation and its results, or None
+        if there is none.
+
+    Returns
+    -------
+    str
+        The paragraph, in Markdown, empty without results.
+    """
+    datasets = {
+        case: (found[1].manifest or {}).get("dataset", {}).get("name")
+        for case, found in (
+            ("validation", validation),
+            ("cross_validation", cross_validation),
+        )
+        if found is not None
+    }
+    sentences = []
+    if validation is not None:
+        algorithm, _, model_time = validation[0].partition("_model_")
+        name = figures.ml_results.ALGORITHM_NAMES.get(algorithm, algorithm)
+        try:
+            trained = (
+                " trained on "
+                f"{dt.datetime.strptime(model_time, '%Y%m%d_%H%M%S'):%d %B %Y}"
+            )
+        except ValueError:
+            trained = ""
+        sentences.append(
+            f"The results below are those of the {name} model{trained} "
+            f"(`{validation[0]}`), on the dataset `{datasets['validation']}`."
+        )
+    if cross_validation is not None:
+        name = figures.ml_results.ALGORITHM_NAMES.get(
+            cross_validation[0], cross_validation[0]
+        )
+        sentences.append(
+            f"The cross-validation trains {name} models on "
+            + (
+                "the same dataset"
+                if datasets.get("cross_validation")
+                == datasets.get("validation")
+                else f"the dataset `{datasets['cross_validation']}`"
+            )
+            + "."
+        )
+    return " ".join(sentences)
+
+
 def describe_validation(
     validation: tuple[str, ml_models.files.Results] | None,
 ) -> str:
@@ -458,6 +520,7 @@ def plot(
         figure_directory, status_folder, results_files
     )
     for case, text in (
+        ("model", describe_model(validation, cross_validation)),
         ("validation", describe_validation(validation)),
         ("cross_validation", describe_cross_validation(cross_validation)),
     ):

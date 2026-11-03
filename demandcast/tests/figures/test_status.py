@@ -158,6 +158,9 @@ def test_plot(tmp_path):
         "The models have no validation yet.\n",
         "The models have no cross-validation yet.\n",
     ]
+    assert (status_folder / status.ML_RESULTS_FILES["model"]).read_text(
+        encoding="utf-8"
+    ) == "\n"
     text = status.describe(NUMBERS)
     assert (status_folder / status.NUMBERS_FILE).read_text(
         encoding="utf-8"
@@ -240,6 +243,34 @@ def test_describe_cross_validation(holdout, description):
     assert status.describe_cross_validation(None) == (
         "The models have no cross-validation yet."
     )
+
+
+@pytest.mark.parametrize(
+    ("dataset", "cross_validation_data"),
+    [("data_1", "the same dataset"), ("data_2", "the dataset `data_2`")],
+)
+def test_describe_model(dataset, cross_validation_data):
+    """
+    Test the paragraph of the model and the data of the results.
+
+    The cross-validation tells its dataset if it is not that of the
+    validation.
+    """
+    summary = _summary({("All", "All"): 0.1})
+
+    assert status.describe_model(
+        (
+            "xgboost_model_20261102_194204",
+            _results(summary, {"dataset": {"name": "data_1"}}),
+        ),
+        ("xgboost", _results(summary, {"dataset": {"name": dataset}})),
+    ) == (
+        "The results below are those of the XGBoost model trained on 02 "
+        "November 2026 (`xgboost_model_20261102_194204`), on the dataset "
+        "`data_1`. The cross-validation trains XGBoost models on "
+        f"{cross_validation_data}."
+    )
+    assert status.describe_model(None, None) == ""
 
 
 def test_describe_validation():
