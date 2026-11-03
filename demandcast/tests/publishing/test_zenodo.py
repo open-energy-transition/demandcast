@@ -47,6 +47,10 @@ class _FakeZenodo:
         self.requests: list[tuple[str, str]] = []
         self.metadata: dict = {}
         self.uploaded: dict[str, bytes] = {}
+        self.dates: list[dict[str, str]] = [
+            {"type": "available"},
+            {"type": "collected", "start": "2026-01-01"},
+        ]
 
     def __call__(self, method, url, headers, **kwargs):
         """
@@ -70,6 +74,7 @@ class _FakeZenodo:
             "metadata": {
                 "title": "Forecasts",
                 "creators": [{"name": "Antonini, Enrico"}],
+                "dates": self.dates,
                 "version": "1.0.0",
                 "doi": "10.5281/zenodo.100",
                 "prereserve_doi": {"doi": "10.5281/zenodo.200"},
@@ -143,6 +148,11 @@ def test_publish_a_new_version(fake_zenodo, release_files):
     for key, value in release_metadata.items():
         assert fake_zenodo.metadata[key] == value
     assert fake_zenodo.metadata["creators"] == [{"name": "Antonini, Enrico"}]
+    # The date without a start or an end, which Zenodo rejects, is left
+    # out.
+    assert fake_zenodo.metadata["dates"] == [
+        {"type": "collected", "start": "2026-01-01"}
+    ]
     assert fake_zenodo.metadata["version"] == "1.1.0"
     assert "doi" not in fake_zenodo.metadata
     assert fake_zenodo.uploaded == {
@@ -150,6 +160,16 @@ def test_publish_a_new_version(fake_zenodo, release_files):
         "forecasts.parquet": b"forecasts",
     }
     assert not any("publish" in url for _, url in fake_zenodo.requests)
+
+
+def test_new_version_without_dates(fake_zenodo, release_files):
+    """Test that a record with only dates without value has no dates."""
+    fake_zenodo.dates = [{"type": "available"}]
+
+    zenodo.publish_release(release_files, "2.0.0", 100)
+
+    assert "dates" not in fake_zenodo.metadata
+    assert fake_zenodo.metadata["version"] == "2.0.0"
 
 
 def test_publish_a_new_record(fake_zenodo, release_files):

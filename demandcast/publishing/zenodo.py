@@ -279,6 +279,16 @@ def _create_draft(
         if key not in ("doi", "prereserve_doi")
     }
     metadata.update(read_release_metadata())
+    # Zenodo rejects a date without a start or an end, which the
+    # metadata of a published record can have, such as {"type":
+    # "available"}.
+    dates = [
+        date
+        for date in metadata.pop("dates", [])
+        if date.get("start") or date.get("end")
+    ]
+    if dates:
+        metadata["dates"] = dates
     metadata["version"] = version
     metadata["publication_date"] = pd.Timestamp.now().strftime("%Y-%m-%d")
     return api.request(
