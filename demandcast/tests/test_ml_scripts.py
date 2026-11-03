@@ -215,16 +215,15 @@ def _write_provenance(file_name: str) -> None:
 
 def _read_results(folder: str, model: str, data: str) -> pd.DataFrame:
     """
-    Read the results saved by a script, checking the file names.
+    Read the forecasts saved by a script, checking the file names.
 
     Returns
     -------
     pandas.DataFrame
-        The results.
+        The forecasts.
     """
     results_folder = os.path.join(folder, f"with_{model}", f"using_{data}")
     assert sorted(os.listdir(results_folder)) == [
-        f"all_{NOW}.csv",
         f"all_{NOW}.manifest.json",
         f"all_{NOW}.parquet",
     ]

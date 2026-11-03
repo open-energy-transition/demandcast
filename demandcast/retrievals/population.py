@@ -6,7 +6,7 @@ Description:
     This module downloads the population of the countries, historical
     from the World Bank and future from the IAMC scenarios of IIASA,
     and saves the population of the countries and subdivisions of
-    interest into CSV and Parquet files.
+    interest into Parquet files.
 
     The population of a subdivision is its share of the population of
     its country times the population of its country, so that the
@@ -267,7 +267,7 @@ def run_data_retrieval(
     from the World Bank and future population data from the IAMC
     scenarios for the countries of interest. For subdivisions, the
     population data is calculated by aggregating gridded population
-    data. The population data is saved into CSV and Parquet files.
+    data. The population data is saved into Parquet files.
 
     Parameters
     ----------

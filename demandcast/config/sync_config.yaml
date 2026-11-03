@@ -18,5 +18,12 @@ excluded_folders:
   - logs
 
 # OPTIONAL.
+# The only folders of the data folder that are copied, such as
+# assembled to download only the assembled data, or
+# results/forecasts. All the folders that are not excluded are copied
+# if it is not given.
+included_folders:
+
+# OPTIONAL.
 # Whether to only list the files to copy, without copying them.
 dry_run: false

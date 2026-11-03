@@ -7,7 +7,8 @@ Description:
     Cloud Storage, or the bucket to the data folder, without overwriting
     or deleting any file at the destination: only the missing files are
     copied, and the files that differ are reported in the log (see
-    publishing.gcs).
+    publishing.gcs). The copy can be limited to some folders, such as
+    "assembled" to download only the assembled data.
 """
 
 from typing import Literal
@@ -25,6 +26,7 @@ class ConfigModel(utils.config.StrictSettings):
     direction: Literal["upload", "download"]
     bucket: str | None
     excluded_folders: list[str] = Field(default_factory=lambda: ["logs"])
+    included_folders: list[str] | None = None
     dry_run: bool = False
 
     @field_validator("bucket")
@@ -74,6 +76,7 @@ def main(config: ConfigModel) -> None:
         utils.paths.get_data_folder(),
         config.excluded_folders,
         config.dry_run,
+        included_folders=config.included_folders,
     )
 
 

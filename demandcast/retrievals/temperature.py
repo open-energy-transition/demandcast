@@ -6,8 +6,7 @@ Description:
     This module includes functions to extract temperature data
     downloaded from the Copernicus Climate Data Store (CDS) for the most
     populous grid cells in a given country or subdivision. It calculates
-    the average temperature and saves the results into CSV and Parquet
-    files.
+    the average temperature and saves the results into Parquet files.
 
     The temperature of the reanalysis comes from one of three sources of
     the same ERA5 data (the reanalysis_source of retrieve.py):
@@ -682,8 +681,7 @@ def run_data_retrieval(
     This function extracts temperature data downloaded from the
     Copernicus Climate Data Store (CDS) for the most populous grid
     cells in a given country or subdivision. It calculates the
-    average temperature and saves the results into CSV and Parquet
-    files.
+    average temperature and saves the results into Parquet files.
 
     Parameters
     ----------
@@ -795,7 +793,7 @@ def run_data_retrieval(
             # if it was made by another processing, or if the reanalysis
             # data may have been updated since.
             if (
-                not os.path.exists(file_path_without_ext + ".csv")
+                not os.path.exists(file_path_without_ext + ".parquet")
                 or not has_current_processing(
                     file_path_without_ext + ".parquet"
                 )
@@ -842,7 +840,6 @@ def run_data_retrieval(
                 temperature_database.to_parquet(
                     file_path_without_ext + ".parquet"
                 )
-                temperature_database.to_csv(file_path_without_ext + ".csv")
 
                 logging.info(
                     f"Temperature time series for the year {selected_year}"

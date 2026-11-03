@@ -250,7 +250,7 @@ The trained model is saved to `data/models/{algorithm_name}/{algorithm_name}_mod
 
 ### Manifests
 
-Each assembled dataset, trained model and result has a manifest next to it, a JSON file with the same name and the extension `.manifest.json` (`demandcast/utils/manifest.py`), which tells what it is and how it was made: its kind, the checksum of each of its files (both the CSV and the Parquet file of a dataset or of results), the commit of the code and the checksum of `uv.lock`, and:
+Each assembled dataset, trained model and result has a manifest next to it, a JSON file with the same name and the extension `.manifest.json` (`demandcast/utils/manifest.py`), which tells what it is and how it was made: its kind, the checksum of each of its files (the Parquet file, and the CSV file of the errors of a validation or cross-validation), the commit of the code and the checksum of `uv.lock`, and:
 
 - for an assembled dataset, its purpose (training or forecasting), the settings of `assemble.py`, its columns and types, its countries and subdivisions, and for each input, such as the combined electricity demand or the temperature, the number of files read and a checksum of their paths and contents;
 - for a model, its dataset and its checksum, the settings of `ml_config.yaml` and of the model, its features in their order with their types, its target and the transformation of the target, the statistics of its standardization, if any, and the countries and subdivisions and local years of each of its sets;
@@ -341,7 +341,7 @@ model_path:                        # Path to trained model file
 data_path:                         # Path to assembled data file
 ```
 
-Forecasts are saved to `data/results/forecasts/with_{trained_model_name}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the predicted electricity demand for the forecast period, in MW, whose complete years sum to their annual demand (see [from the predictions to MW](#from-the-predictions-to-mw)).
+Forecasts are saved to `data/results/forecasts/with_{trained_model_name}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet`, with the predicted electricity demand for the forecast period, in MW, whose complete years sum to their annual demand (see [from the predictions to MW](#from-the-predictions-to-mw)).
 
 ## Model Configuration
 

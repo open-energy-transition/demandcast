@@ -8,7 +8,7 @@ Description:
     Bank, and to calculate future annual electricity demand per capita
     based on growth rates from the IAMC scenarios. The electricity
     demand data is extracted for the countries and subdivisions of
-    interest and saved into CSV and Parquet files.
+    interest and saved into Parquet files.
 
     The two historical sources define the demand differently. The
     demand of Ember is the electricity generated and imported, less the
@@ -118,7 +118,7 @@ def run_data_retrieval(
     data from Ember and the World Bank, extracts the electricity data
     for the countries and subdivisions of interest, calculates future
     electricity demand per capita based on growth rates from the IAMC
-    scenarios, and saves it into CSV and Parquet files.
+    scenarios, and saves it into Parquet files.
 
     Parameters
     ----------

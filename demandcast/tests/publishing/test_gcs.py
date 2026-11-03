@@ -180,6 +180,41 @@ def test_upload(data_folder):
     }
 
 
+@pytest.mark.parametrize("direction", ["upload", "download"])
+def test_sync_of_some_folders(data_folder, direction):
+    """Test that only the files of the included folders are copied."""
+    for name in ("assembled/local.parquet", "temperature/local.parquet"):
+        (data_folder / name).parent.mkdir(parents=True, exist_ok=True)
+        (data_folder / name).write_bytes(b"local")
+    bucket = _FakeBucket(
+        {
+            "assembled/cloud.parquet": b"assembled",
+            "results/forecasts/all_1.parquet": b"forecasts",
+            "results/validation/all_1.parquet": b"validation",
+            "temperature/cloud.parquet": b"temperature",
+        }
+    )
+
+    report = gcs.sync(
+        "bucket",
+        direction,
+        str(data_folder),
+        client=_FakeClient(bucket),
+        included_folders=["assembled", "results/forecasts/"],
+    )
+
+    if direction == "upload":
+        assert report.copied == ["assembled/local.parquet"]
+        assert "temperature/local.parquet" not in bucket.objects
+    else:
+        assert report.copied == [
+            "assembled/cloud.parquet",
+            "results/forecasts/all_1.parquet",
+        ]
+        assert not (data_folder / "results" / "validation").exists()
+        assert not (data_folder / "temperature" / "cloud.parquet").exists()
+
+
 def test_download(data_folder):
     """Test that only the missing files are downloaded."""
     bucket = _FakeBucket(

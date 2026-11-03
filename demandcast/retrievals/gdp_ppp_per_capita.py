@@ -8,7 +8,7 @@ Description:
     Monetary Fund (IMF), as well as to calculate future GDP PPP per
     capita based on growth rates from the IAMC scenarios. The data is
     extracted for specified countries and subdivisions and saved into
-    CSV and Parquet files.
+    Parquet files.
 """
 
 from typing import cast
@@ -272,7 +272,7 @@ def run_data_retrieval(
     data from the World Bank and calculates future GDP PPP per capita
     based on growth rates from the IAMC scenarios. The data is
     extracted for the countries and subdivisions of interest and saved
-    into CSV and Parquet files.
+    into Parquet files.
 
     Parameters
     ----------
