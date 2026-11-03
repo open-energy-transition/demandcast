@@ -88,11 +88,11 @@ def describe_version(
     """
     Describe a version in the titles and in the names of the figures.
 
-    The description tells whether the results are those of a validation
-    or of a cross-validation, from the folder of the results, and the
-    algorithm and version of the model: the time of the training of a
-    validated model, and the time of a cross-validation, whose holdout
-    is in the names of the files only.
+    The title tells whether the results are those of a validation or of
+    a cross-validation, from the folder of the results, and the
+    algorithm of the model. The names of the files also tell its
+    version: the time of the training of a validated model, and the
+    holdout and the time of a cross-validation.
 
     Parameters
     ----------
@@ -109,9 +109,9 @@ def describe_version(
     Returns
     -------
     tuple[str, str]
-        The title, such as "Validation of the XGBoost model
-        20261029_144400", and the part of the names of the files, such
-        as "validation_xgboost_model_20261029_144400".
+        The title, such as "Validation of XGBoost", and the part of the
+        names of the files, such as
+        "validation_xgboost_model_20261029_144400".
     """
     file_path = file_path or ml_models.files.find_latest_results(
         results_directory, version
@@ -127,15 +127,12 @@ def describe_version(
             len("all_") : -len(".parquet")
         ]
         return (
-            f"Cross-validation of {algorithm_name} {results_time}",
+            f"Cross-validation of {algorithm_name}",
             f"cross_validation_{version}_{holdout}_{results_time}",
         )
     if not model_time:
         return f"Validation of {version}", f"validation_{version}"
-    return (
-        f"Validation of the {algorithm_name} model {model_time}",
-        f"validation_{version}",
-    )
+    return f"Validation of {algorithm_name}", f"validation_{version}"
 
 
 def _get_figure_width(number_of_entities: int) -> float:
@@ -910,7 +907,8 @@ def _plot_comparison(
     _add_explanatory_text(axs[1], metric)
 
     # Add a legend.
-    _add_legend(fig, [descriptions[0][0], descriptions[1][0]])
+    # The two versions are told apart by the names of their files.
+    _add_legend(fig, [descriptions[0][1], descriptions[1][1]])
 
     _add_grid(fig)
     plt.savefig(
