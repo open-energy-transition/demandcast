@@ -35,7 +35,7 @@ uvx pre-commit run --all-files  # run them on the whole repository
 
 1. Create a branch from `main` in your fork.
 2. Follow the existing style: [Ruff](https://docs.astral.sh/ruff/) formatting and linting (lines of at most 79 characters), NumPy-style docstrings and type hints, checked by mypy. The pre-commit hooks check this for you.
-3. Start each file with a descriptive, concise, clear and simple docstring (or comment, for files that are not Python), and add inline comments only where something is not obvious. Comments, docstrings and documentation state what the code does and the data behind it, with no history of changes and no comparisons with other code: those belong in commit messages and pull requests.
+3. Write docstrings following [PEP 257](https://peps.python.org/pep-0257/) and [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html). Start each file with a descriptive, concise, clear and simple docstring (or comment, for files that are not Python) that states what the module does and the data behind it. The docstring of each function, class and test states what it does, with the reasons and data facts that apply only to it in a Notes section. Add inline comments only for lines a reader would otherwise misread, such as an unusual timeout or a deliberately hidden error, never to explain ordinary behaviour or to repeat a docstring. Comments, docstrings and documentation describe the current code, with no history of changes and no comparisons with other code: those belong in commit messages and pull requests.
 4. Add or update tests for your changes in `demandcast/tests/`, whose folders mirror the code (the tests of `utils/fetcher.py` are in `tests/utils/test_fetcher.py`), and run them from the `demandcast/` folder:
 
    ```bash
