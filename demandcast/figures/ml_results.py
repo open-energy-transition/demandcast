@@ -633,7 +633,11 @@ def _plot_best_and_worst(
     axs[0, 0].legend(
         handles=handles, loc="upper left", fontsize=OVERALL_TEXT_SIZE - 2
     )
-    cast(ConstrainedLayoutEngine, fig.get_layout_engine()).set(hspace=0.08)
+    # The padding separates the title of the figure from those of the
+    # panels.
+    cast(ConstrainedLayoutEngine, fig.get_layout_engine()).set(
+        h_pad=0.12, hspace=0.07
+    )
     fig.suptitle(
         f"{description[0]}\nHourly demand of the countries and "
         "subdivisions with the lowest and the highest WAPE",
