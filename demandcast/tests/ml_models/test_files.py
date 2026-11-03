@@ -8,6 +8,7 @@ Description:
 """
 
 import os
+import zipfile
 from unittest.mock import patch
 
 import pandas as pd
@@ -316,3 +317,44 @@ def test_read_predictions():
     )
     with pytest.raises(ValueError, match="differ from those"):
         ml_models.files.read_predictions(results)
+
+
+def test_save_results_with_the_models_of_the_folds(tmp_path):
+    """
+    Test that the models of the folds are archived with the results.
+
+    The manifest of the results has the checksum of the archive and of
+    each model in it.
+    """
+    models_folder = tmp_path / "models"
+    models_folder.mkdir()
+    for code in ("DEU", "FRA"):
+        (models_folder / f"{code}.json").write_text(code)
+    ml_models.files.save_results(
+        "cross_validation",
+        pd.DataFrame({"Entity code": ["DEU", "FRA"]}),
+        "xgboost",
+        "data_1",
+        "all",
+        models_folder=str(models_folder),
+    )
+    results = ml_models.files.read_results(
+        str(
+            ml_models.files.find_latest_results(
+                utils.paths.get_results_folder("cross_validation"), "xgboost"
+            )
+        )
+    )
+
+    entry = (results.manifest or {})["models"]
+    archive_path = os.path.join(
+        os.path.dirname(results.file_path), entry["file"]
+    )
+    assert entry["sha256"] == utils.manifest.get_checksum(archive_path)
+    with zipfile.ZipFile(archive_path) as archive:
+        assert archive.namelist() == ["DEU.json", "FRA.json"]
+        assert archive.read("FRA.json") == b"FRA"
+    assert entry["models"] == {
+        name: utils.manifest.get_checksum(str(models_folder / name))
+        for name in ("DEU.json", "FRA.json")
+    }

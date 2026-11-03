@@ -5,7 +5,8 @@ Description:
 
     This script performs a cross-validation of a machine learning model
     using a preprocessed dataset, implementing a Leave-One-Group-Out
-    (LOGO) strategy and saving the results.
+    (LOGO) strategy and saving the results, with the trained model of
+    each fold in a ZIP archive next to them (see ml_models.files).
 """
 
 # On Windows, PyTorch must be imported before pandas, so the ml_models
@@ -15,6 +16,8 @@ import ml_models  # noqa: F401
 # isort: split
 import logging
 import os
+import shutil
+import tempfile
 from typing import Literal
 
 from pydantic import BaseModel
@@ -71,47 +74,54 @@ def run_model_cross_validation(
     # Read and prepare the dataset.
     prepared_dataset = ml_models.data.prepare_dataset(data_path, ml_config)
 
-    # Run Leave-One-Group-Out cross-validation.
-    mapes, predictions = ml_models.evaluation.cross_validate(
-        prepared_dataset,
-        n_jobs,
-        ml_config.algorithm,
-        model_config,
-        holdout,
-    )
-
-    results = mapes.merge(
-        ml_models.reporting.describe_entities(
+    # Run Leave-One-Group-Out cross-validation, keeping the model of
+    # each fold to archive with the results.
+    models_folder = tempfile.mkdtemp()
+    try:
+        mapes, predictions = ml_models.evaluation.cross_validate(
             prepared_dataset,
-            provenance=ml_models.reporting.read_provenance(data_path),
-        ),
-        on="Entity code",
-        how="left",
-    )
-    summary = ml_models.reporting.summarize(results, "Testing")
-    ml_models.reporting.log_summary(
-        summary, f"Held-out entities, holding out each {holdout}"
-    )
+            n_jobs,
+            ml_config.algorithm,
+            model_config,
+            holdout,
+            models_folder,
+        )
 
-    # Save the cross-validation results.
-    ml_models.files.save_results(
-        "cross_validation",
-        results,
-        ml_config.algorithm.lower(),
-        os.path.basename(data_path).split(".")[0],
-        "all",
-        {
-            "holdout": holdout,
-            "ml_settings": ml_config.model_dump(),
-            "model_settings": model_config.model_dump(),
-            "folds": ml_models.evaluation.get_folds(
-                prepared_dataset["group"], holdout
+        results = mapes.merge(
+            ml_models.reporting.describe_entities(
+                prepared_dataset,
+                provenance=ml_models.reporting.read_provenance(data_path),
             ),
-        },
-        data_path=data_path,
-        summary=summary,
-        predictions=predictions,
-    )
+            on="Entity code",
+            how="left",
+        )
+        summary = ml_models.reporting.summarize(results, "Testing")
+        ml_models.reporting.log_summary(
+            summary, f"Held-out entities, holding out each {holdout}"
+        )
+
+        # Save the cross-validation results.
+        ml_models.files.save_results(
+            "cross_validation",
+            results,
+            ml_config.algorithm.lower(),
+            os.path.basename(data_path).split(".")[0],
+            "all",
+            {
+                "holdout": holdout,
+                "ml_settings": ml_config.model_dump(),
+                "model_settings": model_config.model_dump(),
+                "folds": ml_models.evaluation.get_folds(
+                    prepared_dataset["group"], holdout
+                ),
+            },
+            data_path=data_path,
+            summary=summary,
+            predictions=predictions,
+            models_folder=models_folder,
+        )
+    finally:
+        shutil.rmtree(models_folder)
 
 
 def main(config: ConfigModel) -> None:

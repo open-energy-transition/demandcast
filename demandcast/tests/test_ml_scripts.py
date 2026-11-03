@@ -243,13 +243,18 @@ def _read_scores(
         The scores, and their summary by group of countries.
     """
     results_folder = os.path.join(folder, f"with_{model}", f"using_{data}")
-    assert sorted(os.listdir(results_folder)) == [
-        f"all_{NOW}.csv",
-        f"all_{NOW}.manifest.json",
-        f"all_{NOW}.parquet",
-        f"predictions_{NOW}.parquet",
-        f"summary_{NOW}.csv",
-    ]
+    # A cross-validation also archives the model of each fold.
+    cross_validation = os.path.basename(folder) == "cross_validation"
+    assert sorted(os.listdir(results_folder)) == sorted(
+        [
+            f"all_{NOW}.csv",
+            f"all_{NOW}.manifest.json",
+            f"all_{NOW}.parquet",
+            f"predictions_{NOW}.parquet",
+            f"summary_{NOW}.csv",
+            *([f"models_{NOW}.zip"] if cross_validation else []),
+        ]
+    )
     manifest = utils.manifest.read_manifest(
         os.path.join(results_folder, f"all_{NOW}.parquet")
     )
@@ -262,6 +267,14 @@ def _read_scores(
     )
     assert set(predictions["Entity code"]) == set(COUNTRY_CODES)
     assert (predictions["Load (MW)"] > 0).all()
+    if cross_validation:
+        # A cross-validation names its model after its algorithm.
+        extension = {
+            name.lower(): value for name, value in MODEL_EXTENSIONS.items()
+        }[model]
+        assert sorted(manifest["models"]["models"]) == sorted(
+            f"{code}.{extension}" for code in COUNTRY_CODES
+        )
     return (
         pd.read_parquet(os.path.join(results_folder, f"all_{NOW}.parquet")),
         pd.read_csv(os.path.join(results_folder, f"summary_{NOW}.csv")),

@@ -8,7 +8,17 @@ Description:
     record, or of a new record, to check and publish on the website of
     Zenodo (see publishing.zenodo). The manifest of each file (see
     utils/manifest.py), which tells how the model was trained and which
-    model and data gave the forecasts, is uploaded with it.
+    model and data gave the forecasts, is uploaded with it, and so is
+    the README of the release (publishing/release/README.md), with the
+    sources, licences and attributions of the data and how to replicate
+    the results.
+
+    A release cannot have the electricity demand, whose redistribution
+    the licences of many data sources do not allow: the files of the
+    electricity demand, the assembled data for training and the
+    predictions of the validations and cross-validations, which have
+    the actual demand of their hours, stop the release before anything
+    is uploaded.
 """
 
 import logging
@@ -20,6 +30,14 @@ import publishing.zenodo
 import utils.config
 import utils.manifest
 import utils.paths
+
+# The README of the releases.
+README_FILE = os.path.join(
+    os.path.dirname(publishing.zenodo.__file__), "release", "README.md"
+)
+
+# The starts of the names of the files with the electricity demand.
+DEMAND_FILE_PREFIXES = ("assembled_data_for_training_", "predictions_")
 
 
 class ConfigModel(utils.config.StrictSettings):
@@ -87,6 +105,40 @@ class ConfigModel(utils.config.StrictSettings):
                 "model, its settings and its forecasts."
             )
         return files
+
+
+def _check_publishable(file_paths: list[str]) -> None:
+    """
+    Check that no file of a release has the electricity demand.
+
+    Parameters
+    ----------
+    file_paths : list[str]
+        The paths of the files.
+
+    Raises
+    ------
+    ValueError
+        If a file is in the folder of the electricity demand, or is the
+        assembled data for training or predictions of scored hours,
+        with their actual demand.
+    """
+    demand_folder = os.path.realpath(
+        utils.paths.get_data_folder("electricity_demand")
+    )
+    for file_path in file_paths:
+        in_demand_folder = (
+            os.path.commonpath([os.path.realpath(file_path), demand_folder])
+            == demand_folder
+        )
+        if in_demand_folder or os.path.basename(file_path).startswith(
+            DEMAND_FILE_PREFIXES
+        ):
+            raise ValueError(
+                f"The file {file_path} has the electricity demand, whose "
+                "redistribution the licences of many data sources do not "
+                "allow, so it cannot be in a release."
+            )
 
 
 def _with_manifests(file_paths: list[str]) -> list[str]:
@@ -169,13 +221,13 @@ def main(config: ConfigModel) -> None:
     utils.config.set_up_logging("publication")
     utils.config.log_configuration(config)
 
+    file_paths = [
+        os.path.join(utils.paths.get_data_folder(), file_path)
+        for file_path in config.files
+    ]
+    _check_publishable(file_paths)
     publishing.zenodo.publish_release(
-        _with_manifests(
-            [
-                os.path.join(utils.paths.get_data_folder(), file_path)
-                for file_path in config.files
-            ]
-        ),
+        [*_with_manifests(file_paths), README_FILE],
         config.version,
         # The settings check that the record is a number or "new".
         config.zenodo_record

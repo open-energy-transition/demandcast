@@ -34,6 +34,7 @@ Description:
 """
 
 import logging
+import os
 from typing import Any, Literal
 
 import numpy as np
@@ -425,12 +426,13 @@ def _score_fold(
     prepared_dataset: ml_models.data.PreparedDataset,
     train_index: np.ndarray,
     test_index: np.ndarray,
+    model_path: str | None = None,
 ) -> tuple[
     list[tuple[str, float, float, float, float, float, float]],
     pd.DataFrame | None,
 ]:
     """
-    Train a model on one fold and score it.
+    Train a model on one fold and score it, and save it if asked.
 
     Parameters
     ----------
@@ -445,6 +447,9 @@ def _score_fold(
         The positions of the training rows.
     test_index : numpy.ndarray
         The positions of the held-out rows.
+    model_path : str | None, optional
+        The file where the trained model of the fold is saved, with the
+        extension of the model, none to not save it.
 
     Returns
     -------
@@ -462,6 +467,8 @@ pandas.DataFrame | None]
     held_out = ml_models.data.select_rows(prepared_dataset, test_index)
 
     model = model_module.train({"training": training}, model_config)
+    if model_path is not None:
+        model_module.save(model, model_path)
 
     training_predictions = model_module.predict(model, training)
     training_mape = mean_absolute_percentage_error(
@@ -509,13 +516,15 @@ def cross_validate(
     algorithm: str,
     model_config: BaseModel,
     holdout: Literal["entity", "country"] = "entity",
+    models_folder: str | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame | None]:
     """
     Run the Leave-One-Group-Out cross-validation of a model.
 
     Each entity, or each country with its subdivisions, is held out in
     turn: a model is trained on the others, and scored on its training
-    rows and on the rows of each held-out entity.
+    rows and on the rows of each held-out entity. The model of each fold
+    can be saved, named after the fold.
 
     Parameters
     ----------
@@ -531,6 +540,9 @@ def cross_validate(
     holdout : str, optional
         What each fold holds out: an "entity", or a "country" with its
         subdivisions.
+    models_folder : str | None, optional
+        The folder where the model of each fold is saved, as
+        <fold><extension of the model>, none to not save them.
 
     Returns
     -------
@@ -544,14 +556,24 @@ def cross_validate(
         get_scored_predictions), or None if the rows have no load in MW.
     """
     # Check that the algorithm is supported.
-    ml_models.registry.get_model_module(algorithm)
+    model_module = ml_models.registry.get_model_module(algorithm)
 
     group = prepared_dataset["group"]
     folds = group.map(lambda code: _get_fold(code, holdout))
 
     results = Parallel(n_jobs=n_jobs)(
         delayed(_score_fold)(
-            algorithm, model_config, prepared_dataset, train, test
+            algorithm,
+            model_config,
+            prepared_dataset,
+            train,
+            test,
+            os.path.join(
+                models_folder,
+                f"{folds.iloc[test[0]]}{model_module.FILE_EXTENSION}",
+            )
+            if models_folder is not None
+            else None,
         )
         for train, test in LeaveOneGroupOut().split(
             prepared_dataset["features"], prepared_dataset["target"], folds

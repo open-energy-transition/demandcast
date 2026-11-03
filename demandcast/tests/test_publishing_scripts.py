@@ -41,7 +41,7 @@ def test_sync(monkeypatch):
     ("record", "expected_record"), [(18374352, 18374352), ("new", None)]
 )
 def test_publish(monkeypatch, record, expected_record):
-    """Test that the files are found in the data folder."""
+    """Test that the files of the data folder go with a README."""
     calls = []
     monkeypatch.setattr(
         publish.publishing.zenodo,
@@ -62,7 +62,8 @@ def test_publish(monkeypatch, record, expected_record):
             [
                 os.path.join(
                     utils.paths.get_data_folder(), "models/xgboost/model.json"
-                )
+                ),
+                publish.README_FILE,
             ],
             "1.1.0",
             expected_record,
@@ -123,9 +124,10 @@ def _write_release(folder):
                 "all.manifest.json",
                 "all.parquet",
                 "settings.yaml",
+                "README.md",
             ],
         ),
-        (["all.csv"], ["all.csv", "all.manifest.json"]),
+        (["all.csv"], ["all.csv", "all.manifest.json", "README.md"]),
     ],
 )
 def test_publish_with_the_manifests(monkeypatch, caplog, files, expected):
@@ -191,3 +193,44 @@ def test_release_preflight(monkeypatch, problem):
         )
 
     assert calls == []
+
+
+@pytest.mark.parametrize(
+    "file_name",
+    [
+        "assembled/assembled_data_for_training_20261102_194003.parquet",
+        "assembled/assembled_data_for_training_20261102_194003.csv",
+        "results/validation/with_model/using_data/predictions_1.parquet",
+        "electricity_demand/combined/FRA.parquet",
+    ],
+)
+def test_release_without_the_demand(monkeypatch, file_name):
+    """Test that a file with the demand stops the release."""
+    file_path = os.path.join(utils.paths.get_data_folder(), file_name)
+    os.makedirs(os.path.dirname(file_path))
+    with open(file_path, "w") as file:
+        file.write("demand")
+    calls = []
+    monkeypatch.setattr(
+        publish.publishing.zenodo,
+        "publish_release",
+        lambda *args: calls.append(args),
+    )
+
+    with pytest.raises(ValueError, match="has the electricity demand"):
+        publish.main(
+            publish.ConfigModel(
+                zenodo_record=1, version="2.0.0", files=[file_name]
+            )
+        )
+
+    assert calls == []
+
+
+def test_readme_of_the_releases():
+    """Test that the README of the releases names its sources."""
+    with open(publish.README_FILE, encoding="utf-8") as file:
+        readme = file.read()
+
+    for source in ("ERA5", "World Bank", "Monetary Fund", "Ember", "CC BY"):
+        assert source in readme
