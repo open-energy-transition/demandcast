@@ -388,13 +388,38 @@ def test_bars_of_small_codes_not_seen_in_training():
     ]
 
 
+def test_typical_week_on_the_half_hour():
+    """
+    Test the typical week of a time zone on the half hour.
+
+    The local hours of India start at 0:30, and the week of 13 January
+    2025 has the median error of the three complete weeks.
+    """
+    hours = pd.date_range("2025-01-06 00:30", "2025-01-26 23:30", freq="h")
+    errors = pd.Series(1.0, index=hours)
+    errors[
+        (hours >= pd.Timestamp("2025-01-13"))
+        & (hours < pd.Timestamp("2025-01-20"))
+    ] = 2.0
+    errors[hours >= pd.Timestamp("2025-01-20")] = 3.0
+    hourly = pd.DataFrame(
+        {"Load (MW)": 100.0, "Forecast load (MW)": 100.0 + errors},
+        index=hours,
+    )
+
+    assert ml_results._get_typical_week(hourly) == pd.Timestamp("2025-01-13")
+    # Without the first day of each week, no week is complete.
+    assert ml_results._get_typical_week(hourly.iloc[24 : 7 * 24]) is None
+
+
 def test_plot_best_and_worst(tmp_path):
     """
     Test the figure of the hourly demand of the best and worst codes.
 
     France has the lowest WAPE and Germany the highest. Germany has two
     scored years, of which 2024 has the most hours, and a missing day,
-    which is a gap in its lines.
+    which is a gap in its lines. Each code has its year and its typical
+    week.
     """
     france = pd.date_range("2023-01-01 01:00", "2024-01-01 00:00", freq="h")
     germany = pd.date_range("2023-06-01 01:00", "2025-01-01 00:00", freq="h")
@@ -450,15 +475,22 @@ def test_plot_best_and_worst(tmp_path):
         )
 
     figure = saved["wape_validation_xgboost_model_1_best_and_worst.png"]
+    # The typical week is the first complete one, from Monday to Sunday
+    # in local time, since all the weeks have the same error: that of
+    # 1 January 2024 has not its first hour, which is in 2023.
     assert [ax.get_title() for ax in figure.axes] == [
         "Lowest WAPE: FRA in 2023 (WAPE of the year 1.0%)",
+        "Typical week: 02 Jan to 08 Jan (WAPE 1.0%)",
         "Highest WAPE: DEU in 2024 (WAPE of the year 20.0%)",
+        "Typical week: 08 Jan to 14 Jan (WAPE 20.0%)",
     ]
     # The lines of Germany have a gap for its missing day, and the axes
-    # span the whole local year.
-    actual = figure.axes[1].get_lines()[0].get_ydata()
+    # span the whole local year and the week.
+    actual = figure.axes[2].get_lines()[0].get_ydata()
     assert np.isnan(np.asarray(actual, dtype=float)).sum() == 24
-    assert figure.axes[1].get_xlim() == pytest.approx(
+    week = np.asarray(figure.axes[3].get_lines()[0].get_ydata())
+    assert len(week) == 7 * 24
+    assert figure.axes[2].get_xlim() == pytest.approx(
         [
             plt.matplotlib.dates.date2num(pd.Timestamp("2024-01-01")),
             plt.matplotlib.dates.date2num(pd.Timestamp("2025-01-01")),

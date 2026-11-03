@@ -35,7 +35,7 @@ The boxes show how the errors spread: for all the countries and subdivisions, fo
 
 ![Distribution of the WAPE of the validation](status/wape_validation_distribution.png)
 
-The figure below compares the actual hourly demand with the forecast, over a full year, for the country or subdivision with the lowest error and for that with the highest. The forecast has the annual demand of the actual one, so the two differ by the error of the hourly profile, which the WAPE measures.
+The figure below compares the actual hourly demand with the forecast for the country or subdivision with the lowest error and for that with the highest: over a full year on the left, and on the right over its typical week, from Monday to Sunday, whose error is the median of the weeks of the year, shaded in the year. The forecast has the annual demand of the actual one, so the two differ by the error of the hourly profile, which the WAPE measures.
 
 ![Actual and forecast hourly demand of the best and the worst country or subdivision of the validation](status/wape_validation_best_and_worst.png)
 

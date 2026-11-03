@@ -15,7 +15,10 @@ Description:
     group in MW. If the results have the predictions of their scored
     hours, a third figure shows the actual and forecast hourly demand of
     the codes with the lowest and the highest WAPE, in the local year
-    with the most scored hours, the latest of them. The forecast is in
+    with the most scored hours, the latest of them, and in its typical
+    week, the complete week from Monday to Sunday whose WAPE is the
+    closest to the median WAPE of the complete weeks of the year. The
+    forecast is in
     MW with the same annual demand as the actual one (see
     ml_models.evaluation.get_scored_predictions), so the two differ by
     the error of the hourly profile, which the WAPE measures. The errors
@@ -39,12 +42,13 @@ Description:
 """
 
 import os
-from typing import Literal
+from typing import Literal, cast
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.layout_engine import ConstrainedLayoutEngine
 from matplotlib.patches import Patch
 from matplotlib.transforms import offset_copy
 
@@ -451,6 +455,54 @@ def _add_bar_plot(
     ax.set_xlim(-1, len(series))
 
 
+def _get_typical_week(hourly: pd.DataFrame) -> pd.Timestamp | None:
+    """
+    Get the week of a year whose error is the median one.
+
+    Parameters
+    ----------
+    hourly : pandas.DataFrame
+        The actual ("Load (MW)") and forecast ("Forecast load (MW)")
+        load of each hour, by the local time of its start.
+
+    Returns
+    -------
+    pandas.Timestamp | None
+        The Monday of the complete week, from Monday to Sunday, whose
+        WAPE is the closest to the median WAPE of the complete weeks,
+        or None if no week is complete.
+    """
+    times = pd.DatetimeIndex(hourly.index)
+    mondays = times.normalize() - pd.to_timedelta(times.day_of_week, unit="D")
+    weeks = hourly.groupby(mondays)
+    # A complete week has all its hours, from the first hour of Monday
+    # to the last of Sunday, one less or one more when the clocks
+    # change, which start on the half hour in some time zones, such as
+    # India.
+    starts = pd.Series(times, index=times).groupby(mondays)
+    first, last = starts.min(), starts.max()
+    week_starts = pd.Series(first.index, index=first.index)
+    hour = pd.Timedelta(hours=1)
+    complete = (
+        (weeks["Load (MW)"].count() >= 7 * 24 - 1)
+        & weeks["Load (MW)"].apply(lambda load: load.notna().all())
+        & (first - week_starts < hour)
+        & (week_starts + pd.Timedelta(days=7) - last <= hour)
+    )
+    errors = (
+        weeks.apply(
+            lambda week: (
+                (week["Forecast load (MW)"] - week["Load (MW)"]).abs().sum()
+                / week["Load (MW)"].sum()
+            )
+        )
+    )[complete]
+    if errors.empty:
+        return None
+    distances = (errors - errors.median()).abs()
+    return pd.DatetimeIndex(distances.index)[int(distances.argmin())]
+
+
 def _plot_best_and_worst(
     figure_directory: str,
     errors: pd.Series,
@@ -459,6 +511,10 @@ def _plot_best_and_worst(
 ) -> None:
     """
     Plot the actual and forecast demand of the best and worst codes.
+
+    Each code has a row, with its local year on the left and, on the
+    right, its typical week, whose WAPE is the median of its weeks (see
+    _get_typical_week), shaded in the year.
 
     Parameters
     ----------
@@ -476,8 +532,15 @@ def _plot_best_and_worst(
     """
     errors = errors.dropna()
     errors = errors[errors.index.isin(predictions["Entity code"].unique())]
-    fig, axs = plt.subplots(2, 1, figsize=(16, 9), layout="constrained")
-    for ax, (label, code) in zip(
+    fig, axs = plt.subplots(
+        2,
+        2,
+        figsize=(16, 9),
+        layout="constrained",
+        sharey="row",
+        gridspec_kw={"width_ratios": [2, 1]},
+    )
+    for (year_ax, week_ax), (label, code) in zip(
         axs,
         (("Lowest", errors.idxmin()), ("Highest", errors.idxmax())),
         strict=True,
@@ -491,45 +554,86 @@ def _plot_best_and_worst(
         hourly = rows.reindex(
             pd.date_range(rows.index.min(), rows.index.max(), freq="h")
         )
-        times = (
+        hourly.index = (
             (pd.DatetimeIndex(hourly.index) - pd.Timedelta(hours=1))
             .tz_localize("UTC")
             .tz_convert(utils.time_zones.get_time_zone(str(code)))
             .tz_localize(None)
         )
-        ax.plot(times, hourly["Load (MW)"], color="black", linewidth=0.5)
-        ax.plot(
-            times,
-            hourly["Forecast load (MW)"],
-            color="tab:orange",
-            linewidth=0.5,
-            alpha=0.8,
-        )
         year_error = (
             rows["Forecast load (MW)"] - rows["Load (MW)"]
         ).abs().sum() / rows["Load (MW)"].sum()
-        ax.set_title(
+        monday = _get_typical_week(hourly)
+        panels = [(year_ax, hourly, 0.5)]
+        if monday is not None:
+            week = hourly[
+                (hourly.index >= monday)
+                & (hourly.index < monday + pd.Timedelta(days=7))
+            ]
+            panels.append((week_ax, week, 1.2))
+        else:
+            week_ax.set_axis_off()
+        for ax, data, width in panels:
+            ax.plot(
+                data.index, data["Load (MW)"], color="black", linewidth=width
+            )
+            ax.plot(
+                data.index,
+                data["Forecast load (MW)"],
+                color="tab:orange",
+                linewidth=width,
+                alpha=0.8,
+            )
+            ax.tick_params(labelsize=OVERALL_TEXT_SIZE - 4)
+
+        year_ax.set_title(
             f"{label} WAPE: {code} in {int(year)} "
             f"(WAPE of the year {year_error * 100:.1f}%)",
             weight="bold",
             fontsize=OVERALL_TEXT_SIZE - 2,
         )
-        ax.set_ylabel("Demand (MW)", weight="bold", fontsize=OVERALL_TEXT_SIZE)
-        ax.tick_params(labelsize=OVERALL_TEXT_SIZE - 4)
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
-        ax.xaxis.set_major_locator(mdates.MonthLocator())
-        ax.set_xlim(
+        year_ax.set_ylabel(
+            "Demand (MW)", weight="bold", fontsize=OVERALL_TEXT_SIZE
+        )
+        year_ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
+        year_ax.xaxis.set_major_locator(
+            mdates.MonthLocator(bymonth=range(1, 13, 2))
+        )
+        year_ax.set_xlim(
             pd.Timestamp(int(year), 1, 1), pd.Timestamp(int(year) + 1, 1, 1)
         )
-    axs[-1].set_xlabel("Local time", weight="bold", fontsize=OVERALL_TEXT_SIZE)
+        if monday is not None:
+            sunday = monday + pd.Timedelta(days=6)
+            week_error = (
+                week["Forecast load (MW)"] - week["Load (MW)"]
+            ).abs().sum() / week["Load (MW)"].sum()
+            week_ax.set_title(
+                f"Typical week: {monday:%d %b} to {sunday:%d %b} "
+                f"(WAPE {week_error * 100:.1f}%)",
+                weight="bold",
+                fontsize=OVERALL_TEXT_SIZE - 2,
+            )
+            week_ax.xaxis.set_major_locator(mdates.DayLocator())
+            week_ax.xaxis.set_major_formatter(mdates.DateFormatter("%a"))
+            week_ax.set_xlim(monday, monday + pd.Timedelta(days=7))
+            year_ax.axvspan(
+                monday,
+                monday + pd.Timedelta(days=7),
+                color="lightgrey",
+                alpha=0.6,
+                zorder=0,
+            )
+    for ax in axs[-1]:
+        ax.set_xlabel("Local time", weight="bold", fontsize=OVERALL_TEXT_SIZE)
     handles = [
         plt.Line2D([], [], color="black", linewidth=2, label="Actual"),
         plt.Line2D([], [], color="tab:orange", linewidth=2, label="Forecast"),
+        Patch(facecolor="lightgrey", label="Typical week"),
     ]
-    axs[0].legend(
+    axs[0, 0].legend(
         handles=handles, loc="upper left", fontsize=OVERALL_TEXT_SIZE - 2
     )
-    fig.get_layout_engine().set(hspace=0.08)
+    cast(ConstrainedLayoutEngine, fig.get_layout_engine()).set(hspace=0.08)
     fig.suptitle(
         f"{description[0]}\nHourly demand of the countries and "
         "subdivisions with the lowest and the highest WAPE",
