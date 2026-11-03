@@ -214,8 +214,8 @@ def _read_assembled(target_use: str) -> pd.DataFrame:
     Returns
     -------
     pandas.DataFrame
-        The assembled data, from its Parquet file, which is the same as
-        its CSV file.
+        The assembled data, from its Parquet file, which has no CSV
+        copy.
     """
     pattern = os.path.join(
         utils.paths.get_assembled_folder(),
@@ -224,13 +224,8 @@ def _read_assembled(target_use: str) -> pd.DataFrame:
     parquet_path = next(
         path for path in glob.glob(pattern) if path.endswith(".parquet")
     )
-    assembled = pd.read_parquet(parquet_path)
-    from_csv = pd.read_csv(parquet_path.removesuffix(".parquet") + ".csv")
-    assert len(from_csv) == len(assembled)
-    assert (
-        from_csv["Entity code"].tolist() == assembled["Entity code"].tolist()
-    )
-    return assembled
+    assert not os.path.exists(parquet_path.removesuffix(".parquet") + ".csv")
+    return pd.read_parquet(parquet_path)
 
 
 def test_load_data_for_entity(tmp_path):

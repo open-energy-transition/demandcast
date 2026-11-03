@@ -205,7 +205,7 @@ def save_yearly_values(
 
     The values of the given years are converted to the hours of their
     local years and cleaned, and replace the saved values of those
-    years. Both files are replaced only once they are written.
+    years. The file is replaced only once it is written.
 
     Parameters
     ----------
@@ -216,7 +216,7 @@ def save_yearly_values(
     variable_name : str
         The name of the variable.
     file_path_without_ext : str
-        The path of the Parquet and CSV files, without extension.
+        The path of the Parquet file, without extension.
     time_zone : datetime.tzinfo
         The time zone of the local years.
     """
@@ -240,13 +240,9 @@ def save_yearly_values(
         if not saved.empty:
             time_series = pd.concat([saved, time_series]).sort_index()
 
-    for extension in (".parquet", ".csv"):
-        temporary_path = file_path_without_ext + ".tmp" + extension
-        if extension == ".parquet":
-            time_series.to_frame().to_parquet(temporary_path)
-        else:
-            time_series.to_csv(temporary_path)
-        os.replace(temporary_path, file_path_without_ext + extension)
+    temporary_path = file_path_without_ext + ".tmp.parquet"
+    time_series.to_frame().to_parquet(temporary_path)
+    os.replace(temporary_path, file_path_without_ext + ".parquet")
 
 
 def clean_data(time_series: pd.Series, variable_name: str) -> pd.Series:

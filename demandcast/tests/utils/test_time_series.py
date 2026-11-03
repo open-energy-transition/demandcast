@@ -273,11 +273,8 @@ def test_save_yearly_values(tmp_path):
         2024: {"min": 2.0, "max": 2.0, "count": 8784},
     }
     assert saved.index.is_monotonic_increasing
-    from_csv = pd.read_csv(file_path + ".csv", index_col=0)["Value"]
-    assert from_csv.to_numpy().tolist() == saved.to_numpy().tolist()
     assert sorted(path.name for path in tmp_path.iterdir()) == [
-        "values.csv",
-        "values.parquet",
+        "values.parquet"
     ]
 
 

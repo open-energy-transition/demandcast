@@ -6,7 +6,9 @@ Description:
     This module copies the files of the data folder to a bucket of
     Google Cloud Storage, or the files of the bucket to the data folder,
     with the same paths. A copy only adds the files that are missing at
-    the destination: it never overwrites or deletes a file there.
+    the destination: it never overwrites or deletes a file there. It can
+    be limited to some folders, such as "assembled" to download only
+    the assembled data.
 
     A file at the same path at both ends is compared by its size and its
     CRC32C checksum, which Cloud Storage keeps for each object. An
@@ -141,6 +143,32 @@ def _is_excluded(name: str, excluded_folders: Iterable[str]) -> bool:
     """
     return name.endswith("/") or name.split("/", maxsplit=1)[0] in set(
         excluded_folders
+    )
+
+
+def _is_included(name: str, included_folders: Iterable[str] | None) -> bool:
+    """
+    Tell whether a file is in the folders to copy.
+
+    Parameters
+    ----------
+    name : str
+        The path of the file relative to the data folder, with forward
+        slashes, which is its name in the bucket.
+    included_folders : Iterable[str] | None
+        The folders to copy, relative to the data folder, such as
+        "assembled" or "results/forecasts", or None for all of them.
+
+    Returns
+    -------
+    bool
+        True if the file is in one of the folders, or if all of them are
+        copied.
+    """
+    if included_folders is None:
+        return True
+    return any(
+        name.startswith(folder.strip("/") + "/") for folder in included_folders
     )
 
 
@@ -300,6 +328,7 @@ def sync(
     excluded_folders: Iterable[str] = ("logs",),
     dry_run: bool = False,
     client: Any = None,
+    included_folders: Iterable[str] | None = None,
 ) -> SyncReport:
     """
     Copy the missing files to the bucket or to the data folder.
@@ -320,6 +349,10 @@ def sync(
     client : google.cloud.storage.Client, optional
         The client of Cloud Storage, by default one with the credentials
         of the user.
+    included_folders : Iterable[str] | None, optional
+        The only folders to copy, relative to the data folder, such as
+        "assembled" or "results/forecasts", or None to copy all the
+        folders that are not excluded.
 
     Returns
     -------
@@ -327,12 +360,21 @@ def sync(
         The files copied, identical and different.
     """
     excluded_folders = tuple(excluded_folders)
+    if included_folders is not None:
+        included_folders = tuple(included_folders)
     bucket = (client or storage.Client()).bucket(bucket_name)
-    local_files = list_local_files(data_folder, excluded_folders)
+    local_files = {
+        name: file_path
+        for name, file_path in list_local_files(
+            data_folder, excluded_folders
+        ).items()
+        if _is_included(name, included_folders)
+    }
     blobs = {
         blob.name: blob
         for blob in bucket.list_blobs()
         if not _is_excluded(blob.name, excluded_folders)
+        and _is_included(blob.name, included_folders)
     }
     report = SyncReport()
 

@@ -863,12 +863,10 @@ def run_data_assemply(
     )
 
     # Sort the dataset in the order of the entities and of the times,
-    # since the windows of the LSTM need consecutive hours. Save it to
-    # CSV and Parquet formats.
+    # since the windows of the LSTM need consecutive hours.
     assembled_data = assembled_data.sort_values(
         ["Entity code", "Time (UTC)"], ignore_index=True
     )
-    assembled_data.to_csv(output_path + ".csv", index=False)
     assembled_data.to_parquet(output_path + ".parquet", index=False)
     if coverage is not None:
         coverage.to_csv(output_path + "_coverage.csv", index=False)
@@ -919,9 +917,7 @@ def run_data_assemply(
         },
     )
 
-    logging.info(
-        f"Assembled data saved to {output_path}.csv and {output_path}.parquet"
-    )
+    logging.info(f"Assembled data saved to {output_path}.parquet")
 
 
 def main(config: ConfigModel) -> None:

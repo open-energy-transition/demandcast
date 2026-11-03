@@ -56,10 +56,7 @@ def test_run_data_retrieval_of_future_scenario():
                 "annual_electricity_demand_per_capita"
             )
         )
-    ) == [
-        "FRA_SSP2_45.csv",
-        "FRA_SSP2_45.parquet",
-    ]
+    ) == ["FRA_SSP2_45.parquet"]
     saved = pd.read_parquet(
         os.path.join(
             utils.paths.get_indicator_folder(
