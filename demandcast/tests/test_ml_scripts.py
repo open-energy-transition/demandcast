@@ -235,7 +235,7 @@ def _read_scores(
     folder: str, model: str, data: str
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Read the scores of a validation, with their summary.
+    Read the scores of a validation, with their summary and predictions.
 
     Returns
     -------
@@ -247,6 +247,7 @@ def _read_scores(
         f"all_{NOW}.csv",
         f"all_{NOW}.manifest.json",
         f"all_{NOW}.parquet",
+        f"predictions_{NOW}.parquet",
         f"summary_{NOW}.csv",
     ]
     manifest = utils.manifest.read_manifest(
@@ -254,6 +255,13 @@ def _read_scores(
     )
     assert manifest is not None
     assert manifest["summary"]["file"] == f"summary_{NOW}.csv"
+    # The predictions of the scored rows in MW, of each country.
+    assert manifest["predictions"]["file"] == f"predictions_{NOW}.parquet"
+    predictions = pd.read_parquet(
+        os.path.join(results_folder, f"predictions_{NOW}.parquet")
+    )
+    assert set(predictions["Entity code"]) == set(COUNTRY_CODES)
+    assert (predictions["Load (MW)"] > 0).all()
     return (
         pd.read_parquet(os.path.join(results_folder, f"all_{NOW}.parquet")),
         pd.read_csv(os.path.join(results_folder, f"summary_{NOW}.csv")),

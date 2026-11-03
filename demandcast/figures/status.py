@@ -10,11 +10,14 @@ Description:
     annual electricity demand per capita, how many countries,
     subdivisions, data sources and years of data there are, and the
     errors of a validation and of a cross-validation of the models (see
-    figures.ml_results), with their median WAPE in ml_results.md. The
-    results are those of the given files, or the latest of each case by
-    the time in their names, checked against their manifests, and the
-    description of the cross-validation follows the holdout that its
-    manifest records.
+    figures.ml_results): the error of each code, their distribution and
+    the hourly demand of the codes with the lowest and the highest
+    error, with the median WAPE of each case in ml_validation.md and
+    ml_cross_validation.md. The results are those of the given files,
+    or the latest of each case by the time in their names, checked
+    against their manifests, with their summary and their predictions,
+    and the description of the cross-validation follows the holdout
+    that its manifest records.
 
     The figures are drawn into the folder of the figures and copied
     into webpage/docs/status/, with the numbers in numbers.md, which the
@@ -53,19 +56,25 @@ FIGURE_FILES = (
 NUMBERS_FILE = "numbers.md"
 
 # The figures of the errors of the models on the page, the bars of the
-# codes and their distribution, by case of the results.
+# codes, their distribution and the hourly demand of the best and the
+# worst code, by case of the results.
 ML_FIGURE_FILES: dict[
-    Literal["validation", "cross_validation"], tuple[str, str]
+    Literal["validation", "cross_validation"], tuple[str, str, str]
 ] = {
-    "validation": ("wape_validation.png", "wape_validation_distribution.png"),
-    "cross_validation": (
-        "wape_cross_validation.png",
-        "wape_cross_validation_distribution.png",
-    ),
+    case: (
+        f"wape_{case}.png",
+        f"wape_{case}_distribution.png",
+        f"wape_{case}_best_and_worst.png",
+    )
+    for case in ("validation", "cross_validation")
 }
 
-# The file of the description of the errors, in the folder of the page.
-ML_RESULTS_FILE = "ml_results.md"
+# The files of the description of the errors of each case, in the folder
+# of the page.
+ML_RESULTS_FILES = {
+    "validation": "ml_validation.md",
+    "cross_validation": "ml_cross_validation.md",
+}
 
 # The markers of the block of the numbers in the README.
 STATUS_START = "<!-- status:start -->"
@@ -221,7 +230,8 @@ def _find_results(
     Raises
     ------
     ValueError
-        If the results have no summary in their manifest.
+        If the results have no summary or no predictions in their
+        manifest.
     """
     file_path = file_path or ml_models.files.find_latest_results(
         utils.paths.get_results_folder(case), "*"
@@ -229,10 +239,12 @@ def _find_results(
     if file_path is None:
         return None
     results = ml_models.files.read_results(file_path)
-    if results.summary is None:
+    if results.summary is None or "predictions" not in (
+        results.manifest or {}
+    ):
         raise ValueError(
-            f"The results {file_path} have no summary in their manifest, "
-            "so they cannot be described."
+            f"The results {file_path} have no summary or no predictions in "
+            "their manifest, so they cannot be described."
         )
     version = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
     return version.removeprefix("with_"), results
@@ -262,21 +274,51 @@ def _get_median_wape(
     return float(rows["Median WAPE"].iloc[0]) * 100
 
 
-def describe_ml_results(
+def describe_validation(
     validation: tuple[str, ml_models.files.Results] | None,
-    cross_validation: tuple[str, ml_models.files.Results] | None,
 ) -> str:
     """
-    Describe the errors of the models in a paragraph of Markdown.
-
-    The cross-validation is described by the holdout that its manifest
-    records, a held-out entity by default.
+    Describe the errors of the validation in a paragraph of Markdown.
 
     Parameters
     ----------
     validation : tuple[str, ml_models.files.Results] | None
         The trained model of the validation and its results, or None if
         there is none.
+
+    Returns
+    -------
+    str
+        The paragraph.
+    """
+    if validation is None:
+        return "The models have no validation yet."
+    version, results = validation
+    summary = cast(pd.DataFrame, results.summary)
+    algorithm, _, model_time = version.partition("_model_")
+    name = figures.ml_results.ALGORITHM_NAMES.get(algorithm, algorithm)
+    return (
+        f"In the validation of the {name} model {model_time}, the median "
+        "WAPE of the countries and subdivisions is "
+        f"**{_get_median_wape(summary):.1f}%**: "
+        f"{_get_median_wape(summary, 'Seen in training', 'Yes'):.1f}% for "
+        "those whose other years the model saw in training, and "
+        f"{_get_median_wape(summary, 'Seen in training', 'No'):.1f}% for "
+        "those that it never saw."
+    )
+
+
+def describe_cross_validation(
+    cross_validation: tuple[str, ml_models.files.Results] | None,
+) -> str:
+    """
+    Describe the errors of the cross-validation in a paragraph.
+
+    The cross-validation is described by the holdout that its manifest
+    records, a held-out entity by default.
+
+    Parameters
+    ----------
     cross_validation : tuple[str, ml_models.files.Results] | None
         The algorithm of the cross-validation and its results, or None
         if there is none.
@@ -284,47 +326,32 @@ def describe_ml_results(
     Returns
     -------
     str
-        The paragraph.
+        The paragraph, in Markdown.
     """
-    sentences = []
-    if validation is not None:
-        version, results = validation
-        summary = cast(pd.DataFrame, results.summary)
-        algorithm, _, model_time = version.partition("_model_")
-        name = figures.ml_results.ALGORITHM_NAMES.get(algorithm, algorithm)
-        sentences.append(
-            f"In the validation of the {name} model {model_time}, the "
-            "median WAPE of the countries and subdivisions is "
-            f"**{_get_median_wape(summary):.1f}%**: "
-            f"{_get_median_wape(summary, 'Seen in training', 'Yes'):.1f}% "
-            "for those whose other years the model saw in training, and "
-            f"{_get_median_wape(summary, 'Seen in training', 'No'):.1f}% "
-            "for those that it never saw."
+    if cross_validation is None:
+        return "The models have no cross-validation yet."
+    algorithm, results = cross_validation
+    summary = cast(pd.DataFrame, results.summary)
+    name = figures.ml_results.ALGORITHM_NAMES.get(algorithm, algorithm)
+    holdout = (results.manifest or {}).get("holdout", "entity")
+    codes = int(summary.loc[summary["Group"] == "All", "Codes"].iloc[0])
+    return (
+        f"The cross-validation of {name} leaves "
+        + (
+            "each country, with its subdivisions,"
+            if holdout == "country"
+            else "each country or subdivision"
         )
-    if cross_validation is not None:
-        algorithm, results = cross_validation
-        summary = cast(pd.DataFrame, results.summary)
-        name = figures.ml_results.ALGORITHM_NAMES.get(algorithm, algorithm)
-        holdout = (results.manifest or {}).get("holdout", "entity")
-        codes = int(summary.loc[summary["Group"] == "All", "Codes"].iloc[0])
-        sentences.append(
-            f"In the cross-validation of {name}, which leaves "
-            + (
-                "each country, with its subdivisions,"
-                if holdout == "country"
-                else "each country or subdivision"
-            )
-            + " out of the training in turn, the median WAPE of the "
-            f"{codes} held-out countries and subdivisions is "
-            f"**{_get_median_wape(summary):.1f}%**, an estimate of the "
-            + (
-                "error for a country without data."
-                if holdout == "country"
-                else "error for a country or subdivision without data, "
-                "whose country can have data of its other subdivisions."
-            )
+        + " out of the training in turn, and the median WAPE of the "
+        f"{codes} held-out countries and subdivisions is "
+        f"**{_get_median_wape(summary):.1f}%**, an estimate of the "
+        + (
+            "error for a country without data."
+            if holdout == "country"
+            else "error for a country or subdivision without data, whose "
+            "country can have data of its other subdivisions."
         )
-    return " ".join(sentences) or "The models have no results yet."
+    )
 
 
 def _plot_ml_results(
@@ -369,7 +396,11 @@ def _plot_ml_results(
             results_directory, version, results.file_path
         )
         for drawn, file_name in zip(
-            (f"wape_{stem}.png", f"wape_{stem}_distribution.png"),
+            (
+                f"wape_{stem}.png",
+                f"wape_{stem}_distribution.png",
+                f"wape_{stem}_best_and_worst.png",
+            ),
             file_names,
             strict=True,
         ):
@@ -422,7 +453,13 @@ def plot(
     validation, cross_validation = _plot_ml_results(
         figure_directory, status_folder, results_files
     )
-    with open(
-        os.path.join(status_folder, ML_RESULTS_FILE), "w", encoding="utf-8"
-    ) as file:
-        file.write(describe_ml_results(validation, cross_validation) + "\n")
+    for case, text in (
+        ("validation", describe_validation(validation)),
+        ("cross_validation", describe_cross_validation(cross_validation)),
+    ):
+        with open(
+            os.path.join(status_folder, ML_RESULTS_FILES[case]),
+            "w",
+            encoding="utf-8",
+        ) as file:
+            file.write(text + "\n")

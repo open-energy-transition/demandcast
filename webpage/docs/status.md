@@ -19,11 +19,15 @@ The [data retrieval](retrieval.md) page describes the data sources, and how thei
 
 ## Forecast errors
 
-The models forecast the hourly electricity demand of each year of a country or subdivision. Their error is the weighted absolute percentage error (WAPE): the sum of the absolute differences between the forecast and the actual hourly demand, divided by the sum of the actual demand. Lower is better.
+The models forecast the hourly electricity demand of each year of a country or subdivision. Their error is the weighted absolute percentage error (WAPE): the sum of the absolute differences between the forecast and the actual hourly demand, divided by the sum of the actual demand. Lower is better. The models are scored in two ways: a validation, on the most recent year of the countries and subdivisions with data, and a cross-validation, on countries and subdivisions whose data the model never saw.
 
---8<-- "status/ml_results.md"
+### Validation
 
-The validation trains the model on all the years of data but the most recent one of each country and subdivision, and scores it on that year. The countries and subdivisions with a single year of data are only scored, so the model never saw them in training. Each bar is the error of a country or subdivision, hatched with lines if the model never saw it in training, and with dots if its mean demand is below 300 MW.
+The validation trains the model on all the years of data but the most recent one of each country and subdivision, and scores it on that year. The countries and subdivisions with a single year of data are only scored, so the model never saw them in training. It tells how well the model forecasts a new year of the places it learned from.
+
+--8<-- "status/ml_validation.md"
+
+Each bar is the error of a country or subdivision, hatched with lines if the model never saw it in training, and with dots if its mean demand is below 300 MW.
 
 ![WAPE of the validation of each country and subdivision](status/wape_validation.png)
 
@@ -31,10 +35,22 @@ The boxes show how the errors spread: for all the countries and subdivisions, fo
 
 ![Distribution of the WAPE of the validation](status/wape_validation_distribution.png)
 
-The cross-validation trains a model without each country, with its subdivisions, and scores it on that country, as the models forecast the countries without data.
+The figure below compares the actual hourly demand with the forecast, over a full year, for the country or subdivision with the lowest error and for that with the highest. The forecast has the annual demand of the actual one, so the two differ by the error of the hourly profile, which the WAPE measures.
+
+![Actual and forecast hourly demand of the best and the worst country or subdivision of the validation](status/wape_validation_best_and_worst.png)
+
+### Cross-validation
+
+The cross-validation trains a model without part of the data in turn, and scores it on the part left out, which the model never saw, as when the models forecast the countries and subdivisions without data.
+
+--8<-- "status/ml_cross_validation.md"
+
+The figures show the error of each country and subdivision, their distribution, and the actual and forecast hourly demand of those with the lowest and the highest error, as for the validation.
 
 ![WAPE of the cross-validation of each country and subdivision](status/wape_cross_validation.png)
 
 ![Distribution of the WAPE of the cross-validation](status/wape_cross_validation_distribution.png)
+
+![Actual and forecast hourly demand of the best and the worst country or subdivision of the cross-validation](status/wape_cross_validation_best_and_worst.png)
 
 The [machine learning](ML.md) page describes the models and how they are validated.

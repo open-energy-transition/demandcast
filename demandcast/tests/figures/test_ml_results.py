@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+import ml_models.files
 import utils.manifest
 import utils.paths
 from figures import ml_results
@@ -385,3 +386,82 @@ def test_bars_of_small_codes_not_seen_in_training():
         None,
         ml_results.UNSEEN_HATCH + ml_results.SMALL_HATCH,
     ]
+
+
+def test_plot_best_and_worst(tmp_path):
+    """
+    Test the figure of the hourly demand of the best and worst codes.
+
+    France has the lowest WAPE and Germany the highest. Germany has two
+    scored years, of which 2024 has the most hours, and a missing day,
+    which is a gap in its lines.
+    """
+    france = pd.date_range("2023-01-01 01:00", "2024-01-01 00:00", freq="h")
+    germany = pd.date_range("2023-06-01 01:00", "2025-01-01 00:00", freq="h")
+    germany = germany[
+        (germany <= pd.Timestamp("2024-03-01"))
+        | (germany > pd.Timestamp("2024-03-02"))
+    ]
+    predictions = pd.concat(
+        [
+            pd.DataFrame(
+                {
+                    "Entity code": code,
+                    "Time (UTC)": hours,
+                    "Local year": (hours - pd.Timedelta(hours=1)).year,
+                    "Load (MW)": 100.0,
+                    "Forecast load (MW)": forecast,
+                }
+            )
+            for code, hours, forecast in (
+                ("FRA", france, 101.0),
+                ("DEU", germany, 120.0),
+            )
+        ],
+        ignore_index=True,
+    )
+    ml_models.files.save_results(
+        "validation",
+        pd.DataFrame(
+            {
+                "Entity code": ["DEU", "FRA"],
+                "Testing MAPE": [0.2, 0.01],
+                "Testing WAPE": [0.2, 0.01],
+            }
+        ),
+        "xgboost_model_1",
+        "data_1",
+        "all",
+        predictions=predictions,
+    )
+
+    saved = {}
+    with patch.object(
+        plt,
+        "savefig",
+        side_effect=lambda path, **_: saved.update(
+            {os.path.basename(path): plt.gcf()}
+        ),
+    ):
+        ml_results.plot(
+            str(tmp_path),
+            "xgboost_model_1",
+            results_directory=utils.paths.get_results_folder("validation"),
+        )
+
+    figure = saved["wape_validation_xgboost_model_1_best_and_worst.png"]
+    assert [ax.get_title() for ax in figure.axes] == [
+        "Lowest WAPE: FRA in 2023 (WAPE of the year 1.0%)",
+        "Highest WAPE: DEU in 2024 (WAPE of the year 20.0%)",
+    ]
+    # The lines of Germany have a gap for its missing day, and the axes
+    # span the whole local year.
+    actual = figure.axes[1].get_lines()[0].get_ydata()
+    assert np.isnan(np.asarray(actual, dtype=float)).sum() == 24
+    assert figure.axes[1].get_xlim() == pytest.approx(
+        [
+            plt.matplotlib.dates.date2num(pd.Timestamp("2024-01-01")),
+            plt.matplotlib.dates.date2num(pd.Timestamp("2025-01-01")),
+        ]
+    )
+    plt.close("all")

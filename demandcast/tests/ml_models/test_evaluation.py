@@ -105,7 +105,7 @@ def _make_prepared_dataset(
 
 def test_cross_validate_returns_one_row_per_entity(algorithm):
     """Test that there is one row of MAPEs per held-out entity."""
-    mapes = ml_models.evaluation.cross_validate(
+    mapes, _ = ml_models.evaluation.cross_validate(
         _make_prepared_dataset(),
         1,
         algorithm,
@@ -135,7 +135,7 @@ def test_cross_validate_by_country():
         return real_train(prepared_dataset, config)
 
     with patch.object(model_module, "train", side_effect=spy_train):
-        mapes = ml_models.evaluation.cross_validate(
+        mapes, _ = ml_models.evaluation.cross_validate(
             _make_prepared_dataset(["ARG", "ARG_B", "ARG_C", "BRA"]),
             1,
             "XGBoost",
@@ -202,10 +202,10 @@ def test_cross_validate_in_parallel():
     """Test that the results are the same with parallel folds."""
     dataset = _make_prepared_dataset()
 
-    sequential_mapes = ml_models.evaluation.cross_validate(
+    sequential_mapes, _ = ml_models.evaluation.cross_validate(
         dataset, 1, "XGBoost", _model_config("XGBoost")
     )
-    parallel_mapes = ml_models.evaluation.cross_validate(
+    parallel_mapes, _ = ml_models.evaluation.cross_validate(
         dataset, 2, "XGBoost", _model_config("XGBoost")
     )
 
@@ -309,6 +309,11 @@ def test_errors_in_mwh_weigh_each_year_by_its_demand():
         "features": pd.DataFrame({"a": np.zeros(20)}),
         "target": pd.Series(np.ones(20)),
         "group": pd.Series(["FRA"] * 20, name="Entity code"),
+        "time": pd.Series(
+            pd.date_range("2023-06-01", periods=10, freq="h").append(
+                pd.date_range("2024-06-01", periods=10, freq="h")
+            )
+        ),
         "local_year": pd.Series([2023] * 10 + [2024] * 10),
         "others": pd.DataFrame({"Load (MW)": load}),
     }
@@ -337,7 +342,7 @@ def test_cross_validation_gives_the_errors_in_mwh():
     dataset["local_year"] = pd.Series([2024] * len(dataset["target"]))
     dataset["others"] = pd.DataFrame({"Load (MW)": dataset["target"] * 1000.0})
 
-    results = ml_models.evaluation.cross_validate(
+    results, predictions = ml_models.evaluation.cross_validate(
         dataset, 1, "XGBoost", _model_config("XGBoost")
     )
 
@@ -349,6 +354,20 @@ def test_cross_validation_gives_the_errors_in_mwh():
         results["Testing absolute error (MWh)"]
         / results["Testing demand (MWh)"]
     ).tolist() == pytest.approx(results["Testing WAPE"].tolist())
+    # The predictions of each held-out row, in MW, give its errors.
+    assert predictions is not None
+    assert len(predictions) == len(dataset["target"])
+    errors = (
+        (predictions["Forecast load (MW)"] - predictions["Load (MW)"])
+        .abs()
+        .groupby(predictions["Entity code"])
+        .sum()
+    )
+    assert errors.to_dict() == pytest.approx(
+        results.set_index("Entity code")[
+            "Testing absolute error (MWh)"
+        ].to_dict()
+    )
 
 
 def test_wape_is_not_dominated_by_values_close_to_zero():

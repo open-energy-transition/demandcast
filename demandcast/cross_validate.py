@@ -72,7 +72,7 @@ def run_model_cross_validation(
     prepared_dataset = ml_models.data.prepare_dataset(data_path, ml_config)
 
     # Run Leave-One-Group-Out cross-validation.
-    mapes = ml_models.evaluation.cross_validate(
+    mapes, predictions = ml_models.evaluation.cross_validate(
         prepared_dataset,
         n_jobs,
         ml_config.algorithm,
@@ -110,6 +110,7 @@ def run_model_cross_validation(
         },
         data_path=data_path,
         summary=summary,
+        predictions=predictions,
     )
 
 
