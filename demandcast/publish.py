@@ -13,12 +13,13 @@ Description:
     sources, licences and attributions of the data and how to replicate
     the results.
 
-    A release with forecasts also has their compact file
+    The forecasts are uploaded as their compact file
     (COMPACT_FORECASTS_FILE), made from them at the upload, with the
     time, the code and the forecast of each hour of each country and
-    subdivision, without the inputs of the model. It has the name and
-    the columns of the file of the first release of DemandCast, which
-    PyPSA-Earth downloads.
+    subdivision, without the inputs of the model, which the assembled
+    data for forecasting has. It has the name and the columns of the
+    file of the first release of DemandCast, which PyPSA-Earth
+    downloads.
 
     A release cannot have the electricity demand, whose redistribution
     the licences of many data sources do not allow: the files of the
@@ -219,29 +220,36 @@ def _with_manifests(file_paths: list[str]) -> list[str]:
     return with_manifests
 
 
-def _write_compact_forecasts(file_paths: list[str], folder: str) -> list[str]:
+def _use_compact_forecasts(file_paths: list[str], folder: str) -> list[str]:
     """
-    Write the compact file of the forecasts of a release.
+    Replace the forecasts of a release with their compact file.
+
+    The compact file has the time, the code and the forecast of each
+    hour of each country and subdivision, without the inputs of the
+    model, which the assembled data for forecasting has. Its manifest
+    has the model, the data and the units of the forecasts, and the
+    name, checksum and code version of the forecasts that it comes
+    from, after they are checked against their manifest.
 
     Parameters
     ----------
     file_paths : list[str]
         The paths of the files of the release.
     folder : str
-        The folder where to write the compact file.
+        The folder where to write the compact file and its manifest.
 
     Returns
     -------
     list[str]
-        The path of the compact file, or none if the
-        release has no forecasts in a Parquet file.
+        The paths of the files of the release, with the compact file in
+        place of the Parquet file of the forecasts, if it has one.
 
     Raises
     ------
     ValueError
         If the release has the forecasts of several Parquet files.
     """
-    forecasts = []
+    forecasts = {}
     for file_path in file_paths:
         if not file_path.endswith(".parquet"):
             continue
@@ -251,20 +259,44 @@ def _write_compact_forecasts(file_paths: list[str], folder: str) -> list[str]:
             and manifest["kind"] == "results"
             and manifest.get("case") == "forecasts"
         ):
-            forecasts.append(file_path)
+            forecasts[file_path] = manifest
     if not forecasts:
-        return []
+        return file_paths
     if len(forecasts) > 1:
         raise ValueError(
-            f"The release has several files of forecasts: {forecasts}."
+            f"The release has several files of forecasts: {list(forecasts)}."
         )
+    [(forecasts_path, manifest)] = forecasts.items()
+    utils.manifest.verify_file(forecasts_path, "results")
 
-    file_path = os.path.join(folder, COMPACT_FORECASTS_FILE)
+    compact_path = os.path.join(folder, COMPACT_FORECASTS_FILE)
     pd.read_parquet(
-        forecasts[0], columns=COMPACT_FORECASTS_COLUMNS
-    ).to_parquet(file_path, index=False)
-    logging.info(f"The forecasts of {forecasts[0]} are in {file_path}.")
-    return [file_path]
+        forecasts_path, columns=COMPACT_FORECASTS_COLUMNS
+    ).to_parquet(compact_path, index=False)
+    utils.manifest.write_manifest(
+        compact_path,
+        "results",
+        {
+            "case": "forecasts",
+            "model": manifest.get("model"),
+            "dataset": manifest.get("dataset"),
+            "columns": COMPACT_FORECASTS_COLUMNS,
+            "units": manifest.get("units"),
+            "annual_totals": manifest.get("annual_totals"),
+            "forecasts": {
+                "file": manifest["file"],
+                "sha256": manifest["sha256"],
+                "code": manifest.get("code"),
+            },
+        },
+    )
+    logging.info(
+        f"The forecasts of {forecasts_path} are uploaded as {compact_path}."
+    )
+    return [
+        compact_path if file_path == forecasts_path else file_path
+        for file_path in file_paths
+    ]
 
 
 def main(config: ConfigModel) -> None:
@@ -287,12 +319,10 @@ def main(config: ConfigModel) -> None:
         for file_path in config.files
     ]
     _check_publishable(file_paths)
-    release_files = _with_manifests(file_paths)
     with tempfile.TemporaryDirectory() as folder:
         publishing.zenodo.publish_release(
             [
-                *release_files,
-                *_write_compact_forecasts(file_paths, folder),
+                *_with_manifests(_use_compact_forecasts(file_paths, folder)),
                 README_FILE,
             ],
             config.version,

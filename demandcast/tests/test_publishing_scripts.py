@@ -8,6 +8,7 @@ Description:
 """
 
 import os
+from typing import Any
 
 import pandas as pd
 import pytest
@@ -247,16 +248,23 @@ def test_release_with_the_compact_forecasts(monkeypatch):
         }
     ).to_parquet(forecasts_path, index=False)
     utils.manifest.write_manifest(
-        forecasts_path, "results", {"case": "forecasts"}
+        forecasts_path,
+        "results",
+        {"case": "forecasts", "model": {"name": "model"}, "units": "MW"},
     )
-    uploads: list[tuple[str, pd.DataFrame]] = []
+    uploads: dict[str, Any] = {}
 
     def publish_release(file_paths, *_args):
-        uploads.extend(
-            (os.path.basename(path), pd.read_parquet(path))
-            for path in file_paths
-            if path.endswith(publish.COMPACT_FORECASTS_FILE)
-        )
+        for path in file_paths:
+            name = os.path.basename(path)
+            if name.endswith(".parquet"):
+                uploads[name] = pd.read_parquet(path)
+            elif name.endswith(".json"):
+                uploads[name] = utils.manifest.read_manifest(
+                    path.replace(utils.manifest.MANIFEST_EXTENSION, ".parquet")
+                )
+            else:
+                uploads[name] = None
 
     monkeypatch.setattr(
         publish.publishing.zenodo, "publish_release", publish_release
@@ -270,14 +278,29 @@ def test_release_with_the_compact_forecasts(monkeypatch):
         )
     )
 
-    [(name, compact_forecasts)] = uploads
-    assert name == "forecasts_on_historical_period.parquet"
+    # The forecasts with the inputs of the model are not uploaded.
+    assert sorted(uploads) == [
+        "README.md",
+        "forecasts_on_historical_period.manifest.json",
+        "forecasts_on_historical_period.parquet",
+    ]
+    compact_forecasts = uploads["forecasts_on_historical_period.parquet"]
     assert list(compact_forecasts.columns) == [
         "Time (UTC)",
         "Entity code",
         "Forecast load (MW)",
     ]
     assert list(compact_forecasts["Entity code"]) == ["FRA", "USA", "USA_CA"]
+    manifest = uploads["forecasts_on_historical_period.manifest.json"]
+    assert (manifest["case"], manifest["model"], manifest["units"]) == (
+        "forecasts",
+        {"name": "model"},
+        "MW",
+    )
+    assert manifest["forecasts"]["file"] == "all.parquet"
+    assert manifest["forecasts"]["sha256"] == utils.manifest.get_checksum(
+        forecasts_path
+    )
 
 
 def test_release_with_several_forecasts(monkeypatch):
