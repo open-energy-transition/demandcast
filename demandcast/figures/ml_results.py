@@ -526,12 +526,10 @@ def _plot_best_and_worst(
         plt.Line2D([], [], color="black", linewidth=2, label="Actual"),
         plt.Line2D([], [], color="tab:orange", linewidth=2, label="Forecast"),
     ]
-    fig.legend(
-        handles=handles,
-        loc="outside lower center",
-        ncols=2,
-        fontsize=OVERALL_TEXT_SIZE - 2,
+    axs[0].legend(
+        handles=handles, loc="upper left", fontsize=OVERALL_TEXT_SIZE - 2
     )
+    fig.get_layout_engine().set(hspace=0.08)
     fig.suptitle(
         f"{description[0]}\nHourly demand of the countries and "
         "subdivisions with the lowest and the highest WAPE",
