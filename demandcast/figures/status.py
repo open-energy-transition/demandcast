@@ -312,13 +312,14 @@ def describe_model(
     if validation is not None:
         algorithm, _, model_time = validation[0].partition("_model_")
         name = figures.ml_results.ALGORITHM_NAMES.get(algorithm, algorithm)
-        try:
-            trained = (
-                " trained on "
-                f"{dt.datetime.strptime(model_time, '%Y%m%d_%H%M%S'):%d %B %Y}"
-            )
-        except ValueError:
-            trained = ""
+        trained_at = pd.to_datetime(
+            model_time, format="%Y%m%d_%H%M%S", errors="coerce"
+        )
+        trained = (
+            f" trained on {trained_at:%d %B %Y}"
+            if pd.notna(trained_at)
+            else ""
+        )
         sentences.append(
             f"The results below are those of the {name} model{trained} "
             f"(`{validation[0]}`), on the dataset `{datasets['validation']}`."
