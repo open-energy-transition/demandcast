@@ -284,7 +284,10 @@ def describe_model(
     cross_validation: tuple[str, ml_models.files.Results] | None,
 ) -> str:
     """
-    Describe the model and the data of the results in a paragraph.
+    Describe the model of the results in a paragraph.
+
+    The assembled data is not named, since the licences of many data
+    sources do not allow its redistribution.
 
     Parameters
     ----------
@@ -322,7 +325,7 @@ def describe_model(
         )
         sentences.append(
             f"The results below are those of the {name} model{trained} "
-            f"(`{validation[0]}`), on the dataset `{datasets['validation']}`."
+            f"(`{validation[0]}`)."
         )
     if cross_validation is not None:
         name = figures.ml_results.ALGORITHM_NAMES.get(
@@ -331,12 +334,11 @@ def describe_model(
         sentences.append(
             f"The cross-validation trains {name} models on "
             + (
-                "the same dataset"
+                "the same data."
                 if datasets.get("cross_validation")
                 == datasets.get("validation")
-                else f"the dataset `{datasets['cross_validation']}`"
+                else "other data."
             )
-            + "."
         )
     return " ".join(sentences)
 

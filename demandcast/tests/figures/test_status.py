@@ -247,14 +247,14 @@ def test_describe_cross_validation(holdout, description):
 
 @pytest.mark.parametrize(
     ("dataset", "cross_validation_data"),
-    [("data_1", "the same dataset"), ("data_2", "the dataset `data_2`")],
+    [("data_1", "the same data"), ("data_2", "other data")],
 )
 def test_describe_model(dataset, cross_validation_data):
     """
-    Test the paragraph of the model and the data of the results.
+    Test the paragraph of the model of the results.
 
-    The cross-validation tells its dataset if it is not that of the
-    validation.
+    The data is not named, and the cross-validation tells whether it is
+    that of the validation.
     """
     summary = _summary({("All", "All"): 0.1})
 
@@ -266,9 +266,8 @@ def test_describe_model(dataset, cross_validation_data):
         ("xgboost", _results(summary, {"dataset": {"name": dataset}})),
     ) == (
         "The results below are those of the XGBoost model trained on 02 "
-        "November 2026 (`xgboost_model_20261102_194204`), on the dataset "
-        "`data_1`. The cross-validation trains XGBoost models on "
-        f"{cross_validation_data}."
+        "November 2026 (`xgboost_model_20261102_194204`). The "
+        f"cross-validation trains XGBoost models on {cross_validation_data}."
     )
     assert status.describe_model(None, None) == ""
 
