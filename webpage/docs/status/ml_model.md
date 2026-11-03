@@ -1,1 +1,1 @@
-The results below are those of the XGBoost model trained on 02 November 2026 (`xgboost_model_20261102_194204`). The cross-validation trains XGBoost models on the same data.
+The results below are those of XGBoost models, trained on the data of the countries and subdivisions above, without the data that each evaluation leaves out, which its section describes.

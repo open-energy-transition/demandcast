@@ -245,29 +245,24 @@ def test_describe_cross_validation(holdout, description):
     )
 
 
-@pytest.mark.parametrize(
-    ("dataset", "cross_validation_data"),
-    [("data_1", "the same data"), ("data_2", "other data")],
-)
-def test_describe_model(dataset, cross_validation_data):
+def test_describe_model():
     """
-    Test the paragraph of the model of the results.
+    Test the paragraph of the models of the results.
 
-    The data is not named, and the cross-validation tells whether it is
-    that of the validation.
+    It names their algorithm, once, not the trained model.
     """
     summary = _summary({("All", "All"): 0.1})
 
     assert status.describe_model(
-        (
-            "xgboost_model_20261102_194204",
-            _results(summary, {"dataset": {"name": "data_1"}}),
-        ),
-        ("xgboost", _results(summary, {"dataset": {"name": dataset}})),
+        ("xgboost_model_20261102_194204", _results(summary)),
+        ("xgboost", _results(summary)),
     ) == (
-        "The results below are those of the XGBoost model trained on 02 "
-        "November 2026 (`xgboost_model_20261102_194204`). The "
-        f"cross-validation trains XGBoost models on {cross_validation_data}."
+        "The results below are those of XGBoost models, trained on the "
+        "data of the countries and subdivisions above, without the data "
+        "that each evaluation leaves out, which its section describes."
+    )
+    assert status.describe_model(None, ("lstm", _results(summary))).startswith(
+        "The results below are those of LSTM models"
     )
     assert status.describe_model(None, None) == ""
 
@@ -285,8 +280,8 @@ def test_describe_validation():
     assert status.describe_validation(
         ("xgboost_model_20261031_212342", _results(validation))
     ) == (
-        "In the validation of the XGBoost model 20261031_212342, the "
-        "median WAPE of the countries and subdivisions is **7.1%**: 6.6% "
+        "In the validation of XGBoost, the median WAPE of the countries "
+        "and subdivisions is **7.1%**: 6.6% "
         "for those whose other years the model saw in training, and 11.2% "
         "for those that it never saw."
     )

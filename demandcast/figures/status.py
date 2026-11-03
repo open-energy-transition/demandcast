@@ -284,10 +284,11 @@ def describe_model(
     cross_validation: tuple[str, ml_models.files.Results] | None,
 ) -> str:
     """
-    Describe the model of the results in a paragraph.
+    Describe the models of the results in a paragraph.
 
-    The assembled data is not named, since the licences of many data
-    sources do not allow its redistribution.
+    Each evaluation trains its own models, without the data that it
+    leaves out, which its section describes, so the paragraph names
+    their algorithm, not a trained model.
 
     Parameters
     ----------
@@ -303,44 +304,25 @@ def describe_model(
     str
         The paragraph, in Markdown, empty without results.
     """
-    datasets = {
-        case: (found[1].manifest or {}).get("dataset", {}).get("name")
-        for case, found in (
-            ("validation", validation),
-            ("cross_validation", cross_validation),
-        )
+    algorithms = [
+        found[0].partition("_model_")[0]
+        for found in (validation, cross_validation)
         if found is not None
-    }
-    sentences = []
-    if validation is not None:
-        algorithm, _, model_time = validation[0].partition("_model_")
-        name = figures.ml_results.ALGORITHM_NAMES.get(algorithm, algorithm)
-        trained_at = pd.to_datetime(
-            model_time, format="%Y%m%d_%H%M%S", errors="coerce"
+    ]
+    names = list(
+        dict.fromkeys(
+            figures.ml_results.ALGORITHM_NAMES.get(algorithm, algorithm)
+            for algorithm in algorithms
         )
-        trained = (
-            f" trained on {trained_at:%d %B %Y}"
-            if pd.notna(trained_at)
-            else ""
-        )
-        sentences.append(
-            f"The results below are those of the {name} model{trained} "
-            f"(`{validation[0]}`)."
-        )
-    if cross_validation is not None:
-        name = figures.ml_results.ALGORITHM_NAMES.get(
-            cross_validation[0], cross_validation[0]
-        )
-        sentences.append(
-            f"The cross-validation trains {name} models on "
-            + (
-                "the same data."
-                if datasets.get("cross_validation")
-                == datasets.get("validation")
-                else "other data."
-            )
-        )
-    return " ".join(sentences)
+    )
+    if not names:
+        return ""
+    return (
+        f"The results below are those of {' and '.join(names)} models, "
+        "trained on the data of the countries and subdivisions above, "
+        "without the data that each evaluation leaves out, which its "
+        "section describes."
+    )
 
 
 def describe_validation(
@@ -364,11 +346,11 @@ def describe_validation(
         return "The models have no validation yet."
     version, results = validation
     summary = cast(pd.DataFrame, results.summary)
-    algorithm, _, model_time = version.partition("_model_")
+    algorithm = version.partition("_model_")[0]
     name = figures.ml_results.ALGORITHM_NAMES.get(algorithm, algorithm)
     return (
-        f"In the validation of the {name} model {model_time}, the median "
-        "WAPE of the countries and subdivisions is "
+        f"In the validation of {name}, the median WAPE of the countries and "
+        "subdivisions is "
         f"**{_get_median_wape(summary):.1f}%**: "
         f"{_get_median_wape(summary, 'Seen in training', 'Yes'):.1f}% for "
         "those whose other years the model saw in training, and "
