@@ -1,0 +1,1 @@
+The cross-validation of XGBoost leaves each country or subdivision out of the training in turn, and the median WAPE of the 168 held-out countries and subdivisions is **8.5%**, an estimate of the error for a country or subdivision without data, whose country can have data of its other subdivisions.

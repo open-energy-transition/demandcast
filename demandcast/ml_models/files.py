@@ -21,8 +21,8 @@ Description:
 
     The results of a version are read from the latest of its files by
     the time in their names, and are checked against their manifest,
-    with their summary, so that a copied or changed file is neither
-    taken for the latest nor read.
+    with their summary and their predictions, so that a copied or
+    changed file is neither taken for the latest nor read.
 """
 
 import dataclasses
@@ -185,6 +185,39 @@ def read_results(file_path: str) -> Results:
     return Results(file_path, pd.read_parquet(file_path), summary, manifest)
 
 
+def read_predictions(results: Results) -> pd.DataFrame | None:
+    """
+    Read the predictions of results, checked against their manifest.
+
+    Parameters
+    ----------
+    results : Results
+        The results.
+
+    Returns
+    -------
+    pandas.DataFrame | None
+        The predictions of the scored rows in MW (see
+        ml_models.evaluation.get_scored_predictions), or None if the
+        manifest of the results has none.
+
+    Raises
+    ------
+    ValueError
+        If the predictions differ from those that the manifest records.
+    """
+    entry = (results.manifest or {}).get("predictions")
+    if entry is None:
+        return None
+    file_path = os.path.join(os.path.dirname(results.file_path), entry["file"])
+    if utils.manifest.get_checksum(file_path) != entry["sha256"]:
+        raise ValueError(
+            f"The predictions {file_path} differ from those that the "
+            f"manifest of {results.file_path} records."
+        )
+    return pd.read_parquet(file_path)
+
+
 def get_trained_model_path(
     model_path: str | None,
     algorithm_name: str,
@@ -289,6 +322,7 @@ def save_results(
     model_path: str | None = None,
     data_path: str | None = None,
     summary: pd.DataFrame | None = None,
+    predictions: pd.DataFrame | None = None,
 ) -> None:
     """
     Save the model results to CSV and Parquet files, with a manifest.
@@ -297,7 +331,8 @@ def save_results(
     model and of the data of the results, if their paths are given, and
     of the summary of the results, saved to a CSV file whose name
     starts with "summary" instead of the start of the names of the
-    results.
+    results, and of the predictions of the scored rows, saved to a
+    Parquet file whose name starts with "predictions".
 
     Parameters
     ----------
@@ -321,6 +356,9 @@ def save_results(
     summary : pandas.DataFrame | None, optional
         The summary of the results, such as their errors by group of
         countries and subdivisions (see ml_models.reporting).
+    predictions : pandas.DataFrame | None, optional
+        The predictions of the scored rows in MW (see
+        ml_models.evaluation.get_scored_predictions).
 
     Raises
     ------
@@ -357,17 +395,25 @@ def save_results(
     # the manifest of their model, data and metric.
     output_dataset.to_csv(results_file_name + ".csv", index=False)
     output_dataset.to_parquet(results_file_name + ".parquet", index=False)
-    summary_content = {}
+    # The files that the manifest records besides the results.
+    companion_files: dict[str, dict[str, str]] = {}
     if summary is not None:
         summary_path = os.path.join(
             model_results_folder, f"summary_{timestamp}.csv"
         )
         summary.to_csv(summary_path, index=False)
-        summary_content = {
-            "summary": {
-                "file": os.path.basename(summary_path),
-                "sha256": utils.manifest.get_checksum(summary_path),
-            }
+        companion_files["summary"] = {
+            "file": os.path.basename(summary_path),
+            "sha256": utils.manifest.get_checksum(summary_path),
+        }
+    if predictions is not None:
+        predictions_path = os.path.join(
+            model_results_folder, f"predictions_{timestamp}.parquet"
+        )
+        predictions.to_parquet(predictions_path, index=False)
+        companion_files["predictions"] = {
+            "file": os.path.basename(predictions_path),
+            "sha256": utils.manifest.get_checksum(predictions_path),
         }
     utils.manifest.write_manifest(
         results_file_name + ".parquet",
@@ -401,7 +447,7 @@ def save_results(
                     ),
                 }
             ),
-            **summary_content,
+            **companion_files,
             **(extra or {}),
         },
         other_formats=(results_file_name + ".csv",),

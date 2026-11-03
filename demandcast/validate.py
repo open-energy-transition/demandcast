@@ -116,6 +116,9 @@ def run_model_validation(
         model_path=trained_model_path,
         data_path=data_path,
         summary=summary,
+        predictions=ml_models.evaluation.get_scored_predictions(
+            predictions["testing"], prepared_dataset["testing"]
+        ),
     )
 
 

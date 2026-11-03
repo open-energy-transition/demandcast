@@ -143,11 +143,21 @@ def test_plot(tmp_path):
 
     # Without results of the models, the page says so.
     assert sorted(os.listdir(status_folder)) == sorted(
-        [*status.FIGURE_FILES, status.NUMBERS_FILE, status.ML_RESULTS_FILE]
+        [
+            *status.FIGURE_FILES,
+            status.NUMBERS_FILE,
+            *status.ML_RESULTS_FILES.values(),
+        ]
     )
-    assert (status_folder / status.ML_RESULTS_FILE).read_text(
-        encoding="utf-8"
-    ) == "The models have no results yet.\n"
+    assert [
+        (status_folder / status.ML_RESULTS_FILES[case]).read_text(
+            encoding="utf-8"
+        )
+        for case in ("validation", "cross_validation")
+    ] == [
+        "The models have no validation yet.\n",
+        "The models have no cross-validation yet.\n",
+    ]
     text = status.describe(NUMBERS)
     assert (status_folder / status.NUMBERS_FILE).read_text(
         encoding="utf-8"
@@ -202,8 +212,8 @@ def _results(
         (
             "country",
             (
-                "which leaves each country, with its subdivisions, out of "
-                "the training in turn, the median WAPE of the 3 held-out "
+                "leaves each country, with its subdivisions, out of the "
+                "training in turn, and the median WAPE of the 3 held-out "
                 "countries and subdivisions is **10.0%**, an estimate of the "
                 "error for a country without data."
             ),
@@ -211,21 +221,29 @@ def _results(
         (
             "entity",
             (
-                "which leaves each country or subdivision out of the "
-                "training in turn, the median WAPE of the 3 held-out "
-                "countries and subdivisions is **10.0%**, an estimate of the "
-                "error for a country or subdivision without data, whose "
-                "country can have data of its other subdivisions."
+                "leaves each country or subdivision out of the training in "
+                "turn, and the median WAPE of the 3 held-out countries and "
+                "subdivisions is **10.0%**, an estimate of the error for a "
+                "country or subdivision without data, whose country can have "
+                "data of its other subdivisions."
             ),
         ),
     ],
 )
-def test_describe_ml_results(holdout, description):
-    """
-    Test the paragraph of the errors of the models.
+def test_describe_cross_validation(holdout, description):
+    """Test that the cross-validation is described by its holdout."""
+    cross_validation = _summary({("All", "All"): 0.1})
 
-    The cross-validation is described by the holdout of its manifest.
-    """
+    assert status.describe_cross_validation(
+        ("xgboost", _results(cross_validation, {"holdout": holdout}))
+    ) == ("The cross-validation of XGBoost " + description)
+    assert status.describe_cross_validation(None) == (
+        "The models have no cross-validation yet."
+    )
+
+
+def test_describe_validation():
+    """Test the paragraph of the errors of the validation."""
     validation = _summary(
         {
             ("All", "All"): 0.071,
@@ -233,20 +251,17 @@ def test_describe_ml_results(holdout, description):
             ("Seen in training", "No"): 0.112,
         }
     )
-    cross_validation = _summary({("All", "All"): 0.1})
 
-    assert status.describe_ml_results(
-        ("xgboost_model_20261031_212342", _results(validation)),
-        ("xgboost", _results(cross_validation, {"holdout": holdout})),
+    assert status.describe_validation(
+        ("xgboost_model_20261031_212342", _results(validation))
     ) == (
         "In the validation of the XGBoost model 20261031_212342, the "
         "median WAPE of the countries and subdivisions is **7.1%**: 6.6% "
         "for those whose other years the model saw in training, and 11.2% "
-        "for those that it never saw. In the cross-validation of XGBoost, "
-        + description
+        "for those that it never saw."
     )
-    assert status.describe_ml_results(None, None) == (
-        "The models have no results yet."
+    assert status.describe_validation(None) == (
+        "The models have no validation yet."
     )
 
 
@@ -256,13 +271,16 @@ def _save_results(
     summary: pd.DataFrame,
 ) -> str:
     """
-    Save results of a case with their summary and manifest.
+    Save results of a case with their summary, predictions and manifest.
+
+    The predictions are those of France in 2024.
 
     Returns
     -------
     str
         The path of the Parquet file of the results.
     """
+    hours = pd.date_range("2024-01-01 00:00", "2024-12-31 23:00", freq="h")
     ml_models.files.save_results(
         case,
         pd.DataFrame(
@@ -276,6 +294,15 @@ def _save_results(
         "data_1",
         "all",
         summary=summary,
+        predictions=pd.DataFrame(
+            {
+                "Entity code": "FRA",
+                "Time (UTC)": hours,
+                "Local year": 2024,
+                "Load (MW)": 50000.0,
+                "Forecast load (MW)": 51000.0,
+            }
+        ),
     )
     return str(
         ml_models.files.find_latest_results(
@@ -369,4 +396,19 @@ def test_results_without_summary():
     )
 
     with pytest.raises(ValueError, match="no summary"):
+        status._find_results("cross_validation")
+
+
+def test_results_without_predictions():
+    """Test that results without predictions are not described."""
+    ml_models.files.save_results(
+        "cross_validation",
+        pd.DataFrame({"Entity code": ["FRA"], "Testing WAPE": [0.1]}),
+        "xgboost",
+        "data_1",
+        "all",
+        summary=_summary({("All", "All"): 0.1}),
+    )
+
+    with pytest.raises(ValueError, match="no predictions"):
         status._find_results("cross_validation")

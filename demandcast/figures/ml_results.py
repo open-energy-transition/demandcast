@@ -12,10 +12,19 @@ Description:
     training or if it is small, and the distribution of the errors of
     all the codes, by whether the model saw them and by their size class
     (see ml_models.reporting), with the WAPE of all the hours of each
-    group in MW. The errors of two versions can also be
-    compared, and those of the models trained on the data of each
-    income group and continent plotted against those of the model
-    trained on all the data.
+    group in MW. If the results have the predictions of their scored
+    hours, a third figure shows the actual and forecast hourly demand of
+    the codes with the lowest and the highest WAPE, in the local year
+    with the most scored hours, the latest of them, and in its typical
+    week, the complete week from Monday to Sunday whose WAPE is the
+    closest to the median WAPE of the complete weeks of the year. The
+    forecast is in
+    MW with the same annual demand as the actual one (see
+    ml_models.evaluation.get_scored_predictions), so the two differ by
+    the error of the hourly profile, which the WAPE measures. The errors
+    of two versions can also be compared, and those of the models
+    trained on the data of each income group and continent plotted
+    against those of the model trained on all the data.
 
     A version is a trained model, such as xgboost_model_20261029_144400,
     or the algorithm of a cross-validation, such as xgboost. Its errors
@@ -33,11 +42,13 @@ Description:
 """
 
 import os
-from typing import Literal
+from typing import Literal, cast
 
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.layout_engine import ConstrainedLayoutEngine
 from matplotlib.patches import Patch
 from matplotlib.transforms import offset_copy
 
@@ -45,6 +56,7 @@ import ml_models.files
 import ml_models.reporting
 import utils.manifest
 import utils.paths
+import utils.time_zones
 
 # The names of the algorithms in the titles of the figures, by the start
 # of the names of their models and of their cross-validations.
@@ -64,6 +76,10 @@ UNSEEN_HATCH = "////"
 
 # The hatch of the bars of the codes of the small size class.
 SMALL_HATCH = "...."
+
+# The size of the text of the figure of the error of each code, but
+# that of the codes under the bars.
+OVERALL_TEXT_SIZE = 16
 
 
 def describe_version(
@@ -439,6 +455,206 @@ def _add_bar_plot(
     ax.set_xlim(-1, len(series))
 
 
+def _get_typical_week(hourly: pd.DataFrame) -> pd.Timestamp | None:
+    """
+    Get the week of a year whose error is the median one.
+
+    Parameters
+    ----------
+    hourly : pandas.DataFrame
+        The actual ("Load (MW)") and forecast ("Forecast load (MW)")
+        load of each hour, by the local time of its start.
+
+    Returns
+    -------
+    pandas.Timestamp | None
+        The Monday of the complete week, from Monday to Sunday, whose
+        WAPE is the closest to the median WAPE of the complete weeks,
+        or None if no week is complete.
+    """
+    times = pd.DatetimeIndex(hourly.index)
+    mondays = times.normalize() - pd.to_timedelta(times.day_of_week, unit="D")
+    weeks = hourly.groupby(mondays)
+    # A complete week has all its hours, from the first hour of Monday
+    # to the last of Sunday, one less or one more when the clocks
+    # change, which start on the half hour in some time zones, such as
+    # India.
+    starts = pd.Series(times, index=times).groupby(mondays)
+    first, last = starts.min(), starts.max()
+    week_starts = pd.Series(first.index, index=first.index)
+    hour = pd.Timedelta(hours=1)
+    complete = (
+        (weeks["Load (MW)"].count() >= 7 * 24 - 1)
+        & weeks["Load (MW)"].apply(lambda load: load.notna().all())
+        & (first - week_starts < hour)
+        & (week_starts + pd.Timedelta(days=7) - last <= hour)
+    )
+    errors = (
+        weeks.apply(
+            lambda week: (
+                (week["Forecast load (MW)"] - week["Load (MW)"]).abs().sum()
+                / week["Load (MW)"].sum()
+            )
+        )
+    )[complete]
+    if errors.empty:
+        return None
+    distances = (errors - errors.median()).abs()
+    return pd.DatetimeIndex(distances.index)[int(distances.argmin())]
+
+
+def _plot_best_and_worst(
+    figure_directory: str,
+    errors: pd.Series,
+    predictions: pd.DataFrame,
+    description: tuple[str, str],
+) -> None:
+    """
+    Plot the actual and forecast demand of the best and worst codes.
+
+    Each code has a row, with its local year on the left and, on the
+    right, its typical week, whose WAPE is the median of its weeks (see
+    _get_typical_week), shaded in the year.
+
+    Parameters
+    ----------
+    figure_directory : str
+        The directory where the figure will be saved.
+    errors : pandas.Series
+        The testing WAPE of each country and subdivision, as a fraction,
+        indexed by their code.
+    predictions : pandas.DataFrame
+        The actual and forecast load in MW of the scored hours (see
+        ml_models.evaluation.get_scored_predictions).
+    description : tuple[str, str]
+        The title of the version and the part of the name of the file
+        (see describe_version).
+    """
+    errors = errors.dropna()
+    errors = errors[errors.index.isin(predictions["Entity code"].unique())]
+    fig, axs = plt.subplots(
+        2,
+        2,
+        figsize=(16, 9),
+        layout="constrained",
+        sharey="row",
+        gridspec_kw={"width_ratios": [2, 1]},
+    )
+    for (year_ax, week_ax), (label, code) in zip(
+        axs,
+        (("Lowest", errors.idxmin()), ("Highest", errors.idxmax())),
+        strict=True,
+    ):
+        rows = predictions[predictions["Entity code"] == code]
+        hours = rows.groupby("Local year").size()
+        year = hours[hours == hours.max()].index.max()
+        rows = rows[rows["Local year"] == year].set_index("Time (UTC)")
+        # Every hour from the first to the last, so that the missing
+        # hours leave gaps in the lines, at the local time of its start.
+        hourly = rows.reindex(
+            pd.date_range(rows.index.min(), rows.index.max(), freq="h")
+        )
+        hourly.index = (
+            (pd.DatetimeIndex(hourly.index) - pd.Timedelta(hours=1))
+            .tz_localize("UTC")
+            .tz_convert(utils.time_zones.get_time_zone(str(code)))
+            .tz_localize(None)
+        )
+        year_error = (
+            rows["Forecast load (MW)"] - rows["Load (MW)"]
+        ).abs().sum() / rows["Load (MW)"].sum()
+        monday = _get_typical_week(hourly)
+        panels = [(year_ax, hourly, 0.5)]
+        if monday is not None:
+            week = hourly[
+                (hourly.index >= monday)
+                & (hourly.index < monday + pd.Timedelta(days=7))
+            ]
+            panels.append((week_ax, week, 1.2))
+        else:
+            week_ax.set_axis_off()
+        for ax, data, width in panels:
+            ax.plot(
+                data.index, data["Load (MW)"], color="black", linewidth=width
+            )
+            ax.plot(
+                data.index,
+                data["Forecast load (MW)"],
+                color="tab:orange",
+                linewidth=width,
+                alpha=0.8,
+            )
+            ax.tick_params(labelsize=OVERALL_TEXT_SIZE - 4)
+
+        year_ax.set_title(
+            f"{label} WAPE: {code} in {int(year)} "
+            f"(WAPE of the year {year_error * 100:.1f}%)",
+            weight="bold",
+            fontsize=OVERALL_TEXT_SIZE - 2,
+        )
+        year_ax.set_ylabel(
+            "Demand (MW)", weight="bold", fontsize=OVERALL_TEXT_SIZE
+        )
+        year_ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
+        year_ax.xaxis.set_major_locator(
+            mdates.MonthLocator(bymonth=range(1, 13, 2))
+        )
+        year_ax.set_xlim(
+            pd.Timestamp(int(year), 1, 1), pd.Timestamp(int(year) + 1, 1, 1)
+        )
+        if monday is not None:
+            sunday = monday + pd.Timedelta(days=6)
+            week_error = (
+                week["Forecast load (MW)"] - week["Load (MW)"]
+            ).abs().sum() / week["Load (MW)"].sum()
+            week_ax.set_title(
+                f"Typical week: {monday:%d %b} to {sunday:%d %b} "
+                f"(WAPE {week_error * 100:.1f}%)",
+                weight="bold",
+                fontsize=OVERALL_TEXT_SIZE - 2,
+            )
+            week_ax.xaxis.set_major_locator(mdates.DayLocator())
+            week_ax.xaxis.set_major_formatter(mdates.DateFormatter("%a"))
+            week_ax.set_xlim(monday, monday + pd.Timedelta(days=7))
+            year_ax.axvspan(
+                monday,
+                monday + pd.Timedelta(days=7),
+                color="lightgrey",
+                alpha=0.6,
+                zorder=0,
+            )
+    for ax in axs[-1]:
+        ax.set_xlabel("Local time", weight="bold", fontsize=OVERALL_TEXT_SIZE)
+    handles = [
+        plt.Line2D([], [], color="black", linewidth=2, label="Actual"),
+        plt.Line2D([], [], color="tab:orange", linewidth=2, label="Forecast"),
+        Patch(facecolor="lightgrey", label="Typical week"),
+    ]
+    axs[0, 0].legend(
+        handles=handles, loc="upper left", fontsize=OVERALL_TEXT_SIZE - 2
+    )
+    # The padding separates the title of the figure from those of the
+    # panels.
+    cast(ConstrainedLayoutEngine, fig.get_layout_engine()).set(
+        h_pad=0.12, hspace=0.07
+    )
+    fig.suptitle(
+        f"{description[0]}\nHourly demand of the countries and "
+        "subdivisions with the lowest and the highest WAPE",
+        weight="bold",
+        fontsize=OVERALL_TEXT_SIZE,
+    )
+    _add_grid(fig)
+    plt.savefig(
+        os.path.join(
+            figure_directory, f"wape_{description[1]}_best_and_worst.png"
+        ),
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close(fig)
+
+
 def _add_grid(fig: plt.Figure) -> None:
     """
     Add horizontal grid lines, in a very light grey, behind the data.
@@ -498,7 +714,10 @@ def _add_legend(
 
 
 def _add_explanatory_text(
-    target: plt.Axes | plt.Figure, metric: Literal["WAPE", "MAPE"] = "MAPE"
+    target: plt.Axes | plt.Figure,
+    metric: Literal["WAPE", "MAPE"] = "MAPE",
+    fontsize: float = 12,
+    gap: float = 16,
 ) -> None:
     """
     Add an arrow that tells that a lower error is better.
@@ -510,6 +729,10 @@ def _add_explanatory_text(
         height, or the figure, on whose right side it is.
     metric : str, optional
         The metric of the errors, "WAPE" or "MAPE".
+    fontsize : float, optional
+        The size of the text.
+    gap : float, optional
+        The gap between the axes and the text, in points.
     """
     if isinstance(target, plt.Axes):
         # A fixed gap in points, whatever the width of the axes.
@@ -518,7 +741,7 @@ def _add_explanatory_text(
             offset_copy(
                 target.transAxes,
                 fig=target.get_figure(root=True),
-                x=16,
+                x=gap,
                 units="points",
             ),
             "left",
@@ -533,7 +756,7 @@ def _add_explanatory_text(
         ha=alignment,
         va="center",
         weight="bold",
-        fontsize=12,
+        fontsize=fontsize,
         rotation=90,
         bbox={
             "boxstyle": "larrow",
@@ -581,12 +804,22 @@ def _plot_overall(
 
     # Initialize the plot, wide enough for the names of the bars.
     fig, ax = plt.subplots(
-        figsize=(_get_figure_width(len(mape_to_plot)), 5),
+        figsize=(_get_figure_width(len(mape_to_plot)), 6),
         layout="constrained",
     )
     _add_bar_plot(ax, mape_to_plot[f"{version}_all"], unseen, small)
-    ax.set_ylabel(METRIC_NAMES[metric], weight="bold", fontsize=12)
-    ax.set_xlabel("Country or subdivision", weight="bold", fontsize=12)
+    # The text is larger than the codes of the bars, which would
+    # otherwise overlap.
+    name, abbreviation = METRIC_NAMES[metric].removesuffix(")").split(" (")
+    ax.set_ylabel(
+        f"{name}\n({abbreviation}, %)",
+        weight="bold",
+        fontsize=OVERALL_TEXT_SIZE,
+    )
+    ax.set_xlabel(
+        "Country or subdivision", weight="bold", fontsize=OVERALL_TEXT_SIZE
+    )
+    ax.tick_params(axis="y", labelsize=OVERALL_TEXT_SIZE - 2)
     # The legend has the hatches of the figure, in the same order in
     # every figure.
     handles = [
@@ -604,10 +837,12 @@ def _plot_overall(
         if flags is not None and flags.reindex(mape_to_plot.index).any()
     ]
     if handles:
-        ax.legend(handles=handles, loc="upper left", fontsize=10)
+        ax.legend(
+            handles=handles, loc="upper left", fontsize=OVERALL_TEXT_SIZE - 2
+        )
 
-    _add_explanatory_text(ax, metric)
-    fig.suptitle(description[0], weight="bold", fontsize=12)
+    _add_explanatory_text(ax, metric, OVERALL_TEXT_SIZE, gap=24)
+    fig.suptitle(description[0], weight="bold", fontsize=OVERALL_TEXT_SIZE + 2)
 
     _add_grid(fig)
     plt.savefig(
@@ -1102,3 +1337,17 @@ def plot(
             small,
         )
         _plot_distribution(figure_directory, results, description, metric)
+        file_path = results_file or ml_models.files.find_latest_results(
+            results_directory, version
+        )
+        if metric == "WAPE" and file_path is not None:
+            predictions = ml_models.files.read_predictions(
+                ml_models.files.read_results(file_path)
+            )
+            if predictions is not None:
+                _plot_best_and_worst(
+                    figure_directory,
+                    results["Testing WAPE"],
+                    predictions,
+                    description,
+                )

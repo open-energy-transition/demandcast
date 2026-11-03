@@ -1,1 +1,0 @@
-In the validation of the XGBoost model 20261031_212342, the median WAPE of the countries and subdivisions is **7.2%**: 6.6% for those whose other years the model saw in training, and 11.3% for those that it never saw. In the cross-validation of XGBoost, which leaves each country out of the training in turn, it is **10.0%**, the error to expect for a country without data.

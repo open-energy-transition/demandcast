@@ -15,6 +15,7 @@ import pytest
 
 import ml_models.files
 import utils.manifest
+import utils.paths
 
 
 def test_get_trained_model_path_with_provided_path():
@@ -272,3 +273,46 @@ def test_save_results_invalid_case():
             assembled_data_file_name="assembled_data",
             file_name_prefix="test",
         )
+
+
+def test_read_predictions():
+    """
+    Test that the predictions of results are read as saved.
+
+    Predictions changed after the results are not read.
+    """
+    predictions = pd.DataFrame(
+        {
+            "Entity code": ["FRA"],
+            "Load (MW)": [1.0],
+            "Forecast load (MW)": [2.0],
+        }
+    )
+    ml_models.files.save_results(
+        "validation",
+        pd.DataFrame({"Entity code": ["FRA"]}),
+        "xgboost_model_1",
+        "data_1",
+        "all",
+        predictions=predictions,
+    )
+    results = ml_models.files.read_results(
+        str(
+            ml_models.files.find_latest_results(
+                utils.paths.get_results_folder("validation"), "xgboost_model_1"
+            )
+        )
+    )
+
+    read = ml_models.files.read_predictions(results)
+    assert read is not None
+    pd.testing.assert_frame_equal(read, predictions)
+
+    predictions.assign(**{"Forecast load (MW)": 3.0}).to_parquet(
+        os.path.join(
+            os.path.dirname(results.file_path),
+            (results.manifest or {})["predictions"]["file"],
+        )
+    )
+    with pytest.raises(ValueError, match="differ from those"):
+        ml_models.files.read_predictions(results)

@@ -285,7 +285,7 @@ model_path:                        # Path to trained model file
 data_path:                         # Path to assembled data file (default: that of the training of the model)
 ```
 
-Results are saved to `data/results/validation/with_{trained_model_name}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the MAPE and WAPE of each country and subdivision in each set, and its description in the testing set (see [reporting by group](#reporting-by-group)).
+Results are saved to `data/results/validation/with_{trained_model_name}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the MAPE and WAPE of each country and subdivision in each set, and its description in the testing set (see [reporting by group](#reporting-by-group)). `predictions_YYYYMMDD_HHMMSS.parquet`, which the manifest of the results records, has the actual and predicted load of each hour of the testing set in MW: the prediction of the load relative to the annual mean times the mean load of its local year, so that both have the same annual demand and differ by the error of the hourly profile.
 
 #### Reporting by group
 
@@ -321,7 +321,7 @@ data_path:                         # Path to assembled data file
 holdout: entity                    # Hold out each entity, or each country with its subdivisions ("country")
 ```
 
-Cross-validation results are saved to `data/results/cross_validation/with_{algorithm}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the MAPE and WAPE of each held-out country and subdivision on the training rows and on its own rows, the holdout, and its description, with their summary by group (see [reporting by group](#reporting-by-group)). The models are trained and scored on all the fields of their rows, such as their times, as in a validation.
+Cross-validation results are saved to `data/results/cross_validation/with_{algorithm}/using_{data_file_name}/all_YYYYMMDD_HHMMSS.parquet` (and `.csv`), with the MAPE and WAPE of each held-out country and subdivision on the training rows and on its own rows, the holdout, and its description, with their summary by group (see [reporting by group](#reporting-by-group)), and the actual and predicted load in MW of each held-out hour in `predictions_YYYYMMDD_HHMMSS.parquet`, as for a validation. The models are trained and scored on all the fields of their rows, such as their times, as in a validation.
 
 ### Forecasting
 

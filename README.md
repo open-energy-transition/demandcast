@@ -35,14 +35,10 @@ DemandCast models the **gross electricity demand**: the electricity consumed, wh
 ## Current state
 
 <!-- status:start -->
-As of 01 November 2026, DemandCast has retrieval modules for the hourly electricity demand of **57 countries and 138 subdivisions**, in 67 countries, from **43 data sources**, with about **1,677 years of data** in total since 1994, in the periods that the data sources cover, before the cleaning and the selection of the complete years for training.
+As of 03 November 2026, DemandCast has retrieval modules for the hourly electricity demand of **57 countries and 138 subdivisions**, in 67 countries, from **43 data sources**, with about **1,678 years of data** in total since 1994, in the periods that the data sources cover, before the cleaning and the selection of the complete years for training.
 <!-- status:end -->
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="webpage/docs/status/available_entities_dark_mode.png">
-  <source media="(prefers-color-scheme: light)" srcset="webpage/docs/status/available_entities_light_mode.png">
-  <img alt="Countries and subdivisions for which retrieval modules of electricity demand data are available" src="webpage/docs/status/available_entities_light_mode.png">
-</picture>
+![Countries and subdivisions for which retrieval modules of electricity demand data are available](webpage/docs/status/available_entities.png)
 
 - The [current state](https://open-energy-transition.github.io/demandcast/status/) page shows the data by GDP and electricity demand per capita, and the forecast errors of the models.
 - The [data sources](https://open-energy-transition.github.io/demandcast/#data-sources) of each type of data are listed in the documentation.
