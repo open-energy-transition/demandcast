@@ -163,7 +163,7 @@ def test_publish_a_new_version(fake_zenodo, release_files):
 
 
 def test_new_version_without_dates(fake_zenodo, release_files):
-    """Test that a record with only dates without value has no dates."""
+    """Test that a record whose only date has no value gets no dates."""
     fake_zenodo.dates = [{"type": "available"}]
 
     zenodo.publish_release(release_files, "2.0.0", 100)
