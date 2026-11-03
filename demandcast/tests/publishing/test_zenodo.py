@@ -130,7 +130,13 @@ def release_files(tmp_path):
 
 
 def test_publish_a_new_version(fake_zenodo, release_files):
-    """Test that the release is a draft version with its files only."""
+    """
+    Test that the release is a draft version with its files only.
+
+    The new version has the title and description of the release, keeps
+    the creators of the record, and leaves out the date without a start
+    or an end, which Zenodo rejects. The draft is not published.
+    """
     draft_url = zenodo.publish_release(release_files, "1.1.0", 100)
 
     assert draft_url == "https://zenodo.org/deposit/200"
@@ -142,14 +148,10 @@ def test_publish_a_new_version(fake_zenodo, release_files):
         ("PUT", f"{BUCKET}/model.json"),
         ("PUT", f"{BUCKET}/forecasts.parquet"),
     ]
-    # The new version has the title and description of the release, and
-    # keeps the creators of the record, and the draft is not published.
     release_metadata = zenodo.read_release_metadata()
     for key, value in release_metadata.items():
         assert fake_zenodo.metadata[key] == value
     assert fake_zenodo.metadata["creators"] == [{"name": "Antonini, Enrico"}]
-    # The date without a start or an end, which Zenodo rejects, is left
-    # out.
     assert fake_zenodo.metadata["dates"] == [
         {"type": "collected", "start": "2026-01-01"}
     ]
