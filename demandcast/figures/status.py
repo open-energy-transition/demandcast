@@ -22,7 +22,8 @@ Description:
     The figures are drawn into the folder of the figures and copied
     into webpage/docs/status/, with the numbers in numbers.md, which the
     page includes. The README shows the same numbers, in its block
-    between the markers STATUS_START and STATUS_END, which is replaced.
+    between the markers STATUS_START and STATUS_END, which is replaced,
+    and the map on a white background.
 
     The numbers come from the YAML files of the data sources, like the
     map: the years of a country or subdivision are those of the longest
@@ -45,8 +46,11 @@ import utils.data_sources
 import utils.paths
 
 # The figures of the page, as figures.data_availability and
-# figures.map_of_available_entities name them.
+# figures.map_of_available_entities name them. The README shows the map
+# on a white background, which reads with both the light and the dark
+# theme of GitHub, whatever the colour scheme of the browser.
 FIGURE_FILES = (
+    "available_entities.png",
     "available_entities_light_mode.png",
     "available_entities_dark_mode.png",
     "data_availability_by_gpd_ppp_and_electricity_demand.png",
