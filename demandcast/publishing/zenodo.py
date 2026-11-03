@@ -20,10 +20,7 @@ Description:
     identifiers of the release are in publishing/release/metadata.yaml,
     which describes the files and the errors of the release and is
     updated for each release. A new version takes them, and keeps the
-    creators, contributors and communities of the record. It leaves out
-    the dates without a start or an end, such as {"type": "available"},
-    which the metadata of a published record can have and Zenodo
-    rejects in that of a draft.
+    creators, contributors and communities of the record.
 
     The files are uploaded to the bucket of the draft, which takes large
     files. The API key is read from ZENODO_API_KEY, or from
@@ -246,6 +243,14 @@ def _create_draft(
     -------
     dict
         The draft, as the API of Zenodo gives it.
+
+    Notes
+    -----
+    The draft of a new version has the files of the previous version,
+    which keeps them, and they are removed from the draft. Its metadata
+    leaves out the dates without a start or an end, such as {"type":
+    "available"}, which the metadata of a published record can have
+    and Zenodo rejects in that of a draft.
     """
     if record is None:
         return api.request(
