@@ -73,9 +73,10 @@ ML_FIGURE_FILES: dict[
     for case in ("validation", "cross_validation")
 }
 
-# The files of the description of the errors of each case, in the folder
-# of the page.
+# The files of the description of the model and of the errors of each
+# case, in the folder of the page.
 ML_RESULTS_FILES = {
+    "model": "ml_model.md",
     "validation": "ml_validation.md",
     "cross_validation": "ml_cross_validation.md",
 }
@@ -278,6 +279,51 @@ def _get_median_wape(
     return float(rows["Median WAPE"].iloc[0]) * 100
 
 
+def describe_model(
+    validation: tuple[str, ml_models.files.Results] | None,
+    cross_validation: tuple[str, ml_models.files.Results] | None,
+) -> str:
+    """
+    Describe the models of the results in a paragraph.
+
+    Each evaluation trains its own models, without the data that it
+    leaves out, which its section describes, so the paragraph names
+    their algorithm, not a trained model.
+
+    Parameters
+    ----------
+    validation : tuple[str, ml_models.files.Results] | None
+        The trained model of the validation and its results, or None if
+        there is none.
+    cross_validation : tuple[str, ml_models.files.Results] | None
+        The algorithm of the cross-validation and its results, or None
+        if there is none.
+
+    Returns
+    -------
+    str
+        The paragraph, in Markdown, empty without results.
+    """
+    algorithms = [
+        found[0].partition("_model_")[0]
+        for found in (validation, cross_validation)
+        if found is not None
+    ]
+    names = list(
+        dict.fromkeys(
+            figures.ml_results.ALGORITHM_NAMES.get(algorithm, algorithm)
+            for algorithm in algorithms
+        )
+    )
+    if not names:
+        return ""
+    return (
+        f"Each trains {' and '.join(names)} models on the data above, "
+        "without the data that it scores them on, which its section "
+        "describes."
+    )
+
+
 def describe_validation(
     validation: tuple[str, ml_models.files.Results] | None,
 ) -> str:
@@ -299,11 +345,11 @@ def describe_validation(
         return "The models have no validation yet."
     version, results = validation
     summary = cast(pd.DataFrame, results.summary)
-    algorithm, _, model_time = version.partition("_model_")
+    algorithm = version.partition("_model_")[0]
     name = figures.ml_results.ALGORITHM_NAMES.get(algorithm, algorithm)
     return (
-        f"In the validation of the {name} model {model_time}, the median "
-        "WAPE of the countries and subdivisions is "
+        f"In the validation of {name}, the median WAPE of the countries and "
+        "subdivisions is "
         f"**{_get_median_wape(summary):.1f}%**: "
         f"{_get_median_wape(summary, 'Seen in training', 'Yes'):.1f}% for "
         "those whose other years the model saw in training, and "
@@ -458,6 +504,7 @@ def plot(
         figure_directory, status_folder, results_files
     )
     for case, text in (
+        ("model", describe_model(validation, cross_validation)),
         ("validation", describe_validation(validation)),
         ("cross_validation", describe_cross_validation(cross_validation)),
     ):

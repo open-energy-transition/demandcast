@@ -158,6 +158,9 @@ def test_plot(tmp_path):
         "The models have no validation yet.\n",
         "The models have no cross-validation yet.\n",
     ]
+    assert (status_folder / status.ML_RESULTS_FILES["model"]).read_text(
+        encoding="utf-8"
+    ) == "\n"
     text = status.describe(NUMBERS)
     assert (status_folder / status.NUMBERS_FILE).read_text(
         encoding="utf-8"
@@ -242,6 +245,27 @@ def test_describe_cross_validation(holdout, description):
     )
 
 
+def test_describe_model():
+    """
+    Test the paragraph of the models of the results.
+
+    It names their algorithm, once, not the trained model.
+    """
+    summary = _summary({("All", "All"): 0.1})
+
+    assert status.describe_model(
+        ("xgboost_model_20261102_194204", _results(summary)),
+        ("xgboost", _results(summary)),
+    ) == (
+        "Each trains XGBoost models on the data above, without the data "
+        "that it scores them on, which its section describes."
+    )
+    assert status.describe_model(None, ("lstm", _results(summary))).startswith(
+        "Each trains LSTM models"
+    )
+    assert status.describe_model(None, None) == ""
+
+
 def test_describe_validation():
     """Test the paragraph of the errors of the validation."""
     validation = _summary(
@@ -255,8 +279,8 @@ def test_describe_validation():
     assert status.describe_validation(
         ("xgboost_model_20261031_212342", _results(validation))
     ) == (
-        "In the validation of the XGBoost model 20261031_212342, the "
-        "median WAPE of the countries and subdivisions is **7.1%**: 6.6% "
+        "In the validation of XGBoost, the median WAPE of the countries "
+        "and subdivisions is **7.1%**: 6.6% "
         "for those whose other years the model saw in training, and 11.2% "
         "for those that it never saw."
     )

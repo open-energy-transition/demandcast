@@ -152,13 +152,13 @@ def test_read_saved_results(tmp_path):
         (
             "validation",
             "xgboost_model_20261029_144400",
-            "Validation of the XGBoost model 20261029_144400",
+            "Validation of XGBoost",
             "wape_validation_xgboost_model_20261029_144400.png",
         ),
         (
             "cross_validation",
             "xgboost",
-            "Cross-validation of XGBoost 20261029_161733",
+            "Cross-validation of XGBoost",
             "wape_cross_validation_xgboost_country_20261029_161733.png",
         ),
     ],
@@ -314,7 +314,7 @@ def test_plot_described_results(tmp_path, metric):
     # The title of the bars has no background, and the distribution says
     # what its metric stands for.
     title = bars.get_suptitle()
-    assert title == "Validation of the XGBoost model 1"
+    assert title == "Validation of XGBoost"
     [title_text] = [text for text in bars.texts if text.get_text() == title]
     assert title_text.get_bbox_patch() is None
     assert (

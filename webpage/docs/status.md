@@ -11,7 +11,7 @@ The map shows the countries and subdivisions for which retrieval modules of elec
 ![Countries and subdivisions for which retrieval modules of electricity demand data are available](status/available_entities_light_mode.png#only-light)
 ![Countries and subdivisions for which retrieval modules of electricity demand data are available](status/available_entities_dark_mode.png#only-dark)
 
-The figure below shows the years of data by GDP PPP per capita and by annual electricity demand per capita, by continent, and how they changed in each country between its first and last year of data. It shows which kinds of countries the training data covers, and therefore where the models extrapolate when they forecast the demand of the countries without data.
+The figure below shows the years of data of the countries and subdivisions by GDP PPP per capita and by annual electricity demand per capita of their country, by continent, and how these changed in each country between its first and last year of data. It shows which kinds of countries and subdivisions the training data covers, and therefore where the models extrapolate when they forecast the demand of those without data.
 
 ![Years of hourly and sub-hourly electricity demand data by GDP PPP and annual electricity demand per capita](status/data_availability_by_gpd_ppp_and_electricity_demand.png)
 
@@ -19,7 +19,10 @@ The [data retrieval](retrieval.md) page describes the data sources, and how thei
 
 ## Forecast errors
 
-The models forecast the hourly electricity demand of each year of a country or subdivision. Their error is the weighted absolute percentage error (WAPE): the sum of the absolute differences between the forecast and the actual hourly demand, divided by the sum of the actual demand. Lower is better. The models are scored in two ways: a validation, on the most recent year of the countries and subdivisions with data, and a cross-validation, on countries and subdivisions whose data the model never saw.
+The models forecast the hourly electricity demand of each year of a country or subdivision. Their error is the weighted absolute percentage error (WAPE): the sum of the absolute differences between the forecast and the actual hourly demand, divided by the sum of the actual demand. Lower is better.
+
+The models are scored in two ways: a validation, on the most recent year of the countries and subdivisions with data, and a cross-validation, on countries and subdivisions whose data the model never saw.
+--8<-- "status/ml_model.md"
 
 ### Validation
 
@@ -41,7 +44,7 @@ The figure below compares the actual hourly demand with the forecast for the cou
 
 ### Cross-validation
 
-The cross-validation trains a model without part of the data in turn, and scores it on the part left out, which the model never saw, as when the models forecast the countries and subdivisions without data.
+The cross-validation scores the models on data that they never saw. It tells how well they forecast the countries and subdivisions without data.
 
 --8<-- "status/ml_cross_validation.md"
 
