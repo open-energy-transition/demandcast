@@ -45,6 +45,7 @@ Some modules require API keys to access data from external services. These keys 
 CDS_API_KEY=<your_key>             # For data retrieval from Copernicus CDS
 ENTSOE_API_KEY=<your_key>          # For data retrieval from ENTSO-E
 EIA_API_KEY=<your_key>             # For data retrieval from EIA
+EMBER_API_KEY=<your_key>           # For the annual electricity demand per capita of Ember, with a free key
 EPIAS_USERNAME=<your_username>     # For data retrieval from EPIAS, with a free account
 EPIAS_PASSWORD=<your_password>     # For data retrieval from EPIAS
 ISONE_USERNAME=<your_username>     # For data retrieval from ISO New England, with a free ISO Express account

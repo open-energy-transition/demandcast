@@ -22,6 +22,7 @@ Some modules require API keys to access data from external services. These keys 
 CDS_API_KEY=<your_key>             # For data retrieval from Copernicus CDS
 ENTSOE_API_KEY=<your_key>          # For data retrieval from ENTSO-E
 EIA_API_KEY=<your_key>             # For data retrieval from EIA
+EMBER_API_KEY=<your_key>           # For the annual electricity demand per capita of Ember, with a free key
 EPIAS_USERNAME=<your_username>     # For data retrieval from EPIAS, with a free account
 EPIAS_PASSWORD=<your_password>     # For data retrieval from EPIAS
 ISONE_USERNAME=<your_username>     # For data retrieval from ISO New England, with a free ISO Express account
@@ -137,7 +138,7 @@ The report also counts the checks that each data source has failed in a row, fro
 
 ### Annual electricity demand per capita
 
-The module `demandcast/retrievals/annual_electricity_demand_per_capita.py` retrieves annual electricity demand per capita data from Ember and the World Bank for the historical period and from the Integrated Assessment Modeling Consortium (IAMC) database for different future scenarios.
+The module `demandcast/retrievals/annual_electricity_demand_per_capita.py` retrieves annual electricity demand per capita data from Ember, through its API with the key in `EMBER_API_KEY`, and the World Bank for the historical period and from the Integrated Assessment Modeling Consortium (IAMC) database for different future scenarios.
 
 The demand of Ember is the electricity generated and imported, less the exports: the electricity supplied, with the losses of the networks and with the generation that is not on the networks of the system operators, such as rooftop solar and the plants of industries for their own use. The electric power consumption of the World Bank is the consumption of the consumers, without the losses of the networks and the own use of the power plants, about 12% lower in the median country. The hourly demand of the system operators includes the losses of their networks but not the generation off them: its yearly demand is 0.94 times that of Ember and 1.05 times that of the World Bank in the median national series, and gets closer to Ember as embedded generation is added for the gross demand. Ember gives the historical values, and the World Bank fills the countries and years that Ember does not have (before 2000, and about 46 countries), times the ratio of Ember to the World Bank of the country in the years that both have, or the median of these ratios. The future scenarios apply the growth rates of the final energy of electricity per capita of the IAMC database to the last historical value, which assumes that the share of the losses stays the same.
 
