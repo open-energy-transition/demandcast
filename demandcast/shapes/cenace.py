@@ -262,7 +262,7 @@ shapes_to_merge = states[states["code"].isin(["MX-QUE", "MX-MEX", "MX-CMX"])]
 # Get the shapes of Guerreo.
 shape_to_cut = states[states["code"].isin(["MX-GRO"])]
 
-# Define a polygon to keep only the Southern part of Guerrero.
+# Define a polygon to keep only the western part of Guerrero.
 new_bounds = geopandas.GeoSeries(
     Polygon(
         [
