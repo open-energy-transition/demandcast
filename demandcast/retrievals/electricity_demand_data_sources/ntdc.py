@@ -6,17 +6,17 @@ Description:
     This module provides functions to retrieve the electricity demand
     data from a publicly available repository with data provided by the
     National Transmission & Despatch Company (NTDC) in Pakistan. The
-    data is read from the files downloaded manually from Kaggle, which
-    needs a free account.
+    data is read from the file downloaded manually from Zenodo, which
+    keeps a copy of the dataset under the CC0 licence.
 
-    The dataset has not been on Kaggle since October 2026 at the latest,
-    so only the files downloaded before can be read; the Wayback Machine
-    keeps its page of 2026-08-04, whose licence is CC0. They give the
-    hourly system load (SYSLOAD) in MW, with thousands separators, by
-    date and hour ending from 1 to 24 in the time of Pakistan, which has
-    no daylight saving time. Where several files have the same hour, the
-    latest download, whose data ends last, is kept, after the days of
-    the rows of each file are corrected (see below).
+    The dataset was published on Kaggle, where it has not been since
+    October 2026 at the latest: the Wayback Machine keeps its page of
+    2026-08-04, and Zenodo the file downloaded before. The files give
+    the hourly system load (SYSLOAD) in MW, with thousands separators,
+    by date and hour ending from 1 to 24 in the time of Pakistan, which
+    has no daylight saving time. Where several files have the same hour,
+    the latest download, whose data ends last, is kept, after the days
+    of the rows of each file are corrected (see below).
 
     About 170 rows around midnight have the date of the day before or
     after, such as the hour 24 of 06/01/2015 between the hours 23 of
@@ -54,6 +54,7 @@ Description:
 
     Source: https://www.kaggle.com/datasets/tentative/ntdc-dataset
     Source: https://web.archive.org/web/20260804193104/https://www.kaggle.com/datasets/tentative/ntdc-dataset
+    Source: https://doi.org/10.5281/zenodo.24023127
 """
 
 import datetime as dt
@@ -234,7 +235,7 @@ def get_url() -> str:
     str
         The URL of the electricity demand data.
     """
-    return "https://www.kaggle.com/datasets/tentative/ntdc-dataset"
+    return "https://zenodo.org/records/24023127"
 
 
 def download_and_extract_data_for_request(
@@ -261,7 +262,6 @@ def download_and_extract_data_for_request(
         url=get_url(),
         prefix="NTD",
         read_file=pd.read_csv,
-        access=" after registering on the website",
     )
 
     # Remove the thousands separators and read the values as numbers.
