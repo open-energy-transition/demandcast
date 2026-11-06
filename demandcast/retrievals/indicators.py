@@ -115,8 +115,6 @@ def run_retrieval(
     """
     os.makedirs(utils.paths.get_indicator_folder(indicator), exist_ok=True)
 
-    # The codes without projections, such as Kosovo, have only their
-    # historical years.
     codes = utils.availability.check_and_get_codes_with(
         "historical_data", code=code, file_path=file
     )

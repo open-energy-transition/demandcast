@@ -27,14 +27,7 @@ Description:
     them: in the median national series, its yearly demand is 0.94
     times that of Ember and 1.05 times that of the World Bank, and it
     gets closer to Ember as the embedded generation is added to it for
-    the gross demand that DemandCast models. The two sources are not
-    averaged, since an average of their definitions would jump where
-    one of them is missing. Ember, which counts the demand whatever
-    supplies it, gives the value, and the World Bank fills the
-    countries and years that Ember does not have
-    (before 2000, and about 46 countries), times the ratio of Ember to
-    the World Bank of the country in the years that both have, or the
-    median of these ratios for a country without enough such years.
+    the gross demand that DemandCast models.
 
     The growth rates of the scenarios are those of the final energy of
     electricity per capita (Final Energy|Electricity per capita), which
@@ -62,29 +55,32 @@ def get_historical_data() -> pd.DataFrame:
     """
     Get historical electricity demand per capita data.
 
-    The demand per capita of Ember is completed by that of the World
-    Bank, times the ratio of Ember to the World Bank of each country,
-    since the World Bank leaves out the losses of the networks.
-
     Returns
     -------
     pandas.DataFrame
         The historical electricity demand per capita data in kWh, by
         country code (rows) and year (columns).
+
+    Notes
+    -----
+    The two sources are not averaged, since an average of their
+    definitions would jump where one of them is missing. Ember, which
+    counts the demand whatever supplies it, gives the value, and the
+    World Bank fills the countries and years that Ember does not have
+    (before 2000, and about 46 countries), times the ratio of Ember to
+    the World Bank of the country: the median of the years that both
+    have, or the median of the countries for a country with fewer than
+    MIN_YEARS_OF_BOTH such years.
     """
-    # Download the electricity demand per capita from Ember.
     ember_electricity_demand_per_capita = (
         ember.download_electricity_demand_per_capita()
     )
 
-    # Download the electricity demand per capita from the World Bank.
     world_bank_electricity_demand_per_capita = world_bank.download(
         "electricity_demand_per_capita"
     )
 
-    # The ratio of Ember to the World Bank of each country, the median
-    # of the years that both have, if there are enough of them, or the
-    # median of the countries.
+    # The ratio of Ember to the World Bank of each country.
     ratios = (
         ember_electricity_demand_per_capita
         / world_bank_electricity_demand_per_capita
@@ -96,8 +92,6 @@ def get_historical_data() -> pd.DataFrame:
         world_bank_electricity_demand_per_capita.index
     ).fillna(country_ratios.median())
 
-    # Fill the countries and years that Ember does not have with the
-    # World Bank, scaled to Ember.
     return ember_electricity_demand_per_capita.combine_first(
         world_bank_electricity_demand_per_capita.mul(country_ratios, axis=0)
     )
@@ -113,12 +107,6 @@ def run_data_retrieval(
 ) -> None:
     """
     Download and extract annual electricity demand per capita.
-
-    This function downloads historical electricity demand per capita
-    data from Ember and the World Bank, extracts the electricity data
-    for the countries and subdivisions of interest, calculates future
-    electricity demand per capita based on growth rates from the IAMC
-    scenarios, and saves it into Parquet files.
 
     Parameters
     ----------
@@ -140,10 +128,8 @@ def run_data_retrieval(
         The scenario of the electricity demand per capita data to be
         retrieved.
     """
-    # Download the historical electricity demand per capita data.
     global_historical_electricity_demand_per_capita = get_historical_data()
 
-    # Read the growth rates of future electricity demand per capita.
     global_future_electricity_demand_per_capita_growth_rates = iiasa.read(
         "annual_electricity_demand_per_capita"
     )
@@ -170,7 +156,6 @@ def run_data_retrieval(
         # to which the subdivision belongs.
         iso_alpha_3_code = entity_code.split("_", maxsplit=1)[0]
 
-        # Extract the electricity data for the country.
         historical_electricity_demand_per_capita = cast(
             pd.Series,
             global_historical_electricity_demand_per_capita.loc[
@@ -178,7 +163,6 @@ def run_data_retrieval(
             ],
         ).dropna()
 
-        # Get the years of available historical and future data.
         available_historical_years = (
             historical_electricity_demand_per_capita.index.tolist()
         )
@@ -190,7 +174,6 @@ def run_data_retrieval(
             )
         )
 
-        # Get the list of year and scenario combinations.
         year_scenario_list = (
             utils.scenarios.get_year_and_scenario_combinations(
                 year,

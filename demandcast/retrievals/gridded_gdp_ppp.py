@@ -35,24 +35,18 @@ def _download_gdp_ppp(raw_directory: str) -> None:
     raw_directory : str
         The directory where the global GDP PPP data will be saved.
     """
-    # Check if the file already exists.
     if not os.path.exists(raw_directory):
         logging.info("Downloading global gridded GDP PPP data from Zenodo.")
 
-        # Define the URL to download the GDP PPP data.
         url = "https://zenodo.org/records/7898409/files/GDP_025d%20(2000-2100).7z?download=1"
 
-        # Fetch the data from the URL.
         response = requests.get(url, timeout=60)
 
-        # Check if the request was successful.
         response.raise_for_status()
 
-        # Extract all files from the 7z archive.
         with py7zr.SevenZipFile(
             BytesIO(response.content), mode="r"
         ) as archive:
-            # List the contents of the archive.
             archive.extractall(path=os.path.dirname(raw_directory))
 
         os.rename(
@@ -85,19 +79,15 @@ def _read_gdp_ppp(raw_directory: str, year_scenario: str) -> xarray.DataArray:
     xarray.DataArray
         The GDP PPP data for the specified year and SSP.
     """
-    # Define the file path of the GDP PPP data.
     file_path = os.path.join(
         raw_directory,
         f"GDP{year_scenario.lower()}.tif",
     )
 
-    # Read the GDP PPP data.
     global_gdp_ppp = xarray.open_dataarray(file_path)
 
-    # Harmonize the coordinates of the GDP PPP data.
     global_gdp_ppp = utils.geospatial.harmonize_coords(global_gdp_ppp)
 
-    # Clean the dataset and return it.
     return utils.geospatial.clean_raster(global_gdp_ppp, "gdp_ppp")
 
 
@@ -111,11 +101,6 @@ def run_data_retrieval(
 ):
     """
     Download and extract gridded GDP PPP data.
-
-    This function downloads GDP PPP data from a Zenodo repository,
-    extracts the data for the specified countries and subdivisions of
-    interest at a 0.25-degree resolution, and saves the data into NetCDF
-    files.
 
     Parameters
     ----------

@@ -36,10 +36,8 @@ def get_historical_data() -> pd.DataFrame:
     pandas.DataFrame
         The historical GDP PPP per capita data.
     """
-    # Download the historical GDP PPP per capita from the World Bank.
     world_bank_gdp_ppp_per_capita = world_bank.download("gdp_ppp_per_capita")
 
-    # Download the historical GDP PPP per capita from the IMF.
     imf_gdp_ppp_per_capita = imf.download_gdp_ppp_per_capita()
 
     # Merge the two datasets by averaging them.
@@ -94,8 +92,13 @@ def _get_gdp_ppp_per_capita_from_gridded_data(
     -------
     pandas.Series
         The GDP PPP per capita for the specified years.
+
+    Notes
+    -----
+    The gridded GDP PPP is in constant 2005 international dollars, and
+    is converted to constant 2021 international dollars, the unit of
+    the World Bank and the IMF.
     """
-    # Get the total GDP PPP from gridded data.
     gdp_ppp = retrievals.gridded_totals.get_total_value_from_gridded_data(
         "gdp_ppp",
         code,
@@ -105,12 +108,8 @@ def _get_gdp_ppp_per_capita_from_gridded_data(
         scenario,
     )
 
-    # Convert GDP PPP, which is in constant 2005 international $, to
-    # constant 2021 international $, which is the unit used by the World
-    # Bank and the IMF.
     gdp_ppp = gdp_ppp.apply(lambda x: cpi.inflate(x, 2005, to=2021))
 
-    # Get the total population from gridded data.
     population = retrievals.gridded_totals.get_total_value_from_gridded_data(
         "population",
         code,
@@ -120,7 +119,6 @@ def _get_gdp_ppp_per_capita_from_gridded_data(
         scenario,
     )
 
-    # Calculate the GDP PPP per capita.
     return gdp_ppp / population
 
 
@@ -162,18 +160,12 @@ def _extract_historical_gdp_ppp_per_capita(
     pandas.Series
         The historical GDP PPP per capita for the country.
     """
-    # Check if the ISO Alpha-3 code is in the historical
-    # GDP PPP per capita data.
     if iso_alpha_3_code in global_historical_gdp_ppp_per_capita.index:
-        # Get the historical GDP PPP per capita for the
-        # country of interest.
         historical_gdp_ppp_per_capita = cast(
             pd.Series,
             global_historical_gdp_ppp_per_capita.loc[iso_alpha_3_code],
         ).dropna()
     else:
-        # Interpolate the historical GDP PPP per capita from
-        # gridded data.
         historical_gdp_ppp_per_capita = (
             _get_gdp_ppp_per_capita_from_gridded_data(
                 code,
@@ -233,19 +225,13 @@ def _extract_future_gdp_ppp_per_capita(
     pandas.Series
         The future GDP PPP per capita for the country.
     """
-    # Check if the ISO Alpha-3 code is in the future
-    # GDP PPP per capita data.
     if iso_alpha_3_code in global_future_gdp_ppp_per_capita.index:
-        # Get the future GDP PPP per capita for the country and scenario
-        # of interest.
         future_gdp_ppp_per_capita = iiasa.extract_and_interpolate(
             global_future_gdp_ppp_per_capita,
             iso_alpha_3_code,
             scenario,
         )
     else:
-        # Extract the future GDP PPP per capita by aggregating gridded
-        # data.
         future_gdp_ppp_per_capita = _get_gdp_ppp_per_capita_from_gridded_data(
             code,
             future_years,
@@ -268,12 +254,6 @@ def run_data_retrieval(
     """
     Download and extract GDP PPP per capita data.
 
-    This function downloads and extracts historical GDP PPP per capita
-    data from the World Bank and calculates future GDP PPP per capita
-    based on growth rates from the IAMC scenarios. The data is
-    extracted for the countries and subdivisions of interest and saved
-    into Parquet files.
-
     Parameters
     ----------
     code : str | None
@@ -292,14 +272,10 @@ def run_data_retrieval(
     scenario : str | None
         The scenario of the GDP PPP per capita data to be retrieved.
     """
-    # Get the historical GDP PPP per capita.
     global_historical_gdp_ppp_per_capita = get_historical_data()
 
-    # Read the future GDP PPP per capita data.
     global_future_gdp_ppp_per_capita = iiasa.read("gdp_ppp_per_capita")
 
-    # Define the available years for gridded GDP PPP and population
-    # data.
     available_historical_years_of_gridded_data = list(
         utils.catalogue.GRIDDED_POPULATION_YEARS
     )
