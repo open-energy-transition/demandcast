@@ -17,13 +17,7 @@ import ml_models.files
 
 
 def test_read_and_check_ml_configuration():
-    """
-    Test reading and checking ML configuration.
-
-    This test mocks the configuration file reading and checks if the
-    function correctly validates the configuration.
-    """
-    # Define a sample configuration.
+    """Test reading and checking ML configuration."""
     sample_config = {
         "algorithm": "xgboost",
         "group": "entity_code",
@@ -57,10 +51,8 @@ def test_read_and_check_ml_configuration_minimal():
     """
     Test reading ML configuration with minimal fields.
 
-    This test checks if the function works with optional fields set to
-    None.
+    The optional fields are None.
     """
-    # Define a minimal configuration.
     minimal_config = {
         "algorithm": "xgboost",
         "group": "entity_code",
@@ -87,10 +79,8 @@ def test_read_and_check_ml_configuration_error():
     """
     Test error handling in read_and_check_ml_configuration.
 
-    This test checks if the function raises ValueError when the
-    configuration is invalid.
+    A configuration without the required fields raises a ValueError.
     """
-    # Define an invalid configuration (missing required fields).
     invalid_config = {
         "algorithm": "xgboost",
         "features": ["feature1"],
@@ -107,13 +97,7 @@ def test_read_and_check_ml_configuration_error():
 
 
 def test_split_temporally_with_testing_and_validation():
-    """
-    Test _split_temporally with both testing and validation sets.
-
-    This test checks if the function correctly splits the dataset into
-    training, testing, and validation sets based on the splitter column.
-    """
-    # Create a sample dataset.
+    """Test _split_temporally with both testing and validation sets."""
     dataset = pd.DataFrame(
         {
             "entity_code": ["A", "A", "A", "B", "B", "B"],
@@ -140,12 +124,7 @@ def test_split_temporally_with_testing_and_validation():
 
 
 def test_split_temporally_with_testing_only():
-    """
-    Test _split_temporally with only testing set.
-
-    This test checks if the function correctly splits the dataset when
-    only testing set is requested.
-    """
+    """Test _split_temporally with only testing set."""
     dataset = pd.DataFrame(
         {
             "entity_code": ["A", "A", "A"],
@@ -170,12 +149,7 @@ def test_split_temporally_with_testing_only():
 
 
 def test_split_temporally_with_validation_only():
-    """
-    Test _split_temporally with only validation set.
-
-    This test checks if the function correctly splits the dataset when
-    only validation set is requested.
-    """
+    """Test _split_temporally with only validation set."""
     dataset = pd.DataFrame(
         {
             "entity_code": ["A", "A", "A"],
@@ -249,8 +223,7 @@ def test_split_temporally_without_splits():
     """
     Test _split_temporally without testing or validation sets.
 
-    This test checks if the function returns only training set when
-    no splits are requested.
+    The whole dataset is the training set.
     """
     dataset = pd.DataFrame(
         {
@@ -278,8 +251,8 @@ def test_split_in_groups():
     """
     Test _split_in_groups function.
 
-    This test checks if the function correctly splits the dataset into
-    features, target, group, time, and other components.
+    The dataset is split into features, target, group, time and the
+    other columns.
     """
     dataset = pd.DataFrame(
         {
@@ -311,12 +284,7 @@ def test_split_in_groups():
 
 
 def test_split_in_groups_without_target():
-    """
-    Test _split_in_groups without target.
-
-    This test checks if the function works correctly when target is
-    not included.
-    """
+    """Test _split_in_groups without target."""
     dataset = pd.DataFrame(
         {
             "entity_code": ["A", "B"],
@@ -345,8 +313,7 @@ def test_split_in_groups_with_categorical_features():
     """
     Test _split_in_groups with categorical features.
 
-    This test checks if the function correctly converts categorical
-    features to category dtype.
+    The categorical features have the category dtype.
     """
     dataset = pd.DataFrame(
         {
@@ -376,8 +343,7 @@ def test_split_in_groups_with_scaling_variables():
     """
     Test _split_in_groups with scaling variables.
 
-    This test checks if the function correctly calculates the scaling
-    factor from scaling variables.
+    The scaling factor is the product of the scaling variables.
     """
     dataset = pd.DataFrame(
         {
@@ -409,8 +375,7 @@ def test_split_in_groups_with_additional_columns():
     """
     Test _split_in_groups with additional columns.
 
-    This test checks if the function correctly handles additional
-    columns not specified in the parameters.
+    The columns that are not given are the others, in their order.
     """
     dataset = pd.DataFrame(
         {
@@ -441,8 +406,7 @@ def test_split_in_groups_missing_columns():
     """
     Test _split_in_groups with missing columns.
 
-    This test checks if the function raises ValueError when required
-    columns are missing from the dataset.
+    A dataset without the required columns raises a ValueError.
     """
     dataset = pd.DataFrame(
         {
@@ -463,12 +427,7 @@ def test_split_in_groups_missing_columns():
 
 
 def test_prepare_split_datasets():
-    """
-    Test prepare_split_datasets with testing and validation sets.
-
-    This test mocks the configuration reading and data loading to check
-    if the function correctly prepares the dataset with splits.
-    """
+    """Test prepare_split_datasets with testing and validation sets."""
     sample_config = Mock()
     sample_config.group = "entity_code"
     sample_config.features = ["feature1"]
@@ -511,7 +470,7 @@ def test_prepare_split_datasets_with_training_set_only():
     """
     Test prepare_split_datasets without testing and validation sets.
 
-    This test checks that the whole dataset is the training set.
+    The whole dataset is the training set.
     """
     sample_config = Mock()
     sample_config.group = "entity_code"
@@ -550,12 +509,7 @@ def test_prepare_split_datasets_with_training_set_only():
 
 
 def test_prepare_dataset_without_splits():
-    """
-    Test prepare_dataset without testing and validation sets.
-
-    This test checks if the function correctly prepares the dataset
-    without temporal splits.
-    """
+    """Test prepare_dataset without testing and validation sets."""
     sample_config = Mock()
     sample_config.group = "entity_code"
     sample_config.features = ["feature1"]
@@ -597,12 +551,7 @@ def test_prepare_dataset_without_splits():
 
 
 def test_prepare_dataset_without_target():
-    """
-    Test prepare_dataset without target variable.
-
-    This test checks if the function correctly prepares the dataset
-    when target is not requested.
-    """
+    """Test prepare_dataset without target variable."""
     sample_config = Mock()
     sample_config.group = "entity_code"
     sample_config.features = ["feature1"]
@@ -803,7 +752,6 @@ def test_normalize_to_annual_totals(caplog):
     assert totals[("FRA", 2023)] == pytest.approx(1e6)
     assert totals[("FRA", 2024)] == pytest.approx(1e6)
     assert normalized[8760] == 0.0
-    # The incomplete year keeps its predictions.
     assert normalized[group == "DEU"].eq(1.2).all()
     assert normalized[group == "ITA"].eq(0.0).all()
     assert status.set_index(["Entity code", "Local year"])[
