@@ -34,6 +34,14 @@ def server(monkeypatch):
     contents: dict[str, bytes] = {}
 
     def send(_adapter, request, **_kwargs):
+        """
+        Answer a request with the CSV content of its URL.
+
+        Returns
+        -------
+        requests.Response
+            The response to the request.
+        """
         response = requests.Response()
         response.status_code = 200
         response._content = contents[request.url]
@@ -148,6 +156,14 @@ def test_record_and_replay_manual_files():
     (folder / "ABC_1.csv").write_text("load\n1\n")
 
     def read():
+        """
+        Read the loads of the manual files of the data source.
+
+        Returns
+        -------
+        list[int]
+            The loads of the files.
+        """
         return utils.fetcher.read_manual_files(
             data_source_name="ABC",
             url="https://example.org",
@@ -180,6 +196,7 @@ def test_save_versions(server):
     request = (pd.Timestamp("2024-01-01"), pd.Timestamp("2024-01-31"))
 
     def retrieve(retrieved):
+        """Record the request, and save its responses at a time."""
         with utils.raw_data.recording("test") as responses:
             requests.get("https://example.org/data", timeout=10)
         utils.raw_data.save_versions(
