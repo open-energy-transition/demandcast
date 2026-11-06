@@ -1,3 +1,6 @@
+# Configuration of retrieve.py for the temperature of the benchmark of
+# the models, from 2021 to 2023 (see run.py).
+
 variable: temperature
 electricity_data_source:
 code:
