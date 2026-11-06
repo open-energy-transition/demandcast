@@ -10,7 +10,8 @@ Description:
     needs a free account.
 
     The dataset has not been on Kaggle since October 2026 at the latest,
-    so only the files downloaded before can be read. They give the
+    so only the files downloaded before can be read; the Wayback Machine
+    keeps its page of 2026-08-04, whose licence is CC0. They give the
     hourly system load (SYSLOAD) in MW, with thousands separators, by
     date and hour ending from 1 to 24 in the time of Pakistan, which has
     no daylight saving time. Where several files have the same hour, the
@@ -52,6 +53,7 @@ Description:
     the yaml file: it does not cover the whole shape of Pakistan.
 
     Source: https://www.kaggle.com/datasets/tentative/ntdc-dataset
+    Source: https://web.archive.org/web/20260804193104/https://www.kaggle.com/datasets/tentative/ntdc-dataset
 """
 
 import datetime as dt
