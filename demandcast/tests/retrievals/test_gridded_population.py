@@ -363,10 +363,10 @@ def test_read_future_population_dataset(tmp_path):
     Test that the coordinates of a future raster are made geographic.
 
     The coordinates of the raster, which are not in degrees, are
-    scaled to the longitudes of the whole world and to the latitudes
-    from 72 degrees south to 84 degrees north. The first and last
-    centres of the cells are one cell of 30 arc seconds less than these
-    ranges apart, and lie within half a cell of their limits.
+    scaled to the centres of cells of 30 arc seconds that cover the
+    longitudes of the whole world and the latitudes from 72 degrees
+    south to 84 degrees north: the first and last centres are half a
+    cell inside these limits.
     """
     values = np.arange(16.0).reshape(4, 4)
     os.makedirs(os.path.join(tmp_path, "SSP2"))
@@ -386,12 +386,12 @@ def test_read_future_population_dataset(tmp_path):
     y = population["y"].to_numpy()
     cell = 30 / 3600
     assert population.name == "population"
-    assert x[-1] - x[0] == pytest.approx(360 - cell)
-    assert y[-1] - y[0] == pytest.approx(156 - cell)
+    assert x[0] == pytest.approx(-180 + cell / 2)
+    assert x[-1] == pytest.approx(180 - cell / 2)
+    assert y[0] == pytest.approx(-72 + cell / 2)
+    assert y[-1] == pytest.approx(84 - cell / 2)
     assert np.allclose(np.diff(x), (360 - cell) / 3)
     assert np.allclose(np.diff(y), (156 - cell) / 3)
-    assert -180 - cell / 2 < x[0] < x[-1] < 180 + cell / 2
-    assert -72 - cell / 2 < y[0] < y[-1] < 84 + cell / 2
     assert population.to_numpy().tolist() == values[::-1].tolist()
 
 
