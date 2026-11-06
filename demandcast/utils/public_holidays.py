@@ -8,13 +8,6 @@ Description:
     use it to see the days on which the demand drops as on a Sunday,
     which their hour, weekend and month features cannot tell.
 
-    A subdivision also has its own holidays if it is the official
-    subdivision (ISO 3166-2) of the same code and name. Many
-    subdivisions are regions of system operators that use the code of
-    another subdivision, such as New England (USA_NE, the code of
-    Nebraska), and have only the holidays of their country. A country
-    that the package does not know has none, which the log reports.
-
     India and its states have only the holidays in SELECTED_HOLIDAYS.
     From 2017 to 2025, the weekday demand of its states dropped by a
     median of 5 to 7% on these six days, against the same weekday one
@@ -93,6 +86,15 @@ def get_holiday_calendar(code: str) -> holidays.HolidayBase | None:
         is an official subdivision that the package knows and the
         country has not selected holidays, or None if the package does
         not know the country.
+
+    Notes
+    -----
+    A subdivision is official if it has the code and the name of a
+    subdivision of ISO 3166-2. Many subdivisions are regions of system
+    operators that use the code of another subdivision, such as New
+    England (USA_NE, the code of Nebraska), and have only the holidays
+    of their country. A country that the package does not know is
+    reported in the log.
     """
     country_code, _, subdivision_code = code.partition("_")
     try:

@@ -241,6 +241,20 @@ class _UrlResponse(io.BytesIO):
     def __init__(
         self, content: bytes, headers: dict[str, str], status: int, url: str
     ) -> None:
+        """
+        Set up the response.
+
+        Parameters
+        ----------
+        content : bytes
+            The content.
+        headers : dict[str, str]
+            The headers.
+        status : int
+            The status.
+        url : str
+            The URL.
+        """
         super().__init__(content)
         self.headers = email.message.Message()
         for name, value in headers.items():
@@ -323,6 +337,25 @@ def recording(data_source: str) -> Iterator[list[dict[str, Any]]]:
         status: int,
         headers: dict[str, str],
     ) -> None:
+        """
+        Record a response, and save its content.
+
+        Parameters
+        ----------
+        method : str
+            The HTTP method, or MANUAL_FILE for a file downloaded
+            manually.
+        url : str
+            The URL, or the name of the file downloaded manually.
+        body : Any
+            The body of the request.
+        content : bytes
+            The content of the response.
+        status : int
+            The status of the response.
+        headers : dict[str, str]
+            The headers of the response that are kept.
+        """
         responses.append(
             {
                 "key": list(_key(method, url, body)),
@@ -339,6 +372,23 @@ def recording(data_source: str) -> Iterator[list[dict[str, Any]]]:
         request: requests.PreparedRequest,
         **kwargs: Any,
     ) -> requests.Response:
+        """
+        Send a request with requests, and record its response.
+
+        Parameters
+        ----------
+        session : requests.Session
+            The session.
+        request : requests.PreparedRequest
+            The request.
+        **kwargs : Any
+            The options of the sending.
+
+        Returns
+        -------
+        requests.Response
+            The response.
+        """
         response = send(session, request, **kwargs)
         headers = {
             name: response.headers[name]
@@ -358,6 +408,23 @@ def recording(data_source: str) -> Iterator[list[dict[str, Any]]]:
         return response
 
     def recording_urlopen(url: Any, *args: Any, **kwargs: Any) -> _UrlResponse:
+        """
+        Open a URL with urllib, and record its response.
+
+        Parameters
+        ----------
+        url : Any
+            The URL or the request object.
+        *args : Any
+            The other arguments of urlopen.
+        **kwargs : Any
+            The keyword arguments of urlopen.
+
+        Returns
+        -------
+        _UrlResponse
+            The response, with its content read.
+        """
         full_url, body = _url_and_body(url)
         method = "POST" if body is not None else "GET"
         with urlopen(url, *args, **kwargs) as response:
@@ -372,11 +439,27 @@ def recording(data_source: str) -> Iterator[list[dict[str, Any]]]:
         return _UrlResponse(content, headers, status, full_url)
 
     def recording_find_manual_files(prefix: str) -> list[str]:
+        """
+        Find the files downloaded manually, and record them.
+
+        Parameters
+        ----------
+        prefix : str
+            The start of the names of the files.
+
+        Returns
+        -------
+        list[str]
+            The paths of the files, in the order of their names.
+
+        Notes
+        -----
+        A file found twice, such as to check whether it changed before
+        reading it, is recorded once.
+        """
         file_paths = find_manual_files(prefix)
         for file_path in file_paths:
             name = os.path.basename(file_path)
-            # A file found twice, such as to check whether it changed
-            # before reading it, is recorded once.
             if any(
                 response["key"] == list(_key(MANUAL_FILE, name, None))
                 for response in responses
@@ -479,18 +562,45 @@ def replaying(
         Nothing: the requests sent with requests or urllib get the saved
         responses meanwhile, and the data source finds the saved files
         downloaded manually.
+
+    Notes
+    -----
+    The saved files downloaded manually are copied into a temporary
+    folder with their names, which can tell how to read them.
     """
     saved = {tuple(response["key"]): response for response in responses}
     send = requests.Session.send
     urlopen = urllib.request.urlopen  # noqa: S310
     find_manual_files = utils.fetcher.find_manual_files
-    # The saved files downloaded manually are copied with their names,
-    # which can tell how to read them.
     manual_folder = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
 
     def replay(
         method: str, url: str, body: Any
     ) -> tuple[bytes, dict[str, Any]]:
+        """
+        Get the saved response of a request.
+
+        Parameters
+        ----------
+        method : str
+            The HTTP method.
+        url : str
+            The URL.
+        body : Any
+            The body.
+
+        Returns
+        -------
+        tuple[bytes, dict[str, Any]]
+            The content of the response, empty if it was not saved, and
+            the saved response, with its status and headers.
+
+        Raises
+        ------
+        RawDataNotFoundError
+            If the request has no saved response and sends no secret in
+            its body.
+        """
         response = saved.get(_key(method, url, body))
         if response is None:
             if _sends_secret(body):
@@ -511,6 +621,23 @@ def replaying(
         request: requests.PreparedRequest,
         **_kwargs: Any,
     ) -> requests.Response:
+        """
+        Answer a request of requests with its saved response.
+
+        Parameters
+        ----------
+        _session : requests.Session
+            The session, which is not used.
+        request : requests.PreparedRequest
+            The request.
+        **_kwargs : Any
+            The options of the sending, which are not used.
+
+        Returns
+        -------
+        requests.Response
+            The saved response.
+        """
         content, saved_response = replay(
             str(request.method), str(request.url), request.body
         )
@@ -527,6 +654,23 @@ def replaying(
     def replaying_urlopen(
         url: Any, *_args: Any, **_kwargs: Any
     ) -> _UrlResponse:
+        """
+        Answer a URL opened with urllib with its saved response.
+
+        Parameters
+        ----------
+        url : Any
+            The URL or the request object.
+        *_args : Any
+            The other arguments of urlopen, which are not used.
+        **_kwargs : Any
+            The keyword arguments of urlopen, which are not used.
+
+        Returns
+        -------
+        _UrlResponse
+            The saved response.
+        """
         full_url, body = _url_and_body(url)
         method = "POST" if body is not None else "GET"
         content, saved_response = replay(method, full_url, body)
@@ -538,6 +682,20 @@ def replaying(
         )
 
     def replaying_find_manual_files(prefix: str) -> list[str]:
+        """
+        Find the saved files downloaded manually.
+
+        Parameters
+        ----------
+        prefix : str
+            The start of the names of the files.
+
+        Returns
+        -------
+        list[str]
+            The paths of the copies of the files, in the order of their
+            names.
+        """
         return _copy_manual_files(
             data_source, saved, prefix, manual_folder.name
         )

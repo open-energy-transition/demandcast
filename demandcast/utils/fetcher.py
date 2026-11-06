@@ -139,10 +139,8 @@ def _read_aspx_params(
     dict[str, str | int]
         The updated POST data parameters with the ASPX parameters added.
     """
-    # Read the content of the response.
     html_content = response.text
 
-    # Extract the parameters from the HTML content.
     viewstate = re.findall(r"id=\"__VIEWSTATE\" value=\"(.+)\"", html_content)[
         0
     ]
@@ -150,7 +148,6 @@ def _read_aspx_params(
         r"id=\"__EVENTVALIDATION\" value=\"(.+)\"", html_content
     )[0]
 
-    # Return the POST data parameters with the ASPX parameters added.
     return {
         **post_data_params,
         "__VIEWSTATE": viewstate,
@@ -287,8 +284,6 @@ def _send(
     data = dict(post_data_params or {})
 
     if get_cookies:
-        # Send a GET request to the URL to retrieve the cookies, and
-        # send them with the request.
         session = requests.Session()
         session.get(
             url,
@@ -312,8 +307,6 @@ def _send(
         )
     else:
         if query_aspx_webpage:
-            # Read the ASPX parameters of the page and add them to the
-            # data of the POST request.
             page = requests.get(
                 url,
                 timeout=timeout,
