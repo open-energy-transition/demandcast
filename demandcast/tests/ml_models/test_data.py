@@ -819,6 +819,26 @@ def test_normalize_to_annual_totals(caplog):
     assert "all zero are not scaled to their annual total: ITA" in caplog.text
 
 
+def test_normalize_without_report(caplog):
+    """Test that the scaling without report is the same, but silent."""
+    group, local_year, time = _years({("FRA", 2023): 8760})
+    predictions = pd.Series(1.2, index=group.index)
+    predictions[0] = -0.5
+
+    reported, _ = ml_models.data.normalize_to_annual_totals(
+        predictions, group, local_year, time
+    )
+    caplog.clear()
+    with caplog.at_level("INFO"):
+        normalized, _ = ml_models.data.normalize_to_annual_totals(
+            predictions, group, local_year, time, report=False
+        )
+
+    assert normalized[0] == 0.0
+    pd.testing.assert_series_equal(normalized, reported)
+    assert caplog.text == ""
+
+
 def test_normalize_invalid_predictions():
     """
     Test that predictions that are not numbers or a repeated hour stop.

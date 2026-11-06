@@ -276,7 +276,7 @@ def normalize_to_annual_totals(
         logging.warning(
             f"{int(negative.sum())} negative predictions are set to zero."
         )
-        load[negative] = 0.0
+    load[negative] = 0.0
 
     keys = [group.to_numpy(), local_year.to_numpy()]
     hours = load.groupby(keys).transform("size")
