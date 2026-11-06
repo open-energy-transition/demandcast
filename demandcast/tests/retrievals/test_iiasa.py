@@ -332,13 +332,17 @@ def test_gdp_ppp_per_capita_is_calculated(iiasa_folder, monkeypatch):
     [
         ("France", "FRA"),
         ("Republic of Moldova", "MDA"),
-        ("Russia", "RUS"),
+        ("Russian Federation", "RUS"),
         ("C?te d'Ivoire", "CIV"),
         ("Democratic Republic of the Congo", "COD"),
         ("Turkey", "TUR"),
         ("Cura?ao", "CUW"),
         ("R?union", "REU"),
         ("United States Virgin Islands", "VIR"),
+        ("Micronesia", "FSM"),
+        ("Palestine", "PSE"),
+        # The fuzzy search of pycountry gives Serbia.
+        ("Kosovo", "XKX"),
     ],
 )
 def test_from_iiasa_name_to_iso_alpha_3_code(name, code):
@@ -346,16 +350,10 @@ def test_from_iiasa_name_to_iso_alpha_3_code(name, code):
     assert iiasa._from_iiasa_name_to_iso_alpha_3_code(name) == code
 
 
-@pytest.mark.parametrize(
-    ("name", "message"),
-    [
-        ("Korea", "Multiple countries found"),
-        ("Atlantis", "not found"),
-    ],
-)
-def test_from_unknown_iiasa_name(name, message):
-    """Test that an ambiguous or unknown name of IIASA is an error."""
-    with pytest.raises(ValueError, match=message):
+@pytest.mark.parametrize("name", ["Korea", "Atlantis", "Bavaria"])
+def test_from_unknown_iiasa_name(name):
+    """Test that a name that is not exactly a country is an error."""
+    with pytest.raises(ValueError, match="not found"):
         iiasa._from_iiasa_name_to_iso_alpha_3_code(name)
 
 
