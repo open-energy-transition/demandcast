@@ -57,6 +57,6 @@ jobs:
             else
               echo "The [Awesome Electricity Demand](https://github.com/open-energy-transition/Awesome-Electricity-Demand) list does not have these data sources of DemandCast. Add them to its \`data/sources/\` folder, with the same names:"
               echo
-              printf -- '- `%s`\n' "${missing[@]}"
+              printf -- "- \`%s\`\n" "${missing[@]}"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
