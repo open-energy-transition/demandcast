@@ -126,6 +126,7 @@ def test_plot(tmp_path):
     )
 
     def draw(folder):
+        """Write each figure file with its name as content."""
         for file_name in status.FIGURE_FILES:
             with open(os.path.join(folder, file_name), "w") as file:
                 file.write(file_name)
