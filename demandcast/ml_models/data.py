@@ -96,14 +96,11 @@ def read_and_check_ml_configuration() -> ConfigModel:
     ValueError
         If the configuration is invalid.
     """
-    # Define the path to the features and target configuration file.
     config_path = utils.paths.get_config_file("ml_config.yaml")
 
-    # Read the configuration.
     with open(config_path, encoding="utf-8") as file:
         raw_config = utils.config.yaml.safe_load(file)
 
-    # Validate the configuration.
     try:
         config = ConfigModel(**raw_config)
     except ValidationError as e:
@@ -166,12 +163,9 @@ def to_load_relative_to_annual_mean(
     """
     Express the load relative to the annual mean.
 
-    The fraction of the annual total of an average hour is 1/8760 (or
-    1/8784 in leap years), which is too small for the models: the gain
-    of an XGBoost split scales with the square of the target, so almost
-    no split reaches its minimum gain (issue #145). Multiplying by the
-    hours in the local year gives the load relative to the annual mean,
-    so that an average hour is 1.
+    Multiplying the fraction of the annual total by the hours in the
+    local year gives the load relative to the annual mean, so that an
+    average hour is 1.
 
     Parameters
     ----------
@@ -184,6 +178,13 @@ def to_load_relative_to_annual_mean(
     -------
     pandas.Series
         The load relative to the annual mean.
+
+    Notes
+    -----
+    The fraction of the annual total of an average hour is 1/8760 (or
+    1/8784 in leap years), which is too small for the models: the gain
+    of an XGBoost split scales with the square of the target, so almost
+    no split reaches its minimum gain (issue #145).
     """
     return load_fraction * _hours_in_year(local_year)
 
@@ -394,16 +395,19 @@ def _split_temporally(
     split_dataset : dict[str, pandas.DataFrame]
         A dictionary containing the split datasets with keys
         'training', 'testing' (if used), and 'validation' (if used).
+
+    Notes
+    -----
+    The holdouts take the latest available years of each entity, in
+    this order: the testing set the latest one, and the validation set
+    the one before it, or the latest one without a testing set, so that
+    no year of the training set comes after them.
     """
     logging.info(
         "Splitting dataset into training, testing, and validation sets, "
         "if requested."
     )
 
-    # The holdouts take the latest available years of each entity, in
-    # this order: the testing set the latest one, and the validation
-    # set the one before it, or the latest one without a testing set,
-    # so that no year of the training set comes after them.
     holdouts = [
         name
         for name, requested in (
@@ -435,7 +439,6 @@ def _split_temporally(
         ]
     )
 
-    # Reset indexes for all datasets.
     for key, split_data in split_dataset.items():
         split_dataset[key] = split_data.reset_index(drop=True)
 
@@ -485,16 +488,16 @@ def _split_in_groups(  # noqa: C901
     Returns
     -------
     split_dataset : PreparedDataset
-        A dictionary containing the features, target, entity codes,
-        and scaling factors (if any).
+        A dictionary containing the features, entity codes, times, the
+        columns that are not used (if any), the target (if included) and
+        the scaling factor, the product of the scaling variables (if
+        any).
 
     Raises
     ------
     ValueError
         If required columns are missing from the dataset.
     """
-    # Construct the list of columns to check for existence in the
-    # dataset.
     columns_to_check = [*feature_columns, group_column, time_column]
     if target:
         columns_to_check += [target_column]
@@ -503,7 +506,6 @@ def _split_in_groups(  # noqa: C901
     if scaling_variable_columns:
         columns_to_check += scaling_variable_columns
 
-    # Check if all required columns are present in the dataset.
     missing_columns = set(columns_to_check) - set(dataset.columns)
     if missing_columns:
         raise ValueError(
@@ -522,18 +524,14 @@ def _split_in_groups(  # noqa: C901
             f"dataset but not used: {additional_columns}"
         )
 
-    # Extract features.
     features = dataset[feature_columns].copy()
 
     if categorical_feature_columns:
-        # Convert values of categorical features to integer type and
-        # then to category dtype.
         for feature in categorical_feature_columns:
             features[feature] = (
                 features[feature].astype(int).astype("category")
             )
 
-    # Split the dataset into features and group.
     split_dataset: PreparedDataset = {
         "features": features,
         "group": dataset[group_column].copy(),
@@ -544,16 +542,13 @@ def _split_in_groups(  # noqa: C901
         split_dataset["others"] = dataset[additional_columns].copy()
 
     if target:
-        # Extract target.
         split_dataset["target"] = dataset[target_column].copy()
 
     if scaling_variable_columns:
-        # Calculate the scaling factor.
         scaling_factor = pd.Series(1.0, index=dataset.index)
         for scaling_variable in scaling_variable_columns:
             scaling_factor *= dataset[scaling_variable]
 
-        # Add the scaling factor to the split dataset.
         split_dataset["scaling_factor"] = scaling_factor
 
     return split_dataset
@@ -635,10 +630,8 @@ def prepare_dataset(
         factors (if any) of the dataset. The target is the load
         relative to the annual mean.
     """
-    # Read the dataset.
     dataset = pd.read_parquet(data_path)
 
-    # Prepare and return the dataset without splitting.
     return _prepare(dataset, ml_config, target)
 
 
@@ -669,7 +662,6 @@ def prepare_split_datasets(
         used), and 'validation' (if used). Their target is the load
         relative to the annual mean.
     """
-    # Read the dataset and split it temporally.
     split_dataset = _split_temporally(
         pd.read_parquet(data_path),
         testing_set,
@@ -678,7 +670,6 @@ def prepare_split_datasets(
         ml_config.splitter,
     )
 
-    # Prepare each split of the dataset.
     return {
         split_name: _prepare(dataset, ml_config)
         for split_name, dataset in split_dataset.items()

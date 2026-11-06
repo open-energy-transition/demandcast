@@ -93,7 +93,6 @@ def get_initialized_model(config: ConfigModel) -> XGBRegressor:
     XGBRegressor
         Initialized XGBoost model.
     """
-    # Initialize model with config parameters.
     hyperparameters = config.model_dump(
         exclude={"random_state", "enable_categorical", "evaluation_metric"},
         exclude_none=True,
@@ -132,10 +131,8 @@ def train(
     """
     logging.info("Starting XGBoost model training.")
 
-    # Get an initialized model.
     xgb_model = get_initialized_model(config)
 
-    # Prepare evaluation set if the validation dataset is provided.
     eval_set = None
     if "validation" in prepared_dataset:
         eval_set = [
@@ -145,7 +142,6 @@ def train(
             )
         ]
 
-    # Train the model.
     xgb_model.fit(
         prepared_dataset["training"]["features"],
         prepared_dataset["training"]["target"],
@@ -199,15 +195,11 @@ def predict(
         # training/validation/testing.
         dataset = cast("ml_models.data.PreparedDataset", prepared_dataset)
 
-        # Make predictions and return them.
         return pd.Series(xgb_model.predict(dataset["features"]))
 
-    # Initialize predictions dictionary to store training,
-    # validation, and testing predictions.
     predictions: dict[str, pd.Series] = {}
 
     for split_name, data in prepared_dataset.items():
-        # Make predictions for the current split.
         preds = xgb_model.predict(data["features"])
 
         predictions[split_name] = pd.Series(preds)

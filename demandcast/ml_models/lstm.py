@@ -4,9 +4,8 @@ License: AGPL-3.0.
 Description:
 
     This module contains functions to train and save an LSTM model
-    for electricity demand forecasting. The ``LSTMRegressor`` wrapper
-    implements the sklearn estimator interface, enabling direct use
-    with ``cross_validate()`` and ``LeaveOneGroupOut()``.
+    for electricity demand forecasting, wrapped in ``LSTMRegressor``, an
+    sklearn estimator.
 
     Sequence construction respects entity boundaries and time gaps:
     rows from different entities (identified by the ``"group"`` column
@@ -29,9 +28,7 @@ Description:
     of each of them in the training rows, which are saved with the
     model: features of different magnitudes, such as the GDP per capita
     and the temperature, would otherwise saturate the gates of the
-    LSTM. A saved model also records its cyclical features and whether
-    it has the padding indicator, and one without them takes the
-    features as they are, without the indicator.
+    LSTM.
 """
 
 from __future__ import annotations
@@ -84,6 +81,20 @@ class _LSTMNet(nn.Module):
         n_layers: int,
         dropout: float,
     ) -> None:
+        """
+        Make the layers of the network.
+
+        Parameters
+        ----------
+        n_features : int
+            The number of inputs of each step.
+        n_units : int
+            The hidden units of each LSTM layer.
+        n_layers : int
+            The number of stacked LSTM layers.
+        dropout : float
+            The dropout rate between the LSTM layers.
+        """
         super().__init__()
         self.lstm = nn.LSTM(
             input_size=n_features,
@@ -161,7 +172,7 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
         learning_rate: float = 1e-3,
         random_state: int = 42,
     ) -> None:
-        # sklearn convention: store constructor args unchanged.
+        """Store the parameters unchanged, as sklearn requires."""
         self.n_timesteps = n_timesteps
         self.n_units = n_units
         self.n_layers = n_layers
@@ -453,7 +464,7 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
 
 
 # ----------------------------------------------------------------------
-# Module-level API  (mirrors ml_models/xgboost.py)
+# Module-level API (see ml_models/registry.py)
 # ----------------------------------------------------------------------
 
 
@@ -488,6 +499,12 @@ def load(model_path: str) -> LSTMRegressor:
     ------
     FileNotFoundError
         If ``model_path`` does not exist.
+
+    Notes
+    -----
+    A model saved without the statistics of its features, its cyclical
+    features or its padding indicator takes the features as they are,
+    without the indicator.
     """
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model checkpoint not found: {model_path}")
@@ -496,8 +513,6 @@ def load(model_path: str) -> LSTMRegressor:
 
     lstm_model = LSTMRegressor(**checkpoint["params"])
     lstm_model.n_features_in_ = checkpoint["n_features_in_"]
-    # A model saved without statistics, cyclical features or padding
-    # indicator takes the features as they are, without the indicator.
     if "mean_" not in checkpoint:
         logging.warning(
             f"The model {model_path} has no statistics of its features, "

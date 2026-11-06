@@ -250,10 +250,8 @@ def get_trained_model_path(
     FileNotFoundError
         If no trained model files are found.
     """
-    # Get the folder containing trained model files.
     trained_models_folder = utils.paths.get_models_folder(algorithm_name)
 
-    # If no model path is provided, find the latest trained model file.
     if model_path is None:
         model_path = _get_latest_file(
             trained_models_folder, f"{algorithm_name}_model", extension
@@ -293,10 +291,8 @@ def get_assemble_data_path(
     FileNotFoundError
         If no assembled data files are found.
     """
-    # Get the folder containing assembled data files.
     assembled_data_folder = utils.paths.get_assembled_folder()
 
-    # If no data path is provided, find the latest assembled data file.
     if data_path is None:
         data_path = _get_latest_file(
             assembled_data_folder,
@@ -343,12 +339,12 @@ def save_results(
 
     Parameters
     ----------
+    case : str
+        The case of the results.
     output_dataset : pandas.DataFrame
         The dataset containing the model results to save.
     trained_model_name : str
         The name of the trained model used for obtaining the results.
-    case : str
-        The case of the results.
     assembled_data_file_name : str
         The name of the assembled data, without its extension.
     file_name_prefix : str
@@ -375,19 +371,15 @@ def save_results(
     ValueError
         If the case is invalid.
     """
-    # Check that the case is valid.
     if case not in ["validation", "cross_validation", "forecasts"]:
         raise ValueError(f"Invalid case: {case}")
 
-    # Determine the content type for logging.
     output_dataset_content = "MAPEs" if "validation" in case else "forecasts"
 
     logging.info(f"Saving model {output_dataset_content}.")
 
-    # Get the folder where to save the model results.
     results_folder = utils.paths.get_results_folder(case)
 
-    # Construct the model results folder path.
     model_results_folder = os.path.join(
         results_folder,
         f"with_{trained_model_name}",
@@ -395,7 +387,6 @@ def save_results(
     )
     os.makedirs(model_results_folder, exist_ok=True)
 
-    # Construct the results file name.
     timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
     results_file_name = os.path.join(
         model_results_folder, f"{file_name_prefix}_{timestamp}"
@@ -642,8 +633,8 @@ def check_model_manifest(
     Parameters
     ----------
     manifest : dict[str, Any] | None
-        The manifest of the model, None for a model trained before the
-        manifests, which is not checked.
+        The manifest of the model, None for a model without a manifest,
+        which is not checked.
     ml_config : ml_models.data.ConfigModel
         The settings of the machine learning models.
     data_path : str | None, optional
