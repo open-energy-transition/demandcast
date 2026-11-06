@@ -60,7 +60,6 @@ def get_url() -> str:
     str
         The URL of the electricity demand data.
     """
-    # Return the URL of the electricity demand data.
     return (
         "https://donnees.hydroquebec.com/api/explore/v2.1/catalog/datasets/"
         "historique-demande-electricite-quebec/exports/csv?"
@@ -74,9 +73,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the Hydro-Québec website.
-
     Parameters
     ----------
     request : None
@@ -88,17 +84,20 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    When daylight saving time ends, the export gives both hours that end
+    at 01:00 the offset of standard time, so they come at the same time
+    and the hour before has no value. The export also has two values at
+    00:00 on 1 January 2023, and one of them does not fit.
     """
-    # Get the URL of the electricity demand data.
     url = get_url()
 
-    # Fetch the electricity demand data.
     dataset = utils.fetcher.fetch_dataframe(url, "csv")
 
-    # Set the date as the index and extract the demand.
     electricity_demand_time_series = dataset.set_index("date").iloc[:, 0]
 
-    # Convert the index to a datetime object.
     electricity_demand_time_series.index = pd.to_datetime(
         electricity_demand_time_series.index,
         format="%Y-%m-%dT%H:%M:%S%z",
@@ -111,9 +110,8 @@ def download_and_extract_data_for_request(
         kind="stable"
     )
 
-    # When daylight saving time ends, the export gives both hours that
-    # end at 01:00 the offset of standard time, so they come at the same
-    # time and the hour before has no value. Move the first one there.
+    # Move the first of two hours at the same time to the hour before,
+    # when it has no value.
     one_hour = pd.Timedelta(hours=1)
     times = pd.DatetimeIndex(electricity_demand_time_series.index)
     without_previous_hour = ~(times - one_hour).isin(times)
@@ -123,8 +121,7 @@ def download_and_extract_data_for_request(
     )
 
     # Of the other times that come twice, keep the value closest to the
-    # average of the hours before and after: the export has two values
-    # at 00:00 on 1 January 2023, and one of them does not fit.
+    # average of the hours before and after.
     duplicated = electricity_demand_time_series.index.duplicated(keep=False)
     if duplicated.any():
         unique = electricity_demand_time_series[~duplicated]

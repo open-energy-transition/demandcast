@@ -30,9 +30,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the GRUPOICE website.
-
     Parameters
     ----------
     code : str
@@ -47,7 +44,6 @@ def get_available_requests(
     list[int]
         The list of available requests.
     """
-    # Return the available requests, which are the years.
     return list(range(start_date.year, end_date.year + 1))
 
 
@@ -65,7 +61,6 @@ def get_url(year: int) -> str:
     str
         The URL of the electricity demand data.
     """
-    # Construct the URL for the request.
     return (
         "https://apps.grupoice.com/CenceWeb/data/sen/csv/DemandaMW?intervalo=15&"
         f"inicio={year}0101&fin={year}1231"
@@ -75,9 +70,6 @@ def get_url(year: int) -> str:
 def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    from the GRUPOICE website.
 
     Parameters
     ----------
@@ -93,17 +85,14 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     """
     logging.info(f"Retrieving electricity demand data for the year {year}.")
 
-    # Get the URL of the electricity demand data.
     url = get_url(year)
 
-    # Fetch the data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "html",
         read_as="csv_table",
     )
 
-    # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
         dataset["MW"].values,
         index=pd.to_datetime(dataset["fechaHora"]),

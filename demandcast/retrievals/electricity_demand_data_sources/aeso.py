@@ -40,9 +40,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the AESO website.
-
     Parameters
     ----------
     code : str
@@ -88,9 +85,6 @@ def download_and_extract_data_for_request(period: str, code: str) -> pd.Series:
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the AESO website.
-
     Parameters
     ----------
     period : str
@@ -102,6 +96,11 @@ def download_and_extract_data_for_request(period: str, code: str) -> pd.Series:
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    The times are written as "2010-01-01 7:00" or, in the file of 2010
+    to 2019, as "1/1/2010 7:00", month first.
     """
     logging.info(f"Retrieving electricity demand data for {period}.")
 
@@ -113,9 +112,7 @@ def download_and_extract_data_for_request(period: str, code: str) -> pd.Series:
         csv_kwargs={"usecols": ["Date_Begin_GMT", "ACTUAL_AIL"]},
     )
 
-    # The times are the starts of the hours in UTC, written as
-    # "2010-01-01 7:00" or, in the file of 2010 to 2019, as
-    # "1/1/2010 7:00", month first. Move them to the ends of the hours.
+    # Move the times from the starts to the ends of the hours.
     electricity_demand_time_series = pd.Series(
         dataset["ACTUAL_AIL"].to_numpy(),
         index=pd.to_datetime(dataset["Date_Begin_GMT"], format="mixed"),

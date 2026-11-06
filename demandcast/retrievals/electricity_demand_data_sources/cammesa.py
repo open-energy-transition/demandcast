@@ -11,13 +11,12 @@ Description:
     The API gives the demand of the national system (SADI) in MW every
     5 minutes, at times with their offset from UTC, from 00:00 to 00:00
     of the next day, for about the last 7 to 8 months only: on
-    2026-10-19, from 2026-03-01. The earlier days give an empty list,
-    which the module reads as a day without data. The same request
-    gives the demand of the regions, provinces and distributors of the
-    regions file below, by their identifier. The module retrieves 21
-    provinces of Argentina, and Buenos Aires with its autonomous city,
-    which CAMMESA splits into Greater Buenos Aires and the rest of the
-    province. Tierra del Fuego is not connected.
+    2026-10-19, from 2026-03-01. The same request gives the demand of
+    the regions, provinces and distributors of the regions file below,
+    by their identifier. The module retrieves 21 provinces of Argentina,
+    and Buenos Aires with its autonomous city, which CAMMESA splits into
+    Greater Buenos Aires and the rest of the province. Tierra del Fuego
+    is not connected.
 
     The provinces make up the national system, whose demand is not
     retrieved: from March to October 2026, their demand added up to
@@ -74,9 +73,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the CAMMESA website.
-
     Parameters
     ----------
     code : str
@@ -90,18 +86,19 @@ def get_available_requests(
     -------
     list[str]
         The list of available requests.
+
+    Notes
+    -----
+    CAMMESA gives the data of about the last 8 months only, so the
+    requests start at the start date or 8 months before the month of the
+    end date, whichever is later.
     """
-    # CAMMESA only provides the data of about the last 8 months, so the
-    # requests start at the start date or 8 months before the month of
-    # the end date, whichever is later.
     first_day = max(
         pd.Timestamp(start_date),
         pd.Timestamp(end_date.year, end_date.month, 1)
         - pd.DateOffset(months=8),
     )
 
-    # Return the available requests, which are the dates in the format
-    # YYYY-MM-DD.
     return (
         pd.date_range(start=first_day, end=end_date, freq="D")
         .strftime("%Y-%m-%d")
@@ -149,8 +146,13 @@ def _download_region(date: str, region_id: int) -> pd.Series:
     -------
     pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    A day out of the data of the API gives an empty list, which is read
+    as a day without data. The last value, at 00:00 of the next day,
+    belongs to the next day, so it is dropped.
     """
-    # Fetch the data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
         get_url(date, region_id),
         "html",
@@ -158,29 +160,21 @@ def _download_region(date: str, region_id: int) -> pd.Series:
         read_as="json",
     )
 
-    # A day out of the data of the API gives an empty list.
     if "dem" not in dataset.columns:
         return pd.Series(dtype="float64")
 
-    # Remove rows with NaN values for demand.
     dataset = dataset.dropna(subset=["dem"])
 
-    # Extract the electricity demand time series.
     time_series = pd.Series(
         dataset["dem"].values, index=pd.to_datetime(dataset["fecha"])
     )
 
-    # Drop the last value of the time series because it belongs to
-    # the following day.
     return time_series[:-1]
 
 
 def download_and_extract_data_for_request(date: str, code: str) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    from the CAMMESA website.
 
     Parameters
     ----------
@@ -195,11 +189,14 @@ def download_and_extract_data_for_request(date: str, code: str) -> pd.Series:
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
 
+    Notes
+    -----
+    A time without the value of one of the regions has no sum, so it is
+    left out.
     """
     logging.info(f"Retrieving electricity demand data for {date}.")
 
     # Add up the demand of the regions of the country or subdivision.
-    # A time without the value of one of the regions has no sum.
     region_time_series = [
         _download_region(date, region_id) for region_id in REGION_IDS[code]
     ]

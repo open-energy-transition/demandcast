@@ -41,9 +41,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the XM website.
-
     Parameters
     ----------
     code : str
@@ -58,7 +55,6 @@ def get_available_requests(
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
         The list of available requests.
     """
-    # Split the period of the data into one-month periods.
     return utils.time_series.split_period(start_date, end_date, "MS")
 
 
@@ -90,7 +86,6 @@ def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
             "period to 1 month."
         )
 
-    # Return the URL of the electricity demand data.
     return (
         "https://50uclmn31c.execute-api.us-east-1.amazonaws.com/prod/xmproxy?"
         f"metricId=DemaReal&entity=Sistema&start={start_date:%Y-%m-%d}"
@@ -103,9 +98,6 @@ def download_and_extract_data_for_request(
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    from the XM website.
 
     Parameters
     ----------
@@ -126,10 +118,8 @@ def download_and_extract_data_for_request(
         f"{start_date.date()} to {end_date.date()}."
     )
 
-    # Get the URL of the electricity demand data.
     url = get_url(start_date, end_date)
 
-    # Fetch the data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "html",
@@ -138,12 +128,8 @@ def download_and_extract_data_for_request(
         read_as="json",
     )
 
-    # Initialize the list to store the daily values.
     daily_values_list = []
-
-    # Iterate over the dates in the dataset.
     for date in dataset["Date"]:
-        # Extract the row corresponding to the date.
         values_dict = dataset[dataset["Date"] == date]
 
         # Extract the values for each hour of the day.
@@ -155,7 +141,6 @@ def download_and_extract_data_for_request(
         # Define the date and time for each hour of the day.
         date_and_time = [date + f" {hour:02d}:00" for hour in range(24)]
 
-        # Create and append a pandas Series for the day.
         daily_values_list.append(
             pd.Series(
                 hourly_values,
@@ -163,10 +148,7 @@ def download_and_extract_data_for_request(
             )
         )
 
-    # Concatenate the daily values into a single pandas Series.
     electricity_demand_time_series = pd.concat(daily_values_list)
-
-    # Convert the electricity demand values to float type.
     electricity_demand_time_series = electricity_demand_time_series.astype(
         float
     )

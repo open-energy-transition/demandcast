@@ -20,6 +20,7 @@ Description:
     shortages of supply, which the reports add to the generation for
     their demand, and the rooftop solar, which is not among the power
     stations.
+
     The readings are at the full hours: the half hours in between are
     the averages of the hours around them, except for one or two in
     the evening peak, so the module keeps the full hours only. The
@@ -59,10 +60,14 @@ def _clean_and_format(date: str) -> str:
     ------
     ValueError
         If the date string cannot be inferred.
+
+    Notes
+    -----
+    Some report names have typos in their dates, which are fixed by
+    their known corrections. The name of the report of 2022-04-25 has no
+    date, so the regular expression captures only "t" from it.
     """
-    # Create a dictionary to fix known typos in the date strings.
-    # The file name for 2022-04-25 does not have the date in it. The
-    # regular expression captures only "t". Add it manually.
+    # Fix known typos in the date strings.
     fix_typo = {
         "t": "25-04-2022",
         "2209-2023": "22-09-2023",
@@ -73,8 +78,6 @@ def _clean_and_format(date: str) -> str:
         "05-052020": "05-05-2020",
         "04-11-219": "04-11-2019",
     }
-
-    # Fix known typos in the date string.
     if date in fix_typo:
         date = fix_typo[date]
 
@@ -92,7 +95,7 @@ def _clean_and_format(date: str) -> str:
     if len(month) == 1:
         month = f"0{month}"
 
-    # Add leading thousand to year if needed.
+    # Add the century to the year if needed.
     if len(year) == 2:
         year = f"20{year}"
 
@@ -116,12 +119,9 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the PGCB website. Each request corresponds to
-    a specific Excel file identified by a unique number, file
-    extension, and date. The function scrapes the website to find
-    all available files and returns a list of tuples containing
-    the file number, file extension, and date.
+    This function reads the pages of the PGCB website that list the
+    reports, and keeps the Excel file of each report, except those known
+    to be unavailable.
 
     Parameters
     ----------
@@ -134,9 +134,18 @@ def get_available_requests(
 
     Returns
     -------
-    available_requests : list[tuple[str, str, str]
-        A list of tuples, each containing the file number, file
-        extension, and date in the format.
+    available_requests : list[tuple[str, str, str]]
+        The number and extension of the file of each report, and the
+        date of the report in the format YYYY-MM-DD, in chronological
+        order.
+
+    Notes
+    -----
+    The pages are read until the first one without reports: the website
+    has about 150 pages, and adds one every month. The rows without a
+    spreadsheet or a date, such as a test row that appeared on the
+    website in September 2026, are skipped. The website lists the
+    reports from the newest, so the requests are sorted by date.
     """
     logging.info("Retrieving the available requests from the PGCB website.")
 
@@ -164,13 +173,10 @@ def get_available_requests(
         "2022-06-14",  # Missing file.
     ]
 
-    # Initialize an empty list to store available requests.
     available_requests = []
 
-    # Read the pages until the first one without reports. The website
-    # has about 150 pages, and adds one every month.
+    # Read the pages until the first one without reports.
     for page_number in range(1, 1000):
-        # Construct the URL for the current page.
         page_url = (
             "https://erp.powergrid.gov.bd/w/report/eyJpdiI6IldsU2ZQTGkvbkRnQU9"
             "FMjZ5UHhmeGc9PSIsInZhbHVlIjoiQzhONVl5ZGxRY3E3T3ZVNCtLZGt1Zz09Iiwi"
@@ -179,7 +185,6 @@ def get_available_requests(
             f"show_report?page={page_number}"
         )
 
-        # Fetch the HTML content of the page.
         html_content = utils.fetcher.fetch_response(
             page_url,
         )
@@ -214,8 +219,7 @@ def get_available_requests(
             except ValueError:
                 date = None
 
-            # Skip the rows without a spreadsheet or a date, such as a
-            # test row that appeared on the website in September 2026.
+            # Skip the rows without a spreadsheet or a date.
             if file_info is None or date is None:
                 logging.warning(
                     f"Skipping the report '{report_name.group(1)}' on page "
@@ -231,8 +235,6 @@ def get_available_requests(
         if not page_has_reports:
             break
 
-    # Return the requests in chronological order, as the other data
-    # sources do: the website lists the reports from the newest.
     return sorted(available_requests, key=lambda request: request[2])
 
 
@@ -264,9 +266,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the PGCB website for the given date range.
-
     Parameters
     ----------
     file_number_extension_and_date : tuple[str, str, str]
@@ -286,10 +285,8 @@ def download_and_extract_data_for_request(
         f"Retrieving electricity demand data from file with date {date}."
     )
 
-    # Get the URL of the electricity demand data.
     url = get_url(file_number, extension)
 
-    # Fetch the data from the URL.
     excel_file = utils.fetcher.fetch_excel_file(
         url,
     )
@@ -330,8 +327,7 @@ def download_and_extract_data_for_request(
     )
     hours, minutes = hours_and_minutes[0], hours_and_minutes[1]
 
-    # Keep the readings at the full hours, with midnight from "24:00"
-    # when the report has it, and from "00:00" otherwise.
+    # Keep the readings at the full hours.
     is_reading = minutes.eq(0)
     if hours[is_reading].eq(24).any():
         is_reading &= hours.ne(0)

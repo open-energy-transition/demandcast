@@ -152,6 +152,13 @@ def _read_states_of_files(
     pandas.DataFrame
         The name of the state, the start of the hour and the demand,
         once for each state and hour.
+
+    Notes
+    -----
+    The rows of the states are those whose first column is a state and
+    a year, such as "Assam - 2024", which leaves out the disclaimer
+    below the data and the files of the demand of India, which have the
+    year in their first column.
     """
     dataset = utils.fetcher.read_manual_files(
         data_source_name="NITI Aayog",
@@ -161,8 +168,7 @@ def _read_states_of_files(
         access=" after submitting a request via the form on the website",
     )
 
-    # Leave out the disclaimer below the data, and the files of the
-    # demand of India, which have the year in their first column.
+    # Keep the rows of the states.
     states = dataset[
         dataset.reindex(columns=["State"])["State"]
         .astype("string")
@@ -183,8 +189,7 @@ def _read_states_of_files(
         }
     )
 
-    # Keep one value of each state and hour, from the latest download
-    # of the files that overlap.
+    # Keep one value of each state and hour.
     return (
         utils.time_series.keep_latest_download(
             states.set_index(["name", "time"])["Hourly Demand Met (in MW)"],
@@ -243,7 +248,6 @@ def get_url() -> str:
     str
         The URL of the electricity demand data.
     """
-    # Return the URL of the electricity demand data.
     return "https://iced.niti.gov.in/energy/electricity/distribution/national-level-consumption/load-curve"
 
 
@@ -251,11 +255,7 @@ def download_and_extract_data_for_request(
     request: None, code: str
 ) -> pd.Series:
     """
-    Extract electricity demand data.
-
-    This function extracts the electricity demand data from the
-    NITI Aayog website. This function assumes that the data has
-    been downloaded and is available in the specified folder.
+    Extract electricity demand data from the files downloaded manually.
 
     Parameters
     ----------

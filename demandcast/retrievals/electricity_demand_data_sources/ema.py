@@ -38,9 +38,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the EMA website.
-
     Parameters
     ----------
     code : str
@@ -54,12 +51,15 @@ def get_available_requests(
     -------
     requests : list[tuple[int, int, int]]
         List of tuples in the format (year, month, day).
+
+    Notes
+    -----
+    The requests end one week before the end date, so that the last one
+    is within the available data, and leave out the weeks whose files
+    are not on the EMA website.
     """
-    # Subtract one week from the end date to ensure that the last
-    # request is within the available data range.
     end_date = end_date - pd.Timedelta("7days")
 
-    # Create a list of dates that are not available on the EMA website.
     dates_not_available = [
         pd.Timestamp("2014-12-01"),
         pd.Timestamp("2014-12-08"),
@@ -77,8 +77,6 @@ def get_available_requests(
         pd.Timestamp("2015-04-13"),
     ]
 
-    # Return the available requests, which are tuples in the format
-    # (year, month, day).
     return [
         (date.year, date.month, date.day)
         for date in pd.date_range(start=start_date, end=end_date, freq="7D")
@@ -104,16 +102,13 @@ def get_url(year: int, month: int, day: int) -> str:
     str
         The URL of the electricity demand data.
     """
-    # Construct the request date.
     request_date = pd.Timestamp(year=year, month=month, day=day)
 
-    # Define the base URL.
     base_url = (
         "https://www.ema.gov.sg/content/dam/corporate/resources/statistics/"
         "half-hourly-data/"
     )
 
-    # Construct the URL for the request.
     if request_date < pd.Timestamp("2014-12-15"):
         month_abbr = calendar.month_abbr[month]
         return base_url + f"{year}/{day:02d}_{month_abbr}_{year}.xls"
@@ -141,6 +136,12 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    The columns of the values also hold the dates and the titles above
+    them, so pandas reads them as objects, which are then converted to
+    numbers.
     """
     year, month, day = year_month_and_day
 
@@ -148,10 +149,8 @@ def download_and_extract_data_for_request(
         f"Retrieving electricity demand data for {year}-{month:02d}-{day:02d}."
     )
 
-    # Construct the URL for the request.
     url = get_url(year, month, day)
 
-    # Fetch the data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "html",
@@ -160,15 +159,10 @@ def download_and_extract_data_for_request(
         get_cookies=True,
     )
 
-    # Find the row that contains the string "00:30" in the first
-    # column.
+    # Keep the 48 rows of the half hours, from the one ending at 00:30.
     start_row = dataset[dataset.iloc[:, 0] == "00:30"].index[0]
-
-    # Keep only the rows from the start row and the following 48
-    # rows.
     dataset = dataset.iloc[start_row : start_row + 48, :]
 
-    # Reconstruct the request date.
     request_date = pd.Timestamp(year=year, month=month, day=day)
 
     # Keep only the columns with system demand data.
@@ -179,8 +173,6 @@ def download_and_extract_data_for_request(
     else:
         dataset = dataset.iloc[:, [1 + 3 * i for i in range(7)]]
 
-    # Convert the values to numbers: the columns also hold the dates and
-    # the titles above the values, so pandas reads them as objects.
     dataset = dataset.apply(pd.to_numeric)
 
     # Add a column for the hour of the day.
@@ -188,7 +180,6 @@ def download_and_extract_data_for_request(
         "00:00", periods=48, freq="30min"
     ).strftime("%H:%M")
 
-    # Rename the columns to the corresponding dates.
     dataset.columns = [
         date.strftime("%Y-%m-%d")
         for date in pd.date_range(start=request_date, periods=7)
@@ -206,8 +197,7 @@ def download_and_extract_data_for_request(
         ),
     )
 
-    # The rows of the files are the ends of the half hours ("Period
-    # Ending Time"), 30 minutes after their starts.
+    # Move the times from the starts to the ends of the half hours.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

@@ -33,9 +33,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the BC Hydro website.
-
     Parameters
     ----------
     code : str
@@ -50,7 +47,6 @@ def get_available_requests(
     list[int]
         The list of available requests.
     """
-    # Return the available requests, which are the years.
     return list(range(start_date.year, end_date.year + 1))
 
 
@@ -73,7 +69,6 @@ def get_url(year: int) -> str:
     ValueError
         If the year is not implemented.
     """
-    # Define the URL of the electricity demand data.
     url = (
         "https://www.bchydro.com/content/dam/BCHydro/customer-portal/"
         "documents/corporate/suppliers/transmission-system/"
@@ -125,10 +120,6 @@ def _get_excel_information(
     """
     Get the information to read the Excel files.
 
-    This function returns the information needed to read the
-    Excel files containing the electricity demand data from the BC Hydro
-    website.
-
     Parameters
     ----------
     year : int
@@ -155,9 +146,6 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the BC Hydro website.
-
     Parameters
     ----------
     year : int
@@ -169,18 +157,21 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    A missing value, other than the value of 0 of the hour that does not
+    exist when daylight saving time starts, leaves fewer values than
+    hours, so building the time series raises an error.
     """
     logging.info(f"Retrieving electricity demand data for the year {year}.")
 
-    # Get the URL of the electricity demand data.
     url = get_url(year)
 
-    # Get the Excel information of the electricity demand data.
     rows_to_skip, header, index_columns, load_column = _get_excel_information(
         year
     )
 
-    # Fetch the Excel file of the year.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "excel",
@@ -207,8 +198,7 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     ) + pd.Timedelta("1h")
 
     # Remove the value of 0 of the hour that does not exist when
-    # daylight saving time starts. Another missing value would leave
-    # fewer values than hours, which is an error below.
+    # daylight saving time starts.
     available_data = dataset[load_column[0]][
         (
             np.logical_and(
@@ -218,7 +208,6 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         )
     ]
 
-    # Construct the index of the electricity demand time series.
     timestamps = pd.date_range(
         start=first_time_step,
         end=last_time_step,
@@ -226,7 +215,6 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         tz="America/Vancouver",
     )
 
-    # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
         available_data.values, index=timestamps
     )

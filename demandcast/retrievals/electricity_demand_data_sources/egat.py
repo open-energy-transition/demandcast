@@ -33,9 +33,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from EGAT.
-
     Parameters
     ----------
     code : str
@@ -50,7 +47,6 @@ def get_available_requests(
     list[int]
         The list of available requests.
     """
-    # Return the available requests, which are the years.
     return list(range(start_date.year, end_date.year + 1))
 
 
@@ -68,7 +64,6 @@ def get_url(year: int) -> str:
     url : str
         The URL of the electricity demand data.
     """
-    # Return the URL of the electricity demand data.
     return (
         "https://zenodo.org/records/17109911/files/"
         f"system_{year}.csv?download=1"
@@ -78,9 +73,6 @@ def get_url(year: int) -> str:
 def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    from EGAT.
 
     Parameters
     ----------
@@ -93,16 +85,19 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    The file does not say if its times are the starts or the ends of the
+    hours. The dip of the lunch break, from 12:00 to 13:00 in Thailand,
+    falls on the times of 12:00, which fits starts.
     """
     logging.info(f"Retrieving electricity demand data for the year {year}.")
 
-    # Get the URL of the electricity demand data.
     url = get_url(year)
 
-    # Fetch the electricity demand data from the URL.
     dataset = utils.fetcher.fetch_dataframe(url, "csv")
 
-    # Sum the regional demand columns to get total national demand.
     dataset["National Demand"] = (
         dataset["north_demand"]
         + dataset["south_demand"]
@@ -111,16 +106,12 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         + dataset["northeast_demand"]
     )
 
-    # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
         dataset["National Demand"].values,
         index=pd.to_datetime(dataset["datetime"], format="%d/%m/%Y %H:%M"),
     )
 
-    # The file does not say if its times are the starts or the ends of
-    # the hours. The dip of the lunch break, from 12:00 to 13:00 in
-    # Thailand, falls on the times of 12:00, which fits starts. Move
-    # them to the ends of the hours.
+    # Move the times from the starts to the ends of the hours.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

@@ -33,9 +33,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the NB Power website.
-
     Parameters
     ----------
     code : str
@@ -48,10 +45,9 @@ def get_available_requests(
     Returns
     -------
     list[tuple[int, int]]
-        The list of available requests.
+        The year and month of each month whose last day is between the
+        dates.
     """
-    # Get the list of available requests, which are the years and
-    # months.
     values_list = (
         pd.date_range(start=start_date, end=end_date, freq="ME")
         .strftime("%Y-%m")
@@ -59,8 +55,6 @@ def get_available_requests(
         .tolist()
     )
 
-    # Return the available requests, which are tuples in the format
-    # (year, month).
     return [(int(year), int(month)) for year, month in values_list]
 
 
@@ -71,9 +65,8 @@ def get_url() -> str:
     Returns
     -------
     str
-        The URL of the electricity demand data
+        The URL of the electricity demand data.
     """
-    # Return the URL of the electricity demand data.
     return "https://tso.nbpower.com/Public/en/system_information_archive.aspx"
 
 
@@ -82,9 +75,6 @@ def download_and_extract_data_for_request(
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    from the NB Power website.
 
     Parameters
     ----------
@@ -97,6 +87,11 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    Each value is the average of the hour that ends at its time, as the
+    5-minute data of New Brunswick from CCEI shows.
     """
     year, month = year_and_month
 
@@ -105,7 +100,6 @@ def download_and_extract_data_for_request(
         f"year {year} and month {month}."
     )
 
-    # Get the URL of the electricity demand data.
     url = get_url()
 
     # Fetch the CSV file of the month.
@@ -121,16 +115,13 @@ def download_and_extract_data_for_request(
         query_aspx_webpage=True,
     )
 
-    # Extract the electricity demand time series. The times mark the
-    # end of each hour: each value is the average of the hour before its
-    # time, as the 5-minute data of New Brunswick from CCEI show.
     electricity_demand_time_series = pd.Series(
         dataset["NB_LOAD"].values,
         index=pd.to_datetime(dataset["HOUR"].values, format="%Y-%m-%d %H:%M"),
     )
 
-    # Localize the times, which follow daylight saving time: when it
-    # ends, 01:00 comes twice.
+    # Localize the ends of the hours: when daylight saving time ends,
+    # 01:00 comes twice.
     electricity_demand_time_series = (
         electricity_demand_time_series.tz_localize(
             "America/Moncton", ambiguous="infer"

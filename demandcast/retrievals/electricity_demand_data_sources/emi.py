@@ -12,8 +12,7 @@ Description:
     the day has 46 half hours, and the one before the change ends at
     02:00, which does not exist. When it ends, the day has 50, and the
     second half hours that start at 02:00 and 02:30 are labelled as
-    starting at 02:40 and 02:50. The module reads the starts, which
-    always exist, and puts the repeated ones in standard time.
+    starting at 02:40 and 02:50.
 
     Source: https://www.emi.ea.govt.nz/Wholesale/Reports/W_GD_C
 """
@@ -33,9 +32,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the EMI website.
-
     Parameters
     ----------
     code : str
@@ -50,7 +46,6 @@ def get_available_requests(
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
         The list of available requests.
     """
-    # Split the period of the data into one-year periods.
     return utils.time_series.split_period(start_date, end_date, "YS")
 
 
@@ -75,7 +70,6 @@ def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
     ValueError
         If the retrieval period is longer than 1 year.
     """
-    # Check if the retrieval period is less than 1 year.
     if end_date - start_date > pd.Timedelta("366days"):
         raise ValueError(
             "The retrieval period must be less than or equal to 1 year. "
@@ -96,9 +90,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the EMI website.
-
     Parameters
     ----------
     period : tuple[pandas.Timestamp, pandas.Timestamp]
@@ -110,6 +101,14 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    The starts of the half hours are read, since they always exist,
+    unlike some of their ends. The second half hours that start at 02:00
+    and 02:30 when daylight saving time ends are moved back from 02:40
+    and 02:50, in standard time, after the first ones in daylight saving
+    time.
     """
     start_date, end_date = period
 
@@ -117,21 +116,16 @@ def download_and_extract_data_for_request(
         f"Retrieving data from {start_date.date()} to {end_date.date()}."
     )
 
-    # Get the URL of the electricity demand data.
     url = get_url(start_date, end_date)
 
-    # Fetch the electricity demand data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         content_type="csv",
         csv_kwargs={"skiprows": 11},
     )
 
-    # Read the starts of the half hours, which exist on the days of
-    # daylight saving time, unlike some of their ends. When daylight
-    # saving time ends, the second half hours that start at 02:00 and
-    # 02:30 are labelled as starting at 02:40 and 02:50: move them back,
-    # in standard time, after the first ones in daylight saving time.
+    # Read the starts of the half hours, with the repeated ones moved
+    # back to 02:00 and 02:30.
     starts = pd.to_datetime(
         dataset["Period start"], format="%d/%m/%Y %H:%M:%S"
     )
@@ -142,8 +136,7 @@ def download_and_extract_data_for_request(
         + pd.to_timedelta(starts.dt.minute.map({40: 0, 50: 30}), unit="min"),
     )
 
-    # Extract the electricity demand time series. Convert GWh to MW
-    # considering a 0.5-hour time step.
+    # Convert the GWh of each half hour to MW.
     electricity_demand_time_series = pd.Series(
         dataset["Demand (GWh)"].to_numpy() * 1000 / 0.5,
         index=pd.DatetimeIndex(starts),
