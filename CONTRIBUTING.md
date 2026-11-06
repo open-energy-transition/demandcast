@@ -67,6 +67,8 @@ The YAML file has no comments, and gives:
 
 `cleaning/combining.py` uses `definition`, `compiled` and `same_area` to rank the sources of a code. Please also add a small **synthetic** test fixture that mimics the source's file format, in `demandcast/tests/retrievals/electricity_demand_data_sources/fixtures/`, and a test `test_<source>.py` next to it that parses it: the `fake_downloads` fixture serves the file instead of the download, and `assert_demand` checks the result (see `test_aemo_nem.py` and [#161](https://github.com/open-energy-transition/demandcast/issues/161)).
 
+Every data source of DemandCast is also in the [Awesome Electricity Demand](https://github.com/open-energy-transition/Awesome-Electricity-Demand) list, in a YAML file with the same name in `data/sources/`, with the same entities, years and terms of use: add it there first, following its [contributing guide](https://github.com/open-energy-transition/Awesome-Electricity-Demand/blob/main/CONTRIBUTING.md). Pull requests that change the YAML files of the data sources warn about the sources that the list does not have, and the list compares the two every month.
+
 To check a source over the network, set `data_sources` in `demandcast/config/check_data_sources_config.yaml` and run `uv run check.py --config config/check_data_sources_config.yaml`: the live check downloads the latest request and checks its values and times.
 
 ### Adding a machine learning model
