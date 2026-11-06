@@ -1,3 +1,7 @@
+# The countries of the world, with their names and ISO 3166 alpha-3
+# codes, in the format of the YAML file of a data source. The tests of
+# the data sources check the countries of each one against this file.
+
 entities:
   - country_name: Aruba
     country_code: ABW

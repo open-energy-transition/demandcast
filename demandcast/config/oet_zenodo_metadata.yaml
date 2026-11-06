@@ -1,4 +1,6 @@
-# Zenodo metadata for datasets created by Open Energy Transition (OET).
+# Zenodo metadata for datasets created by Open Energy Transition (OET):
+# the creators and contributors of a new record, read by
+# publishing/zenodo.py (see metadata_file in publish_config.yaml).
 
 creators:
   - name: "Antonini, Enrico G. A."
