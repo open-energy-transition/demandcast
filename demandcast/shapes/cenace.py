@@ -213,7 +213,7 @@ subdivisions = pd.concat([subdivisions, merged_shape])
 subdivisions.loc[subdivisions["code"] == "MX-AGU", "code"] = "MEX_OCC"
 subdivisions.loc[subdivisions["code"] == "MEX_OCC", "name"] = "Occidental"
 
-# Central (MEX_CEN): Queretaro, Mexico, Mexico City, the southern part
+# Central (MEX_CEN): Queretaro, Mexico, Mexico City, the western part
 # of Guerrero, and the parts of Michoacan and Guanajuato outside
 # Occidental.
 shapes_to_merge = states[states["code"].isin(["MX-QUE", "MX-MEX", "MX-CMX"])]
