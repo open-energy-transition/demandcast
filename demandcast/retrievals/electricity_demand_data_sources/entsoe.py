@@ -6,11 +6,7 @@ Description:
     This module provides functions to retrieve the electricity demand
     data from the website of the European Network of Transmission System
     Operators for Electricity (ENTSO-E). The data is retrieved in
-    one-year intervals, with the client of entsoe-py, which retries
-    after connection errors. A request that ENTSO-E answers with an
-    error of its server is split into months, then days, and the days
-    that still fail are left out. The errors are raised without the API
-    key, which the URLs of the requests have.
+    one-year intervals, with the client of entsoe-py.
 
     The API gives the actual total load of each country in MW, at the
     start of each interval in UTC: hourly, 30 or 15 minutes depending on
@@ -104,9 +100,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the ENTSO-E website.
-
     Parameters
     ----------
     code : str
@@ -120,9 +113,12 @@ def get_available_requests(
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
         The list of available requests.
+
+    Notes
+    -----
+    The requests are one-year periods, the longest that the platform
+    gives.
     """
-    # Split the period of the data into one-year periods, the maximum
-    # available on the platform.
     return utils.time_series.split_period(start_date, end_date, "YS")
 
 
@@ -168,9 +164,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the ENTSO-E website.
-
     Parameters
     ----------
     period : tuple[pandas.Timestamp, pandas.Timestamp]
@@ -188,11 +181,16 @@ def download_and_extract_data_for_request(
     ValueError
         If the retrieval period is longer than 1 year, or if the
         ENTSO-E API key is not set in the environment variables.
+
+    Notes
+    -----
+    The step of each time is the shorter of the intervals to the times
+    before and after it, because the resolution of some countries
+    changes within a year and the data can have gaps. A single time is
+    one hour long.
     """
     start_date, end_date = period
 
-    # Check if the retrieval period is less than 1 year, the maximum
-    # available on the platform.
     if end_date - start_date > pd.Timedelta("366days"):
         raise ValueError(
             "The retrieval period must be less than or equal to 1 year. "
@@ -203,25 +201,17 @@ def download_and_extract_data_for_request(
         f"Retrieving electricity demand data from {start_date.date()} to {end_date.date()}."
     )
 
-    # Get the API key.
     api_key = utils.config.read_api_key("ENTSOE_API_KEY", "ENTSO-E")
 
-    # Add the time zone to the start date.
     start_date = start_date.tz_localize("UTC")
     end_date = end_date.tz_localize("UTC")
 
-    # Download the electricity demand time series from the ENTSO-E
-    # API.
     electricity_demand_time_series = _fetch_demand(
         api_key, code, start_date, end_date, area=AREAS.get(code)
     )
 
     if not electricity_demand_time_series.empty:
-        # The time values are provided at the beginning of the time
-        # steps. Move each one to the end of its step, the shorter of
-        # the intervals to the times before and after it: some countries
-        # changed from hourly to 15-minute data within a year, and the
-        # data can have gaps. A single time value is one hour long.
+        # Move each time from the start to the end of its step.
         times = electricity_demand_time_series.index.to_series()
         steps = (
             pd.concat([times.diff(), -times.diff(-1)], axis=1)
@@ -232,7 +222,6 @@ def download_and_extract_data_for_request(
             electricity_demand_time_series.index + pd.TimedeltaIndex(steps)
         )
 
-        # Correct the times of the periods that are wrong on ENTSO-E.
         electricity_demand_time_series = _correct_times(
             electricity_demand_time_series, code
         )
@@ -254,12 +243,6 @@ def _query_load(
 ) -> pd.Series:
     """
     Query the load of an area of ENTSO-E, around the periods it fails.
-
-    ENTSO-E answers some periods with an error of the server (400,
-    "Unexpected ERROR occurred during processing of use case"), such as
-    the load of Cyprus on 2025-10-09, while it gives the days around
-    them. The period is then split into months, and a month that fails
-    into days, and the days that fail are left out.
 
     Parameters
     ----------
@@ -284,6 +267,14 @@ def _query_load(
     ------
     requests.exceptions.HTTPError
         If ENTSO-E answers with another error than 400.
+
+    Notes
+    -----
+    ENTSO-E answers some periods with an error of the server (400,
+    "Unexpected ERROR occurred during processing of use case"), such as
+    the load of Cyprus on 2025-10-09, while it gives the days around
+    them. The period is then split into months, and a month that fails
+    into days, and the days that fail are left out.
     """
     try:
         return client.query_load(area, start=start, end=end)["Actual Load"]
@@ -331,16 +322,7 @@ def _fetch_demand(
     """
     Fetch the electricity demand time series from the ENTSO-E API.
 
-    This function retrieves the hourly electricity demand time series
-    for a specified country using the ENTSO-E API, whose client retries
-    the request after connection errors. The periods that ENTSO-E
-    answers with an error of the server are split into months and days,
-    and the days that still fail are left out (see _query_load).
-    The errors of the requests are raised without the API key, which
-    their URL has.
-    The data is returned as a
-    pandas Series with the time index in the time zone of the country
-    and the values in MW.
+    The times are in the time zone of the country.
 
     Parameters
     ----------
@@ -364,14 +346,16 @@ def _fetch_demand(
     -------
     pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    The client of the API retries the request after connection errors.
+    The periods that ENTSO-E answers with an error of the server are
+    split into months and days (see _query_load).
     """
-    # Get the area of ENTSO-E: the ISO Alpha-2 code of the country, if
-    # no other area is given.
     if area is None:
         area = utils.codes.get_iso_alpha_2_code(iso_alpha_3_code)
 
-    # Define the ENTSO-E API client, which retries after connection
-    # errors.
     client = EntsoePandasClient(
         api_key=api_key, retry_count=retries, retry_delay=retry_delay
     )
@@ -386,7 +370,6 @@ def _fetch_demand(
         )
 
     except NoMatchingDataError:
-        # If the data is not available, skip to the next country.
         logging.warning(
             f"No data available for {iso_alpha_3_code} between "
             f"{start_date_and_time.date()} and {end_date_and_time.date()}."

@@ -3,7 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to handle geospatial data.
+    This module provides functions to handle gridded data, such as the
+    population and the weather: harmonize its coordinates, coarsen it,
+    convert densities to counts, and weigh its grid cells by the
+    fractions of them in the shape of a country or subdivision.
 """
 
 import geopandas
@@ -18,10 +21,9 @@ def harmonize_coords[T: (xarray.DataArray, xarray.Dataset)](ds: T) -> T:
     """
     Rename coordinates and reset longitudes.
 
-    This function renames the longitude and latitude coordinates to "x"
-    and "y", respectively, and resets the longitudes from the range
-    [0, 360] to [-180, 180]. It also sorts the dataset by the "y"
-    coordinate to ensure a consistent order.
+    The longitude and latitude coordinates are renamed to "x" and "y",
+    the longitudes go from the range [0, 360] to [-180, 180], and the
+    data is sorted by "y".
 
     Parameters
     ----------
@@ -39,21 +41,24 @@ def harmonize_coords[T: (xarray.DataArray, xarray.Dataset)](ds: T) -> T:
     ValueError
         If the x coordinate contains values less than -180 or greater
         than 180.
+
+    Notes
+    -----
+    The longitudes are reset in double precision: in single precision,
+    such as in ARCO-ERA5, 354.25 would become -5.749984.
+
+    The data is sorted by "y" so that its order is the same whatever
+    its source.
     """
-    # Rename longitude and latitude coordinates to x and y coordinates.
     if "longitude" in ds.coords and "latitude" in ds.coords:
         ds = ds.rename({"longitude": "x", "latitude": "y"})
     elif "lon" in ds.coords and "lat" in ds.coords:
         ds = ds.rename({"lon": "x", "lat": "y"})
 
-    # Reset longitudes from the range [0, 360] to [-180, 180], in double
-    # precision: in single precision, such as in ARCO-ERA5, 354.25
-    # would become -5.749984.
     if ds["x"].min() >= 0:
         x = ds["x"].astype("float64")
         ds = ds.assign_coords(x=(x + 179.99999) % 360 - 179.99999).sortby("x")
 
-    # Drop duplicate x coordinates if they exist.
     ds = ds.drop_duplicates("x")
 
     if ds["x"].min() < -180.01:
@@ -67,7 +72,6 @@ def harmonize_coords[T: (xarray.DataArray, xarray.Dataset)](ds: T) -> T:
             "Please ensure that the x coordinate is in the correct range."
         )
 
-    # Sort the dataset by the y coordinate and return it.
     return ds.sortby("y")
 
 
@@ -77,11 +81,9 @@ def clean_raster(
     """
     Clean the xarray data imported from a raster file.
 
-    This function cleans the xarray data imported from a raster file
-    by dropping unnecessary variables, renaming the variable to the
-    specified variable name, and removing the "band" and "spatial_ref"
-    dimensions and attributes. It also squeezes the "band" dimension if
-    it exists.
+    The "band" dimension is squeezed, the "band" and "spatial_ref"
+    coordinates and the attributes are dropped, and the data is named
+    after the variable.
 
     Parameters
     ----------
@@ -95,8 +97,6 @@ def clean_raster(
     xarray.DataArray
         The cleaned xarray data.
     """
-    # Drop unnecessary variables, rename the variable, and remove
-    # unnecessary dimensions and attributes.
     xarray_data = xarray_data.squeeze("band")
     xarray_data = xarray_data.drop_vars(["band", "spatial_ref"])
     xarray_data = xarray_data.drop_attrs()
@@ -110,14 +110,6 @@ def _get_fraction_of_grid_cells_in_shape(
 ) -> xarray.DataArray:
     """
     Calculate the fraction of each grid cell that is in the given shape.
-
-    This function calculates the fraction of each grid cell that is
-    contained within the specified country or subdivision shape. It
-    takes the grid cells defined by the xarray data and computes the
-    intersection with the provided shape, returning a new xarray
-    DataArray with the fraction of each grid cell that is in the shape.
-    The resulting fraction is normalized to ensure that the values are
-    between 0 and 1.
 
     Parameters
     ----------
@@ -139,9 +131,12 @@ def _get_fraction_of_grid_cells_in_shape(
     ValueError
         If the shape is outside the bounds of the gridded data, or if
         the fractions are not finite values between 0 and 1.
+
+    Notes
+    -----
+    Rounding errors can give fractions slightly above 1, which are set
+    to 1.
     """
-    # Ensure that the bounds of the entity shape are within gridded data
-    # limits.
     if (
         entity_shape.total_bounds[0] < xarray_data.x.min().item()
         or entity_shape.total_bounds[2] > xarray_data.x.max().item()
@@ -169,8 +164,6 @@ def _get_fraction_of_grid_cells_in_shape(
         box(*c) for c in np.hstack((coords - half_cell, coords + half_cell))
     ]
 
-    # Create the grid as a GeoDataFrame where each row has the
-    # coordinates and the geometry of the grid cell.
     grid = geopandas.GeoDataFrame(
         {"x": coords[:, 0], "y": coords[:, 1], "geometry": grid_cells},
         crs="EPSG:4326",
@@ -186,22 +179,18 @@ def _get_fraction_of_grid_cells_in_shape(
         .area
     )
 
-    # Calculate the fraction of each grid cell that is in the shape.
     fraction_of_grid_cells_in_shape_np = (
         intersection_area / cell_area
     ).to_numpy()
 
-    # Some rounding errors can lead to fractions slightly above 1.
-    # Set these values to 1. A new array is created because, with
-    # Copy-on-Write, the array returned by to_numpy() is read-only.
+    # A new array is created because, with Copy-on-Write, the array
+    # returned by to_numpy() is read-only.
     fraction_of_grid_cells_in_shape_np = np.where(
         np.isclose(fraction_of_grid_cells_in_shape_np, 1),
         1.0,
         fraction_of_grid_cells_in_shape_np,
     )
 
-    # Check that the fraction is between 0 and 1 and that there are
-    # no NaN or infinite values.
     if not np.all(
         (fraction_of_grid_cells_in_shape_np >= 0)
         & (fraction_of_grid_cells_in_shape_np <= 1)
@@ -219,7 +208,6 @@ def _get_fraction_of_grid_cells_in_shape(
             "values."
         )
 
-    # Convert the numpy array to a xarray DataArray.
     fraction_of_grid_cells_in_shape = xarray.DataArray(
         fraction_of_grid_cells_in_shape_np.reshape(
             len(xarray_data.y), len(xarray_data.x)
@@ -242,9 +230,8 @@ def from_density_to_count(
     """
     Convert density to count.
 
-    This function converts a density xarray to a count xarray by
-    calculating the area of each grid cell in square kilometers and
-    multiplying the density by the area.
+    The count of each grid cell is its density times its area in square
+    kilometres.
 
     Parameters
     ----------
@@ -265,24 +252,17 @@ def from_density_to_count(
     x_resolution = density.x[1:].to_numpy() - density.x[:-1].to_numpy()
     y_resolution = density.y[1:].to_numpy() - density.y[:-1].to_numpy()
 
-    # Check that the resolution of the grid cells is uniform along each
-    # axis.
     if not np.allclose(x_resolution, x_resolution[0]):
         raise ValueError("The x resolution must be uniform.")
     if not np.allclose(y_resolution, y_resolution[0]):
         raise ValueError("The y resolution must be uniform.")
-
-    # Check that the resolution is the same in both directions.
     if not np.allclose(x_resolution[0], y_resolution[0]):
         raise ValueError(
             "The x and y resolutions must be the same. "
             f"Got {x_resolution[0]} and {y_resolution[0]}."
         )
 
-    # Get the resolution in degrees.
     resolution = x_resolution[0]
-
-    # Extract the longitudes and latitudes values.
     longitudes = density.x.to_numpy()
     latitudes = density.y.to_numpy()
 
@@ -295,7 +275,6 @@ def from_density_to_count(
         ]
     )
 
-    # Create an xarray DataArray for the boundary latitudes.
     boundary_latitude_grid = xarray.Dataset(
         data_vars={
             "upper_lat": (
@@ -324,8 +303,6 @@ def from_density_to_count(
         )
     )
 
-    # Calculate the count by multiplying the density by
-    # the area of each grid cell.
     return density * area
 
 
@@ -337,14 +314,8 @@ def get_largest_values_in_shape(
     """
     Get the grid cells with the largest values inside a shape.
 
-    This function extracts the grid cells with the largest values from
-    the given xarray data within the specified country or subdivision
-    shape. The value of a cell inside the shape is its value times the
-    fraction of the cell that is in the shape, which assumes that the
-    value, such as the population, is spread evenly over the cell: a
-    populous cell at the border, mostly outside the shape, ranks by the
-    part of its population inside it. The grid cells with the largest
-    of these values are returned.
+    The value of a cell inside the shape is its value times the fraction
+    of the cell that is in the shape.
 
     Parameters
     ----------
@@ -360,13 +331,17 @@ def get_largest_values_in_shape(
     xarray.DataArray
         The grid cells with the largest values inside the given shape,
         with these values.
+
+    Notes
+    -----
+    The value is assumed to be spread evenly over the cell, such as the
+    population: a populous cell at the border, mostly outside the
+    shape, ranks by the part of its population inside it.
     """
-    # Calculate the fraction of each grid cell that is in the shapes.
     fraction_of_grid_cells_in_shape = _get_fraction_of_grid_cells_in_shape(
         xarray_data, entity_shape, make_plot=False
     )
 
-    # Rearrange the values inside the shape.
     xarray_data_rearranged = (
         (xarray_data * fraction_of_grid_cells_in_shape)
         .where(fraction_of_grid_cells_in_shape > 0.0)
@@ -374,7 +349,6 @@ def get_largest_values_in_shape(
         .dropna(dim="z")
     )
 
-    # Return the grid cells with the largest values.
     return xarray_data_rearranged.sortby(xarray_data_rearranged).tail(
         number_of_grid_cells
     )
@@ -388,9 +362,7 @@ def coarsen(
     """
     Coarsen the xarray data to the target resolution.
 
-    This function coarsens the xarray data to the specified target
-    resolution by aggregating the data into bins of the target
-    resolution.
+    The data is aggregated into bins of the target resolution.
 
     Parameters
     ----------
@@ -412,8 +384,12 @@ def coarsen(
     ValueError
         If the target resolution is not at least twice the original
         resolution or does not divide 360.
+
+    Notes
+    -----
+    The grid cells at -180 and 180 are on the same meridian, so both
+    take the sum of their values.
     """
-    # Get the original resolution of the xarray data.
     original_x_resolution = abs(
         original_xarray.x[1] - original_xarray.x[0]
     ).item()
@@ -422,14 +398,10 @@ def coarsen(
     ).item()
     original_resolution = max(original_x_resolution, original_y_resolution)
 
-    # Check if the target resolution is greater than the original
-    # resolution.
     if target_resolution <= 2 * original_resolution:
         raise ValueError(
             "Target resolution must be at least twice the original resolution."
         )
-
-    # Check if the target resolution provides an integer number of bins.
     if 360 % target_resolution != 0:
         raise ValueError(
             "Target resolution must result in an integer number when "
@@ -475,30 +447,25 @@ def coarsen(
         "y", y_bins, labels=y_bin_centers
     ).sum()
 
-    # Rename the bins to "x" and "y".
     coarsened_xarray = coarsened_xarray.rename({"x_bins": "x", "y_bins": "y"})
 
     # If the bounds are at the edges of the longitude range, adjust the
     # first and last x coordinates to be exactly -180 and 180,
     # respectively.
     if coarsened_xarray.x[0] == -180 + target_resolution / 4:
-        # Change the first x coordinates to -180.
         coarsened_xarray = coarsened_xarray.assign_coords(
             x=coarsened_xarray.x.where(
                 coarsened_xarray.x != coarsened_xarray.x[0], -180
             )
         )
     if coarsened_xarray.x[-1] == 180 - target_resolution / 4:
-        # Change the last x coordinates to 180.
         coarsened_xarray = coarsened_xarray.assign_coords(
             x=coarsened_xarray.x.where(
                 coarsened_xarray.x != coarsened_xarray.x[-1], 180
             )
         )
 
-    # If the x coordinate goes from -180 to 180, sum the values at
-    # the edges. This is because the grid cells at -180 and 180
-    # represent the same longitude line.
+    # Sum the values of the cells at -180 and 180.
     if coarsened_xarray.x[0] == -180 and coarsened_xarray.x[-1] == 180:
         coarsened_xarray.loc[{"x": -180}] += coarsened_xarray.loc[{"x": 180}]
         coarsened_xarray.loc[{"x": 180}] = coarsened_xarray.loc[{"x": -180}]

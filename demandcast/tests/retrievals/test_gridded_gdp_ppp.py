@@ -38,6 +38,14 @@ def test_run_data_retrieval(monkeypatch):
     read: list[tuple[str, str]] = []
 
     def read_gdp_ppp(folder, year_scenario):
+        """
+        Record a read and give the global grid.
+
+        Returns
+        -------
+        xarray.DataArray
+            The global grid.
+        """
         read.append((folder, year_scenario))
         return global_grid
 
@@ -77,7 +85,6 @@ def test_run_data_retrieval(monkeypatch):
     ) as germany:
         assert germany.values.tolist() == [[10.0, 11.0], [14.0, 15.0]]
 
-    # A grid that exists is kept.
     path = os.path.join(processed_folder, "FRA_0.25_deg_2020.nc")
     os.utime(path, (0, 0))
     gridded_gdp_ppp.run_data_retrieval(None, None, 2020, None, None, None)

@@ -89,9 +89,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the NESO website.
-
     Parameters
     ----------
     code : str
@@ -104,9 +101,8 @@ def get_available_requests(
     Returns
     -------
     list[int]
-        The list of available requests.
+        The years of the data.
     """
-    # Return the available requests, which are the years.
     return list(range(start_date.year, end_date.year + 1))
 
 
@@ -150,7 +146,6 @@ def get_url(year: int) -> str:
     if dataset_ids.empty:
         raise ValueError(f"The year {year} is not supported for the dataset.")
 
-    # Return the URL of the electricity demand data.
     return (
         "https://api.neso.energy/api/3/action/datastore_search_sql?"
         f"sql=SELECT%20*%20FROM%20%22{dataset_ids.iloc[0]}%22%20"
@@ -161,9 +156,6 @@ def get_url(year: int) -> str:
 def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    from the NESO website.
 
     Parameters
     ----------
@@ -176,13 +168,16 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    Each settlement period ends 30 minutes times its number after the
+    local midnight of its day, in absolute time.
     """
     logging.info(f"Retrieving electricity demand data for the year {year}.")
 
-    # Get the URL of the electricity demand data.
     url = get_url(year)
 
-    # Fetch the electricity demand data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "html",
@@ -195,9 +190,7 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     if "FORECAST_ACTUAL_INDICATOR" in dataset.columns:
         dataset = dataset[dataset["FORECAST_ACTUAL_INDICATOR"] != "F"]
 
-    # The settlement periods of a day are the half hours from its local
-    # midnight, 46 or 50 on the days of daylight saving time. Each one
-    # ends 30 minutes times its number after midnight, in absolute time.
+    # Find the ends of the settlement periods.
     midnights = _read_dates(dataset["SETTLEMENT_DATE"]).tz_localize(
         "Europe/London"
     )
@@ -205,8 +198,7 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         dataset["SETTLEMENT_PERIOD"].astype(int).to_numpy() * 30, unit="min"
     )
 
-    # Add the embedded generation to the national demand, counting the
-    # missing values ("NA") as zero.
+    # Add the embedded generation to the national demand.
     demand = pd.to_numeric(dataset["ND"])
     for column in EMBEDDED_GENERATION:
         if column in dataset.columns:
@@ -214,7 +206,6 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
                 dataset[column], errors="coerce"
             ).fillna(0)
 
-    # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
         demand.to_numpy(), index=midnights + periods
     )

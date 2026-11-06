@@ -111,7 +111,6 @@ def test_get_data(synthetic_data):
         "IND",
         "AUS",
     ]
-    # Ontario has data from 2015 to 2023, and Canada from 2018 to 2022.
     assert data.gdp_points["CAN"].index.tolist() == [2015, 2023]
     assert data.gdp_points["CAN"].tolist() == (
         synthetic_data.loc["CAN", [2015, 2023]].tolist()

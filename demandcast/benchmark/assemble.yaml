@@ -1,3 +1,6 @@
+# Configuration of assemble.py for the data of the benchmark of the
+# models, for training from 2021 to 2023 (see run.py).
+
 target_use: training
 file: benchmark/codes.yaml
 start_year: 2021

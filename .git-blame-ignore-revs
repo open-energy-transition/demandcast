@@ -1,4 +1,4 @@
-# Commits that git blame skips: mass formatting and lint fixes that don't
+# Commits that git blame skips: mass formatting and lint fixes that do not
 # change behaviour. GitHub uses this file automatically; to use it locally,
 # run `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
 

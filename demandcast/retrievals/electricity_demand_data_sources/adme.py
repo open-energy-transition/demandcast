@@ -15,12 +15,6 @@ Description:
     A request to the end of a month also gives that month, so the month
     after each one-year period is downloaded twice and kept once.
 
-    Since October 2026, the file of the current year starts with
-    warnings of the PHP code of the website, about 8 for each hour,
-    before the header of the table, whose values are the same as before.
-    The table is read from its header ("Fecha;"). A year takes about 20
-    seconds to be prepared.
-
     Source: https://adme.com.uy/controlpanel.php
 """
 
@@ -40,9 +34,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the ADME website.
-
     Parameters
     ----------
     code : str
@@ -57,7 +48,6 @@ def get_available_requests(
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
         The list of available requests.
     """
-    # Split the period of the data into one-year periods.
     return utils.time_series.split_period(start_date, end_date, "YS")
 
 
@@ -81,8 +71,11 @@ def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
     ------
     ValueError
         If the retrieval period is longer than 1 year.
+
+    Notes
+    -----
+    The website gives at most 1 year of data per request.
     """
-    # The website gives at most 1 year of data per request.
     if end_date - start_date > pd.Timedelta("366days"):
         raise ValueError(
             "The retrieval period must be less than or equal to 1 year. "
@@ -102,9 +95,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the ADME website.
-
     Parameters
     ----------
     period : tuple[pandas.Timestamp, pandas.Timestamp]
@@ -121,6 +111,14 @@ def download_and_extract_data_for_request(
     ------
     ValueError
         If the file has no table.
+
+    Notes
+    -----
+    The file of the current year starts with warnings of the PHP code of
+    the website, about 8 for each hour, before the header of the table,
+    so the table is read from its header ("Fecha;"). A year takes about
+    20 seconds to be prepared, so it is fetched with the timeout of a
+    file.
     """
     start_date, end_date = period
 
@@ -128,11 +126,8 @@ def download_and_extract_data_for_request(
         f"Retrieving data from {start_date.date()} to {end_date.date()}."
     )
 
-    # Get the URL of the electricity demand data.
     url = get_url(start_date, end_date)
 
-    # Fetch the electricity demand data from the URL, and read the
-    # table from its header, after the warnings of the website.
     content = utils.fetcher.fetch_response(
         url, timeout=utils.fetcher.FILE_TIMEOUT
     ).content.decode("utf-8", errors="replace")
@@ -141,13 +136,11 @@ def download_and_extract_data_for_request(
         raise ValueError(f"The file of ADME has no table: {url}")
     dataset = pd.read_csv(io.StringIO(content[header:]), sep=";")
 
-    # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
         dataset["Demanda"].values,
         index=pd.to_datetime(dataset["Fecha"], format="%d-%m-%Y %H:%M"),
     )
 
-    # Add the time zone information to the time series.
     electricity_demand_time_series = (
         electricity_demand_time_series.tz_localize("America/Montevideo")
     )

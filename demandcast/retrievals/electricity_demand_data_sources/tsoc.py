@@ -66,9 +66,8 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the TSOC website: the years that have ended, since
-    the file of a year is published after it ends.
+    The requests are the years that have ended, since the file of a
+    year is published after it ends.
 
     Parameters
     ----------
@@ -84,7 +83,6 @@ def get_available_requests(
     list[int]
         The list of available requests.
     """
-    # Return the years of the dates that have ended.
     last_year = min(end_date.year, pd.Timestamp.today().year - 1)
     return list(range(start_date.year, last_year + 1))
 
@@ -103,7 +101,6 @@ def get_url(year: int) -> str:
     str
         The URL of the electricity demand data.
     """
-    # Return the URL of the Excel file of the year.
     path = (
         "/files/electrical-system/daily-system-generation/"
         f"Ημερήσια Παραγωγή Ηλεκτρικού Συστήματος - {year}.xlsx"
@@ -279,9 +276,6 @@ def _correct_whole_hours(
 def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    from the TSOC website.
 
     Parameters
     ----------

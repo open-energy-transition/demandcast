@@ -13,17 +13,15 @@ Description:
     covers the time since the value before it, at most its resolution,
     so that a value after a gap does not cover the gap. The resolution
     is that around each value, the median time between the 25 values
-    around it, since it can change within a data source, such as from 30
-    to 5 minutes in the NEM of Australia in October 2021. The intervals
+    around it, since it can change within a data source. The intervals
     are computed once, before any value is removed, so that removing a
     value does not lengthen the interval of the next one. A value
     follows the one before it if the time between them is its interval:
     the rules below that look at runs of values never bridge a gap,
     whether the data source misses the values or an earlier rule removed
-    them. The day of
-    a value is the local day of the start of its interval, so that the
-    value at midnight belongs to the day that it ends, except for the
-    copied days below.
+    them. The day of a value is the local day of the start of its
+    interval, so that the value at midnight belongs to the day that it
+    ends, except for the copied days below.
 
     The cleaning screens the values with statistical rules, which look
     for what errors usually look like rather than for the errors of
@@ -304,10 +302,13 @@ def _find_repeated_days(
     -------
     numpy.ndarray
         True for the values of the repeated days.
+
+    Notes
+    -----
+    Each day is compared by its values at their times of the day, so
+    that days missing other values differ.
     """
     days = local_times.normalize()
-    # Each day is compared by its values at their times of the day, so
-    # that days missing other values differ.
     fingerprints = pd.Series(
         list(
             zip(
@@ -335,11 +336,7 @@ def _find_copied_days(
     values: pd.Series, durations: pd.Series, time_zone: str
 ) -> pd.Series:
     """
-    Find the days whose values repeat those of an earlier day.
-
-    A data source can copy its days by the starts or by the ends of its
-    intervals, whichever its times mark, so the days are taken both
-    ways.
+    Find the copied days, by the starts and the ends of the intervals.
 
     Parameters
     ----------
@@ -574,6 +571,16 @@ def _find_removed(
     removed = pd.Series("", index=values.index)
 
     def remove(rule: str, found: pd.Series) -> None:
+        """
+        Set the rule of the values that it finds, if not removed yet.
+
+        Parameters
+        ----------
+        rule : str
+            The rule.
+        found : pandas.Series
+            True for the values that the rule finds.
+        """
         found = found.reindex(removed.index, fill_value=False)
         removed[found & (removed == "")] = rule
 
@@ -599,10 +606,6 @@ def _find_removed(
 def _resample_hourly(values: pd.Series, durations: pd.Series) -> pd.DataFrame:
     """
     Average the values of each hour, at its end.
-
-    Each value is the average of its interval, and counts in each hour
-    for the part of its interval within the hour, so that the energy of
-    the values is kept.
 
     Parameters
     ----------

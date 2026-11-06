@@ -21,6 +21,7 @@ class _FakeBlob:
     """An object of the fake bucket."""
 
     def __init__(self, bucket: "_FakeBucket", name: str) -> None:
+        """Set up the object of a name in the bucket."""
         self.bucket = bucket
         self.name = name
 
@@ -59,6 +60,7 @@ class _FakeBucket:
     def __init__(
         self, objects: dict[str, bytes], hidden: frozenset[str] = frozenset()
     ) -> None:
+        """Set up the bucket with a copy of the objects."""
         self.objects = dict(objects)
         # The objects written by another copy after the listing.
         self.hidden = hidden
@@ -94,6 +96,7 @@ class _FakeClient:
     """A client with a single bucket."""
 
     def __init__(self, bucket: _FakeBucket) -> None:
+        """Set up the client of the bucket."""
         self._bucket = bucket
 
     def bucket(self, _name: str) -> _FakeBucket:

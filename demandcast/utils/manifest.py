@@ -24,8 +24,7 @@ Description:
     such as one synchronized from a bucket.
 
     The manifests have a version (MANIFEST_VERSION), which grows when
-    their content changes in a way that older code cannot read. Version
-    2 adds the checksum of each format of the file.
+    their content changes in a way that older code cannot read.
 """
 
 import datetime as dt
@@ -275,6 +274,11 @@ def verify_file(file_path: str, kind: str | None) -> dict[str, Any] | None:
     ValueError
         If the manifest is of another kind, does not describe the file,
         or records another checksum than that of the file.
+
+    Notes
+    -----
+    A manifest of version 1 has no checksum of each format ("files"),
+    only that of the file ("sha256").
     """
     manifest = read_manifest(file_path)
     if manifest is None:

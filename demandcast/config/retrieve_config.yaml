@@ -50,7 +50,7 @@ scenario:
 
 # OPTIONAL.
 # Variable of the weather data to be retrieved (only "temperature" is
-# currently supported).
+# supported).
 weather_variable: temperature
 
 # OPTIONAL.

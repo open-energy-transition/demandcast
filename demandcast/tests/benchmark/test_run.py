@@ -72,6 +72,14 @@ def test_run_benchmark(
     steps_run = []
 
     def run_step(step):
+        """
+        Record the number of the step.
+
+        Returns
+        -------
+        int
+            The exit code of the step.
+        """
         steps_run.append(numbers[step])
         return exit_codes.get(numbers[step], 0)
 

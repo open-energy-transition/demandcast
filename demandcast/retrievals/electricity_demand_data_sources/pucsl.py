@@ -21,6 +21,7 @@ Description:
     midday, and from September 2026 a battery, whose dispatch is
     negative when it charges. Before, the demand left out the rooftop
     solar generation.
+
     The dispatch of the rooftop solar is missing at night and counts as
     zero, and the times not published yet have no dispatch of any plant
     and no demand.
@@ -43,9 +44,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the PUCSL website.
-
     Parameters
     ----------
     code : str
@@ -60,7 +58,6 @@ def get_available_requests(
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
         The list of available requests.
     """
-    # Split the period of the data into seven-day periods.
     return utils.time_series.split_period(start_date, end_date, "7D")
 
 
@@ -110,9 +107,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the PUCSL website for the given date range.
-
     Parameters
     ----------
     period : tuple[pandas.Timestamp, pandas.Timestamp]
@@ -131,10 +125,8 @@ def download_and_extract_data_for_request(
         f"Retrieving data from {start_date.date()} to {end_date.date()}."
     )
 
-    # Get the URL of the electricity demand data.
     url = get_url(start_date, end_date)
 
-    # Fetch the electricity demand data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         content_type="html",
@@ -144,7 +136,6 @@ def download_and_extract_data_for_request(
         retry_delay=20,
     )
 
-    # Convert timestamps to datetime
     dataset["reportTimestamp"] = pd.to_datetime(dataset["reportTimestamp"])
 
     # Sum the dispatch of the plants at each time, without demand at the
@@ -153,7 +144,6 @@ def download_and_extract_data_for_request(
         "dispatchValueInMW"
     ].sum(min_count=1)
 
-    # Extract the electricity demand time series
     electricity_demand_time_series = pd.Series(
         dataset_grouped["dispatchValueInMW"].values,
         index=dataset_grouped["reportTimestamp"],
@@ -162,7 +152,7 @@ def download_and_extract_data_for_request(
     # Move the starts of the 15 minutes to their ends.
     electricity_demand_time_series.index += pd.Timedelta(minutes=15)
 
-    # Add the time zone information to the time series.
+    # Convert the times from UTC to the time of Sri Lanka.
     electricity_demand_time_series = electricity_demand_time_series.tz_convert(
         "Asia/Colombo"
     )

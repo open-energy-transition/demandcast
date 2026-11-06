@@ -65,9 +65,8 @@ def get_url() -> str:
     Returns
     -------
     str
-        The URL of the electricity demand data
+        The URL of the electricity demand data.
     """
-    # Return the URL of the file of the dataset.
     return (
         "https://data.mendeley.com/public-files/datasets/z5x2d3mhw7/files/"
         "049d33a5-6d4f-465a-8a65-b613487eb1c9/file_downloaded"
@@ -79,9 +78,6 @@ def download_and_extract_data_for_request(
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    from Sonelgaz.
 
     Parameters
     ----------
@@ -95,7 +91,6 @@ def download_and_extract_data_for_request(
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
     """
-    # Get the URL of the electricity demand data.
     url = get_url()
 
     # Fetch the data from the URL, with requests: Mendeley Data refuses
@@ -125,7 +120,6 @@ def download_and_extract_data_for_request(
         index=index,
     )
 
-    # Sort the index.
     electricity_demand_time_series = (
         electricity_demand_time_series.sort_index()
     )

@@ -37,24 +37,18 @@ url = (
     "jpn_adm_2019_shp.zip"
 )
 
-# Download the zip file.
 response = requests.get(url, timeout=60)
 
-# Define the folder where to extract the shapefile.
 temporary_dir = os.path.join(os.path.dirname(__file__), "kansaitd_temp")
 os.makedirs(temporary_dir, exist_ok=True)
 
-# Extract the zip file.
 with zipfile.ZipFile(BytesIO(response.content)) as z:
-    # Extract the contents of the zip file to a temporary directory.
     z.extractall(temporary_dir)
 
-# Read the shapefile of the prefectures.
 prefectures = geopandas.read_file(
     os.path.join(temporary_dir, "jpn_admbnda_adm1_2019.shp")
 )
 
-# Change the projection of the shapefile to EPSG 4326.
 prefectures = prefectures.to_crs(epsg=4326)
 
 # Define the codes of the prefectures fully included.
@@ -66,16 +60,13 @@ codes_of_whole_prefectures = [
     "JP30",
 ]
 
-# Select the prefectures of interest.
 whole_prefectures = prefectures[
     prefectures["ADM1_PCODE"].isin(codes_of_whole_prefectures)
 ]
 
-## Merge all the prefectures into a single geometry.
 whole_prefectures = whole_prefectures.dissolve(by="ADM0_EN")
 whole_prefectures = whole_prefectures.reset_index()
 
-# Select the shape of the Hyogo Prefecture.
 hyogo = prefectures[prefectures["ADM1_PCODE"] == "JP28"]
 
 # Define a mask polygon to exclude Awaji Island from Hyogo Prefecture.
@@ -94,10 +85,8 @@ mask_hyogo = geopandas.GeoSeries(
 )
 mask_hyogo_frame = geopandas.GeoDataFrame(geometry=mask_hyogo, crs=4326)
 
-# Cut Hyogo Prefecture with the mask polygon.
 hyogo_cut = hyogo.overlay(mask_hyogo_frame, how="intersection")
 
-# Select the shape of the Fukui Prefecture.
 fukui = prefectures[prefectures["ADM1_PCODE"] == "JP18"]
 
 # Define a mask polygon for southern Fukui Prefecture.
@@ -113,10 +102,8 @@ mask_fukui = geopandas.GeoSeries(
 )
 mask_fukui_frame = geopandas.GeoDataFrame(geometry=mask_fukui, crs=4326)
 
-# Cut Fukui Prefecture with the mask polygon.
 fukui_cut = fukui.overlay(mask_fukui_frame, how="intersection")
 
-# Select the shape of the Mie Prefecture.
 mie = prefectures[prefectures["ADM1_PCODE"] == "JP24"]
 
 # Define a mask polygon for western Mie Prefecture.
@@ -132,31 +119,24 @@ mask_mie = geopandas.GeoSeries(
 )
 mask_mie_frame = geopandas.GeoDataFrame(geometry=mask_mie, crs=4326)
 
-# Cut Mie Prefecture with the mask polygon.
 mie_cut = mie.overlay(mask_mie_frame, how="intersection")
 
-# Merge all prefectures into one geometry.
 all_prefectures = pd.concat([whole_prefectures, hyogo_cut, fukui_cut, mie_cut])
 all_prefectures = all_prefectures.dissolve(by="ADM0_EN").reset_index()
 
-# Select the columns of interest.
 all_prefectures = all_prefectures[["ADM1_EN", "ADM1_PCODE", "geometry"]]
 
-# Rename columns.
 all_prefectures = all_prefectures.rename(
     columns={"ADM1_EN": "name", "ADM1_PCODE": "code"}
 )
 
-# Rename the region name and code.
 all_prefectures["name"] = ["Kansai"]
 all_prefectures["code"] = ["JPN_Kansai"]
 
-# Save the shape of the region to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "kansaitd")
 os.makedirs(shapes_dir, exist_ok=True)
 all_prefectures.to_file(
     os.path.join(shapes_dir, "kansaitd.shp"), driver="ESRI Shapefile"
 )
 
-# Remove temporary folder.
 shutil.rmtree(temporary_dir)

@@ -32,7 +32,7 @@ import utils.fetcher
 # Bikram Sambat year for dataset (April 2017 to April 2018).
 DATASET_BS_YEAR = 2074
 
-# In this dataset, hour 0 (midnight) is represented as 24.
+# The hour of the time 0:00 of the files, which is the end of the day.
 MIDNIGHT_HOUR = 24
 
 
@@ -41,9 +41,6 @@ def get_available_requests(
 ) -> list[int]:
     """
     Get the available requests.
-
-    This function retrieves the available requests for the electricity
-    demand data provided by NEA.
 
     Parameters
     ----------
@@ -57,11 +54,9 @@ def get_available_requests(
     Returns
     -------
     list[int]
-        A list of available requests.
+        The numbers of the twelve months of the year DATASET_BS_YEAR in
+        the Bikram Sambat calendar.
     """
-    # Return the available requests, which are the month numbers from 1
-    # to 12 in the Bikram Sambat calendar year defined by
-    # DATASET_BS_YEAR.
     return list(range(1, 13))
 
 
@@ -95,7 +90,6 @@ def get_url(bs_month: int) -> str:
         12: "b72c50b8-2e05-43f6-8232-7696caf07c70",  # Chaitra
     }
 
-    # Return the URL for the given month.
     return (
         "https://api.opendatanepal.com/api/action/datastore_search?"
         f"resource_id={file_id_number[bs_month]}&sort=_id asc"
@@ -108,9 +102,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    provided by NEA.
-
     Parameters
     ----------
     bs_month : int
@@ -122,16 +113,21 @@ def download_and_extract_data_for_request(
     -------
     pandas.Series
         The electricity demand time series in MW for the given month.
+
+    Notes
+    -----
+    The times of the file of Shrawan are fractions of a day rounded to
+    two decimals, such as 0.04 for 1:00 or 0.23 for 5:30, so they are
+    rounded to the nearest half hour, which gives the times of the other
+    months.
     """
     logging.info(
         f"Retrieving electricity demand data for the Bikram Sambat month "
         f"{bs_month} of the year {DATASET_BS_YEAR}."
     )
 
-    # Get the URL for the given month.
     url = get_url(bs_month)
 
-    # Fetch the electricity demand data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "html",
@@ -148,10 +144,7 @@ def download_and_extract_data_for_request(
     dataset = dataset[dataset.columns[1:]]
     dataset = dataset.set_index(dataset.columns[0])
 
-    # The file of Shrawan gives the times as fractions of a day, such as
-    # 0.04 for 1:00 or 0.23 for 5:30, rounded to two decimals. Round
-    # them to the nearest half hour, which gives the times of the other
-    # months.
+    # Round the fractions of a day to the nearest half hour.
     dataset.columns = [
         column
         if ":" in str(column)
@@ -162,15 +155,27 @@ def download_and_extract_data_for_request(
         for column in dataset.columns
     ]
 
-    # Melt the dataset to have 'Hour' and 'Demand' columns.
+    # Melt the dataset to have 'Time' and 'Demand' columns.
     dataset = dataset.melt(
         ignore_index=False,
         var_name="Time",
         value_name="Demand",
     ).reset_index()
 
-    # Helper function to parse "Time" string.
     def parse_time_string(time_str: str) -> tuple[int, int]:
+        """
+        Parse a time of the files.
+
+        Parameters
+        ----------
+        time_str : str
+            The time, such as "5:30".
+
+        Returns
+        -------
+        tuple[int, int]
+            The hour, MIDNIGHT_HOUR for 0:00, and the minute.
+        """
         hour_str, minute_str = time_str.split(":")
         hour = int(hour_str)
         minute = int(minute_str)
@@ -178,7 +183,6 @@ def download_and_extract_data_for_request(
             hour = MIDNIGHT_HOUR
         return hour, minute
 
-    # Create a Nepali date and time list.
     nepali_date_and_time = [
         (
             DATASET_BS_YEAR,
@@ -189,25 +193,17 @@ def download_and_extract_data_for_request(
         for _, row in dataset.iterrows()
     ]
 
-    # Initialize a list to store Gregorian dates.
+    # Convert the dates of the Bikram Sambat calendar to the Gregorian
+    # calendar.
     index = []
-
     for date_and_time in nepali_date_and_time:
-        # Define the Bikram Sambat date.
         bs_date = nepali_datetime.date(*date_and_time[:3])
-
-        # Convert to Gregorian date.
         gregorian_date = bs_date.to_datetime_date()
-
-        # Combine date and time to form a complete datetime.
         gregorian_datetime = pd.to_datetime(gregorian_date) + pd.Timedelta(
             hours=date_and_time[3], minutes=date_and_time[4]
         )
-
-        # Append to the index.
         index.append(pd.Index([gregorian_datetime]))
 
-    # Define the electricity demand time series.
     electricity_demand_time_series = pd.Series(
         dataset["Demand"].astype(float).to_numpy(),
         index=pd.DatetimeIndex(

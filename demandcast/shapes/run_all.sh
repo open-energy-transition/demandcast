@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# Define the name of the scripts that generate the shapefiles. occto.py
-# reads the shapes of kansaitd.py and tepco.py, so it comes after them.
+# Runs the scripts of this folder, which generate the shapefiles of the
+# subdivisions that are not standard, read by utils/shapes.py. It is run
+# from this folder.
+
+# occto.py reads the shapes of kansaitd.py and tepco.py, so it comes
+# after them.
 scripts="cammesa \
 cenace \
 eia \
@@ -13,7 +17,6 @@ soni \
 tepco \
 occto"
 
-# Iterate over each script and run it.
 for script in $scripts; do
     uv run "$script.py"
 done

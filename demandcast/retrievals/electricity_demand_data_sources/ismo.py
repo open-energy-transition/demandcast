@@ -55,9 +55,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the ISMO website.
-
     Parameters
     ----------
     code : str
@@ -104,9 +101,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the ISMO website.
-
     Parameters
     ----------
     fiscal_year : int
@@ -118,14 +112,17 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    The demand is read by the position of its column, whose name is a
+    description on several lines.
     """
     logging.info(
         "Retrieving electricity demand data from "
         f"{fiscal_year - 1}-07-01 to {fiscal_year}-06-30."
     )
 
-    # Fetch the date, the hour and the demand, whose column name is a
-    # description on several lines.
     dataset = utils.fetcher.fetch_dataframe(
         get_url(fiscal_year),
         "html",
@@ -133,7 +130,7 @@ def download_and_extract_data_for_request(
         excel_kwargs={"usecols": [0, 1, 2]},
     )
 
-    # The hours are their starts. Move them to their ends.
+    # Move the starts of the hours to their ends.
     electricity_demand_time_series = pd.Series(
         dataset.iloc[:, 2].to_numpy(dtype="float64"),
         index=pd.to_datetime(dataset["Date"])

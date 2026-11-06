@@ -1,3 +1,6 @@
+# Configuration of retrieve.py for the electricity demand of the
+# benchmark of the models, from ENTSO-E (see run.py).
+
 variable: electricity_demand
 electricity_data_source: entsoe
 code:

@@ -48,12 +48,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the CAISO website. The data until 2023 is in one
-    file per year, and the data from 2024 on in one file per month,
-    published one to four months after the month ends, so the months
-    are read from the download page.
-
     Parameters
     ----------
     code : str
@@ -67,8 +61,13 @@ def get_available_requests(
     -------
     list[tuple[int, int | None]]
         The list of available requests.
+
+    Notes
+    -----
+    The data until 2023 is in one file per year, and the data from 2024
+    on in one file per month, published one to four months after the
+    month ends, so the months are read from the download page.
     """
-    # Requests before 2024.
     requests_before: list[tuple[int, int | None]] = [
         (year, None) for year in range(start_date.year, 2024)
     ]
@@ -96,14 +95,12 @@ def get_available_requests(
         if month_name.lower() in month_numbers
     }
 
-    # Requests from 2024 onward, for the published months.
     requests_after: list[tuple[int, int | None]] = [
         (year, month)
         for year, month in sorted(published_months)
         if pd.Timestamp(year, month, 1) <= pd.Timestamp(end_date)
     ]
 
-    # Return the list of available requests.
     return requests_before + requests_after
 
 
@@ -128,10 +125,8 @@ def get_url(year: int, month: int | None) -> str:
     ValueError
         If the data is yearly from 2024, or monthly before 2024.
     """
-    # Define the base URL of the electricity demand data.
     base_url = "https://www.caiso.com/documents/"
 
-    # Define the full URL based on the year and month.
     if month is None:
         # Yearly data before 2024.
         if year <= 2022:
@@ -161,9 +156,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the CAISO website.
-
     Parameters
     ----------
     year_and_month : tuple[int, int | None]
@@ -176,6 +168,15 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    The hour that ends at midnight at the start of each day of January
+    2019 belongs to the day before. When daylight saving time ends, the
+    hour ending at 01:00 comes twice, first in daylight saving time. The
+    files of 2019 give an hour ending at 02:00 on the day when daylight
+    saving time starts, which does not exist and is left out, and an
+    average of the hours around it at 03:00.
     """
     year, month = year_and_month
 
@@ -188,10 +189,8 @@ def download_and_extract_data_for_request(
         )
     )
 
-    # Get the URL of the electricity demand data.
     url = get_url(year, month)
 
-    # Fetch the data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "html",
@@ -201,7 +200,6 @@ def download_and_extract_data_for_request(
     # Keep only rows with valid data.
     dataset = dataset[pd.to_datetime(dataset["Date"], errors="coerce").notna()]
 
-    # Define the column names based on the year.
     if year <= 2020:
         hourly_column = "HE"
         demand_column = "CAISO Total"
@@ -209,9 +207,7 @@ def download_and_extract_data_for_request(
         hourly_column = "HR"
         demand_column = "CAISO"
 
-    # Read the dates and the hours ending in local time. In January
-    # 2019, the hour that ends at midnight starts each day instead of
-    # ending it, so it belongs to the day before.
+    # Read the dates and the hours ending in local time.
     dates = pd.to_datetime(dataset["Date"])
     hours = dataset[hourly_column].astype(int)
     first_of_day = dates != dates.shift()
@@ -220,11 +216,6 @@ def download_and_extract_data_for_request(
     )
     index = pd.DatetimeIndex(dates + pd.to_timedelta(hours, unit="h"))
 
-    # When daylight saving time ends, the hour ending at 01:00 comes
-    # twice, first in daylight saving time. When it starts, the hour
-    # that does not exist is missing, except in 2019, whose files give
-    # an hour ending at 02:00, which does not exist, and an average of
-    # the hours around it at 03:00.
     electricity_demand_time_series = pd.Series(
         dataset[demand_column].values, index=index
     ).tz_localize(

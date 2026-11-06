@@ -92,7 +92,6 @@ def get_url(year: int) -> str:
     str
         The URL of the electricity demand data.
     """
-    # Return the URL of the electricity demand data.
     return (
         "https://ons-aws-prod-opendata.s3.amazonaws.com/dataset/"
         f"curva-carga-ho/CURVA_CARGA_{year}.csv"
@@ -102,9 +101,6 @@ def get_url(year: int) -> str:
 def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    from the ONS website.
 
     Parameters
     ----------
@@ -120,13 +116,10 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     """
     logging.info(f"Retrieving electricity demand data for the year {year}.")
 
-    # Extract the subdivision code from the code.
     subdivision_code = code.split("_")[1]
 
-    # Get the URL of the electricity demand data.
     url = get_url(year)
 
-    # Fetch the data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
         url, "csv", csv_kwargs={"sep": ";"}
     )
@@ -134,7 +127,6 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     # Filter the dataset for the subdivision of interest.
     dataset = dataset[dataset["id_subsistema"] == subdivision_code]
 
-    # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
         dataset["val_cargaenergiahomwmed"].values,
         index=pd.to_datetime(dataset["din_instante"]),

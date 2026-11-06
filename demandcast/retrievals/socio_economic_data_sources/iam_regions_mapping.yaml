@@ -1,3 +1,8 @@
+# The IAM region of each country, by ISO Alpha-3 code, read by
+# retrievals/socio_economic_data_sources/iiasa.py to give each country
+# the growth rates of the electricity demand per capita of its region,
+# and by checks/data_availability.py.
+
 # OECD 90 and EU member states and candidates
 ALB: R5.2OECD # Albania
 AUS: R5.2OECD # Australia

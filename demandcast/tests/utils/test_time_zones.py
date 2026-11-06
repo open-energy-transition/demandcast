@@ -19,11 +19,10 @@ import utils.time_zones
 
 def test_time_zones():
     """
-    Test if the entities module can retrieve time zones correctly.
+    Test if the time_zones module can retrieve time zones correctly.
 
-    This test checks if the entities module can retrieve the time
-    zones for countries and subdivisions. It also checks if the time
-    zones are correctly set for the specified codes.
+    The time zones are those of countries, subdivisions and the
+    entities of a data source.
     """
     # Check the time zone of a country.
     assert utils.time_zones.get_time_zone("FRA") == pytz.timezone(
@@ -40,7 +39,6 @@ def test_time_zones():
         "America/New_York"
     )
 
-    # Define a sample yaml file content.
     entities = [
         {
             "country_name": "France",
@@ -60,8 +58,6 @@ def test_time_zones():
             "dummy_data_source"
         )
 
-        # Check if the function returns a dictionary with correct time
-        # zones.
         assert isinstance(time_zones, dict)
         assert "FRA" in time_zones
         assert time_zones["FRA"] == pytz.timezone("Europe/Paris")
@@ -154,9 +150,8 @@ def test_time_zones_errors():
     """
     Test if the time zone functions handle errors correctly.
 
-    This test checks if the functions raise errors for invalid codes,
-    missing time zones, and conflicting time zones in multiple yaml
-    files.
+    Invalid codes, missing time zones, and conflicting time zones in
+    several yaml files raise errors.
     """
     # Test if invalid codes raise errors.
     with pytest.raises(ValueError, match="is not recognized or not available"):
@@ -182,7 +177,6 @@ def test_time_zones_errors():
         }
     ]
 
-    # Check if the function raises errors for invalid time zones.
     with (
         pytest.raises(
             ValueError, match="does not match the expected time zone"
@@ -206,7 +200,6 @@ def test_time_zones_errors():
         }
     ]
 
-    # Check if the function raises errors for missing time zones.
     with (
         pytest.raises(ValueError, match="The time zone is not defined"),
         patch(
@@ -227,8 +220,6 @@ def test_time_zones_errors():
             "utils.time_zones._get_time_zones_in_data_source"
         ) as mock_get_time_zones,
     ):
-        # Mock the return value for the case when the code is not found
-        # in any data source.
         mock_get_data_sources.return_value = []
 
         # Check if the function raises an error for codes not found in
@@ -239,16 +230,11 @@ def test_time_zones_errors():
         ):
             utils.time_zones._get_defined_time_zone_for_code("XX_YY")
 
-        # Mock the return value for the case when the code is found in
-        # multiple data sources.
         mock_get_data_sources.return_value = ["source1", "source2"]
 
-        # Define two different time zones.
         time_zone1 = dt.UTC
         time_zone2 = dt.timezone(dt.timedelta(hours=-1))
 
-        # Mock the return value of _get_time_zones to return different
-        # time zones for each data source.
         mock_get_time_zones.side_effect = [
             {"YY": time_zone1},
             {"YY": time_zone2},

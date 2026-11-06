@@ -3,11 +3,12 @@ License: AGPL-3.0.
 
 Description:
 
-    This module is used to read Excel files already downloaded from the
-    Shared Socioeconomic Pathways (SSP) database of the International
-    Institute for Applied Systems Analysis (IIASA). The files contain
-    future projections of population, electricity demand per capita and
-    GDP PPP per capita for different scenarios.
+    This module is used to read CSV and Excel files already downloaded
+    from the Shared Socioeconomic Pathways (SSP) database of the
+    International Institute for Applied Systems Analysis (IIASA). The
+    files contain future projections of population, GDP PPP and the
+    growth rate of the electricity demand per capita for different
+    scenarios.
 
     Source: https://tntcat.iiasa.ac.at/SspDb
     Source: https://data.ece.iiasa.ac.at/ssp
@@ -41,32 +42,30 @@ def _map_from_region_to_country(
     pandas.DataFrame
         The IIASA data with the region codes replaced by ISO Alpha-3
         country codes.
+
+    Notes
+    -----
+    Each country of iam_regions_mapping.yaml takes a copy of the rows
+    of its IAM region, and the rows of the regions are then dropped.
     """
-    # Define the path to the yaml file containing the mapping of ISO
-    # Alpha-3 codes to IAM regions.
     iam_region_mapping = os.path.join(
         os.path.dirname(__file__), "iam_regions_mapping.yaml"
     )
 
-    # Read the mapping from the yaml file.
     with open(iam_region_mapping, encoding="utf-8") as file:
         iso_to_region = yaml.safe_load(file)
 
     for iso_alpha_3_code, region_code in iso_to_region.items():
-        # Get the data for the region of interest.
         iiasa_data_of_country = iiasa_data[iiasa_data["Region"] == region_code]
 
-        # Substitute the region code with the ISO Alpha-3 codes.
         iiasa_data_of_country = iiasa_data_of_country.replace(
             {"Region": {region_code: iso_alpha_3_code}}
         )
 
-        # Append the data to the main dataframe.
         iiasa_data = pd.concat(
             [iiasa_data, iiasa_data_of_country], ignore_index=True
         )
 
-    # Drop the rows with the region codes.
     iiasa_data = iiasa_data[
         iiasa_data["Region"].isin(iso_to_region.keys())
     ].reset_index(drop=True)
@@ -91,8 +90,15 @@ def _calculate_gdp_ppp_per_capita(
     -------
     gdp_ppp_per_capita : pandas.DataFrame
         A DataFrame containing the calculated GDP PPP per capita data.
+
+    Notes
+    -----
+    The GDP PPP is in billion and the population in million, hence the
+    factor of 1000. The GDP PPP per capita is converted from constant
+    2017 to constant 2021 international dollars, the unit of the World
+    Bank and the IMF, with the consumer price index, which is updated
+    first, although only its values up to 2021 are used.
     """
-    # Find regions contained in both datasets.
     common_regions = sorted(set(gdp_ppp["Region"]) & set(population["Region"]))
 
     # Filter the datasets to keep only the common regions.
@@ -103,12 +109,10 @@ def _calculate_gdp_ppp_per_capita(
         population["Region"].isin(common_regions)
     ].reset_index(drop=True)
 
-    # Define the years of interest.
     years_of_interest = [
         str(year) for year in utils.catalogue.PROJECTION_YEARS
     ]
 
-    # Merge the two datasets on Region and Scenario.
     gdp_ppp_per_capita = gdp_ppp.merge(
         population,
         on=["Region", "Scenario"],
@@ -123,16 +127,13 @@ def _calculate_gdp_ppp_per_capita(
             * 1000
         )
 
-    # Keep only the relevant columns.
     columns_to_keep = ["Region", "Scenario", *years_of_interest]
     gdp_ppp_per_capita = gdp_ppp_per_capita[columns_to_keep].copy()
 
-    # Add the required columns.
     gdp_ppp_per_capita["Model"] = "IIASA 2023"
     gdp_ppp_per_capita["Variable"] = "GDP|PPP per capita"
     gdp_ppp_per_capita["Unit"] = "USD_2021/yr"
 
-    # Reorder columns.
     columns_order = [
         "Model",
         "Scenario",
@@ -143,14 +144,9 @@ def _calculate_gdp_ppp_per_capita(
     ]
     gdp_ppp_per_capita = gdp_ppp_per_capita[columns_order]
 
-    # Update CPI data. This is needed to ensure that the inflation
-    # adjustment is done with the most recent data. This should not
-    # affect the results since we are only using CPI data up to 2021.
     cpi.update()
 
-    # Convert GDP PPP per capita, which is in constant 2017
-    # international $, to constant 2021 international $, which is the
-    # unit used by the World Bank and the IMF.
+    # Convert from constant 2017 to constant 2021 international dollars.
     for year in years_of_interest:
         gdp_ppp_per_capita[year] = gdp_ppp_per_capita[year].apply(
             lambda x: cpi.inflate(x, 2017, to=2021)
@@ -178,9 +174,13 @@ def _from_iiasa_name_to_iso_alpha_3_code(name: str) -> str:
     ValueError
         If the country name is not found or if multiple countries are
         found.
+
+    Notes
+    -----
+    The names that pycountry does not find, some of which have a
+    question mark in place of a letter that is not ASCII, are mapped by
+    hand.
     """
-    # Define the mapping from country names to ISO Alpha-3 codes for
-    # countries not found by pycountry.
     custom_mapping = {
         "C?te d'Ivoire": "CIV",
         "Democratic Republic of the Congo": "COD",
@@ -231,8 +231,16 @@ def read(variable: str) -> pd.DataFrame:
     ------
     ValueError
         If the variable is not one of the expected values.
+
+    Notes
+    -----
+    The last row of each CSV file, the copyright notice of the SSP
+    Scenario Explorer, is left out. The GDP PPP per capita is
+    calculated from the GDP PPP and the population, which takes a while
+    and downloads the price indices. The repository has it, next to its
+    inputs; without it, it is calculated and kept in the data folder,
+    since the scripts write only there.
     """
-    # Define the base file path.
     base_file_path = os.path.join(
         os.path.dirname(__file__),
         "manual_downloads",
@@ -240,7 +248,6 @@ def read(variable: str) -> pd.DataFrame:
 
     if variable == "population":
         logging.info("Loading future population data from IIASA.")
-        # Read the population data.
         iiasa_data = pd.read_csv(
             os.path.join(base_file_path, "IAM_national_population.csv"),
         ).iloc[:-1, :]
@@ -257,15 +264,12 @@ def read(variable: str) -> pd.DataFrame:
             iiasa_data.loc[:, years_of_interest] * 1e6
         )
 
-        # Change the unit.
         iiasa_data["Unit"] = "people"
     elif variable == "annual_electricity_demand_per_capita":
         logging.info(
             "Loading future electricity demand per capita growth rates from "
             "IIASA."
         )
-        # Read the growth rate of the electricity demand per capita
-        # data.
         iiasa_data = pd.read_excel(
             os.path.join(
                 base_file_path,
@@ -273,14 +277,8 @@ def read(variable: str) -> pd.DataFrame:
             ),
         ).iloc[:-2, :-2]
 
-        # Convert the region names to ISO Alpha-3 codes.
         iiasa_data = _map_from_region_to_country(iiasa_data)
     elif variable == "gdp_ppp_per_capita":
-        # The GDP PPP per capita is calculated from the GDP PPP and the
-        # population, which takes a while and downloads the price
-        # indices. The repository has it, next to its inputs; without
-        # it, it is calculated and kept in the data folder, since the
-        # scripts write only there.
         gdp_ppp_per_capita_file_path = os.path.join(
             base_file_path, "IAM_national_gdp_ppp_per_capita.csv"
         )
@@ -295,7 +293,6 @@ def read(variable: str) -> pd.DataFrame:
                 "Calculating future GDP PPP per capita data from GDP PPP and "
                 "population data."
             )
-            # Read population and GDP PPP data.
             iiasa_population_data = pd.read_csv(
                 os.path.join(base_file_path, "IAM_national_population.csv"),
             ).iloc[:-1, :]
@@ -303,21 +300,17 @@ def read(variable: str) -> pd.DataFrame:
                 os.path.join(base_file_path, "IAM_national_gdp_ppp.csv"),
             ).iloc[:-1, :]
 
-            # Calculate the GDP PPP per capita.
             iiasa_data = _calculate_gdp_ppp_per_capita(
                 iiasa_gdp_ppp_data,
                 iiasa_population_data,
             )
 
-            # Save the GDP PPP per capita data to a CSV file for future
-            # use.
             os.makedirs(
                 os.path.dirname(gdp_ppp_per_capita_file_path), exist_ok=True
             )
             iiasa_data.to_csv(gdp_ppp_per_capita_file_path, index=False)
         else:
             logging.info("Loading future GDP PPP per capita data from IIASA.")
-            # Read the GDP PPP per capita data.
             iiasa_data = pd.read_csv(gdp_ppp_per_capita_file_path)
 
         # Convert the region names to ISO Alpha-3 codes.
@@ -332,7 +325,6 @@ def read(variable: str) -> pd.DataFrame:
             "'gdp_ppp_per_capita'."
         )
 
-    # Reset the index to be the Region column.
     iiasa_data = iiasa_data.set_index("Region")
 
     return iiasa_data
@@ -365,13 +357,11 @@ def _extract(
         If no data is found for the given country and scenario, or if
         more than one row is found.
     """
-    # Extract the data for the country and scenario of interest.
     iiasa_data_of_country = iiasa_data[
         (iiasa_data.index == iso_alpha_3_code)
         & (iiasa_data["Scenario"].str.upper() == scenario)
     ]
 
-    # Check that there is only one row.
     if len(iiasa_data_of_country) != 1:
         raise ValueError(
             f"Expected one row for country {iso_alpha_3_code} and scenario "
@@ -385,7 +375,6 @@ def _extract(
         iiasa_data_of_country.columns.astype(str).str.isdigit(),
     ].dropna()
 
-    # Convert the index to integers and the values to floats.
     values_by_year.index = values_by_year.index.astype(int)
 
     return values_by_year.astype(float)
@@ -413,14 +402,12 @@ def extract_and_interpolate(
     interpolated_data : pandas.Series
         The interpolated data from IIASA with years as index.
     """
-    # Extract the data for the country and scenario of interest.
     iiasa_data_of_country = _extract(
         iiasa_data,
         iso_alpha_3_code,
         scenario,
     )
 
-    # Interpolate the data to get the values for the future years.
     interpolated_data = iiasa_data_of_country.reindex(
         range(
             iiasa_data_of_country.index.min(),
@@ -467,42 +454,39 @@ def extrapolate(
     -------
     extrapolated_data : pandas.Series
         The extrapolated future data from IIASA with years as index.
+
+    Notes
+    -----
+    The growth rate of a year, in percent per year, is that of the last
+    year of IIASA before it, or that of the first year of IIASA for the
+    years up to it.
     """
-    # Extract the data for the country and scenario of interest.
     iiasa_data_of_country = _extract(
         iiasa_data,
         iso_alpha_3_code,
         scenario,
     )
 
-    # Initialize a Series to store the future values.
     extrapolated_data = pd.Series(
         index=future_years,
         dtype=float,
     )
 
-    # Set the previous value to the last historical value.
     previous_value = last_historical_value
     previous_year = last_historical_year
 
-    # Calculate the future values by applying the annual growth rates to
-    # the last historical value.
     for year in future_years:
         if year <= iiasa_data_of_country.index.min():
-            # Use the growth rate of the first available year.
             annual_growth_rate_of_year = iiasa_data_of_country.iloc[0]
         else:
-            # Use the closest growth rate that is less than to the year.
             annual_growth_rate_of_year = iiasa_data_of_country[
                 iiasa_data_of_country.index < year
             ].iloc[-1]
 
-        # Calculate the value for the year.
         extrapolated_data[year] = previous_value * (
             1 + annual_growth_rate_of_year / 100
         ) ** (year - previous_year)
 
-        # Update the previous value.
         previous_value = extrapolated_data[year]
         previous_year = year
 

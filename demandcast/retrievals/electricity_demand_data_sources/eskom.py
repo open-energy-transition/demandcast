@@ -75,7 +75,6 @@ def get_url() -> str:
     str
         The URL of the electricity demand data.
     """
-    # Return the URL of the electricity demand data.
     return "https://www.eskom.co.za/dataportal/cf-api/CF600011bdba174"
 
 
@@ -85,9 +84,7 @@ def download_and_extract_data_for_request(
     """
     Extract electricity demand data.
 
-    This function extracts the electricity demand data from the Eskom
-    website. This function assumes that the data has been downloaded and
-    is available in the specified folder.
+    The data must already be downloaded into the specified folder.
 
     Parameters
     ----------
@@ -100,8 +97,13 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    A value that is not a number, such as the text "ast" in the data of
+    2025-07-11, becomes a missing value, which the cleaning of the data
+    then removes.
     """
-    # Read the downloaded files.
     dataset = utils.fetcher.read_manual_files(
         data_source_name="Eskom",
         url=get_url(),
@@ -110,9 +112,7 @@ def download_and_extract_data_for_request(
         access=" after sending a request via the form on the website",
     )
 
-    # Read the values as numbers. A value that is not a number, such as
-    # the text "ast" in the data of 2025-07-11, becomes a missing value,
-    # which the cleaning of the data then removes.
+    # Read the values as numbers, and report those that are not.
     load = pd.to_numeric(dataset["RSA Contracted Demand"], errors="coerce")
     not_numbers = dataset["RSA Contracted Demand"][
         load.isna() & dataset["RSA Contracted Demand"].notna()
@@ -136,8 +136,7 @@ def download_and_extract_data_for_request(
         dataset["File"],
     )
 
-    # The times are the starts of the hours, as the name of their column
-    # says. Move them to the ends of the hours, in local time.
+    # Move the times from the starts to the ends of the hours.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

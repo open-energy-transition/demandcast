@@ -8,6 +8,13 @@ Description:
     and saves them to a shapefile. The subdivisions are created by
     merging the states of Mexico into larger regions.
 
+    The states split between two regions are cut with polygons drawn by
+    hand, and each step is checked visually against the maps of the
+    sources.
+
+    The geometries are snapped to a grid of 0.005 degrees, which removes
+    small spikes in the shapes that cause issues when they are plotted.
+
     Source: https://www.geni.org/globalenergy/library/national_energy_grid/mexico/index.shtml
     Source: https://github.com/jschleuss/mexican-states
     Source: https://acclaimenergy.com.mx/wp-content/uploads/2019/03/TMCA-Map.jpg
@@ -30,82 +37,58 @@ url = (
     "https://github.com/jschleuss/mexican-states/archive/refs/heads/master.zip"
 )
 
-# Download the zip file.
 response = requests.get(url, timeout=60)
 
-# Define the folder where to extract the shapefile.
 temporary_dir = os.path.join(os.path.dirname(__file__), "cenace_temp")
 os.makedirs(temporary_dir, exist_ok=True)
 
-# Extract the zip file.
 with zipfile.ZipFile(BytesIO(response.content), "r") as archive:
-    # Extract all the files in the archive.
     archive.extractall(temporary_dir)
 
-# Read the shapefile of the Mexican states.
 states = geopandas.read_file(
     os.path.join(temporary_dir, "mexican-states-master", "mexican-states.shp")
 )
 
-# Change the projection of the shapefile to EPSG 4326.
 states = states.to_crs(epsg=4326)
 
-# Keep only the columns of interest.
 states = states[["name", "is_in_coun", "ISO3166-2", "geometry"]]
 
-# Rename the columns.
 states = states.rename(columns={"ISO3166-2": "code"})
 
-########################################################################
-# The following code creates the subdivisions of Mexico according to the
-# Mexican National Energy Control Center (CENACE). The subdivisions are
-# created by merging the states of Mexico into larger regions. This was
-# a manual process and each step had to be checked visually.
-########################################################################
-
-# Add the shape of Baja California and set the code to "MEX_BCA".
+# Baja California (MEX_BCA) and Baja California Sur (MEX_BCS).
 subdivisions = states[states["code"] == "MX-BCN"]
 subdivisions.loc[subdivisions["code"] == "MX-BCN", "code"] = "MEX_BCA"
 
-# Add the shape of Baja California Sur and set the code to "MEX_BCS".
 subdivisions = pd.concat([subdivisions, states[states["code"] == "MX-BCS"]])
 subdivisions.loc[subdivisions["code"] == "MX-BCS", "code"] = "MEX_BCS"
 
-# Get the shapes of Sonora and Sinaloa.
+# Noroeste (MEX_NOR): Sonora and Sinaloa.
 shapes_to_merge = states[states["code"].isin(["MX-SON", "MX-SIN"])]
 
-# Merge the shapes of Sonora and Sinaloa.
 merged_shape = shapes_to_merge.dissolve(by="is_in_coun")
 merged_shape = merged_shape.reset_index()
 
-# Add the merged shape, Noroeste, to the subdivisions and set the name
-# to Noroeste and code to "MEX_NOR".
 subdivisions = pd.concat([subdivisions, merged_shape])
 subdivisions.loc[subdivisions["code"] == "MX-SON", "code"] = "MEX_NOR"
 subdivisions.loc[subdivisions["code"] == "MEX_NOR", "name"] = "Noroeste"
 
-# Get the shapes of Chihuahua and Durango.
+# Norte (MEX_NTE): Chihuahua and Durango.
 shapes_to_merge = states[states["code"].isin(["MX-CHH", "MX-DUR"])]
 
-# Merge the shapes of Chihuahua and Durango.
 merged_shape = shapes_to_merge.dissolve(by="is_in_coun")
 merged_shape = merged_shape.reset_index()
 
-# Add the merged shape, Norte, to the subdivisions and set the name to
-# Norte and code to "MEX_NOR".
 subdivisions = pd.concat([subdivisions, merged_shape])
 subdivisions.loc[subdivisions["code"] == "MX-CHH", "code"] = "MEX_NTE"
 subdivisions.loc[subdivisions["code"] == "MEX_NTE", "name"] = "Norte"
 
-# Get the shapes of Campeche, Quintana Roo and Yucatan.
+# Peninsular (MEX_PEN): Campeche, Quintana Roo and Yucatan, without the
+# western part of Campeche.
 shapes_to_merge = states[states["code"].isin(["MX-CAM", "MX-ROO", "MX-YUC"])]
 
-# Merge the shapes of Campeche, Quintana Roo and Yucatan.
 merged_shape = shapes_to_merge.dissolve(by="is_in_coun")
 merged_shape = merged_shape.reset_index()
 
-# Define a polygon to exclude some parts of the Western part of
-# Campeche.
 new_bounds = geopandas.GeoSeries(
     Polygon(
         [
@@ -118,22 +101,18 @@ new_bounds = geopandas.GeoSeries(
 )
 new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
-# Cut the merged shape.
 merged_shape = merged_shape.overlay(new_bounds_frame, how="difference")
 
-# Add the merged shape, Peninsular, to the subdivisions and set the name
-# to Peninsular and code to "MEX_PEN".
 subdivisions = pd.concat([subdivisions, merged_shape])
 subdivisions.loc[subdivisions["code"] == "MX-CAM", "code"] = "MEX_PEN"
 subdivisions.loc[subdivisions["code"] == "MEX_PEN", "name"] = "Peninsular"
 
-# Get the shapes of Coahuila, Nuevo Leon and Tamaulipas.
+# Noreste (MEX_NES): Coahuila, Nuevo Leon, Tamaulipas, the northern part
+# of Veracruz and the eastern part of San Luis Potosi.
 shapes_to_merge = states[states["code"].isin(["MX-COA", "MX-NLE", "MX-TAM"])]
 
-# Get the shapes of Veracruz.
 shape_to_cut = states[states["code"].isin(["MX-VER"])]
 
-# Define a polygon to keep only the Northern part of Veracruz.
 new_bounds = geopandas.GeoSeries(
     Polygon(
         [
@@ -146,16 +125,12 @@ new_bounds = geopandas.GeoSeries(
 )
 new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
-# Cut the shape of Veracruz.
 shape_to_cut = shape_to_cut.overlay(new_bounds_frame, how="intersection")
 
-# Add the cut shape of Veracruz to the shapes to merge.
 shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
 
-# Get the shapes of San Luis Potosi.
 shape_to_cut = states[states["code"].isin(["MX-SLP"])]
 
-# Define a polygon to keep only the Eastern part of San Luis Potosi.
 new_bounds = geopandas.GeoSeries(
     Polygon(
         [
@@ -168,43 +143,34 @@ new_bounds = geopandas.GeoSeries(
 )
 new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
-# Cut the shape of San Luis Potosi.
 shape_to_cut = shape_to_cut.overlay(new_bounds_frame, how="intersection")
 
-# Add the cut shape of San Luis Potosi to the shapes to merge.
 shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
 
-# Merge the shapes of Coahuila, Nuevo Leon, Tamaulipas, Veracruz and San
-# Luis Potosi.
 merged_shape = shapes_to_merge.dissolve(by="is_in_coun")
 merged_shape = merged_shape.reset_index()
 
-# Add the merged shape, Noreste, to the subdivisions and set the name to
-# Noreste and code to "MEX_NES".
 subdivisions = pd.concat([subdivisions, merged_shape])
 subdivisions.loc[subdivisions["code"] == "MX-NLE", "code"] = "MEX_NES"
 subdivisions.loc[subdivisions["code"] == "MEX_NES", "name"] = "Noreste"
 
-# Get the shapes of Nayarit, Zacatecas, Yalisco, Aguascalientes and
-# Colima.
+# Occidental (MEX_OCC): Nayarit, Zacatecas, Jalisco, Aguascalientes,
+# Colima, and parts of San Luis Potosi, Guanajuato and Michoacan.
 shapes_to_merge = states[
     states["code"].isin(["MX-NAY", "MX-ZAC", "MX-JAL", "MX-AGU", "MX-COL"])
 ]
 
-# Get the shapes of San Luis Potosi.
 shape_to_cut = states[states["code"].isin(["MX-SLP"])]
 
-# Using the same polygon as before, keep the Western part of San Luis
-# Potosi.
+# The polygon of the eastern part of San Luis Potosi, above, leaves its
+# western part.
 shape_to_cut = shape_to_cut.overlay(new_bounds_frame, how="difference")
 
-# Add the cut shape of San Luis Potosi to the shapes to merge.
 shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
 
-# Get the shapes of Guanajuato.
 shape_to_cut = states[states["code"].isin(["MX-GUA"])]
 
-# Define a polygon to keep only the Northwestern part of Guanajuato.
+# Keep only the northwestern part of Guanajuato.
 new_bounds = geopandas.GeoSeries(
     Polygon(
         [
@@ -216,16 +182,13 @@ new_bounds = geopandas.GeoSeries(
 )
 new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
-# Cut the shape of Guanajuato.
 shape_to_cut = shape_to_cut.overlay(new_bounds_frame, how="difference")
 
-# Add the cut shape of Guanajuato to the shapes to merge.
 shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
 
-# Get the shapes of Michoacan.
 shape_to_cut = states[states["code"].isin(["MX-MIC"])]
 
-# Define a polygon to keep only the Northwestern part of Guanajuato.
+# Keep only the western part of Michoacan.
 new_bounds = geopandas.GeoSeries(
     Polygon(
         [
@@ -239,30 +202,24 @@ new_bounds = geopandas.GeoSeries(
 )
 new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
-# Cut the shape of Michoacan.
 shape_to_cut = shape_to_cut.overlay(new_bounds_frame, how="difference")
 
-# Add the cut shape of Michoacan to the shapes to merge.
 shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
 
-# Merge the shapes of Nayarit, Zacatecas, Jalisco, Aguascalientes,
-# Colima, San Luis Potosi and Michoacan.
 merged_shape = shapes_to_merge.dissolve(by="is_in_coun")
 merged_shape = merged_shape.reset_index()
 
-# Add the merged shape, Occidental, to the subdivisions and set the name
-# to Occidental and code to "MEX_OCC".
 subdivisions = pd.concat([subdivisions, merged_shape])
 subdivisions.loc[subdivisions["code"] == "MX-AGU", "code"] = "MEX_OCC"
 subdivisions.loc[subdivisions["code"] == "MEX_OCC", "name"] = "Occidental"
 
-# Get the shapes of Queretaro, Mexico, and Mexico City.
+# Central (MEX_CEN): Queretaro, Mexico, Mexico City, the southern part
+# of Guerrero, and the parts of Michoacan and Guanajuato outside
+# Occidental.
 shapes_to_merge = states[states["code"].isin(["MX-QUE", "MX-MEX", "MX-CMX"])]
 
-# Get the shapes of Guerreo.
 shape_to_cut = states[states["code"].isin(["MX-GRO"])]
 
-# Define a polygon to keep only the Southern part of Guerrero.
 new_bounds = geopandas.GeoSeries(
     Polygon(
         [
@@ -275,71 +232,49 @@ new_bounds = geopandas.GeoSeries(
 )
 new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
-# Cut the shape of Guerrero.
 shape_to_cut = shape_to_cut.overlay(new_bounds_frame, how="intersection")
 
-# Add the cut shape of Guerrero to the shapes to merge.
 shapes_to_merge = pd.concat([shapes_to_merge, shape_to_cut])
 
-# Add the shapes of Michoacan and Guanajuato.
 shapes_to_merge = pd.concat(
     [shapes_to_merge, states[states["code"].isin(["MX-MIC", "MX-GUA"])]]
 )
 
-# Merge the shapes of Queretaro, Mexico, Guerrero, Michoacan and
-# Guanajuato.
 merged_shape = shapes_to_merge.dissolve(by="is_in_coun")
 merged_shape = merged_shape.reset_index()
 
-# Remove the Northwestern part of the merged shape with the shape of
-# Occidental region.
 merged_shape = merged_shape.overlay(
     subdivisions[subdivisions["code"] == "MEX_OCC"], how="difference"
 )
 
-# Add the merged shape, Central, to the subdivisions and set the name to
-# Central and code to "MEX_CEN".
 subdivisions = pd.concat([subdivisions, merged_shape])
 subdivisions.loc[subdivisions["code"] == "MX-CMX", "code"] = "MEX_CEN"
 subdivisions.loc[subdivisions["code"] == "MEX_CEN", "name"] = "Central"
 
-# Merge all the states.
+# Oriental (MEX_ORI): the rest of Mexico.
 merged_states = states.dissolve(by="is_in_coun")
 merged_states = merged_states.reset_index()
 
-# Merge all the subdivisions already created.
 merged_subdivisions = subdivisions.dissolve(by="is_in_coun")
 merged_subdivisions = merged_subdivisions.reset_index()
 
-# Remove the subdivisions from the merged states.
 merged_states = merged_states.overlay(merged_subdivisions, how="difference")
 
-# Add the merged shape, Oriental, to the subdivisions and set the name
-# to Oriental and code to "MEX_ORI".
 subdivisions = pd.concat([subdivisions, merged_states])
 subdivisions.loc[subdivisions["code"] == "MX-AGU", "code"] = "MEX_ORI"
 subdivisions.loc[subdivisions["code"] == "MEX_ORI", "name"] = "Oriental"
 
-########################################################################
-
-# Keep only the columns of interest.
 subdivisions = subdivisions[["name", "code", "geometry"]]
 subdivisions = subdivisions.reset_index(drop=True)
 
-# Set the precision of the geometry to a grid size of 0.005 degrees.
-# This is done to remove small spikes in the shapes that cause issues
-# when plotting the shapes.
 subdivisions["geometry"] = subdivisions["geometry"].set_precision(0.005)
 
-# Add the coordinate reference system (CRS) to the shapefile.
 subdivisions = subdivisions.set_crs(epsg=4326)
 
-# Save the shapes of the subdivisions to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "cenace")
 os.makedirs(shapes_dir, exist_ok=True)
 subdivisions.to_file(
     os.path.join(shapes_dir, "cenace.shp"), driver="ESRI Shapefile"
 )
 
-# Remove the folder with the shapefile of the Mexican states.
 shutil.rmtree(temporary_dir)

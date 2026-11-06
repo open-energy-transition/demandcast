@@ -21,12 +21,10 @@ local_time_zone = pytz.timezone("America/New_York")
 @pytest.fixture
 def sample_time_series():
     """
-    Fixture to provide a sample time series for testing.
+    Make a sample time series.
 
-    This function creates a pandas Series with a datetime index and some
-    missing values. The time series is defined to have a 30-minute
-    resolution, spanning one year from 2023 to 2024. It contains some
-    missing data points, specifically at indices 2, 3, and 10.
+    The series has a 30-minute resolution over the year 2023, and no
+    values at the indices 2, 3 and 10.
 
     Returns
     -------
@@ -34,15 +32,12 @@ def sample_time_series():
         A pandas Series representing a time series with a datetime index
         and some missing values.
     """
-    # Define a one-year-long time series with 30-minute resolution.
     dates = pd.date_range("2023", "2024", freq="30min", tz=local_time_zone)[
         :-1
     ]
 
-    # Define the data.
     data: list[int | None] = list(range(len(dates)))
 
-    # Remove three data points, two of which are consecutive.
     data[2] = None
     data[3] = None
     data[10] = None
@@ -125,28 +120,17 @@ def test_localize_interval_starts_with_ambiguous_starts():
 
 
 def test_convert_from_yearly_to_hourly():
-    """
-    Test the conversion from yearly to hourly time series.
-
-    This test checks if the function correctly converts a yearly time
-    series to an hourly time series, ensuring that the length of the
-    resulting series matches the expected number of hours for the given
-    years.
-    """
-    # Prepare sample yearly data for 2020 and 2021.
+    """Test the conversion from yearly to hourly time series."""
     values = pd.Series([100, 200], index=pd.Index([2020, 2021]))
 
-    # Convert to hourly.
     hourly_series = utils.time_series.convert_from_yearly_to_hourly(
         values, local_time_zone
     )
 
-    # Check the length of the resulting series.
     expected_hours_2020 = 366 * 24
     expected_hours_2021 = 365 * 24
     assert len(hourly_series) == expected_hours_2020 + expected_hours_2021
 
-    # Check the index type and timezone.
     assert isinstance(hourly_series.index, pd.DatetimeIndex)
     assert str(hourly_series.index.tz) == str(local_time_zone)
 
@@ -164,7 +148,6 @@ def test_convert_from_yearly_to_hourly():
     assert hourly_series[idx_2021_end] == 200
     assert hourly_series.index[-1] == idx_2021_end
 
-    # Check all unique values are as expected
     assert set(hourly_series.values) == {100, 200}
 
 
@@ -172,16 +155,8 @@ def test_clean_data(sample_time_series):
     """
     Test the clean_data function.
 
-    This test checks if the clean_data function correctly cleans the
-    time series by removing NaN values, zeros, and duplicate indices.
-    It also verifies that the cleaned time series has the expected index
-    and name.
-
-    Parameters
-    ----------
-    sample_time_series : pandas.Series
-        A pandas Series representing a time series with a datetime index
-        and some missing values.
+    It removes NaN values, zeros and duplicate times, names the series
+    and its index, and needs an index with a time zone.
     """
     # Add a duplicate index and a zero value for testing.
     time_series = sample_time_series.copy()
@@ -194,17 +169,14 @@ def test_clean_data(sample_time_series):
         time_series, "TestVariable"
     )
 
-    # Should have no NaN, zeros, or duplicates.
     assert cleaned_time_series.isna().sum() == 0
     assert (cleaned_time_series == 0).sum() == 0
     assert cleaned_time_series.index.duplicated().sum() == 0
     assert cleaned_time_series.index.name == "Time (UTC)"
     assert cleaned_time_series.name == "TestVariable"
 
-    # Remove the time zone from the index.
     cleaned_time_series = cleaned_time_series.tz_localize(None)
 
-    # Check if the function raises an error for an timezone-naive index.
     with pytest.raises(
         ValueError, match="The time series must be timezone-aware"
     ):
@@ -253,6 +225,7 @@ def test_save_yearly_values(tmp_path):
     file_path = str(tmp_path / "values")
 
     def save(values: dict[int, float], years: list[int]) -> None:
+        """Save the values of some years in the file."""
         utils.time_series.save_yearly_values(
             pd.Series(values), years, "Value", file_path, local_time_zone
         )

@@ -14,17 +14,11 @@ Description:
     (see ml_models.reporting), with the WAPE of all the hours of each
     group in MW. If the results have the predictions of their scored
     hours, a third figure shows the actual and forecast hourly demand of
-    the codes with the lowest and the highest WAPE, in the local year
-    with the most scored hours, the latest of them, and in its typical
-    week, the complete week from Monday to Sunday whose WAPE is the
-    closest to the median WAPE of the complete weeks of the year. The
-    forecast is in
-    MW with the same annual demand as the actual one (see
-    ml_models.evaluation.get_scored_predictions), so the two differ by
-    the error of the hourly profile, which the WAPE measures. The errors
-    of two versions can also be compared, and those of the models
-    trained on the data of each income group and continent plotted
-    against those of the model trained on all the data.
+    the codes with the lowest and the highest WAPE, in a year and in its
+    typical week. The errors of two versions can also be compared, and
+    those of the models trained on the data of each income group and
+    continent plotted against those of the model trained on all the
+    data.
 
     A version is a trained model, such as xgboost_model_20261029_144400,
     or the algorithm of a cross-validation, such as xgboost. Its errors
@@ -295,7 +289,6 @@ def _read_errors(
         The errors of each country and subdivision, in percent, in a
         column "<version>_<name>" for each version and results.
     """
-    # Initialize a DataFrame to hold the data.
     errors = pd.DataFrame()
     errors[f"{version}_all"] = _read_testing_error(
         results_directory, version, "all", metric, file_path
@@ -346,17 +339,20 @@ def _add_box_and_bar_plot(
     ValueError
         If the axs parameter does not contain exactly two axes, or if
         the data parameter does not contain one or two series.
+
+    Notes
+    -----
+    With two series, the bars of the first are drawn on the left of
+    their tick, with a negative width, and those of the second on the
+    right.
     """
     if len(axs) != 2:
         raise ValueError("The axs parameter must contain exactly two axes.")
     if len(data) < 1 or len(data) > 2:
         raise ValueError("The data parameter must contain one or two series.")
 
-    # Define the colors to be used for each series.
     colors = ["tab:blue", "tab:orange"]
 
-    # Define the properties of the box and whisker plot common to all
-    # series.
     medianprops = {"linewidth": line_width * 1.5, "color": "tab:red"}
     meanpointprops = {
         "marker": "D",
@@ -365,18 +361,14 @@ def _add_box_and_bar_plot(
         "markeredgecolor": "black",
     }
 
-    # Define the box width based on the number of series.
     box_width = 0.2 if len(data) == 1 else 0.4
 
     for i, series in enumerate(data):
-        # Define the properties of the box and whisker plot for the
-        # current series.
         boxprops = {"color": colors[i], "linewidth": line_width}
         whiskerprops = {"color": colors[i], "linewidth": line_width}
         capprops = {"color": colors[i], "linewidth": line_width}
         flierprops = {"markeredgecolor": colors[i], "linewidth": line_width}
 
-        # Add the box and whisker plot to the axes.
         axs[0].boxplot(
             series,
             showmeans=True,
@@ -390,16 +382,12 @@ def _add_box_and_bar_plot(
             positions=[i],
         )
 
-    # Remove the x-ticks.
     axs[0].set_xticks([])
 
-    # Determine the width of the x-axis of the bar plot.
     x_axis_width = len(data[0])
 
-    # Define the indices for the bars.
     indices = np.arange(x_axis_width)
 
-    # Add the bars to the axes.
     for i, series in enumerate(data):
         axs[1].bar(
             indices,
@@ -409,7 +397,6 @@ def _add_box_and_bar_plot(
             color=colors[i],
         )
 
-    # Set the x-ticks, x-tick labels, and x-axis limits.
     axs[1].set_xticks(indices)
     axs[1].set_xticklabels(data[0].index, rotation=90, fontsize=fontsize)
 
@@ -468,14 +455,16 @@ def _get_typical_week(hourly: pd.DataFrame) -> pd.Timestamp | None:
         The Monday of the complete week, from Monday to Sunday, whose
         WAPE is the closest to the median WAPE of the complete weeks,
         or None if no week is complete.
+
+    Notes
+    -----
+    A complete week has all its hours, from the first hour of Monday to
+    the last of Sunday, one less or one more when the clocks change.
+    The hours start on the half hour in some time zones, such as India.
     """
     times = pd.DatetimeIndex(hourly.index)
     mondays = times.normalize() - pd.to_timedelta(times.day_of_week, unit="D")
     weeks = hourly.groupby(mondays)
-    # A complete week has all its hours, from the first hour of Monday
-    # to the last of Sunday, one less or one more when the clocks
-    # change, which start on the half hour in some time zones, such as
-    # India.
     starts = pd.Series(times, index=times).groupby(mondays)
     first, last = starts.min(), starts.max()
     week_starts = pd.Series(first.index, index=first.index)
@@ -526,6 +515,17 @@ def _plot_best_and_worst(
     description : tuple[str, str]
         The title of the version and the part of the name of the file
         (see describe_version).
+
+    Notes
+    -----
+    The year of a code is its local year with the most scored hours, the
+    latest of them. Its load is shown at every hour from the first to
+    the last, so that the missing hours leave gaps in the lines, at the
+    local time of the start of the hour.
+
+    The forecast has the same annual demand as the actual load (see
+    ml_models.evaluation.get_scored_predictions), so the two differ by
+    the error of the hourly profile, which the WAPE measures.
     """
     errors = errors.dropna()
     errors = errors[errors.index.isin(predictions["Entity code"].unique())]
@@ -546,8 +546,6 @@ def _plot_best_and_worst(
         hours = rows.groupby("Local year").size()
         year = hours[hours == hours.max()].index.max()
         rows = rows[rows["Local year"] == year].set_index("Time (UTC)")
-        # Every hour from the first to the last, so that the missing
-        # hours leave gaps in the lines, at the local time of its start.
         hourly = rows.reindex(
             pd.date_range(rows.index.min(), rows.index.max(), freq="h")
         )
@@ -681,18 +679,17 @@ def _add_legend(
         The figure where to add the legend.
     versions : list[str]
         The versions to be included in the legend.
+    y_pos : float, optional
+        The height of the legend, as a fraction of that of the figure.
     """
-    # Define the colors to be used for each version.
     colors = ["tab:blue", "tab:orange"]
 
-    # Define the positions for the legend entries.
     positions = (
         [[0.54, y_pos]]
         if len(versions) == 1
         else [[0.38, y_pos], [0.68, y_pos]]
     )
 
-    # Add a legend.
     for i, version in enumerate(versions):
         fig.text(
             positions[i][0],
@@ -794,19 +791,22 @@ def _plot_overall(
     small : pandas.Series | None, optional
         Whether each country or subdivision is of the small size class,
         whose bars are hatched with dots.
+
+    Notes
+    -----
+    The text is larger than the codes under the bars, which would
+    otherwise overlap. The legend has the hatches of the figure, in the
+    same order in every figure.
     """
     mape_to_plot = mape.dropna(subset=[f"{version}_all"]).sort_values(
         by=f"{version}_all"
     )
 
-    # Initialize the plot, wide enough for the names of the bars.
     fig, ax = plt.subplots(
         figsize=(_get_figure_width(len(mape_to_plot)), 6),
         layout="constrained",
     )
     _add_bar_plot(ax, mape_to_plot[f"{version}_all"], unseen, small)
-    # The text is larger than the codes of the bars, which would
-    # otherwise overlap.
     name, abbreviation = METRIC_NAMES[metric].removesuffix(")").split(" (")
     ax.set_ylabel(
         f"{name}\n({abbreviation}, %)",
@@ -817,8 +817,6 @@ def _plot_overall(
         "Country or subdivision", weight="bold", fontsize=OVERALL_TEXT_SIZE
     )
     ax.tick_params(axis="y", labelsize=OVERALL_TEXT_SIZE - 2)
-    # The legend has the hatches of the figure, in the same order in
-    # every figure.
     handles = [
         Patch(
             facecolor="tab:blue", edgecolor="white", hatch=hatch, label=label
@@ -878,10 +876,14 @@ def _plot_comparison(
         (see describe_version).
     metric : str, optional
         The metric of the errors, "WAPE" or "MAPE".
+
+    Notes
+    -----
+    The two versions are told apart in the legend by the names of their
+    files.
     """
     mape_to_plot = mape.sort_values(by=f"{version}_all")
 
-    # Initialize the plot, wide enough for the names of the bars.
     width = _get_figure_width(len(mape_to_plot))
     fig, axs = plt.subplots(
         1,
@@ -892,7 +894,6 @@ def _plot_comparison(
         gridspec_kw={"width_ratios": [1, width / 2 - 1]},
     )
 
-    # Add a box and whisker plot and a bar plot.
     _add_box_and_bar_plot(
         [axs[0], axs[1]],
         [
@@ -906,8 +907,6 @@ def _plot_comparison(
 
     _add_explanatory_text(axs[1], metric)
 
-    # Add a legend.
-    # The two versions are told apart by the names of their files.
     _add_legend(fig, [descriptions[0][1], descriptions[1][1]])
 
     _add_grid(fig)
@@ -949,7 +948,6 @@ def _plot_by_group(
     metric : str, optional
         The metric of the errors, "WAPE" or "MAPE".
     """
-    # Define the group labels for the legend.
     group_labels = {
         "lower_middle_income": "Lower middle income",
         "upper_middle_income": "Upper middle income",
@@ -963,8 +961,7 @@ def _plot_by_group(
     }
 
     for case, case_groups in groups.items():
-        # Initialize the the plot where to show the MAPE values by
-        # group.
+        # Each group has the axes of a box, of its bars and of a space.
         if case == "continent":
             fig, axs = plt.subplots(
                 2,
@@ -986,17 +983,12 @@ def _plot_by_group(
         axs = axs.flatten()
 
         for i, group in enumerate(case_groups):
-            # Select the entities belonging to the current group that
-            # have a MAPE value.
             mape_to_plot = mape[[f"{version}_all", f"{version}_{group}"]][
                 mape[f"{version}_{group}"].notna()
             ]
 
-            # Sort the entities by their MAPE values for better
-            # visualization.
             mape_to_plot = mape_to_plot.sort_values(by=f"{version}_all")
 
-            # Add a box and whisker plot and a bar plot.
             _add_box_and_bar_plot(
                 [axs[3 * i], axs[3 * i + 1]],
                 [
@@ -1014,7 +1006,6 @@ def _plot_by_group(
             # Turn off the axis for spacing.
             axs[3 * i + 2].set_axis_off()
 
-        # Add a legend.
         _add_legend(
             fig,
             ["Trained on all data", "Trained on data in group"],
@@ -1027,7 +1018,6 @@ def _plot_by_group(
             fontsize=12,
         )
 
-        # Add a text to indicate that a lower error is better.
         _add_explanatory_text(fig, metric)
 
         fig.supylabel(METRIC_NAMES[metric], weight="bold", x=-0.03)
@@ -1264,13 +1254,15 @@ def plot(
     ValueError
         If the --by_group and --compare_with_version options are used
         together.
+
+    Notes
+    -----
+    The groups of the income levels leave out the low-income group,
+    which has no validation results.
     """
     if results_directory is None:
         results_directory = utils.paths.get_results_folder("validation")
 
-    # Define the groups for the two cases (income level and continent).
-    # Note that currently there are no validation results for the
-    # low-income group, so it is not included here.
     groups = {
         "income": [
             "lower_middle_income",

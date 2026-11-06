@@ -91,9 +91,6 @@ def _get_share_of_country(
     """
     Get the share of the population of its country in a subdivision.
 
-    The share is that of the gridded population in the shape of the
-    subdivision, over that in the shape of its whole country.
-
     Parameters
     ----------
     code : str
@@ -263,12 +260,6 @@ def run_data_retrieval(
     """
     Download and extract population data.
 
-    This function downloads and extracts historical population data
-    from the World Bank and future population data from the IAMC
-    scenarios for the countries of interest. For subdivisions, the
-    population data is calculated by aggregating gridded population
-    data. The population data is saved into Parquet files.
-
     Parameters
     ----------
     code : str | None
@@ -277,27 +268,20 @@ def run_data_retrieval(
         The file path containing the codes of the countries or
         subdivisions of interest.
     year : int | None
-        The year of the electricity demand per capita data to be
-        retrieved.
+        The year of the population data to be retrieved.
     start_year : int | None
-        The start year of the range of electricity demand per capita
-        data to be retrieved.
+        The start year of the range of population data to be retrieved.
     end_year : int | None
-        The end year of the range of electricity demand per capita
-        data to be retrieved.
+        The end year of the range of population data to be retrieved.
     scenario : str | None
-        The scenario of the electricity demand per capita data to be
-        retrieved.
+        The scenario of the population data to be retrieved.
     """
     _get_gridded_population.cache_clear()
 
-    # Download the historical population data.
     global_historical_population = world_bank.download("population")
 
-    # Read the future population data.
     global_future_population = iiasa.read("population")
 
-    # Define the available years for gridded population data.
     available_historical_years_of_gridded_data = list(
         utils.catalogue.GRIDDED_POPULATION_YEARS
     )

@@ -4,7 +4,12 @@ License: AGPL-3.0.
 Description:
 
     This script generates the shape of Great Britain, which is served by
-    NESO.
+    NESO, as the part of the shape of the United Kingdom of Natural
+    Earth at 1:50m within a polygon that leaves out Northern Ireland and
+    the remote islands.
+
+    The geometry is snapped to a grid of 0.005 degrees, which removes
+    small spikes in the shape that cause issues when it is plotted.
 """
 
 import os
@@ -14,13 +19,10 @@ import geopandas
 import pandas as pd
 from shapely import Polygon
 
-# Load the shapefile containing the shapes of the countries from the
-# Natural Earth database.
 all_shapes = cartopy.io.shapereader.natural_earth(
     resolution="50m", category="cultural", name="admin_0_countries"
 )
 
-# Define a reader for the shapefile.
 reader = cartopy.io.shapereader.Reader(all_shapes)
 
 # Read the shapefile of the United Kingdom.
@@ -31,8 +33,6 @@ uk_shape = pd.Series({"geometry": uk_shape.geometry})
 uk_shape = geopandas.GeoSeries(uk_shape)
 uk_shape_frame = geopandas.GeoDataFrame.from_features(uk_shape, crs=4326)
 
-# Define a polygon to exclude the Northern Ireland and remote islands
-# from the UK shape.
 new_bounds = geopandas.GeoSeries(
     Polygon(
         [
@@ -48,25 +48,17 @@ new_bounds = geopandas.GeoSeries(
 )
 new_bounds_frame = geopandas.GeoDataFrame.from_features(new_bounds, crs=4326)
 
-# Cut the UK shape.
 gb_shape = uk_shape_frame.overlay(new_bounds_frame, how="intersection")
 
-# Add the name and code of the subdivision.
 gb_shape["name"] = ["Great Britain"]
 gb_shape["code"] = ["GBR_GB"]
 
-# Reorder the columns.
 gb_shape = gb_shape[["name", "code", "geometry"]]
 
-# Set the precision of the geometry to a grid size of 0.005 degrees.
-# This is done to remove small spikes in the shapes that cause issues
-# when plotting the shapes.
 gb_shape["geometry"] = gb_shape["geometry"].set_precision(0.005)
 
-# Add the coordinate reference system (CRS) to the shapefile.
 gb_shape = gb_shape.set_crs(epsg=4326)
 
-# Save the shape of the subdivision to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "neso")
 os.makedirs(shapes_dir, exist_ok=True)
 gb_shape.to_file(os.path.join(shapes_dir, "neso.shp"), driver="ESRI Shapefile")

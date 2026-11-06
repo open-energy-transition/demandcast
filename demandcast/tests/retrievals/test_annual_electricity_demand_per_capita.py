@@ -98,6 +98,14 @@ def test_download_of_ember(monkeypatch):
     requests = []
 
     def fetch_response(url, **kwargs):
+        """
+        Record a request and answer with the records.
+
+        Returns
+        -------
+        types.SimpleNamespace
+            The response, whose JSON is the records.
+        """
         requests.append((url, kwargs["request_params"]))
         return SimpleNamespace(json=lambda: records)
 
@@ -148,6 +156,8 @@ def test_download_of_world_bank(monkeypatch):
         files.writestr("API_EG.USE.ELEC.KH.PC.csv", csv)
 
     class Response:
+        """A response with the archive."""
+
         content = archive.getvalue()
 
     monkeypatch.setattr(

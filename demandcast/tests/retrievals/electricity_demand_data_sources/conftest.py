@@ -36,6 +36,7 @@ class FakeDownloads:
     """
 
     def __init__(self) -> None:
+        """Start with no files served and no downloads made."""
         self._files: dict[tuple[str, str], pathlib.Path] = {}
         self.requests: list[tuple[str, str, dict[str, Any]]] = []
 
@@ -119,7 +120,24 @@ def fake_downloads(monkeypatch):
     downloads = FakeDownloads()
 
     def send(method: str):
+        """
+        Make a download of requests with an HTTP method.
+
+        Returns
+        -------
+        Callable
+            The download, which takes the URL and the other arguments.
+        """
+
         def request(url: str, **kwargs: Any) -> requests.Response:
+            """
+            Get the file served at a URL as a response.
+
+            Returns
+            -------
+            requests.Response
+                The response, with the content of the file.
+            """
             response = requests.Response()
             response.status_code = 200
             response.url = url
@@ -134,11 +152,20 @@ def fake_downloads(monkeypatch):
         """A session of requests that gets the served files."""
 
         def __init__(self) -> None:
+            """Start with no cookies and no headers."""
             self.cookies = requests.cookies.RequestsCookieJar()
             self.headers: dict[str, str] = {}
             self.get = send("GET")
 
     def urlopen(request: urllib.request.Request, **kwargs: Any) -> io.BytesIO:
+        """
+        Get the file served at the URL of a request of urllib.
+
+        Returns
+        -------
+        io.BytesIO
+            The content of the file.
+        """
         return io.BytesIO(
             downloads.get_file("GET", request.full_url, **kwargs).read_bytes()
         )

@@ -36,6 +36,14 @@ def test_gdp_ppp_per_capita_is_kept_in_the_data_folder(monkeypatch):
     calculated = []
 
     def calculate(*_args):
+        """
+        Record a calculation and give a GDP PPP per capita.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The GDP PPP per capita of France in 2030.
+        """
         calculated.append(1)
         return pd.DataFrame(
             {"Region": ["France"], "Unit": ["$"], "2030": [50000.0]}

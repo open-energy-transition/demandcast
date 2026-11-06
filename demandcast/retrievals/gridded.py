@@ -7,9 +7,6 @@ Description:
     share: the extraction of the grid of each country and subdivision
     from a global grid, and, for the gridded population and GDP, the
     loop over the years and scenarios of their global grids.
-
-    The grid of a country or subdivision covers the bounds of its shape,
-    west, south, east and north, and is saved in a NetCDF file.
 """
 
 import logging
@@ -58,6 +55,11 @@ def extract_entity_grids(
     is_up_to_date : Callable[[str], bool], optional
         The function that tells whether the file of a code can be
         kept. By default, a file that exists is kept.
+
+    Notes
+    -----
+    The grid of a country or subdivision covers the bounds of its shape,
+    and is saved in a NetCDF file.
     """
     for entity_code in tqdm(
         codes, desc="Countries and subdivisions", leave=False

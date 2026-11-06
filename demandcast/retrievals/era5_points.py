@@ -7,10 +7,10 @@ Description:
     reanalysis at single points of its grid, every 0.25 degrees, from
     the analysis-ready time series of the Copernicus Climate Data Store
     (CDS), which gives the whole series of a point, from 1990 to about a
-    week ago, in one request of about 35 seconds and 4 MB, instead of
-    the grids of whole years of retrievals/gridded_weather.py. Their
-    values are those of the grids. The CDS describes this dataset as
-    experimental; the grids remain available.
+    week ago, in one request of about 35 seconds and 4 MB. Its values
+    are those of the grids of ERA5 (see retrievals/gridded_weather.py).
+    The CDS describes this dataset as experimental; the grids remain
+    available.
 
     The series of each point is saved in the raw folder of the gridded
     weather, in points/. It is downloaded again from 120 days before its

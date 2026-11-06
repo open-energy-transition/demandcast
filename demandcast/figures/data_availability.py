@@ -128,37 +128,30 @@ def _get_electricity_demand_per_capita(
         subdivision codes.
     years_of_interest : dict[str, list[int]]
         A dictionary where the keys are entity codes and the values are
-        lists of strings representing the years of interest.
+        lists of the years of interest.
 
     Returns
     -------
     dict[str, dict[str, pandas.Series]]
-        The annual electricity demand data for the specified country and
-        for the years of interest.
+        The annual electricity demand per capita of the country of each
+        code, in the years of interest of the code, by code and by ISO
+        alpha-3 code of its country.
     """
-    # Download the electricity demand per capita data.
     electricity_demand_per_capita = (
         retrievals.annual_electricity_demand_per_capita.get_historical_data()
     )
 
-    # Initialize the electricity demand data series for each country or
-    # subdivision. The dictionary structure is specified because
-    # required by the type hint.
     electricity_demand_data: dict[str, dict[str, pd.Series]] = {}
 
-    # Loop over the codes.
     for code in codes:
         # Extract the ISO alpha-3 code for the country itself or the
         # country to which the subdivision belongs.
         iso_alpha_3_code = code.split("_")[0]
 
-        # Extract the electricity demand data for the country.
         electricity_demand_per_capita_of_country = cast(
             pd.Series, electricity_demand_per_capita.loc[iso_alpha_3_code]
         )
 
-        # Extract the electricity demand per capita data for the years
-        # of interest.
         electricity_demand_per_capita_of_country = (
             electricity_demand_per_capita_of_country[
                 electricity_demand_per_capita_of_country.index.isin(
@@ -167,14 +160,11 @@ def _get_electricity_demand_per_capita(
             ]
         )
 
-        # If the country is already in the dictionary, add a new key for
-        # the code.
         if iso_alpha_3_code in electricity_demand_data:
             electricity_demand_data[iso_alpha_3_code][code] = (
                 electricity_demand_per_capita_of_country
             )
         else:
-            # If the country is not in the dictionary, add it.
             electricity_demand_data[iso_alpha_3_code] = {
                 code: electricity_demand_per_capita_of_country
             }
@@ -196,44 +186,35 @@ def _get_gdp_ppp_per_capita(
         subdivision codes.
     years_of_interest : dict[str, list[int]]
         A dictionary where the keys are entity codes and the values are
-        lists of strings representing the years of interest.
+        lists of the years of interest.
 
     Returns
     -------
     gdp_data : dict[str, dict[str, pandas.Series]]
-        The GDP PPP per capita data for the specified country and for
-        the years of interest.
+        The GDP PPP per capita of the country of each code, in the years
+        of interest of the code, by code and by ISO alpha-3 code of its
+        country.
     """
-    # Download the GDP per capita data.
     gdp_ppp_per_capita = retrievals.gdp_ppp_per_capita.get_historical_data()
 
-    # Initialize the GDP data series for each country or subdivision.
-    # The dictionary structure is specified because required by the type
-    # hint.
     gdp_data: dict[str, dict[str, pd.Series]] = {}
 
-    # Loop over the codes.
     for code in codes:
         # Extract the ISO alpha-3 code for the country itself or the
         # country to which the subdivision belongs.
         iso_alpha_3_code = code.split("_")[0]
 
-        # Extract the GDP data for the country.
         gdp_ppp_per_capita_of_country = cast(
             pd.Series, gdp_ppp_per_capita.loc[iso_alpha_3_code]
         )
 
-        # Extract the GDP data for the years of interest.
         gdp_ppp_per_capita_of_country = gdp_ppp_per_capita_of_country[
             gdp_ppp_per_capita_of_country.index.isin(years_of_interest[code])
         ]
 
-        # If the country is already in the dictionary, add a new key for
-        # the code.
         if iso_alpha_3_code in gdp_data:
             gdp_data[iso_alpha_3_code][code] = gdp_ppp_per_capita_of_country
         else:
-            # If the country is not in the dictionary, add it.
             gdp_data[iso_alpha_3_code] = {code: gdp_ppp_per_capita_of_country}
 
     return gdp_data
@@ -253,9 +234,8 @@ def _get_occurrences(
     Parameters
     ----------
     data : dict[str, dict[str, pandas.Series]]
-        A dictionary where the keys are entity codes and the values are
-        pandas Series with years as index and values as electricity
-        demand or GDP per capita.
+        The electricity demand or GDP per capita of the country of each
+        code, by year, by code and by ISO alpha-3 code of its country.
     codes : list[str]
         A list of ISO alpha-3 or a combination of ISO alpha-3 and
         subdivision codes.
@@ -276,25 +256,20 @@ def _get_occurrences(
     Returns
     -------
     occurrence : dict[str, dict[str, float]]
-        A dictionary where the keys are entity codes and the values are
-        dictionaries with levels as keys and occurrences as values.
+        A dictionary where the keys are continent codes and the values
+        are dictionaries with levels as keys and occurrences as values.
     """
-    # Initialize the occurrence in the defined levels and by continent.
     occurrence = {
         continent: dict.fromkeys(levels.keys(), 0.0)
         for continent in continent_names
     }
 
-    # Loop over the countries and subdivisions.
     for code in codes:
         # Extract the ISO alpha-3 code for the country itself or the
         # country to which the subdivision belongs.
         iso_alpha_3_code = code.split("_")[0]
 
-        # Loop over the available years for the country or subdivision.
         for year in data[iso_alpha_3_code][code].index:
-            # Loop over the levels and continents and add the occurrence
-            # to the corresponding level and continent.
             for level, (min_val, max_val) in levels.items():
                 if min_val <= data[iso_alpha_3_code][code][year] < max_val:
                     occurrence[continent_codes[code]][level] += (
@@ -365,13 +340,9 @@ def _add_bar_chart(
     matplotlib.axes.Axes
         The axes with the added bar chart.
     """
-    # Initialize the cumulative height for the stacked bars.
+    # Stack the bars of the continents.
     cumulative_height = np.zeros(len(levels))
-
-    # Create a bar plot for the GDP occurrences with continents as
-    # stacked bars.
     for continent_code, continent_occurrence in occurrence.items():
-        # Create a bar plot for the current continent.
         ax.bar(
             list(continent_occurrence.keys()),
             list(continent_occurrence.values()),
@@ -380,11 +351,9 @@ def _add_bar_chart(
             color=colors[continent_code],
             alpha=0.7,
         )
-
-        # Update the cumulative height for the next iteration.
         cumulative_height += np.array(list(continent_occurrence.values()))
 
-    # Set the title and labels.
+    # Label the levels in thousands.
     ax.set_xlabel(xlabel, fontsize=16, weight="bold")
     ax.tick_params(labelsize=13)
     ax.set_xticks(
@@ -434,11 +403,6 @@ class FigureData:
 def get_data() -> FigureData:
     """
     Get the data of the figure of the availability of the data.
-
-    The years of electricity demand data of each country and of each
-    subdivision are counted by continent and by level of GDP PPP and of
-    annual electricity demand per capita of its country, from Ember, the
-    World Bank and the IMF.
 
     Returns
     -------
@@ -529,19 +493,16 @@ def draw(data: FigureData, figure_directory: str) -> None:
     figure_directory : str
         The directory to store the figure.
     """
-    # Set the font size.
     plt.rc("font", size=12)
 
-    # The height of the bar charts, which share their scale.
     height = _get_height_of_bar_charts(
         data.gdp_occurrence, data.electricity_demand_occurrence
     )
 
-    # Create a figure to plot the GDP coverage.
     fig, ax0 = plt.subplots(figsize=(15, 7))
     ax0.set_axis_off()
 
-    # Add the bar chart for the electricity demand coverage.
+    # Add the bar chart for the GDP coverage.
     ax = fig.add_axes((0.0, 0.0, 0.2, 1))
     ax = _add_bar_chart(
         ax,
@@ -551,13 +512,10 @@ def draw(data: FigureData, figure_directory: str) -> None:
         CONTINENT_NAMES,
         COLORS,
     )
-
-    # Set the y-axis limit to the maximum cumulative height and the
-    # label.
     ax.set_ylim(0, height)
     ax.set_ylabel("Number of years", fontsize=16, weight="bold")
 
-    # Add the bar chart for the GDP coverage.
+    # Add the bar chart for the electricity demand coverage.
     ax = fig.add_axes((0.25, 0.0, 0.2, 1))
     ax = _add_bar_chart(
         ax,
@@ -567,7 +525,6 @@ def draw(data: FigureData, figure_directory: str) -> None:
         CONTINENT_NAMES,
         COLORS,
     )
-    # Set the y-axis limit to the maximum cumulative height.
     ax.set_ylim(0, height)
 
     # Add scatter plot for the GDP and annual demand per capita data.
@@ -748,7 +705,6 @@ def draw(data: FigureData, figure_directory: str) -> None:
             fontsize=16,
         )
 
-    # Add the axis titles.
     ax.set_xlabel(
         "GDP per capita, PPP (2021 international k$)",
         fontsize=16,
@@ -760,7 +716,6 @@ def draw(data: FigureData, figure_directory: str) -> None:
         weight="bold",
     )
 
-    # Add a title to the figure.
     plt.suptitle(
         (
             "Availability of hourly and sub-hourly electricity demand data\n"
@@ -772,7 +727,6 @@ def draw(data: FigureData, figure_directory: str) -> None:
         weight="bold",
     )
 
-    # Save the figure.
     fig.savefig(
         os.path.join(
             figure_directory,
@@ -786,10 +740,6 @@ def draw(data: FigureData, figure_directory: str) -> None:
 def plot(figure_directory: str) -> None:
     """
     Plot the figure of the availability of the data.
-
-    The figure shows the years of hourly and sub-hourly electricity
-    demand data by GDP PPP and annual electricity demand per capita,
-    with the data of Ember, the World Bank and the IMF.
 
     Parameters
     ----------

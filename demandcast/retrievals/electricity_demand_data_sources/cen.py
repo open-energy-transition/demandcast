@@ -12,8 +12,8 @@ Description:
     saving time ends has an hour 25, and the day when it starts has no
     hour 1. Until 2015 the demand is the one of the central system (SIC)
     only, about 30% less, so the data starts in 2016. The API has no
-    data after 2026-05-13: the data of CEN is now published on another
-    platform (issue #262). The end date of the YAML file is that day, so
+    data after 2026-05-13: CEN publishes its data on another platform
+    (issue #262). The end date of the YAML file is that day, so
     that the live check does not report the data as old, and still
     reports the data after it if the API gives it again.
 
@@ -35,9 +35,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the CEN website.
-
     Parameters
     ----------
     code : str
@@ -52,7 +49,6 @@ def get_available_requests(
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
         The list of available requests.
     """
-    # Split the period of the data into one-year periods.
     return utils.time_series.split_period(start_date, end_date, "YS")
 
 
@@ -77,14 +73,12 @@ def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
     ValueError
         If the retrieval period is longer than 1 year.
     """
-    # Check that the retrieval period is less than one year.
     if end_date - start_date > pd.Timedelta("366days"):
         raise ValueError(
             "The retrieval period is greater than 1 year. "
             "Please reduce the period to 1 year."
         )
 
-    # Return the URL of the electricity demand data.
     return (
         "https://sipub.coordinador.cl/api/v1/recursos/"
         f"demandasistemareal?fecha__gte={start_date:%Y-%m-%d}"
@@ -98,9 +92,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the CEN website.
-
     Parameters
     ----------
     period : tuple[pandas.Timestamp, pandas.Timestamp]
@@ -112,6 +103,12 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    When daylight saving time ends, the 24th and the 25th hours both
+    start at 23:00: the 24th in daylight saving time, and the 25th in
+    standard time.
     """
     start_date, end_date = period
 
@@ -120,10 +117,8 @@ def download_and_extract_data_for_request(
         f"{start_date.date()} to {end_date.date()}."
     )
 
-    # Get the URL of the electricity demand data.
     url = get_url(start_date, end_date)
 
-    # Define the headers for the request.
     header_params = {
         "Referer": (
             "https://www.coordinador.cl/operacion/graficos/"
@@ -132,7 +127,6 @@ def download_and_extract_data_for_request(
         "Origin": "https://www.coordinador.cl",
     }
 
-    # Fetch the data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "html",
@@ -142,10 +136,8 @@ def download_and_extract_data_for_request(
         json_keys=["data"],
     )
 
-    # Merge the date and time columns into a single column. Consider
-    # that the time is given at the end of the hour. In some years
-    # where there is the switch to or from daylight saving time,
-    # there is a 25th hour.
+    # Merge the date and the start of each hour into a single column,
+    # with the 25th hour starting at the same time as the 24th.
     dataset["date and time"] = [
         date + f" {(min(time, 24) - 1):02d}:00"
         for date, time in zip(dataset["fecha"], dataset["hora"], strict=True)
@@ -155,16 +147,12 @@ def download_and_extract_data_for_request(
     # 24th.
     dataset = dataset.sort_values(by=["date and time", "hora"])
 
-    # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
         dataset["demanda"].values,
         index=pd.to_datetime(dataset["date and time"]),
     )
 
-    # Localize the starts of the hours and move them to their ends. When
-    # daylight saving time ends, the 24th and the 25th hours both start
-    # at 23:00: the 24th in daylight saving time, and the 25th in
-    # standard time.
+    # Localize the starts of the hours and move them to their ends.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

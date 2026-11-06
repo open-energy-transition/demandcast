@@ -72,7 +72,8 @@ def _removed_times(removed: pd.DataFrame, rule: str) -> list[str]:
     Returns
     -------
     list[str]
-        The start and end of each period, as "HH:MM-HH:MM" on the day.
+        The start and end of each period, as
+        "YYYY-MM-DD HH:MM/YYYY-MM-DD HH:MM".
     """
     periods = removed[removed["rule"] == rule]
     return [

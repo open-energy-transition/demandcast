@@ -16,8 +16,8 @@ import yaml
 import utils.data_sources
 import utils.paths
 
-# The licence, a country and a subdivision, as in the yaml file of a
-# data source.
+# The licence, a period of the definition, a country and a subdivision,
+# as in the yaml file of a data source.
 LICENCE = {
     "redistribute": True,
     "terms": "CC-BY 4.0 license. Use for any purpose with attribution.",
@@ -71,8 +71,12 @@ def write_data_source(monkeypatch, tmp_path):
     monkeypatch.setattr(utils.paths, "DATA_SOURCES_FOLDER", str(folder))
 
     def write(content: object) -> None:
-        # A file without a definition gets one, so that the tests check
-        # the other parts of the file.
+        """
+        Write the content as the yaml file of the data source.
+
+        A file without a definition gets one, so that the tests check
+        the other parts of the file.
+        """
         if isinstance(content, dict) and "definition" not in content:
             content = {**content, "definition": [DEFINITION_PERIOD]}
         with open(folder / "test_source.yaml", "w", encoding="utf-8") as file:
@@ -83,13 +87,11 @@ def write_data_source(monkeypatch, tmp_path):
 
 def test_read_codes():
     """
-    Test if the entities module can read codes correctly.
+    Test if the data_sources module can read codes correctly.
 
-    This test checks if the functions in the entities module can
-    correctly read codes from a yaml file or from a specific data
-    source, and if they handle errors correctly.
+    The codes are read from a yaml file, from a data source, or from
+    all the data sources.
     """
-    # Define a sample yaml file content.
     entities = [
         {
             "country_name": "France",
@@ -134,12 +136,11 @@ def test_read_codes():
 
 def test_read_codes_errors():
     """
-    Test if the read_codes function handles errors correctly.
+    Test if the read_codes_in function handles errors correctly.
 
-    This test checks if the function raises errors for invalid file
-    paths, invalid data sources, and invalid codes.
+    Neither or both of a file and a data source, or an invalid data
+    source, raise an error.
     """
-    # Check if common errors in input data are handled correctly.
     with pytest.raises(
         ValueError, match="Either file_path or data_source must be provided"
     ):
@@ -159,10 +160,9 @@ def test_date_ranges():
     """
     Test if the date ranges are read correctly.
 
-    This test checks if the function reads the date ranges from a yaml
-    file and returns a dictionary with the expected keys and values.
+    The date ranges are by code, and an end date of today is five days
+    before today.
     """
-    # Define a sample yaml file content.
     entities = [
         {
             "country_name": "France",
@@ -181,20 +181,15 @@ def test_date_ranges():
         },
     ]
 
-    # Read the codes from the sample yaml file and check them.
     with patch(
         "utils.data_sources.read_entities_info",
         return_value=entities,
     ):
-        # Read the date ranges from the sample yaml file.
         date_ranges = utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
             "dummy_data_source"
         )
 
-    # Check if function returns a list of date ranges.
     assert isinstance(date_ranges, dict)
-
-    # Check if the date ranges are read correctly.
     assert date_ranges["FRA"] == (
         dt.date(2014, 12, 15),
         (dt.datetime.now().astimezone() - dt.timedelta(days=5)).date(),
@@ -205,10 +200,8 @@ def test_date_ranges_errors():
     """
     Test if the read_date_ranges function handles errors correctly.
 
-    This test checks if the function raises errors for invalid date
-    ranges, such as end dates before start dates.
+    A start date after the end date raises an error.
     """
-    # Define sample yaml file content with an invalid data.
     entities = [
         {
             "country_name": "France",
@@ -218,7 +211,6 @@ def test_date_ranges_errors():
         }
     ]
 
-    # Check if the function raises an error for invalid date ranges.
     with (
         pytest.raises(ValueError, match="is after the end date"),
         patch(

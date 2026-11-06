@@ -43,7 +43,6 @@ def _read_codes(future: bool) -> list[str]:
         than 500 km², whose population and GDP PPP per capita are
         estimated from the gridded data.
     """
-    # Read the CSV file containing the available data information.
     data = pd.read_csv(
         os.path.join(
             utils.paths.CHECKS_FOLDER,
@@ -54,6 +53,22 @@ def _read_codes(future: bool) -> list[str]:
     )
 
     def has(code: str, *columns: str) -> bool:
+        """
+        Check whether a country or subdivision has some of the data.
+
+        Parameters
+        ----------
+        code : str
+            The code of the country or subdivision.
+        *columns : str
+            The names of the data, such as "population".
+
+        Returns
+        -------
+        bool
+            Whether the code has the historical data, and the future
+            data if they are needed, of all the columns.
+        """
         return all(
             data.loc[code, f"historical_{column}"]
             and (not future or data.loc[code, f"future_{column}"])
@@ -80,12 +95,9 @@ def read_codes_with_all_data() -> list[str]:
     """
     Get the codes of all countries and subdivisions with all data.
 
-    This function retrieves the codes of all countries and
-    subdivisions for which all required data for the demand forecasting
-    model is available. This includes the availability of shapes,
-    historical and future population data, historical and future
-    electricity demand per capita, and historical and future GDP PPP per
-    capita.
+    All data is the data that the demand forecasting model needs: the
+    shapes, and the historical and future population, electricity
+    demand per capita and GDP PPP per capita.
 
     Returns
     -------
@@ -102,9 +114,7 @@ def read_codes_with_historical_data() -> list[str]:
 
     These codes have the historical population, electricity demand per
     capita and GDP PPP per capita, but not necessarily their
-    projections, such as Kosovo, which IIASA does not cover: their data
-    can be used for training and validation, but not to forecast future
-    scenarios.
+    projections.
 
     Returns
     -------
@@ -123,11 +133,9 @@ def check_and_get_codes_with(  # noqa: C901
     """
     Check code validity (if provided) or get all available codes.
 
-    This function checks if the code provided as an argument or the
-    codes in the specified file are valid by comparing them with the
-    list of available codes for which a certain feature is available.
-    If no code or file path is provided, it returns all available codes
-    for which the feature is available.
+    A code is valid when the feature is available for it. Without a
+    code or a file path, all the codes for which the feature is
+    available are returned.
 
     Parameters
     ----------
@@ -180,7 +188,6 @@ def check_and_get_codes_with(  # noqa: C901
         )
 
     if code is not None:
-        # Check if the code is available.
         if code not in all_codes:
             if data_source is not None:
                 raise ValueError(
@@ -195,14 +202,8 @@ def check_and_get_codes_with(  # noqa: C901
         codes = [code]
 
     elif file_path is not None:
-        # Get the list of countries and subdivisions available on the
-        # specified file.
         codes = utils.data_sources.read_codes_in(file_path=file_path)
-
-        # Initialize a list of the remaining codes.
         remaining_codes = codes.copy()
-
-        # Check if the codes are available.
         for entity_code in codes:
             if entity_code not in all_codes:
                 if data_source is not None:
@@ -216,16 +217,13 @@ def check_and_get_codes_with(  # noqa: C901
                     )
                 remaining_codes.remove(entity_code)
 
-        # Check if there are any codes left.
         if len(remaining_codes) == 0:
             raise ValueError(
                 "None of the codes in the file are available. Please choose "
                 f"from the following: {', '.join(all_codes)}"
             )
-        # If there are codes left, return them.
         codes = remaining_codes
     else:
-        # If no code or file path is provided, use all available codes.
         codes = all_codes
 
     return codes

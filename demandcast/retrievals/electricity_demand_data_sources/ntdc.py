@@ -6,18 +6,16 @@ Description:
     This module provides functions to retrieve the electricity demand
     data from a publicly available repository with data provided by the
     National Transmission & Despatch Company (NTDC) in Pakistan. The
-    data is retrieved by registering on the website and downloading
-    the data manually. The user needs to create an account on the
-    Kaggle website, which is free of charge. After registration,
-    the user can log in to the website and download the data.
+    data is read from the files downloaded manually from Kaggle, which
+    needs a free account.
 
-    The dataset is no longer on Kaggle, since October 2026 at the
-    latest, so only the files downloaded before can be read. They give
-    the hourly system load (SYSLOAD) in MW, with thousands separators,
-    by date and hour ending from 1 to 24 in the time of Pakistan, which
-    has no daylight saving time. Where several files have the same
-    hour, the latest download, whose data ends last, is kept, after the
-    days of the rows of each file are corrected (see below).
+    The dataset has not been on Kaggle since October 2026 at the latest,
+    so only the files downloaded before can be read. They give the
+    hourly system load (SYSLOAD) in MW, with thousands separators, by
+    date and hour ending from 1 to 24 in the time of Pakistan, which has
+    no daylight saving time. Where several files have the same hour, the
+    latest download, whose data ends last, is kept, after the days of
+    the rows of each file are corrected (see below).
 
     About 170 rows around midnight have the date of the day before or
     after, such as the hour 24 of 06/01/2015 between the hours 23 of
@@ -47,8 +45,8 @@ Description:
     shifts. A value that a move brings onto the hour of another value is
     left out, and the hour that it leaves has no value.
 
-    ISMO, which took over the system operation of
-    NTDC, publishes the hourly demand from July 2024 (see ismo.py).
+    ISMO, which took over the system operation of NTDC, publishes the
+    hourly demand from July 2024 (see ismo.py).
 
     The load leaves out K-Electric, so its data has same_area false in
     the yaml file: it does not cover the whole shape of Pakistan.
@@ -234,7 +232,6 @@ def get_url() -> str:
     str
         The URL of the electricity demand data.
     """
-    # Return the URL of the electricity demand data.
     return "https://www.kaggle.com/datasets/tentative/ntdc-dataset"
 
 
@@ -242,11 +239,7 @@ def download_and_extract_data_for_request(
     request: None, code: str
 ) -> pd.Series:
     """
-    Extract electricity demand data.
-
-    This function extracts the electricity demand data for
-    Pakistan. This function assumes that the data has
-    been downloaded and is available in the specified folder.
+    Extract electricity demand data from the files downloaded manually.
 
     Parameters
     ----------
@@ -302,9 +295,8 @@ def download_and_extract_data_for_request(
         ]
     )
 
-    # Keep one value of each hour, from the latest download of the
-    # files that overlap, and move the days that slip against their
-    # hours back to them, which compares the days with the other years.
+    # Keep one value of each hour, and move the days that slip against
+    # their hours back to them.
     electricity_demand_time_series = _correct_slipped_days(
         utils.time_series.keep_latest_download(
             pd.Series(

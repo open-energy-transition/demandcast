@@ -1,10 +1,14 @@
+# Configuration of the documentation site, built with MkDocs and the
+# Material theme from the docs folder, by the docs workflow
+# (.github/workflows/docs.yml), which deploys it to GitHub Pages.
+
 site_name: DemandCast
 theme:
   name: material
   icon:
     logo: octicons/zap-24
     repo: octicons/git-branch-24
-  favicon: lightning_logo.svg # Ensure lightning_logo.svg is actually in the docs/ directory
+  favicon: lightning_logo.svg # The favicon must be in the docs folder.
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default

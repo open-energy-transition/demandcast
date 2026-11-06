@@ -1,4 +1,5 @@
-# Configuration for the LSTM model.
+# Configuration of the LSTM model, read by ml_models/registry.py when
+# the algorithm of ml_config.yaml is LSTM.
 
 # REQUIRED.
 # Lookback window length in timesteps. Each prediction draws on the

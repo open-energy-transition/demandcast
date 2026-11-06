@@ -10,11 +10,6 @@ Description:
     for the countries and subdivisions of interest at a 0.25-degree
     resolution, and saves it into NetCDF files.
 
-    The archives of Figshare are downloaded from its download server,
-    which the API of Figshare gives as their download URL: the links of
-    its website, under figshare.com, now answer scripts with a challenge
-    for bots instead of the file.
-
     Source: https://data.ghg.center/sedac-popdensity-yeargrid5yr-v4.11/browseui/#sedac-popdensity-yeargrid5yr-v4.11/
     Source: https://doi.org/10.6084/m9.figshare.19608594
     Source: https://doi.org/10.1038/s41597-022-01675-x
@@ -58,7 +53,6 @@ def _download_historical_gridded_population_density(
             f"{list(utils.catalogue.GRIDDED_POPULATION_YEARS)}."
         )
 
-    # Define the file path for the population density data.
     file_path = os.path.join(downloaded_data_directory, f"{year}.tif")
 
     if not os.path.exists(file_path):
@@ -67,19 +61,15 @@ def _download_historical_gridded_population_density(
             f"for the year {year}."
         )
 
-        # Define the URL of the population density data.
         url = (
             "https://data.ghg.center/sedac-popdensity-yeargrid5yr-v4.11/"
             f"gpw_v4_population_density_rev11_{year}_30_sec_{year}.tif"
         )
 
-        # Download the population density data.
         response = requests.get(url, timeout=60)
 
-        # Check if the request was successful.
         response.raise_for_status()
 
-        # Save the response content.
         with open(file_path, "wb") as file:
             file.write(response.content)
 
@@ -111,6 +101,15 @@ def _download_future_gridded_population(  # noqa: C901
     ------
     ValueError
         If the scenario is not available.
+
+    Notes
+    -----
+    The archives are downloaded from the download server of Figshare,
+    which its API gives as their download URL, since the links of its
+    website, under figshare.com, answer scripts with a challenge for
+    bots. An archive, of about 2.5 GB, is downloaded into a file in
+    chunks. The folders of SSP1, SSP2, SSP4 and SSP5 in their archives
+    are named SPP1, SPP2, SPP4 and SPP5.
     """
     if scenario not in utils.catalogue.SSP_SCENARIOS:
         raise ValueError(
@@ -118,8 +117,6 @@ def _download_future_gridded_population(  # noqa: C901
             f"{list(utils.catalogue.SSP_SCENARIOS)}."
         )
 
-    # Define the folder name for the population data for the specified
-    # scenario.
     folder_name = os.path.join(
         downloaded_data_directory,
         scenario,
@@ -130,7 +127,6 @@ def _download_future_gridded_population(  # noqa: C901
             "Downloading global gridded population data from Figshare for "
             f"{scenario}."
         )
-        # Define the URL of the population data.
         match scenario:
             case "SSP1":
                 url = "https://ndownloader.figshare.com/files/34829160"
@@ -143,8 +139,6 @@ def _download_future_gridded_population(  # noqa: C901
             case "SSP5":
                 url = "https://ndownloader.figshare.com/files/34829391"
 
-        # Download the archive of about 2.5 GB into a file, in chunks,
-        # and extract all population data from it.
         os.makedirs(downloaded_data_directory, exist_ok=True)
         archive_path = os.path.join(
             downloaded_data_directory, f"{scenario}.zip"
@@ -219,19 +213,15 @@ def _read_population_dataset(
     xarray.DataArray
         The population data for the specified year and scenario.
     """
-    # Define the file path of the population dataset.
     if scenario is None:
-        # For historical years, the file name is just the year.
         file_path = os.path.join(downloaded_data_directory, f"{year}.tif")
     else:
-        # For future years, the file name includes the scenario.
         file_path = os.path.join(
             downloaded_data_directory,
             scenario,
             f"{scenario}_{year}.tif",
         )
 
-    # Download the population dataset.
     global_population_dataset = xarray.open_dataarray(
         file_path, engine="rasterio"
     )
@@ -254,12 +244,10 @@ def _read_population_dataset(
             - global_population_dataset["y"].min()
         ) * (156 - 30 / 3600) - (72 - 30 / 3600)
 
-    # Harmonize the population dataset.
     global_population_dataset = utils.geospatial.harmonize_coords(
         global_population_dataset
     )
 
-    # Clean the dataset and return it.
     return utils.geospatial.clean_raster(
         global_population_dataset, "population"
     )
@@ -275,13 +263,6 @@ def run_data_retrieval(
 ) -> None:
     """
     Download and extract gridded population data.
-
-    This function downloads population density data for historical
-    years (2000-2020) from SEDAC and population count data for future
-    years (2025-2100) from Figshare under different Shared
-    Socioeconomic Pathways (SSPs). It then extracts the population
-    data for the countries and subdivisions of interest at a
-    0.25-degree resolution, and saves it into NetCDF files.
 
     Parameters
     ----------
@@ -357,7 +338,6 @@ def run_data_retrieval(
         """
         population = cast(xarray.DataArray, population)
         if selected_year in utils.catalogue.GRIDDED_POPULATION_YEARS:
-            # Convert the population density to population count.
             population = utils.geospatial.from_density_to_count(population)
         return utils.geospatial.coarsen(population, bounds)
 

@@ -5,15 +5,15 @@ Description:
 
     Unit tests for ml_models.lstm.
 
-    Tests use a small synthetic dataset whose structure exactly mirrors
-    the output of ``ml_models.data.prepare_split_datasets(
+    The tests use a small synthetic dataset with the structure of the
+    output of ``ml_models.data.prepare_split_datasets(
     testing_set=True, validation_set=True)``: a dict with
     ``"training"``, ``"validation"``, and ``"testing"`` keys, each
     containing ``"features"``, ``"target"``, ``"group"``, ``"time"``,
     and ``"scaling_factor"`` sub-keys.
 
-    Where file I/O or configuration reading is needed, the tests patch
-    the relevant functions rather than touching the real file system.
+    The tests patch the reading of the configuration, and save the
+    models in temporary folders.
 """
 
 from __future__ import annotations
@@ -115,7 +115,7 @@ def _make_prepared_dataset() -> dict:
 
 
 def test_read_configuration_returns_correct_values():
-    """Values read from YAML are reflected in the config model."""
+    """Test that the values read from YAML reach the config model."""
     yaml_content = (
         "n_timesteps: 48\n"
         "n_units: 64\n"
@@ -145,7 +145,7 @@ def test_read_configuration_returns_correct_values():
 
 
 def test_read_configuration_defaults_on_empty_yaml():
-    """An empty YAML file returns default hyperparameters."""
+    """Test that an empty YAML file gives the default settings."""
     with (
         patch("builtins.open", mock_open(read_data="{}\n")),
     ):
@@ -165,7 +165,7 @@ def test_read_configuration_defaults_on_empty_yaml():
 
 
 def test_read_configuration_raises_on_bad_type():
-    """A wrong value type raises ValueError."""
+    """Test that a value of the wrong type raises a ValueError."""
     with (
         patch(
             "builtins.open",
@@ -181,7 +181,7 @@ def test_read_configuration_raises_on_bad_type():
     ["n_units: 0\n", "n_layers: -1\n", "dropout: 1.0\n", "n_unit: 8\n"],
 )
 def test_read_configuration_raises_on_invalid_value(content):
-    """An invalid dimension, rate or a misspelt setting raises."""
+    """Test that an invalid dimension, rate or setting name raises."""
     with (
         patch("builtins.open", mock_open(read_data=content)),
         pytest.raises(ValueError, match="Configuration validation"),
@@ -195,7 +195,7 @@ def test_read_configuration_raises_on_invalid_value(content):
 
 
 def test_get_initialized_model_returns_lstm_regressor():
-    """get_initialized_model returns a fresh, unfitted LSTMRegressor."""
+    """Test that get_initialized_model gives an unfitted model."""
     model = lstm_module.get_initialized_model(_FAST_CONFIG)
 
     assert isinstance(model, lstm_module.LSTMRegressor)
@@ -203,7 +203,7 @@ def test_get_initialized_model_returns_lstm_regressor():
 
 
 def test_get_initialized_model_uses_config_values():
-    """Hyperparameters from config are forwarded to LSTMRegressor."""
+    """Test that the hyperparameters of the config reach the model."""
     model = lstm_module.get_initialized_model(_FAST_CONFIG)
 
     assert model.n_timesteps == _FAST_CONFIG.n_timesteps
@@ -218,7 +218,7 @@ def test_get_initialized_model_uses_config_values():
 
 
 def test_train_returns_lstm_regressor():
-    """train() returns a fitted LSTMRegressor instance."""
+    """Test that train() gives a fitted LSTMRegressor."""
     dataset = _make_prepared_dataset()
     model = lstm_module.train(dataset, _FAST_CONFIG)
 
@@ -227,7 +227,7 @@ def test_train_returns_lstm_regressor():
 
 
 def test_train_sets_feature_names():
-    """After train(), feature_names_in_ matches the dataset columns."""
+    """Test that feature_names_in_ are the columns of the dataset."""
     dataset = _make_prepared_dataset()
     model = lstm_module.train(dataset, _FAST_CONFIG)
 
@@ -235,9 +235,8 @@ def test_train_sets_feature_names():
 
 
 def test_train_only_uses_training_split():
-    """train() only reads the 'training' key; extra keys are ignored."""
+    """Test that train() needs only the 'training' key."""
     dataset = _make_prepared_dataset()
-    # Remove validation and testing — train must not fail.
     del dataset["validation"]
     del dataset["testing"]
 
@@ -267,7 +266,7 @@ def trained_model_and_dataset():
 
 
 def test_predict_multi_split_returns_dict(trained_model_and_dataset):
-    """Multi-split predict() returns a dict keyed by split name."""
+    """Test that predict() of several splits gives a dict by split."""
     model, dataset = trained_model_and_dataset
     result = lstm_module.predict(model, dataset)
 
@@ -276,7 +275,7 @@ def test_predict_multi_split_returns_dict(trained_model_and_dataset):
 
 
 def test_predict_multi_split_all_series(trained_model_and_dataset):
-    """Each value in the multi-split result is a pandas.Series."""
+    """Test that each split of the predictions is a pandas.Series."""
     model, dataset = trained_model_and_dataset
     result = lstm_module.predict(model, dataset)
 
@@ -287,7 +286,7 @@ def test_predict_multi_split_all_series(trained_model_and_dataset):
 
 
 def test_predict_multi_split_correct_lengths(trained_model_and_dataset):
-    """Prediction length matches feature row count per split."""
+    """Test that each split has one prediction per row."""
     model, dataset = trained_model_and_dataset
     result = lstm_module.predict(model, dataset)
 
@@ -305,7 +304,7 @@ def test_predict_multi_split_correct_lengths(trained_model_and_dataset):
 
 
 def test_predict_single_dataset_returns_series(trained_model_and_dataset):
-    """Single-dataset predict() returns a bare pandas.Series."""
+    """Test that predict() of a single dataset gives a pandas.Series."""
     model, dataset = trained_model_and_dataset
     single = dataset["training"]  # has "features" key at top level
 
@@ -315,7 +314,7 @@ def test_predict_single_dataset_returns_series(trained_model_and_dataset):
 
 
 def test_predict_single_dataset_correct_length(trained_model_and_dataset):
-    """Single-dataset prediction length equals the number of rows."""
+    """Test that a single dataset has one prediction per row."""
     model, dataset = trained_model_and_dataset
     single = dataset["testing"]
 
@@ -330,7 +329,7 @@ def test_predict_single_dataset_correct_length(trained_model_and_dataset):
 
 
 def test_save_creates_pt_file(trained_model_and_dataset):
-    """save() writes a .pt file to the trained models folder."""
+    """Test that save() writes the .pt file."""
     model, _ = trained_model_and_dataset
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -340,7 +339,7 @@ def test_save_creates_pt_file(trained_model_and_dataset):
 
 
 def test_load_restores_feature_names(trained_model_and_dataset):
-    """load() restores feature_names_in_ from the checkpoint."""
+    """Test that load() restores feature_names_in_ from the file."""
     model, _ = trained_model_and_dataset
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -353,7 +352,7 @@ def test_load_restores_feature_names(trained_model_and_dataset):
 
 
 def test_load_predictions_match_original(trained_model_and_dataset):
-    """Predictions from a loaded model match the original model."""
+    """Test that a loaded model predicts as the saved one."""
     model, dataset = trained_model_and_dataset
     features = dataset["testing"]["features"]
     groups = dataset["testing"]["group"]
@@ -372,7 +371,7 @@ def test_load_predictions_match_original(trained_model_and_dataset):
 
 
 def test_load_raises_if_file_missing():
-    """load() raises FileNotFoundError for a nonexistent path."""
+    """Test that load() raises FileNotFoundError for a missing file."""
     with pytest.raises(FileNotFoundError):
         lstm_module.load("/nonexistent/path/model.pt")
 
@@ -386,7 +385,7 @@ def test_feature_names_in_tolist_returns_python_list(
     trained_model_and_dataset,
 ):
     """
-    feature_names_in_.tolist() returns a plain Python list of strings.
+    Test that feature_names_in_.tolist() gives a list of strings.
 
     validate.py and forecast.py call
     ``model.feature_names_in_.tolist()`` and compare it to
@@ -404,13 +403,11 @@ def test_feature_names_check_passes_against_matching_dataset(
     trained_model_and_dataset,
 ):
     """
-    The validate.py / forecast.py feature-name guard passes for LSTM.
+    Test that the check of the features of validate.py passes.
 
-    Simulates the exact check both scripts perform: compare
-    ``df.columns.tolist()`` against
-    ``model.feature_names_in_.tolist()``. A failure here means the
-    dispatch branches would incorrectly raise ValueError even when
-    the data matches the training features.
+    validate.py and forecast.py compare ``df.columns.tolist()`` with
+    ``model.feature_names_in_.tolist()``, and raise a ValueError when
+    they differ.
     """
     model, dataset = trained_model_and_dataset
     # validate.py uses the training split; forecast.py uses the bare
@@ -434,11 +431,11 @@ def test_feature_names_check_passes_against_matching_dataset(
 
 def test_predict_respects_entity_boundaries():
     """
-    Sequences must not borrow rows across entity boundaries.
+    Test that the sequences take no rows of other entities.
 
-    Uses entity-specific feature values (ord of entity letter) to
-    detect cross-entity contamination: any non-zero timestep value
-    that doesn't belong to the current entity's ordinal is a violation.
+    The features of each entity are the code point of its letter, so a
+    step that is not padding and has another value is from another
+    entity.
     """
     rng = np.random.default_rng(7)
     n_per = 50
@@ -481,7 +478,7 @@ def test_predict_respects_entity_boundaries():
 
 def test_sequences_break_at_gaps_in_time():
     """
-    Sequences must not join rows that are not an hour apart.
+    Test that the sequences break where rows are not an hour apart.
 
     Of four rows of one entity, two in January and two in February, the
     first February row starts a new window instead of following the
@@ -515,7 +512,7 @@ def test_sequences_break_at_gaps_in_time():
 def test_features_are_standardized_with_the_training_rows(
     trained_model_and_dataset,
 ):
-    """The statistics of the features are those of the training rows."""
+    """Test that the features are standardized by the training rows."""
     model, dataset = trained_model_and_dataset
     features = dataset["training"]["features"].to_numpy(dtype=np.float32)
 
@@ -526,7 +523,7 @@ def test_features_are_standardized_with_the_training_rows(
 def test_load_of_a_model_without_statistics(
     trained_model_and_dataset, tmp_path, caplog
 ):
-    """A model saved before the standardization takes raw features."""
+    """Test that a model saved without statistics takes raw features."""
     model, _ = trained_model_and_dataset
     file_path = str(tmp_path / "model.pt")
     lstm_module.save(model, file_path)

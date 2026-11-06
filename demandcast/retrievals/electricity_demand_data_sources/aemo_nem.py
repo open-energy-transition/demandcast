@@ -59,9 +59,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the AEMO website.
-
     Parameters
     ----------
     code : str
@@ -76,9 +73,6 @@ def get_available_requests(
     available_requests : list[tuple[int, int]]
         The list of available requests.
     """
-    # Return the available requests, which are the year and month of
-    # each month of the data, including the current one, whose file
-    # runs until the current day.
     return [
         (period.year, period.month)
         for period in pd.period_range(start=start_date, end=end_date, freq="M")
@@ -103,10 +97,8 @@ def get_url(year: int, month: int, code: str) -> str:
     url : str
         The URL of the electricity demand data.
     """
-    # Extract the subdivision code.
     subdivision_code = code.split("_")[1]
 
-    # Define the URL of the electricity demand data.
     url = (
         "https://www.aemo.com.au/aemo/data/nem/priceanddemand/"
         f"PRICE_AND_DEMAND_{year}{month:02d}_{subdivision_code}1.csv"
@@ -176,9 +168,13 @@ def _get_rooftop_solar(year: int, month: int, code: str) -> pd.Series | None:
     pandas.Series | None
         The rooftop solar in MW at the end of each 30 minutes in NEM
         time, or None if the file of the month is not published yet.
+
+    Notes
+    -----
+    The file is found by its name in the folder of the month, because
+    its name is not the same in all the years.
     """
-    # Find the file of the month in its folder, whose name changed in
-    # 2024.
+    # Find the file of the month in its folder.
     folder_url = get_rooftop_solar_folder_url(year, month)
     try:
         folder = _fetch_content(folder_url).decode()
@@ -219,9 +215,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the AEMO website.
-
     Parameters
     ----------
     year_and_month : tuple[int, int]
@@ -241,10 +234,8 @@ def download_and_extract_data_for_request(
         f"year {year} and month {month}."
     )
 
-    # Get the URL of the electricity demand data.
     url = get_url(year, month, code)
 
-    # Fetch the electricity demand data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "html",
@@ -252,15 +243,13 @@ def download_and_extract_data_for_request(
         header_params={"User-Agent": "Mozilla/5.0"},
     )
 
-    # Extract the electricity demand data from the dataset.
     electricity_demand_time_series = pd.Series(
         dataset["TOTALDEMAND"].values,
         index=pd.to_datetime(dataset["SETTLEMENTDATE"]),
     )
 
     # Add the estimate of the rooftop solar of the 30 minutes that each
-    # interval ends in, from 2017, and leave out the month if its
-    # estimate is not published yet.
+    # interval ends in.
     if (year, month) >= FIRST_MONTH_OF_ROOFTOP_SOLAR:
         rooftop_solar = _get_rooftop_solar(year, month, code)
         if rooftop_solar is None:
@@ -277,8 +266,6 @@ def download_and_extract_data_for_request(
             + rooftop_solar.reindex(ends).to_numpy()
         ).dropna()
 
-    # Add the time zone information to the index. The timestamps are in
-    # NEM time, which is UTC+10 all year, without daylight saving.
     electricity_demand_time_series = (
         electricity_demand_time_series.tz_localize(NEM_TIME)
     )
