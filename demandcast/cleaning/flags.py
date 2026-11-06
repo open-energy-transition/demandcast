@@ -29,6 +29,7 @@ Description:
     The combined electricity demand of a code (see
     cleaning/combining.py) is flagged in the same way, and its flags are
     saved next to it.
+
     Each flag gives its first and last day, and its year or day, in
     local time, by the local time of the start of each hour, so that the
     review of a flag applies to the hours of its local days. The days of
@@ -298,6 +299,20 @@ def _get_midday_index(cleaned: pd.Series, longitude: float) -> pd.Series:
     values = pd.Series(cleaned.to_numpy(), index=middle.normalize())
 
     def mean_of(window: tuple[float, float]) -> pd.Series:
+        """
+        Get the mean demand of each day in a window of hours.
+
+        Parameters
+        ----------
+        window : tuple[float, float]
+            The hours of the window, from and to, in solar time.
+
+        Returns
+        -------
+        pandas.Series
+            The mean demand in the window of each solar day that has
+            all its hours.
+        """
         in_window = (hours >= window[0]) & (hours < window[1])
         days = values[in_window].groupby(level=0).agg(["mean", "count"])
         complete = days["count"] == window[1] - window[0]
@@ -372,11 +387,9 @@ def _find_midday_changes(cleaned: pd.Series, longitude: float) -> pd.DataFrame:
                 for year in years
             )
 
-    # A change is kept if the season before or after it, or the same
-    # season of the year before or after it, has the same flag, or if
-    # it is in the last year of its season. Each season has a number,
-    # in the order of the seasons, so that the season after the last of
-    # a year is the first of the next year.
+    # Keep the changes that last. Each season has a number, in the
+    # order of the seasons, so that the season after the last of a year
+    # is the first of the next year.
     seasons = {(flag, 4 * year + quarter) for flag, year, quarter, *_ in found}
     last_years = {
         quarter: quarterly[quarter].dropna().index.max()
@@ -819,7 +832,7 @@ def _find_low_values(cleaned: pd.Series, time_zone: str) -> pd.DataFrame:
     """
     if cleaned.empty:
         return pd.DataFrame(columns=COLUMNS)
-    # The local start of each hour, which gives its year and month.
+    # The local start of each hour, which gives its year and day.
     starts = (
         (pd.DatetimeIndex(cleaned.index) - pd.Timedelta(hours=1))
         .tz_localize("UTC")
