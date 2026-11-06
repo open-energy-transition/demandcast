@@ -8,13 +8,15 @@ authors:
     given-names: Kevin
   - family-names: Goli
     given-names: Vamsi Priya
+    orcid: https://orcid.org/0000-0001-9754-6699
   - family-names: Antonini
     given-names: Enrico
+    orcid: https://orcid.org/0000-0002-5573-0954
 repository-code: https://github.com/open-energy-transition/demandcast
 url: https://open-energy-transition.github.io/demandcast/
 license: AGPL-3.0
-version: 1.0.0
-date-released: 2026-02-02
+version: 2.0.0
+date-released: 2026-11-06
 keywords:
   - electricity demand
   - forecasting
@@ -36,7 +38,7 @@ preferred-citation:
   url: https://arxiv.org/abs/2510.08000
 references:
   - type: data
-    title: "Global Dataset of Forecasted Hourly Electricity Demand from 2000 to 2024 Using DemandCast"
+    title: "Global Dataset of Forecasted Hourly Electricity Demand from 2000 to 2025 Using DemandCast"
     authors:
       - family-names: Antonini
         given-names: Enrico

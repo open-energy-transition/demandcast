@@ -112,6 +112,16 @@ Common types are `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `build`, `ci
 
 Fill in the pull request template. On pull requests from forks, CI starts once a maintainer approves it. A maintainer reviews every pull request. Before it is merged, all CI checks must pass and every review conversation must be resolved, including the automatic comments of GitHub Code Quality. For mechanical changes to untested code, such as renames or lint fixes, maintainers can skip the check of the changed lines with the `skip-diff-cover` label. Please keep pull requests focused: several small ones are easier to review than a large one.
 
+## Releasing
+
+Maintainers release a version of DemandCast in three steps:
+
+1. Open a pull request that sets the version, such as `2.0.0`, in `demandcast/pyproject.toml` (then run `uv lock` in `demandcast/`), and `version` and `date-released` in `CITATION.cff`. A test checks that the two versions match.
+2. Once it is merged, draft a release on GitHub with the tag `v2.0.0` on `main` and generated notes, which `.github/release.yml` groups by the labels of the pull requests, with a short summary of the main changes above them.
+3. Publish the release. This creates the tag: the Docker workflow checks that the versions of `pyproject.toml` and `CITATION.cff` are those of the tag and publishes the image with the tags `2.0.0`, `2.0` and `2`.
+
+The forecasts, the trained models and their inputs are released on Zenodo, with `publish.py` (see [sharing and publishing](https://open-energy-transition.github.io/demandcast/publishing/)).
+
 ## AI-assisted contributions
 
 You may use AI tools to help with your contribution, provided that:
