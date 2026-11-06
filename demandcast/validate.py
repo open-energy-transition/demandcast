@@ -59,7 +59,6 @@ def run_model_validation(
     """
     logging.info("Starting model validation process.")
 
-    # Get the module of the model.
     algorithm = ml_config.algorithm
     model_module = ml_models.registry.get_model_module(algorithm)
 
@@ -70,11 +69,8 @@ def run_model_validation(
     manifest = utils.manifest.verify_file(trained_model_path, "model")
     model = model_module.load(trained_model_path)
 
-    # Get the assembled data path: by default, that of the training of
-    # the model.
     data_path = ml_models.files.get_validation_data_path(data_path, manifest)
 
-    # Read and prepare the dataset.
     prepared_dataset = ml_models.data.prepare_split_datasets(
         data_path, ml_config, True, used_validation_set
     )
@@ -88,10 +84,8 @@ def run_model_validation(
         manifest, ml_config, data_path, prepared_dataset
     )
 
-    # Make predictions.
     predictions = model_module.predict(model, prepared_dataset)
 
-    # Calculate MAPEs.
     mapes = ml_models.evaluation.calculate_mapes(prepared_dataset, predictions)
 
     results = mapes.merge(
@@ -106,7 +100,6 @@ def run_model_validation(
     summary = ml_models.reporting.summarize(results, "Testing")
     ml_models.reporting.log_summary(summary, "Testing set")
 
-    # Save the MAPEs.
     ml_models.files.save_results(
         "validation",
         results,
@@ -134,7 +127,6 @@ def main(config: ConfigModel) -> None:
     utils.config.set_up_logging("model_validation")
     utils.config.log_configuration(config)
 
-    # Read and check machine learning configuration.
     ml_config = ml_models.data.read_and_check_ml_configuration()
 
     run_model_validation(

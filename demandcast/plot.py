@@ -97,7 +97,6 @@ def main(config: ConfigModel) -> None:
     utils.config.set_up_logging("plotting")
     utils.config.log_configuration(config)
 
-    # Create a directory to store the figures.
     figure_directory = utils.paths.get_results_folder("figures")
     os.makedirs(figure_directory, exist_ok=True)
 

@@ -15,16 +15,8 @@ Description:
 
     The forecasts are uploaded as their compact file
     (COMPACT_FORECASTS_FILE), made from them at the upload, with the
-    time, the code and the forecast of each hour of each country and
-    subdivision, without the inputs of the model, which the assembled
-    data for forecasting has. It has the name and the columns of the
-    file of the first release of DemandCast, which PyPSA-Earth
-    downloads.
-
-    Zenodo has no folders, so the files of each folder of the settings,
-    such as those of a validation, are uploaded with their manifests in
-    a ZIP archive named after the folder, whose files are in a folder of
-    the same name.
+    name and the columns of the file of the first release of
+    DemandCast, which PyPSA-Earth downloads.
 
     A release cannot have the electricity demand, whose redistribution
     the licences of many data sources do not allow: the files of the
@@ -240,7 +232,6 @@ def _with_manifests(file_paths: list[str]) -> list[str]:
         if manifest_path not in with_manifests:
             with_manifests.append(manifest_path)
 
-    # The results must be those of the model of the release.
     models = {
         manifest["sha256"]
         for manifest in manifests.values()
@@ -364,6 +355,11 @@ def _archive_folder(name: str, file_paths: list[str], folder: str) -> str:
     ------
     ValueError
         If two files have the same name.
+
+    Notes
+    -----
+    Zenodo has no folders, so the files of a folder of a release, such
+    as those of a validation, are uploaded in this archive.
     """
     names = [os.path.basename(file_path) for file_path in file_paths]
     if len(set(names)) < len(names):

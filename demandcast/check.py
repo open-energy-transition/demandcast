@@ -3,8 +3,8 @@ License: AGPL-3.0.
 
 Description:
 
-    This script performs checks on the data data quality and
-    availability, on the electricity demand data sources, and gathers
+    This script performs checks on the data quality and availability,
+    on the electricity demand data sources, and gathers
     the flags of the cleaned electricity demand into a report.
 """
 

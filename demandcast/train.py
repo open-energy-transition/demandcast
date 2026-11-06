@@ -61,19 +61,15 @@ def run_model_training(
     """
     logging.info("Starting model training process.")
 
-    # Get the module of the model.
     algorithm = ml_config.algorithm
     model_module = ml_models.registry.get_model_module(algorithm)
 
-    # Get the assembled data path.
     data_path = ml_models.files.get_assemble_data_path(data_path)
 
-    # Read and prepare the dataset.
     prepared_dataset = ml_models.data.prepare_split_datasets(
         data_path, ml_config, reserve_testing_set, use_validation_set
     )
 
-    # Define a model name based on timestamp.
     model_name = (
         f"{algorithm.lower()}_model_"
         f"{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
@@ -112,7 +108,6 @@ def main(config: ConfigModel) -> None:
     utils.config.set_up_logging("model_training")
     utils.config.log_configuration(config)
 
-    # Read and check machine learning configuration.
     ml_config = ml_models.data.read_and_check_ml_configuration()
 
     run_model_training(
