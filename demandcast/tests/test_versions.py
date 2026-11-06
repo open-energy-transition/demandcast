@@ -4,9 +4,9 @@ License: AGPL-3.0.
 Description:
 
     Tests that the version of DemandCast in demandcast/pyproject.toml is
-    the one in CITATION.cff, which Zenodo reads for the metadata of the
-    releases that it archives. The release tag must match both, which
-    the Docker workflow checks on version tags.
+    the one in CITATION.cff, which GitHub shows to cite the repository.
+    The release tag must match both, which the Docker workflow checks on
+    version tags.
 """
 
 import pathlib

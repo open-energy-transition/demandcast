@@ -118,9 +118,9 @@ Maintainers release a version of DemandCast in three steps:
 
 1. Open a pull request that sets the version, such as `2.0.0`, in `demandcast/pyproject.toml` (then run `uv lock` in `demandcast/`), and `version` and `date-released` in `CITATION.cff`. A test checks that the two versions match.
 2. Once it is merged, draft a release on GitHub with the tag `v2.0.0` on `main` and generated notes, which `.github/release.yml` groups by the labels of the pull requests, with a short summary of the main changes above them.
-3. Publish the release. This creates the tag: the Docker workflow checks that the versions of `pyproject.toml` and `CITATION.cff` are those of the tag and publishes the image with the tags `2.0.0`, `2.0` and `2`, and Zenodo archives the release with the metadata of `CITATION.cff`.
+3. Publish the release. This creates the tag: the Docker workflow checks that the versions of `pyproject.toml` and `CITATION.cff` are those of the tag and publishes the image with the tags `2.0.0`, `2.0` and `2`.
 
-The forecasts, the trained models and their inputs are released on Zenodo separately, with `publish.py` (see [sharing and publishing](https://open-energy-transition.github.io/demandcast/publishing/)).
+The forecasts, the trained models and their inputs are released on Zenodo, with `publish.py` (see [sharing and publishing](https://open-energy-transition.github.io/demandcast/publishing/)).
 
 ## AI-assisted contributions
 
