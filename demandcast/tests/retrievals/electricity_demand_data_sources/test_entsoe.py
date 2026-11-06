@@ -202,24 +202,16 @@ def test_correct_times(code, times, expected):
 
 
 def test_fetch_demand():
-    """
-    Test fetching demand data from ENTSOE.
-
-    This test mocks the EntsoePandasClient to return a pandas.Series
-    with a time series of demand data.
-    """
-    # Define a mock series to simulate demand data.
+    """Test that the demand of a country or an area is read."""
     mock_series = pd.Series(
         [1, 2], index=pd.date_range("2023-01-01", periods=2, freq="h")
     )
 
-    # Patch the EntsoePandasClient to return the mock series.
     with patch.object(entsoe, "EntsoePandasClient") as mock_client:
         mock_client.return_value.query_load.return_value = pd.DataFrame(
             {"Actual Load": mock_series}
         )
 
-        # Test fetching demand data for a valid country code.
         result = entsoe._fetch_demand(
             "dummy",
             "FRA",
@@ -237,7 +229,6 @@ def test_fetch_demand():
         )
         assert isinstance(result, pd.Series)
 
-        # Test with an area of ENTSO-E in place of the country.
         entsoe._fetch_demand(
             "dummy",
             "GBR_NIR",
@@ -252,15 +243,11 @@ def test_fetch_demand():
 
 def test_fetch_demand_errors():
     """
-    Test fetching demand data from ENTSOE with errors.
+    Test that a connection error is raised and missing data is skipped.
 
-    This test mocks the EntsoePandasClient to raise a connection error
-    and NoMatchingDataError, and checks that the _fetch_demand
-    function lets the client retry the first and skips the second.
+    The client of ENTSO-E gets the retries of the connection.
     """
     with patch.object(entsoe, "EntsoePandasClient") as mock_client:
-        # Test the EntsoePandasClient to raise a connection error after
-        # its retries.
         mock_client.return_value.query_load.side_effect = (
             requests.exceptions.ConnectionError("Connection failed")
         )
@@ -277,7 +264,6 @@ def test_fetch_demand_errors():
             api_key="dummy", retry_count=2, retry_delay=0
         )
 
-        # Test the EntsoePandasClient to raise NoMatchingDataError.
         mock_client.return_value.query_load.side_effect = NoMatchingDataError(
             "No data"
         )
@@ -303,6 +289,21 @@ def _query_load_failing(status_code: int):
     """
 
     def query_load(_area, start, end):
+        """
+        Give the load of a period.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The load of each day.
+
+        Raises
+        ------
+        requests.exceptions.HTTPError
+            If the period has 2025-10-09.
+        NoMatchingDataError
+            If the period starts in December.
+        """
         if start <= pd.Timestamp("2025-10-09", tz="UTC") < end:
             response = requests.Response()
             response.status_code = status_code
@@ -401,7 +402,6 @@ def test_fetch_demand_errors_without_api_key():
                 pd.Timestamp("2023-01-02"),
             )
 
-    # The error and its traceback do not have the API key.
     traceback_text = "".join(traceback.format_exception(error.value))
     assert api_key not in traceback_text
     assert "securityToken=***" in traceback_text

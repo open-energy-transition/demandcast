@@ -113,7 +113,6 @@ def get_url(code: str) -> str:
     ValueError
         If the subdivision code is not supported.
     """
-    # Extract the subdivision code.
     subdivision_code = code.split("_")[1]
 
     # Define the mapping between the subdivision codes and API variable
@@ -136,7 +135,6 @@ def get_url(code: str) -> str:
             f"Subdivision code {subdivision_code} is not supported."
         )
 
-    # Return the URL of the electricity demand data.
     return (
         "https://api.statcan.gc.ca/hfed-dehf/sdmx/rest/data/"
         f"CCEI,DF_HFED_{variable_names[subdivision_code][0]},1.0/"
@@ -151,9 +149,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the CCEI website.
-
     Parameters
     ----------
     request : None
@@ -165,11 +160,17 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    The data of Ontario comes from IESO, whose hours end at 1:00 to
+    24:00 in Eastern Standard Time all year. CCEI keeps these times in
+    DATETIME_LOCAL, with the hour 24 at 00:00 of the same day, and
+    converts them to UTC (TIME_PERIOD) as if they followed daylight
+    saving time: an hour early in summer, and a day early at midnight.
     """
-    # Get the URL of the electricity demand data.
     url = get_url(code)
 
-    # Fetch the CSV file of the subdivision.
     dataset = utils.fetcher.fetch_dataframe(url, "csv")
 
     if code == "CAN_NB":
@@ -179,12 +180,7 @@ def download_and_extract_data_for_request(
         )
 
     if code == "CAN_ON":
-        # The data of Ontario comes from IESO, whose hours end at 1:00
-        # to 24:00 in Eastern Standard Time all year. CCEI keeps these
-        # times in DATETIME_LOCAL, with the hour 24 at 00:00 of the same
-        # day, and converts them to UTC (TIME_PERIOD) as if they
-        # followed daylight saving time: an hour early in summer, and a
-        # day early at midnight. Read them in Eastern Standard Time
+        # Read the local times of Ontario in Eastern Standard Time
         # (UTC-5), with the hour 24 at midnight of the next day.
         local_times = pd.to_datetime(dataset["DATETIME_LOCAL"])
         local_times += pd.to_timedelta(

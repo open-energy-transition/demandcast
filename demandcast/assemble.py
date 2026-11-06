@@ -318,8 +318,13 @@ def _load_data_for_entity(
     ValueError
         If the electricity demand does not say which hours can be used
         for training.
+
+    Notes
+    -----
+    All the inputs are resampled to hours, with the mean, so that their
+    times are the same: the times of some entities are at the half hour,
+    from the conversion of their time zone.
     """
-    # Initialize a list to hold the data for the entity.
     entity_frames: list[pd.DataFrame] = []
 
     for file_path in file_paths:
@@ -332,8 +337,7 @@ def _load_data_for_entity(
 
         # Read the current parquet file, without the hours of the
         # electricity demand that cannot be used for training, such as
-        # those of the errors of a data source. The demand must say
-        # which hours can be used.
+        # those of the errors of a data source.
         current_data = pd.read_parquet(file_path)
         if "Load (MW)" in numeric_columns and "Eligible" not in current_data:
             raise ValueError(
@@ -353,7 +357,6 @@ def _load_data_for_entity(
                 columns="Eligible"
             )
 
-        # Append to the entity dataframe.
         entity_frames.append(current_data)
 
     if entity_frames:
@@ -367,10 +370,8 @@ def _load_data_for_entity(
             )
         )
     else:
-        # If no data was loaded, return None.
         return None
 
-    # Ensure specified columns are numeric.
     for column in numeric_columns:
         entity_data[column] = pd.to_numeric(
             entity_data[column], errors="coerce"
@@ -379,29 +380,21 @@ def _load_data_for_entity(
     # Drop NaN values that may have resulted from coercion.
     entity_data = entity_data.dropna()
 
-    # Resample to hourly frequency by taking the mean. It is needed to
-    # do it on all variables to ensure consistent timestamps. For
-    # instance, some entities may have timestamps at the half hour due
-    # to the timezone conversion.
     entity_data = entity_data.resample(
         "1h", label="right", closed="right"
     ).mean()
 
-    # Drop any rows with NaN values after resampling.
     entity_data = entity_data.dropna()
 
-    # Use the same time resolution for all datasets. Since pandas 3,
-    # the resolution is inferred (e.g., microseconds for parsed strings
-    # and nanoseconds for weather data), and merging datasets with
-    # different resolutions silently drops rows.
+    # Use the same time resolution for all datasets: pandas infers it
+    # (e.g., microseconds for parsed strings and nanoseconds for weather
+    # data), and merging datasets with different resolutions silently
+    # drops rows.
     entity_data.index = pd.DatetimeIndex(entity_data.index).as_unit("ns")
 
-    # Keep only rows with positive values in the specified numeric
-    # columns.
     for column in numeric_columns:
         entity_data = entity_data[entity_data[column] > 0]
 
-    # Add a column for the entity code.
     entity_data["Entity code"] = entity_code
     entity_data = entity_data.reset_index()
 
@@ -530,7 +523,6 @@ def _merge_datasets(
     """
     logging.info(f"Merging {len(datasets)} datasets.")
 
-    # Merge all datasets on the specified columns.
     merged_dataset = reduce(
         lambda left, right: dask.dataframe.merge(
             left, right, on=on, how="inner"
@@ -566,10 +558,6 @@ def _select_complete_years(
     """
     Keep the years of each entity with enough of their hours.
 
-    The fraction of the annual total of an hour assumes that the hours
-    of its year with data represent the whole year: a year without its
-    winter or its summer would have the wrong annual total.
-
     Parameters
     ----------
     merged_dataset : pandas.DataFrame
@@ -585,6 +573,12 @@ def _select_complete_years(
         share of the year ("Year coverage") and the lowest share of the
         hours of a month ("Lowest month coverage"), and whether it is
         kept ("Kept").
+
+    Notes
+    -----
+    The fraction of the annual total of an hour assumes that the hours
+    of its year with data represent the whole year: a year without its
+    winter or its summer would have the wrong annual total.
     """
     keys = ["Entity code", "Local year"]
     hours_by_month = merged_dataset.pivot_table(
@@ -690,9 +684,7 @@ def _calculate_load_fraction(merged_dataset: pd.DataFrame) -> pd.DataFrame:
 
     The load fraction is calculated as the load at each timestamp
     divided by the total annual load for the corresponding entity and
-    year, adjusted for the amount of hours tracked in the dataset. The
-    function assumes that time is in hourly frequency. Changes should be
-    made if a different frequency is used.
+    year, adjusted for the amount of hours tracked in the dataset.
 
     Parameters
     ----------
@@ -703,21 +695,22 @@ def _calculate_load_fraction(merged_dataset: pd.DataFrame) -> pd.DataFrame:
     -------
     merged_dataset : pandas.DataFrame
         Dataframe with load fraction column added.
+
+    Notes
+    -----
+    The rows must be hourly, since a year is taken to have 8760 hours,
+    or 8784 if it is a leap year.
     """
     logging.info("Calculating load fraction for each timestamp.")
 
-    # Compute the total annual load and the amount of hours tracked in
-    # the dataset for each entity and year.
     groups = merged_dataset.groupby(["Entity code", "Local year"])["Load (MW)"]
     annual_load = groups.transform("sum")
     amount_of_hours_tracked = groups.transform("count")
 
-    # Calculate the amount of hours in each year.
     years = merged_dataset["Local year"]
     is_leap_year = (years % 4 == 0) & ((years % 100 != 0) | (years % 400 == 0))
     amount_of_hours_in_year = np.where(is_leap_year, 8784, 8760)
 
-    # Calculate the load fraction.
     merged_dataset["Load (fraction of annual total)"] = (
         merged_dataset["Load (MW)"]
         * amount_of_hours_tracked
@@ -777,7 +770,6 @@ def run_data_assemply(
         If target_use is not 'training' or 'forecasting' or if only one
         of start_year or end_year is provided.
     """
-    # Check that the inputs are valid.
     if target_use not in ["training", "forecasting"]:
         raise ValueError(
             "target_use must be either 'training' or 'forecasting'"
@@ -790,7 +782,6 @@ def run_data_assemply(
 
     logging.info(f"Starting data assembly for {target_use}.")
 
-    # The selected scenarios and climate models of the inputs.
     selected_scenarios = {
         "annual_electricity_demand_per_capita": (
             scenario_for_annual_electricity_demand_per_capita
@@ -825,7 +816,6 @@ def run_data_assemply(
             ]
         datasets_to_merge.append(data)
 
-    # Merge datasets on common columns.
     assembled_data = _merge_datasets(
         datasets_to_merge,
         ["Time (UTC)", "Entity code"],
@@ -845,17 +835,13 @@ def run_data_assemply(
 
     coverage = provenance = None
     if target_use == "training":
-        # Keep the years with enough hours, and calculate the load
-        # fraction for training data.
         assembled_data, coverage = _select_complete_years(assembled_data)
         assembled_data = _calculate_load_fraction(assembled_data)
         provenance = _get_provenance(assembled_data)
 
-    # Get the assembled data folder path.
     assembled_data_folder = utils.paths.get_assembled_folder()
     os.makedirs(assembled_data_folder, exist_ok=True)
 
-    # Construct the output file path.
     output_path = os.path.join(
         assembled_data_folder,
         f"assembled_data_for_{target_use}_"

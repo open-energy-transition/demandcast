@@ -10,7 +10,11 @@ Description:
     entities and do not have well-defined geographical boundaries. As a
     result, the balancing authority shapefiles sometimes overlap each
     other. The script fixes some of these overlaps by cutting the
-    overlapping regions.
+    overlapping regions, one by one, with cuts made by hand and each
+    checked visually.
+
+    The geometries are snapped to a grid of 0.005 degrees, which removes
+    small spikes in the shapes that cause issues when they are plotted.
 
     Source: https://atlas.eia.gov/datasets/eia::balancing-authorities/about
     Source: https://www.eia.gov/electricity/gridmonitor/expanded-view/electric_overview/US48/US48/ElectricStatusMap-1
@@ -28,13 +32,10 @@ url = (
     "data?format=shp&spatialRefId=3857&where=1%3D1"
 )
 
-# Read the shapefile of the balancing authorities as a GeoDataFrame.
 balancing_authorities = geopandas.read_file(url)
 
-# Change the projection of the shapefile to EPSG 4326.
 balancing_authorities = balancing_authorities.to_crs(epsg=4326)
 
-# Merge the balancing authorities belonging to the same region.
 regions = balancing_authorities.dissolve(by="EIAregion")
 
 # Define the codes of the regions.
@@ -54,24 +55,14 @@ region_codes = {
     "Texas": "USA_TEX",
 }
 
-# Add the codes to the regions shapefile.
 for region_name in regions.index:
     regions.loc[region_name, "EIAcode"] = region_codes[region_name]
 
-# Select the columns of interest.
 regions = regions[["EIAcode", "geometry"]]
 
-# Reset the index.
 regions = regions.reset_index()
 
-# Rename the columns.
 regions = regions.rename(columns={"EIAregion": "name", "EIAcode": "code"})
-
-########################################################################
-# The following code fixes the overlaps between the regions. The regions
-# are not well defined and sometimes overlap each other. This was a
-# manual process and each step had to be checked visually.
-########################################################################
 
 # Using the California region, cut the Northwest.
 regions.loc[regions["name"] == "Northwest", "geometry"] = regions.loc[
@@ -234,17 +225,10 @@ regions.loc[regions["name"] == "New England", "geometry"] = regions.loc[
     regions.loc[regions["name"] == "New York", "geometry"], align=False
 )
 
-########################################################################
-
-# Set the precision of the geometry to a grid size of 0.005 degrees.
-# This is done to remove small spikes in the shapes that cause issues
-# when plotting the shapes.
 regions["geometry"] = regions["geometry"].set_precision(0.005)
 
-# Add the coordinate reference system (CRS) to the shapefile.
 regions = regions.set_crs(epsg=4326)
 
-# Save the shapes of the regions to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "eia")
 os.makedirs(shapes_dir, exist_ok=True)
 regions.to_file(os.path.join(shapes_dir, "eia.shp"), driver="ESRI Shapefile")

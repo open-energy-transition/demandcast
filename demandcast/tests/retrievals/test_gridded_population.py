@@ -121,10 +121,26 @@ def test_run_data_retrieval(monkeypatch):
     converted = []
 
     def read_population_dataset(folder, year, scenario):
+        """
+        Record a read and give the global grid.
+
+        Returns
+        -------
+        xarray.DataArray
+            The global grid.
+        """
         read.append((folder, year, scenario))
         return global_grid
 
     def from_density_to_count(grid):
+        """
+        Record a conversion and keep the grid as it is.
+
+        Returns
+        -------
+        xarray.DataArray
+            The grid.
+        """
         converted.append(grid)
         return grid
 

@@ -40,12 +40,17 @@ def download(variable: str) -> pd.DataFrame:
     ------
     ValueError
         If the variable is not "population",
-        "electricity_demand_per_capita" or "gdp_ppp_per_capita".
+        "electricity_demand_per_capita" or "gdp_ppp_per_capita", or if
+        the archive of the World Bank has no data file.
+
+    Notes
+    -----
+    The archive of the World Bank has the data in the CSV file whose
+    name does not start with "Metadata", after four lines of header.
     """
     if variable == "population":
         logging.info("Downloading population data from the World Bank.")
 
-        # Define the URL to download the population data.
         url = "https://api.worldbank.org/v2/en/indicator/SP.POP.TOTL?downloadformat=csv"
     elif variable == "electricity_demand_per_capita":
         logging.info(
@@ -53,15 +58,12 @@ def download(variable: str) -> pd.DataFrame:
             "Bank."
         )
 
-        # Define the URL to download the electricity demand per capita
-        # data.
         url = "https://api.worldbank.org/v2/en/indicator/EG.USE.ELEC.KH.PC?downloadformat=csv"
     elif variable == "gdp_ppp_per_capita":
         logging.info(
             "Downloading GDP PPP per capita data from the World Bank."
         )
 
-        # Define the URL to download the GDP PPP per capita data.
         url = "https://api.worldbank.org/v2/en/indicator/NY.GDP.PCAP.PP.KD?downloadformat=csv"
     else:
         raise ValueError(
@@ -69,13 +71,9 @@ def download(variable: str) -> pd.DataFrame:
             "'electricity_demand_per_capita' or 'gdp_ppp_per_capita'."
         )
 
-    # Fetch the data from the World Bank.
     response = requests.get(url, timeout=60)
 
-    # Extract the archive from the response.
     with zipfile.ZipFile(BytesIO(response.content), "r") as archive:
-        # Get the name of data file in the archive. It is the file that
-        # does not start with "Metadata" and ends with ".csv".
         world_bank_file_name = next(
             (
                 name
@@ -87,12 +85,10 @@ def download(variable: str) -> pd.DataFrame:
         if world_bank_file_name is None:
             raise ValueError("No data file found in the World Bank archive.")
 
-        # Read the electricity demand per capita from the archive.
         world_bank_data = pd.read_csv(
             archive.open(world_bank_file_name), skiprows=4
         )
 
-        # Set the index to the country code.
         world_bank_data = world_bank_data.set_index("Country Code")
 
         # Keep only the columns that are digits (i.e., years).
@@ -105,10 +101,8 @@ def download(variable: str) -> pd.DataFrame:
         world_bank_data.index = world_bank_data.index.astype(str)
         world_bank_data = world_bank_data.astype(float)
 
-        # Rename the columns.
         world_bank_data.columns.name = "Year"
 
-    # Remove rows with all NaN values.
     world_bank_data = world_bank_data.dropna(how="all")
 
     # Remove rows with country codes that are not three letters long.

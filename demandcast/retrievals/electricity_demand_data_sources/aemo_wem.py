@@ -70,9 +70,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the AEMO website.
-
     Parameters
     ----------
     code : str
@@ -133,15 +130,11 @@ def get_url(
         The URL of the electricity demand data.
     """
     if pre_reform:
-        # If the request is for the pre-reform period, set the URL to
-        # fetch .csv files for data from 2006 to 2023.
         return (
             "https://data.wa.aemo.com.au/datafiles/operational-demand/"
             f"operational-demand-{year}.csv"
         )
 
-    # If the request is for the post-reform period, set the URL to
-    # fetch .json files for data from September 2023 onward.
     return (
         "https://data.wa.aemo.com.au/public/market-data/wemde/"
         "operationalDemandWithdrawal/dailyFiles/"
@@ -233,9 +226,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the AEMO website.
-
     Parameters
     ----------
     pre_reform_and_date : tuple[bool, int, int | None, int | None]
@@ -259,6 +249,12 @@ def download_and_extract_data_for_request(
     utils.fetcher.DataNotFoundError
         If the daily file of a whole month, or of a day more than a week
         before the last day of the request, is not found.
+
+    Notes
+    -----
+    The times before the reform are in UTC+8 also during the daylight
+    saving that Perth trialled from 2006 to 2009, and those of the daily
+    files after it have their offset from UTC.
     """
     pre_reform, year, month, day = pre_reform_and_date
 
@@ -267,13 +263,10 @@ def download_and_extract_data_for_request(
             f"Retrieving electricity demand data for the year {year}."
         )
 
-        # Get the URL of the electricity demand data.
         url = get_url(pre_reform, year, month, day)
 
-        # Fetch the data from the URL.
         dataset = utils.fetcher.fetch_dataframe(url, "csv")
 
-        # Extract the electricity demand data from the dataset.
         electricity_demand_time_series = pd.Series(
             dataset["Operational Demand (MW)"].values,
             index=pd.to_datetime(dataset["Trading Interval"]),
@@ -301,10 +294,6 @@ def download_and_extract_data_for_request(
                 electricity_demand_time_series,
             ).dropna()
 
-        # The timestamps are in AWST, which is UTC+8 all year, also
-        # during the daylight saving that Perth trialled from 2006 to
-        # 2009. Move them to the ends of the trading intervals, because
-        # the demand data seems to be reported at their beginning.
         electricity_demand_time_series = (
             utils.time_series.localize_interval_starts(
                 electricity_demand_time_series,
@@ -321,9 +310,8 @@ def download_and_extract_data_for_request(
             f"Retrieving electricity demand data for {year}-{month:02d}."
         )
 
-        # Fetch the daily file of each trading day of the month. The
-        # times are the starts of the 5-minute dispatch intervals, with
-        # their offset from UTC: move them to the ends of the intervals.
+        # Fetch the daily file of each trading day of the month, and
+        # move its times to the ends of the intervals.
         trading_days = _get_trading_days(year, month, day)
         daily_demand = []
         for trading_day in trading_days:

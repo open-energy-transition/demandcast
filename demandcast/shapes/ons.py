@@ -4,7 +4,11 @@ License: AGPL-3.0.
 Description:
 
     This script generates the shapes of the four major subsystems of the
-    Brazilian electricity sector.
+    Brazilian electricity sector, by merging the shapes of the Brazilian
+    states of Natural Earth at 1:50m.
+
+    The geometries are snapped to a grid of 0.005 degrees, which removes
+    small spikes in the shapes that cause issues when they are plotted.
 
     Source: https://pt.wikipedia.org/wiki/Sistema_Interligado_Nacional
 """
@@ -55,16 +59,12 @@ names_of_brazilian_subdivisions = {
     "BRA_S": "South",
 }
 
-# Load the shapefile containing the subdivision shapes from the Natural
-# Earth database.
 all_shapes = cartopy.io.shapereader.natural_earth(
     resolution="50m", category="cultural", name="admin_1_states_provinces"
 )
 
-# Define a reader for the shapefile.
 reader = cartopy.io.shapereader.Reader(all_shapes)
 
-# Read the shapefiles of all Brazilian states.
 state_shapes = [
     shape
     for shape in list(reader.records())
@@ -86,36 +86,25 @@ for state_shape in state_shapes:
     )
     states = pd.concat([states, state.to_frame().T], ignore_index=True)
 
-# Add the coordinate reference system to the GeoDataFrame.
 states = geopandas.GeoDataFrame(states, geometry="geometry", crs="EPSG:4326")
 
-# Merge the states belonging to the same subdivision.
 subdivisions = states.dissolve(by="parent")
 
-# Reset the index of the GeoDataFrame.
 subdivisions = subdivisions.reset_index()
 
-# Drop the columns that are not needed.
 subdivisions = subdivisions[["name", "parent", "geometry"]]
 
-# Rename the columns of the GeoDataFrame.
 subdivisions = subdivisions.rename(columns={"parent": "code"})
 
-# Add the names of the subdivisions to the GeoDataFrame.
 for subdivision_code in subdivisions["code"]:
     subdivisions.loc[subdivisions["code"] == subdivision_code, "name"] = (
         names_of_brazilian_subdivisions[subdivision_code]
     )
 
-# Set the precision of the geometry to a grid size of 0.005 degrees.
-# This is done to remove small spikes in the shapes that cause issues
-# when plotting the shapes.
 subdivisions["geometry"] = subdivisions["geometry"].set_precision(0.005)
 
-# Add the coordinate reference system (CRS) to the shapefile.
 subdivisions = subdivisions.set_crs(epsg=4326)
 
-# Save the shapes of the subdivisions to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "ons")
 os.makedirs(shapes_dir, exist_ok=True)
 subdivisions.to_file(

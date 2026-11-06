@@ -14,7 +14,7 @@ import os
 import sys
 
 # The tokens of the directories added, kept for the lifetime of the
-# process: CPython removes a directory when its token is collected.
+# process (see enable_torch_dll_directory).
 _TOKENS: list = []
 
 
@@ -22,17 +22,19 @@ def enable_torch_dll_directory() -> list:
     """
     Register torch's ``lib`` directory with the Windows DLL loader.
 
-    CPython's garbage collector calls ``RemoveDllDirectory`` when the
-    token returned by ``os.add_dll_directory`` is collected, so the
-    tokens are kept in this module for the lifetime of the process,
-    while torch may load its DLLs. The callers need not keep them.
-
     Returns
     -------
     list
         Tokens returned by ``os.add_dll_directory``, one per matching
         ``torch/lib`` directory found on ``sys.path``. Empty on
         non-Windows platforms or when no such directory is found.
+
+    Notes
+    -----
+    CPython's garbage collector calls ``RemoveDllDirectory`` when the
+    token returned by ``os.add_dll_directory`` is collected, so the
+    tokens are kept in this module for the lifetime of the process,
+    while torch may load its DLLs. The callers need not keep them.
     """
     tokens: list = []
     if sys.platform == "win32" and hasattr(os, "add_dll_directory"):

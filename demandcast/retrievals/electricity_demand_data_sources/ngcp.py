@@ -11,7 +11,8 @@ Description:
     Visayas and Mindanao, by date and hour ending from 1 to 24 in the
     time of the Philippines, which has no daylight saving time. The
     demand of the country is their sum, for the hours with the demand
-    of all three; the other sheets are parts of Visayas.
+    of all three; the other five sheets are parts of Visayas, which the
+    sheet of Visayas already counts.
 
     Source: https://www.ngcp.ph/operations#operations
 """
@@ -58,7 +59,6 @@ def get_url() -> str:
     str
         The URL of the electricity demand data.
     """
-    # Return the URL of the electricity demand data.
     return "https://www.ngcp.ph/Attachment-Uploads/operations/Hourly%20Demand%20per%20Grid.xlsx"
 
 
@@ -67,9 +67,6 @@ def download_and_extract_data_for_request(
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    for Philippines.
 
     Parameters
     ----------
@@ -90,7 +87,6 @@ def download_and_extract_data_for_request(
     ValueError
         If the Excel file does not have the sheets of the main regions.
     """
-    # Get the URL of the electricity demand data.
     url = get_url()
 
     # Download the Excel file once, and read its sheets below.
@@ -102,10 +98,7 @@ def download_and_extract_data_for_request(
     # Define the main regions in the Philippines.
     regions = ["LUZON", "VISAYAS", "MINDANAO"]
 
-    # Extract the sheet names from the Excel file that refer to the
-    # main regions: Luzon, Visayas, and Mindanao. The other 5 sheets in
-    # the Excel file are sub-regions of Visayas, and their data is
-    # already aggregated in the main Visayas sheet.
+    # Find the sheets of the main regions.
     sheet_names = {
         sheet.split(" ")[0].upper(): sheet
         for sheet in map(str, excel_file.sheet_names)
@@ -136,7 +129,6 @@ def download_and_extract_data_for_request(
             skiprows=rows_to_skip[region],
         )
 
-        # Make sure the dataset is a pandas DataFrame.
         if not isinstance(dataset, pd.DataFrame):
             raise TypeError(
                 f"The extracted data is a {type(dataset)} object, "
@@ -163,14 +155,12 @@ def download_and_extract_data_for_request(
         dataset = dataset[["Datetime", "Demand"]]
         all_data.append(dataset)
 
-    # Combine and aggregate data across all regions. An hour without the
-    # demand of every region gets no total, rather than a partial one.
+    # Sum the demand of the regions.
     combined = pd.concat(all_data)
     combined = (
         combined.groupby("Datetime").sum(min_count=len(regions)).sort_index()
     )
 
-    # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
         combined["Demand"].values, index=combined.index
     )

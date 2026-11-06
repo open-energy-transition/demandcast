@@ -1,4 +1,5 @@
-# Configuration for the XGBoost model.
+# Configuration of the XGBoost model, read by ml_models/registry.py when
+# the algorithm of ml_config.yaml is XGBoost.
 
 # REQUIRED.
 # Random seed for reproducibility.

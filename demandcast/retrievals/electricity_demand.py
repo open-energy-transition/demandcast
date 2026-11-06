@@ -67,9 +67,12 @@ def _process_series(
     ------
     TypeError
         If the values of the time series are not numbers.
+
+    Notes
+    -----
+    The values are checked to be numbers, so that the data of a source
+    that returns text are not saved as text.
     """
-    # Check that the values are numbers, so that the data of a source
-    # that returns text are not saved as text.
     if not pd.api.types.is_numeric_dtype(time_series):
         raise TypeError(
             f"The data source {data_source} returned values of type "
@@ -181,8 +184,6 @@ def _process_data(
         request_key = json.dumps(entry["request"], sort_keys=True)
         request = utils.raw_data.decode_request(entry["request"])
 
-        # Process the versions from the newest, which the older ones
-        # only fill.
         combined: pd.DataFrame | None = None
         for number, version in enumerate(reversed(entry["versions"])):
             time_series = (
@@ -205,8 +206,6 @@ def _process_data(
 
     if not frames:
         return None
-    # Where the requests overlap, such as when a data source changes its
-    # requests, the newest version of them gives the values.
     processed = pd.concat(frames).sort_values(
         "Retrieved", ascending=False, kind="stable"
     )
@@ -219,16 +218,8 @@ def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:
     """
     Retrieve the electricity demand data.
 
-    This function downloads the electricity demand time series from the
-    specified data source, keeps the responses of its website in the raw
-    data, and processes them with those of the earlier retrievals. If
-    the data of the latest of several requests is not found, it is
-    skipped, because the file of the latest period can be not published
-    yet. If a request fails, the responses of the requests before it
-    are kept in the raw data, so that a long retrieval that fails does
-    not lose them: they can be processed without the network. So are
-    the responses of the request itself, with the error, if its data
-    cannot be extracted from them.
+    The responses of the website of the data source are kept in the raw
+    data and processed with those of the earlier retrievals.
 
     Parameters
     ----------
@@ -248,8 +239,19 @@ def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:
     utils.fetcher.DataNotFoundError
         If the data of an earlier request, or of the only one, is not
         found.
+
+    Notes
+    -----
+    If the data of the latest of several requests is not found, it is
+    skipped, because the file of the latest period can be not published
+    yet. If a request fails, the responses of the requests before it
+    are kept in the raw data, so that a long retrieval that fails does
+    not lose them: they can be processed without the network. So are
+    the responses of the request itself, with the error, if its data
+    cannot be extracted from them, such as after a change of their
+    format: they can be processed again once the code of the data
+    source is fixed.
     """
-    # Import the retrieval module for the data source.
     retrieval_module = importlib.import_module(
         f"retrievals.electricity_demand_data_sources.{data_source}"
     )
@@ -289,11 +291,8 @@ def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:
                 )
                 continue
             except Exception as error:
-                # Keep the responses whose data cannot be extracted,
-                # such as after a change of their format, with the
-                # error, so that they can be processed again once the
-                # code of the data source is fixed. The responses of a
-                # failed download, which miss some, are not kept.
+                # The responses of a failed download, which miss some,
+                # are not kept.
                 if not isinstance(error, OSError):
                     message = utils.fetcher.redact(str(error))
                     downloads.append(
@@ -311,9 +310,6 @@ def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:
                 )
             ] = time_series
     finally:
-        # Keep the responses of the requests downloaded so far, also
-        # when a later request fails, so that they can be processed
-        # again without the network.
         utils.raw_data.save_versions(data_source, code, downloads, retrieved)
 
     return _process_data(data_source, code, downloaded)
@@ -327,10 +323,10 @@ def _save_data(
     """
     Save the processed electricity demand.
 
-    This function saves the electricity demand, processed to MW and UTC
-    at the resolution of the data source, to a parquet file named after
-    the code and the data source in the folder of processed electricity
-    demand, which replaces the file of an earlier retrieval.
+    The demand, in UTC at the resolution of the data source, goes to a
+    parquet file named after the code and the data source in the folder
+    of processed electricity demand, and replaces the file of an
+    earlier retrieval.
 
     Parameters
     ----------
@@ -358,10 +354,9 @@ def run_data_retrieval(
     """
     Run the electricity demand data retrieval.
 
-    This function runs the electricity demand data retrieval
-    process. It retrieves the electricity demand time series for the
-    specified countries and subdivisions from the data source, or only
-    processes their raw data again, cleans the data, and saves it.
+    The electricity demand of each country and subdivision is
+    retrieved, or its raw data is processed again, and then cleaned and
+    saved.
 
     Parameters
     ----------
@@ -376,8 +371,6 @@ def run_data_retrieval(
     offline : bool, optional
         If True, process the raw data again without downloading it.
     """
-    # Get the list of codes of the countries and subdivisions of
-    # interest.
     codes = utils.availability.check_and_get_codes_with(
         "electricity_demand_data",
         code=code,
@@ -393,8 +386,6 @@ def run_data_retrieval(
     for entity_code in tqdm(codes, desc="Countries and subdivisions"):
         logging.info(f"Retrieving electricity data for {entity_code}.")
 
-        # Retrieve and process the electricity demand, and go on with
-        # the next country or subdivision if there is none.
         processed = (
             _process_data(data_source, entity_code)
             if offline

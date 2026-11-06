@@ -1,4 +1,5 @@
-# Configuration for the machine learning model.
+# Configuration of the machine learning model, read by the train.py,
+# validate.py, cross_validate.py and forecast.py scripts.
 
 # REQUIRED.
 # The machine learning algorithm to be used for training.

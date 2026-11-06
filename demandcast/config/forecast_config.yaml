@@ -1,7 +1,7 @@
 # Configuration read by the forecast.py script.
 
 # OPTIONAL.
-# The machine learning algorithm to be used for forecasting.
+# The path to the trained model to be used for forecasting.
 model_path:
 
 # OPTIONAL.

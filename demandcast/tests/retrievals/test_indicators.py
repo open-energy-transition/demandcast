@@ -242,6 +242,14 @@ def test_retrieval_without_projections(monkeypatch, caplog):
     )
 
     def get_request(_code):
+        """
+        Make a request with one historical and one future year.
+
+        Returns
+        -------
+        retrievals.indicators.Request
+            The request.
+        """
         return retrievals.indicators.Request(
             historical_years=[2020],
             future_years=[2030],

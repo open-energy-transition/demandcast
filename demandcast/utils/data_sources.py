@@ -225,32 +225,25 @@ def read_data_sources() -> list[str]:
     """
     Read the names of the data sources.
 
-    This function reads the names of the data sources from the yaml
-    files in the folder containing the modules for electricity demand
-    retrievals. The names are extracted from the file names.
+    The names are those of the yaml files in the folder of the modules
+    for electricity demand retrievals.
 
     Returns
     -------
     data_sources : list[str]
         The list of available data sources.
     """
-    # Get the path to folder containing the yaml files of the data
-    # sources.
     data_sources_directory = utils.paths.DATA_SOURCES_FOLDER
 
-    # Get the path of all yaml files in the specified folder.
     file_paths = [
         os.path.join(data_sources_directory, file)
         for file in os.listdir(data_sources_directory)
         if file.endswith(".yaml")
     ]
 
-    # Read the data sources from the file names.
     data_sources = [
         os.path.basename(file_path).split(".")[0] for file_path in file_paths
     ]
-
-    # Sort the data sources alphabetically.
     data_sources.sort()
 
     return data_sources
@@ -278,14 +271,12 @@ def _read_data_source_file(data_source: str) -> _DataSourceFile:
         If the data source is not valid, or if its yaml file is not
         valid.
     """
-    # Check if the data source is valid.
     if data_source not in read_data_sources():
         raise ValueError(
             f"Invalid data source: {data_source}. Available data "
             f"sources are: {', '.join(read_data_sources())}"
         )
 
-    # Read the yaml file of the data source.
     file_path = os.path.join(
         utils.paths.DATA_SOURCES_FOLDER,
         f"{data_source.lower()}.yaml",
@@ -293,7 +284,6 @@ def _read_data_source_file(data_source: str) -> _DataSourceFile:
     with open(file_path, encoding="utf-8") as file:
         content = yaml.safe_load(file)
 
-    # Check its content.
     try:
         return _DataSourceFile.model_validate(content)
     except ValidationError as error:
@@ -401,10 +391,6 @@ def read_entities_info(
     """
     Get the information of the countries and subdivisions.
 
-    This function reads the information of the countries and
-    subdivisions from a specified yaml file or from the yaml file of a
-    specified data source.
-
     Parameters
     ----------
     file_path : str, optional
@@ -437,20 +423,15 @@ def read_entities_info(
             for entity in _read_data_source_file(data_source).entities
         ]
     if file_path == "" and data_source == "":
-        # If no file path or data source is provided, raise an error.
         raise ValueError("Either file_path or data_source must be provided.")
     if file_path != "" and data_source != "":
-        # If both data source and data source file path are provided,
-        # raise an error.
         raise ValueError(
             "Only one of file_path or data_source must be provided."
         )
 
-    # Read the content from the file.
     with open(file_path, encoding="utf-8") as file:
         content = yaml.safe_load(file)
 
-    # Return the information of the countries and subdivisions.
     return content["entities"]
 
 
@@ -459,10 +440,6 @@ def get_electricity_demand_data_sources_containing_code(
 ) -> list[str]:
     """
     Get the data sources containing the provided code.
-
-    This function retrieves the data sources for which the provided code
-    is available. It checks all yaml files in the retrieval scripts
-    folder and returns a list of data sources that contain the code.
 
     Parameters
     ----------
@@ -474,25 +451,14 @@ def get_electricity_demand_data_sources_containing_code(
     data_sources : list[str]
         The list of data sources that contain the provided code.
     """
-    # Get the available data sources.
     data_sources = read_data_sources()
 
-    # Initialize a list to store the data sources containing the code.
     data_sources_containing_code = []
-
-    # Iterate over the file paths and check if the code is in the file.
     for data_source in data_sources:
-        # Read the content from the file.
         entities = read_entities_info(data_source=data_source)
-
-        # Iterate over the entities in the file.
         for entity in entities:
-            # Extract the code of the country or subdivision.
             entity_code = get_code_of(entity)
-
-            # Check if the provided code matches the entity code.
             if entity_code == code:
-                # Add the data source to the list.
                 data_sources_containing_code.append(data_source)
 
     return data_sources_containing_code
@@ -501,11 +467,6 @@ def get_electricity_demand_data_sources_containing_code(
 def read_codes_in(file_path: str = "", data_source: str = "") -> list[str]:
     """
     Read the codes of the countries and subdivisions.
-
-    This function reads the codes of the countries and subdivision from
-    a specified yaml file or from the yaml file of a specified data
-    source. It extracts the codes for each country or subdivision and
-    returns a list of codes.
 
     Parameters
     ----------
@@ -524,10 +485,8 @@ def read_codes_in(file_path: str = "", data_source: str = "") -> list[str]:
         A list of ISO Alpha-3 codes of the countries or the
         combination of the ISO Alpha-3 codes and the subdivision codes.
     """
-    # Extract the information of the countries and subdivisions.
     entities = read_entities_info(file_path=file_path, data_source=data_source)
 
-    # Extract and return codes.
     return [get_code_of(entity) for entity in entities]
 
 
@@ -535,33 +494,27 @@ def read_all_codes_with_electricity_demand_data() -> list[str]:
     """
     Read the codes of all countries and subdivisions with demand data.
 
-    This function reads the codes of all countries and subdivisions for
-    which high-resolution electricity demand data is available. It
-    checks all yaml files in the retrieval scripts folder and combines
-    the codes from all files, removing duplicates, in alphabetical
-    order, so that the codes are processed in the same order in every
-    run.
+    The codes of all the data sources are combined, without
+    duplicates.
 
     Returns
     -------
     list[str]
         A list of codes of all countries and subdivisions for which
         high-resolution electricity demand data is available, sorted.
+
+    Notes
+    -----
+    The codes are sorted alphabetically, so that they are processed in
+    the same order in every run.
     """
-    # Get the available data sources of electricity demand data.
     data_sources = read_data_sources()
 
-    # Define a list to store the codes.
     codes = []
-    # Iterate over the yaml files and read the codes from each file.
     for data_source in data_sources:
-        # Read the codes from the file.
         file_codes = read_codes_in(data_source=data_source)
-
-        # Append the codes to the list.
         codes.extend(file_codes)
 
-    # Remove duplicates and return the sorted list of codes.
     return sorted(set(codes))
 
 
@@ -571,12 +524,7 @@ def read_date_ranges_of_electricity_demand_in_data_source(
     """
     Read the start and end dates of the available data.
 
-    This function reads the start and end dates of the available data
-    for the countries and subdivisions from the yaml file of a specified
-    data source. It extracts the start and end dates for each country or
-    subdivision and returns a dictionary where the keys are the codes of
-    the countries or subdivisions and the values are tuples containing
-    the start and end dates.
+    The dates are read from the yaml file of the data source.
 
     Parameters
     ----------
@@ -594,33 +542,26 @@ def read_date_ranges_of_electricity_demand_in_data_source(
     ValueError
         If the start date is after the end date for a country or
         subdivision.
+
+    Notes
+    -----
+    An end date of "today" is taken as five days before today, to avoid
+    issues with the latest data.
     """
-    # Extract the information of the countries and subdivisions.
     entities = read_entities_info(data_source=data_source)
 
-    # Define a dictionary to store the start and end dates of the
-    # available data for the countries and subdivisions.
     start_and_end_dates: dict[str, tuple[dt.date, dt.date]] = {}
-
-    # Iterate over the entities and extract the start and end dates.
     for entity in entities:
-        # Extract the code of the country or subdivision.
         code = get_code_of(entity)
 
-        # Extract the start and end dates of the available data.
         start_date = entity["start_date"]
         if entity["end_date"] == "today":
-            # If the end date is "today", set it to a few days before
-            # today to avoid issues with the latest data.
             end_date = (pd.Timestamp.now() - pd.Timedelta(days=5)).date()
         else:
             end_date = entity["end_date"]
 
-        # Add the code to the dictionary and the respective start and
-        # end dates.
         start_and_end_dates[code] = (start_date, end_date)
 
-        # Check if the start date is before the end date.
         if start_date > end_date:
             raise ValueError(
                 f"The start date {start_date} is after the end date "
@@ -633,14 +574,10 @@ def read_date_ranges_of_electricity_demand_in_data_source(
 
 def read_all_date_ranges() -> dict[str, tuple[dt.date, dt.date]]:
     """
-    Read the all start and end dates of the available data.
+    Read all the start and end dates of the available data.
 
-    This function reads the start and end dates of the available data
-    for all countries and subdivisions from all yaml files in the
-    retrieval scripts folder. It combines the start and end dates from
-    all files and checks for duplicates. If a duplicate is found, it
-    keeps the dates giving the longest period for that country or
-    subdivision.
+    A country or subdivision in more than one data source takes the
+    dates that give the longest period.
 
     Returns
     -------
@@ -648,25 +585,15 @@ def read_all_date_ranges() -> dict[str, tuple[dt.date, dt.date]]:
         The dictionary containing the start and end dates of the
         available data for the countries and subdivisions.
     """
-    # Get the available data sources.
     data_sources = read_data_sources()
 
-    # Define a dictionary to store the start and end dates of the
-    # available data for the countries and subdivisions.
     start_and_end_dates: dict[str, tuple[dt.date, dt.date]] = {}
-
-    # Iterate over the yaml files and read the start and end dates from
-    # each file.
     for data_source in data_sources:
-        # Read the start and end dates from the file.
         file_start_and_end_dates = (
             read_date_ranges_of_electricity_demand_in_data_source(data_source)
         )
 
-        # Check for duplicates.
         for code, (start_date, end_date) in file_start_and_end_dates.items():
-            # If the code is already in the dictionary, get the dates
-            # giving the longest period.
             if code in start_and_end_dates:
                 existing_start_date, existing_end_date = start_and_end_dates[
                     code
@@ -676,12 +603,8 @@ def read_all_date_ranges() -> dict[str, tuple[dt.date, dt.date]]:
                 ).days
                 new_time_difference = (end_date - start_date).days
                 if new_time_difference > existing_time_difference:
-                    # If the new time difference is greater, update the
-                    # start and end dates.
                     start_and_end_dates[code] = (start_date, end_date)
             else:
-                # If the code is not in the dictionary, add it to the
-                # dictionary.
                 start_and_end_dates[code] = (start_date, end_date)
 
     return start_and_end_dates

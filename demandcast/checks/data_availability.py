@@ -60,6 +60,12 @@ def _add_first_and_last_years(
     ------
     ValueError
         If the variable is not recognized.
+
+    Notes
+    -----
+    The years of a second source are appended after those of the first,
+    such as those of the World Bank after those of Ember, so the first
+    and last years are the smallest and largest ones.
     """
     first_years: list[int | None] = []
     last_years: list[int | None] = []
@@ -86,13 +92,9 @@ def _add_first_and_last_years(
             first_years.append(None)
             last_years.append(None)
         else:
-            # Extract the available years for the entity.
             entity_data = data_source.loc[code]
             available_years = entity_data.dropna().index.tolist()
 
-            # Add the first and last available years, which are not in
-            # order when the years of a second source are appended, as
-            # those of the World Bank after those of Ember.
             if available_years:
                 first_years.append(min(available_years))
                 last_years.append(max(available_years))
@@ -150,8 +152,12 @@ def get_data_availability() -> pd.DataFrame:
         If an ISO Alpha-3 code for a country or subdivision with
         available shapes is not in the official list of ISO Alpha-3
         codes.
+
+    Notes
+    -----
+    Kosovo, which is not formally recognized in ISO 3166, is added to
+    pycountry with the code XKX.
     """
-    # Get the list of countries and subdivisions with available shapes.
     entity_codes_with_shape = utils.shapes.get_all_codes_with_shapes()
 
     # Get the ISO Alpha-3 codes for all countries and the parent
@@ -160,25 +166,19 @@ def get_data_availability() -> pd.DataFrame:
         code.split("_")[0] for code in entity_codes_with_shape
     ]
 
-    # Add countries to pycountry that are not formally recognized.
     if pycountry.countries.get(alpha_3="XKX") is None:
         pycountry.countries.add_entry(
             alpha_2="XK", alpha_3="XKX", name="Kosovo", numeric="926"
         )
 
-    # Get the list of all available ISO Alpha-3 codes.
     official_iso_alpha_3_codes = [
         country.alpha_3 for country in pycountry.countries
     ]
 
-    # Check that all ISO Alpha-3 codes for countries and subdivisions
-    # with available shapes are in the official list of ISO Alpha-3
-    # codes.
     for code in sorted(set(iso_alpha_3_codes_with_shapes)):
         if code not in official_iso_alpha_3_codes:
             raise ValueError(f"Code {code} with shape not in official list.")
 
-    # Initialize a DataFrame to store the available data.
     data_availability = pd.DataFrame(index=entity_codes_with_shape)
     data_availability.index.name = "entity_code"
 
@@ -190,12 +190,10 @@ def get_data_availability() -> pd.DataFrame:
         for code in data_availability.index
     ]
 
-    # Add a column with the ISO Alpha-3 codes.
     data_availability["parent_iso_alpha_3_code"] = (
         iso_alpha_3_codes_with_shapes
     )
 
-    # Download the historical population data.
     world_bank_historical_population = world_bank.download("population")
 
     # Add a column to indicate the availability of historical population
@@ -206,15 +204,12 @@ def get_data_availability() -> pd.DataFrame:
         ~data_availability.index.str.contains("_")
     )
 
-    # Add columns with the first and last available years for historical
-    # population data.
     data_availability = _add_first_and_last_years(
         "historical_population",
         world_bank_historical_population,
         data_availability,
     )
 
-    # Download the historical electricity demand per capita.
     electricity_demand_per_capita = (
         retrievals.annual_electricity_demand_per_capita.get_historical_data()
     )
@@ -227,15 +222,12 @@ def get_data_availability() -> pd.DataFrame:
         )
     )
 
-    # Add columns with the first and last available years for historical
-    # electricity demand per capita data.
     data_availability = _add_first_and_last_years(
         "historical_electricity_demand_per_capita",
         electricity_demand_per_capita,
         data_availability,
     )
 
-    # Download the historical GDP PPP per capita.
     gdp_ppp_per_capita = retrievals.gdp_ppp_per_capita.get_historical_data()
 
     # Add a column to indicate the availability of historical GDP PPP
@@ -244,15 +236,12 @@ def get_data_availability() -> pd.DataFrame:
         "parent_iso_alpha_3_code"
     ].isin(gdp_ppp_per_capita.index)
 
-    # Add columns with the first and last available years for historical
-    # GDP PPP per capita data.
     data_availability = _add_first_and_last_years(
         "historical_gdp_ppp_per_capita",
         gdp_ppp_per_capita,
         data_availability,
     )
 
-    # Read future population from the IIASA SSP database.
     iiasa_future_population = iiasa.read("population")
 
     # Add a column to indicate the availability of future population
@@ -263,7 +252,6 @@ def get_data_availability() -> pd.DataFrame:
         ~data_availability.index.str.contains("_")
     )
 
-    # Read future GDP PPP per capita from the IIASA SSP database.
     iiasa_future_gdp_ppp_per_capita = iiasa.read("gdp_ppp_per_capita")
 
     # Add a column to indicate the availability of future GDP PPP per
@@ -272,7 +260,6 @@ def get_data_availability() -> pd.DataFrame:
         "parent_iso_alpha_3_code"
     ].isin(iiasa_future_gdp_ppp_per_capita.index)
 
-    # Define the retreivals directory.
     retrievals_directory = utils.paths.RETRIEVALS_FOLDER
 
     # Read codes available for future electricity demand per capita
@@ -299,14 +286,11 @@ def get_data_availability() -> pd.DataFrame:
         )
     )
 
-    # Initialize a column to indicate if the area of the country is
-    # smaller than 500 km2.
     data_availability["area_greater_than_500_km2"] = False
 
     # Loop over all countries and subdivisions to check if their area is
     # greater than 500 km2.
     for entity_code in data_availability.index:
-        # Get the shape of the country.
         shape = utils.shapes.get_entity_shape(entity_code, make_plot=False)
 
         # Get the area of the country in square kilometers.
@@ -320,7 +304,6 @@ def get_data_availability() -> pd.DataFrame:
                 True
             )
 
-    # Drop the column with the parent ISO Alpha-3 codes.
     return data_availability.drop(columns=["parent_iso_alpha_3_code"])
 
 

@@ -36,7 +36,7 @@ def test_write_and_read_manifest(tmp_path):
 
 
 def test_file_without_manifest(tmp_path):
-    """Test that a file made before the manifests has none."""
+    """Test that a file without a manifest file has no manifest."""
     assert utils.manifest.read_manifest(str(tmp_path / "model.json")) is None
 
 
@@ -54,6 +54,14 @@ def test_code_version_without_git(monkeypatch):
     """Test that the code version is unknown without git."""
 
     def run(*_args, **_kwargs):
+        """
+        Fail as when git is not installed.
+
+        Raises
+        ------
+        OSError
+            Always.
+        """
         raise OSError("git is not installed")
 
     monkeypatch.setattr(utils.manifest.subprocess, "run", run)
@@ -66,6 +74,19 @@ def test_code_version_when_git_fails(monkeypatch):
     calls = []
 
     def run(command, **_kwargs):
+        """
+        Record the command, and fail on the status of git.
+
+        Returns
+        -------
+        subprocess.CompletedProcess
+            The output of the other commands.
+
+        Raises
+        ------
+        subprocess.CalledProcessError
+            For the status of git.
+        """
         calls.append(command)
         if command[1] == "status":
             raise utils.manifest.subprocess.CalledProcessError(128, command)

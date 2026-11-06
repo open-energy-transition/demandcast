@@ -15,11 +15,6 @@ Description:
     identical file is skipped, and a different one is reported in the
     log, and left as it is at both ends, for its user to decide.
 
-    An upload asks Cloud Storage to write an object only if it does not
-    exist (if_generation_match=0), so a file that another copy has just
-    written is not overwritten either, and a download creates its file
-    only if it does not exist.
-
     The bucket is private: Cloud Storage reads the credentials of the
     user, from "gcloud auth application-default login".
 """
@@ -241,6 +236,12 @@ def _upload(blob: Any, file_path: str) -> bool:
     bool
         Whether the file was uploaded, False if the object was written
         in the meantime.
+
+    Notes
+    -----
+    Cloud Storage writes the object only if it does not exist
+    (if_generation_match=0), so an object that another copy has just
+    written is not overwritten.
     """
     try:
         blob.upload_from_filename(file_path, if_generation_match=0)
@@ -265,6 +266,12 @@ def _download(blob: Any, file_path: str) -> bool:
     bool
         Whether the object was downloaded, False if the file was written
         in the meantime.
+
+    Notes
+    -----
+    The object is downloaded to a temporary file, which is then linked
+    to the path: the link fails if a file was written there in the
+    meantime, so that it is not overwritten.
     """
     if os.path.exists(file_path):
         return False
@@ -273,7 +280,6 @@ def _download(blob: Any, file_path: str) -> bool:
     try:
         with open(temporary_path, "xb") as file:
             blob.download_to_file(file)
-        # The link fails if the file was written in the meantime.
         os.link(temporary_path, file_path)
     except FileExistsError:
         return False

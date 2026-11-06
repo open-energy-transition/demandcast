@@ -11,8 +11,7 @@ Description:
     each hour in UTC. From 2022-06-16 to 2025-12-02, the times of the
     balancing authority of CAISO (CISO), which is most of the region of
     California (CAL), are one hour late: its values match the files of
-    CAISO and its OASIS API an hour earlier. The module moves them back
-    by an hour in the demand of California.
+    CAISO and its OASIS API an hour earlier.
 
     The demand of the regions leaves out the solar behind the meters.
     For New England, isone.py gives the gross demand, with the estimate
@@ -48,9 +47,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the EIA website.
-
     Parameters
     ----------
     code : str
@@ -64,10 +60,12 @@ def get_available_requests(
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
         The list of available requests.
+
+    Notes
+    -----
+    The requests are six-month periods, because the API gives at most
+    5000 values per request.
     """
-    # Split the period of the data into six-month periods, which avoids
-    # the limitation of the API to retrieve a maximum of 5000 data
-    # points.
     return utils.time_series.split_period(start_date, end_date, "6MS")
 
 
@@ -99,21 +97,16 @@ def get_url(
         If the number of time points is greater than 5000, or if the
         EIA API key is not set.
     """
-    # Check that the number of time points is less than 5000.
     if (end_date - start_date).days * 24 >= 5000:
         raise ValueError("The number of time points is greater than 5000.")
 
-    # Get the API key.
     api_key = utils.config.read_api_key("EIA_API_KEY", "EIA")
 
-    # Convert the start and end dates and times to the required format.
     start = start_date.strftime("%Y-%m-%dT%H")
     end = end_date.strftime("%Y-%m-%dT%H")
 
-    # Extract the subdivision code.
     subdivision_code = code.split("_")[1]
 
-    # Return the URL of the electricity demand data.
     return (
         "https://api.eia.gov/v2/electricity/rto/region-data/data/?"
         f"api_key={api_key}&facets[type][]=D&"
@@ -129,9 +122,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the EIA website.
-
     Parameters
     ----------
     period : tuple[pandas.Timestamp, pandas.Timestamp]
@@ -143,6 +133,12 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    In the period in which the times of CISO are one hour late, its
+    values in the demand of California are replaced with the ones of an
+    hour later, which belong to the times.
     """
     start_date, end_date = period
 
@@ -153,9 +149,7 @@ def download_and_extract_data_for_request(
 
     electricity_demand_time_series = _download(start_date, end_date, code)
 
-    # In the period in which the times of CISO are one hour late,
-    # replace its values in the demand of California with the ones of
-    # an hour later, which belong to the times.
+    # Correct the times of CISO in the demand of California.
     late_start, late_end = CISO_LATE_PERIOD
     if (
         code == "USA_CAL"
@@ -198,8 +192,11 @@ def _download(
     -------
     pandas.Series
         The electricity demand time series in MW, at times in UTC.
+
+    Notes
+    -----
+    The API gives the values as text.
     """
-    # Fetch the electricity demand data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
         get_url(start_date, end_date, code),
         "html",
@@ -208,8 +205,6 @@ def _download(
         json_keys=["response", "data"],
     )
 
-    # Create the electricity demand time series. The API gives the
-    # values as text.
     return pd.Series(
         pd.to_numeric(dataset["value"]).to_numpy(),
         index=pd.to_datetime(dataset["period"]),

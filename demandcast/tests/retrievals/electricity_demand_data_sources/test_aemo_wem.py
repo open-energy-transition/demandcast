@@ -152,6 +152,19 @@ def _fetch_without_day(monkeypatch, missing_day):
     fetched = []
 
     def fetch(url, *_args, **_kwargs):
+        """
+        Record a URL and get an empty file.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The empty file, with the columns of AEMO.
+
+        Raises
+        ------
+        DataNotFoundError
+            If the URL is that of the daily file of the missing day.
+        """
         fetched.append(url)
         if url.endswith(f"-{missing_day:02d}.json"):
             raise utils.fetcher.DataNotFoundError("HTTP error 404")

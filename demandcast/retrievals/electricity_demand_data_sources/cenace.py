@@ -60,9 +60,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the CENACE website.
-
     Parameters
     ----------
     code : str
@@ -76,12 +73,15 @@ def get_available_requests(
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
         The list of available requests.
+
+    Notes
+    -----
+    CENACE publishes the data until about 15 days before the current
+    day, so the requests end 10 days before the end date, which is by
+    default 5 days before the current day (see utils/data_sources.py).
     """
-    # Mexico has data until 15 days before the current date. Subtract
-    # 10 days to the end date on top of the 5 days already considered.
     end_date = pd.to_datetime(end_date) - pd.Timedelta("10days")
 
-    # Split the period of the data into one-year periods.
     return utils.time_series.split_period(start_date, end_date, "YS")
 
 
@@ -94,7 +94,6 @@ def get_url() -> str:
     str
         The URL of the electricity demand data.
     """
-    # Return the URL of the electricity demand data.
     return (
         "https://www.cenace.gob.mx/Paginas/SIM/Reportes/"
         "EstimacionDemandaReal.aspx"
@@ -106,9 +105,6 @@ def download_and_extract_data_for_request(
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    from the CENACE website.
 
     Parameters
     ----------
@@ -130,7 +126,6 @@ def download_and_extract_data_for_request(
     """
     start_date, end_date = period
 
-    # Check if the retrieval period is less than 1 year.
     if end_date - start_date > pd.Timedelta("366days"):
         raise ValueError(
             "The retrieval period must be less than or equal to 1 year. "
@@ -142,7 +137,6 @@ def download_and_extract_data_for_request(
         f"{start_date.date()} to {end_date.date()}."
     )
 
-    # Get the URL of the electricity demand data.
     url = get_url()
 
     # Define the parameters for the POST request.
@@ -171,10 +165,8 @@ def download_and_extract_data_for_request(
         "_PorBalance": "Descargar+en+archivo+.zip",
     }
 
-    # Define the headers for the request.
     header_params = {"User-Agent": "Mozilla/5.0"}
 
-    # Fetch HTML content from the URL.
     response = utils.fetcher.fetch_response(
         url,
         "POST",
@@ -183,34 +175,25 @@ def download_and_extract_data_for_request(
         query_aspx_webpage=True,
     )
 
-    # Extract the zip file from the HTML content.
     archive = zipfile.ZipFile(BytesIO(response.content), "r")
 
-    # Get the names of the files in the archive.
     file_names = archive.namelist()
 
-    # Get all the dates in the time range.
     dates = (
         pd.date_range(start_date, end_date, freq="D")
         .strftime("%Y-%m-%d")
         .tolist()
     )
 
-    # Get the subdivision code.
     subdivision_code = code.split("_")[1]
 
-    # Get the time zone of the hours of the files: the time of central
-    # Mexico for the areas of the SIN, and the time zone of the area for
-    # the systems of Baja California.
     if subdivision_code in {"BCA", "BCS"}:
         time_zone = utils.time_zones.get_time_zone(code)
     else:
         time_zone = CENTRAL_MEXICO_TIME
 
-    # Initialize the list to store the daily values.
     daily_values_list = []
 
-    # Iterate over the dates and extract the corresponding files.
     for date in dates:
         # Read the latest settlement of the day with data, going back to
         # the earlier ones while the later ones are still empty.
@@ -232,7 +215,6 @@ def download_and_extract_data_for_request(
             if skip_rows is None:
                 raise ValueError(f"No header found in the file {file_name}.")
 
-            # Check if the line after the header has some data.
             if lines[skip_rows + 1] != "":
                 file_content = content
                 break
@@ -243,17 +225,14 @@ def download_and_extract_data_for_request(
             logging.warning(f"No data found for the date {date}, skipped.")
             continue
 
-        # Read the file content into a pandas DataFrame.
         dataset = pd.read_csv(
             StringIO(file_content), skiprows=skip_rows, index_col=False
         )
 
-        # Define the column name for the subdivision code.
         column_name = (
             "Sistema" if subdivision_code in {"BCA", "BCS"} else " Area"
         )
 
-        # Extract the daily values for the subdivision.
         daily_values = dataset[dataset[column_name] == subdivision_code][
             " Estimacion de Demanda por Balance (MWh) "
         ].reset_index(drop=True)
@@ -267,14 +246,11 @@ def download_and_extract_data_for_request(
             tz=time_zone,
         )
 
-        # Append the daily values to the list.
         daily_values_list.append(daily_values)
 
-    # Return an empty series if no day has data.
     if not daily_values_list:
         return pd.Series(dtype="float64")
 
-    # Concatenate the daily values into a single pandas Series.
     electricity_demand_time_series = pd.concat(daily_values_list)
 
     # Add 1 hour to the index to indicate the end of the hour.

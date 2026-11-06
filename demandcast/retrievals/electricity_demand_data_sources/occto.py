@@ -21,14 +21,9 @@ Description:
 
     The service is a web application without an account, whose public
     screens are opened by posting a form and whose files are saved by
-    the "CSV 保存" button. The information download screen
-    ("情報ダウンロード", CF01S010C) is opened with an empty post, then
-    its form, with the daily actual demand (data kind 12), the first and
-    last days and the area, is checked ("print"), confirmed ("ok"),
-    which gives a download key and a new request token, and submitted
-    ("download"), which gives the file: the requests that the button
-    sends in a browser. A request is a year of an area; a whole year is
-    accepted at once.
+    the "CSV 保存" button. The data is downloaded from the information
+    download screen ("情報ダウンロード", CF01S010C). A request is a year
+    of an area; a whole year is accepted at once.
 
     The file is a CSV in Shift JIS (code page 932), with the date
     (YYYY/MM/DD), the hour ("hh:mm～hh:mm", its start and end in
@@ -92,6 +87,7 @@ class _FormFields(HTMLParser):
     """The fields of a form and the values that a browser sends."""
 
     def __init__(self) -> None:
+        """Set up an empty list of fields, outside any select list."""
         super().__init__()
         self.fields: list[tuple[str, str]] = []
         self._select: list[str] | None = None
@@ -244,6 +240,15 @@ def _download(first_day: dt.date, last_day: dt.date, code: str) -> bytes:
     ------
     ValueError
         If the service gives a page instead of the file.
+
+    Notes
+    -----
+    The function sends the requests that the "CSV 保存" button sends in
+    a browser. The screen is opened with an empty post, then its form,
+    with the daily actual demand (data kind 12), the first and last days
+    and the area, is checked ("print"), confirmed ("ok"), which gives a
+    download key and a new request token that go in the form, and
+    submitted ("download"), which gives the file.
     """
     check_box, value, _ = AREAS[code]
     with requests.Session() as session:
@@ -271,8 +276,6 @@ def _download(first_day: dt.date, last_day: dt.date, code: str) -> bytes:
         ] + list(chosen.items())
 
         _post(session, fields, "print")
-        # The confirmation gives the key of the file and a new token,
-        # which the browser puts in the form.
         header = _post(session, fields, "ok").json()["root"]["bizRoot"][
             "header"
         ]
@@ -335,7 +338,7 @@ def download_and_extract_data_for_request(
         index=pd.DatetimeIndex(starts),
     )
 
-    # The times are the starts of the hours. Move them to the ends.
+    # Move the starts of the hours to their ends.
     return utils.time_series.localize_interval_starts(
         electricity_demand_time_series, "Asia/Tokyo", pd.Timedelta(hours=1)
     )

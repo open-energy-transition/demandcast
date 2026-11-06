@@ -64,7 +64,6 @@ def get_url() -> str:
     str
         The URL of the electricity demand data.
     """
-    # Return the URL of the electricity demand data.
     return "https://zenodo.org/records/7537890/files/loadarea_10min_2017Jan_2022Jun.csv?download=1"
 
 
@@ -73,9 +72,6 @@ def download_and_extract_data_for_request(
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    for Taiwan.
 
     Parameters
     ----------
@@ -89,16 +85,14 @@ def download_and_extract_data_for_request(
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
     """
-    # Get the URL of the electricity demand data.
     url = get_url()
 
-    # Fetch the data from the URL.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "csv",
     )
 
-    # Sum the regional demand columns to get total national demand
+    # Sum the load of the four areas.
     dataset["National Demand"] = (
         dataset["south"]
         + dataset["north"]
@@ -106,7 +100,6 @@ def download_and_extract_data_for_request(
         + dataset["central"]
     )
 
-    # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
         dataset["National Demand"].values,
         index=pd.to_datetime(dataset["datetime"]),

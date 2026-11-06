@@ -63,9 +63,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the EPIAS transparency platform.
-
     Parameters
     ----------
     code : str
@@ -80,7 +77,6 @@ def get_available_requests(
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
         The first and last day of each one-year period.
     """
-    # Split the period of the data into one-year periods.
     return utils.time_series.split_period(start_date, end_date, "YS")
 
 
@@ -112,12 +108,14 @@ def _get_ticket() -> str:
     """
     Get a ticket of the account of EPIAS for the requests to the API.
 
-    The ticket is valid for two hours.
-
     Returns
     -------
     str
         The ticket granting ticket (TGT).
+
+    Notes
+    -----
+    The ticket is valid for two hours.
     """
     response = utils.fetcher.fetch_response(
         TICKET_URL,
@@ -154,7 +152,6 @@ def _fetch_hourly_data(
         The data of each hour, by the start of the hour with its offset
         from UTC ("date").
     """
-    # The dates of the request have their offset from UTC in Turkey.
     return utils.fetcher.fetch_dataframe(
         url,
         "html",
@@ -175,9 +172,6 @@ def download_and_extract_data_for_request(
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    from the EPIAS transparency platform.
 
     Parameters
     ----------
@@ -204,7 +198,6 @@ def download_and_extract_data_for_request(
     if dataset.empty:
         return pd.Series(dtype="float64")
 
-    # The times are the starts of the hours, with their offset from UTC.
     starts = pd.DatetimeIndex(pd.to_datetime(dataset["date"], utc=True))
     consumption = pd.Series(
         dataset["consumption"].to_numpy(dtype="float64"), index=starts

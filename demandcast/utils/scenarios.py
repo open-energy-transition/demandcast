@@ -3,8 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides utility functions for the data retrieval for
-    different future scenarios.
+    This module selects the years, scenarios and climate models of the
+    data that a retrieval script downloads, from its settings and the
+    years and scenarios that are available.
 """
 
 import logging
@@ -95,7 +96,6 @@ def _get_years(
             raise ValueError(
                 f"year must be one of the available years: {available_years}."
             )
-        # Use the specified year.
         years = [year]
     elif start_year is not None and end_year is not None:
         if start_year > end_year:
@@ -110,14 +110,12 @@ def _get_years(
                 "end_year is greater than the latest available year, "
                 f"which is {available_years[-1]}."
             )
-        # Use the range of years from start_year to end_year.
         years = [y for y in available_years if start_year <= y <= end_year]
     elif (start_year is not None and end_year is None) or (
         start_year is None and end_year is not None
     ):
         raise ValueError("Both start_year and end_year must be specified.")
     else:
-        # Use all available years.
         years = available_years
 
     return years
@@ -147,7 +145,6 @@ def _get_scenarios(
     ValueError
         If the input parameters are not valid.
     """
-    # Normalize the scenario names to uppercase.
     available_scenarios = _normalize_scenarios(available_scenarios)
 
     if scenario is not None:
@@ -156,10 +153,8 @@ def _get_scenarios(
                 "scenario must be one of the following: "
                 f"{available_scenarios}."
             )
-        # Use the specified scenario.
         scenarios = [scenario.upper()]
     else:
-        # Use all available scenarios.
         scenarios = available_scenarios
 
     return scenarios
@@ -193,7 +188,6 @@ def _get_scenarios_for_model(
     ValueError
         If the input parameters are not valid.
     """
-    # Normalize the model and scenario names to uppercase.
     scenarios_for_model = _normalize_scenarios_for_model(
         available_scenarios_for_model
     )
@@ -204,7 +198,6 @@ def _get_scenarios_for_model(
                 "model must be one of the following: "
                 f"{list(scenarios_for_model.keys())}."
             )
-        # Use the specified model.
         scenarios_for_model = {
             model.upper(): scenarios_for_model[model.upper()]
         }
@@ -216,7 +209,6 @@ def _get_scenarios_for_model(
                     "scenario must be one of the following for model "
                     f"{model_key}: {available_scenarios}."
                 )
-            # Use the specified scenario.
             scenarios_for_model[model_key] = [scenario.upper()]
 
     return scenarios_for_model
@@ -259,16 +251,13 @@ def get_year_and_scenario_combinations(
         A list of tuples, where each tuple contains a year and an
         optional scenario.
     """
-    # Get the list of available years sorted without duplicates.
     available_years = sorted(
         set(available_historical_years + available_future_years)
     )
 
-    # Get the list of years and scenarios based on the input parameters.
     years = _get_years(year, start_year, end_year, available_years)
     scenarios = _get_scenarios(scenario, available_scenarios)
 
-    # Create a list of year and scenario combinations.
     year_scenario_list: list[tuple[int, str | None]] = []
     for selected_year in years:
         if (
@@ -332,12 +321,10 @@ def get_year_model_and_scenario_combinations(
         A list of tuples, where each tuple contains a year, an optional
         climate model, and an optional scenario.
     """
-    # Get the list of available years sorted without duplicates.
     available_years = sorted(
         set(available_historical_years + available_future_years)
     )
 
-    # Get the list of years and scenarios based on the input parameters.
     years = _get_years(year, start_year, end_year, available_years)
     scenarios_for_model = _get_scenarios_for_model(
         model,
@@ -345,7 +332,6 @@ def get_year_model_and_scenario_combinations(
         available_scenarios_for_model,
     )
 
-    # Create a list of year, model, and scenario combinations.
     year_model_scenario_list: list[tuple[int, str | None, str | None]] = []
     for selected_year in years:
         if (
@@ -382,11 +368,9 @@ def _extend_historical_years(available_years: list[int]) -> list[int]:
     """
     Extend historical years up to last year if needed.
 
-    This is useful when the most recent historical year is earlier
-    than last year, and we want to fill in the missing years up to
-    last year. For example, if the most recent historical year is 2021
-    and the current year is 2024, this function will add 2022 and
-    2023 to the list of available years.
+    The years after the last available one, up to last year, are added:
+    if the last available year is 2021 and the current year is 2024,
+    2022 and 2023 are added.
 
     Parameters
     ----------
@@ -398,16 +382,12 @@ def _extend_historical_years(available_years: list[int]) -> list[int]:
     list[int]
         The extended list of available years.
     """
-    # Get the current year and the last historical year.
     current_year = pd.Timestamp.now().year
     last_historical_year = available_years[-1]
 
-    # If the last historical year is already last year or later,
-    # return the available years as is.
     if last_historical_year >= current_year - 1:
         return available_years
 
-    # Add years from last available to last year if needed.
     missing_years = list(range(last_historical_year + 1, current_year))
     return available_years + missing_years
 
@@ -423,16 +403,12 @@ def get_years_and_scenarios(
     available_historical_years_of_gridded_data: list[int],
 ) -> tuple[list[int], list[int], list[int], list[str]]:
     """
-    Get the years and scenarios dictionary for a specific country.
+    Get the years and scenarios of a country or subdivision.
 
-    The function determines the requested historical years, used
-    historical years, future years, and scenarios based on the input
-    parameters and the available data. There may be differences between
-    the requested historical years and the used historical years if, for
-    example, the requested years for a country are between 2020 and
-    2024, but the available historical data for that country is only up
-    to 2023. In this case, the used historical years will be 2020 to
-    2023, and 2023 will be used for 2024.
+    The used historical years can differ from the requested ones: if the
+    requested years of a country are 2020 to 2024, and its historical
+    data ends in 2023, the used historical years are 2020 to 2023, and
+    2023 is used for 2024.
 
     The historical years of a subdivision are those of the gridded data,
     and, if its country has historical data, also the years of the
@@ -474,14 +450,11 @@ def get_years_and_scenarios(
         - scenarios: list[str]
             The list of scenarios.
     """
-    # Check if the ISO Alpha-3 code is in the historical data.
     if iso_alpha_3_code in global_historical_data.index:
-        # Extract the historical data for the country.
         national_historical_data = (
             global_historical_data.loc[iso_alpha_3_code]
         ).dropna()
 
-        # Get the years of available historical data.
         available_historical_years = national_historical_data.index.tolist()
     else:
         # Define the available years for historical data when
@@ -492,8 +465,6 @@ def get_years_and_scenarios(
                 available_historical_years_of_gridded_data[-1] + 1,
             )
         )
-    # The years of the country of a subdivision before the gridded data,
-    # which use the first year of the gridded data.
     country_code = iso_alpha_3_code.split("_", maxsplit=1)[0]
     earlier_years = []
     if (
@@ -518,12 +489,10 @@ def get_years_and_scenarios(
         )
     )
 
-    # Get the list of available years sorted without duplicates.
     available_years = sorted(
         set(extended_available_historical_years + available_future_years)
     )
 
-    # Get the list of requested years.
     all_requested_years = _get_years(
         year,
         start_year,
@@ -546,12 +515,10 @@ def get_years_and_scenarios(
         for y in requested_historical_years
     ]
 
-    # Get the list of future years.
     future_years = [
         y for y in all_requested_years if y in available_future_years
     ]
 
-    # Get scenarios for future data.
     scenarios = (
         _get_scenarios(scenario, available_scenarios) if future_years else []
     )

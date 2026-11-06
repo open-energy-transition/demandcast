@@ -256,7 +256,6 @@ def check_data_source(data_source: str, maximum_age_days: int) -> Result:
     result = Result(data_source=data_source)
 
     try:
-        # Check the first country or subdivision of the data source.
         entity = utils.data_sources.read_entities(data_source)[0]
         code = entity.code
         result.code = code
@@ -446,6 +445,13 @@ def run_check(
     ------
     ValueError
         If a data source is not recognized.
+
+    Notes
+    -----
+    Each data source is checked in its own thread, since each one is
+    another website. The threads are daemons, so that a website that
+    does not answer cannot keep the check from ending. The failures in
+    a row are counted since a website can be out of reach for a while.
     """
     all_data_sources = sorted(utils.data_sources.read_data_sources())
     if data_sources is None:
@@ -468,9 +474,7 @@ def run_check(
             maximum_age_days_by_source.get(data_source, maximum_age_days),
         )
 
-    # Check the data sources at the same time, since each one is another
-    # website. The threads are daemons, so that a website that does not
-    # answer cannot keep the check from ending.
+    # Check the data sources at the same time.
     threads = {}
     for data_source in data_sources:
         if data_source in MANUAL_DOWNLOADS:
@@ -496,8 +500,7 @@ def run_check(
                 seconds=time_limit_minutes * 60,
             )
 
-    # Count the checks that each data source has failed in a row, since
-    # a website can be out of reach for a while.
+    # Count the checks that each data source has failed in a row.
     previous_failures = _read_previous_failures()
     ordered_results = [results[data_source] for data_source in data_sources]
     for result in ordered_results:

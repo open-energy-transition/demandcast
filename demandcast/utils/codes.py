@@ -79,9 +79,6 @@ def get_name_from_code(code: str) -> str:  # noqa: C901
     """
     Get the name of a country or subdivision from its code.
 
-    This function retrieves the name of a country or subdivision based
-    on its code.
-
     Parameters
     ----------
     code : str
@@ -97,6 +94,11 @@ def get_name_from_code(code: str) -> str:  # noqa: C901
     ValueError
         If the country or subdivision with the given code is not found
         in pycountry.
+
+    Notes
+    -----
+    A subdivision takes its name from the yaml file of the first data
+    source that has it, or else from pycountry.
     """
     # Extract the ISO Alpha-3 code from the code.
     if "_" not in code and "-" not in code:
@@ -106,36 +108,23 @@ def get_name_from_code(code: str) -> str:  # noqa: C901
     else:
         iso_alpha_3_code = code.split("-", maxsplit=1)[0]
 
-    # Get the ISO Alpha-2 code of the country itself or the country to
-    # which the subdivision belongs.
     iso_alpha_2_code = get_iso_alpha_2_code(iso_alpha_3_code)
 
-    # Get the name of the country or subdivision of interest based on
-    # its code.
     if "_" not in code and "-" not in code:
-        # Get the country name from the ISO Alpha-3 code.
         if iso_alpha_3_code in EXTRA_ENTITIES:
             name = EXTRA_ENTITIES[iso_alpha_3_code]["name"]
         else:
             name = pycountry.countries.lookup(iso_alpha_3_code).name
     else:
-        # Try to get the data source that contains the provided code.
         data_sources = utils.data_sources.get_electricity_demand_data_sources_containing_code(
             code
         )
 
         if len(data_sources) > 0:
-            # If multiple data sources contain the code, use the first
-            # one.
             data_source = data_sources[0]
-
-            # Get the information of the countries and subdivisions in
-            # the data source.
             entities = utils.data_sources.read_entities_info(
                 data_source=data_source
             )
-
-            # Find the subdivision name from the data source file.
             for entity in entities:
                 if utils.data_sources.get_code_of(entity) == code.replace(
                     "-", "_"
@@ -144,15 +133,12 @@ def get_name_from_code(code: str) -> str:  # noqa: C901
                     break
 
         else:
-            # If no data source contains the code, use pycountry to
-            # get the subdivision name.
-            # Reconstruct the subdivision code.
+            # Reconstruct the subdivision code of pycountry.
             if "_" in code:
                 subdivision_code = iso_alpha_2_code + "-" + code.split("_")[1]
             else:
                 subdivision_code = iso_alpha_2_code + "-" + code.split("-")[1]
 
-            # Get the subdivision information from the code.
             subdivision = pycountry.subdivisions.get(code=subdivision_code)
 
             # Handle if subdivision is a list or a single object.
@@ -175,9 +161,8 @@ def get_continent_code(code: str) -> str:
     """
     Get the continent of a country or subdivision.
 
-    This function retrieves the continent code of a country or
-    subdivision from the ISO Alpha-3 code of the country, using
-    config/continents.yaml and the predefined entities.
+    The continent code comes from the ISO Alpha-3 code of the country,
+    through config/continents.yaml and the predefined entities.
 
     Parameters
     ----------

@@ -86,7 +86,6 @@ def _construct_output_dataset(
         scaling_factor,
     )
 
-    # Construct the output dataset.
     columns: list[pd.Series | pd.DataFrame] = [
         prepared_dataset["time"],
         prepared_dataset["group"],
@@ -121,16 +120,13 @@ def run_forecasting(
     """
     logging.info("Starting model forecasting process.")
 
-    # Get the module of the model.
     algorithm = ml_config.algorithm
     model_module = ml_models.registry.get_model_module(algorithm)
 
-    # Get the assembled data path.
     data_path = ml_models.files.get_assemble_data_path(
         data_path, "forecasting"
     )
 
-    # Read and prepare the dataset.
     prepared_dataset = ml_models.data.prepare_dataset(
         data_path, ml_config, target=False
     )
@@ -145,18 +141,14 @@ def run_forecasting(
     ml_models.data.check_model_features(model, prepared_dataset["features"])
     ml_models.files.check_model_manifest(manifest, ml_config)
 
-    # Make predictions.
     predictions = model_module.predict(model, prepared_dataset)
     logging.info("Forecasting completed successfully.")
 
-    # Construct the output dataset, and the reconciliation of each
-    # year with its annual demand.
     output_dataset, annual_totals = _construct_output_dataset(
         prepared_dataset,
         predictions,
     )
 
-    # Save the output dataset.
     ml_models.files.save_results(
         "forecasts",
         output_dataset,
@@ -181,7 +173,6 @@ def main(config: ConfigModel) -> None:
     utils.config.set_up_logging("model_forecasting")
     utils.config.log_configuration(config)
 
-    # Read and check machine learning configuration.
     ml_config = ml_models.data.read_and_check_ml_configuration()
 
     run_forecasting(

@@ -12,6 +12,9 @@ Description:
     two union territories. The other subdivisions have the standard
     shapes of Natural Earth at 1:50m, which are also used here.
 
+    The geometries are snapped to a grid of 0.005 degrees, which removes
+    small spikes in the shapes that cause issues when they are plotted.
+
     Source: https://www.naturalearthdata.com/downloads/50m-cultural-vectors/50m-admin-1-states-provinces/
 """
 
@@ -28,8 +31,6 @@ merged_subdivisions = {
     ("IND_JKLA", "Jammu and Kashmir and Ladakh"): ["IN-JK", "IN-LA"],
 }
 
-# Load the shapefile of the states and provinces of Natural Earth at
-# 1:50m, as the standard shapes.
 all_shapes = cartopy.io.shapereader.natural_earth(
     resolution="50m", category="cultural", name="admin_1_states_provinces"
 )
@@ -52,12 +53,8 @@ for (code, name), iso_codes in merged_subdivisions.items():
     shapes.append(parts.dissolve(by="code").reset_index())
 subdivisions = pd.concat(shapes)[["name", "code", "geometry"]]
 
-# Set the precision of the geometry to a grid size of 0.005 degrees.
-# This is done to remove small spikes in the shapes that cause issues
-# when plotting the shapes.
 subdivisions["geometry"] = subdivisions["geometry"].set_precision(0.005)
 
-# Save the shapes of the subdivisions to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "niti")
 os.makedirs(shapes_dir, exist_ok=True)
 subdivisions.to_file(

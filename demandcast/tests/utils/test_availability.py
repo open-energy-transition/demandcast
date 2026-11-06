@@ -18,11 +18,9 @@ import utils.paths
 
 def test_get_all_codes_with_all_data():
     """
-    Test if the function _get_all_codes_with_all_data works correctly.
+    Test if the function read_codes_with_all_data works correctly.
 
-    This test checks if the function can read the available data summary
-    from a CSV file and return a list of codes for which all data is
-    available.
+    The codes are read from the CSV file of the available data.
     """
     with (
         patch("pandas.read_csv") as mock_read_csv,
@@ -30,8 +28,6 @@ def test_get_all_codes_with_all_data():
     ):
         mock_path_join.return_value = "/checks/available_data_summary.csv"
 
-        # Mock the return value of pandas.read_csv to return a sample
-        # DataFrame.
         mock_read_csv.return_value = pd.DataFrame(
             {
                 "historical_population": [True, True, True, False],
@@ -55,13 +51,9 @@ def test_get_all_codes_with_all_data():
             index=["XY1", "XY2", "XY3", "XY4"],
         )
 
-        # Get all codes with all data available.
         all_data_codes = utils.availability.read_codes_with_all_data()
 
-        # Check if the function returns a list of codes.
         assert isinstance(all_data_codes, list)
-
-        # Check if the codes are read correctly.
         assert "XY1" in all_data_codes
         assert "XY2" in all_data_codes
         assert "XY3" not in all_data_codes
@@ -72,9 +64,8 @@ def test_check_and_get_codes_with():
     """
     Test if the function check_and_get_codes_with works correctly.
 
-    This test checks if the function can read codes from a yaml file,
-    from a specific data source, or from a specific code, and if it
-    handles errors correctly.
+    The codes are those of a data source, a code, a yaml file, or all
+    the codes with all the data.
     """
     # Read codes belonging to a specific data source.
     entsoe_codes = utils.availability.check_and_get_codes_with(
@@ -96,25 +87,17 @@ def test_check_and_get_codes_with():
             "utils.data_sources.read_all_codes_with_electricity_demand_data"
         ) as mock_read_all_codes,
     ):
-        # Mock the return value of read_codes_in to return codes from a
-        # specific file.
         mock_read_codes.return_value = ["FRA", "DEU"]
-
-        # Mock the return value of
-        # read_all_codes_with_electricity_demand_data to return all
-        # available codes with demand data.
         mock_read_all_codes.return_value = [
             "FRA",
             "DEU",
             "ITA",
         ]
 
-        # Check if the codes from the file are read correctly.
         dummy_codes = utils.availability.check_and_get_codes_with(
             "electricity_demand_data", file_path="dummy.yaml"
         )
 
-        # Check if the codes for a specific file are read correctly.
         assert isinstance(dummy_codes, list)
         assert "FRA" in dummy_codes
         assert "USA_TEX" not in dummy_codes
@@ -123,14 +106,10 @@ def test_check_and_get_codes_with():
     with patch(
         "utils.availability.read_codes_with_all_data"
     ) as mock_get_all_codes:
-        # Mock the return value of _get_all_codes_with_all_data to
-        # return a sample list of codes.
         mock_get_all_codes.return_value = ["XYZ1", "XYZ2"]
 
-        # Get all codes with all data available.
         shape_codes = utils.availability.check_and_get_codes_with("all_data")
 
-        # Check if the codes are read correctly.
         assert isinstance(shape_codes, list)
         assert "XYZ1" in shape_codes
         assert "XYZ2" in shape_codes
@@ -141,9 +120,8 @@ def test_check_and_get_codes_with_errors():
     """
     Test if the check_and_get_codes_with function handles errors.
 
-    This test checks if the function raises errors for invalid codes,
-    invalid data sources, and if the codes in the file do not match the
-    expected codes.
+    Invalid features, data sources and codes raise errors, and so does
+    a file with none of the available codes.
     """
     # Check if the function raises an error for an invalid feature.
     with pytest.raises(ValueError, match="Invalid feature"):
@@ -181,20 +159,13 @@ def test_check_and_get_codes_with_errors():
             "utils.data_sources.read_all_codes_with_electricity_demand_data"
         ) as mock_read_all_codes,
     ):
-        # Mock the return value of read_codes_in to return invalid
-        # codes.
         mock_read_codes.return_value = ["USA_CAL", "USA_TEX"]
-
-        # Mock the return value of
-        # read_all_codes_with_electricity_demand_data
-        # to return all available codes with demand data.
         mock_read_all_codes.return_value = [
             "FRA",
             "DEU",
             "ITA",
         ]
 
-        # Check if the function raises an error for invalid codes.
         with pytest.raises(
             ValueError, match="None of the codes in the file are available"
         ):
@@ -203,27 +174,20 @@ def test_check_and_get_codes_with_errors():
             )
 
     # Check if the function raises an error for invalid codes read from
-    # a file.
+    # a file, for the codes with all the data.
     with (
         patch("utils.data_sources.read_codes_in") as mock_read_codes,
         patch(
             "utils.availability.read_codes_with_all_data"
         ) as mock_read_all_codes,
     ):
-        # Mock the return value of read_codes_in to return invalid
-        # codes.
         mock_read_codes.return_value = ["USA_CAL", "USA_TEX"]
-
-        # Mock the return value of
-        # read_all_codes_with_electricity_demand_data
-        # to return all available codes with demand data.
         mock_read_all_codes.return_value = [
             "FRA",
             "DEU",
             "ITA",
         ]
 
-        # Check if the function raises an error for invalid codes.
         with pytest.raises(
             ValueError, match="None of the codes in the file are available"
         ):
@@ -232,7 +196,6 @@ def test_check_and_get_codes_with_errors():
             )
 
     with patch("utils.data_sources.read_codes_in") as mock_read_codes:
-        # Check if the function raises an error for invalid codes.
         # Mock the return value of read_codes_in for two times, the
         # first time for electricity demand data, the second time
         # for the codes in the file.
@@ -241,8 +204,6 @@ def test_check_and_get_codes_with_errors():
             ["FRA", "DEU", "ITA"],
         ]
 
-        # Check if the function raises an error when the codes in
-        # the file do not match the expected codes.
         with pytest.raises(
             ValueError, match="None of the codes in the file are available"
         ):

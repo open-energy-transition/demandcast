@@ -51,8 +51,12 @@ def add_data_source(tmp_path, monkeypatch):
     )
 
     def add(name: str, codes: list[str], **functions: Mock) -> None:
-        # The codes are country codes, followed by subdivision codes
-        # for subdivisions, which also have a name and a time zone.
+        """
+        Write the YAML file and the module of a fake data source.
+
+        The codes are country codes, followed by subdivision codes for
+        subdivisions, which also have a name and a time zone.
+        """
         entities = []
         for code in codes:
             country_code, _, subdivision_code = code.partition("_")
@@ -304,6 +308,19 @@ def test_unpublished_latest_request(add_data_source):
     """Test that the data of the latest request can be missing."""
 
     def download(request, _code):
+        """
+        Give the demand of 2023.
+
+        Returns
+        -------
+        pandas.Series
+            The demand of the request.
+
+        Raises
+        ------
+        DataNotFoundError
+            If the request is 2024.
+        """
         if request == 2024:
             raise utils.fetcher.DataNotFoundError("HTTP error 404")
         return _demand("2023-01-01 01:00", [100.0])
@@ -325,6 +342,19 @@ def test_missing_data_of_other_requests(add_data_source, requests):
     """Test that the data of another or the only request must exist."""
 
     def download(request, _code):
+        """
+        Give the demand of 2024.
+
+        Returns
+        -------
+        pandas.Series
+            The demand of the request.
+
+        Raises
+        ------
+        DataNotFoundError
+            If the request is None or 2023.
+        """
         if request in {None, 2023}:
             raise utils.fetcher.DataNotFoundError("HTTP error 404")
         return _demand("2024-01-01 01:00", [100.0])
@@ -407,6 +437,14 @@ def test_versions_of_the_raw_data(add_data_source, monkeypatch):
     contents: dict[str, bytes] = {}
 
     def send(_adapter, request, **_kwargs):
+        """
+        Answer a request with the content of its URL.
+
+        Returns
+        -------
+        requests.Response
+            The response.
+        """
         response = requests.Response()
         response.status_code = 200
         response._content = contents[request.url]
@@ -416,6 +454,14 @@ def test_versions_of_the_raw_data(add_data_source, monkeypatch):
     monkeypatch.setattr(requests.adapters.HTTPAdapter, "send", send)
 
     def download_and_extract_data_for_request(_request, _code):
+        """
+        Download the file of the website and read its values.
+
+        Returns
+        -------
+        pandas.Series
+            The demand in MW, at times in UTC.
+        """
         text = requests.get(url, timeout=10).text
         values = pd.read_csv(io.StringIO(text), index_col=0, parse_dates=True)
         return values["value"].astype(float).tz_localize("UTC")
@@ -478,8 +524,20 @@ def test_versions_of_the_raw_data(add_data_source, monkeypatch):
 def test_raw_data_kept_when_a_request_fails(add_data_source, monkeypatch):
     """Test that the responses before a failed request are kept."""
 
-    # A website that answers the file of 2023 and fails for 2024.
     def send(_adapter, request, **_kwargs):
+        """
+        Answer the file of 2023.
+
+        Returns
+        -------
+        requests.Response
+            The response.
+
+        Raises
+        ------
+        requests.exceptions.ConnectionError
+            If the request is the file of 2024.
+        """
         if request.url.endswith("2024.csv"):
             raise requests.exceptions.ConnectionError("Read timed out")
         response = requests.Response()
@@ -491,6 +549,14 @@ def test_raw_data_kept_when_a_request_fails(add_data_source, monkeypatch):
     monkeypatch.setattr(requests.adapters.HTTPAdapter, "send", send)
 
     def download_and_extract_data_for_request(request, _code):
+        """
+        Download the file of the year and read its values.
+
+        Returns
+        -------
+        pandas.Series
+            The demand in MW, at times in UTC.
+        """
         text = requests.get(
             f"https://example.org/{request}.csv", timeout=10
         ).text
@@ -522,8 +588,17 @@ def test_newest_of_overlapping_requests(add_data_source, monkeypatch):
     """Test that the newest of overlapping requests gives the values."""
 
     def download_and_extract_data_for_request(request, _code):
-        # The daily requests give about 1 MW, and the monthly one about
-        # 2 MW for the first day only, all changing every hour.
+        """
+        Give the demand of a day or of the month.
+
+        The daily requests give about 1 MW, and the monthly one about
+        2 MW for the first day only, all changing every hour.
+
+        Returns
+        -------
+        pandas.Series
+            The demand of the request.
+        """
         hours = [0.001 * hour for hour in range(24)]
         if request == "month":
             return _demand("2024-01-01 01:00", [2.0 + h for h in hours])
@@ -589,6 +664,14 @@ def test_manual_files_in_the_raw_data(add_data_source, monkeypatch):
     file_path = os.path.join(folder, "MAN_1.csv")
 
     def download_and_extract_data_for_request(_request, _code):
+        """
+        Read the values of the manually downloaded files.
+
+        Returns
+        -------
+        pandas.Series
+            The demand in MW, at times in UTC.
+        """
         dataset = utils.fetcher.read_manual_files(
             data_source_name="Manual",
             url="https://example.org",
@@ -643,8 +726,15 @@ def test_raw_data_kept_when_the_data_cannot_be_extracted(
 ):
     """Test that the responses whose data has an error are kept."""
 
-    # A website whose file has another name of its column.
     def send(_adapter, request, **_kwargs):
+        """
+        Answer with a file that has another name of its column.
+
+        Returns
+        -------
+        requests.Response
+            The response.
+        """
         response = requests.Response()
         response.status_code = 200
         response._content = b"time,valeur\n2023-01-01 00:00,1\n"
@@ -655,6 +745,14 @@ def test_raw_data_kept_when_the_data_cannot_be_extracted(
     column = {"name": "value"}
 
     def download_and_extract_data_for_request(_request, _code):
+        """
+        Download the file and read the values of the column.
+
+        Returns
+        -------
+        pandas.Series
+            The demand in MW, at times in UTC.
+        """
         text = requests.get("https://example.org/data.csv", timeout=10).text
         return _read_csv_demand(text, column["name"])
 

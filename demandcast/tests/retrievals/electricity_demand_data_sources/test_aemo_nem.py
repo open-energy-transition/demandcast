@@ -108,6 +108,14 @@ def test_rooftop_solar_without_folder(monkeypatch):
     """Test that a month without its folder has no rooftop solar yet."""
 
     def fetch_content(_url):
+        """
+        Fail as for a folder that does not exist.
+
+        Raises
+        ------
+        DataNotFoundError
+            Always.
+        """
         raise aemo_nem.utils.fetcher.DataNotFoundError("HTTP error 404")
 
     monkeypatch.setattr(aemo_nem, "_fetch_content", fetch_content)

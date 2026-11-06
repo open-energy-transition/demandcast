@@ -68,10 +68,8 @@ def run_model_cross_validation(
     """
     logging.info("Starting cross-validation process.")
 
-    # Get the assembled data path.
     data_path = ml_models.files.get_assemble_data_path(data_path)
 
-    # Read and prepare the dataset.
     prepared_dataset = ml_models.data.prepare_dataset(data_path, ml_config)
 
     # Run Leave-One-Group-Out cross-validation, keeping the model of
@@ -100,7 +98,6 @@ def run_model_cross_validation(
             summary, f"Held-out entities, holding out each {holdout}"
         )
 
-        # Save the cross-validation results.
         ml_models.files.save_results(
             "cross_validation",
             results,
@@ -136,7 +133,6 @@ def main(config: ConfigModel) -> None:
     utils.config.set_up_logging("model_cross_validation")
     utils.config.log_configuration(config)
 
-    # Read and check machine learning configuration.
     ml_config = ml_models.data.read_and_check_ml_configuration()
 
     run_model_cross_validation(

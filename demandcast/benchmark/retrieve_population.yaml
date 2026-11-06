@@ -1,3 +1,6 @@
+# Configuration of retrieve.py for the population of the benchmark of
+# the models (see run.py).
+
 variable: population
 electricity_data_source:
 code:

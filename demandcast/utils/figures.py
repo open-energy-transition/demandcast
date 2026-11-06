@@ -4,8 +4,8 @@ License: AGPL-3.0.
 Description:
 
     This module contains functions to generate a simple plot of data
-    from a GeoDataFrame or xarray DataArray and save the figure
-    to a specified directory.
+    from a GeoDataFrame or xarray DataArray and save the figure in the
+    figures folder of the results.
 """
 
 import os
@@ -23,8 +23,7 @@ def simple_plot(
     """
     Generate a simple plot of the provided data.
 
-    This function takes a GeoDataFrame or xarray DataArray, plots it
-    using matplotlib, and saves the figure to a specified directory.
+    The figure is saved as a PNG file named after the figure.
 
     Parameters
     ----------
@@ -33,11 +32,9 @@ def simple_plot(
     figure_name : str
         The name of the figure.
     """
-    # Create a directory to store the figures.
     figure_directory = utils.paths.get_results_folder("figures")
     os.makedirs(figure_directory, exist_ok=True)
 
-    # Plot the data.
     fig, ax = plt.subplots()
     # xarray types the plot accessor in a way that mypy misreads.
     data_to_plot.plot(ax=ax)  # type: ignore[call-arg]

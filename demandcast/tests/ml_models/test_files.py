@@ -20,12 +20,7 @@ import utils.paths
 
 
 def test_get_trained_model_path_with_provided_path():
-    """
-    Test get_trained_model_path when a path is provided.
-
-    This test checks if the function returns the provided path when
-    it's not None.
-    """
+    """Test get_trained_model_path when a path is provided."""
     model_path = "/path/to/model.json"
     result = ml_models.files.get_trained_model_path(model_path, "xgboost")
     assert result == model_path
@@ -35,8 +30,7 @@ def test_get_trained_model_path_without_provided_path():
     """
     Test get_trained_model_path when no path is provided.
 
-    This test mocks the file system to simulate finding the latest
-    trained model file.
+    The path is that of the latest trained model.
     """
     with (
         patch("utils.paths.get_models_folder", return_value="/models"),
@@ -77,8 +71,7 @@ def test_get_trained_model_path_no_files_found():
     """
     Test get_trained_model_path when no files are found.
 
-    This test checks if the function raises FileNotFoundError when no
-    trained model files are found.
+    It raises a FileNotFoundError.
     """
     with (
         patch("utils.paths.get_models_folder", return_value="/models"),
@@ -94,8 +87,8 @@ def test_get_trained_model_path_pt_extension():
     """
     Test get_trained_model_path with ``.pt`` extension for LSTM.
 
-    Verifies the extension parameter selects ``.pt`` files and picks
-    the latest by datetime stamp.
+    The extension selects the ``.pt`` files, and the latest is the one
+    with the latest time in its name.
     """
     with (
         patch("utils.paths.get_models_folder", return_value="/models"),
@@ -117,12 +110,7 @@ def test_get_trained_model_path_pt_extension():
 
 
 def test_get_trained_model_path_xgboost_unchanged_with_pt_present():
-    """
-    XGBoost path search ignores ``.pt`` files even when they exist.
-
-    Ensures the extension parameter keeps the two algorithm namespaces
-    fully separated.
-    """
+    """Test that the search of XGBoost models ignores ``.pt`` files."""
     with (
         patch("utils.paths.get_models_folder", return_value="/models"),
         patch("os.listdir") as mock_listdir,
@@ -140,12 +128,7 @@ def test_get_trained_model_path_xgboost_unchanged_with_pt_present():
 
 
 def test_get_assemble_data_path_with_provided_path():
-    """
-    Test get_assemble_data_path when a path is provided.
-
-    This test checks if the function returns the provided path when
-    it's not None.
-    """
+    """Test get_assemble_data_path when a path is provided."""
     data_path = "/path/to/data.parquet"
     result = ml_models.files.get_assemble_data_path(data_path)
     assert result == data_path
@@ -155,8 +138,7 @@ def test_get_assemble_data_path_without_provided_path():
     """
     Test get_assemble_data_path when no path is provided.
 
-    This test mocks the file system to simulate finding the latest
-    assembled data file.
+    The path is that of the latest assembled data.
     """
     with (
         patch("utils.paths.get_assembled_folder", return_value="/data"),
@@ -184,8 +166,7 @@ def test_get_assemble_data_path_no_files_found():
     """
     Test get_assemble_data_path when no files are found.
 
-    This test checks if the function raises FileNotFoundError when no
-    assembled data files are found.
+    It raises a FileNotFoundError.
     """
     with (
         patch("utils.paths.get_assembled_folder", return_value="/data"),
@@ -264,8 +245,7 @@ def test_save_results_invalid_case():
     """
     Test save_results with invalid case.
 
-    This test checks if the function raises ValueError when an invalid
-    case is provided.
+    It raises a ValueError.
     """
     output_data = pd.DataFrame({"value": [1, 2]})
 

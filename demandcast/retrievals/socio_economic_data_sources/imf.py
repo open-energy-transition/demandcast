@@ -25,17 +25,18 @@ def download_gdp_ppp_per_capita() -> pd.DataFrame:
     -------
     pandas.DataFrame
         The historical GDP PPP per capita data from the IMF.
+
+    Notes
+    -----
+    The codes of the IMF for Kosovo (KOS) and Palestine (WBG) are
+    replaced by their ISO Alpha-3 codes, XKX and PSE.
     """
     logging.info("Downloading GDP PPP per capita data from the IMF.")
 
-    # Initialize the IMF SDMX client.
     imf_client = sdmx.Client("IMF_DATA")
 
-    # Download the GDP PPP per capita data from the IMF.
     imf_gdp_ppp_per_capita = imf_client.data("WEO", key="*.NGDPRPPPPC.A")
 
-    # Convert the data to a pandas Series, indexed by the dimensions of
-    # the data.
     imf_gdp_ppp_per_capita = cast(
         pd.Series, sdmx.to_pandas(imf_gdp_ppp_per_capita)
     )
@@ -55,11 +56,9 @@ def download_gdp_ppp_per_capita() -> pd.DataFrame:
     imf_gdp_ppp_per_capita.index = imf_gdp_ppp_per_capita.index.astype(str)
     imf_gdp_ppp_per_capita = imf_gdp_ppp_per_capita.astype(float)
 
-    # Rename the index and columns.
     imf_gdp_ppp_per_capita.index.name = "Country Code"
     imf_gdp_ppp_per_capita.columns.name = "Year"
 
-    # Remove rows with all NaN values.
     imf_gdp_ppp_per_capita = imf_gdp_ppp_per_capita.dropna(how="all")
 
     # Remove rows with country codes that are not three letters long.
@@ -67,7 +66,6 @@ def download_gdp_ppp_per_capita() -> pd.DataFrame:
         imf_gdp_ppp_per_capita.index.str.len() == 3
     ]
 
-    # Change the code for Kosovo and Palestine.
     imf_gdp_ppp_per_capita = imf_gdp_ppp_per_capita.rename(
         index={"KOS": "XKX", "WBG": "PSE"}
     )

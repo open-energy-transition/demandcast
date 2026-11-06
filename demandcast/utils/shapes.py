@@ -5,7 +5,9 @@ Description:
 
     This module retrieves standard shapes of countries and subdivisions
     from the Natural Earth shapefile database. It also retrieves
-    non-standard subdivision shapes from the shapes directory.
+    non-standard subdivision shapes from the shapes directory: the
+    shapes of subdivisions that Natural Earth does not have, defined by
+    the user in a shapefile for each data source.
 """
 
 import os
@@ -27,11 +29,9 @@ def _remove_islands_and_clip_to_180(  # noqa: C901
     """
     Remove small remote islands and clip to 180/-180 longitude.
 
-    This function modifies the shape of certain countries to exclude
-    small remote islands that are not relevant for the analysis and
-    would otherwise lead to the download of large weather datasets.
-    It also clips the shape to the 180/-180 longitude to avoid issues
-    with data retrieval.
+    The shape of some countries and subdivisions is cut to a box that
+    leaves out their small remote islands and the parts beyond the
+    180/-180 longitude.
 
     Parameters
     ----------
@@ -45,6 +45,12 @@ def _remove_islands_and_clip_to_180(  # noqa: C901
     entity_shape : geopandas.GeoDataFrame
         GeoDataFrame containing the country or subdivision of interest
         without small remote islands.
+
+    Notes
+    -----
+    The small remote islands are not relevant for the analysis and
+    would lead to the download of large weather datasets. The clipping
+    to the 180/-180 longitude avoids issues with the data retrieval.
     """
     new_bounds = None
 
@@ -97,13 +103,9 @@ def _remove_islands_and_clip_to_180(  # noqa: C901
             )
 
     if new_bounds is not None:
-        # Convert the GeoSeries to a GeoDataFrame and set the coordinate
-        # reference system to EPSG 4326.
         new_bounds_frame = geopandas.GeoDataFrame.from_features(
             new_bounds, crs=4326
         )
-
-        # Remove any area outside the new bounds.
         entity_shape = entity_shape.overlay(
             new_bounds_frame, how="intersection"
         )
@@ -117,8 +119,8 @@ def get_standard_shape(
     """
     Retrieve the shape of a country or subdivision.
 
-    This function retrieves the shape of a country or subdivision from
-    the Natural Earth shapefile database.
+    The shape comes from the Natural Earth shapefile database, found by
+    the code of the entity, or else by its name.
 
     Parameters
     ----------
@@ -139,45 +141,28 @@ def get_standard_shape(
     ValueError
         If no shape matches the code or the name of the entity.
     """
-    # If there isn't an underscore in the code, it is the ISO Alpha-3
-    # code of the country, and the entity is therefore the country.
-    # If there is an underscore in the code, it is a combination of ISO
-    # Alpha-3 code and subdivision code, and the entity is a subdivision
-    # of the country.
-
     if "_" not in code:
-        # Define the relevant parameters for the shapefile retrieval.
         shapefile_name = "admin_0_countries"
         main_keys = ["ISO_A3", "ISO_A3_EH"]
         secondary_keys = ["NAME", "NAME_LONG"]
         code_to_search = code
     else:
-        # Define the relevant parameters for the shapefile retrieval.
         shapefile_name = "admin_1_states_provinces"
         main_keys = ["iso_3166_2"]
         secondary_keys = ["name"]
 
-        # Split the code into ISO Alpha-3 code and subdivision code.
         iso_alpha_3_code, subdivision_code = code.split("_")
-
-        # Get the ISO Alpha-2 code from the ISO Alpha-3 code.
         iso_alpha_2_code = utils.codes.get_iso_alpha_2_code(iso_alpha_3_code)
 
         # Combine the ISO Alpha-2 code and the subdivision code to
         # match the format used in the shapefile database.
         code_to_search = f"{iso_alpha_2_code}-{subdivision_code}"
 
-    # Load the shapefile containing the subdivision shapes from the
-    # Natural Earth database.
     all_shapes = cartopy.io.shapereader.natural_earth(
         resolution="50m", category="cultural", name=shapefile_name
     )
-
-    # Define a reader for the shapefile.
     reader = cartopy.io.shapereader.Reader(all_shapes)
 
-    # Read the shape of the country or subdivision of interest by
-    # searching for its code.
     entity_shape = next(
         (
             shape
@@ -188,12 +173,7 @@ def get_standard_shape(
     )
 
     if entity_shape is None:
-        # Get the name of the country or subdivision of interest based
-        # on its code.
         name_to_search = utils.codes.get_name_from_code(code)
-
-        # Read the shape of the country or subdivision of interest by
-        # searching for its name.
         entity_shape = next(
             (
                 shape
@@ -207,7 +187,6 @@ def get_standard_shape(
     if entity_shape is None:
         raise ValueError(f"No shape found for {code} in Natural Earth.")
 
-    # Convert the shape to a GeoDataFrame.
     entity_series = geopandas.GeoSeries(
         pd.Series({"geometry": entity_shape.geometry})
     )
@@ -215,7 +194,6 @@ def get_standard_shape(
         entity_series, crs=4326
     )
 
-    # Remove small remote islands from the shape of some countries.
     if remove_remote_islands:
         entity_shape_frame = _remove_islands_and_clip_to_180(
             entity_shape_frame, code
@@ -228,10 +206,8 @@ def _read_non_standard_shape_codes() -> dict[str, list[str]]:
     """
     Read the non-standard shapes codes from the shapes directory.
 
-    This function reads the codes of the non-standard shapes from the
-    shapes directory. Non-standard shapes are those that are not
-    available in the Natural Earth shapefile database and are defined by
-    the user in the shapes directory.
+    The codes are read from the shapefile of each data source in the
+    shapes directory.
 
     Returns
     -------
@@ -239,30 +215,16 @@ def _read_non_standard_shape_codes() -> dict[str, list[str]]:
         Dictionary containing the non-standard shapes and their
         respective codes.
     """
-    # Get the path to the shapes directory.
     shapes_directory = utils.paths.SHAPES_FOLDER
 
-    # Create a dictionary to store the non-standard shapes and their
-    # respective codes.
     non_standard_shape_codes = {}
-
-    # Iterate over the folders in the shapes directory.
     for folder in os.listdir(shapes_directory):
-        # Check if folder is a directory.
         if os.path.isdir(os.path.join(shapes_directory, folder)):
-            # Define the path to the shapefile.
             shapefile_path = os.path.join(
                 shapes_directory, folder, folder + ".shp"
             )
-
-            # Read the shapefile of the subdivisions of the data source.
             entity_shapes = geopandas.read_file(shapefile_path)
-
-            # Get the codes of the subdivisions in the shapefile.
             entity_codes = entity_shapes["code"].unique()
-
-            # Add the non-standard shapes and their respective codes to
-            # the dictionary.
             non_standard_shape_codes[folder] = list(entity_codes)
 
     return non_standard_shape_codes
@@ -274,10 +236,7 @@ def _get_non_standard_shape(
     """
     Retrieve the shape of a non-standard subdivision.
 
-    This function retrieves the shape of a non-standard subdivision from
-    the shapes directory. Non-standard subdivisions are those that are
-    not available in the Natural Earth shapefile database and are
-    defined by the user in the shapes directory.
+    The shape is read from the shapes directory.
 
     Parameters
     ----------
@@ -291,18 +250,12 @@ def _get_non_standard_shape(
     entity_shape : geopandas.GeoDataFrame
         GeoDataFrame containing the shape of the subdivision.
     """
-    # Get the path to the shapes directory.
     shapes_directory = utils.paths.SHAPES_FOLDER
-
-    # Define the path to the shapefile based on the data source.
     shapefile_path = os.path.join(
         shapes_directory, data_source, data_source + ".shp"
     )
-
-    # Read the shapefile of the subdivisions of the data source.
     entity_shapes = geopandas.read_file(shapefile_path)
 
-    # Get the shape of the subdivision of interest.
     entity_shape = entity_shapes[entity_shapes["code"] == code]
     entity_shape = geopandas.GeoDataFrame.from_features(
         entity_shape["geometry"]
@@ -317,10 +270,9 @@ def get_entity_shape(
     """
     Get the shape of a country or subdivision of interest.
 
-    This function retrieves the shape of a country or subdivision of
-    interest based on its code. If the country or subdivision is not
-    found in the Natural Earth shapefile database, it checks if it is a
-    non-standard shape defined by the user in the shapes directory.
+    A country has the shape of the Natural Earth shapefile database. A
+    subdivision has its non-standard shape, if it has one, and that of
+    the Natural Earth shapefile database otherwise.
 
     Parameters
     ----------
@@ -338,25 +290,13 @@ def get_entity_shape(
     entity_shape : geopandas.GeoDataFrame
         GeoDataFrame containing the country or subdivision of interest.
     """
-    # If there isn't an underscore in the code, it is the ISO Alpha-3
-    # code of the country. If there is an underscore in the code, it is
-    # a combination of ISO Alpha-3 code and subdivision code.
     if "_" not in code:
-        # Get the shape of the country from the Natural Earth
-        # shapefile database.
         entity_shape = get_standard_shape(code, remove_remote_islands)
     else:
-        # Define a flag to check if the subdivision is in the list of
-        # non-standard shapes.
         is_non_standard_shape = False
         selected_data_source = ""
 
-        # Read the codes of the non-standard shapes contained in the
-        # shapes directory.
         non_standard_shape_codes = _read_non_standard_shape_codes()
-
-        # Iterate over the codes of the non-standard shapes and check if
-        # the subdivision code is in the list of non-standard shapes.
         for (
             data_source,
             codes_of_data_source,
@@ -367,15 +307,10 @@ def get_entity_shape(
                 break
 
         if is_non_standard_shape:
-            # Get the shape of the subdivision from the user-defined
-            # shapes in the shapes directory.
             entity_shape = _get_non_standard_shape(code, selected_data_source)
         else:
-            # Get the shape of the subdivision from the Natural Earth
-            # shapefile database.
             entity_shape = get_standard_shape(code, remove_remote_islands)
 
-    # Add the code as index to the GeoDataFrame.
     entity_shape["code"] = code
     entity_shape = entity_shape.set_index("code")
 
@@ -391,11 +326,11 @@ def get_entity_bounds(
     """
     Get the lateral bounds of the country or subdivision.
 
-    This function retrieves the lateral bounds of a country or
-    subdivision of interest. The bounds are returned as a list
-    containing the western, southern, eastern, and northern bounds,
-    respectively. The bounds are rounded to the closest 0.25 degree.
-    One degree of buffer is added to the bounds.
+    The bounds are returned as a list containing the western,
+    southern, eastern, and northern bounds, respectively. One degree of
+    buffer is added to the bounds, which are kept within -180 and 180
+    degrees of longitude and rounded to the closest multiple of the
+    target resolution.
 
     Parameters
     ----------
@@ -411,14 +346,10 @@ def get_entity_bounds(
         List containing the lateral bounds of the country or subdivision
         of interest.
     """
-    # Get the lateral bounds of the country or subdivision of interest
-    # including a buffer layer of one degree.
     entity_bounds = (
         entity_shape.union_all().buffer(1).bounds
     )  # West, South, East, North
 
-    # If longitude bounds are outside the range of -180 to 180 degrees,
-    # adjust them to be within this range.
     if entity_bounds[0] < -180:
         entity_bounds = (
             -180,
@@ -434,7 +365,6 @@ def get_entity_bounds(
             entity_bounds[3],
         )
 
-    # Round the bounds to the closest target resolution.
     return [
         round(x / target_resolution) * target_resolution for x in entity_bounds
     ]
@@ -444,10 +374,9 @@ def get_all_codes_with_shapes() -> list[str]:
     """
     Get the list of all available codes for which shapes are available.
 
-    This function retrieves the list of all available codes for which
-    shapes are available. This includes both standard shapes from the
-    Natural Earth shapefile database and non-standard shapes defined by
-    the user in the shapes directory.
+    The codes are those of the countries and standard subdivisions of
+    the Natural Earth shapefile database, and of the non-standard
+    shapes in the shapes directory.
 
     Returns
     -------
@@ -458,28 +387,34 @@ def get_all_codes_with_shapes() -> list[str]:
     ------
     ValueError
         If a subdivision has an unknown ISO Alpha-2 code.
+
+    Notes
+    -----
+    The countries of Natural Earth include Somaliland and Northern
+    Cyprus, which are not internationally recognized and have no ISO
+    Alpha-3 code, and Kosovo, which has one, but whose shape does not:
+    it is found by its name among the entities that pycountry does not
+    list. They also include territories controlled by other countries
+    or under dispute: the Australian Indian Ocean Territories (AU),
+    Ashmore and Cartier Islands (AU) and the Siachen Glacier. Taiwan is
+    a separate country, with the code TWN.
+
+    The standard subdivisions are those of Australia (six states and
+    three internal territories), Brazil (26 states and one federal
+    district), Canada (10 provinces and three territories), China (22
+    provinces, five autonomous regions and four municipalities), India
+    (28 states and eight union territories), Russia (22 republics, nine
+    krais, 46 oblasts, three federal cities, one autonomous oblast and
+    four autonomous okrugs), South Africa (nine provinces), Ukraine
+    (Crimea and Sevastopol) and the United States (50 states and one
+    federal district).
     """
-    # Get the shape of all countries from the Natural Earth shapefile
-    # database.
     shapes_of_all_countries = cartopy.io.shapereader.natural_earth(
         resolution="50m", category="cultural", name="admin_0_countries"
     )
-
-    # Define a reader for the shapefile.
     reader = cartopy.io.shapereader.Reader(shapes_of_all_countries)
 
-    # Get the list of ISO Alpha-3 codes of all countries. Currently,
-    # the Natural Earth shapefile database contains some countries not
-    # internationally recognized and without an ISO Alpha-3 code.
-    # These are Somaliland and Northern Cyprus. Another country not
-    # internationally recognized but with an ISO Alpha-3 code is Kosovo,
-    # whose shape has no ISO Alpha-3 code either, so it is found by its
-    # name among the entities that pycountry does not list.
-    # There are also some territories controlled by other countries or
-    # under dispute, which are the Australian Indian Ocean Territories
-    # (AU), Ashmore and Cartier Islands (AU), and the Siachen Glacier.
-    # Taiwan is included as a separate country with its own code, which
-    # is TWN.
+    # Get the list of ISO Alpha-3 codes of all countries.
     codes_of_extra_entities = {
         info["name"]: code for code, info in utils.codes.EXTRA_ENTITIES.items()
     }
@@ -494,30 +429,12 @@ def get_all_codes_with_shapes() -> list[str]:
                 codes_of_extra_entities[shape.attributes["NAME"]]
             )
 
-    # Get the shape of standard subdivisions from the Natural Earth
-    # shapefile database.
     shapes_of_all_standard_subdivisions = cartopy.io.shapereader.natural_earth(
         resolution="50m", category="cultural", name="admin_1_states_provinces"
     )
-
-    # Define a reader for the shapefile.
     reader = cartopy.io.shapereader.Reader(shapes_of_all_standard_subdivisions)
 
-    # Get the list of codes of all standard subdivisions. Standard
-    # subdivisions are available for Australia, Brazil, Canada, China,
-    # India, Russia, South Africa, Ukraine, and the United States.
-    # Subdivisions of Australia include six states and three internal
-    # territories. Subdivisions of Brazil include 26 states and one
-    # federal district. Subdivisions of Canada include 10 provinces and
-    # three territories. Subdivisions of China include 22 provinces,
-    # five autonomous regions, and four municipalities. Subdivisions
-    # of India include 28 states and eight union territories.
-    # Subdivisions of Russia include 22 republics, nine krais, 46
-    # oblasts, three federal cities, one autonomous oblast, and four
-    # autonomous okrugs. Subdivisions of South Africa include nine
-    # provinces. Sudivisions of Ukraine include Crimea and Sevastopol.
-    # Subdivisions of the United States include 50 states and one
-    # federal district.
+    # Get the list of codes of all standard subdivisions.
     codes_of_all_standard_subdivisions = [
         shape.attributes["iso_3166_2"] for shape in list(reader.records())
     ]
@@ -541,13 +458,10 @@ def get_all_codes_with_shapes() -> list[str]:
     for codes in non_standard_shape_codes.values():
         codes_of_all_non_standard_subdivisions.extend(codes)
 
-    # Combine the lists of codes of all countries, standard
-    # subdivisions, and non-standard subdivisions.
     all_codes = (
         codes_of_all_countries
         + codes_of_all_standard_subdivisions
         + codes_of_all_non_standard_subdivisions
     )
 
-    # Remove any duplicates and sort the list of codes.
     return sorted(set(all_codes))

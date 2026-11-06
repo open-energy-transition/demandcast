@@ -61,7 +61,6 @@ def download_electricity_demand_per_capita() -> pd.DataFrame:
     electricity_demand_per_capita.index.name = "Country Code"
     electricity_demand_per_capita.columns.name = "Year"
 
-    # Remove rows with all NaN values.
     electricity_demand_per_capita = electricity_demand_per_capita.dropna(
         how="all"
     )

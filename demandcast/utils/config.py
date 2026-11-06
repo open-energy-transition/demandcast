@@ -91,10 +91,8 @@ def read_configuration(
     FileNotFoundError
         If the configuration file does not exist.
     """
-    # Create a parser for the command line arguments.
     parser = argparse.ArgumentParser(description=script_description)
 
-    # Add the argument for the config file path.
     parser.add_argument(
         "-c",
         "--config",
@@ -107,7 +105,6 @@ def read_configuration(
         required=False,
     )
 
-    # Extract the config file path.
     config_file_path = parser.parse_args().config
 
     if not os.path.exists(config_file_path):
@@ -115,7 +112,6 @@ def read_configuration(
             f"The configuration file '{config_file_path}' does not exist."
         )
 
-    # Read the configuration file.
     with open(config_file_path, encoding="utf-8") as file:
         config = yaml.safe_load(file)
 
@@ -181,7 +177,6 @@ def set_up_logging(process: str) -> None:
     process : str
         The name of the process for which the logging is set up.
     """
-    # Define the log file name.
     log_file_name = (
         process
         + "_"
@@ -189,11 +184,9 @@ def set_up_logging(process: str) -> None:
         + ".log"
     )
 
-    # Get the log files directory and create it if it does not exist.
     log_files_directory = utils.paths.get_logs_folder()
     os.makedirs(log_files_directory, exist_ok=True)
 
-    # Set up the logging configuration.
     logging.basicConfig(
         filename=os.path.join(log_files_directory, log_file_name),
         level=logging.INFO,

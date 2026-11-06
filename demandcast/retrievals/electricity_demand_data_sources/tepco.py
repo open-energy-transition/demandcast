@@ -53,9 +53,7 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the TEPCO website: the years with a yearly file,
-    and then the months.
+    The requests are the years with a yearly file, and then the months.
 
     Parameters
     ----------
@@ -201,9 +199,6 @@ def download_and_extract_data_for_request(
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    from the TEPCO website.
 
     Parameters
     ----------

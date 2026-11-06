@@ -60,7 +60,6 @@ def get_url() -> str:
     str
         The URL of the electricity demand data.
     """
-    # Return the URL of the electricity demand data.
     return "https://data.mendeley.com/public-files/datasets/tcmmj4t6f4/files/1b23f797-b28e-445b-85ef-e8c773922a23/file_downloaded"
 
 
@@ -69,9 +68,6 @@ def download_and_extract_data_for_request(
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    from CND.
 
     Parameters
     ----------
@@ -85,20 +81,16 @@ def download_and_extract_data_for_request(
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
     """
-    # Get the URL of the electricity demand data.
     url = get_url()
 
-    # Fetch the data from the URL.
     dataset = utils.fetcher.fetch_dataframe(url, "html", read_as="excel_table")
 
-    # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
         dataset["Carga Real"].values,
         index=pd.to_datetime(dataset["Fecha Hora"]),
     )
 
-    # The times are the starts of the hours, the first of each week
-    # numbered 1. Move them to the ends of the hours.
+    # Move the times from the starts to the ends of the hours.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

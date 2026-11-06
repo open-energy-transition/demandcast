@@ -276,13 +276,16 @@ def is_outdated(
         Whether the file does not exist, or has reanalysis data written
         more than a day ago, when the data may have been updated since,
         and either written before the data of its year was complete or
-        ending before the last hour of a past year. This also completes
-        a year retrieved while it was in progress. The end of the data
-        of a netCDF file of the grid is read from the file, since the
-        time of a file copied from elsewhere, such as from a bucket, is
-        that of its copy. Other files, such as the temperature of a
-        local year, which ends before the last hour of the year in UTC
-        east of UTC, are checked by their time only.
+        ending before the last hour of a past year.
+
+    Notes
+    -----
+    This also completes a year retrieved while it was in progress. The
+    end of the data of a NetCDF file of the grid is read from the file,
+    since the time of a file copied from elsewhere, such as from a
+    bucket, is that of its copy. Other files, such as the temperature
+    of a local year, which ends before the last hour of the year in UTC
+    east of UTC, are checked by their time only.
     """
     if not os.path.exists(file_path):
         return True
@@ -332,7 +335,6 @@ def _get_request(
     ValueError
         If only one of model or scenario is provided.
     """
-    # Initialize the request with the common parameters.
     request: dict[str, str | list[str] | list[float]] = {
         "year": [str(year) for year in years],
         "month": [f"{mm:02d}" for mm in range(1, 13)],
@@ -360,7 +362,6 @@ def _get_request(
             scenario.lower().replace("-", "_").replace(".", "_")
         )
 
-    # Add the bounds to the request if they are provided.
     if bounds is not None:
         request["area"] = [
             bounds[3],
@@ -425,10 +426,8 @@ def _download_data(
         )
     )
 
-    # Create a new CDS API client.
     client = get_cds_client()
 
-    # Define the dataset.
     if dataset in {"reanalysis-era5-single-levels", "reanalysis"}:
         dataset = "reanalysis-era5-single-levels"
         file_path += ".nc"
@@ -438,11 +437,9 @@ def _download_data(
     else:
         raise ValueError(f"Dataset {dataset} is not supported.")
 
-    # Define the request.
     request = _get_request(variable, years, model, scenario, bounds)
     client.retrieve(dataset, request, file_path)
 
-    # Unzip the file if it is a projections dataset.
     if dataset == "projections-cmip6":
         with zipfile.ZipFile(file_path, "r") as zip_ref:
             zip_ref.extractall(os.path.dirname(file_path))
@@ -470,7 +467,6 @@ def _download_data(
                     "Cannot determine which one to rename."
                 )
 
-        # Remove the zip file.
         os.remove(file_path)
 
         logging.info(
@@ -503,10 +499,8 @@ def run_data_retrieval(
     """
     Download and extract gridded weather data.
 
-    This function retrieves weather data from the Copernicus Climate
-    Data Store (CDS) or from ARCO-ERA5 for the countries and
-    subdivisions of interest. The data is saved into NetCDF files in the
-    specified directory.
+    The data comes from the Copernicus Climate Data Store (CDS) or from
+    ARCO-ERA5, and is saved into NetCDF files.
 
     Parameters
     ----------
@@ -542,12 +536,9 @@ def run_data_retrieval(
             f"{', '.join(SOURCES)}."
         )
 
-    # Get the directory to store the population density data.
     result_directory = utils.paths.get_gridded_folder("weather", "processed")
     os.makedirs(result_directory, exist_ok=True)
 
-    # Get the list of codes of the countries and subdivisions of
-    # interest.
     codes = utils.availability.check_and_get_codes_with(
         "historical_data", code=code, file_path=file
     )
@@ -558,7 +549,6 @@ def run_data_retrieval(
             f"Supported variables are: {', '.join(CDS_VARIABLES)}."
         )
 
-    # Get the list of year, model, and scenario combinations.
     year_model_scenario_list = (
         utils.scenarios.get_year_model_and_scenario_combinations(
             year,
@@ -779,7 +769,6 @@ def _retrieve_data_of_each_code(
     for entity_code in tqdm(codes, desc="Countries and subdivisions"):
         logging.info(f"Retrieving gridded {variable} data for {entity_code}.")
 
-        # Get the lateral bounds of the country or subdivision.
         entity_bounds = utils.shapes.get_entity_bounds(
             utils.shapes.get_entity_shape(entity_code, make_plot=False)
         )  # West, South, East, North
@@ -829,9 +818,8 @@ def retrieve_reanalysis(
     """
     Retrieve the reanalysis of a year for a country or subdivision.
 
-    Unlike run_data_retrieval, any year with data can be retrieved, such
-    as the current one, whose first hours end the local year before it
-    west of UTC.
+    The year can be any year with data, such as the current one, whose
+    first hours end the local year before it west of UTC.
 
     Parameters
     ----------

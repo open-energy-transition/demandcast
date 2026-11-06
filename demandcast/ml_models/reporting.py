@@ -11,11 +11,7 @@ Description:
     other years of it in training, its number of years, its mean load
     and its size class, its continent, the data source of most of its
     scored hours, and what the demand of most of them counts of the
-    embedded generation (see utils.data_sources). The data sources and
-    definitions are those that the assembly of the dataset listed (see
-    assemble.py), checked against the manifest of the dataset, so that
-    they are those of the scored rows, whatever was retrieved or
-    reviewed after the assembly.
+    embedded generation (see utils.data_sources).
 
     The summary groups the codes by whether the model saw them, by
     size class, by continent and by what their demand counts of the
@@ -100,6 +96,13 @@ def read_provenance(data_path: str) -> pd.DataFrame | None:
     ------
     ValueError
         If the list differs from the one that the manifest records.
+
+    Notes
+    -----
+    The data sources and definitions are those that the assembly of the
+    dataset listed, checked against the manifest of the dataset, so that
+    they are those of the scored rows, whatever was retrieved or
+    reviewed after the assembly.
     """
     manifest = utils.manifest.read_manifest(data_path) or {}
     if "provenance" not in manifest:
@@ -153,6 +156,20 @@ def _get_main_source(
     ]
 
     def most_hours(column: str) -> str | None:
+        """
+        Get the value of a column with the most hours.
+
+        Parameters
+        ----------
+        column : str
+            The column, "Source" or "Definition".
+
+        Returns
+        -------
+        str | None
+            The value of the column with the most hours, without the
+            empty values, or None if there is none.
+        """
         hours = rows[rows[column] != ""].groupby(column)["Hours"].sum()
         return str(hours.idxmax()) if not hours.empty else None
 

@@ -1,3 +1,6 @@
+# Configuration of retrieve.py for the annual electricity demand per
+# capita of the benchmark of the models (see run.py).
+
 variable: annual_electricity_demand_per_capita
 electricity_data_source:
 code:

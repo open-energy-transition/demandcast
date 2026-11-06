@@ -24,6 +24,7 @@ class _FakeResponse:
     """A response with a status and a JSON content."""
 
     def __init__(self, status_code: int, content: dict | None = None) -> None:
+        """Set up the response, with its content as text."""
         self.status_code = status_code
         self.content = content or {}
         self.text = json.dumps(self.content)
@@ -44,6 +45,7 @@ class _FakeZenodo:
     """The API of Zenodo for a record whose version 100 is published."""
 
     def __init__(self) -> None:
+        """Set up the record without requests or uploads."""
         self.requests: list[tuple[str, str]] = []
         self.metadata: dict = {}
         self.uploaded: dict[str, bytes] = {}

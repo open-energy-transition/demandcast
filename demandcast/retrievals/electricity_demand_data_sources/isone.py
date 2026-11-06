@@ -280,6 +280,19 @@ def _get_distributed_solar_capacity(times: pd.DatetimeIndex) -> np.ndarray:
     )
 
     def to_seconds(index: pd.DatetimeIndex) -> np.ndarray:
+        """
+        Convert times to seconds.
+
+        Parameters
+        ----------
+        index : pandas.DatetimeIndex
+            The times, with a time zone.
+
+        Returns
+        -------
+        numpy.ndarray
+            The seconds since 1970-01-01 00:00 in UTC.
+        """
         return (
             index.tz_convert("UTC")
             .to_numpy(dtype="datetime64[s]")
@@ -363,6 +376,12 @@ def download_and_extract_data_for_request(
     -------
     pandas.Series
         The electricity demand time series in MW, in UTC.
+
+    Notes
+    -----
+    The hour that is repeated when the clocks go back has no samples of
+    the estimate in real time, so it takes the estimate of the hours
+    around it, at night.
     """
     start_day, end_day = period
     logging.info(
@@ -377,10 +396,8 @@ def download_and_extract_data_for_request(
     ).sort_index()
     native_load = native_load[~native_load.index.duplicated()]
 
-    # The estimate in real time of the solar, from its first day, and
-    # the one for the load forecast for the hours without it: before
-    # the first day, in the first hours of the first day, and in the
-    # hours without samples.
+    # Take the estimate in real time of the solar, and the one for the
+    # load forecast for the hours without it.
     solar = pd.Series(dtype=float)
     real_time_days = days[days >= FIRST_DAY_OF_REAL_TIME_SOLAR]
     if len(real_time_days) > 0:
@@ -388,9 +405,7 @@ def download_and_extract_data_for_request(
             [_get_real_time_solar(day, headers) for day in real_time_days]
         ).sort_index()
         if not samples.empty:
-            # Each hour takes the five minutes that start in it, and the
-            # hour repeated when the clocks go back, which has no
-            # samples, takes the hours around it, at night.
+            # Each hour takes the five minutes that start in it.
             solar = (
                 samples.resample("h", closed="left", label="right")
                 .mean()

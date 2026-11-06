@@ -122,6 +122,20 @@ def get_local_year_bounds(
     """
 
     def new_year(year: int) -> pd.Timestamp:
+        """
+        Get the local midnight of January 1 of a year.
+
+        Parameters
+        ----------
+        year : int
+            The year.
+
+        Returns
+        -------
+        pandas.Timestamp
+            The midnight, or the first time after it if it does not
+            exist, in UTC.
+        """
         return (
             pd.Timestamp(year, 1, 1)
             .tz_localize(
@@ -249,9 +263,9 @@ def clean_data(time_series: pd.Series, variable_name: str) -> pd.Series:
     """
     Clean the time series.
 
-    This function removes NaN values, zero values, and duplicated time
-    steps from the time series. It also ensures that the time series is
-    converted to UTC and has a name for the index and the series.
+    Cleaning removes the missing times, NaN values, zero values and
+    duplicated time steps, sorts the time series, converts it to UTC
+    without time zone, and names the index and the series.
 
     Parameters
     ----------
@@ -271,30 +285,19 @@ def clean_data(time_series: pd.Series, variable_name: str) -> pd.Series:
     ValueError
         If the time series is not timezone-aware.
     """
-    # Check if the time series is timezone-aware.
     if (
         not isinstance(time_series.index, pd.DatetimeIndex)
         or time_series.index.tz is None
     ):
         raise ValueError("The time series must be timezone-aware.")
-    # Convert the time zone of the electricity demand time series to
-    # UTC and remove the time zone information.
     time_series = time_series.tz_convert("UTC").tz_localize(None)
 
-    # Set the name of the index and the series.
     time_series.index.name = "Time (UTC)"
     time_series.name = variable_name
 
-    # Remove timestamps with NaT values.
     time_series = time_series[time_series.index.notna()]
-
-    # Remove NaN and zero values from the time series.
     time_series = time_series[time_series.notna() & (time_series != 0)]
-
-    # Remove duplicated time steps from the time series.
     time_series = time_series[~time_series.index.duplicated()]
-
-    # Sort the time series by index.
     time_series = time_series.sort_index()
 
     return time_series

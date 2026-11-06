@@ -271,6 +271,7 @@ def test_release_with_the_compact_forecasts(monkeypatch):
     uploads: dict[str, Any] = {}
 
     def publish_release(file_paths, *_args):
+        """Read the uploaded files back, by their name."""
         for path in file_paths:
             name = os.path.basename(path)
             if name.endswith(".parquet"):

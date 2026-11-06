@@ -120,8 +120,8 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function reads the versions of the file data on the portal and
-    keeps the latest version of each year between the dates.
+    The requests are the latest version of each year between the dates,
+    among the versions of the file data on the portal.
 
     Parameters
     ----------
@@ -181,9 +181,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the KROGD portal.
-
     Parameters
     ----------
     version : tuple[pandas.Timestamp, pandas.Timestamp, str]
@@ -226,7 +223,6 @@ def download_and_extract_data_for_request(
         format="%Y-%m-%d %H",
     )
 
-    # Define the electricity demand time series.
     electricity_demand_time_series = pd.Series(
         dataset["Value"].values,
         index=index,

@@ -66,7 +66,6 @@ def get_url() -> str:
     str
         The URL of the electricity demand data.
     """
-    # Return the URL of the file of the dataset.
     return (
         "https://data.mendeley.com/public-files/datasets/pxvdm26rn7/files/"
         "140d6dcc-90fb-4fa6-8e98-a91379b1ad60/file_downloaded"
@@ -78,9 +77,6 @@ def download_and_extract_data_for_request(
 ) -> pd.Series:
     """
     Download and extract electricity demand data.
-
-    This function downloads and extracts the electricity demand data
-    for Nigeria.
 
     Parameters
     ----------
@@ -94,7 +90,6 @@ def download_and_extract_data_for_request(
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
     """
-    # Get the URL of the electricity demand data.
     url = get_url()
 
     # Fetch the data from the URL, with requests: Mendeley Data refuses
@@ -106,13 +101,11 @@ def download_and_extract_data_for_request(
         excel_kwargs={"sheet_name": "Demand Timeseries", "skiprows": 3},
     )
 
-    # Extract the electricity demand time series.
     electricity_demand_time_series = pd.Series(
         dataset["National Unsuppressed Demand"].values,
         index=pd.to_datetime(dataset["date time"]),
     )
 
-    # Round the index to the nearest second.
     electricity_demand_time_series.index = pd.DatetimeIndex(
         electricity_demand_time_series.index
     ).round("s")

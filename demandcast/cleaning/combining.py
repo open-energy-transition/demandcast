@@ -362,6 +362,21 @@ def _rank_data_sources(
     """
 
     def key(data_source: str) -> tuple[bool, bool, float, int]:
+        """
+        Get the key that sorts a data source, from the best.
+
+        Parameters
+        ----------
+        data_source : str
+            The data source.
+
+        Returns
+        -------
+        tuple[bool, bool, float, int]
+            Whether it covers only part of the area, whether it is
+            compiled, the mean rank of the definition of its hours, and
+            minus its number of hours.
+        """
         entity = next(
             entity
             for entity in utils.data_sources.read_entities(data_source)
@@ -729,7 +744,7 @@ def combine_data(code: str) -> pd.DataFrame | None:
         return None
 
     # Take the hours of the seasons reviewed as errors out of their
-    # source, to fill only the hours that no source gives.
+    # source.
     ranks = {
         data_source: _get_definition_ranks(
             code, data_source, pd.DatetimeIndex(values.index)

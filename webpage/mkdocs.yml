@@ -1,3 +1,7 @@
+# Configuration of the documentation site, built with MkDocs and the
+# Material theme from the docs folder, by the docs workflow
+# (.github/workflows/docs.yml), which deploys it to GitHub Pages.
+
 site_name: DemandCast
 theme:
   name: material

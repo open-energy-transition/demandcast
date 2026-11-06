@@ -43,9 +43,6 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function retrieves the available requests for the electricity
-    demand data from the KansaiTD website.
-
     Parameters
     ----------
     code : str
@@ -60,7 +57,6 @@ def get_available_requests(
     list[tuple[int, int | None]]
         The list of available requests.
     """
-    # Define the date that separates the two types of requests.
     march_2024 = pd.Timestamp("2024-03-01")
 
     # Requests before March 2024.
@@ -68,7 +64,7 @@ def get_available_requests(
         (year, None) for year in range(start_date.year, march_2024.year)
     ]
 
-    # Requests after March 2024
+    # Requests from March 2024.
     requests_after: list[tuple[int, int | None]] = [
         (year, month)
         for year in range(march_2024.year, end_date.year + 1)
@@ -77,7 +73,6 @@ def get_available_requests(
         and (year > march_2024.year or month >= march_2024.month)
     ]
 
-    # Return the list of available requests.
     return requests_before + requests_after
 
 
@@ -97,7 +92,6 @@ def get_url(year: int, month: int | None) -> str:
     url : str
         The URL of the electricity demand data.
     """
-    # Define the URL of the electricity demand data.
     if month is None:
         url = (
             "https://www.kansai-td.co.jp/"
@@ -120,9 +114,6 @@ def download_and_extract_data_for_request(
     """
     Download and extract electricity demand data.
 
-    This function downloads and extracts the electricity demand data
-    from the KansaiTD website.
-
     Parameters
     ----------
     year_and_month : tuple[int, int | None]
@@ -135,6 +126,11 @@ def download_and_extract_data_for_request(
     -------
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
+
+    Notes
+    -----
+    The file of 2021 has three rows before its header, and the other
+    files one.
     """
     year, month = year_and_month
 
@@ -148,13 +144,10 @@ def download_and_extract_data_for_request(
             f"month {month}."
         )
 
-    # Get the URL of the electricity demand data.
     url = get_url(year, month)
 
-    # Determine number of rows to skip.
     skip_rows = 3 if year == 2021 else 1
 
-    # Fetch CSV content from the URL with proper encoding.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "csv",
@@ -165,7 +158,6 @@ def download_and_extract_data_for_request(
     )
 
     if month is None:
-        # Extract the electricity demand time series.
         electricity_demand_time_series = pd.Series(
             dataset["エリア需要〔MWh〕"].values,
             index=pd.to_datetime(dataset["DATE_TIME"]),
@@ -180,7 +172,6 @@ def download_and_extract_data_for_request(
             dataset["TIME"].astype(str) + ":00"
         )
 
-        # Extract the electricity demand time series.
         electricity_demand_time_series = pd.Series(
             dataset["エリア需要"].values,
             index=index,

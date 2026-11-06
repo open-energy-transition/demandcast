@@ -13,21 +13,13 @@ Description:
     figures.ml_results): the error of each code, their distribution and
     the hourly demand of the codes with the lowest and the highest
     error, with the median WAPE of each case in ml_validation.md and
-    ml_cross_validation.md. The results are those of the given files,
-    or the latest of each case by the time in their names, checked
-    against their manifests, with their summary and their predictions,
-    and the description of the cross-validation follows the holdout
-    that its manifest records.
+    ml_cross_validation.md.
 
     The figures are drawn into the folder of the figures and copied
     into webpage/docs/status/, with the numbers in numbers.md, which the
     page includes. The README shows the same numbers, in its block
     between the markers STATUS_START and STATUS_END, which is replaced,
     and the map on a white background.
-
-    The numbers come from the YAML files of the data sources, like the
-    map: the years of a country or subdivision are those of the longest
-    period of data of its data sources.
 """
 
 import dataclasses
@@ -132,6 +124,12 @@ def get_numbers(date: dt.date) -> Numbers:
     -------
     Numbers
         The numbers.
+
+    Notes
+    -----
+    The numbers come from the YAML files of the data sources: the years
+    of a country or subdivision are those of the longest period of data
+    of its data sources.
     """
     date_ranges = utils.data_sources.read_all_date_ranges()
     codes = utils.data_sources.read_all_codes_with_electricity_demand_data()

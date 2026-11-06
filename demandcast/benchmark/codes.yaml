@@ -1,3 +1,5 @@
+# The countries of the benchmark of the models (see run.py).
+
 entities:
   - country_name: Denmark
     country_code: DNK

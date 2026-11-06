@@ -16,10 +16,7 @@ Description:
     unseen country. Its results say which holdout they used.
 
     Each error is given as the mean absolute percentage error (MAPE)
-    and as the weighted absolute percentage error (WAPE), the sum of the
-    absolute errors over the sum of the actual values, which is not
-    dominated by the hours whose actual value is close to zero, as the
-    net demand of North Macedonia at midday in 2025.
+    and as the weighted absolute percentage error (WAPE).
 
     The errors are those of the target of the models, the load relative
     to the annual mean of its local year (see ml_models.data), so they
@@ -29,8 +26,7 @@ Description:
     each entity and of its demand in MWh, with the error of each hour
     in MW, its error times the mean load of its local year, so that the
     WAPE of a group of entities is that of all their hours in MW (see
-    ml_models.reporting). The models are trained and scored on all the
-    fields of their rows, such as their times, as in a validation.
+    ml_models.reporting).
 """
 
 import logging
@@ -72,9 +68,7 @@ def weighted_absolute_percentage_error(
     Calculate the weighted absolute percentage error (WAPE).
 
     The WAPE is the sum of the absolute errors divided by the sum of the
-    absolute actual values. Unlike the MAPE, whose error of each hour is
-    divided by its own actual value, it is not dominated by the hours
-    whose actual value is close to zero.
+    absolute actual values.
 
     Parameters
     ----------
@@ -87,6 +81,13 @@ def weighted_absolute_percentage_error(
     -------
     float
         The WAPE, as a fraction.
+
+    Notes
+    -----
+    Unlike the MAPE, whose error of each hour is divided by its own
+    actual value, the WAPE is not dominated by the hours whose actual
+    value is close to zero, such as the net demand of North Macedonia at
+    midday in 2025.
     """
     actual_values = np.asarray(actual, dtype=float)
     errors = np.abs(np.asarray(predictions, dtype=float) - actual_values)
@@ -176,11 +177,9 @@ def _calculate_by_entity(
     pandas.Series
         The error of each country or subdivision, indexed by its code.
     """
-    # Initialize lists to hold entity codes and their errors.
     list_entity_codes = []
     list_mapes_values = []
 
-    # Calculate the error of each entity.
     for entity_code, entity_group in pd.DataFrame(entity_codes).groupby(
         "Entity code"
     ):
@@ -191,7 +190,6 @@ def _calculate_by_entity(
         list_entity_codes.append(entity_code)
         list_mapes_values.append(current_mape)
 
-    # Create a Series of the errors indexed by entity codes.
     mapes = pd.Series(
         data=list_mapes_values,
         index=list_entity_codes,
@@ -461,6 +459,11 @@ pandas.DataFrame | None]
         entity in MWh, not numbers if its rows have no load in MW; and
         the predictions of the held-out rows in MW (see
         get_scored_predictions).
+
+    Notes
+    -----
+    The model is trained and scored on all the fields of the rows, such
+    as their times.
     """
     model_module = ml_models.registry.get_model_module(algorithm)
     training = ml_models.data.select_rows(prepared_dataset, train_index)

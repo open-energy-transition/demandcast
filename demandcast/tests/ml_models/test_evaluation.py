@@ -5,9 +5,7 @@ Description:
 
     Unit tests of the evaluation of the models: the MAPE of each
     country or subdivision and of each set, and the Leave-One-Group-Out
-    cross-validation, whose entity codes must reach both the training
-    and the predictions, so that the sequences of the LSTM never cross
-    the boundaries between entities.
+    cross-validation.
 """
 
 import os
@@ -130,6 +128,14 @@ def test_cross_validate_by_country():
     training_groups: list[list[str]] = []
 
     def spy_train(prepared_dataset, config):
+        """
+        Record the codes of the training rows, and train the model.
+
+        Returns
+        -------
+        object
+            The trained model.
+        """
         training_groups.append(
             sorted(set(prepared_dataset["training"]["group"]))
         )
@@ -153,9 +159,8 @@ def test_cross_validate_forwards_groups(algorithm):
     """
     Test that the entity codes reach the training and the predictions.
 
-    Regression test for the bug where sklearn's cross_validate() never
-    forwarded ``groups`` into ``estimator.fit()``, so that the LSTM
-    built sequences across the boundaries between entities.
+    The codes keep the sequences of the LSTM within the boundaries of
+    each entity.
     """
     model_module = ml_models.registry.get_model_module(algorithm)
     real_train, real_predict = model_module.train, model_module.predict
@@ -163,15 +168,31 @@ def test_cross_validate_forwards_groups(algorithm):
     predicted_datasets: list[ml_models.data.PreparedDataset] = []
 
     def spy_train(prepared_dataset, config):
+        """
+        Record the codes of the training rows, and train the model.
+
+        Returns
+        -------
+        object
+            The trained model.
+        """
         training_groups.append(prepared_dataset["training"]["group"])
         # The other fields of the rows, such as their times, reach the
-        # training, as in a validation.
+        # training.
         assert prepared_dataset["training"]["time"].index.equals(
             prepared_dataset["training"]["group"].index
         )
         return real_train(prepared_dataset, config)
 
     def spy_predict(model, prepared_dataset):
+        """
+        Record the dataset to predict, and predict it.
+
+        Returns
+        -------
+        pandas.Series | dict[str, pandas.Series]
+            The predictions.
+        """
         predicted_datasets.append(prepared_dataset)
         return real_predict(model, prepared_dataset)
 

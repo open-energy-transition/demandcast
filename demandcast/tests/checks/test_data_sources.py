@@ -60,6 +60,14 @@ def ons_downloads(monkeypatch, request):
     downloads: dict = {"requests": []}
 
     def download(year: int, code: str) -> pd.Series:
+        """
+        Record the request, and raise its error if it has one.
+
+        Returns
+        -------
+        pandas.Series
+            The time series of the request.
+        """
         downloads["requests"].append((year, code))
         time_series = downloads[year]
         if isinstance(time_series, Exception):
@@ -289,6 +297,14 @@ def fake_checks(monkeypatch):
     def check_data_source(
         data_source: str, maximum_age_days: int
     ) -> checks.data_sources.Result:
+        """
+        Record the maximum age of a data source.
+
+        Returns
+        -------
+        checks.data_sources.Result
+            The result of the check.
+        """
         maximum_ages[data_source] = maximum_age_days
         if data_source == "cen":
             return checks.data_sources.Result(
@@ -388,7 +404,8 @@ def test_run_check_counts_the_failures_in_a_row():
         assert report["results"][1]["failures_in_a_row"] == failures_in_a_row
 
         if failures_in_a_row == 1:
-            # A report of before the failures were counted.
+            # A failed result without its number of failures in a row
+            # counts as one failure.
             report["results"][0]["status"] = "failed"
             del report["results"][1]["failures_in_a_row"]
             with open(file_path, "w", encoding="utf-8") as file:
@@ -429,6 +446,14 @@ def test_run_check_without_an_answer(monkeypatch):
     def check_data_source(
         data_source: str, _maximum_age_days: int
     ) -> checks.data_sources.Result:
+        """
+        Pass the check, after the end of the test for Cen.
+
+        Returns
+        -------
+        checks.data_sources.Result
+            The passed result.
+        """
         if data_source == "cen":
             answer.wait(timeout=30)
         return checks.data_sources.Result(

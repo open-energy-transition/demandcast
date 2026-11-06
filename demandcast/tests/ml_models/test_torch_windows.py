@@ -15,7 +15,7 @@ import ml_models.torch_windows as torch_windows_module
 
 
 def test_returns_empty_list_on_non_windows():
-    """No tokens are added when the platform is not win32."""
+    """Test that no tokens are added when the platform is not win32."""
     with patch.object(torch_windows_module.sys, "platform", "linux"):
         tokens = torch_windows_module.enable_torch_dll_directory()
 
@@ -23,7 +23,7 @@ def test_returns_empty_list_on_non_windows():
 
 
 def test_returns_empty_list_without_add_dll_directory(monkeypatch):
-    """No tokens are added when os.add_dll_directory is unavailable."""
+    """Test that no tokens are added without os.add_dll_directory."""
     monkeypatch.setattr(torch_windows_module.sys, "platform", "win32")
     monkeypatch.delattr(
         torch_windows_module.os, "add_dll_directory", raising=False
@@ -35,7 +35,7 @@ def test_returns_empty_list_without_add_dll_directory(monkeypatch):
 
 
 def test_adds_token_for_matching_torch_lib_directory():
-    """A token is returned for the first matching torch/lib dir."""
+    """Test that the first matching torch/lib directory gets a token."""
     fake_token = object()
     match_path = os.path.join("/site-packages", "torch", "lib")
     with (
@@ -62,7 +62,7 @@ def test_adds_token_for_matching_torch_lib_directory():
 
 
 def test_stops_after_first_matching_directory():
-    """Only the first matching torch/lib directory is registered."""
+    """Test that only the first torch/lib directory found is added."""
     first_match_path = os.path.join("/first", "torch", "lib")
     with (
         patch.object(torch_windows_module.sys, "platform", "win32"),
@@ -85,7 +85,7 @@ def test_stops_after_first_matching_directory():
 
 
 def test_returns_empty_list_when_no_directory_matches():
-    """No tokens are returned when no sys.path entry has torch/lib."""
+    """Test that no tokens are returned when no path has torch/lib."""
     with (
         patch.object(torch_windows_module.sys, "platform", "win32"),
         patch.object(torch_windows_module.sys, "path", ["/site-packages"]),
@@ -106,7 +106,7 @@ def test_returns_empty_list_when_no_directory_matches():
 
 
 def test_keeps_the_tokens(monkeypatch):
-    """The tokens stay referenced by the module, so they live on."""
+    """Test that the module keeps the tokens, so that they live on."""
     monkeypatch.setattr(torch_windows_module, "_TOKENS", [])
     fake_token = object()
     with (

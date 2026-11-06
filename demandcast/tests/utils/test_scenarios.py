@@ -16,13 +16,10 @@ def test_get_years():
     """
     Test the _get_years function with various input scenarios.
 
-    This test checks the correct years are returned based on
-    different combinations of year, start_year, and end_year inputs.
+    The inputs are combinations of year, start_year and end_year.
     """
-    # Define available years for testing.
     available_years = [2018, 2019, 2020, 2021]
 
-    # Test various scenarios.
     assert utils.scenarios._get_years(2019, None, None, available_years) == [
         2019
     ]
@@ -40,10 +37,8 @@ def test_get_years_errors():
     """
     Test the _get_years function for error handling with invalid inputs.
 
-    This test checks that appropriate exceptions are raised for
-    invalid combinations of year, start_year, and end_year inputs.
+    Invalid combinations of year, start_year and end_year raise errors.
     """
-    # Define available years for testing.
     available_years = [2018, 2019, 2020, 2021]
 
     # Both year and start_year/end_year provided.
@@ -88,16 +83,13 @@ def test_get_year_and_scenario_combinations():
     """
     Test the get_year_and_scenario_combinations function.
 
-    This test checks the correct (year, scenario) combinations are
-    returned based on different combinations of year, start_year,
-    end_year, and scenario inputs.
+    The inputs are combinations of year, start_year, end_year and
+    scenario.
     """
-    # Define available years and scenarios for testing.
     available_historical_years = [2024, 2025]
     available_future_years = [2025, 2026]
     available_scenarios = ["S1", "S2"]
 
-    # Test various input combinations.
     assert utils.scenarios.get_year_and_scenario_combinations(
         2024,
         None,
@@ -147,11 +139,9 @@ def test_get_year_and_scenario_combinations_errors():
     """
     Test the get_year_and_scenario_combinations function for errors.
 
-    This test checks that appropriate exceptions are raised for
-    invalid combinations of year, start_year, end_year, and scenario
-    inputs.
+    Invalid combinations of year, start_year, end_year and scenario
+    raise errors.
     """
-    # Define available years and scenarios for testing.
     available_historical_years = [2024, 2025]
     available_future_years = [2025, 2026]
     available_scenarios = ["S1", "S2"]
@@ -276,16 +266,13 @@ def test_get_year_model_and_scenario_combinations():
     """
     Test the get_year_model_and_scenario_combinations function.
 
-    This test checks the correct (year, model, scenario) combinations
-    are returned based on different combinations of year, start_year,
-    end_year, model, and scenario inputs.
+    The inputs are combinations of year, start_year, end_year, model
+    and scenario.
     """
-    # Define available years, models, and scenarios for testing.
     available_historical_years = [2024, 2025]
     available_future_years = [2025, 2026]
     scenarios_for_model = {"M1": ["S1", "S2"], "M2": ["S2"]}
 
-    # Test various input combinations.
     assert utils.scenarios.get_year_model_and_scenario_combinations(
         2024,
         None,
@@ -352,11 +339,9 @@ def test_get_year_model_and_scenario_combinations_errors():
     """
     Test get_year_model_and_scenario_combinations function for errors.
 
-    This test checks that appropriate exceptions are raised for
-    invalid combinations of year, start_year, end_year, model,
-    and scenario inputs.
+    Invalid combinations of year, start_year, end_year, model and
+    scenario raise errors.
     """
-    # Define available years, models, and scenarios for testing.
     available_historical_years = [2024, 2025]
     available_future_years = [2025, 2026, 2027]
     scenarios_for_model = {"M1": ["S1", "S2"], "M2": ["S2"]}
@@ -501,12 +486,10 @@ def test_get_years_and_scenarios():
     """
     Test the get_years_and_scenarios function.
 
-    This test checks the correct historical years, used historical
-    years, future years, and scenarios are returned based on
-    different combinations of year, start_year, end_year, and
-    scenario inputs, along with historical data availability.
+    The requested and used historical years, the future years and the
+    scenarios depend on the requested years and on the years of the
+    historical data.
     """
-    # Define a simple DataFrame to simulate historical data.
     data = pd.DataFrame(
         {
             2020: [1],
@@ -518,7 +501,6 @@ def test_get_years_and_scenarios():
         index=["AAA"],
     )
 
-    # Get years and scenarios.
     result = utils.scenarios.get_years_and_scenarios(
         iso_alpha_3_code="AAA",
         year=None,
@@ -547,7 +529,6 @@ def test_get_years_and_scenarios():
         index=["AAA"],
     )
 
-    # Get years and scenarios with missing historical years.
     result = utils.scenarios.get_years_and_scenarios(
         iso_alpha_3_code="AAA",
         year=None,
@@ -564,7 +545,6 @@ def test_get_years_and_scenarios():
     assert result[2] == []  # future years
     assert result[3] == []  # scenarios
 
-    # Define a DataFrame to simulate the use of gridded data.
     data = pd.DataFrame(
         {
             2020: [1],
@@ -600,7 +580,6 @@ def test_get_years_and_scenarios():
         data[year] = [year - 2000]
     data.index = ["AAA"]
 
-    # Get years and scenarios.
     result = utils.scenarios.get_years_and_scenarios(
         iso_alpha_3_code="AAA",
         year=None,
