@@ -50,41 +50,21 @@ def test_aggregate_gridded_data():
 
 
 def test_selected_years():
-    """
-    Test the selection of years for gridded data.
-
-    This function tests the _select_years_of_gridded_data utility
-    function to ensure it correctly selects the available years that
-    match the requested years.
-    """
-    # Define available years and selected years for testing.
+    """Test that the available years around the selection are kept."""
     available_years = [2000, 2005, 2010, 2015]
     selected_years = [2007, 2008]
 
-    # Define the expected output.
     expected_years = [2005, 2010]
 
-    # Call the function to test.
     result = retrievals.gridded_totals._select_years_of_gridded_data(
         available_years, selected_years
     )
 
-    # Assert that the returned years match the expected years.
     assert result == expected_years
 
 
 def test_get_total_value_from_gridded_data():
-    """
-    Test the aggregation to total value from gridded data.
-
-    This function tests the get_total_value_from_gridded_data utility
-    function to ensure it correctly aggregates values from a gridded
-    dataset within a specified shape and time frame. It also checks that
-    the function reteruns the years needed to cover the selected
-    years. Lastly, it verifies that the values are linearly interpolated
-    between the available years.
-    """
-    # Define test parameters.
+    """Test that the totals are interpolated between available years."""
     variable = "population"
     code = "XYZ"
     available_years = [2035, 2040, 2045, 2050]
@@ -97,10 +77,8 @@ def test_get_total_value_from_gridded_data():
             "retrievals.gridded_totals._aggregate_gridded_data"
         ) as mock_aggregate,
     ):
-        # Mock the aggregation function to return a series of values.
         mock_aggregate.side_effect = [10000.0, 12000.0]
 
-        # Call the function to test.
         result = retrievals.gridded_totals.get_total_value_from_gridded_data(
             variable,
             code,
@@ -110,7 +88,6 @@ def test_get_total_value_from_gridded_data():
             scenario=scenario,
         )
 
-    # Assert that the returned Series has the correct index and values.
     assert isinstance(result, pd.Series)
     assert list(result.index) == [2035, 2036, 2037, 2038, 2039, 2040]
     assert np.allclose(result.to_numpy(), np.linspace(10000, 12000, 6))
@@ -125,10 +102,8 @@ def test_get_total_value_from_gridded_data():
             "retrievals.gridded_totals._aggregate_gridded_data"
         ) as mock_aggregate,
     ):
-        # Mock the aggregation function to return a series of values.
         mock_aggregate.side_effect = [50000.0, 70000.0]
 
-        # Call the function to test.
         result = retrievals.gridded_totals.get_total_value_from_gridded_data(
             variable,
             code,
@@ -152,13 +127,7 @@ def test_get_total_value_from_gridded_data():
 
 
 def test_get_total_value_from_gridded_data_errors():
-    """
-    Test error handling in get_total_value_from_gridded_data.
-
-    This function tests the error handling of the
-    get_total_value_from_gridded_data utility function to ensure it
-    raises appropriate exceptions when given invalid input parameters.
-    """
+    """Test that invalid arguments of the totals raise an error."""
     variable = "population"
     code = "XYZ"
     available_years = [2000, 2005, 2010, 2015]

@@ -252,6 +252,14 @@ def test_many_codes_split_the_global_data(monkeypatch):
     )
 
     def retrieve():
+        """
+        Retrieve the data of 2020, with the global data written.
+
+        Returns
+        -------
+        unittest.mock.MagicMock
+            The mock of the download.
+        """
         with patch.object(
             gridded_weather,
             "_download_data",

@@ -44,6 +44,7 @@ class _FakeResponse:
     """A response of the service."""
 
     def __init__(self, content, content_type="text/html"):
+        """Keep the content as bytes and as text, with its type."""
         self.content = (
             content.encode() if isinstance(content, str) else content
         )
@@ -72,9 +73,25 @@ class _FakeSession:
     refuse = False
 
     def __enter__(self):
+        """
+        Open the session.
+
+        Returns
+        -------
+        _FakeSession
+            The session.
+        """
         return self
 
     def __exit__(self, *_):
+        """
+        Close the session.
+
+        Returns
+        -------
+        bool
+            False, so that any error goes through.
+        """
         return False
 
     def get(self, url, **_):
@@ -208,7 +225,17 @@ def test_download_without_the_file(monkeypatch):
     """Test that a page instead of the file stops the retrieval."""
 
     class _Session(_FakeSession):
+        """A session that answers the download with a page."""
+
         def post(self, url, data, headers=None, **kwargs):
+            """
+            Answer the download with a page, and the rest as usual.
+
+            Returns
+            -------
+            _FakeResponse
+                The response of the service.
+            """
             if "pathInfo" not in url and (
                 dict(data)["fwExtention.actionSubType"] == "download"
             ):

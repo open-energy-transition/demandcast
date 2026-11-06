@@ -121,6 +121,14 @@ def test_files_are_read_once(manual_downloads_folder, monkeypatch):
     read_manual_files = niti.utils.fetcher.read_manual_files
 
     def count_reads(*args, **kwargs):
+        """
+        Record the prefix of a read and read the files.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The content of the files.
+        """
         reads.append(kwargs["prefix"])
         return read_manual_files(*args, **kwargs)
 
@@ -134,7 +142,7 @@ def test_files_are_read_once(manual_downloads_folder, monkeypatch):
     niti.download_and_extract_data_for_request(None, "IND_BR")
     assert len(reads) == 1
 
-    # A new file is read with the others.
+    # A file added to the folder is read with the others.
     _write_states_file(
         manual_downloads_folder / "NITI_2024_Goa_Gujarat.xlsx",
         {"Goa": {"01-Jan 12am": 480.0}, "Gujarat": {"01-Jan 12am": 17000.0}},

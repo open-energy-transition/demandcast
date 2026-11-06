@@ -269,6 +269,14 @@ def test_points_give_the_temperature_of_the_grid():
     )
 
     def points_series(_variable, points):
+        """
+        Give the series of the cells of the grid at the points.
+
+        Returns
+        -------
+        list[pandas.Series]
+            The series of each point.
+        """
         return [
             grid.sel(x=longitude, y=latitude).to_series()
             for longitude, latitude in points
@@ -389,18 +397,26 @@ def test_files_of_another_processing_are_extracted_again():
     Test that only the files of another processing are extracted again.
 
     A file of the current processing is reused, and one without its
-    version, such as one made before the cells were ranked by their
-    population inside the shape, is extracted again.
+    version is extracted again.
     """
     times = pd.date_range("2023-01-01 01:00", periods=8760, freq="h")
     series = pd.Series(280.0, index=times)
     calls = []
 
     def extract(*_args, **_kwargs):
+        """
+        Record an extraction and give a constant temperature.
+
+        Returns
+        -------
+        tuple[pandas.Series, pandas.Series]
+            The same temperature twice.
+        """
         calls.append(1)
         return series, series
 
     def retrieve():
+        """Retrieve the temperature of France in 2023."""
         with (
             patch.object(
                 temperature.utils.availability,

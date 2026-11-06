@@ -26,6 +26,7 @@ class FakeClient:
     """A client of the CDS that writes zipped series of points."""
 
     def __init__(self) -> None:
+        """Start without requests."""
         self.requests: list[dict] = []
 
     def retrieve(self, dataset: str, request: dict) -> "FakeClient":
@@ -157,6 +158,14 @@ def test_full_queue_is_waited_for(client):
     calls = []
 
     def retrieve_once_rejected(dataset, request):
+        """
+        Reject the first request, and retrieve the next ones.
+
+        Returns
+        -------
+        FakeClient
+            The client, whose download writes the series.
+        """
         calls.append(request)
         if len(calls) == 1:
             raise rejected
