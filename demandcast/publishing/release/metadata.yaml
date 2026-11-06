@@ -21,10 +21,13 @@ related_identifiers:
   - relation: isDocumentedBy
     identifier: https://open-energy-transition.github.io/demandcast/
     resource_type: other
+  - relation: isCompiledBy
+    identifier: https://github.com/open-energy-transition/demandcast/releases/tag/v2.0.0
+    resource_type: software
 
 description: |
   <p>This dataset provides forecasted hourly electricity demand for 184 countries and 135 subdivisions of Argentina, Australia, Brazil, Canada, China, Great Britain, India, Japan, Mexico and the United States, from 2000 to 2025, with the machine learning models that produce and validate the forecasts and their inputs.</p>
-  <p>The forecasts are generated with DemandCast, using an XGBoost model trained on hourly electricity demand from public data sources (168 countries and subdivisions), ERA5 temperature, GDP per capita, population, annual electricity demand per capita and public holidays. The forecasts of each complete year sum to the annual electricity demand of the country or subdivision: its annual demand per capita (Ember, or the World Bank where Ember has no data) times its population. Times are in UTC and mark the end of each hour. The code and its documentation are in the GitHub repository <a href="https://github.com/open-energy-transition/demandcast">open-energy-transition/demandcast</a>.</p>
+  <p>The forecasts are generated with <a href="https://github.com/open-energy-transition/demandcast/releases/tag/v2.0.0">DemandCast 2.0.0</a>, using an XGBoost model trained on hourly electricity demand from public data sources (168 countries and subdivisions), ERA5 temperature, GDP per capita, population, annual electricity demand per capita and public holidays. The forecasts of each complete year sum to the annual electricity demand of the country or subdivision: its annual demand per capita (Ember, or the World Bank where Ember has no data) times its population. Times are in UTC and mark the end of each hour. The code and its documentation are in the GitHub repository <a href="https://github.com/open-energy-transition/demandcast">open-energy-transition/demandcast</a>.</p>
   <h3>Accuracy</h3>
   <p>On the most recent year of each country and subdivision, left out of the training, the median weighted absolute percentage error (WAPE) of the hourly demand is 7.2%. When each country or subdivision is left out of the training entirely, the median WAPE is 8.5%. The <a href="https://open-energy-transition.github.io/demandcast/status/">current state</a> page has the errors of each country and subdivision.</p>
   <h3>Coverage</h3>
