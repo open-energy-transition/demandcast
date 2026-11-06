@@ -1,8 +1,6 @@
 # Analyses the code with CodeQL on pushes to main, on pull requests to
-# main, including those from forks, and every week. It replaces the
-# default setup of code scanning, which skips the pull requests from
-# forks, so that they also get the results that the ruleset of main
-# requires.
+# main, including those from forks, so that they also get the results
+# that the ruleset of main requires, and every week.
 
 name: CodeQL
 
@@ -43,12 +41,11 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: none
-          # The extended suite, which the default setup used.
           queries: security-extended
 
       - name: Analyse
         uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
-          # The categories of the default setup, which keep the history
-          # of the alerts.
+          # The categories that the default setup of code scanning gives
+          # the alerts, so that the alerts keep their history.
           category: /language:${{ matrix.language }}
