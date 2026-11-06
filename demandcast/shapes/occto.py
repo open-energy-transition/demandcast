@@ -18,6 +18,9 @@ Description:
     Hokuriku and of other prefectures served across their borders are
     left in their prefecture.
 
+    The geometries are snapped to a grid of 0.005 degrees, which removes
+    small spikes in the shapes that cause issues when they are plotted.
+
     Source: https://en.wikipedia.org/wiki/Electricity_sector_in_Japan#/media/File:Power_Grid_of_Japan.svg
     Source: https://en.wikipedia.org/wiki/ISO_3166-2:JP
     Source: https://data.humdata.org/dataset/cod-xa-jpn
@@ -60,18 +63,14 @@ kansai = geopandas.read_file(
     os.path.join(shapes_folder, "kansaitd", "kansaitd.shp")
 )
 
-# Download the zip file.
 response = requests.get(url, timeout=60)
 
-# Define the folder where to extract the shapefile.
 temporary_dir = os.path.join(shapes_folder, "occto_temp")
 os.makedirs(temporary_dir, exist_ok=True)
 
-# Extract the zip file.
 with zipfile.ZipFile(BytesIO(response.content)) as z:
     z.extractall(temporary_dir)
 
-# Read the shapefile of the prefectures.
 prefectures = geopandas.read_file(
     os.path.join(temporary_dir, "jpn_admbnda_adm1_2019.shp")
 ).to_crs(epsg=4326)
@@ -97,15 +96,10 @@ rows.append(
 )
 areas = geopandas.GeoDataFrame(rows, crs=4326)
 
-# Set the precision of the geometry to a grid size of 0.005 degrees.
-# This is done to remove small spikes in the shapes that cause issues
-# when plotting the shapes.
 areas["geometry"] = areas["geometry"].set_precision(0.005)
 
-# Save the shapes of the areas to a shapefile.
 shapes_dir = os.path.join(shapes_folder, "occto")
 os.makedirs(shapes_dir, exist_ok=True)
 areas.to_file(os.path.join(shapes_dir, "occto.shp"), driver="ESRI Shapefile")
 
-# Remove the temporary folder.
 shutil.rmtree(temporary_dir)

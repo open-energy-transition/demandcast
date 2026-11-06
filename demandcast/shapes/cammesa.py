@@ -10,6 +10,9 @@ Description:
     at 1:50m has no Argentine provinces, so they are read from the one
     at 1:10m.
 
+    The geometries are snapped to a grid of 0.005 degrees, which removes
+    small spikes in the shapes that cause issues when they are plotted.
+
     Source: https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-1-states-provinces/
 """
 
@@ -45,7 +48,6 @@ codes_of_provinces = [
     "AR-Z",
 ]
 
-# Load the shapefile of the provinces of Natural Earth at 1:10m.
 all_shapes = cartopy.io.shapereader.natural_earth(
     resolution="10m", category="cultural", name="admin_1_states_provinces"
 )
@@ -91,12 +93,8 @@ if len(buenos_aires) != 2:
 buenos_aires = buenos_aires.dissolve(by="code").reset_index()
 provinces = pd.concat([provinces, buenos_aires[provinces.columns]])
 
-# Set the precision of the geometry to a grid size of 0.005 degrees.
-# This is done to remove small spikes in the shapes that cause issues
-# when plotting the shapes.
 provinces["geometry"] = provinces["geometry"].set_precision(0.005)
 
-# Save the shapes of the provinces to a shapefile.
 shapes_dir = os.path.join(os.path.dirname(__file__), "cammesa")
 os.makedirs(shapes_dir, exist_ok=True)
 provinces.to_file(
