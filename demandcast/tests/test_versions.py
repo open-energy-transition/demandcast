@@ -19,7 +19,7 @@ REPOSITORY = pathlib.Path(__file__).resolve().parents[2]
 
 
 def test_versions_match():
-    """Test that pyproject.toml and CITATION.cff have the same version."""
+    """Test that pyproject.toml and CITATION.cff have one version."""
     with open(REPOSITORY / "demandcast" / "pyproject.toml", "rb") as file:
         version = tomllib.load(file)["project"]["version"]
     with open(REPOSITORY / "CITATION.cff", encoding="utf-8") as file:
