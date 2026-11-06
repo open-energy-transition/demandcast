@@ -128,7 +128,7 @@ def test_run_check():
         "| ccei | CAN_NL | daylight_saving | 2024-11-03, 2025-03-09 "
         "| source_error | Wrong times in UTC. |"
     ) in report
-    # The review of NTDC matches no flag any more.
+    # The review of NTDC matches no flag.
     assert "| ntdc | PAK | time_lag | source_error |" in report
 
 
