@@ -212,6 +212,14 @@ def _read_population_dataset(
     -------
     xarray.DataArray
         The population data for the specified year and scenario.
+
+    Notes
+    -----
+    The rasters of the future population give their coordinates in
+    pixels, not in degrees. Their cells are of 30 arc seconds and cover
+    the longitudes from -180 to 180 and the latitudes from -72 to 84
+    (their .tfw world files), so the pixels are mapped to the centres
+    of the cells, half a cell inside these limits.
     """
     if scenario is None:
         file_path = os.path.join(downloaded_data_directory, f"{year}.tif")
@@ -227,22 +235,15 @@ def _read_population_dataset(
     )
 
     if scenario is not None:
-        # For future population data, the coordinates need to be
-        # converted to standard longitude and latitude.
-        global_population_dataset["x"] = (
-            global_population_dataset["x"]
-            - global_population_dataset["x"].min()
-        ) / (
-            global_population_dataset["x"].max()
-            - global_population_dataset["x"].min()
-        ) * (360 - 30 / 3600) - (180 - 30 / 3600)
-        global_population_dataset["y"] = (
-            global_population_dataset["y"]
-            - global_population_dataset["y"].min()
-        ) / (
-            global_population_dataset["y"].max()
-            - global_population_dataset["y"].min()
-        ) * (156 - 30 / 3600) - (72 - 30 / 3600)
+        cell = 30 / 3600
+        for coordinate, (lowest, highest) in (
+            ("x", (-180, 180)),
+            ("y", (-72, 84)),
+        ):
+            pixels = global_population_dataset[coordinate]
+            global_population_dataset[coordinate] = (pixels - pixels.min()) / (
+                pixels.max() - pixels.min()
+            ) * (highest - lowest - cell) + (lowest + cell / 2)
 
     global_population_dataset = utils.geospatial.harmonize_coords(
         global_population_dataset

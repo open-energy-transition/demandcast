@@ -172,14 +172,16 @@ def _from_iiasa_name_to_iso_alpha_3_code(name: str) -> str:
     Raises
     ------
     ValueError
-        If the country name is not found or if multiple countries are
-        found.
+        If the country name is neither mapped by hand nor a name or code
+        of a country in pycountry.
 
     Notes
     -----
-    The names that pycountry does not find, some of which have a
+    The names that pycountry does not know, some of which have a
     question mark in place of a letter that is not ASCII, are mapped by
-    hand.
+    hand. The other names must be a name or code of a country: the
+    fuzzy search of pycountry also matches the names of subdivisions,
+    such as Kosovo with Serbia, so it is not used.
     """
     custom_mapping = {
         "C?te d'Ivoire": "CIV",
@@ -188,27 +190,16 @@ def _from_iiasa_name_to_iso_alpha_3_code(name: str) -> str:
         "Cura?ao": "CUW",
         "R?union": "REU",
         "United States Virgin Islands": "VIR",
+        "Micronesia": "FSM",
+        "Palestine": "PSE",
+        "Kosovo": "XKX",
     }
-
+    if name in custom_mapping:
+        return custom_mapping[name]
     try:
-        try:
-            country = pycountry.countries.lookup(name)
-            iso_alpha_3_code = country.alpha_3
-        except LookupError:
-            countries = pycountry.countries.search_fuzzy(name)
-            if len(countries) > 1:
-                raise ValueError(
-                    f"Multiple countries found for name '{name}': "
-                    f"{[c.name for c in countries]}"
-                ) from None
-            iso_alpha_3_code = countries[0].alpha_3
+        return pycountry.countries.lookup(name).alpha_3
     except LookupError:
-        if name in custom_mapping:
-            iso_alpha_3_code = custom_mapping[name]
-        else:
-            raise ValueError(f"Country name '{name}' not found.") from None
-
-    return iso_alpha_3_code
+        raise ValueError(f"Country name '{name}' not found.") from None
 
 
 def read(variable: str) -> pd.DataFrame:
