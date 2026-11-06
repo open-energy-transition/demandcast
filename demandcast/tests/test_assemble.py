@@ -435,6 +435,14 @@ def test_assembly_adds_the_public_holidays(monkeypatch):
     merge_datasets = assemble._merge_datasets
 
     def _merge_with_repeated_labels(*args, **kwargs):
+        """
+        Merge the inputs, with labels repeated every 1000 rows.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The merged inputs.
+        """
         merged = merge_datasets(*args, **kwargs)
         merged.index = np.arange(len(merged)) % 1000
         return merged
