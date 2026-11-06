@@ -22,12 +22,9 @@ Description:
     updated for each release. A new version takes them, and keeps the
     creators, contributors and communities of the record.
 
-    The files are uploaded to the bucket of the draft, which takes large
-    files. The API key is read from ZENODO_API_KEY, or from
+    The API key is read from ZENODO_API_KEY, or from
     SANDBOX_ZENODO_API_KEY for the sandbox of Zenodo, which can be used
-    to test a release. It is sent in the Authorization header, only to
-    the address of Zenodo, and a failed request is reported without the
-    message of requests, which may show what it sent.
+    to test a release.
 """
 
 import json
@@ -124,6 +121,11 @@ class ZenodoApi:
         ZenodoError
             If the address is not that of Zenodo, if the request fails,
             or if the status of the response is not the expected one.
+
+        Notes
+        -----
+        The API key is sent in the Authorization header, and only to the
+        address of Zenodo, even when the API gives another address.
         """
         full_url = url if url.startswith("https://") else self.url + url
         if not full_url.startswith(self.origin):
@@ -341,6 +343,11 @@ def publish_release(
         If a file does not exist.
     ValueError
         If two files have the same name.
+
+    Notes
+    -----
+    The files are uploaded to the bucket of the draft, which takes large
+    files.
     """
     for file_path in file_paths:
         if not os.path.isfile(file_path):

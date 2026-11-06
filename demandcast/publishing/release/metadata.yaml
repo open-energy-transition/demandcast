@@ -1,3 +1,7 @@
+# The title, description, keywords and related identifiers of the
+# release on Zenodo, read by publishing/zenodo.py and updated for each
+# release.
+
 title: Global Dataset of Forecasted Hourly Electricity Demand from 2000 to 2025 Using DemandCast
 
 keywords:
