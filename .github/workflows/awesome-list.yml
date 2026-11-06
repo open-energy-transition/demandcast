@@ -1,0 +1,62 @@
+# Warns on pull requests that change the YAML files of the data sources
+# about the sources that the Awesome Electricity Demand list does not have:
+# every source of DemandCast should be in its data/sources/ folder, with the
+# same name. The list compares the two repositories in more detail every
+# month. A missing source never fails the workflow.
+
+name: Awesome list
+
+on:
+  pull_request:
+    paths:
+      - "demandcast/retrievals/electricity_demand_data_sources/*.yaml"
+      - ".github/workflows/awesome-list.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  sources:
+    name: "Sources in the Awesome list"
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: demandcast/retrievals/electricity_demand_data_sources
+
+      - name: "Check out the data sources of the Awesome list"
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: open-energy-transition/Awesome-Electricity-Demand
+          path: awesome
+          sparse-checkout: data/sources
+          persist-credentials: false
+
+      - name: "Warn about the sources that the list does not have"
+        run: |
+          missing=()
+          for path in demandcast/retrievals/electricity_demand_data_sources/*.yaml; do
+            source="$(basename "$path" .yaml)"
+            if [ ! -f "awesome/data/sources/$source.yaml" ]; then
+              missing+=("$source")
+              echo "::warning file=$path,title=Awesome Electricity Demand::The list does not have the source $source: add data/sources/$source.yaml there."
+            fi
+          done
+          {
+            echo "## Sources in the Awesome list"
+            echo
+            if [ "${#missing[@]}" -eq 0 ]; then
+              echo "Every data source of DemandCast is in the [Awesome Electricity Demand](https://github.com/open-energy-transition/Awesome-Electricity-Demand) list."
+            else
+              echo "The [Awesome Electricity Demand](https://github.com/open-energy-transition/Awesome-Electricity-Demand) list does not have these data sources of DemandCast. Add them to its \`data/sources/\` folder, with the same names:"
+              echo
+              printf -- '- `%s`\n' "${missing[@]}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

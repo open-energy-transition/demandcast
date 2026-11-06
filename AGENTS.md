@@ -78,6 +78,7 @@ The interfaces of a data source (its module and YAML file) and of a model are de
 - keep the YAML file of a data source free of comments: explain the format of the data, its quirks and the entities left out in the docstring at the top of the module, and leave the dates of the data to the YAML file;
 - use the helpers of `utils/` instead of copying their code, and follow `ons.py` or `hydroquebec.py`;
 - add a test that parses a small synthetic fixture of the source's files, served by the `fake_downloads` fixture;
+- make sure the source is in the Awesome Electricity Demand list, in `data/sources/<source>.yaml` with the same name, entities, years and terms of use, or say in the pull request that it needs to be added there;
 - for a model, add it to `MODEL_MODULES` in `ml_models/registry.py` and to the modules that mypy checks in `tests/ml_models/test_registry.py`; the module reads no file, the scripts pass its settings.
 
 ## Pull requests
