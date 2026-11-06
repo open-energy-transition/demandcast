@@ -123,9 +123,8 @@ def _read_aspx_params(
     """
     Read the ASPX parameters from the response.
 
-    This function extracts relevant ASPX parameters such as
-    `__VIEWSTATE` and `__EVENTVALIDATION` from the HTML content of the
-    response and returns them with the provided POST data parameters.
+    The ASPX parameters are `__VIEWSTATE` and `__EVENTVALIDATION`, read
+    from the HTML content of the response.
 
     Parameters
     ----------

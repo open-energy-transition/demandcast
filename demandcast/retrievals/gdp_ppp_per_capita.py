@@ -27,9 +27,7 @@ def get_historical_data() -> pd.DataFrame:
     """
     Get the historical GDP PPP per capita data.
 
-    This function downloads the historical GDP PPP per capita data
-    from the World Bank and the IMF, merges them, and returns the
-    combined DataFrame.
+    The data of the World Bank and of the IMF are merged.
 
     Returns
     -------
@@ -67,10 +65,9 @@ def _get_gdp_ppp_per_capita_from_gridded_data(
     """
     Get the GDP PPP per capita by aggregating gridded data.
 
-    This function calculates the GDP PPP per capita for a given country
-    or subdivision by aggregating gridded GDP PPP and population data.
-    The GDP PPP per capita is calculated as the total GDP PPP divided
-    by the total population for the specified years.
+    The GDP PPP per capita is the total of the gridded GDP PPP in the
+    country or subdivision divided by the total of its gridded
+    population.
 
     Parameters
     ----------
@@ -133,10 +130,8 @@ def _extract_historical_gdp_ppp_per_capita(
     """
     Extract the historical GDP PPP per capita for a country.
 
-    This function extracts the historical GDP PPP per capita for a
-    given country from the global historical GDP PPP per capita data.
-    If the country is not found in the global data, it calculates the
-    GDP PPP per capita by aggregating gridded data.
+    The data comes from the global historical GDP PPP per capita data,
+    or else, for a country not in it, from the gridded data.
 
     Parameters
     ----------
@@ -196,10 +191,8 @@ def _extract_future_gdp_ppp_per_capita(
     """
     Extract the future GDP PPP per capita for a country.
 
-    This function extracts the future GDP PPP per capita for a given
-    country and scenario from the global future GDP PPP per capita data.
-    If the country is not found in the global data, it calculates the
-    GDP PPP per capita by aggregating gridded data.
+    The data comes from the global future GDP PPP per capita data, or
+    else, for a country not in it, from the gridded data.
 
     Parameters
     ----------

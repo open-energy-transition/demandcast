@@ -225,9 +225,8 @@ def read_data_sources() -> list[str]:
     """
     Read the names of the data sources.
 
-    This function reads the names of the data sources from the yaml
-    files in the folder containing the modules for electricity demand
-    retrievals. The names are extracted from the file names.
+    The names are those of the yaml files in the folder of the modules
+    for electricity demand retrievals.
 
     Returns
     -------
@@ -392,10 +391,6 @@ def read_entities_info(
     """
     Get the information of the countries and subdivisions.
 
-    This function reads the information of the countries and
-    subdivisions from a specified yaml file or from the yaml file of a
-    specified data source.
-
     Parameters
     ----------
     file_path : str, optional
@@ -446,8 +441,6 @@ def get_electricity_demand_data_sources_containing_code(
     """
     Get the data sources containing the provided code.
 
-    This function checks the yaml files of all the data sources.
-
     Parameters
     ----------
     code : str
@@ -475,10 +468,6 @@ def read_codes_in(file_path: str = "", data_source: str = "") -> list[str]:
     """
     Read the codes of the countries and subdivisions.
 
-    This function reads the codes of the countries and subdivisions
-    from a specified yaml file or from the yaml file of a specified data
-    source.
-
     Parameters
     ----------
     file_path : str, optional
@@ -505,8 +494,8 @@ def read_all_codes_with_electricity_demand_data() -> list[str]:
     """
     Read the codes of all countries and subdivisions with demand data.
 
-    This function combines the codes of the yaml files of all the data
-    sources, without duplicates.
+    The codes of all the data sources are combined, without
+    duplicates.
 
     Returns
     -------
@@ -535,8 +524,7 @@ def read_date_ranges_of_electricity_demand_in_data_source(
     """
     Read the start and end dates of the available data.
 
-    This function reads the start and end dates of the countries and
-    subdivisions from the yaml file of a data source.
+    The dates are read from the yaml file of the data source.
 
     Parameters
     ----------
@@ -588,9 +576,8 @@ def read_all_date_ranges() -> dict[str, tuple[dt.date, dt.date]]:
     """
     Read all the start and end dates of the available data.
 
-    This function combines the start and end dates of the yaml files of
-    all the data sources. A country or subdivision in more than one
-    data source takes the dates that give the longest period.
+    A country or subdivision in more than one data source takes the
+    dates that give the longest period.
 
     Returns
     -------

@@ -263,10 +263,9 @@ def clean_data(time_series: pd.Series, variable_name: str) -> pd.Series:
     """
     Clean the time series.
 
-    This function removes the missing times, NaN values, zero values,
-    and duplicated time steps from the time series, and sorts it. It
-    also converts the time series to UTC, without time zone, and names
-    the index and the series.
+    Cleaning removes the missing times, NaN values, zero values and
+    duplicated time steps, sorts the time series, converts it to UTC
+    without time zone, and names the index and the series.
 
     Parameters
     ----------

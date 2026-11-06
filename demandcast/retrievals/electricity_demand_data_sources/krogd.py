@@ -120,8 +120,8 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function reads the versions of the file data on the portal and
-    keeps the latest version of each year between the dates.
+    The requests are the latest version of each year between the dates,
+    among the versions of the file data on the portal.
 
     Parameters
     ----------

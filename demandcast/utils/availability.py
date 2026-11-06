@@ -95,12 +95,9 @@ def read_codes_with_all_data() -> list[str]:
     """
     Get the codes of all countries and subdivisions with all data.
 
-    This function retrieves the codes of all countries and
-    subdivisions for which all required data for the demand forecasting
-    model is available. This includes the availability of shapes,
-    historical and future population data, historical and future
-    electricity demand per capita, and historical and future GDP PPP per
-    capita.
+    All data is the data that the demand forecasting model needs: the
+    shapes, and the historical and future population, electricity
+    demand per capita and GDP PPP per capita.
 
     Returns
     -------
@@ -136,11 +133,9 @@ def check_and_get_codes_with(  # noqa: C901
     """
     Check code validity (if provided) or get all available codes.
 
-    This function checks if the code provided as an argument or the
-    codes in the specified file are valid by comparing them with the
-    list of available codes for which a certain feature is available.
-    If no code or file path is provided, it returns all available codes
-    for which the feature is available.
+    A code is valid when the feature is available for it. Without a
+    code or a file path, all the codes for which the feature is
+    available are returned.
 
     Parameters
     ----------

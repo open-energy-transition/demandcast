@@ -119,9 +119,8 @@ def get_available_requests(
     """
     Get the available requests.
 
-    This function reads the pages of the PGCB website that list the
-    reports, and keeps the Excel file of each report, except those known
-    to be unavailable.
+    The requests are the Excel files of the reports listed on the pages
+    of the PGCB website, except those known to be unavailable.
 
     Parameters
     ----------

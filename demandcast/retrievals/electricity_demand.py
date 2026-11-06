@@ -218,9 +218,8 @@ def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:
     """
     Retrieve the electricity demand data.
 
-    This function downloads the electricity demand time series from the
-    specified data source, keeps the responses of its website in the raw
-    data, and processes them with those of the earlier retrievals.
+    The responses of the website of the data source are kept in the raw
+    data and processed with those of the earlier retrievals.
 
     Parameters
     ----------
@@ -324,10 +323,10 @@ def _save_data(
     """
     Save the processed electricity demand.
 
-    This function saves the electricity demand, processed to MW and UTC
-    at the resolution of the data source, to a parquet file named after
-    the code and the data source in the folder of processed electricity
-    demand, which replaces the file of an earlier retrieval.
+    The demand, in UTC at the resolution of the data source, goes to a
+    parquet file named after the code and the data source in the folder
+    of processed electricity demand, and replaces the file of an
+    earlier retrieval.
 
     Parameters
     ----------
@@ -355,9 +354,9 @@ def run_data_retrieval(
     """
     Run the electricity demand data retrieval.
 
-    This function retrieves the electricity demand time series for the
-    specified countries and subdivisions from the data source, or only
-    processes their raw data again, cleans the data, and saves it.
+    The electricity demand of each country and subdivision is
+    retrieved, or its raw data is processed again, and then cleaned and
+    saved.
 
     Parameters
     ----------

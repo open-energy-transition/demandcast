@@ -119,9 +119,8 @@ def get_standard_shape(
     """
     Retrieve the shape of a country or subdivision.
 
-    This function retrieves the shape of a country or subdivision from
-    the Natural Earth shapefile database, by its code, or else by its
-    name.
+    The shape comes from the Natural Earth shapefile database, found by
+    the code of the entity, or else by its name.
 
     Parameters
     ----------
@@ -207,8 +206,8 @@ def _read_non_standard_shape_codes() -> dict[str, list[str]]:
     """
     Read the non-standard shapes codes from the shapes directory.
 
-    This function reads the codes of the non-standard shapes from the
-    shapefile of each data source in the shapes directory.
+    The codes are read from the shapefile of each data source in the
+    shapes directory.
 
     Returns
     -------
@@ -237,8 +236,7 @@ def _get_non_standard_shape(
     """
     Retrieve the shape of a non-standard subdivision.
 
-    This function retrieves the shape of a non-standard subdivision from
-    the shapes directory.
+    The shape is read from the shapes directory.
 
     Parameters
     ----------
@@ -328,12 +326,11 @@ def get_entity_bounds(
     """
     Get the lateral bounds of the country or subdivision.
 
-    This function retrieves the lateral bounds of a country or
-    subdivision of interest. The bounds are returned as a list
-    containing the western, southern, eastern, and northern bounds,
-    respectively. One degree of buffer is added to the bounds, which
-    are kept within -180 and 180 degrees of longitude and rounded to
-    the closest multiple of the target resolution.
+    The bounds are returned as a list containing the western,
+    southern, eastern, and northern bounds, respectively. One degree of
+    buffer is added to the bounds, which are kept within -180 and 180
+    degrees of longitude and rounded to the closest multiple of the
+    target resolution.
 
     Parameters
     ----------

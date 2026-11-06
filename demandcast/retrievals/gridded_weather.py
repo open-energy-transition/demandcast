@@ -499,10 +499,8 @@ def run_data_retrieval(
     """
     Download and extract gridded weather data.
 
-    This function retrieves weather data from the Copernicus Climate
-    Data Store (CDS) or from ARCO-ERA5 for the countries and
-    subdivisions of interest. The data is saved into NetCDF files in the
-    specified directory.
+    The data comes from the Copernicus Climate Data Store (CDS) or from
+    ARCO-ERA5, and is saved into NetCDF files.
 
     Parameters
     ----------

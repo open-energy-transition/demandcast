@@ -81,11 +81,7 @@ def _load_gridded_temperature_data(
     """
     Load the gridded temperature data.
 
-    This function reads the gridded temperature data for the given
-    year, model, and scenario. It loads the data for the given year as
-    well as for the previous and next year to account for time zone
-    differences when extracting the temperature data for the given year
-    in local time.
+    The data of the previous and next years is loaded too.
 
     Parameters
     ----------
@@ -113,6 +109,11 @@ def _load_gridded_temperature_data(
     ------
     ValueError
         If the temperature variable is not found in the dataset.
+
+    Notes
+    -----
+    The previous and next years are loaded because the given year in
+    local time starts or ends in them, depending on the time zone.
     """
     temperature_data_directory = utils.paths.get_gridded_folder(
         "weather", "processed"
@@ -191,10 +192,8 @@ def _load_gridded_population_data(
     """
     Load the gridded population data.
 
-    This function reads the gridded population data for the given
-    year. It finds the year of the population data that is closest to
-    the year of the temperature data and downloads the population data
-    if it is not already available.
+    The population data is that of the year closest to the year of the
+    temperature data, downloaded if it is not available.
 
     Parameters
     ----------
@@ -388,11 +387,8 @@ def _get_temperature_in_most_populous_cells(
     """
     Get the temperature data for the most populous grid cells.
 
-    This function reads the temperature data for the given year, model,
-    and scenario. It then extracts the temperature data for the given
-    year in local time and calculates the average temperature for the
-    grid cells with the largest population in the given country or
-    subdivision.
+    The temperature is averaged over the most populous grid cells, for
+    the given year in local time.
 
     Parameters
     ----------
@@ -518,10 +514,9 @@ def _build_temperature_database(
     """
     Build the temperature database for the given country or subdivision.
 
-    This function takes the temperature time series for the most
-    populous grid cells in a given country or subdivision and adds
-    various statistics to it, such as monthly and annual averages,
-    percentiles, and time-related features.
+    The temperature time series of the most populous grid cells gets
+    statistics such as the monthly and annual averages, percentiles,
+    and time-related features.
 
     Parameters
     ----------

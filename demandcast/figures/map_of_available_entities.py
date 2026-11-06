@@ -61,9 +61,8 @@ def plot(figure_directory: str) -> None:
     """
     Plot a map of the countries and subdivisions.
 
-    This function generates a map showing the countries and subdivisions
-    for which retrieval scripts of electricity demand data are
-    available.
+    The countries and subdivisions are those with a retrieval script of
+    electricity demand data.
 
     Parameters
     ----------

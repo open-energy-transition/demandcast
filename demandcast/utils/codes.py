@@ -161,9 +161,8 @@ def get_continent_code(code: str) -> str:
     """
     Get the continent of a country or subdivision.
 
-    This function retrieves the continent code of a country or
-    subdivision from the ISO Alpha-3 code of the country, using
-    config/continents.yaml and the predefined entities.
+    The continent code comes from the ISO Alpha-3 code of the country,
+    through config/continents.yaml and the predefined entities.
 
     Parameters
     ----------

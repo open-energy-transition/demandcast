@@ -21,10 +21,9 @@ def harmonize_coords[T: (xarray.DataArray, xarray.Dataset)](ds: T) -> T:
     """
     Rename coordinates and reset longitudes.
 
-    This function renames the longitude and latitude coordinates to "x"
-    and "y", respectively, and resets the longitudes from the range
-    [0, 360] to [-180, 180]. It also sorts the dataset by the "y"
-    coordinate to ensure a consistent order.
+    The longitude and latitude coordinates are renamed to "x" and "y",
+    the longitudes go from the range [0, 360] to [-180, 180], and the
+    data is sorted by "y".
 
     Parameters
     ----------
@@ -47,6 +46,9 @@ def harmonize_coords[T: (xarray.DataArray, xarray.Dataset)](ds: T) -> T:
     -----
     The longitudes are reset in double precision: in single precision,
     such as in ARCO-ERA5, 354.25 would become -5.749984.
+
+    The data is sorted by "y" so that its order is the same whatever
+    its source.
     """
     if "longitude" in ds.coords and "latitude" in ds.coords:
         ds = ds.rename({"longitude": "x", "latitude": "y"})
@@ -79,9 +81,9 @@ def clean_raster(
     """
     Clean the xarray data imported from a raster file.
 
-    This function squeezes the "band" dimension, drops the "band" and
-    "spatial_ref" coordinates and the attributes, and renames the data
-    to the specified variable name.
+    The "band" dimension is squeezed, the "band" and "spatial_ref"
+    coordinates and the attributes are dropped, and the data is named
+    after the variable.
 
     Parameters
     ----------
@@ -228,9 +230,8 @@ def from_density_to_count(
     """
     Convert density to count.
 
-    This function converts a density xarray to a count xarray by
-    calculating the area of each grid cell in square kilometers and
-    multiplying the density by the area.
+    The count of each grid cell is its density times its area in square
+    kilometres.
 
     Parameters
     ----------
@@ -361,9 +362,7 @@ def coarsen(
     """
     Coarsen the xarray data to the target resolution.
 
-    This function coarsens the xarray data to the specified target
-    resolution by aggregating the data into bins of the target
-    resolution.
+    The data is aggregated into bins of the target resolution.
 
     Parameters
     ----------

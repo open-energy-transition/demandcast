@@ -79,11 +79,9 @@ def _select_years_of_gridded_data(
     """
     Select the years of gridded data.
 
-    The function selects the years of gridded data that cover the
-    years of interest. It finds the first year of available gridded
-    data that is less than or equal to the minimum selected year and
-    the last year of available gridded data that is greater than or
-    equal to the maximum selected year.
+    The selected years cover the years of interest: they go from the
+    latest available year not after the first year of interest to the
+    earliest available year not before the last one.
 
     Parameters
     ----------

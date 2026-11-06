@@ -30,11 +30,9 @@ def _get_time_zone_of_country(iso_alpha_3_code: str) -> dt.tzinfo:
     """
     Get the time zone of a country.
 
-    This function retrieves the time zone of a country based on its ISO
-    Alpha-3 code. If the country has multiple time zones, it determines
-    the appropriate time zone based on the capital city coordinates. If
-    the country is not fully recognized, it uses a predefined mapping
-    for the time zone.
+    If the country has several time zones, the time zone of its capital
+    is taken. A country that is not fully recognised takes a predefined
+    time zone.
 
     Parameters
     ----------
@@ -107,8 +105,7 @@ def _get_time_zones_in_data_source(
     """
     Get the time zones of countries and subdivisions in a data source.
 
-    This function reads the time zones of the countries and subdivisions
-    from the yaml file of a specified data source.
+    The time zones are read from the yaml file of the data source.
 
     Parameters
     ----------
@@ -172,9 +169,8 @@ def _get_defined_time_zone_for_code(code: str) -> dt.tzinfo:
     """
     Get the defined time zone of a country or subdivision.
 
-    This function retrieves the time zone of a country or subdivision
-    based on the definition of the time zone in the yaml files of the
-    data sources.
+    The time zone is the one defined in the yaml files of the data
+    sources.
 
     Parameters
     ----------
@@ -222,11 +218,8 @@ def _get_time_zone_of_subdivision(code: str) -> dt.tzinfo:
     """
     Get the time zone of a subdivision.
 
-    This function retrieves the time zone of a subdivision based on
-    the definition of the time zone in the yaml files of the data
-    sources. If the time zone is not defined in the yaml files, it
-    determines the time zone based on the coordinates of the centroid
-    of the subdivision shape.
+    The time zone is the one defined in the yaml files of the data
+    sources, or else the one at the centroid of the subdivision shape.
 
     Parameters
     ----------
