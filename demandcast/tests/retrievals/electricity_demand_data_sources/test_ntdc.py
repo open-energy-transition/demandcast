@@ -4,7 +4,7 @@ License: AGPL-3.0.
 Description:
 
     Tests for the retrieval of electricity demand data from NTDC, from
-    manually downloaded files.
+    the copy of its dataset on Zenodo.
 """
 
 import numpy as np
@@ -14,12 +14,38 @@ import pytest
 from retrievals.electricity_demand_data_sources import ntdc
 
 
-def test_download_and_extract_data(manual_downloads_folder, assert_demand):
+@pytest.fixture
+def serve_file(fake_downloads, tmp_path):
+    """
+    Serve a synthetic file of NTDC at the URL of the file on Zenodo.
+
+    Returns
+    -------
+    Callable
+        The function that writes the content of the file and serves it.
+    """
+
+    def serve(content: str) -> None:
+        """
+        Write the content of the file and serve it.
+
+        Parameters
+        ----------
+        content : str
+            The content of the CSV file.
+        """
+        path = tmp_path / "NTDC_2015_2020.csv"
+        path.write_text(content, encoding="utf-8")
+        fake_downloads.serve(ntdc.get_url(), path)
+
+    return serve
+
+
+def test_download_and_extract_data(serve_file, assert_demand):
     """Test that the hours and the loads with commas are read."""
-    # The files have the date, the hour from 1 to 24 and the load.
-    (manual_downloads_folder / "NTDC_2024.csv").write_text(
-        'DATE,HOUR,SYSLOAD\n01/01/2024,1,"15,000"\n01/01/2024,24,"17,500.5"\n',
-        encoding="utf-8",
+    # The file has the date, the hour from 1 to 24 and the load.
+    serve_file(
+        'DATE,HOUR,SYSLOAD\n01/01/2024,1,"15,000"\n01/01/2024,24,"17,500.5"\n'
     )
 
     time_series = ntdc.download_and_extract_data_for_request(None, "PAK")
@@ -32,11 +58,10 @@ def test_download_and_extract_data(manual_downloads_folder, assert_demand):
     )
 
 
-def test_download_and_extract_data_with_text(manual_downloads_folder, caplog):
+def test_download_and_extract_data_with_text(serve_file, caplog):
     """Test that a value that is not a number is left out."""
-    (manual_downloads_folder / "NTDC_2024.csv").write_text(
-        'DATE,HOUR,SYSLOAD\n01/01/2024,1,"15,000"\n01/01/2024,2,meter\n',
-        encoding="utf-8",
+    serve_file(
+        'DATE,HOUR,SYSLOAD\n01/01/2024,1,"15,000"\n01/01/2024,2,meter\n'
     )
 
     time_series = ntdc.download_and_extract_data_for_request(None, "PAK")
@@ -45,9 +70,7 @@ def test_download_and_extract_data_with_text(manual_downloads_folder, caplog):
     assert time_series.tolist() == [15000.0]
 
 
-def test_download_and_extract_data_with_other_days(
-    manual_downloads_folder, assert_demand
-):
+def test_download_and_extract_data_with_other_days(serve_file, assert_demand):
     """Test that the rows labelled with another day are moved."""
     # The hour 24 has the date of the day before and the hour 1 of the
     # next day the date of the day, as in the file of NTDC, after a gap
@@ -60,9 +83,7 @@ def test_download_and_extract_data_with_other_days(
         f'{date},{hour},"8,{index:03d}"'
         for index, (date, hour) in enumerate(rows)
     ]
-    (manual_downloads_folder / "NTDC_2015.csv").write_text(
-        "DATE,HOUR,SYSLOAD\n" + "\n".join(lines) + "\n", encoding="utf-8"
-    )
+    serve_file("DATE,HOUR,SYSLOAD\n" + "\n".join(lines) + "\n")
 
     time_series = ntdc.download_and_extract_data_for_request(None, "PAK")
 
@@ -85,36 +106,24 @@ def test_download_and_extract_data_with_other_days(
     )
 
 
-def test_download_and_extract_data_of_two_downloads(
-    manual_downloads_folder, assert_demand
+def test_download_and_extract_data_with_repeated_hour(
+    serve_file, assert_demand
 ):
-    """Test that each hour takes the number of the latest download."""
-    (manual_downloads_folder / "NTDC_2024_old.csv").write_text(
-        "DATE,HOUR,SYSLOAD\n01/01/2024,1,15000\n01/01/2024,2,14000\n",
-        encoding="utf-8",
-    )
-    # The later download ends later and revises the first hour.
-    (manual_downloads_folder / "NTDC_2024_new.csv").write_text(
-        "DATE,HOUR,SYSLOAD\n01/01/2024,1,15500\n01/01/2024,3,13000\n",
-        encoding="utf-8",
+    """Test that an hour given twice keeps its first value."""
+    serve_file(
+        "DATE,HOUR,SYSLOAD\n01/01/2024,1,15000\n01/01/2024,2,14000\n"
+        "01/01/2024,2,14500\n01/01/2024,3,13000\n"
     )
 
     assert_demand(
         ntdc.download_and_extract_data_for_request(None, "PAK"),
         "Asia/Karachi",
         {
-            "2023-12-31 20:00": 15500.0,
+            "2023-12-31 20:00": 15000.0,
             "2023-12-31 21:00": 14000.0,
             "2023-12-31 22:00": 13000.0,
         },
     )
-
-
-@pytest.mark.usefixtures("manual_downloads_folder")
-def test_download_and_extract_data_without_files():
-    """Test that the error says where to put the downloaded files."""
-    with pytest.raises(FileNotFoundError, match="named starting with 'NTD'"):
-        ntdc.download_and_extract_data_for_request(None, "PAK")
 
 
 def test_correct_slipped_days():

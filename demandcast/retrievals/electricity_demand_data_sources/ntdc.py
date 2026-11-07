@@ -4,19 +4,18 @@ License: AGPL-3.0.
 Description:
 
     This module provides functions to retrieve the electricity demand
-    data from a publicly available repository with data provided by the
-    National Transmission & Despatch Company (NTDC) in Pakistan. The
-    data is read from the file downloaded manually from Zenodo, which
-    keeps a copy of the dataset under the CC0 licence.
+    data of the National Transmission & Despatch Company (NTDC) in
+    Pakistan, from the copy on Zenodo of a dataset published on Kaggle
+    under the CC0 licence. The data is retrieved all at once, from a
+    single CSV file.
 
-    The dataset was published on Kaggle, where it has not been since
-    October 2026 at the latest: the Wayback Machine keeps its page of
-    2026-08-04, and Zenodo the file downloaded before. The files give
-    the hourly system load (SYSLOAD) in MW, with thousands separators,
-    by date and hour ending from 1 to 24 in the time of Pakistan, which
-    has no daylight saving time. Where several files have the same hour,
-    the latest download, whose data ends last, is kept, after the days
-    of the rows of each file are corrected (see below).
+    The dataset has not been on Kaggle since October 2026 at the
+    latest: the Wayback Machine keeps its page of 2026-08-04, and Zenodo
+    its file. The file gives the hourly system load (SYSLOAD) in MW,
+    with thousands separators, by date and hour ending from 1 to 24 in
+    the time of Pakistan, which has no daylight saving time. Where an
+    hour appears twice once the days of the rows are corrected (see
+    below), its first value is kept.
 
     About 170 rows around midnight have the date of the day before or
     after, such as the hour 24 of 06/01/2015 between the hours 23 of
@@ -206,8 +205,8 @@ def get_available_requests(
     """
     Get the available requests.
 
-    The data is read at once from the files downloaded manually, so
-    there is a single request, without parameters.
+    The data is downloaded at once from a single file, so there is a
+    single request, without parameters.
 
     Parameters
     ----------
@@ -235,14 +234,14 @@ def get_url() -> str:
     str
         The URL of the electricity demand data.
     """
-    return "https://zenodo.org/records/24023127"
+    return "https://zenodo.org/records/24023127/files/NTDC_2015_2020.csv?download=1"
 
 
 def download_and_extract_data_for_request(
     request: None, code: str
 ) -> pd.Series:
     """
-    Extract electricity demand data from the files downloaded manually.
+    Download and extract electricity demand data.
 
     Parameters
     ----------
@@ -256,13 +255,7 @@ def download_and_extract_data_for_request(
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
     """
-    # Read the downloaded files.
-    dataset = utils.fetcher.read_manual_files(
-        data_source_name="NTDC",
-        url=get_url(),
-        prefix="NTD",
-        read_file=pd.read_csv,
-    )
+    dataset = utils.fetcher.fetch_dataframe(get_url(), "csv")
 
     # Remove the thousands separators and read the values as numbers.
     # The rows without a number are left out.
@@ -280,33 +273,25 @@ def download_and_extract_data_for_request(
     has_number = load.notna().to_numpy()
     dataset, load = dataset[has_number], load[has_number]
 
-    # Define the starts of the hours of each file, with the days of the
-    # rows labelled with another day corrected, which depends on the
-    # order of the rows of the file.
-    starts = pd.to_datetime(
-        dataset.iloc[:, 0].astype(str)
-        + " "
-        + (dataset.iloc[:, 1].astype(str).astype(int) - 1).astype(str),
-        format="%d/%m/%Y %H",
-    )
-    files = dataset["File"].to_numpy()
-    starts = pd.concat(
-        [
-            _correct_days(starts[files == file_name])
-            for file_name in pd.unique(files)
-        ]
+    # Define the starts of the hours, with the days of the rows labelled
+    # with another day corrected, which depends on the order of the
+    # rows.
+    starts = _correct_days(
+        pd.to_datetime(
+            dataset["DATE"].astype(str)
+            + " "
+            + (dataset["HOUR"].astype(str).astype(int) - 1).astype(str),
+            format="%d/%m/%Y %H",
+        )
     )
 
-    # Keep one value of each hour, and move the days that slip against
-    # their hours back to them.
+    # Keep the first value of each hour, and move the days that slip
+    # against their hours back to them.
+    load_by_hour = pd.Series(
+        load.to_numpy(dtype="float64"), index=pd.DatetimeIndex(starts)
+    )
     electricity_demand_time_series = _correct_slipped_days(
-        utils.time_series.keep_latest_download(
-            pd.Series(
-                load.to_numpy(dtype="float64"),
-                index=pd.DatetimeIndex(starts),
-            ),
-            dataset["File"],
-        )
+        load_by_hour[~load_by_hour.index.duplicated()].sort_index()
     )
 
     # Move the times to the ends of the hours, in local time.
