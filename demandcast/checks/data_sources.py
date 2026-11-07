@@ -34,7 +34,7 @@ import utils.time_series
 
 # The data sources whose files are downloaded manually, and so cannot
 # be checked over the network.
-MANUAL_DOWNLOADS = ["eskom", "niti", "ntdc"]
+MANUAL_DOWNLOADS = ["eskom", "niti"]
 
 # The latest requests to try until one has values: the file of a
 # period that has just started can still be empty.

@@ -1,7 +1,7 @@
 licence:
   redistribute: true
   terms: CC0.
-  url: https://web.archive.org/web/20260804193104/https://www.kaggle.com/datasets/tentative/ntdc-dataset
+  url: https://zenodo.org/records/24023127
 definition:
   - start_date: 2015-01-01
     quantity: system load without K-Electric
