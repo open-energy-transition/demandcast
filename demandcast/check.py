@@ -26,6 +26,7 @@ class ConfigModel(utils.config.StrictSettings):
     maximum_age_days: int = 60
     maximum_age_days_by_source: dict[str, int] = Field(default_factory=dict)
     time_limit_minutes: float = 15
+    skipped_data_sources: dict[str, str] = Field(default_factory=dict)
 
 
 def main(config: ConfigModel) -> None:
@@ -48,6 +49,7 @@ def main(config: ConfigModel) -> None:
             config.maximum_age_days,
             config.maximum_age_days_by_source,
             config.time_limit_minutes,
+            config.skipped_data_sources,
         )
     else:
         checks.flags.run_check()

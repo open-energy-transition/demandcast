@@ -386,6 +386,20 @@ def test_run_check(fake_checks):
     ]
 
 
+def test_run_check_with_skipped_data_sources(fake_checks):
+    """Test that the skipped data sources are reported with a reason."""
+    results = checks.data_sources.run_check(
+        ["ons", "cen"],
+        skipped_data_sources={"cen": "Its website refuses the requests."},
+    )
+
+    assert [(result.status, result.messages) for result in results] == [
+        ("passed", []),
+        ("skipped", ["Its website refuses the requests."]),
+    ]
+    assert list(fake_checks) == ["ons"]
+
+
 @pytest.mark.usefixtures("fake_checks")
 def test_run_check_counts_the_failures_in_a_row():
     """Test that the failures are counted from the previous report."""
@@ -497,3 +511,4 @@ def test_configuration_of_the_live_check(monkeypatch):
     assert config.maximum_age_days == 60
     assert config.maximum_age_days_by_source == {"caiso": 180, "tsoc": 700}
     assert config.time_limit_minutes == 15
+    assert list(config.skipped_data_sources) == ["tepco"]

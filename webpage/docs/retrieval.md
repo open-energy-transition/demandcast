@@ -120,7 +120,7 @@ For each data source that is downloaded automatically, the check downloads the l
 - the latest value is more than `maximum_age_days` old (60 by default), for a data source whose `end_date` is `today`;
 - there are data after the `end_date` of the YAML file, which is then out of date.
 
-The data sources read from manually downloaded files are skipped, ENTSO-E and EIA need their API keys, and EPIAS and ISO New England their accounts. The results are saved to `data/results/checks/data_sources_report.md` and `data/results/checks/data_sources_report.json`. In the configuration file, `data_sources` limits the check to some data sources, `maximum_age_days_by_source` gives more days to the data sources that publish later, and `time_limit_minutes` is the time after which the data sources that have not answered fail.
+The data sources read from manually downloaded files are skipped, ENTSO-E and EIA need their API keys, and EPIAS and ISO New England their accounts. The results are saved to `data/results/checks/data_sources_report.md` and `data/results/checks/data_sources_report.json`. In the configuration file, `data_sources` limits the check to some data sources, `maximum_age_days_by_source` gives more days to the data sources that publish later, `time_limit_minutes` is the time after which the data sources that have not answered fail, and `skipped_data_sources` gives the data sources that are not checked, with the reason shown in the report, such as TEPCO, whose website refuses the requests from the runners of GitHub Actions that run the weekly check.
 
 #### Report of the flags
 
