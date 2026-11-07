@@ -30,16 +30,63 @@ Description:
     "23:00". The module takes midnight from "24:00" when the report has
     it, and from "00:00" otherwise.
 
+    The server of the website sends its certificate without the
+    intermediate certificate that links it to a root of the default
+    certificates, which the browsers fetch and Python does not. The
+    module verifies the website with the default certificates and that
+    intermediate one, pgcb_intermediate_certificate.pem next to it,
+    from the address that the certificate of the website gives.
+
     Source: https://erp.powergrid.gov.bd/w/report/eyJpdiI6IldsU2ZQTGkvbkRnQU9FMjZ5UHhmeGc9PSIsInZhbHVlIjoiQzhONVl5ZGxRY3E3T3ZVNCtLZGt1Zz09IiwibWFjIjoiN2JiNTI5MzNhOWIxZDVjY2NkMmFlZWU4ZDU1N2I4OWZlYjNlZWM1ZGU4NzRiNWU4ZjQ3ZDc1ODRlMTk3MDc0YyIsInRhZyI6IiJ9/show_report
 """
 
+import atexit
 import datetime as dt
+import functools
 import logging
+import os
 import re
+import shutil
+import tempfile
 
 import pandas as pd
+import requests.utils
 
 import utils.fetcher
+
+# The intermediate certificate of the website, which its server does not
+# send.
+INTERMEDIATE_CERTIFICATE = os.path.join(
+    os.path.dirname(__file__), "pgcb_intermediate_certificate.pem"
+)
+
+
+@functools.cache
+def _get_certificates() -> str:
+    """
+    Write the certificates that verify the website.
+
+    Returns
+    -------
+    str
+        The path of a file with the default certificates and the
+        intermediate certificate of the website, which is deleted when
+        Python exits.
+    """
+    folder = tempfile.mkdtemp(prefix="demandcast_pgcb_")
+    atexit.register(shutil.rmtree, folder, ignore_errors=True)
+    file_path = os.path.join(folder, "certificates.pem")
+    with (
+        open(
+            requests.utils.DEFAULT_CA_BUNDLE_PATH, encoding="ascii"
+        ) as default,
+        open(INTERMEDIATE_CERTIFICATE, encoding="ascii") as intermediate,
+        open(file_path, "w", encoding="ascii") as certificates,
+    ):
+        certificates.write(default.read())
+        certificates.write("\n")
+        certificates.write(intermediate.read())
+    return file_path
 
 
 def _clean_and_format(date: str) -> str:
@@ -185,7 +232,7 @@ def get_available_requests(
         )
 
         html_content = utils.fetcher.fetch_response(
-            page_url,
+            page_url, verify_ssl=_get_certificates()
         )
 
         # Read each row of the table on its own: the report name gives
@@ -287,7 +334,7 @@ def download_and_extract_data_for_request(
     url = get_url(file_number, extension)
 
     excel_file = utils.fetcher.fetch_excel_file(
-        url,
+        url, verify_ssl=_get_certificates()
     )
 
     # Read the sheet of the load curve.
