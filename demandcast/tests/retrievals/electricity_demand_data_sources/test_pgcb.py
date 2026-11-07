@@ -10,6 +10,7 @@ import datetime as dt
 
 import pandas as pd
 import pytest
+import requests.utils
 
 from retrievals.electricity_demand_data_sources import pgcb
 
@@ -129,3 +130,31 @@ def test_download_and_extract_data_without_load_curve(
     assert pgcb.download_and_extract_data_for_request(
         ("4200", "xlsx", "2019-03-09"), "BGD"
     ).empty
+
+
+def test_download_verifies_the_intermediate_certificate(
+    fake_downloads, tmp_path
+):
+    """
+    Test that the website is verified with its intermediate certificate.
+
+    The file of the certificates of the requests has the default
+    certificates and the intermediate certificate of the website, which
+    its server does not send.
+    """
+    file_path = tmp_path / "report.xlsx"
+    pd.DataFrame([["Forecast"]]).to_excel(file_path, sheet_name="Forecast")
+    fake_downloads.serve(pgcb.get_url("4200", "xlsx"), file_path)
+
+    pgcb.download_and_extract_data_for_request(
+        ("4200", "xlsx", "2019-03-09"), "BGD"
+    )
+
+    [(_, _, request)] = fake_downloads.requests
+    with open(request["verify"], encoding="ascii") as file:
+        certificates = file.read()
+    with open(requests.utils.DEFAULT_CA_BUNDLE_PATH, encoding="ascii") as file:
+        assert certificates.startswith(file.read())
+    with open(pgcb.INTERMEDIATE_CERTIFICATE, encoding="ascii") as file:
+        intermediate = file.read()
+    assert intermediate.split("-----BEGIN CERTIFICATE-----")[1] in certificates

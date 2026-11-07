@@ -13,7 +13,14 @@ Description:
     earlier ones in its history: the version that ends on 2020-12-31
     covers 2013 to 2020, and each later one its year. The module reads
     the versions from the dataset page, its history and their details,
-    and downloads the latest version of each year.
+    and downloads the latest version of each year. The dataset page
+    names the current version, and the file of the current version comes
+    from the request that the download button of the page makes.
+
+    Before each download, the module makes the check of the download
+    limit of the portal that the page makes. Past the limit, the portal
+    asks to solve a CAPTCHA, and the module stops with an error instead
+    of downloading.
 
     The files give the demand in MWh of each hour, at the generation
     side and provisional, by date and hour ending from 1시 to 24시 in
@@ -23,6 +30,7 @@ Description:
 """
 
 import datetime as dt
+import json
 import logging
 import re
 
@@ -63,6 +71,71 @@ def _read_text(url: str, data: dict[str, str] | None = None) -> str:
     return page
 
 
+def _read_current_file_id(detail_id: str) -> str:
+    """
+    Read the identifier of the file of the current version.
+
+    Parameters
+    ----------
+    detail_id : str
+        The identifier of the current version on the portal.
+
+    Returns
+    -------
+    str
+        The identifier of its file.
+
+    Raises
+    ------
+    ValueError
+        If the portal gives no file for the current version.
+    """
+    answer = json.loads(
+        _read_text(
+            f"{PORTAL_URL}/tcs/dss/selectFileDataDownload.do",
+            {
+                "publicDataPk": DATASET_ID,
+                "publicDataDetailPk": detail_id,
+                "atchFileId": "",
+                "fileDetailSn": "1",
+                "publicDataTyCode": "PR0051",
+            },
+        )
+    )
+    if answer.get("status") is not True or not answer.get("atchFileId"):
+        raise ValueError(
+            "The portal of KROGD gives no file for the current version."
+        )
+    return str(answer["atchFileId"])
+
+
+def _check_download_limit(file_id: str) -> None:
+    """
+    Check that the portal allows to download a file.
+
+    Parameters
+    ----------
+    file_id : str
+        The identifier of the file.
+
+    Raises
+    ------
+    ConnectionError
+        If the portal asks to solve a CAPTCHA, past its download limit.
+    """
+    answer = json.loads(
+        _read_text(
+            f"{PORTAL_URL}/cmm/cmm/check-limit.json",
+            {"atchFileId": file_id, "fileDetailSn": "1"},
+        )
+    )
+    if answer.get("needCaptcha"):
+        raise ConnectionError(
+            "The portal of KROGD asks to solve a CAPTCHA, past its download "
+            "limit: retrieve the data again later."
+        )
+
+
 def _read_versions() -> dict[str, str]:
     """
     Read the versions of the file data on the portal.
@@ -78,16 +151,16 @@ def _read_versions() -> dict[str, str]:
     ValueError
         If the dataset page has no current version.
     """
-    # The page of the dataset gives the current version and its file.
+    # The page of the dataset gives the current version, and the
+    # request of its download button gives its file.
     page = _read_text(f"{PORTAL_URL}/data/{DATASET_ID}/fileData.do")
     current = re.search(r"전력수요량_(\d{8})", page)
-    file_id = re.search(r"fileDownload\.do\?atchFileId=(FILE_\d+)", page)
     detail_id = re.search(
         rf"fn_fileDataDown\('{DATASET_ID}', '(uddi:[0-9a-f-]+)'", page
     )
-    if current is None or file_id is None or detail_id is None:
+    if current is None or detail_id is None:
         raise ValueError("The dataset page of KROGD has no current version.")
-    versions = {current.group(1): file_id.group(1)}
+    versions = {current.group(1): _read_current_file_id(detail_id.group(1))}
 
     # The history gives the earlier versions, and their details give
     # their files.
@@ -201,6 +274,7 @@ def download_and_extract_data_for_request(
     )
 
     # Fetch the file, with Korean characters, without its empty rows.
+    _check_download_limit(file_id)
     dataset = utils.fetcher.fetch_dataframe(
         get_url(file_id), "csv", csv_kwargs={"encoding": "cp949"}
     )

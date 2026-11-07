@@ -414,6 +414,7 @@ def run_check(
     maximum_age_days: int = 60,
     maximum_age_days_by_source: dict[str, int] | None = None,
     time_limit_minutes: float = 15,
+    skipped_data_sources: dict[str, str] | None = None,
 ) -> list[Result]:
     """
     Check the electricity demand data sources over the network.
@@ -435,6 +436,10 @@ def run_check(
     time_limit_minutes : float, optional
         The minutes after which the data sources that have not
         answered fail.
+    skipped_data_sources : dict[str, str], optional
+        The data sources that are not checked, with the reason given in
+        the report, such as a website that refuses the requests from
+        where the check runs.
 
     Returns
     -------
@@ -463,6 +468,9 @@ def run_check(
             f"Valid data sources are: {all_data_sources}."
         )
     maximum_age_days_by_source = maximum_age_days_by_source or {}
+    skip_reasons = dict.fromkeys(
+        MANUAL_DOWNLOADS, "Its files are downloaded manually."
+    ) | (skipped_data_sources or {})
 
     checked_at = dt.datetime.now(dt.UTC)
     results: dict[str, Result] = {}
@@ -477,11 +485,11 @@ def run_check(
     # Check the data sources at the same time.
     threads = {}
     for data_source in data_sources:
-        if data_source in MANUAL_DOWNLOADS:
+        if data_source in skip_reasons:
             results[data_source] = Result(
                 data_source=data_source,
                 status="skipped",
-                messages=["Its files are downloaded manually."],
+                messages=[skip_reasons[data_source]],
             )
             continue
         logging.info(f"Checking the data source {data_source}.")
