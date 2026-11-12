@@ -1,7 +1,7 @@
 licence:
   redistribute: true
-  terms: Open data under article 82 of Uruguay's Law 19355 and Decree 54/2017.
-  url: https://adme.com.uy/datosabiertos.html
+  terms: Licencia de Datos Abiertos - Uruguay, which Decree 54/2017 applies to the open data of public bodies. Use for any purpose with attribution.
+  url: https://www.gub.uy/agencia-gobierno-electronico-sociedad-informacion-conocimiento/sites/agencia-gobierno-electronico-sociedad-informacion-conocimiento/files/documentos/publicaciones/licencia_de_datos_abiertos_0.pdf
 definition:
   - start_date: 2019-01-01
     quantity: demand (generation plus imports minus exports)
