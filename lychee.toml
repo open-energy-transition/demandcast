@@ -1,0 +1,9 @@
+# Settings of lychee, which checks the links of the README and of the
+# documentation (see .github/workflows/links.yml).
+
+# Answers that a website is rate limited are not broken links.
+accept = ["200..=299", "429"]
+
+# Websites that refuse automated requests: the Data Explorer of the IMF
+# answers them with HTTP 403.
+exclude = ['^https://data\.imf\.org/']

@@ -10,7 +10,7 @@ Description:
     for the countries and subdivisions of interest at a 0.25-degree
     resolution, and saves it into NetCDF files.
 
-    Source: https://data.ghg.center/sedac-popdensity-yeargrid5yr-v4.11/browseui/#sedac-popdensity-yeargrid5yr-v4.11/
+    Source: https://doi.org/10.7927/H49C6VHW
     Source: https://doi.org/10.6084/m9.figshare.19608594
     Source: https://doi.org/10.1038/s41597-022-01675-x
 """
