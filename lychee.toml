@@ -4,6 +4,12 @@
 # Answers that a website is rate limited are not broken links.
 accept = ["200..=299", "429"]
 
-# Websites that refuse automated requests: the Data Explorer of the IMF
-# answers them with HTTP 403.
-exclude = ['^https://data\.imf\.org/']
+# Websites that refuse automated requests, or those from the runners of
+# GitHub Actions, with HTTP 403: the Data Explorer of the IMF, Ember, and
+# NASA Earthdata, where the DOIs of SEDAC lead.
+exclude = [
+  '^https://data\.imf\.org/',
+  '^https://ember-energy\.org/',
+  '^https://doi\.org/10\.7927/',
+  '^https://(www\.)?earthdata\.nasa\.gov/',
+]
