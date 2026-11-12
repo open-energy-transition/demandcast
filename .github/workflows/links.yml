@@ -1,0 +1,49 @@
+# Checks the links of the README, of the other guides of the repository and
+# of the documentation every week, and on pull requests that change them,
+# with lychee and its settings in lychee.toml. A broken link fails the
+# check.
+
+name: Links
+
+on:
+  schedule:
+    - cron: "41 5 * * 1"
+  pull_request:
+    paths:
+      - "**.md"
+      - "lychee.toml"
+      - ".github/workflows/links.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  check:
+    name: "Check the links"
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check the links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: >-
+            --no-progress
+            README.md
+            CONTRIBUTING.md
+            AGENTS.md
+            CODE_OF_CONDUCT.md
+            'webpage/docs/**/*.md'
+          fail: true
+          # The token avoids the rate limit of GitHub for its own links.
+          token: ${{ secrets.GITHUB_TOKEN }}
