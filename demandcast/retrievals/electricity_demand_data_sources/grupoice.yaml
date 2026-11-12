@@ -1,7 +1,7 @@
 licence:
   redistribute: true
-  terms: CC-BY 4.0 license, as the open data of ICE. Use for any purpose with attribution.
-  url: https://www.grupoice.com/wps/portal/ICE/Transparencia/datos-abiertos
+  terms: CC BY-SA 4.0 license, under which the open data page of ICE listed the demand curves of CENCE. Use for any purpose with attribution, sharing adaptations under the same licence.
+  url: https://web.archive.org/web/20250207024012/https://www.grupoice.com/wps/portal/ICE/Transparencia/datos-abiertos
 definition:
   - start_date: 2012-03-01
     quantity: demand of the national system

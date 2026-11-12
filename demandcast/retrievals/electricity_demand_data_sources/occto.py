@@ -32,8 +32,8 @@ Description:
     rows give the daily energy ("日電力量") and the daily maximum
     ("日最大電力"), which are left out.
 
-    The terms of use of the system information service were not found,
-    so the data is not redistributed.
+    The terms of OCCTO's website let its information be used freely,
+    citing the source and stating any editing.
 
     The area demand counts the solar fed into the networks, but not the
     solar that the consumers of the surplus purchase scheme use
