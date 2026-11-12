@@ -1,9 +1,7 @@
 # Checks the links of the README, of the other guides of the repository and
 # of the documentation every week, and on pull requests that change them,
 # with lychee and its settings in lychee.toml. A broken link fails the
-# check. Lychee is a release of its program, checked against its SHA-256:
-# to update it, change its version and checksum, from the assets of the
-# release on https://github.com/lycheeverse/lychee/releases.
+# check.
 
 name: Links
 
@@ -36,27 +34,16 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install lychee
-        env:
-          VERSION: "0.24.2"
-          SHA256: "1f4e0ef7f6554a6ed33dd7ac144fb2e1bbed98598e7af973042fc5cd43951c9a"
-        run: |
-          archive="lychee-x86_64-unknown-linux-gnu.tar.gz"
-          curl --fail --silent --show-error --location \
-            --output "${RUNNER_TEMP}/${archive}" \
-            "https://github.com/lycheeverse/lychee/releases/download/lychee-v${VERSION}/${archive}"
-          echo "${SHA256}  ${RUNNER_TEMP}/${archive}" | sha256sum --check --strict
-          tar --extract --gzip --file "${RUNNER_TEMP}/${archive}" --directory "${RUNNER_TEMP}"
-          echo "${RUNNER_TEMP}/lychee-x86_64-unknown-linux-gnu" >> "${GITHUB_PATH}"
-
       - name: Check the links
-        env:
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: >-
+            --no-progress
+            README.md
+            CONTRIBUTING.md
+            AGENTS.md
+            CODE_OF_CONDUCT.md
+            'webpage/docs/**/*.md'
+          fail: true
           # The token avoids the rate limit of GitHub for its own links.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: >-
-          lychee --no-progress
-          README.md
-          CONTRIBUTING.md
-          AGENTS.md
-          CODE_OF_CONDUCT.md
-          'webpage/docs/**/*.md'
+          token: ${{ secrets.GITHUB_TOKEN }}
