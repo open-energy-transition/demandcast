@@ -7,7 +7,6 @@
 # occto.py reads the shapes of kansaitd.py and tepco.py, so it comes
 # after them.
 scripts="cammesa \
-cenace \
 eia \
 kansaitd \
 neso \
