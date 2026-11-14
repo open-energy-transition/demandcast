@@ -190,12 +190,12 @@ def test_read_non_standard_shape_codes():
     assert "tepco" in codes
     assert "neso" in codes
     assert codes["soni"] == ["GBR_NIR"]
-    assert "MEX_PEN" in codes["cenace"]
+    assert "USA_CAL" in codes["eia"]
 
 
 def test_get_non_standard_shape():
     """Test the _get_non_standard_shape function."""
-    shape = utils.shapes._get_non_standard_shape("MEX_PEN", "cenace")
+    shape = utils.shapes._get_non_standard_shape("USA_CAL", "eia")
     assert isinstance(shape, geopandas.GeoDataFrame)
 
 
@@ -326,6 +326,7 @@ def test_read_composites():
 
     assert "BRA_N" in composites
     assert composites["AUS_QLD1"].cuts == {"AU-QLD": "queensland"}
+    assert composites["MEX_BCS"].cuts == {"MX-BCS": "mulege"}
     for code, composite in composites.items():
         country, _ = code.split("_", 1)
         alpha_2 = utils.codes.get_iso_alpha_2_code(country)
