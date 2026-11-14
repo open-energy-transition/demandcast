@@ -103,7 +103,12 @@ A data source that republishes the data of the system operators, such as the EIA
 
 #### Non-standard subdivisions
 
-Some countries have subdivisions that are not standard ISO subdivisions. For these cases, the `demandcast/shapes/` folder contains scripts to generate the shapes of these subdivisions. The scripts are named after the data source (e.g., `eia.py`, `ons.py`) and contain functions to generate the shapes. The generated shapes are then used in the retrieval modules and for plotting.
+Some countries have subdivisions that are not standard ISO subdivisions, such as the area of a grid or of a market. Their shapes are in the `demandcast/shapes/` folder, in one of two ways:
+
+- `composites.yaml` defines the subdivisions that are unions of standard subdivisions of Natural Earth at 1:10m, by their ISO 3166-2 codes, with the polygons (`cuts`, in WKT) of the parts of some of them that are outside, such as the isolated systems that the grid of a country does not reach. For example, the Queensland region of the NEM (`AUS_QLD1`) is Queensland without its north-west and Cape York, and the North subsystem of Brazil (`BRA_N`) is a union of seven states, without most of Amazonas.
+- A script named after the data source, such as `eia.py`, makes a shapefile of the subdivisions that are not unions of standard subdivisions, such as the regions of the EIA; `run_all.sh` runs them all.
+
+`utils.shapes.get_entity_shape` gives the shape of any code, from these or from Natural Earth, for the retrieval of the gridded data and for plotting.
 
 #### Live check of the data sources
 

@@ -52,6 +52,7 @@ CODE_FOLDER = os.path.normpath(
 )
 CONFIG_FOLDER = os.path.join(CODE_FOLDER, "config")
 SHAPES_FOLDER = os.path.join(CODE_FOLDER, "shapes")
+COMPOSITES_FILE = os.path.join(SHAPES_FOLDER, "composites.yaml")
 RETRIEVALS_FOLDER = os.path.join(CODE_FOLDER, "retrievals")
 DATA_SOURCES_FOLDER = os.path.join(
     RETRIEVALS_FOLDER, "electricity_demand_data_sources"
