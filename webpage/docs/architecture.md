@@ -38,7 +38,7 @@ demandcast/                         # the repository
 │   ├── ml_models/                  # Machine learning models, their registry, data preparation and evaluation
 │   ├── publishing/                 # Copies to and from Google Cloud Storage, and releases on Zenodo
 │   ├── retrievals/                 # Retrieval of each variable, and the modules and YAML files of the data sources
-│   ├── shapes/                     # Scripts that make the shapes of non-standard subdivisions, and the shapes
+│   ├── shapes/                     # Shapes of non-standard subdivisions: composites.yaml, and scripts with their shapefiles
 │   ├── tests/                      # Tests, in folders that mirror the code
 │   ├── utils/                      # Shared helpers: paths, catalogue, codes, data sources, fetching, time series
 │   ├── Dockerfile                  # Docker image of the project

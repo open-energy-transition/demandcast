@@ -10,9 +10,13 @@ from unittest.mock import patch
 
 import geopandas
 import pytest
+import yaml
 from shapely import Polygon
 
+import utils.codes
 import utils.shapes
+
+SQUARE = "POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0))"
 
 
 @pytest.fixture
@@ -186,7 +190,6 @@ def test_read_non_standard_shape_codes():
     assert "tepco" in codes
     assert "neso" in codes
     assert codes["soni"] == ["GBR_NIR"]
-    assert "BRA_N" in codes["ons"]
     assert "MEX_PEN" in codes["cenace"]
 
 
@@ -286,3 +289,182 @@ def test_get_all_codes_with_shapes():
     assert "RUS_AD" in shape_codes
     assert "UKR_40" in shape_codes
     assert "XKX" in shape_codes
+    assert "BRA_N" in shape_codes
+
+
+@pytest.fixture
+def composites_file(tmp_path):
+    """
+    Point the file of the composites to a temporary file.
+
+    Yields
+    ------
+    function
+        A function that writes its argument as the content of the
+        file, and clears the cache of the composites.
+    """
+    path = tmp_path / "composites.yaml"
+
+    def write(content):
+        path.write_text(yaml.safe_dump(content), encoding="utf-8")
+        utils.shapes.read_composites.cache_clear()
+
+    with patch("utils.paths.COMPOSITES_FILE", str(path)):
+        yield write
+    utils.shapes.read_composites.cache_clear()
+
+
+def test_read_composites():
+    """
+    Read the composites of the repository.
+
+    Each code has a country and a subdivision, and each composite has a
+    standard subdivision of its own country.
+    """
+    utils.shapes.read_composites.cache_clear()
+    composites = utils.shapes.read_composites().composites
+
+    assert "BRA_N" in composites
+    assert composites["AUS_QLD1"].cuts == {"AU-QLD": "queensland"}
+    for code, composite in composites.items():
+        country, _ = code.split("_", 1)
+        alpha_2 = utils.codes.get_iso_alpha_2_code(country)
+        assert any(r.startswith(f"{alpha_2}-") for r in composite.regions)
+
+
+@pytest.mark.parametrize(
+    ("cuts", "composites", "message"),
+    [
+        (
+            {"a": {"description": "A", "polygon": SQUARE}},
+            {
+                "XX_1": {
+                    "name": "X",
+                    "regions": ["XX-A"],
+                    "cuts": {"XX-B": "a"},
+                }
+            },
+            "cuts XX-B, not its region",
+        ),
+        (
+            {},
+            {
+                "XX_1": {
+                    "name": "X",
+                    "regions": ["XX-A"],
+                    "cuts": {"XX-A": "a"},
+                }
+            },
+            "unknown cut a",
+        ),
+        (
+            {"a": {"description": "A", "polygon": SQUARE}},
+            {"XX_1": {"name": "X", "regions": ["XX-A"]}},
+            "unused cuts: a",
+        ),
+        (
+            {"a": {"description": "A", "polygon": "POLYGON ((0 0"}},
+            {},
+            "invalid WKT",
+        ),
+        (
+            {"a": {"description": "A", "polygon": "POINT (0 0)"}},
+            {},
+            "Point is not a polygon",
+        ),
+        (
+            {
+                "a": {
+                    "description": "A",
+                    "polygon": "POLYGON ((0 0, 1 1, 1 0, 0 1, 0 0))",
+                }
+            },
+            {},
+            "the polygon is not valid",
+        ),
+    ],
+)
+def test_read_invalid_composites(composites_file, cuts, composites, message):
+    """Reject a cut of another region, unknown or unused, or invalid."""
+    composites_file({"cuts": cuts, "composites": composites})
+
+    with pytest.raises(ValueError, match=message):
+        utils.shapes.read_composites()
+
+
+def _standard_subdivisions():
+    """
+    Make two standard subdivisions side by side.
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        The squares of XX-A, from 0 to 1, and XX-B, from 1 to 2.
+    """
+    return geopandas.GeoDataFrame(
+        {
+            "iso_3166_2": ["XX-A", "XX-B"],
+            "geometry": [
+                Polygon([(0, 0), (1, 0), (1, 1), (0, 1)]),
+                Polygon([(1, 0), (2, 0), (2, 1), (1, 1)]),
+            ],
+        },
+        crs=4326,
+    )
+
+
+def test_get_composite_shape(composites_file):
+    """
+    Make a composite of two standard subdivisions, one of them cut.
+
+    Notes
+    -----
+    The cut takes the upper half of XX-B, so the two rows of the
+    composite have an area of 1.5.
+    """
+    composites_file(
+        {
+            "cuts": {
+                "half": {
+                    "description": "Upper half",
+                    "polygon": "POLYGON ((1 0.5, 2 0.5, 2 1, 1 1, 1 0.5))",
+                }
+            },
+            "composites": {
+                "XX_1": {
+                    "name": "X",
+                    "regions": ["XX-A", "XX-B"],
+                    "cuts": {"XX-B": "half"},
+                },
+                "XX_2": {"name": "Y", "regions": ["XX-A", "XX-C"]},
+            },
+        }
+    )
+
+    with patch(
+        "utils.shapes._read_detailed_standard_subdivisions",
+        return_value=_standard_subdivisions(),
+    ):
+        shape = utils.shapes.get_entity_shape("XX_1", make_plot=False)
+        assert list(shape.index) == ["XX_1", "XX_1"]
+        assert shape.union_all().area == pytest.approx(1.5)
+
+        with pytest.raises(ValueError, match="no subdivision XX-C"):
+            utils.shapes.get_entity_shape("XX_2", make_plot=False)
+
+
+@pytest.mark.network
+def test_read_detailed_standard_subdivisions():
+    """Read the standard subdivisions of Natural Earth at 1:10m."""
+    regions = utils.shapes._read_detailed_standard_subdivisions()
+
+    assert "BO-B" in set(regions["iso_3166_2"])
+
+
+@pytest.mark.network
+def test_composites_have_shapes():
+    """Make the shape of every composite of the repository."""
+    utils.shapes.read_composites.cache_clear()
+    for code in utils.shapes.read_composites().composites:
+        shape = utils.shapes.get_entity_shape(code, make_plot=False)
+        assert not shape.union_all().is_empty

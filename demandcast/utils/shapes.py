@@ -6,21 +6,258 @@ Description:
     This module retrieves standard shapes of countries and subdivisions
     from the Natural Earth shapefile database. It also retrieves
     non-standard subdivision shapes from the shapes directory: the
-    shapes of subdivisions that Natural Earth does not have, defined by
-    the user in a shapefile for each data source.
+    shapes of subdivisions that Natural Earth does not have, defined in
+    a shapefile for each data source, or in ``composites.yaml`` as
+    unions of standard subdivisions of Natural Earth at 1:10m, without
+    the parts of some of them that polygons mark.
 """
 
+import functools
 import os
 
 import cartopy.io.shapereader
 import geopandas
 import pandas as pd
 import pycountry
+import shapely
+import yaml
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 from shapely import Polygon
 
 import utils.codes
 import utils.figures
 import utils.paths
+
+
+class Cut(BaseModel):
+    """
+    Polygon of the parts of standard subdivisions outside composites.
+
+    Attributes
+    ----------
+    description : str
+        What the polygon cuts, and why.
+    polygon : str
+        The polygon or multipolygon, in WKT, in degrees of longitude
+        and latitude.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    description: str
+    polygon: str
+
+    @field_validator("polygon")
+    @classmethod
+    def _check_polygon(cls, polygon: str) -> str:
+        """
+        Check that the polygon is a valid polygon or multipolygon.
+
+        Parameters
+        ----------
+        polygon : str
+            The polygon, in WKT.
+
+        Returns
+        -------
+        str
+            The polygon, unchanged.
+
+        Raises
+        ------
+        ValueError
+            If the text is not the WKT of a valid polygon or
+            multipolygon.
+        """
+        try:
+            geometry = shapely.from_wkt(polygon)
+        except shapely.errors.GEOSException as error:
+            raise ValueError(f"invalid WKT: {error}") from error
+        if geometry.geom_type not in ("Polygon", "MultiPolygon"):
+            raise ValueError(f"{geometry.geom_type} is not a polygon")
+        if not geometry.is_valid:
+            raise ValueError("the polygon is not valid")
+        return polygon
+
+
+class Composite(BaseModel):
+    """
+    Non-standard subdivision made of standard subdivisions.
+
+    Attributes
+    ----------
+    name : str
+        Name of the subdivision.
+    regions : list[str]
+        ISO 3166-2 codes of the standard subdivisions of Natural Earth
+        at 1:10m that make it, separated by spaces in the file.
+    cuts : dict[str, str]
+        The name of the cut of some of the standard subdivisions, by
+        their ISO 3166-2 code.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    regions: list[str]
+    cuts: dict[str, str] = {}
+
+    @field_validator("regions", mode="before")
+    @classmethod
+    def _split_regions(cls, regions: object) -> object:
+        """
+        Split the codes of the regions, separated by spaces.
+
+        Parameters
+        ----------
+        regions : object
+            The codes, as a string or already as a list.
+
+        Returns
+        -------
+        object
+            The list of codes, or the value unchanged if it is not a
+            string.
+        """
+        return regions.split() if isinstance(regions, str) else regions
+
+
+class Composites(BaseModel):
+    """
+    Content of ``composites.yaml``.
+
+    Attributes
+    ----------
+    cuts : dict[str, Cut]
+        The cuts, by name.
+    composites : dict[str, Composite]
+        The composites, by code of the subdivision.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    cuts: dict[str, Cut]
+    composites: dict[str, Composite]
+
+    @model_validator(mode="after")
+    def _check_cuts(self) -> "Composites":
+        """
+        Check that each cut of a composite exists, on its regions.
+
+        Returns
+        -------
+        Composites
+            The composites, unchanged.
+
+        Raises
+        ------
+        ValueError
+            If a composite cuts a region that it does not have, or with
+            a cut that does not exist, or a cut is not used.
+        """
+        used = set()
+        for code, composite in self.composites.items():
+            for region, cut in composite.cuts.items():
+                if region not in composite.regions:
+                    raise ValueError(f"{code} cuts {region}, not its region")
+                if cut not in self.cuts:
+                    raise ValueError(f"{code} has an unknown cut {cut}")
+                used.add(cut)
+        unused = sorted(set(self.cuts) - used)
+        if unused:
+            raise ValueError(f"unused cuts: {', '.join(unused)}")
+        return self
+
+
+@functools.cache
+def read_composites() -> Composites:
+    """
+    Read the composites of the shapes directory.
+
+    Returns
+    -------
+    Composites
+        The cuts and the composites of ``composites.yaml``.
+
+    Raises
+    ------
+    ValueError
+        If the file is not valid.
+    """
+    with open(utils.paths.COMPOSITES_FILE, encoding="utf-8") as file:
+        content = yaml.safe_load(file)
+    try:
+        return Composites.model_validate(content)
+    except ValidationError as error:
+        raise ValueError(
+            f"The file of the composites is not valid: {error}"
+        ) from error
+
+
+@functools.cache
+def _read_detailed_standard_subdivisions() -> geopandas.GeoDataFrame:
+    """
+    Read the standard subdivisions of Natural Earth at 1:10m.
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        The standard subdivisions, with their ISO 3166-2 code in the
+        column ``iso_3166_2``.
+    """
+    path = cartopy.io.shapereader.natural_earth(
+        resolution="10m", category="cultural", name="admin_1_states_provinces"
+    )
+    return geopandas.read_file(path)
+
+
+def _get_composite_shape(code: str) -> geopandas.GeoDataFrame:
+    """
+    Make the shape of a composite.
+
+    Parameters
+    ----------
+    code : str
+        The combination of ISO Alpha-3 code and subdivision code.
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        GeoDataFrame with the standard subdivisions of the composite,
+        one per row, each without the polygon of its cut, if any.
+
+    Raises
+    ------
+    ValueError
+        If Natural Earth does not have a standard subdivision of the
+        composite.
+    """
+    composites = read_composites()
+    composite = composites.composites[code]
+    regions = _read_detailed_standard_subdivisions()
+    selected = regions[regions["iso_3166_2"].isin(composite.regions)]
+    missing = sorted(set(composite.regions) - set(selected["iso_3166_2"]))
+    if missing:
+        raise ValueError(
+            f"Natural Earth has no subdivision {', '.join(missing)} of "
+            f"the composite {code}."
+        )
+    geometries = []
+    for region, geometry in zip(
+        selected["iso_3166_2"], selected.geometry, strict=True
+    ):
+        part = geometry
+        if region in composite.cuts:
+            cut = composites.cuts[composite.cuts[region]]
+            part = geometry.difference(shapely.from_wkt(cut.polygon))
+        geometries.append(part)
+    return geopandas.GeoDataFrame(geometry=geometries, crs=4326)
 
 
 def _remove_islands_and_clip_to_180(  # noqa: C901
@@ -271,8 +508,9 @@ def get_entity_shape(
     Get the shape of a country or subdivision of interest.
 
     A country has the shape of the Natural Earth shapefile database. A
-    subdivision has its non-standard shape, if it has one, and that of
-    the Natural Earth shapefile database otherwise.
+    subdivision has its non-standard shape, if it has one, as a
+    composite or in the shapefile of a data source, and that of the
+    Natural Earth shapefile database otherwise.
 
     Parameters
     ----------
@@ -292,6 +530,8 @@ def get_entity_shape(
     """
     if "_" not in code:
         entity_shape = get_standard_shape(code, remove_remote_islands)
+    elif code in read_composites().composites:
+        entity_shape = _get_composite_shape(code)
     else:
         is_non_standard_shape = False
         selected_data_source = ""
@@ -376,7 +616,7 @@ def get_all_codes_with_shapes() -> list[str]:
 
     The codes are those of the countries and standard subdivisions of
     the Natural Earth shapefile database, and of the non-standard
-    shapes in the shapes directory.
+    shapes in the shapes directory, composites included.
 
     Returns
     -------
@@ -457,6 +697,7 @@ def get_all_codes_with_shapes() -> list[str]:
     non_standard_shape_codes = _read_non_standard_shape_codes()
     for codes in non_standard_shape_codes.values():
         codes_of_all_non_standard_subdivisions.extend(codes)
+    codes_of_all_non_standard_subdivisions.extend(read_composites().composites)
 
     all_codes = (
         codes_of_all_countries
