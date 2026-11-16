@@ -177,70 +177,31 @@ def test_get_standard_shape_invalid_code():
         assert isinstance(shape, geopandas.GeoDataFrame)
 
 
-def test_read_non_standard_shape_codes():
-    """
-    Test the _read_non_standard_shape_codes function.
-
-    The codes are in a dictionary by data source.
-    """
-    codes = utils.shapes._read_non_standard_shape_codes()
-
-    assert isinstance(codes, dict)
-    assert "occto" in codes
-    assert "tepco" in codes
-    assert "neso" in codes
-    assert codes["soni"] == ["GBR_NIR"]
-    assert "GBR_GB" in codes["neso"]
-
-
-def test_get_non_standard_shape():
-    """Test the _get_non_standard_shape function."""
-    shape = utils.shapes._get_non_standard_shape("GBR_GB", "neso")
-    assert isinstance(shape, geopandas.GeoDataFrame)
-
-
 def test_get_entity_shape(dummy_geodf):
     """
     Test the get_entity_shape function.
 
-    The shape is standard or non-standard, and a subdivision that no
-    data source lists has a standard shape.
+    A country and a standard subdivision have a standard shape, and a
+    non-standard subdivision the shape of its definition.
     """
-    dummy_geodf["code"] = "FRA"
-    dummy_geodf = dummy_geodf.set_index("code")
-
     with (
         patch("utils.shapes.get_standard_shape") as mock_standard,
-        patch(
-            "utils.shapes._read_non_standard_shape_codes"
-        ) as mock_read_codes,
-        patch("utils.shapes._get_non_standard_shape") as mock_nonstandard,
-        patch("utils.figures.simple_plot") as mock_plot,
+        patch("utils.shapes._build_subdivision_shape") as mock_build,
+        patch("utils.figures.simple_plot"),
     ):
-        mock_standard.return_value = dummy_geodf
-        mock_plot.return_value = None
+        mock_standard.side_effect = lambda *_: dummy_geodf.copy()
+        mock_build.side_effect = lambda *_: dummy_geodf.copy()
 
-        # Test the get_entity_shape function for a country with a
-        # standard shape.
-        result = utils.shapes.get_entity_shape("FRA")
-        assert isinstance(result, geopandas.GeoDataFrame)
+        for code in ("FRA", "AUS_VIC"):
+            result = utils.shapes.get_entity_shape(code)
+            assert list(result.index) == [code]
+        assert mock_standard.call_count == 2
+        mock_build.assert_not_called()
 
-        # Mock the return value for the _read_non_standard_shape_codes
-        # function to simulate a non-standard shape for a subdivision.
-        mock_read_codes.return_value = {"dat_source": ["XX_1"]}
-        mock_nonstandard.return_value = dummy_geodf
-
-        result = utils.shapes.get_entity_shape("XX_1", make_plot=False)
-        assert isinstance(result, geopandas.GeoDataFrame)
-
-        # Mock the return value for the _read_non_standard_shape_codes
-        # function with an empty list to simulate that the subdivision
-        # has then a standard shape.
-        mock_read_codes.return_value = {"dat_source": []}
-        mock_standard.return_value = dummy_geodf
-
-        result = utils.shapes.get_entity_shape("XX_1", make_plot=False)
-        assert isinstance(result, geopandas.GeoDataFrame)
+        result = utils.shapes.get_entity_shape("JPN_Kantō", make_plot=False)
+        assert list(result.index) == ["JPN_Kantō"]
+        mock_build.assert_called_once_with("JPN_Kantō")
+        assert mock_standard.call_count == 2
 
 
 def test_get_entity_bounds(dummy_geodf):
@@ -290,6 +251,7 @@ def test_get_all_codes_with_shapes():
     assert "UKR_40" in shape_codes
     assert "XKX" in shape_codes
     assert "BRA_N" in shape_codes
+    assert "JPN_Kantō" in shape_codes
 
 
 @pytest.fixture
@@ -331,6 +293,8 @@ def test_read_subdivisions():
     assert subdivisions["MEX_BCS"].cuts == {"MX-BCS": "mulege"}
     assert subdivisions["USA_NW"].name == "Northwest"
     assert "US-NV" in subdivisions["USA_NW"].standard_subdivisions
+    assert subdivisions["JPN_Okinawa"].cuts == {"JP-47": "amami_islands"}
+    assert "GB-ZET" not in subdivisions["GBR_GB"].standard_subdivisions
     for code, subdivision in subdivisions.items():
         country, _ = code.split("_", 1)
         alpha_2 = utils.codes.get_iso_alpha_2_code(country)
@@ -475,15 +439,6 @@ def test_read_cuts_of_two_files(subdivisions_file):
 
     with pytest.raises(ValueError, match="cuts of another file: a"):
         utils.shapes.read_subdivisions()
-
-
-def test_read_non_standard_shape_codes_skips_other_folders(tmp_path):
-    """Leave out the folders of the shapes without a shapefile."""
-    (tmp_path / "subdivisions").mkdir()
-    (tmp_path / "__pycache__").mkdir()
-
-    with patch("utils.paths.SHAPES_FOLDER", str(tmp_path)):
-        assert utils.shapes._read_non_standard_shape_codes() == {}
 
 
 def _standard_subdivisions():

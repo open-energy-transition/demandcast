@@ -1,0 +1,12 @@
+# The non-standard subdivisions of India defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude.
+
+subdivisions:
+  IND_JHWB:
+    name: Jharkhand and West Bengal
+    standard_subdivisions: IN-JH IN-WB
+  IND_JKLA:
+    name: Jammu and Kashmir and Ladakh
+    standard_subdivisions: IN-JK IN-LA
