@@ -717,6 +717,13 @@ cuts:
       POLYGON ((67.7 68.4, 82.7 68.4, 84.8 67.2, 85.7 68, 86.4 68.1, 87.5 67.3,
       90.6 67.4, 93 68.4, 94.2 68.4, 95.4 69.3, 98 69.8, 99.7 69.9, 103.8 69.3,
       106.4 69.5, 131.4 69.5, 131.4 82, 67.7 82, 67.7 68.4))
+  tskhinvali:
+    description: The Tskhinvali region, Georgia, outside the power system of
+      GSE, supplied from Russia.
+    polygon: >-
+      POLYGON ((43.6 42.45, 43.65 42.3, 43.85 42.15, 44 42.15, 44.2 42.07,
+      44.45 42, 44.65 42.15, 44.6 42.4, 44.4 42.55, 44 42.75, 43.65 42.75, 43.6
+      42.45))
   ucayali:
     description: Atalaya and Purús, in Ucayali, Peru, isolated from the SEIN.
     polygon: >-
@@ -726,6 +733,21 @@ cuts:
       -70.6 -9.1, -70.4 -9.1, -70.2 -9.3, -70.2 -9.8, -70.5 -10.4, -70.9 -10.8,
       -71.2 -11.2, -71.9 -11.3, -72.1 -11.6, -72.5 -11.7, -73.1 -11.6, -73.4
       -11.7, -73.8 -11.5, -74.5 -11.3, -74.8 -11.1))
+  ukraine_east:
+    description: The parts of the Donetsk and Luhansk regions of Ukraine
+      outside its power system from 2015 to 2022, east of the line of contact.
+    polygon: >-
+      POLYGON ((38.5 48.72, 39 48.7, 39.5 48.63, 41 48.6, 41 46.9, 37.85 46.9,
+      37.75 47.4, 37.65 47.75, 37.6 47.98, 37.85 48.15, 37.95 48.35, 38.15
+      48.45, 38.5 48.72))
+  ukraine_occupied_2022:
+    description: The parts of Ukraine outside its power system in October 2022,
+      drawn roughly along the front line of the time.
+    polygon: >-
+      POLYGON ((38 50.4, 37.95 49.6, 38 49.2, 38.2 48.95, 38.05 48.6, 37.8
+      48.25, 37.8 48.1, 37.45 47.9, 37.35 47.7, 36.8 47.75, 36.3 47.55, 35.6
+      47.5, 35.25 47.6, 34.5 47.54, 33.9 47.35, 33.3 47.2, 32.7 47.12, 32.2
+      46.75, 32 46.6, 31.9 45, 41 45, 41 50.4, 38 50.4))
   veracruz_outside_noreste:
     description: The municipalities of Veracruz, Mexico, outside the Noreste
       region of CENACE, by the nodes in them, or the nearest municipality with
@@ -986,6 +1008,15 @@ composites:
       FR-62 FR-63 FR-64 FR-65 FR-66 FR-67 FR-68 FR-69 FR-70 FR-71 FR-72 FR-73
       FR-74 FR-75 FR-76 FR-77 FR-78 FR-79 FR-80 FR-81 FR-82 FR-83 FR-84 FR-85
       FR-86 FR-87 FR-88 FR-89 FR-90 FR-91 FR-92 FR-93 FR-94 FR-95
+  GEO_GSE:
+    name: Power system of GSE
+    regions: >-
+      GE-AB GE-AJ GE-GU GE-IM GE-KA GE-KK GE-MM GE-RL GE-SJ GE-SK GE-SZ GE-TB
+    cuts:
+      GE-IM: tskhinvali
+      GE-MM: tskhinvali
+      GE-RL: tskhinvali
+      GE-SK: tskhinvali
   GRC_INTERCONNECTED:
     name: Interconnected System of Greece
     regions: GR-69 GR-A GR-A1 GR-B GR-C GR-D GR-E GR-F GR-G GR-H GR-J GR-L
@@ -1160,6 +1191,28 @@ composites:
   RUS_VOLGA:
     name: Middle Volga
     regions: RU-CU RU-ME RU-MO RU-NIZ RU-PNZ RU-SAM RU-SAR RU-TA RU-ULY
+  UKR_IPS:
+    name: Integrated Power System of Ukraine
+    regions: >-
+      UA-05 UA-07 UA-09 UA-12 UA-14 UA-18 UA-21 UA-23 UA-26 UA-30 UA-32 UA-35
+      UA-46 UA-48 UA-51 UA-53 UA-56 UA-59 UA-61 UA-63 UA-65 UA-68 UA-71 UA-74
+      UA-77
+    cuts:
+      UA-09: ukraine_east
+      UA-14: ukraine_east
+  UKR_IPS-2022:
+    name: Integrated Power System of Ukraine of 2022
+    regions: >-
+      UA-05 UA-07 UA-09 UA-12 UA-14 UA-18 UA-21 UA-23 UA-26 UA-30 UA-32 UA-35
+      UA-46 UA-48 UA-51 UA-53 UA-56 UA-59 UA-61 UA-63 UA-65 UA-68 UA-71 UA-74
+      UA-77
+    cuts:
+      UA-09: ukraine_occupied_2022
+      UA-14: ukraine_occupied_2022
+      UA-23: ukraine_occupied_2022
+      UA-48: ukraine_occupied_2022
+      UA-63: ukraine_occupied_2022
+      UA-65: ukraine_occupied_2022
   USA_CAISO:
     name: CAISO balancing area
     regions: US-CA
