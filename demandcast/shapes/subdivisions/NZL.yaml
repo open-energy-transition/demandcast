@@ -1,0 +1,14 @@
+# The non-standard subdivisions of New Zealand defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
+# and rounded to 0.1 degrees.
+
+subdivisions:
+  NZL_NI:
+    name: North Island
+    standard_subdivisions: >-
+      NZ-AUK NZ-BOP NZ-GIS NZ-HKB NZ-MWT NZ-NTL NZ-TKI NZ-WGN NZ-WKO
+  NZL_SI:
+    name: South Island
+    standard_subdivisions: NZ-CAN NZ-MBH NZ-NSN NZ-OTA NZ-STL NZ-TAS NZ-WTC

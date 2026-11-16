@@ -293,68 +293,73 @@ def test_get_all_codes_with_shapes():
 
 
 @pytest.fixture
-def composites_file(tmp_path):
+def subdivisions_file(tmp_path):
     """
-    Point the file of the composites to a temporary file.
+    Point the folder of the subdivisions to a temporary folder.
 
     Yields
     ------
     function
-        A function that writes its argument as the content of the
-        file, and clears the cache of the composites.
+        A function that writes its first argument as the content of a
+        file of the folder, by default ``XX.yaml``, and clears the
+        cache of the subdivisions.
     """
-    path = tmp_path / "composites.yaml"
+    folder = tmp_path / "subdivisions"
+    folder.mkdir()
 
-    def write(content):
-        path.write_text(yaml.safe_dump(content), encoding="utf-8")
-        utils.shapes.read_composites.cache_clear()
+    def write(content, name="XX.yaml"):
+        (folder / name).write_text(yaml.safe_dump(content), encoding="utf-8")
+        utils.shapes.read_subdivisions.cache_clear()
 
-    with patch("utils.paths.COMPOSITES_FILE", str(path)):
+    with patch("utils.paths.SUBDIVISIONS_FOLDER", str(folder)):
         yield write
-    utils.shapes.read_composites.cache_clear()
+    utils.shapes.read_subdivisions.cache_clear()
 
 
-def test_read_composites():
+def test_read_subdivisions():
     """
-    Read the composites of the repository.
+    Read the subdivisions of the repository.
 
-    Each code has a country and a subdivision, and each composite has a
-    standard subdivision of its own country.
+    Each code has a country and a subdivision, and each subdivision
+    has a standard subdivision of its own country.
     """
-    utils.shapes.read_composites.cache_clear()
-    composites = utils.shapes.read_composites().composites
+    utils.shapes.read_subdivisions.cache_clear()
+    subdivisions = utils.shapes.read_subdivisions().subdivisions
 
-    assert "BRA_N" in composites
-    assert composites["AUS_QLD1"].cuts == {"AU-QLD": "queensland"}
-    assert composites["MEX_BCS"].cuts == {"MX-BCS": "mulege"}
-    assert composites["USA_NW"].name == "Northwest"
-    assert "US-NV" in composites["USA_NW"].regions
-    for code, composite in composites.items():
+    assert "BRA_N" in subdivisions
+    assert subdivisions["AUS_QLD1"].cuts == {"AU-QLD": "queensland"}
+    assert subdivisions["MEX_BCS"].cuts == {"MX-BCS": "mulege"}
+    assert subdivisions["USA_NW"].name == "Northwest"
+    assert "US-NV" in subdivisions["USA_NW"].standard_subdivisions
+    for code, subdivision in subdivisions.items():
         country, _ = code.split("_", 1)
         alpha_2 = utils.codes.get_iso_alpha_2_code(country)
-        assert any(r.startswith(f"{alpha_2}-") for r in composite.regions)
+        assert any(
+            r.startswith(f"{alpha_2}-")
+            for r in subdivision.standard_subdivisions
+        )
 
 
 @pytest.mark.parametrize(
-    ("cuts", "composites", "message"),
+    ("cuts", "subdivisions", "message"),
     [
         (
             {"a": {"description": "A", "polygon": SQUARE}},
             {
                 "XX_1": {
                     "name": "X",
-                    "regions": ["XX-A"],
+                    "standard_subdivisions": ["XX-A"],
                     "cuts": {"XX-B": "a"},
                 }
             },
-            "cuts XX-B, not its region",
+            "cuts XX-B, not one of its standard subdivisions",
         ),
         (
             {},
             {
                 "XX_1": {
                     "name": "X",
-                    "regions": ["XX-A"],
+                    "standard_subdivisions": ["XX-A"],
                     "cuts": {"XX-A": "a"},
                 }
             },
@@ -362,7 +367,7 @@ def test_read_composites():
         ),
         (
             {"a": {"description": "A", "polygon": SQUARE}},
-            {"XX_1": {"name": "X", "regions": ["XX-A"]}},
+            {"XX_1": {"name": "X", "standard_subdivisions": ["XX-A"]}},
             "unused cuts: a",
         ),
         (
@@ -387,12 +392,98 @@ def test_read_composites():
         ),
     ],
 )
-def test_read_invalid_composites(composites_file, cuts, composites, message):
+def test_read_invalid_subdivisions(
+    subdivisions_file, cuts, subdivisions, message
+):
     """Reject a cut of another region, unknown or unused, or invalid."""
-    composites_file({"cuts": cuts, "composites": composites})
+    subdivisions_file({"cuts": cuts, "subdivisions": subdivisions})
 
     with pytest.raises(ValueError, match=message):
-        utils.shapes.read_composites()
+        utils.shapes.read_subdivisions()
+
+
+def test_read_subdivisions_of_several_files(subdivisions_file):
+    """
+    Read the subdivisions of every file, which may have no cuts.
+
+    Notes
+    -----
+    Files that are not YAML, such as notes, are left out.
+    """
+    subdivisions_file(
+        {
+            "subdivisions": {
+                "XX_1": {"name": "X", "standard_subdivisions": "XX-A"}
+            }
+        }
+    )
+    subdivisions_file(
+        {
+            "cuts": {"a": {"description": "A", "polygon": SQUARE}},
+            "subdivisions": {
+                "YY_1": {
+                    "name": "Y",
+                    "standard_subdivisions": "YY-A YY-B",
+                    "cuts": {"YY-A": "a"},
+                }
+            },
+        },
+        name="YY.yaml",
+    )
+    subdivisions_file({}, name="notes.txt")
+
+    definitions = utils.shapes.read_subdivisions()
+
+    assert sorted(definitions.subdivisions) == ["XX_1", "YY_1"]
+    assert definitions.subdivisions["YY_1"].standard_subdivisions == [
+        "YY-A",
+        "YY-B",
+    ]
+    assert list(definitions.cuts) == ["a"]
+
+
+def test_read_subdivisions_of_another_country(subdivisions_file):
+    """Reject a subdivision in the file of another country."""
+    subdivisions_file(
+        {
+            "subdivisions": {
+                "YY_1": {"name": "Y", "standard_subdivisions": "YY-A"}
+            }
+        }
+    )
+
+    with pytest.raises(ValueError, match="another country: YY_1"):
+        utils.shapes.read_subdivisions()
+
+
+def test_read_cuts_of_two_files(subdivisions_file):
+    """Reject a cut with the name of a cut of another file."""
+    for country in ("XX", "YY"):
+        subdivisions_file(
+            {
+                "cuts": {"a": {"description": "A", "polygon": SQUARE}},
+                "subdivisions": {
+                    f"{country}_1": {
+                        "name": country,
+                        "standard_subdivisions": f"{country}-A",
+                        "cuts": {f"{country}-A": "a"},
+                    }
+                },
+            },
+            name=f"{country}.yaml",
+        )
+
+    with pytest.raises(ValueError, match="cuts of another file: a"):
+        utils.shapes.read_subdivisions()
+
+
+def test_read_non_standard_shape_codes_skips_other_folders(tmp_path):
+    """Leave out the folders of the shapes without a shapefile."""
+    (tmp_path / "subdivisions").mkdir()
+    (tmp_path / "__pycache__").mkdir()
+
+    with patch("utils.paths.SHAPES_FOLDER", str(tmp_path)):
+        assert utils.shapes._read_non_standard_shape_codes() == {}
 
 
 def _standard_subdivisions():
@@ -416,16 +507,16 @@ def _standard_subdivisions():
     )
 
 
-def test_get_composite_shape(composites_file):
+def test_get_subdivision_shape(subdivisions_file):
     """
-    Make a composite of two standard subdivisions, one of them cut.
+    Make a subdivision of two standard subdivisions, one of them cut.
 
     Notes
     -----
     The cut takes the upper half of XX-B, so the two rows of the
-    composite have an area of 1.5.
+    subdivision have an area of 1.5.
     """
-    composites_file(
+    subdivisions_file(
         {
             "cuts": {
                 "half": {
@@ -433,13 +524,16 @@ def test_get_composite_shape(composites_file):
                     "polygon": "POLYGON ((1 0.5, 2 0.5, 2 1, 1 1, 1 0.5))",
                 }
             },
-            "composites": {
+            "subdivisions": {
                 "XX_1": {
                     "name": "X",
-                    "regions": ["XX-A", "XX-B"],
+                    "standard_subdivisions": ["XX-A", "XX-B"],
                     "cuts": {"XX-B": "half"},
                 },
-                "XX_2": {"name": "Y", "regions": ["XX-A", "XX-C"]},
+                "XX_2": {
+                    "name": "Y",
+                    "standard_subdivisions": ["XX-A", "XX-C"],
+                },
             },
         }
     )
@@ -465,9 +559,9 @@ def test_read_detailed_standard_subdivisions():
 
 
 @pytest.mark.network
-def test_composites_have_shapes():
-    """Make the shape of every composite of the repository."""
-    utils.shapes.read_composites.cache_clear()
-    for code in utils.shapes.read_composites().composites:
+def test_subdivisions_have_shapes():
+    """Make the shape of every subdivision of the repository."""
+    utils.shapes.read_subdivisions.cache_clear()
+    for code in utils.shapes.read_subdivisions().subdivisions:
         shape = utils.shapes.get_entity_shape(code, make_plot=False)
         assert not shape.union_all().is_empty

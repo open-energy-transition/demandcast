@@ -1,0 +1,76 @@
+# The non-standard subdivisions of Bolivia defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
+# and rounded to 0.1 degrees.
+
+cuts:
+  beni:
+    description: "The municipalities of Beni, Bolivia, whose seats are isolated
+      systems: Riberalta, Guayaramerín, Baures, Huacaraje and Exaltación."
+    polygon: >-
+      MULTIPOLYGON (((-63.1 -12.5, -62.9 -12.5, -62.3 -12.8, -62 -12.8, -61.7
+      -13.2, -61.5 -13.2, -61.3 -13.3, -61.2 -13.5, -61.3 -13.7, -61.4 -13.8,
+      -63.5 -14.6, -63.8 -14.6, -63.6 -14.3, -64.4 -14.1, -64.4 -13.4, -63
+      -13.5, -63 -12.8, -63.2 -12.6, -63.1 -12.5)), ((-67.2 -12.1, -67.3 -11.9,
+      -67 -11.3, -66.5 -11.1, -66.3 -10.7, -65.9 -10.3, -65.5 -10.1, -65.2
+      -10.1, -65.1 -10.3, -65 -10.9, -65 -11.3, -64.8 -11.6, -64.7 -11.9, -64.8
+      -12, -65 -12, -65.1 -11.9, -65.1 -12, -65.1 -12.1, -65.1 -12.2, -65.1
+      -12.3, -65.2 -12.4, -65 -12.6, -65 -12.8, -65.1 -12.8, -65 -13, -65.2
+      -13.1, -65.2 -13.2, -65.3 -13.5, -65.3 -13.6, -66.5 -13.6, -66.5 -12.7,
+      -66.3 -12.3, -66.3 -12, -66.9 -12, -66.9 -12.2, -67 -12.3, -67.2 -12.1)))
+  santa_cruz:
+    description: "The municipalities of Santa Cruz, Bolivia, whose seats are
+      isolated systems: those of Germán Busch, Velasco, Concepción, Chiquitos,
+      San Matías, Charagua and the Valles Cruceños."
+    polygon: >-
+      MULTIPOLYGON (((-63.4 -20.5, -62.7 -20.4, -62.7 -20.3, -63.2 -20.3, -63.2
+      -20.2, -63.5 -20.2, -63.5 -20.1, -63.3 -20, -63.4 -19.4, -63.3 -19.4,
+      -63.4 -19.2, -63.4 -18.9, -62.9 -18.5, -62.8 -18, -61.3 -18.2, -61.2
+      -17.8, -61.2 -17.7, -61.1 -17.7, -61.2 -17.4, -61.5 -17.3, -61.6 -17.2,
+      -61.8 -17.1, -61.8 -17, -61.7 -17, -61.6 -16.5, -61.8 -16.6, -62 -16.5,
+      -62.2 -16.9, -62 -17, -62.3 -17, -62.4 -16.6, -62.3 -16.6, -62.3 -16.5,
+      -62.3 -16.3, -62.4 -15.9, -62.6 -15.8, -62.5 -15.1, -62.6 -15, -62.6
+      -14.7, -62.8 -14.3, -62.7 -14, -63.1 -14.1, -63 -13.8, -62.8 -13.7, -61.6
+      -13.2, -60.9 -13.2, -60.3 -13.6, -60.2 -13.7, -60.1 -14, -60.2 -14.2, -60
+      -14.6, -59.9 -15.1, -60 -15.3, -59.9 -16, -58.3 -16, -58.1 -16.1, -58
+      -16.3, -58.2 -16.8, -58.1 -17, -57.5 -17.4, -57.4 -17.8, -57.2 -18.2,
+      -57.4 -18.8, -57.4 -19.1, -57.8 -19.7, -57.6 -20, -57.7 -20.3, -58.1
+      -20.4, -58.2 -20.5, -58.4 -20.3, -58.5 -20, -59.2 -19.6, -60 -19.6, -61.5
+      -19.9, -61.7 -20.3, -62 -20.6, -62.1 -20.7, -62.8 -20.7, -63 -20.6, -63.4
+      -20.5)), ((-65 -17.6, -64.8 -17.4, -64.4 -17.1, -64.2 -17.3, -64.2 -17.5,
+      -64.1 -17.6, -64.2 -17.7, -64.1 -17.8, -63.9 -17.9, -63.8 -17.9, -63.8
+      -18, -63.6 -18, -63.5 -18.2, -63.5 -18.4, -63.7 -18.5, -63.7 -18.7, -63.5
+      -18.7, -63.6 -19.1, -63.7 -19, -63.7 -19.2, -63.7 -19.4, -64 -19.5, -64.2
+      -19.4, -64.6 -19, -64.8 -18.4, -65.1 -18.1, -65.1 -17.9, -65 -17.6)),
+      ((-63.8 -20.2, -63.7 -19.9, -63.7 -20.2, -63.7 -20.4, -63.8 -20.2)))
+
+subdivisions:
+  BOL_C:
+    name: Cochabamba
+    standard_subdivisions: BO-C
+  BOL_H:
+    name: Chuquisaca
+    standard_subdivisions: BO-H
+  BOL_L:
+    name: La Paz
+    standard_subdivisions: BO-L
+  BOL_O:
+    name: Oruro
+    standard_subdivisions: BO-O
+  BOL_P:
+    name: Potosí
+    standard_subdivisions: BO-P
+  BOL_SIN-B:
+    name: National Interconnected System in Beni
+    standard_subdivisions: BO-B
+    cuts:
+      BO-B: beni
+  BOL_SIN-S:
+    name: National Interconnected System in Santa Cruz
+    standard_subdivisions: BO-S
+    cuts:
+      BO-S: santa_cruz
+  BOL_T:
+    name: Tarija
+    standard_subdivisions: BO-T

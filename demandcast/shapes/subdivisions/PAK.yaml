@@ -1,0 +1,22 @@
+# The non-standard subdivisions of Pakistan defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
+# and rounded to 0.1 degrees.
+
+cuts:
+  k_electric:
+    description: "The area that K-Electric supplies, Pakistan: Karachi, Gharo
+      and Dhabeji, and Hub, Uthal, Vinder and Bela."
+    polygon: >-
+      POLYGON ((66.2 26.35, 66.45 26.35, 66.75 25.85, 66.85 25.5, 67.25 25.6,
+      67.6 25.2, 67.68 24.85, 67.68 24.65, 66.65 24.75, 66.55 25.35, 66.45
+      25.85, 66.2 26.35))
+
+subdivisions:
+  PAK_NTDC:
+    name: NTDC grid
+    standard_subdivisions: PK-BA PK-IS PK-JK PK-KP PK-PB PK-SD PK-TA
+    cuts:
+      PK-BA: k_electric
+      PK-SD: k_electric

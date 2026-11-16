@@ -7,9 +7,10 @@ Description:
     from the Natural Earth shapefile database. It also retrieves
     non-standard subdivision shapes from the shapes directory: the
     shapes of subdivisions that Natural Earth does not have, defined in
-    a shapefile for each data source, or in ``composites.yaml`` as
-    unions of standard subdivisions of Natural Earth at 1:10m, without
-    the parts of some of them that polygons mark.
+    a shapefile for each data source, or defined in the folder
+    ``subdivisions``, in a file for each country, by the standard
+    subdivisions of Natural Earth at 1:10m that make them, without the
+    parts of some of them that polygons mark.
 """
 
 import functools
@@ -37,7 +38,7 @@ import utils.paths
 
 class Cut(BaseModel):
     """
-    Polygon of the parts of standard subdivisions outside composites.
+    Polygon of the part of standard subdivisions outside subdivisions.
 
     Attributes
     ----------
@@ -86,15 +87,15 @@ class Cut(BaseModel):
         return polygon
 
 
-class Composite(BaseModel):
+class SubdivisionDefinition(BaseModel):
     """
-    Non-standard subdivision made of standard subdivisions.
+    Non-standard subdivision defined by standard subdivisions.
 
     Attributes
     ----------
     name : str
         Name of the subdivision.
-    regions : list[str]
+    standard_subdivisions : list[str]
         ISO 3166-2 codes of the standard subdivisions of Natural Earth
         at 1:10m that make it, separated by spaces in the file.
     cuts : dict[str, str]
@@ -105,18 +106,18 @@ class Composite(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str
-    regions: list[str]
+    standard_subdivisions: list[str]
     cuts: dict[str, str] = {}
 
-    @field_validator("regions", mode="before")
+    @field_validator("standard_subdivisions", mode="before")
     @classmethod
-    def _split_regions(cls, regions: object) -> object:
+    def _split_codes(cls, codes: object) -> object:
         """
-        Split the codes of the regions, separated by spaces.
+        Split the codes of the standard subdivisions at the spaces.
 
         Parameters
         ----------
-        regions : object
+        codes : object
             The codes, as a string or already as a list.
 
         Returns
@@ -125,47 +126,51 @@ class Composite(BaseModel):
             The list of codes, or the value unchanged if it is not a
             string.
         """
-        return regions.split() if isinstance(regions, str) else regions
+        return codes.split() if isinstance(codes, str) else codes
 
 
-class Composites(BaseModel):
+class SubdivisionDefinitions(BaseModel):
     """
-    Content of ``composites.yaml``.
+    Content of a file of the folder ``subdivisions``, or of all of them.
 
     Attributes
     ----------
     cuts : dict[str, Cut]
         The cuts, by name.
-    composites : dict[str, Composite]
-        The composites, by code of the subdivision.
+    subdivisions : dict[str, SubdivisionDefinition]
+        The non-standard subdivisions, by code.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    cuts: dict[str, Cut]
-    composites: dict[str, Composite]
+    cuts: dict[str, Cut] = {}
+    subdivisions: dict[str, SubdivisionDefinition]
 
     @model_validator(mode="after")
-    def _check_cuts(self) -> "Composites":
+    def _check_cuts(self) -> "SubdivisionDefinitions":
         """
-        Check that each cut of a composite exists, on its regions.
+        Check that each cut exists, on a standard subdivision it cuts.
 
         Returns
         -------
-        Composites
-            The composites, unchanged.
+        SubdivisionDefinitions
+            The definitions, unchanged.
 
         Raises
         ------
         ValueError
-            If a composite cuts a region that it does not have, or with
-            a cut that does not exist, or a cut is not used.
+            If a subdivision cuts a standard subdivision that it does
+            not have, or with a cut that does not exist, or a cut is not
+            used.
         """
         used = set()
-        for code, composite in self.composites.items():
-            for region, cut in composite.cuts.items():
-                if region not in composite.regions:
-                    raise ValueError(f"{code} cuts {region}, not its region")
+        for code, subdivision in self.subdivisions.items():
+            for standard, cut in subdivision.cuts.items():
+                if standard not in subdivision.standard_subdivisions:
+                    raise ValueError(
+                        f"{code} cuts {standard}, not one of its standard "
+                        "subdivisions"
+                    )
                 if cut not in self.cuts:
                     raise ValueError(f"{code} has an unknown cut {cut}")
                 used.add(cut)
@@ -176,28 +181,58 @@ class Composites(BaseModel):
 
 
 @functools.cache
-def read_composites() -> Composites:
+def read_subdivisions() -> SubdivisionDefinitions:
     """
-    Read the composites of the shapes directory.
+    Read the definitions of the non-standard subdivisions.
+
+    Each file of the folder ``subdivisions`` of the shapes directory
+    holds the cuts and the non-standard subdivisions of one country,
+    named by its ISO Alpha-3 code.
 
     Returns
     -------
-    Composites
-        The cuts and the composites of ``composites.yaml``.
+    SubdivisionDefinitions
+        The cuts and the subdivisions of all the files.
 
     Raises
     ------
     ValueError
-        If the file is not valid.
+        If a file is not valid, has a subdivision of another country, or
+        has a cut with the name of a cut of another file.
     """
-    with open(utils.paths.COMPOSITES_FILE, encoding="utf-8") as file:
-        content = yaml.safe_load(file)
-    try:
-        return Composites.model_validate(content)
-    except ValidationError as error:
-        raise ValueError(
-            f"The file of the composites is not valid: {error}"
-        ) from error
+    cuts: dict[str, Cut] = {}
+    subdivisions: dict[str, SubdivisionDefinition] = {}
+    folder = utils.paths.SUBDIVISIONS_FOLDER
+    for name in sorted(os.listdir(folder)):
+        country, extension = os.path.splitext(name)
+        if extension != ".yaml":
+            continue
+        with open(os.path.join(folder, name), encoding="utf-8") as file:
+            content = yaml.safe_load(file)
+        try:
+            part = SubdivisionDefinitions.model_validate(content)
+        except ValidationError as error:
+            raise ValueError(
+                f"The subdivisions of {name} are not valid: {error}"
+            ) from error
+        others = sorted(
+            code
+            for code in part.subdivisions
+            if not code.startswith(f"{country}_")
+        )
+        if others:
+            raise ValueError(
+                f"{name} has subdivisions of another country: "
+                f"{', '.join(others)}"
+            )
+        again = sorted(set(part.cuts) & set(cuts))
+        if again:
+            raise ValueError(
+                f"{name} has cuts of another file: {', '.join(again)}"
+            )
+        cuts.update(part.cuts)
+        subdivisions.update(part.subdivisions)
+    return SubdivisionDefinitions(cuts=cuts, subdivisions=subdivisions)
 
 
 @functools.cache
@@ -217,9 +252,9 @@ def _read_detailed_standard_subdivisions() -> geopandas.GeoDataFrame:
     return geopandas.read_file(path)
 
 
-def _get_composite_shape(code: str) -> geopandas.GeoDataFrame:
+def _build_subdivision_shape(code: str) -> geopandas.GeoDataFrame:
     """
-    Make the shape of a composite.
+    Make the shape of a non-standard subdivision from its definition.
 
     Parameters
     ----------
@@ -229,32 +264,35 @@ def _get_composite_shape(code: str) -> geopandas.GeoDataFrame:
     Returns
     -------
     geopandas.GeoDataFrame
-        GeoDataFrame with the standard subdivisions of the composite,
+        GeoDataFrame with the standard subdivisions of the subdivision,
         one per row, each without the polygon of its cut, if any.
 
     Raises
     ------
     ValueError
-        If Natural Earth does not have a standard subdivision of the
-        composite.
+        If Natural Earth does not have one of its standard subdivisions.
     """
-    composites = read_composites()
-    composite = composites.composites[code]
-    regions = _read_detailed_standard_subdivisions()
-    selected = regions[regions["iso_3166_2"].isin(composite.regions)]
-    missing = sorted(set(composite.regions) - set(selected["iso_3166_2"]))
+    definitions = read_subdivisions()
+    subdivision = definitions.subdivisions[code]
+    standard = _read_detailed_standard_subdivisions()
+    selected = standard[
+        standard["iso_3166_2"].isin(subdivision.standard_subdivisions)
+    ]
+    missing = sorted(
+        set(subdivision.standard_subdivisions) - set(selected["iso_3166_2"])
+    )
     if missing:
         raise ValueError(
             f"Natural Earth has no subdivision {', '.join(missing)} of "
-            f"the composite {code}."
+            f"the subdivision {code}."
         )
     geometries = []
-    for region, geometry in zip(
+    for iso_code, geometry in zip(
         selected["iso_3166_2"], selected.geometry, strict=True
     ):
         part = geometry
-        if region in composite.cuts:
-            cut = composites.cuts[composite.cuts[region]]
+        if iso_code in subdivision.cuts:
+            cut = definitions.cuts[subdivision.cuts[iso_code]]
             part = geometry.difference(shapely.from_wkt(cut.polygon))
         geometries.append(part)
     return geopandas.GeoDataFrame(geometry=geometries, crs=4326)
@@ -444,7 +482,7 @@ def _read_non_standard_shape_codes() -> dict[str, list[str]]:
     Read the non-standard shapes codes from the shapes directory.
 
     The codes are read from the shapefile of each data source in the
-    shapes directory.
+    shapes directory: each folder with a shapefile of its name.
 
     Returns
     -------
@@ -456,10 +494,10 @@ def _read_non_standard_shape_codes() -> dict[str, list[str]]:
 
     non_standard_shape_codes = {}
     for folder in os.listdir(shapes_directory):
-        if os.path.isdir(os.path.join(shapes_directory, folder)):
-            shapefile_path = os.path.join(
-                shapes_directory, folder, folder + ".shp"
-            )
+        shapefile_path = os.path.join(
+            shapes_directory, folder, folder + ".shp"
+        )
+        if os.path.isfile(shapefile_path):
             entity_shapes = geopandas.read_file(shapefile_path)
             entity_codes = entity_shapes["code"].unique()
             non_standard_shape_codes[folder] = list(entity_codes)
@@ -508,8 +546,8 @@ def get_entity_shape(
     Get the shape of a country or subdivision of interest.
 
     A country has the shape of the Natural Earth shapefile database. A
-    subdivision has its non-standard shape, if it has one, as a
-    composite or in the shapefile of a data source, and that of the
+    subdivision has its non-standard shape, if it has one, from its
+    definition or from the shapefile of a data source, and that of the
     Natural Earth shapefile database otherwise.
 
     Parameters
@@ -530,8 +568,8 @@ def get_entity_shape(
     """
     if "_" not in code:
         entity_shape = get_standard_shape(code, remove_remote_islands)
-    elif code in read_composites().composites:
-        entity_shape = _get_composite_shape(code)
+    elif code in read_subdivisions().subdivisions:
+        entity_shape = _build_subdivision_shape(code)
     else:
         is_non_standard_shape = False
         selected_data_source = ""
@@ -616,7 +654,8 @@ def get_all_codes_with_shapes() -> list[str]:
 
     The codes are those of the countries and standard subdivisions of
     the Natural Earth shapefile database, and of the non-standard
-    shapes in the shapes directory, composites included.
+    shapes in the shapes directory, those defined in its folder
+    ``subdivisions`` included.
 
     Returns
     -------
@@ -697,7 +736,9 @@ def get_all_codes_with_shapes() -> list[str]:
     non_standard_shape_codes = _read_non_standard_shape_codes()
     for codes in non_standard_shape_codes.values():
         codes_of_all_non_standard_subdivisions.extend(codes)
-    codes_of_all_non_standard_subdivisions.extend(read_composites().composites)
+    codes_of_all_non_standard_subdivisions.extend(
+        read_subdivisions().subdivisions
+    )
 
     all_codes = (
         codes_of_all_countries
