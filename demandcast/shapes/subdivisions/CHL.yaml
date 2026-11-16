@@ -1,5 +1,5 @@
-# The composites of Chile: its non-standard subdivisions that are unions
-# of standard subdivisions of Natural Earth at 1:10m, by their ISO
+# The non-standard subdivisions of Chile defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
 # 3166-2 codes, without the parts of some of them that the polygons of
 # `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
 # and rounded to 0.1 degrees.
@@ -19,17 +19,17 @@ cuts:
       POLYGON ((-72.6 -41.7, -72.4 -41.5, -72.4 -41.4, -72.3 -41.5, -70 -41.5,
       -70 -45, -73.2 -45, -73.2 -41.7, -72.6 -41.7))
 
-composites:
+subdivisions:
   CHL_SEN:
     name: National Electric System
-    regions: >-
+    standard_subdivisions: >-
       CL-AN CL-AP CL-AR CL-AT CL-BI CL-CO CL-LI CL-LL CL-LR CL-ML CL-NB CL-RM
       CL-TA CL-VS
     cuts:
       CL-LL: los_lagos
   CHL_SIC:
     name: Central Interconnected System
-    regions: >-
+    standard_subdivisions: >-
       CL-AN CL-AR CL-AT CL-BI CL-CO CL-LI CL-LL CL-LR CL-ML CL-NB CL-RM CL-VS
     cuts:
       CL-AN: antofagasta

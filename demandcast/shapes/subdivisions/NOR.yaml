@@ -1,0 +1,12 @@
+# The non-standard subdivisions of Norway defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
+# and rounded to 0.1 degrees.
+
+subdivisions:
+  NOR_MAINLAND:
+    name: Mainland Norway
+    standard_subdivisions: >-
+      NO-01 NO-02 NO-03 NO-04 NO-05 NO-06 NO-07 NO-08 NO-09 NO-10 NO-11 NO-12
+      NO-14 NO-15 NO-16 NO-17 NO-18 NO-19 NO-20

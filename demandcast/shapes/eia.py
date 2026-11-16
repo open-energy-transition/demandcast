@@ -4,11 +4,11 @@ License: AGPL-3.0.
 Description:
 
     This script defines the regions of the hourly electricity data of
-    the US Energy Information Administration (EIA-930) as composites of
-    the states of Natural Earth, cut along the counties that the
-    balancing authorities of each region serve, and writes them to
-    composites/USA.yaml, replacing the earlier ones and keeping the
-    other composites of the file.
+    the US Energy Information Administration (EIA-930) as non-standard
+    subdivisions defined by the states of Natural Earth, cut along the
+    counties that the balancing authorities of each region serve, and
+    writes them to subdivisions/USA.yaml, replacing the earlier ones and
+    keeping the other subdivisions of the file.
 
     Each county of the lower 48 states goes to the region whose
     balancing authorities sell the most electricity in it, by the
@@ -64,8 +64,8 @@ ZONES_URL = (
     "electricitymaps-contrib/3baa27a61b8ac50ebdcdf6bc248242f57ee16cac/"
     "geo/world.geojson"
 )
-COMPOSITES_FILE = os.path.join(
-    os.path.dirname(__file__), "composites", "USA.yaml"
+SUBDIVISIONS_FILE = os.path.join(
+    os.path.dirname(__file__), "subdivisions", "USA.yaml"
 )
 # The least share of the sales of a county by which the region with the
 # most of them must lead the next, for the county to follow EIA-861.
@@ -346,7 +346,7 @@ def build(
     counties: geopandas.GeoDataFrame, regions: pd.Series
 ) -> dict[str, dict]:
     """
-    Build the composites of the regions.
+    Build the definitions of the regions.
 
     Parameters
     ----------
@@ -358,8 +358,8 @@ def build(
     Returns
     -------
     dict[str, dict]
-        The cuts and the composites of the regions, as in
-        composites/USA.yaml.
+        The cuts and the definitions of the regions, as in
+        subdivisions/USA.yaml.
     """
     reference = pd.read_excel(
         io.BytesIO(_download(EIA930_URL)), sheet_name="Regions"
@@ -383,13 +383,13 @@ def build(
         zip(states["iso_3166_2"].str[3:], states["name"], strict=True)
     )
     cuts: dict[str, dict] = {}
-    composites: dict[str, dict] = {}
+    subdivisions: dict[str, dict] = {}
     for region in sorted(set(regions)):
         in_region = regions == region
         codes = sorted(set(counties.loc[in_region, "state"]))
-        composite: dict[str, Any] = {
+        subdivision: dict[str, Any] = {
             "name": name_of[region],
-            "regions": [f"US-{code}" for code in codes],
+            "standard_subdivisions": [f"US-{code}" for code in codes],
         }
         for code in codes:
             state = counties["state"] == code
@@ -404,9 +404,9 @@ def build(
                     shapely.union_all(counties.geometry[state & in_region]),
                 ),
             }
-            composite.setdefault("cuts", {})[f"US-{code}"] = key
-        composites[f"USA_{region}"] = composite
-    return {"cuts": cuts, "composites": composites}
+            subdivision.setdefault("cuts", {})[f"US-{code}"] = key
+        subdivisions[f"USA_{region}"] = subdivision
+    return {"cuts": cuts, "subdivisions": subdivisions}
 
 
 def _wrap(text: str, indent: str) -> list[str]:
@@ -457,19 +457,19 @@ def _quote(text: str) -> str:
 
 def write(new: dict[str, dict]) -> None:
     """
-    Write the composites of the regions into composites/USA.yaml.
+    Write the definitions of the regions into subdivisions/USA.yaml.
 
     Parameters
     ----------
     new : dict[str, dict]
-        The cuts and the composites of the regions, from `build`.
+        The cuts and the definitions of the regions, from `build`.
 
     Notes
     -----
-    The composites of the regions replace the earlier ones, and the
-    cuts that no composite uses any more are dropped.
+    The definitions of the regions replace the earlier ones, and the
+    cuts that no subdivision uses any more are dropped.
     """
-    with open(COMPOSITES_FILE, encoding="utf-8") as file:
+    with open(SUBDIVISIONS_FILE, encoding="utf-8") as file:
         text = file.read()
     header = []
     for line in text.splitlines():
@@ -477,12 +477,12 @@ def write(new: dict[str, dict]) -> None:
             break
         header.append(line)
     data = yaml.safe_load(text)
-    data["composites"].update(new["composites"])
+    data["subdivisions"].update(new["subdivisions"])
     data["cuts"].update(new["cuts"])
     used = {
         cut
-        for composite in data["composites"].values()
-        for cut in composite.get("cuts", {}).values()
+        for subdivision in data["subdivisions"].values()
+        for cut in subdivision.get("cuts", {}).values()
     }
     lines = [*header, "", "cuts:"]
     for key in sorted(used):
@@ -493,29 +493,33 @@ def write(new: dict[str, dict]) -> None:
         lines += [f"  {key}:", description[0]]
         lines += ["  " + line for line in description[1:]]
         lines += ["    polygon: >-", *_wrap(cut["polygon"], "      ")]
-    lines += ["", "composites:"]
-    for code in sorted(data["composites"]):
-        composite = data["composites"][code]
-        regions = composite["regions"]
-        if isinstance(regions, str):
-            regions = regions.split()
-        lines += [f"  {code}:", f"    name: {_quote(composite['name'])}"]
-        if len(f"    regions: {' '.join(regions)}") <= 79:
-            lines.append(f"    regions: {' '.join(regions)}")
+    lines += ["", "subdivisions:"]
+    for code in sorted(data["subdivisions"]):
+        subdivision = data["subdivisions"][code]
+        standard = subdivision["standard_subdivisions"]
+        if isinstance(standard, str):
+            standard = standard.split()
+        lines += [f"  {code}:", f"    name: {_quote(subdivision['name'])}"]
+        one = f"    standard_subdivisions: {' '.join(standard)}"
+        if len(one) <= 79:
+            lines.append(one)
         else:
-            lines += ["    regions: >-", *_wrap(" ".join(regions), "      ")]
-        if composite.get("cuts"):
+            lines += [
+                "    standard_subdivisions: >-",
+                *_wrap(" ".join(standard), "      "),
+            ]
+        if subdivision.get("cuts"):
             lines.append("    cuts:")
             lines += [
-                f"      {region}: {cut}"
-                for region, cut in composite["cuts"].items()
+                f"      {iso_code}: {cut}"
+                for iso_code, cut in subdivision["cuts"].items()
             ]
-    with open(COMPOSITES_FILE, "w", encoding="utf-8") as file:
+    with open(SUBDIVISIONS_FILE, "w", encoding="utf-8") as file:
         file.write("\n".join(lines) + "\n")
 
 
 def main() -> None:
-    """Write the regions of EIA-930 to composites/USA.yaml."""
+    """Write the regions of EIA-930 to subdivisions/USA.yaml."""
     counties = read_counties()
     regions = assign_regions(counties)
     write(build(counties, regions))

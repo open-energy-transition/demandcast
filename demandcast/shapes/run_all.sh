@@ -2,7 +2,7 @@
 
 # Runs the scripts of this folder, which generate the shapefiles of the
 # subdivisions that are not standard, read by utils/shapes.py, and the
-# regions of the EIA in composites/USA.yaml. It is run from this folder.
+# regions of the EIA in subdivisions/USA.yaml. It is run from this folder.
 
 # occto.py reads the shapes of kansaitd.py and tepco.py, so it comes
 # after them.

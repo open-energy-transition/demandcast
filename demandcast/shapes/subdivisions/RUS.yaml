@@ -1,8 +1,8 @@
-# The composites of Russia: its non-standard subdivisions that are
-# unions of standard subdivisions of Natural Earth at 1:10m, by their
-# ISO 3166-2 codes, without the parts of some of them that the polygons
-# of `cuts` mark, in WKT, in degrees of longitude and latitude,
-# simplified and rounded to 0.1 degrees.
+# The non-standard subdivisions of Russia defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
+# and rounded to 0.1 degrees.
 
 cuts:
   taimyr:
@@ -24,38 +24,39 @@ cuts:
       132.8 64.6, 133.2 65.3, 136.8 66.2, 144.2 65, 146.4 64.2, 171.4 64.2,
       171.4 82, 91.3 82, 91.3 66.5))
 
-composites:
+subdivisions:
   RUS_CENTER:
     name: Centre
-    regions: >-
+    standard_subdivisions: >-
       RU-BEL RU-BRY RU-IVA RU-KLU RU-KOS RU-KRS RU-LIP RU-MOS RU-MOW RU-ORL
       RU-RYA RU-SMO RU-TAM RU-TUL RU-TVE RU-VLA RU-VLG RU-VOR RU-YAR
   RUS_EAST:
     name: East
-    regions: RU-AMU RU-KHA RU-PRI RU-SA RU-YEV
+    standard_subdivisions: RU-AMU RU-KHA RU-PRI RU-SA RU-YEV
     cuts:
       RU-SA: yakutia
   RUS_NORTHWEST:
     name: North-West
-    regions: >-
+    standard_subdivisions: >-
       RU-ARK RU-KGD RU-KO RU-KR RU-LEN RU-MUR RU-NEN RU-NGR RU-PSK RU-SPE
   RUS_SIBERIA:
     name: Siberia
-    regions: >-
+    standard_subdivisions: >-
       RU-AL RU-ALT RU-BU RU-IRK RU-KEM RU-KK RU-KYA RU-NVS RU-OMS RU-TOM RU-TY
       RU-ZAB
     cuts:
       RU-KYA: taimyr
   RUS_SOUTH:
     name: South
-    regions: >-
+    standard_subdivisions: >-
       RU-AD RU-AST RU-CE RU-DA RU-IN RU-KB RU-KC RU-KDA RU-KL RU-ROS RU-SE
       RU-STA RU-VGG UA-40 UA-43
   RUS_URALS:
     name: Urals
-    regions: >-
+    standard_subdivisions: >-
       RU-BA RU-CHE RU-KGN RU-KHM RU-KIR RU-ORE RU-PER RU-SVE RU-TYU RU-UD
       RU-YAN
   RUS_VOLGA:
     name: Middle Volga
-    regions: RU-CU RU-ME RU-MO RU-NIZ RU-PNZ RU-SAM RU-SAR RU-TA RU-ULY
+    standard_subdivisions: >-
+      RU-CU RU-ME RU-MO RU-NIZ RU-PNZ RU-SAM RU-SAR RU-TA RU-ULY

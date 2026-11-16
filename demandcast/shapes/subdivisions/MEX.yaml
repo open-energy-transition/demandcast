@@ -1,8 +1,8 @@
-# The composites of Mexico: its non-standard subdivisions that are
-# unions of standard subdivisions of Natural Earth at 1:10m, by their
-# ISO 3166-2 codes, without the parts of some of them that the polygons
-# of `cuts` mark, in WKT, in degrees of longitude and latitude,
-# simplified and rounded to 0.1 degrees.
+# The non-standard subdivisions of Mexico defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
+# and rounded to 0.1 degrees.
 
 cuts:
   coahuila_outside_noreste:
@@ -258,20 +258,20 @@ cuts:
       -104.2 22.9, -104.1 22.8, -104.2 22.8, -104.3 22.7, -104.5 22.9, -104.3
       23.6))
 
-composites:
+subdivisions:
   MEX_BCA:
     name: Baja California
-    regions: MX-BCN MX-SON
+    standard_subdivisions: MX-BCN MX-SON
     cuts:
       MX-SON: sonora_outside_baja_california
   MEX_BCS:
     name: Baja California Sur
-    regions: MX-BCS
+    standard_subdivisions: MX-BCS
     cuts:
       MX-BCS: mulege
   MEX_CEN:
     name: Central
-    regions: MX-DIF MX-GRO MX-HID MX-MEX MX-MIC MX-PUE
+    standard_subdivisions: MX-DIF MX-GRO MX-HID MX-MEX MX-MIC MX-PUE
     cuts:
       MX-GRO: guerrero_outside_central
       MX-HID: hidalgo_outside_central
@@ -279,7 +279,7 @@ composites:
       MX-PUE: puebla_outside_central
   MEX_NES:
     name: Noreste
-    regions: MX-COA MX-HID MX-NLE MX-SLP MX-TAM MX-VER
+    standard_subdivisions: MX-COA MX-HID MX-NLE MX-SLP MX-TAM MX-VER
     cuts:
       MX-COA: coahuila_outside_noreste
       MX-HID: hidalgo_outside_noreste
@@ -287,18 +287,18 @@ composites:
       MX-VER: veracruz_outside_noreste
   MEX_NOR:
     name: Noroeste
-    regions: MX-SIN MX-SON
+    standard_subdivisions: MX-SIN MX-SON
     cuts:
       MX-SON: sonora_outside_noroeste
   MEX_NTE:
     name: Norte
-    regions: MX-CHH MX-COA MX-DUR MX-ZAC
+    standard_subdivisions: MX-CHH MX-COA MX-DUR MX-ZAC
     cuts:
       MX-COA: coahuila_outside_norte
       MX-ZAC: zacatecas_outside_norte
   MEX_OCC:
     name: Occidental
-    regions: >-
+    standard_subdivisions: >-
       MX-AGU MX-COL MX-GUA MX-HID MX-JAL MX-MIC MX-NAY MX-QUE MX-SLP MX-ZAC
     cuts:
       MX-HID: hidalgo_outside_occidental
@@ -307,11 +307,12 @@ composites:
       MX-ZAC: zacatecas_outside_occidental
   MEX_ORI:
     name: Oriental
-    regions: MX-CHP MX-GRO MX-MOR MX-OAX MX-PUE MX-TAB MX-TLA MX-VER
+    standard_subdivisions: >-
+      MX-CHP MX-GRO MX-MOR MX-OAX MX-PUE MX-TAB MX-TLA MX-VER
     cuts:
       MX-GRO: guerrero_outside_oriental
       MX-PUE: puebla_outside_oriental
       MX-VER: veracruz_outside_oriental
   MEX_PEN:
     name: Peninsular
-    regions: MX-CAM MX-ROO MX-YUC
+    standard_subdivisions: MX-CAM MX-ROO MX-YUC

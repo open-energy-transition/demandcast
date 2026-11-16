@@ -1,5 +1,5 @@
-# The composites of Peru: its non-standard subdivisions that are unions
-# of standard subdivisions of Natural Earth at 1:10m, by their ISO
+# The non-standard subdivisions of Peru defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
 # 3166-2 codes, without the parts of some of them that the polygons of
 # `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
 # and rounded to 0.1 degrees.
@@ -23,10 +23,10 @@ cuts:
       -71.2 -11.2, -71.9 -11.3, -72.1 -11.6, -72.5 -11.7, -73.1 -11.6, -73.4
       -11.7, -73.8 -11.5, -74.5 -11.3, -74.8 -11.1))
 
-composites:
+subdivisions:
   PER_SEIN:
     name: National Interconnected System
-    regions: >-
+    standard_subdivisions: >-
       PE-AMA PE-ANC PE-APU PE-ARE PE-AYA PE-CAJ PE-CAL PE-CUS PE-HUC PE-HUV
       PE-ICA PE-JUN PE-LAL PE-LAM PE-LIM PE-LOR PE-MDD PE-MOQ PE-PAS PE-PIU
       PE-PUN PE-SAM PE-TAC PE-TUM PE-UCA
@@ -35,11 +35,11 @@ composites:
       PE-UCA: ucayali
   PER_SEIN-2000:
     name: National Interconnected System of 2000
-    regions: >-
+    standard_subdivisions: >-
       PE-ANC PE-APU PE-ARE PE-AYA PE-CAJ PE-CAL PE-CUS PE-HUC PE-HUV PE-ICA
       PE-JUN PE-LAL PE-LAM PE-LIM PE-MOQ PE-PAS PE-PIU PE-PUN PE-TAC PE-TUM
   PER_SICN:
     name: Central-North Interconnected System
-    regions: >-
+    standard_subdivisions: >-
       PE-ANC PE-AYA PE-CAJ PE-CAL PE-HUC PE-HUV PE-ICA PE-JUN PE-LAL PE-LAM
       PE-LIM PE-PAS PE-PIU PE-TUM

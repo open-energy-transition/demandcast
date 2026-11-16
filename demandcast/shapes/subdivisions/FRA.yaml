@@ -1,13 +1,13 @@
-# The composites of France: its non-standard subdivisions that are
-# unions of standard subdivisions of Natural Earth at 1:10m, by their
-# ISO 3166-2 codes, without the parts of some of them that the polygons
-# of `cuts` mark, in WKT, in degrees of longitude and latitude,
-# simplified and rounded to 0.1 degrees.
+# The non-standard subdivisions of France defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
+# and rounded to 0.1 degrees.
 
-composites:
+subdivisions:
   FRA_CONTINENTAL:
     name: Continental France
-    regions: >-
+    standard_subdivisions: >-
       FR-01 FR-02 FR-03 FR-04 FR-05 FR-06 FR-07 FR-08 FR-09 FR-10 FR-11 FR-12
       FR-13 FR-14 FR-15 FR-16 FR-17 FR-18 FR-19 FR-21 FR-22 FR-23 FR-24 FR-25
       FR-26 FR-27 FR-28 FR-29 FR-30 FR-31 FR-32 FR-33 FR-34 FR-35 FR-36 FR-37

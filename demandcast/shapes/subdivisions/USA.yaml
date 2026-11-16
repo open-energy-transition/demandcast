@@ -1,10 +1,10 @@
-# The composites of the United States: its non-standard subdivisions
-# that are unions of standard subdivisions of Natural Earth at 1:10m, by
+# The non-standard subdivisions of the United States defined by the
+# standard subdivisions of Natural Earth at 1:10m that make them, by
 # their ISO 3166-2 codes, without the parts of some of them that the
 # polygons of `cuts` mark, in WKT, in degrees of longitude and latitude,
 # simplified and rounded to 0.1 degrees.
 # shapes/eia.py writes the regions of EIA-930, and keeps the other
-# composites.
+# subdivisions.
 
 cuts:
   alabama_outside_southeast:
@@ -690,25 +690,25 @@ cuts:
       36.3, -75.8 36.3, -83 36.3, -83.2 36.4, -83.3 36.6, -83 36.6, -82.8 36.8,
       -82.9 36.9, -83.3 36.7, -83.1 37.1))
 
-composites:
+subdivisions:
   USA_CAISO:
     name: CAISO balancing area
-    regions: US-CA
+    standard_subdivisions: US-CA
     cuts:
       US-CA: california_outside_caiso
   USA_CAL:
     name: California
-    regions: US-CA
+    standard_subdivisions: US-CA
     cuts:
       US-CA: california_outside_california
   USA_CAR:
     name: Carolinas
-    regions: US-NC US-SC
+    standard_subdivisions: US-NC US-SC
     cuts:
       US-NC: north_carolina_outside_carolinas
   USA_CENT:
     name: Central
-    regions: >-
+    standard_subdivisions: >-
       US-AR US-IA US-KS US-LA US-MO US-MT US-ND US-NE US-NM US-OK US-SD US-TX
     cuts:
       US-AR: arkansas_outside_central
@@ -723,12 +723,12 @@ composites:
       US-TX: texas_outside_central
   USA_FLA:
     name: Florida
-    regions: US-FL
+    standard_subdivisions: US-FL
     cuts:
       US-FL: florida_outside_florida
   USA_MIDA:
     name: Mid-Atlantic
-    regions: >-
+    standard_subdivisions: >-
       US-DC US-DE US-IL US-IN US-KY US-MD US-MI US-NC US-NJ US-OH US-PA US-VA
       US-WV
     cuts:
@@ -740,7 +740,7 @@ composites:
       US-VA: virginia_outside_mid_atlantic
   USA_MIDW:
     name: Midwest
-    regions: >-
+    standard_subdivisions: >-
       US-AR US-IA US-IL US-IN US-KY US-LA US-MI US-MN US-MO US-MS US-ND US-SD
       US-TX US-VA US-WI
     cuts:
@@ -759,10 +759,10 @@ composites:
       US-VA: virginia_outside_midwest
   USA_NE:
     name: New England
-    regions: US-CT US-MA US-ME US-NH US-RI US-VT
+    standard_subdivisions: US-CT US-MA US-ME US-NH US-RI US-VT
   USA_NW:
     name: Northwest
-    regions: >-
+    standard_subdivisions: >-
       US-CA US-CO US-ID US-MT US-NE US-NM US-NV US-OR US-SD US-UT US-WA US-WY
     cuts:
       US-CA: california_outside_northwest
@@ -772,10 +772,10 @@ composites:
       US-SD: south_dakota_outside_northwest
   USA_NY:
     name: New York
-    regions: US-NY
+    standard_subdivisions: US-NY
   USA_SE:
     name: Southeast
-    regions: US-AL US-FL US-GA US-MS
+    standard_subdivisions: US-AL US-FL US-GA US-MS
     cuts:
       US-AL: alabama_outside_southeast
       US-FL: florida_outside_southeast
@@ -783,13 +783,13 @@ composites:
       US-MS: mississippi_outside_southeast
   USA_SW:
     name: Southwest
-    regions: US-AZ US-NM US-TX
+    standard_subdivisions: US-AZ US-NM US-TX
     cuts:
       US-NM: new_mexico_outside_southwest
       US-TX: texas_outside_southwest
   USA_TEN:
     name: Tennessee
-    regions: US-AL US-GA US-KY US-MS US-NC US-TN
+    standard_subdivisions: US-AL US-GA US-KY US-MS US-NC US-TN
     cuts:
       US-AL: alabama_outside_tennessee
       US-GA: georgia_outside_tennessee
@@ -798,6 +798,6 @@ composites:
       US-NC: north_carolina_outside_tennessee
   USA_TEX:
     name: Texas
-    regions: US-TX
+    standard_subdivisions: US-TX
     cuts:
       US-TX: texas_outside_texas

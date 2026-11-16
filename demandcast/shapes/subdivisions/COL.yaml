@@ -1,8 +1,8 @@
-# The composites of Colombia: its non-standard subdivisions that are
-# unions of standard subdivisions of Natural Earth at 1:10m, by their
-# ISO 3166-2 codes, without the parts of some of them that the polygons
-# of `cuts` mark, in WKT, in degrees of longitude and latitude,
-# simplified and rounded to 0.1 degrees.
+# The non-standard subdivisions of Colombia defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
+# and rounded to 0.1 degrees.
 
 cuts:
   choco:
@@ -40,10 +40,10 @@ cuts:
       -74.7 0.5, -74.5 0.4, -74.4 0.2, -73.7 -0.2, -73.6 -0.5, -73.7 -0.6,
       -74.5 -0.8, -75.2 -0.4, -75.5 -0.3, -75.9 -0.2, -76.4 0.3, -76.3 0.4))
 
-composites:
+subdivisions:
   COL_SIN:
     name: National Interconnected System
-    regions: >-
+    standard_subdivisions: >-
       CO-ANT CO-ARA CO-ATL CO-BOL CO-BOY CO-CAL CO-CAQ CO-CAS CO-CAU CO-CES
       CO-CHO CO-COR CO-CUN CO-GUV CO-HUI CO-LAG CO-MAG CO-MET CO-NAR CO-NSA
       CO-PUT CO-QUI CO-RIS CO-SAN CO-SUC CO-TOL CO-VAC

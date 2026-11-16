@@ -1,8 +1,8 @@
-# The composites of Ukraine: its non-standard subdivisions that are
-# unions of standard subdivisions of Natural Earth at 1:10m, by their
-# ISO 3166-2 codes, without the parts of some of them that the polygons
-# of `cuts` mark, in WKT, in degrees of longitude and latitude,
-# simplified and rounded to 0.1 degrees.
+# The non-standard subdivisions of Ukraine defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
+# and rounded to 0.1 degrees.
 
 cuts:
   ukraine_east:
@@ -21,10 +21,10 @@ cuts:
       47.5, 35.25 47.6, 34.5 47.54, 33.9 47.35, 33.3 47.2, 32.7 47.12, 32.2
       46.75, 32 46.6, 31.9 45, 41 45, 41 50.4, 38 50.4))
 
-composites:
+subdivisions:
   UKR_IPS:
     name: Integrated Power System of Ukraine
-    regions: >-
+    standard_subdivisions: >-
       UA-05 UA-07 UA-09 UA-12 UA-14 UA-18 UA-21 UA-23 UA-26 UA-30 UA-32 UA-35
       UA-46 UA-48 UA-51 UA-53 UA-56 UA-59 UA-61 UA-63 UA-65 UA-68 UA-71 UA-74
       UA-77
@@ -33,7 +33,7 @@ composites:
       UA-14: ukraine_east
   UKR_IPS-2022:
     name: Integrated Power System of Ukraine of 2022
-    regions: >-
+    standard_subdivisions: >-
       UA-05 UA-07 UA-09 UA-12 UA-14 UA-18 UA-21 UA-23 UA-26 UA-30 UA-32 UA-35
       UA-46 UA-48 UA-51 UA-53 UA-56 UA-59 UA-61 UA-63 UA-65 UA-68 UA-71 UA-74
       UA-77

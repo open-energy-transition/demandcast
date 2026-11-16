@@ -1,8 +1,8 @@
-# The composites of Georgia: its non-standard subdivisions that are
-# unions of standard subdivisions of Natural Earth at 1:10m, by their
-# ISO 3166-2 codes, without the parts of some of them that the polygons
-# of `cuts` mark, in WKT, in degrees of longitude and latitude,
-# simplified and rounded to 0.1 degrees.
+# The non-standard subdivisions of Georgia defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
+# and rounded to 0.1 degrees.
 
 cuts:
   tskhinvali:
@@ -13,10 +13,10 @@ cuts:
       44.45 42, 44.65 42.15, 44.6 42.4, 44.4 42.55, 44 42.75, 43.65 42.75, 43.6
       42.45))
 
-composites:
+subdivisions:
   GEO_GSE:
     name: Power system of GSE
-    regions: >-
+    standard_subdivisions: >-
       GE-AB GE-AJ GE-GU GE-IM GE-KA GE-KK GE-MM GE-RL GE-SJ GE-SK GE-SZ GE-TB
     cuts:
       GE-IM: tskhinvali

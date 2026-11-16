@@ -1,8 +1,8 @@
-# The composites of Canada: its non-standard subdivisions that are
-# unions of standard subdivisions of Natural Earth at 1:10m, by their
-# ISO 3166-2 codes, without the parts of some of them that the polygons
-# of `cuts` mark, in WKT, in degrees of longitude and latitude,
-# simplified and rounded to 0.1 degrees.
+# The non-standard subdivisions of Canada defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
+# and rounded to 0.1 degrees.
 
 cuts:
   labrador:
@@ -32,19 +32,19 @@ cuts:
       61.2, -129.5 62.2)), ((-130 70, -130 65.5, -142 65.5, -142 70, -130 70)),
       ((-138.4 63.2, -138.4 60.9, -141.5 60.9, -141.5 63.2, -138.4 63.2)))
 
-composites:
+subdivisions:
   CAN_NL-ISLAND:
     name: Island Interconnected System
-    regions: CA-NL
+    standard_subdivisions: CA-NL
     cuts:
       CA-NL: labrador
   CAN_QC-INTEGRATED:
     name: Integrated network of Québec
-    regions: CA-QC
+    standard_subdivisions: CA-QC
     cuts:
       CA-QC: quebec
   CAN_YT-INTEGRATED:
     name: Yukon Integrated System
-    regions: CA-YT
+    standard_subdivisions: CA-YT
     cuts:
       CA-YT: yukon
