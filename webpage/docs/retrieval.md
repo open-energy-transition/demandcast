@@ -106,7 +106,8 @@ A data source that republishes the data of the system operators, such as the EIA
 Some countries have subdivisions that are not standard ISO subdivisions, such as the area of a grid or of a market. Their shapes are in the `demandcast/shapes/` folder, in one of two ways:
 
 - `composites.yaml` defines the subdivisions that are unions of standard subdivisions of Natural Earth at 1:10m, by their ISO 3166-2 codes, with the polygons (`cuts`, in WKT) of the parts of some of them that are outside, such as the isolated systems that the grid of a country does not reach. For example, the Queensland region of the NEM (`AUS_QLD1`) is Queensland without its north-west and Cape York, and the North subsystem of Brazil (`BRA_N`) is a union of seven states, without most of Amazonas.
-- A script named after the data source, such as `eia.py`, makes a shapefile of the subdivisions that are not unions of standard subdivisions, such as the regions of the EIA; `run_all.sh` runs them all.
+- A script named after the data source, such as `occto.py`, makes a shapefile of the subdivisions that are not unions of standard subdivisions; `run_all.sh` runs them all.
+- `eia.py` writes the regions of the EIA (EIA-930) to `composites.yaml`, as the states cut along the counties that the balancing authorities of each region serve. Each county goes to the region with the most retail sales in it, from the service territories and sales of the utilities in EIA-861, spread over their counties by population; where that region leads by less than 15% of the sales, and in Texas, whose largest distribution companies EIA-861 does not list by county, the county follows the zones of [Electricity Maps](https://github.com/electricitymaps/electricitymaps-contrib). Run it again with each new year of EIA-861.
 
 `utils.shapes.get_entity_shape` gives the shape of any code, from these or from Natural Earth, for the retrieval of the gridded data and for plotting.
 
