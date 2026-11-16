@@ -1,0 +1,12 @@
+# The non-standard subdivisions of Honduras defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
+# and rounded to 0.01 degrees.
+
+subdivisions:
+  HND_SIN:
+    name: National Interconnected System
+    standard_subdivisions: >-
+      HN-AT HN-CH HN-CL HN-CM HN-CP HN-CR HN-EP HN-FM HN-IN HN-LE HN-LP HN-OC
+      HN-OL HN-SB HN-VA HN-YO
