@@ -1,0 +1,12 @@
+# The composites of Portugal: its non-standard subdivisions that are
+# unions of standard subdivisions of Natural Earth at 1:10m, by their
+# ISO 3166-2 codes, without the parts of some of them that the polygons
+# of `cuts` mark, in WKT, in degrees of longitude and latitude,
+# simplified and rounded to 0.1 degrees.
+
+composites:
+  PRT_MAINLAND:
+    name: Mainland Portugal
+    regions: >-
+      PT-01 PT-02 PT-03 PT-04 PT-05 PT-06 PT-07 PT-08 PT-09 PT-10 PT-11 PT-12
+      PT-13 PT-14 PT-15 PT-16 PT-17 PT-18

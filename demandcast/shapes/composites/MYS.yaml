@@ -1,0 +1,12 @@
+# The composites of Malaysia: its non-standard subdivisions that are
+# unions of standard subdivisions of Natural Earth at 1:10m, by their
+# ISO 3166-2 codes, without the parts of some of them that the polygons
+# of `cuts` mark, in WKT, in degrees of longitude and latitude,
+# simplified and rounded to 0.1 degrees.
+
+composites:
+  MYS_PENINSULAR:
+    name: Peninsular Malaysia
+    regions: >-
+      MY-01 MY-02 MY-03 MY-04 MY-05 MY-06 MY-07 MY-08 MY-09 MY-10 MY-11 MY-14
+      MY-16

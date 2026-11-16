@@ -1,0 +1,46 @@
+# The composites of Ukraine: its non-standard subdivisions that are
+# unions of standard subdivisions of Natural Earth at 1:10m, by their
+# ISO 3166-2 codes, without the parts of some of them that the polygons
+# of `cuts` mark, in WKT, in degrees of longitude and latitude,
+# simplified and rounded to 0.1 degrees.
+
+cuts:
+  ukraine_east:
+    description: The parts of the Donetsk and Luhansk regions of Ukraine
+      outside its power system from 2015 to 2022, east of the line of contact.
+    polygon: >-
+      POLYGON ((38.5 48.72, 39 48.7, 39.5 48.63, 41 48.6, 41 46.9, 37.85 46.9,
+      37.75 47.4, 37.65 47.75, 37.6 47.98, 37.85 48.15, 37.95 48.35, 38.15
+      48.45, 38.5 48.72))
+  ukraine_occupied_2022:
+    description: The parts of Ukraine outside its power system in October 2022,
+      drawn roughly along the front line of the time.
+    polygon: >-
+      POLYGON ((38 50.4, 37.95 49.6, 38 49.2, 38.2 48.95, 38.05 48.6, 37.8
+      48.25, 37.8 48.1, 37.45 47.9, 37.35 47.7, 36.8 47.75, 36.3 47.55, 35.6
+      47.5, 35.25 47.6, 34.5 47.54, 33.9 47.35, 33.3 47.2, 32.7 47.12, 32.2
+      46.75, 32 46.6, 31.9 45, 41 45, 41 50.4, 38 50.4))
+
+composites:
+  UKR_IPS:
+    name: Integrated Power System of Ukraine
+    regions: >-
+      UA-05 UA-07 UA-09 UA-12 UA-14 UA-18 UA-21 UA-23 UA-26 UA-30 UA-32 UA-35
+      UA-46 UA-48 UA-51 UA-53 UA-56 UA-59 UA-61 UA-63 UA-65 UA-68 UA-71 UA-74
+      UA-77
+    cuts:
+      UA-09: ukraine_east
+      UA-14: ukraine_east
+  UKR_IPS-2022:
+    name: Integrated Power System of Ukraine of 2022
+    regions: >-
+      UA-05 UA-07 UA-09 UA-12 UA-14 UA-18 UA-21 UA-23 UA-26 UA-30 UA-32 UA-35
+      UA-46 UA-48 UA-51 UA-53 UA-56 UA-59 UA-61 UA-63 UA-65 UA-68 UA-71 UA-74
+      UA-77
+    cuts:
+      UA-09: ukraine_occupied_2022
+      UA-14: ukraine_occupied_2022
+      UA-23: ukraine_occupied_2022
+      UA-48: ukraine_occupied_2022
+      UA-63: ukraine_occupied_2022
+      UA-65: ukraine_occupied_2022

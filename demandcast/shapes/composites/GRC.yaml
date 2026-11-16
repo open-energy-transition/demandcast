@@ -1,0 +1,19 @@
+# The composites of Greece: its non-standard subdivisions that are
+# unions of standard subdivisions of Natural Earth at 1:10m, by their
+# ISO 3166-2 codes, without the parts of some of them that the polygons
+# of `cuts` mark, in WKT, in degrees of longitude and latitude,
+# simplified and rounded to 0.1 degrees.
+
+cuts:
+  dodecanese:
+    description: The Dodecanese, in the South Aegean, Greece, east of the
+      Cyclades.
+    polygon: >-
+      POLYGON ((26.2 35, 30 35, 30 38, 26.2 38, 26.2 35))
+
+composites:
+  GRC_INTERCONNECTED:
+    name: Interconnected System of Greece
+    regions: GR-69 GR-A GR-A1 GR-B GR-C GR-D GR-E GR-F GR-G GR-H GR-J GR-L
+    cuts:
+      GR-L: dodecanese

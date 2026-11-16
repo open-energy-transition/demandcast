@@ -295,21 +295,23 @@ def test_get_all_codes_with_shapes():
 @pytest.fixture
 def composites_file(tmp_path):
     """
-    Point the file of the composites to a temporary file.
+    Point the folder of the composites to a temporary folder.
 
     Yields
     ------
     function
-        A function that writes its argument as the content of the
-        file, and clears the cache of the composites.
+        A function that writes its first argument as the content of a
+        file of the folder, by default ``XX.yaml``, and clears the
+        cache of the composites.
     """
-    path = tmp_path / "composites.yaml"
+    folder = tmp_path / "composites"
+    folder.mkdir()
 
-    def write(content):
-        path.write_text(yaml.safe_dump(content), encoding="utf-8")
+    def write(content, name="XX.yaml"):
+        (folder / name).write_text(yaml.safe_dump(content), encoding="utf-8")
         utils.shapes.read_composites.cache_clear()
 
-    with patch("utils.paths.COMPOSITES_FILE", str(path)):
+    with patch("utils.paths.COMPOSITES_FOLDER", str(folder)):
         yield write
     utils.shapes.read_composites.cache_clear()
 
@@ -393,6 +395,75 @@ def test_read_invalid_composites(composites_file, cuts, composites, message):
 
     with pytest.raises(ValueError, match=message):
         utils.shapes.read_composites()
+
+
+def test_read_composites_of_several_files(composites_file):
+    """
+    Read the composites of every file, which may have no cuts.
+
+    Notes
+    -----
+    Files that are not YAML, such as notes, are left out.
+    """
+    composites_file({"composites": {"XX_1": {"name": "X", "regions": "XX-A"}}})
+    composites_file(
+        {
+            "cuts": {"a": {"description": "A", "polygon": SQUARE}},
+            "composites": {
+                "YY_1": {
+                    "name": "Y",
+                    "regions": "YY-A YY-B",
+                    "cuts": {"YY-A": "a"},
+                }
+            },
+        },
+        name="YY.yaml",
+    )
+    composites_file({}, name="notes.txt")
+
+    composites = utils.shapes.read_composites()
+
+    assert sorted(composites.composites) == ["XX_1", "YY_1"]
+    assert composites.composites["YY_1"].regions == ["YY-A", "YY-B"]
+    assert list(composites.cuts) == ["a"]
+
+
+def test_read_composites_of_another_country(composites_file):
+    """Reject a composite in the file of another country."""
+    composites_file({"composites": {"YY_1": {"name": "Y", "regions": "YY-A"}}})
+
+    with pytest.raises(ValueError, match="another country: YY_1"):
+        utils.shapes.read_composites()
+
+
+def test_read_cuts_of_two_files(composites_file):
+    """Reject a cut with the name of a cut of another file."""
+    for country in ("XX", "YY"):
+        composites_file(
+            {
+                "cuts": {"a": {"description": "A", "polygon": SQUARE}},
+                "composites": {
+                    f"{country}_1": {
+                        "name": country,
+                        "regions": f"{country}-A",
+                        "cuts": {f"{country}-A": "a"},
+                    }
+                },
+            },
+            name=f"{country}.yaml",
+        )
+
+    with pytest.raises(ValueError, match="cuts of another file: a"):
+        utils.shapes.read_composites()
+
+
+def test_read_non_standard_shape_codes_skips_other_folders(tmp_path):
+    """Leave out the folders of the shapes without a shapefile."""
+    (tmp_path / "composites").mkdir()
+    (tmp_path / "__pycache__").mkdir()
+
+    with patch("utils.paths.SHAPES_FOLDER", str(tmp_path)):
+        assert utils.shapes._read_non_standard_shape_codes() == {}
 
 
 def _standard_subdivisions():

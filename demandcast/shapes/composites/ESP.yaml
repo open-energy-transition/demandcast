@@ -1,0 +1,14 @@
+# The composites of Spain: its non-standard subdivisions that are unions
+# of standard subdivisions of Natural Earth at 1:10m, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
+# and rounded to 0.1 degrees.
+
+composites:
+  ESP_PENINSULAR:
+    name: Peninsular Spain
+    regions: >-
+      ES-A ES-AB ES-AL ES-AV ES-B ES-BA ES-BI ES-BU ES-C ES-CA ES-CC ES-CO
+      ES-CR ES-CS ES-CU ES-GI ES-GR ES-GU ES-H ES-HU ES-J ES-L ES-LE ES-LO
+      ES-LU ES-M ES-MA ES-MU ES-NA ES-O ES-OR ES-P ES-PO ES-S ES-SA ES-SE ES-SG
+      ES-SO ES-SS ES-T ES-TE ES-TO ES-V ES-VA ES-VI ES-Z ES-ZA

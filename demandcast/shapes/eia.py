@@ -7,7 +7,8 @@ Description:
     the US Energy Information Administration (EIA-930) as composites of
     the states of Natural Earth, cut along the counties that the
     balancing authorities of each region serve, and writes them to
-    composites.yaml, replacing the earlier ones.
+    composites/USA.yaml, replacing the earlier ones and keeping the
+    other composites of the file.
 
     Each county of the lower 48 states goes to the region whose
     balancing authorities sell the most electricity in it, by the
@@ -63,7 +64,9 @@ ZONES_URL = (
     "electricitymaps-contrib/3baa27a61b8ac50ebdcdf6bc248242f57ee16cac/"
     "geo/world.geojson"
 )
-COMPOSITES_FILE = os.path.join(os.path.dirname(__file__), "composites.yaml")
+COMPOSITES_FILE = os.path.join(
+    os.path.dirname(__file__), "composites", "USA.yaml"
+)
 # The least share of the sales of a county by which the region with the
 # most of them must lead the next, for the county to follow EIA-861.
 MARGIN = 0.15
@@ -356,7 +359,7 @@ def build(
     -------
     dict[str, dict]
         The cuts and the composites of the regions, as in
-        composites.yaml.
+        composites/USA.yaml.
     """
     reference = pd.read_excel(
         io.BytesIO(_download(EIA930_URL)), sheet_name="Regions"
@@ -454,7 +457,7 @@ def _quote(text: str) -> str:
 
 def write(new: dict[str, dict]) -> None:
     """
-    Write the composites of the regions into composites.yaml.
+    Write the composites of the regions into composites/USA.yaml.
 
     Parameters
     ----------
@@ -512,7 +515,7 @@ def write(new: dict[str, dict]) -> None:
 
 
 def main() -> None:
-    """Write the regions of EIA-930 to composites.yaml."""
+    """Write the regions of EIA-930 to composites/USA.yaml."""
     counties = read_counties()
     regions = assign_regions(counties)
     write(build(counties, regions))

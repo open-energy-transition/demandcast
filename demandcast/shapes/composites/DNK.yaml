@@ -1,0 +1,13 @@
+# The composites of Denmark: its non-standard subdivisions that are
+# unions of standard subdivisions of Natural Earth at 1:10m, by their
+# ISO 3166-2 codes, without the parts of some of them that the polygons
+# of `cuts` mark, in WKT, in degrees of longitude and latitude,
+# simplified and rounded to 0.1 degrees.
+
+composites:
+  DNK_DK1:
+    name: Western Denmark
+    regions: DK-81 DK-82 DK-83
+  DNK_DK2:
+    name: Eastern Denmark
+    regions: DK-84 DK-85

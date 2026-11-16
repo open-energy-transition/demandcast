@@ -7,9 +7,10 @@ Description:
     from the Natural Earth shapefile database. It also retrieves
     non-standard subdivision shapes from the shapes directory: the
     shapes of subdivisions that Natural Earth does not have, defined in
-    a shapefile for each data source, or in ``composites.yaml`` as
-    unions of standard subdivisions of Natural Earth at 1:10m, without
-    the parts of some of them that polygons mark.
+    a shapefile for each data source, or in the folder ``composites``,
+    in a file for each country, as unions of standard subdivisions of
+    Natural Earth at 1:10m, without the parts of some of them that
+    polygons mark.
 """
 
 import functools
@@ -130,7 +131,7 @@ class Composite(BaseModel):
 
 class Composites(BaseModel):
     """
-    Content of ``composites.yaml``.
+    Content of a file of composites, or of all of them.
 
     Attributes
     ----------
@@ -142,7 +143,7 @@ class Composites(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    cuts: dict[str, Cut]
+    cuts: dict[str, Cut] = {}
     composites: dict[str, Composite]
 
     @model_validator(mode="after")
@@ -180,24 +181,53 @@ def read_composites() -> Composites:
     """
     Read the composites of the shapes directory.
 
+    Each file of the folder ``composites`` holds the cuts and the
+    composites of one country, named by its ISO Alpha-3 code.
+
     Returns
     -------
     Composites
-        The cuts and the composites of ``composites.yaml``.
+        The cuts and the composites of all the files.
 
     Raises
     ------
     ValueError
-        If the file is not valid.
+        If a file is not valid, has a composite of another country, or
+        has a cut with the name of a cut of another file.
     """
-    with open(utils.paths.COMPOSITES_FILE, encoding="utf-8") as file:
-        content = yaml.safe_load(file)
-    try:
-        return Composites.model_validate(content)
-    except ValidationError as error:
-        raise ValueError(
-            f"The file of the composites is not valid: {error}"
-        ) from error
+    cuts: dict[str, Cut] = {}
+    composites: dict[str, Composite] = {}
+    folder = utils.paths.COMPOSITES_FOLDER
+    for name in sorted(os.listdir(folder)):
+        country, extension = os.path.splitext(name)
+        if extension != ".yaml":
+            continue
+        with open(os.path.join(folder, name), encoding="utf-8") as file:
+            content = yaml.safe_load(file)
+        try:
+            part = Composites.model_validate(content)
+        except ValidationError as error:
+            raise ValueError(
+                f"The composites of {name} are not valid: {error}"
+            ) from error
+        others = sorted(
+            code
+            for code in part.composites
+            if not code.startswith(f"{country}_")
+        )
+        if others:
+            raise ValueError(
+                f"{name} has composites of another country: "
+                f"{', '.join(others)}"
+            )
+        again = sorted(set(part.cuts) & set(cuts))
+        if again:
+            raise ValueError(
+                f"{name} has cuts of another file: {', '.join(again)}"
+            )
+        cuts.update(part.cuts)
+        composites.update(part.composites)
+    return Composites(cuts=cuts, composites=composites)
 
 
 @functools.cache
@@ -444,7 +474,7 @@ def _read_non_standard_shape_codes() -> dict[str, list[str]]:
     Read the non-standard shapes codes from the shapes directory.
 
     The codes are read from the shapefile of each data source in the
-    shapes directory.
+    shapes directory: each folder with a shapefile of its name.
 
     Returns
     -------
@@ -456,10 +486,10 @@ def _read_non_standard_shape_codes() -> dict[str, list[str]]:
 
     non_standard_shape_codes = {}
     for folder in os.listdir(shapes_directory):
-        if os.path.isdir(os.path.join(shapes_directory, folder)):
-            shapefile_path = os.path.join(
-                shapes_directory, folder, folder + ".shp"
-            )
+        shapefile_path = os.path.join(
+            shapes_directory, folder, folder + ".shp"
+        )
+        if os.path.isfile(shapefile_path):
             entity_shapes = geopandas.read_file(shapefile_path)
             entity_codes = entity_shapes["code"].unique()
             non_standard_shape_codes[folder] = list(entity_codes)
