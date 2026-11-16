@@ -1,0 +1,107 @@
+# The non-standard subdivisions of Japan defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude, rounded to
+# 0.01 degrees.
+
+cuts:
+  amami_islands:
+    description: The Amami Islands of Kagoshima, Japan, in the area of Kyūshū,
+      which Natural Earth puts in Okinawa.
+    polygon: >-
+      POLYGON ((130.2 26.95, 130.2 28.7, 128.3 28.7, 128.3 26.95, 130.2 26.95))
+  fukui_outside_hokuriku:
+    description: The south-west of Fukui, Japan, in the area of Kansai, outside
+      that of Hokuriku.
+    polygon: >-
+      POLYGON ((135.4 35.21, 136.19 35.44, 135.69 35.91, 135.14 35.78, 135.4
+      35.21))
+  fukui_outside_kansai:
+    description: Fukui, Japan, outside its south-west, the part in the area of
+      Kansai.
+    polygon: >-
+      POLYGON ((136.19 35.44, 135.69 35.91, 135.69 36.5, 137 36.5, 137 35.2,
+      136.19 35.2, 136.19 35.44))
+  mie_outside_chubu:
+    description: The south-west of Mie, Japan, in the area of Kansai, outside
+      that of Chūbu.
+    polygon: >-
+      POLYGON ((136.03 33.54, 136.37 33.85, 135.88 34.17, 135.58 33.79, 136.03
+      33.54))
+  mie_outside_kansai:
+    description: Mie, Japan, outside its south-west, the part in the area of
+      Kansai.
+    polygon: >-
+      POLYGON ((136.37 33.85, 135.88 34.17, 135.7 34.3, 135.7 35.4, 137.1 35.4,
+      137.1 33.6, 136.37 33.6, 136.37 33.85))
+  okinawa_outside_kyushu:
+    description: Okinawa, Japan, as Natural Earth draws it, outside the Amami
+      Islands, the part in the area of Kyūshū.
+    polygon: >-
+      POLYGON ((122 23, 132 23, 132 26.95, 128.3 26.95, 128.3 28.7, 122 28.7,
+      122 23))
+  shizuoka_outside_chubu:
+    description: Shizuoka, Japan, east of the Fuji River, in the area of Kantō,
+      outside that of Chūbu.
+    polygon: >-
+      POLYGON ((138.48 35.7, 138.48 35.22, 138.68 35, 138.68 34.5, 139.5 34.5,
+      139.5 35.7, 138.48 35.7))
+  shizuoka_outside_kanto:
+    description: Shizuoka, Japan, west of the Fuji River, in the area of Chūbu,
+      outside that of Kantō.
+    polygon: >-
+      POLYGON ((137.3 34.5, 138.68 34.5, 138.68 35, 138.48 35.22, 138.48 35.7,
+      137.3 35.7, 137.3 34.5))
+  tokyo_outside_kanto:
+    description: The Izu and Ogasawara Islands of Tokyo, Japan, outside the
+      area of Kantō, whose grid does not reach them.
+    polygon: >-
+      POLYGON ((155 19, 155 35.2, 135 35.2, 135 19, 155 19))
+
+subdivisions:
+  JPN_Hokkaidō:
+    name: Hokkaidō
+    standard_subdivisions: JP-01
+  JPN_Tōhoku:
+    name: Tōhoku
+    standard_subdivisions: JP-02 JP-03 JP-04 JP-05 JP-06 JP-07 JP-15
+  JPN_Kantō:
+    name: Kantō
+    standard_subdivisions: >-
+      JP-08 JP-09 JP-10 JP-11 JP-12 JP-13 JP-14 JP-19 JP-22
+    cuts:
+      JP-13: tokyo_outside_kanto
+      JP-22: shizuoka_outside_kanto
+  JPN_Chūbu:
+    name: Chūbu
+    standard_subdivisions: JP-20 JP-21 JP-22 JP-23 JP-24
+    cuts:
+      JP-22: shizuoka_outside_chubu
+      JP-24: mie_outside_chubu
+  JPN_Hokuriku:
+    name: Hokuriku
+    standard_subdivisions: JP-16 JP-17 JP-18
+    cuts:
+      JP-18: fukui_outside_hokuriku
+  JPN_Kansai:
+    name: Kansai
+    standard_subdivisions: JP-18 JP-24 JP-25 JP-26 JP-27 JP-28 JP-29 JP-30
+    cuts:
+      JP-18: fukui_outside_kansai
+      JP-24: mie_outside_kansai
+  JPN_Chūgoku:
+    name: Chūgoku
+    standard_subdivisions: JP-31 JP-32 JP-33 JP-34 JP-35
+  JPN_Shikoku:
+    name: Shikoku
+    standard_subdivisions: JP-36 JP-37 JP-38 JP-39
+  JPN_Kyūshū:
+    name: Kyūshū
+    standard_subdivisions: JP-40 JP-41 JP-42 JP-43 JP-44 JP-45 JP-46 JP-47
+    cuts:
+      JP-47: okinawa_outside_kyushu
+  JPN_Okinawa:
+    name: Okinawa
+    standard_subdivisions: JP-47
+    cuts:
+      JP-47: amami_islands

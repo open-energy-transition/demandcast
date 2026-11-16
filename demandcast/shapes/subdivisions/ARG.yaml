@@ -1,0 +1,72 @@
+# The non-standard subdivisions of Argentina defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude.
+
+subdivisions:
+  ARG_A:
+    name: Salta
+    standard_subdivisions: AR-A
+  ARG_BA:
+    name: Buenos Aires and Ciudad Autónoma de Buenos Aires
+    standard_subdivisions: AR-B AR-C
+  ARG_D:
+    name: San Luis
+    standard_subdivisions: AR-D
+  ARG_E:
+    name: Entre Ríos
+    standard_subdivisions: AR-E
+  ARG_F:
+    name: La Rioja
+    standard_subdivisions: AR-F
+  ARG_G:
+    name: Santiago del Estero
+    standard_subdivisions: AR-G
+  ARG_H:
+    name: Chaco
+    standard_subdivisions: AR-H
+  ARG_J:
+    name: San Juan
+    standard_subdivisions: AR-J
+  ARG_K:
+    name: Catamarca
+    standard_subdivisions: AR-K
+  ARG_L:
+    name: La Pampa
+    standard_subdivisions: AR-L
+  ARG_M:
+    name: Mendoza
+    standard_subdivisions: AR-M
+  ARG_N:
+    name: Misiones
+    standard_subdivisions: AR-N
+  ARG_P:
+    name: Formosa
+    standard_subdivisions: AR-P
+  ARG_Q:
+    name: Neuquén
+    standard_subdivisions: AR-Q
+  ARG_R:
+    name: Río Negro
+    standard_subdivisions: AR-R
+  ARG_S:
+    name: Santa Fe
+    standard_subdivisions: AR-S
+  ARG_T:
+    name: Tucumán
+    standard_subdivisions: AR-T
+  ARG_U:
+    name: Chubut
+    standard_subdivisions: AR-U
+  ARG_W:
+    name: Corrientes
+    standard_subdivisions: AR-W
+  ARG_X:
+    name: Córdoba
+    standard_subdivisions: AR-X
+  ARG_Y:
+    name: Jujuy
+    standard_subdivisions: AR-Y
+  ARG_Z:
+    name: Santa Cruz
+    standard_subdivisions: AR-Z
