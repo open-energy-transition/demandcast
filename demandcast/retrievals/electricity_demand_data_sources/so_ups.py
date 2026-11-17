@@ -19,11 +19,11 @@ Description:
     started, until 2010, the page repeats the hour after the skipped
     one with the same value, which is kept once, and on the days when
     it ended it gives the hour that ends at the repeated time once,
-    which is left out. A day that the page does not have gives the
-    chart of another day, so its data is not found.
+    which is left out. Some days, such as 2002-02-01 in the Centre,
+    have a page without chart, and give no data.
 
-    The website answers some requests with the error 503 when they
-    follow each other within a second, so the requests are sent at
+    The website answers about one request in four with the error 503
+    when they are sent two seconds apart, so the requests are sent at
     least REQUEST_INTERVAL seconds apart.
 
     The terms of SO UES allow the reproduction of its information in
@@ -54,7 +54,7 @@ SYSTEMS = {
 }
 
 # The minimum time between two requests, in seconds.
-REQUEST_INTERVAL = 2.0
+REQUEST_INTERVAL = 3.0
 
 # The time of the last request, from time.monotonic.
 _last_request = {"time": float("-inf")}
@@ -122,12 +122,8 @@ def download_and_extract_data_for_request(
     Returns
     -------
     electricity_demand_time_series : pandas.Series
-        The electricity demand time series in MW.
-
-    Raises
-    ------
-    utils.fetcher.DataNotFoundError
-        If the page has no chart, or the chart of another day.
+        The electricity demand time series in MW, empty if the page has
+        no chart of the day.
     """
     logging.info(f"Retrieving electricity demand data for {day}.")
 
@@ -150,9 +146,8 @@ def download_and_extract_data_for_request(
         else {}
     )
     if attributes.get("date") != day.isoformat():
-        raise utils.fetcher.DataNotFoundError(
-            f"The page of SO UES has no chart of {day}."
-        )
+        logging.warning(f"The page of SO UES has no chart of {day}.")
+        return pd.Series(dtype=float)
 
     electricity_demand_time_series = pd.Series(
         pd.to_numeric(attributes["datay"].split(","), errors="coerce"),
