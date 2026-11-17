@@ -11,11 +11,10 @@ definition:
     power_plant_use: unknown
     note: The load leaves out the solar behind the meters of the consumers, about 10 GW in 2019 and 16 GW in 2025, and probably counts the charging of batteries from 2023.
 entities:
-  - subdivision_name: California
-    subdivision_code: CAL
+  - subdivision_name: CAISO balancing area
+    subdivision_code: CAISO
     country_name: United States
     country_code: USA
     start_date: 2019-01-01
     end_date: today
     time_zone: America/Los_Angeles
-    same_area: false

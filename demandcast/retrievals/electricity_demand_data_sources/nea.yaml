@@ -11,7 +11,10 @@ definition:
     power_plant_use: unknown
     note: The dataset does not define the load and covers a single year.
 entities:
-  - country_name: Nepal
+  - subdivision_name: Integrated Nepal Power System
+    subdivision_code: INPS
+    country_name: Nepal
     country_code: NPL
     start_date: 2017-04-14
     end_date: 2018-04-13
+    time_zone: Asia/Kathmandu

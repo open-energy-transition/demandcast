@@ -11,7 +11,10 @@ definition:
     power_plant_use: unknown
     note: The real demand of XM is not defined in its public documents. Its midday falls compared with the morning and afternoon, from 1.065 in 2021 to 1.029 in 2026, which can be distributed solar (AGPE) left out.
 entities:
-  - country_name: Colombia
+  - subdivision_name: National Interconnected System
+    subdivision_code: SIN
+    country_name: Colombia
     country_code: COL
     start_date: 2000-01-01
     end_date: today
+    time_zone: America/Bogota

@@ -13,7 +13,9 @@ Description:
     The data is the real demand of the system (DemaReal) in kWh of each
     hour, which the module converts to MW, from 2000, by date and hour
     from "Hour01" to "Hour24", the hours that end at 01:00 to 24:00 in
-    the time of Colombia, which has no daylight saving time.
+    the time of Colombia, which has no daylight saving time. It is the
+    demand of the National Interconnected System (COL_SIN), without the
+    non-interconnected zones.
 
     The proxy takes 22 to 26 seconds to answer the request of a month,
     longer than the usual time limit of the requests (10 seconds), so

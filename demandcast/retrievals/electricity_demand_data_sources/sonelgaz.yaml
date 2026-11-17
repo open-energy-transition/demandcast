@@ -11,7 +11,10 @@ definition:
     power_plant_use: unknown
     note: The dataset does not define the demand. Its midday stays between 1.026 and 1.044 of the morning and afternoon from 2010 to 2019.
 entities:
-  - country_name: Algeria
+  - subdivision_name: Northern interconnected grid
+    subdivision_code: RIN
+    country_name: Algeria
     country_code: DZA
     start_date: 2008-01-01
     end_date: 2020-02-01
+    time_zone: Africa/Algiers

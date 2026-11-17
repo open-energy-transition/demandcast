@@ -24,10 +24,10 @@ Description:
     4 GW, while the load in the evening and at night stays the same,
     probably because the charging of batteries is counted as load.
 
-    The load of CAISO is about 82% of the demand of the region of
-    California of the EIA, whose shape the code USA_CAL has, so its
-    data has same_area false in the yaml file and the combined demand of
-    California takes the data of the EIA (see cleaning/combining.py).
+    The load is that of the balancing area of CAISO (USA_CAISO), without
+    the balancing areas of BANC, LADWP, IID and TID and the north of
+    California: about 82% of the demand of the region of California of
+    the EIA (USA_CAL).
 
     Source: https://www.caiso.com/library/historical-ems-hourly-load
 """
@@ -51,7 +51,7 @@ def get_available_requests(
     Parameters
     ----------
     code : str
-        The code of California.
+        The code of the balancing area of CAISO.
     start_date : datetime.date
         The first day of the data.
     end_date : datetime.date
@@ -162,7 +162,7 @@ def download_and_extract_data_for_request(
         The year and month of the data to retrieve, without a month
         until 2023.
     code : str
-        The code of California.
+        The code of the balancing area of CAISO.
 
     Returns
     -------

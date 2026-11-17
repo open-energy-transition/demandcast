@@ -626,7 +626,7 @@ def test_assembly_combines_stale_demand_again(change, monkeypatch):
     reviews, is combined again from the cleaned demand of 1 MW.
     """
     file_path = os.path.join(
-        utils.paths.get_electricity_demand_folder("combined"), "FRA.parquet"
+        utils.paths.get_electricity_demand_folder("combined"), "DEU.parquet"
     )
     if change == "legacy file":
         demand = pd.read_parquet(file_path).drop(columns="Eligible")
@@ -639,21 +639,21 @@ def test_assembly_combines_stale_demand_again(change, monkeypatch):
             "get_fingerprint",
             lambda code: fingerprint(code) + "-reviews-changed",
         )
-    assert not cleaning.combining.is_current("FRA")
+    assert not cleaning.combining.is_current("DEU")
 
     assemble.run_data_assemply("training")
 
-    assert cleaning.combining.is_current("FRA")
+    assert cleaning.combining.is_current("DEU")
     assembled = _read_assembled("training")
     loads = assembled.groupby("Entity code")["Load (MW)"].max()
-    assert loads["FRA"] < 1000.0
+    assert loads["DEU"] < 1000.0
 
 
 @pytest.mark.usefixtures("assembly_inputs")
 def test_assembly_without_eligibility_stops():
     """Test that a demand that cannot be combined again stops it."""
     combined_path = os.path.join(
-        utils.paths.get_electricity_demand_folder("combined"), "FRA.parquet"
+        utils.paths.get_electricity_demand_folder("combined"), "DEU.parquet"
     )
     demand = pd.read_parquet(combined_path).drop(columns="Eligible")
     demand.attrs = {}
@@ -661,7 +661,7 @@ def test_assembly_without_eligibility_stops():
     os.remove(
         os.path.join(
             utils.paths.get_electricity_demand_folder("cleaned"),
-            "FRA_entsoe.parquet",
+            "DEU_entsoe.parquet",
         )
     )
 

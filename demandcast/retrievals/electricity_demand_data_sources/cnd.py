@@ -12,7 +12,10 @@ Description:
     The file gives the hourly load ("Carga Real"), generation, imports
     and exports in MW, at the start of each hour in the time of Panama,
     which has no daylight saving time: the hours of each week are
-    numbered from 1, at 00:00.
+    numbered from 1, at 00:00. The load is that of the National
+    Interconnected System (PAN_SIN), without Darién, the Emberá-Wounaan
+    and Guna Yala comarcas, the Pearl Islands, Taboga, Tortí and the
+    islands of Bocas del Toro.
 
     Source: https://data.mendeley.com/datasets/tcmmj4t6f4/1
 """

@@ -174,14 +174,14 @@ def test_download_and_extract_data_for_request_of_area(
         # The summer of 2018 of Ukraine is an hour late, and its winter
         # of 2018 to 2019 an hour early.
         (
-            "UKR",
+            "UKR_IPS",
             ["2018-07-01 12:00", "2018-10-28 00:30", "2018-10-28 01:00"],
             ["2018-07-01 11:00", "2018-10-27 23:30", "2018-10-28 02:00"],
         ),
         # When the summer of 2018 starts, its first hour moves onto the
         # hour before it, which is kept once.
         (
-            "UKR",
+            "UKR_IPS",
             ["2018-03-25 00:30", "2018-03-25 01:30", "2018-03-25 02:30"],
             ["2018-03-25 00:30", "2018-03-25 01:30"],
         ),

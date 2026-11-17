@@ -99,7 +99,9 @@ def test_download_and_extract_data_of_newfoundland(
         URL.format("NL,1.0/N...DEMAND") + QUERY, "ccei_nl.csv"
     )
 
-    time_series = ccei.download_and_extract_data_for_request(None, "CAN_NL")
+    time_series = ccei.download_and_extract_data_for_request(
+        None, "CAN_NL-ISLAND"
+    )
 
     # The local times (DATETIME_LOCAL) are read in the time of
     # Newfoundland (UTC-3:30, UTC-2:30 in summer). Those of the summer

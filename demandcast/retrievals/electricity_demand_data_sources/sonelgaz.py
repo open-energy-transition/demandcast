@@ -18,7 +18,9 @@ Description:
     2012, 13.6% above 2011, and 10,464 MW on 2013-08-07 at 21:00, while
     the values as they are give none of them. The module divides them by
     125/148. In 2019, the rows from 2019-02-10 come three times, with
-    the same values, and the cleaning keeps one of each.
+    the same values, and the cleaning keeps one of each. The demand is
+    that of the northern interconnected grid (DZA_RIN), without the
+    isolated grids of the south.
 
     Source: https://data.mendeley.com/datasets/z5x2d3mhw7/1
     Source: https://doi.org/10.1016/j.dib.2023.109854

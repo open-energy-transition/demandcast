@@ -25,8 +25,8 @@ entities:
     start_date: 1998-12-07
     end_date: today
     time_zone: Australia/Sydney
-  - subdivision_name: Queensland
-    subdivision_code: QLD
+  - subdivision_name: Queensland region of the NEM
+    subdivision_code: QLD1
     country_name: Australia
     country_code: AUS
     start_date: 1998-12-07
@@ -39,8 +39,8 @@ entities:
     start_date: 1998-12-07
     end_date: today
     time_zone: Australia/Melbourne
-  - subdivision_name: South Australia
-    subdivision_code: SA
+  - subdivision_name: South Australia region of the NEM
+    subdivision_code: SA1
     country_name: Australia
     country_code: AUS
     start_date: 1998-12-07

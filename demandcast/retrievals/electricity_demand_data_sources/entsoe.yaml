@@ -56,22 +56,31 @@ entities:
     country_code: FIN
     start_date: 2014-12-19
     end_date: today
-  - country_name: France
+  - subdivision_name: Continental France
+    subdivision_code: CONTINENTAL
+    country_name: France
     country_code: FRA
     start_date: 2014-12-15
     end_date: today
-  - country_name: Georgia
+    time_zone: Europe/Paris
+  - subdivision_name: Power system of GSE
+    subdivision_code: GSE
+    country_name: Georgia
     country_code: GEO
     start_date: 2021-12-19
     end_date: today
+    time_zone: Asia/Tbilisi
   - country_name: Germany
     country_code: DEU
     start_date: 2015-01-01
     end_date: today
-  - country_name: Greece
+  - subdivision_name: Interconnected System of Greece
+    subdivision_code: INTERCONNECTED
+    country_name: Greece
     country_code: GRC
     start_date: 2014-12-29
     end_date: today
+    time_zone: Europe/Athens
   - country_name: Hungary
     country_code: HUN
     start_date: 2014-12-23
@@ -116,18 +125,24 @@ entities:
     country_code: MKD
     start_date: 2015-01-15
     end_date: today
-  - country_name: Norway
+  - subdivision_name: Mainland Norway
+    subdivision_code: MAINLAND
+    country_name: Norway
     country_code: NOR
     start_date: 2014-12-14
     end_date: today
+    time_zone: Europe/Oslo
   - country_name: Poland
     country_code: POL
     start_date: 2014-12-31
     end_date: today
-  - country_name: Portugal
+  - subdivision_name: Mainland Portugal
+    subdivision_code: MAINLAND
+    country_name: Portugal
     country_code: PRT
     start_date: 2014-12-08
     end_date: today
+    time_zone: Europe/Lisbon
   - country_name: Romania
     country_code: ROU
     start_date: 2015-01-05
@@ -144,10 +159,13 @@ entities:
     country_code: SVN
     start_date: 2014-12-30
     end_date: today
-  - country_name: Spain
+  - subdivision_name: Peninsular Spain
+    subdivision_code: PENINSULAR
+    country_name: Spain
     country_code: ESP
     start_date: 2014-12-19
     end_date: today
+    time_zone: Europe/Madrid
   - country_name: Sweden
     country_code: SWE
     start_date: 2015-01-01
@@ -156,10 +174,13 @@ entities:
     country_code: CHE
     start_date: 2014-10-23
     end_date: today
-  - country_name: Ukraine
+  - subdivision_name: Integrated Power System of Ukraine
+    subdivision_code: IPS
+    country_name: Ukraine
     country_code: UKR
     start_date: 2017-09-24
     end_date: 2022-02-25
+    time_zone: Europe/Kyiv
   - subdivision_name: Great Britain
     subdivision_code: GB
     country_name: United Kingdom

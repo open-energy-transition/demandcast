@@ -11,7 +11,10 @@ definition:
     power_plant_use: unknown
     note: The dataset does not define the real load. Its midday falls a little from 2016 to 2019, from 1.136 to 1.128 of the morning and afternoon, and more in 2020 with the lockdown.
 entities:
-  - country_name: Panama
+  - subdivision_name: National Interconnected System
+    subdivision_code: SIN
+    country_name: Panama
     country_code: PAN
     start_date: 2016-01-02
     end_date: 2020-07-31
+    time_zone: America/Panama

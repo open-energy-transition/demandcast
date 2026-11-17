@@ -11,8 +11,10 @@ definition:
     power_plant_use: unknown
     note: The demand leaves out K-Electric, which supplies Karachi, and the solar of the consumers, which grows fast from 2023.
 entities:
-  - country_name: Pakistan
+  - subdivision_name: NTDC grid
+    subdivision_code: NTDC
+    country_name: Pakistan
     country_code: PAK
     start_date: 2024-07-01
     end_date: 2025-06-30
-    same_area: false
+    time_zone: Asia/Karachi
