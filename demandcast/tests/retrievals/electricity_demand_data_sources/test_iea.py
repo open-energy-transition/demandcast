@@ -10,6 +10,7 @@ import datetime as dt
 
 import pandas as pd
 
+import utils.data_sources
 from retrievals.electricity_demand_data_sources import iea
 
 
@@ -24,6 +25,20 @@ def test_get_available_requests():
         (pd.Timestamp("2021-07-01"), pd.Timestamp("2022-01-01")),
         (pd.Timestamp("2022-01-01"), pd.Timestamp("2022-03-01")),
     ]
+
+
+def test_time_zones_of_the_entities():
+    """
+    Test that each entity has a time zone, and a region if needed.
+
+    A subdivision of a country whose regions the API gives is one of
+    them.
+    """
+    countries_with_regions = {code.split("_")[0] for code in iea.REGIONS}
+    for entity in utils.data_sources.read_entities("iea"):
+        assert entity.country_code in iea.TIME_ZONES
+        if entity.country_code in countries_with_regions:
+            assert entity.code in iea.REGIONS
 
 
 def test_download_and_extract_data_for_request(fake_downloads, assert_demand):

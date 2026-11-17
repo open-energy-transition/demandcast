@@ -96,6 +96,7 @@ TIME_ZONES = {
     "MEX": "America/Mexico_City",
     "MKD": "Europe/Skopje",
     "MNE": "Europe/Podgorica",
+    "MYS": "Asia/Kuala_Lumpur",
     "NGA": "Africa/Lagos",
     "NIC": "America/Managua",
     "NLD": "Europe/Amsterdam",
