@@ -29,10 +29,13 @@ Description:
     hour that the API gives twice when daylight saving time ends, or
     once, is left out.
 
-    Each series of the IEA is the data of a system operator, whose
-    terms also apply. The IEA republishes the data of the EIA, ENTSO-E,
-    the CCEI and OCCTO, so it is compiled in the yaml file and ranks
-    after them (see cleaning/combining.py).
+    Each series of the IEA is the data of a system operator, whose terms
+    also apply. Those of GSO, the operator of Peninsular Malaysia,
+    forbid downloading and storing the content of its own website
+    without the written consent of TNB; its series is taken from the
+    publication of the IEA. The IEA republishes the data of the EIA,
+    ENTSO-E, the CCEI and OCCTO, so it is compiled in the yaml file and
+    ranks after them (see cleaning/combining.py).
 
     Source: https://www.iea.org/data-and-statistics/data-tools/real-time-electricity-tracker
 """

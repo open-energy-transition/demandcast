@@ -905,6 +905,10 @@ entities:
     country_name: Mexico
     subdivision_code: PEN
     subdivision_name: Peninsular
+  - country_code: MYS
+    country_name: Malaysia
+    subdivision_code: PENINSULAR
+    subdivision_name: Peninsular Malaysia
   - country_code: NIC
     country_name: Nicaragua
     subdivision_code: SIN
