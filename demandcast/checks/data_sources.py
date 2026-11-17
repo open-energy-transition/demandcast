@@ -47,6 +47,10 @@ DAYS_AFTER_END_DATE = 7
 # The name of the files of the report, without extension.
 REPORT_NAME = "data_sources_report"
 
+# The readers of Excel files, which pandas imports when it first reads
+# one.
+EXCEL_READERS = ("openpyxl", "xlrd")
+
 
 @dataclasses.dataclass
 class Result:
@@ -409,6 +413,39 @@ def _write_report(results: list[Result], checked_at: dt.datetime) -> None:
     logging.info(f"Report saved to {file_path}.json and {file_path}.md.")
 
 
+def _import_modules(data_sources: list[str]) -> None:
+    """
+    Import the modules of the data sources and the Excel readers.
+
+    Parameters
+    ----------
+    data_sources : list[str]
+        The data sources whose modules are imported.
+
+    Notes
+    -----
+    The data sources are checked in threads, and Python can give a
+    thread a module that another thread is still importing, partially
+    initialized, such as a reader of Excel files that two data sources
+    use. The modules are therefore imported before the threads start. A
+    module that fails to import here is imported again in its thread,
+    which reports the error in the result of its data source.
+    """
+    for name in [
+        *(
+            f"retrievals.electricity_demand_data_sources.{data_source}"
+            for data_source in data_sources
+        ),
+        *EXCEL_READERS,
+    ]:
+        try:
+            importlib.import_module(name)
+        except Exception:
+            logging.warning(
+                f"The module {name} could not be imported.", exc_info=True
+            )
+
+
 def run_check(
     data_sources: list[str] | None = None,
     maximum_age_days: int = 60,
@@ -455,8 +492,10 @@ def run_check(
     -----
     Each data source is checked in its own thread, since each one is
     another website. The threads are daemons, so that a website that
-    does not answer cannot keep the check from ending. The failures in
-    a row are counted since a website can be out of reach for a while.
+    does not answer cannot keep the check from ending. The modules of
+    the data sources and the readers of Excel files are imported before
+    the threads start (see _import_modules). The failures in a row are
+    counted since a website can be out of reach for a while.
     """
     all_data_sources = sorted(utils.data_sources.read_data_sources())
     if data_sources is None:
@@ -483,6 +522,13 @@ def run_check(
         )
 
     # Check the data sources at the same time.
+    _import_modules(
+        [
+            data_source
+            for data_source in data_sources
+            if data_source not in skip_reasons
+        ]
+    )
     threads = {}
     for data_source in data_sources:
         if data_source in skip_reasons:
