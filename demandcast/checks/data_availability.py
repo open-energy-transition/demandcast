@@ -293,9 +293,10 @@ def get_data_availability() -> pd.DataFrame:
     for entity_code in data_availability.index:
         shape = utils.shapes.get_entity_shape(entity_code, make_plot=False)
 
-        # Get the area of the country in square kilometers.
+        # Get the area of all the polygons of the shape in square
+        # kilometers.
         area = (
-            shape.geometry.set_crs(epsg=4326).to_crs("+proj=cea").area.iloc[0]
+            shape.geometry.set_crs(epsg=4326).to_crs("+proj=cea").area.sum()
             / 10**6
         )
 
