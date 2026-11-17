@@ -1,0 +1,854 @@
+licence:
+  redistribute: false
+  terms: CC BY 4.0 license for the tracker of the IEA. The terms of the system operators whose data it republishes also apply.
+  url: https://www.iea.org/data-and-statistics/data-tools/real-time-electricity-tracker
+compiled: true
+republishes:
+  - ccei
+  - eia
+  - entsoe
+  - occto
+definition:
+  - start_date: 2009-01-01
+    quantity: demand of the system operators, republished by the IEA
+    embedded_generation: unknown
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The IEA republishes the demand of the system operators, so its definition is that of each operator.
+entities:
+  - country_name: Albania
+    country_code: ALB
+    start_date: 2015-01-04
+    end_date: today
+  - country_name: Argentina
+    country_code: ARG
+    start_date: 2015-01-01
+    end_date: today
+  - subdivision_name: New South Wales
+    subdivision_code: NSW
+    country_name: Australia
+    country_code: AUS
+    start_date: 2015-01-01
+    end_date: today
+    time_zone: Australia/Sydney
+  - subdivision_name: Darwin-Katherine Interconnected System
+    subdivision_code: DKIS
+    country_name: Australia
+    country_code: AUS
+    start_date: 2015-10-23
+    end_date: 2026-04-05
+    time_zone: Australia/Darwin
+  - subdivision_name: Queensland region of the NEM
+    subdivision_code: QLD1
+    country_name: Australia
+    country_code: AUS
+    start_date: 2015-01-01
+    end_date: today
+    time_zone: Australia/Brisbane
+  - subdivision_name: South Australia region of the NEM
+    subdivision_code: SA1
+    country_name: Australia
+    country_code: AUS
+    start_date: 2015-01-01
+    end_date: today
+    time_zone: Australia/Adelaide
+  - subdivision_name: Tasmania
+    subdivision_code: TAS
+    country_name: Australia
+    country_code: AUS
+    start_date: 2015-01-01
+    end_date: today
+    time_zone: Australia/Hobart
+  - subdivision_name: Victoria
+    subdivision_code: VIC
+    country_name: Australia
+    country_code: AUS
+    start_date: 2015-01-01
+    end_date: today
+    time_zone: Australia/Melbourne
+  - subdivision_name: South West Interconnected System
+    subdivision_code: SWIS
+    country_name: Australia
+    country_code: AUS
+    start_date: 2020-01-01
+    end_date: today
+    time_zone: Australia/Perth
+  - country_name: Austria
+    country_code: AUT
+    start_date: 2014-12-06
+    end_date: today
+  - country_name: Belgium
+    country_code: BEL
+    start_date: 2014-12-06
+    end_date: today
+  - country_name: Bangladesh
+    country_code: BGD
+    start_date: 2015-04-17
+    end_date: 2026-08-31
+  - country_name: Bulgaria
+    country_code: BGR
+    start_date: 2014-12-31
+    end_date: today
+  - country_name: Bosnia and Herzegovina
+    country_code: BIH
+    start_date: 2017-02-27
+    end_date: today
+  - subdivision_name: National Interconnected System in Beni
+    subdivision_code: SIN-B
+    country_name: Bolivia, Plurinational State of
+    country_code: BOL
+    start_date: 2020-01-01
+    end_date: today
+    time_zone: America/La_Paz
+  - subdivision_name: Cochabamba
+    subdivision_code: C
+    country_name: Bolivia, Plurinational State of
+    country_code: BOL
+    start_date: 2015-01-01
+    end_date: today
+    time_zone: America/La_Paz
+  - subdivision_name: Chuquisaca
+    subdivision_code: H
+    country_name: Bolivia, Plurinational State of
+    country_code: BOL
+    start_date: 2015-01-01
+    end_date: today
+    time_zone: America/La_Paz
+  - subdivision_name: La Paz
+    subdivision_code: L
+    country_name: Bolivia, Plurinational State of
+    country_code: BOL
+    start_date: 2015-01-01
+    end_date: today
+    time_zone: America/La_Paz
+  - subdivision_name: Oruro
+    subdivision_code: O
+    country_name: Bolivia, Plurinational State of
+    country_code: BOL
+    start_date: 2015-01-01
+    end_date: today
+    time_zone: America/La_Paz
+  - subdivision_name: Potosí
+    subdivision_code: P
+    country_name: Bolivia, Plurinational State of
+    country_code: BOL
+    start_date: 2015-01-01
+    end_date: today
+    time_zone: America/La_Paz
+  - subdivision_name: National Interconnected System in Santa Cruz
+    subdivision_code: SIN-S
+    country_name: Bolivia, Plurinational State of
+    country_code: BOL
+    start_date: 2015-01-01
+    end_date: today
+    time_zone: America/La_Paz
+  - subdivision_name: Tarija
+    subdivision_code: T
+    country_name: Bolivia, Plurinational State of
+    country_code: BOL
+    start_date: 2015-01-01
+    end_date: today
+    time_zone: America/La_Paz
+  - subdivision_name: North of 2000
+    subdivision_code: N-2000
+    country_name: Brazil
+    country_code: BRA
+    start_date: 2010-01-01
+    end_date: 2012-12-31
+    time_zone: America/Belem
+  - subdivision_name: North of 2013
+    subdivision_code: N-2013
+    country_name: Brazil
+    country_code: BRA
+    start_date: 2013-01-01
+    end_date: 2014-12-31
+    time_zone: America/Belem
+  - subdivision_name: North of 2015
+    subdivision_code: N-2015
+    country_name: Brazil
+    country_code: BRA
+    start_date: 2015-01-01
+    end_date: 2024-12-31
+    time_zone: America/Belem
+  - subdivision_name: North
+    subdivision_code: N
+    country_name: Brazil
+    country_code: BRA
+    start_date: 2025-01-01
+    end_date: today
+    time_zone: America/Belem
+  - subdivision_name: North-East
+    subdivision_code: NE
+    country_name: Brazil
+    country_code: BRA
+    start_date: 2010-01-01
+    end_date: today
+    time_zone: America/Fortaleza
+  - subdivision_name: South-East/Centre-West of 2009
+    subdivision_code: SE-2009
+    country_name: Brazil
+    country_code: BRA
+    start_date: 2010-01-01
+    end_date: 2022-12-31
+    time_zone: America/Sao_Paulo
+  - subdivision_name: South-East/Centre-West
+    subdivision_code: SE
+    country_name: Brazil
+    country_code: BRA
+    start_date: 2023-01-01
+    end_date: today
+    time_zone: America/Sao_Paulo
+  - subdivision_name: South
+    subdivision_code: S
+    country_name: Brazil
+    country_code: BRA
+    start_date: 2010-01-01
+    end_date: today
+    time_zone: America/Sao_Paulo
+  - subdivision_name: Alberta
+    subdivision_code: AB
+    country_name: Canada
+    country_code: CAN
+    start_date: 2026-03-13
+    end_date: today
+    time_zone: America/Edmonton
+  - subdivision_name: British Columbia
+    subdivision_code: BC
+    country_name: Canada
+    country_code: CAN
+    start_date: 2026-04-19
+    end_date: today
+    time_zone: America/Vancouver
+  - subdivision_name: New Brunswick
+    subdivision_code: NB
+    country_name: Canada
+    country_code: CAN
+    start_date: 2026-06-26
+    end_date: today
+    time_zone: America/Moncton
+  - subdivision_name: Island Interconnected System
+    subdivision_code: NL-ISLAND
+    country_name: Canada
+    country_code: CAN
+    start_date: 2026-06-25
+    end_date: today
+    time_zone: America/St_Johns
+  - subdivision_name: Nova Scotia
+    subdivision_code: NS
+    country_name: Canada
+    country_code: CAN
+    start_date: 2026-06-26
+    end_date: today
+    time_zone: America/Halifax
+  - subdivision_name: Ontario
+    subdivision_code: "ON"
+    country_name: Canada
+    country_code: CAN
+    start_date: 2022-11-08
+    end_date: today
+    time_zone: America/Toronto
+  - subdivision_name: Prince Edward Island
+    subdivision_code: PE
+    country_name: Canada
+    country_code: CAN
+    start_date: 2026-03-13
+    end_date: today
+    time_zone: America/Halifax
+  - subdivision_name: Integrated network of Québec
+    subdivision_code: QC-INTEGRATED
+    country_name: Canada
+    country_code: CAN
+    start_date: 2022-10-03
+    end_date: today
+    time_zone: America/Montreal
+  - subdivision_name: Yukon Integrated System
+    subdivision_code: YT-INTEGRATED
+    country_name: Canada
+    country_code: CAN
+    start_date: 2026-06-17
+    end_date: today
+    time_zone: America/Whitehorse
+  - country_name: Switzerland
+    country_code: CHE
+    start_date: 2014-12-31
+    end_date: today
+  - subdivision_name: National Electric System
+    subdivision_code: SEN
+    country_name: Chile
+    country_code: CHL
+    start_date: 2018-01-01
+    end_date: 2026-05-13
+    time_zone: America/Santiago
+  - subdivision_name: National Interconnected System
+    subdivision_code: SIN
+    country_name: Colombia
+    country_code: COL
+    start_date: 2017-01-01
+    end_date: 2025-05-01
+    time_zone: America/Bogota
+  - country_name: Costa Rica
+    country_code: CRI
+    start_date: 2014-12-31
+    end_date: today
+  - country_name: Cyprus
+    country_code: CYP
+    start_date: 2016-09-21
+    end_date: today
+  - country_name: Czech Republic
+    country_code: CZE
+    start_date: 2014-12-25
+    end_date: today
+  - country_name: Germany
+    country_code: DEU
+    start_date: 2014-12-31
+    end_date: today
+  - country_name: Denmark
+    country_code: DNK
+    start_date: 2014-12-31
+    end_date: today
+  - subdivision_name: Peninsular Spain
+    subdivision_code: PENINSULAR
+    country_name: Spain
+    country_code: ESP
+    start_date: 2014-12-19
+    end_date: today
+    time_zone: Europe/Madrid
+  - country_name: Estonia
+    country_code: EST
+    start_date: 2014-12-15
+    end_date: today
+  - country_name: Finland
+    country_code: FIN
+    start_date: 2014-12-19
+    end_date: today
+  - subdivision_name: Continental France
+    subdivision_code: CONTINENTAL
+    country_name: France
+    country_code: FRA
+    start_date: 2014-12-15
+    end_date: today
+    time_zone: Europe/Paris
+  - subdivision_name: Great Britain
+    subdivision_code: GB
+    country_name: United Kingdom
+    country_code: GBR
+    start_date: 2015-01-01
+    end_date: today
+    time_zone: Europe/London
+  - subdivision_name: Power system of GSE
+    subdivision_code: GSE
+    country_name: Georgia
+    country_code: GEO
+    start_date: 2022-01-29
+    end_date: today
+    time_zone: Asia/Tbilisi
+  - subdivision_name: Interconnected System of Greece
+    subdivision_code: INTERCONNECTED
+    country_name: Greece
+    country_code: GRC
+    start_date: 2014-12-29
+    end_date: today
+    time_zone: Europe/Athens
+  - country_name: Guatemala
+    country_code: GTM
+    start_date: 2024-02-05
+    end_date: today
+  - subdivision_name: National Interconnected System
+    subdivision_code: SIN
+    country_name: Honduras
+    country_code: HND
+    start_date: 2024-02-05
+    end_date: today
+    time_zone: America/Tegucigalpa
+  - country_name: Croatia
+    country_code: HRV
+    start_date: 2014-12-31
+    end_date: today
+  - country_name: Hungary
+    country_code: HUN
+    start_date: 2014-12-22
+    end_date: today
+  - country_name: India
+    country_code: IND
+    start_date: 2018-11-21
+    end_date: today
+  - country_name: Ireland
+    country_code: IRL
+    start_date: 2015-01-01
+    end_date: today
+  - country_name: Iran, Islamic Republic of
+    country_code: IRN
+    start_date: 2014-12-06
+    end_date: 2026-02-04
+  - country_name: Italy
+    country_code: ITA
+    start_date: 2014-12-31
+    end_date: today
+  - subdivision_name: Chūbu
+    subdivision_code: Chūbu
+    country_name: Japan
+    country_code: JPN
+    start_date: 2017-01-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Chūgoku
+    subdivision_code: Chūgoku
+    country_name: Japan
+    country_code: JPN
+    start_date: 2017-01-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Hokkaidō
+    subdivision_code: Hokkaidō
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Hokuriku
+    subdivision_code: Hokuriku
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Kansai
+    subdivision_code: Kansai
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Kantō
+    subdivision_code: Kantō
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Kyūshū
+    subdivision_code: Kyūshū
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-01-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Okinawa
+    subdivision_code: Okinawa
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-03-31
+    end_date: 2026-10-09
+    time_zone: Asia/Tokyo
+  - subdivision_name: Shikoku
+    subdivision_code: Shikoku
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - subdivision_name: Tōhoku
+    subdivision_code: Tōhoku
+    country_name: Japan
+    country_code: JPN
+    start_date: 2016-04-01
+    end_date: today
+    time_zone: Asia/Tokyo
+  - country_name: South Korea
+    country_code: KOR
+    start_date: 2017-01-04
+    end_date: today
+  - country_name: Sri Lanka
+    country_code: LKA
+    start_date: 2023-07-18
+    end_date: today
+  - country_name: Lithuania
+    country_code: LTU
+    start_date: 2015-01-01
+    end_date: today
+  - country_name: Luxembourg
+    country_code: LUX
+    start_date: 2014-12-16
+    end_date: today
+  - country_name: Latvia
+    country_code: LVA
+    start_date: 2014-12-22
+    end_date: today
+  - country_name: Moldova
+    country_code: MDA
+    start_date: 2018-12-13
+    end_date: today
+  - subdivision_name: Baja California
+    subdivision_code: BCA
+    country_name: Mexico
+    country_code: MEX
+    start_date: 2020-01-01
+    end_date: 2026-07-31
+    time_zone: America/Tijuana
+  - subdivision_name: Baja California Sur
+    subdivision_code: BCS
+    country_name: Mexico
+    country_code: MEX
+    start_date: 2020-01-01
+    end_date: 2026-07-31
+    time_zone: America/Mazatlan
+  - subdivision_name: Central
+    subdivision_code: CEN
+    country_name: Mexico
+    country_code: MEX
+    start_date: 2020-01-01
+    end_date: 2026-04-30
+    time_zone: America/Mexico_City
+  - subdivision_name: Noreste
+    subdivision_code: NES
+    country_name: Mexico
+    country_code: MEX
+    start_date: 2020-01-01
+    end_date: 2026-04-30
+    time_zone: America/Monterrey
+  - subdivision_name: Noroeste
+    subdivision_code: NOR
+    country_name: Mexico
+    country_code: MEX
+    start_date: 2020-01-01
+    end_date: 2026-04-30
+    time_zone: America/Mazatlan
+  - subdivision_name: Norte
+    subdivision_code: NTE
+    country_name: Mexico
+    country_code: MEX
+    start_date: 2020-01-01
+    end_date: 2026-04-30
+    time_zone: America/Chihuahua
+  - subdivision_name: Occidental
+    subdivision_code: OCC
+    country_name: Mexico
+    country_code: MEX
+    start_date: 2020-01-01
+    end_date: 2026-04-30
+    time_zone: America/Bahia_Banderas
+  - subdivision_name: Oriental
+    subdivision_code: ORI
+    country_name: Mexico
+    country_code: MEX
+    start_date: 2020-01-01
+    end_date: 2026-04-30
+    time_zone: America/Mexico_City
+  - subdivision_name: Peninsular
+    subdivision_code: PEN
+    country_name: Mexico
+    country_code: MEX
+    start_date: 2020-01-01
+    end_date: 2026-04-30
+    time_zone: America/Merida
+  - country_name: North Macedonia
+    country_code: MKD
+    start_date: 2015-01-14
+    end_date: today
+  - country_name: Montenegro
+    country_code: MNE
+    start_date: 2014-12-31
+    end_date: today
+  - country_name: Nigeria
+    country_code: NGA
+    start_date: 2021-11-22
+    end_date: today
+  - subdivision_name: National Interconnected System of 2009
+    subdivision_code: SIN-2009
+    country_name: Nicaragua
+    country_code: NIC
+    start_date: 2009-04-13
+    end_date: 2010-12-31
+    time_zone: America/Managua
+  - subdivision_name: National Interconnected System of 2011
+    subdivision_code: SIN-2011
+    country_name: Nicaragua
+    country_code: NIC
+    start_date: 2011-01-01
+    end_date: 2021-12-31
+    time_zone: America/Managua
+  - subdivision_name: National Interconnected System
+    subdivision_code: SIN
+    country_name: Nicaragua
+    country_code: NIC
+    start_date: 2022-01-01
+    end_date: today
+    time_zone: America/Managua
+  - country_name: Netherlands
+    country_code: NLD
+    start_date: 2014-12-06
+    end_date: today
+  - subdivision_name: Mainland Norway
+    subdivision_code: MAINLAND
+    country_name: Norway
+    country_code: NOR
+    start_date: 2014-12-13
+    end_date: today
+    time_zone: Europe/Oslo
+  - subdivision_name: North Island
+    subdivision_code: NI
+    country_name: New Zealand
+    country_code: NZL
+    start_date: 2020-12-23
+    end_date: today
+    time_zone: Pacific/Auckland
+  - subdivision_name: South Island
+    subdivision_code: SI
+    country_name: New Zealand
+    country_code: NZL
+    start_date: 2020-12-23
+    end_date: today
+    time_zone: Pacific/Auckland
+  - subdivision_name: National Interconnected System
+    subdivision_code: SIN
+    country_name: Panama
+    country_code: PAN
+    start_date: 2024-02-05
+    end_date: today
+    time_zone: America/Panama
+  - subdivision_name: National Interconnected System
+    subdivision_code: SEIN
+    country_name: Peru
+    country_code: PER
+    start_date: 2017-12-31
+    end_date: today
+    time_zone: America/Lima
+  - subdivision_name: Luzon
+    subdivision_code: LUZON
+    country_name: Philippines
+    country_code: PHL
+    start_date: 2020-10-09
+    end_date: today
+    time_zone: Asia/Manila
+  - subdivision_name: Visayas
+    subdivision_code: VISAYAS
+    country_name: Philippines
+    country_code: PHL
+    start_date: 2020-10-09
+    end_date: today
+    time_zone: Asia/Manila
+  - subdivision_name: Mindanao
+    subdivision_code: MINDANAO
+    country_name: Philippines
+    country_code: PHL
+    start_date: 2020-10-09
+    end_date: today
+    time_zone: Asia/Manila
+  - country_name: Poland
+    country_code: POL
+    start_date: 2014-12-30
+    end_date: today
+  - subdivision_name: Mainland Portugal
+    subdivision_code: MAINLAND
+    country_name: Portugal
+    country_code: PRT
+    start_date: 2014-12-08
+    end_date: today
+    time_zone: Europe/Lisbon
+  - country_name: Romania
+    country_code: ROU
+    start_date: 2015-01-05
+    end_date: today
+  - subdivision_name: Centre
+    subdivision_code: CENTER
+    country_name: Russian Federation
+    country_code: RUS
+    start_date: 2022-03-01
+    end_date: 2026-10-08
+    time_zone: Europe/Moscow
+  - subdivision_name: North-West
+    subdivision_code: NORTHWEST
+    country_name: Russian Federation
+    country_code: RUS
+    start_date: 2022-03-01
+    end_date: 2026-10-08
+    time_zone: Europe/Moscow
+  - subdivision_name: Middle Volga
+    subdivision_code: VOLGA
+    country_name: Russian Federation
+    country_code: RUS
+    start_date: 2022-03-01
+    end_date: 2026-10-08
+    time_zone: Europe/Moscow
+  - subdivision_name: South
+    subdivision_code: SOUTH
+    country_name: Russian Federation
+    country_code: RUS
+    start_date: 2022-03-01
+    end_date: 2026-10-08
+    time_zone: Europe/Moscow
+  - subdivision_name: Urals
+    subdivision_code: URALS
+    country_name: Russian Federation
+    country_code: RUS
+    start_date: 2022-03-01
+    end_date: 2026-10-08
+    time_zone: Asia/Yekaterinburg
+  - subdivision_name: Siberia
+    subdivision_code: SIBERIA
+    country_name: Russian Federation
+    country_code: RUS
+    start_date: 2022-03-01
+    end_date: 2026-10-08
+    time_zone: Asia/Krasnoyarsk
+  - subdivision_name: East
+    subdivision_code: EAST
+    country_name: Russian Federation
+    country_code: RUS
+    start_date: 2026-04-25
+    end_date: 2026-10-08
+    time_zone: Asia/Vladivostok
+  - country_name: Singapore
+    country_code: SGP
+    start_date: 2016-04-28
+    end_date: today
+  - country_name: El Salvador
+    country_code: SLV
+    start_date: 2024-02-05
+    end_date: today
+  - country_name: Serbia
+    country_code: SRB
+    start_date: 2015-01-01
+    end_date: today
+  - country_name: Slovakia
+    country_code: SVK
+    start_date: 2014-12-17
+    end_date: today
+  - country_name: Slovenia
+    country_code: SVN
+    start_date: 2014-12-30
+    end_date: today
+  - country_name: Sweden
+    country_code: SWE
+    start_date: 2014-12-31
+    end_date: today
+  - country_name: Thailand
+    country_code: THA
+    start_date: 2025-07-01
+    end_date: today
+  - country_name: Turkey
+    country_code: TUR
+    start_date: 2015-12-31
+    end_date: today
+  - country_name: Taiwan
+    country_code: TWN
+    start_date: 2025-01-01
+    end_date: today
+  - subdivision_name: Integrated Power System of Ukraine
+    subdivision_code: IPS
+    country_name: Ukraine
+    country_code: UKR
+    start_date: 2015-01-01
+    end_date: 2022-02-28
+    time_zone: Europe/Kyiv
+  - subdivision_name: Integrated Power System of Ukraine of 2022
+    subdivision_code: IPS-2022
+    country_name: Ukraine
+    country_code: UKR
+    start_date: 2022-03-01
+    end_date: 2022-10-27
+    time_zone: Europe/Kyiv
+  - country_name: Uruguay
+    country_code: URY
+    start_date: 2020-01-01
+    end_date: today
+  - subdivision_name: California
+    subdivision_code: CAL
+    country_name: United States
+    country_code: USA
+    start_date: 2018-10-31
+    end_date: today
+    time_zone: America/Los_Angeles
+  - subdivision_name: Carolinas
+    subdivision_code: CAR
+    country_name: United States
+    country_code: USA
+    start_date: 2018-10-31
+    end_date: today
+    time_zone: America/New_York
+  - subdivision_name: Central
+    subdivision_code: CENT
+    country_name: United States
+    country_code: USA
+    start_date: 2018-10-31
+    end_date: today
+    time_zone: America/Chicago
+  - subdivision_name: Florida
+    subdivision_code: FLA
+    country_name: United States
+    country_code: USA
+    start_date: 2018-10-31
+    end_date: today
+    time_zone: America/New_York
+  - subdivision_name: Mid-Atlantic
+    subdivision_code: MIDA
+    country_name: United States
+    country_code: USA
+    start_date: 2018-10-31
+    end_date: today
+    time_zone: America/New_York
+  - subdivision_name: Midwest
+    subdivision_code: MIDW
+    country_name: United States
+    country_code: USA
+    start_date: 2018-10-31
+    end_date: today
+    time_zone: America/Chicago
+  - subdivision_name: New England
+    subdivision_code: NE
+    country_name: United States
+    country_code: USA
+    start_date: 2018-10-31
+    end_date: today
+    time_zone: America/New_York
+  - subdivision_name: Northwest
+    subdivision_code: NW
+    country_name: United States
+    country_code: USA
+    start_date: 2018-10-31
+    end_date: today
+    time_zone: America/Los_Angeles
+  - subdivision_name: New York
+    subdivision_code: NY
+    country_name: United States
+    country_code: USA
+    start_date: 2018-10-31
+    end_date: today
+    time_zone: America/New_York
+  - subdivision_name: Southeast
+    subdivision_code: SE
+    country_name: United States
+    country_code: USA
+    start_date: 2018-10-31
+    end_date: today
+    time_zone: America/New_York
+  - subdivision_name: Southwest
+    subdivision_code: SW
+    country_name: United States
+    country_code: USA
+    start_date: 2018-10-31
+    end_date: today
+    time_zone: America/Phoenix
+  - subdivision_name: Tennessee
+    subdivision_code: TEN
+    country_name: United States
+    country_code: USA
+    start_date: 2018-10-31
+    end_date: today
+    time_zone: America/Chicago
+  - subdivision_name: Texas
+    subdivision_code: TEX
+    country_name: United States
+    country_code: USA
+    start_date: 2018-10-31
+    end_date: today
+    time_zone: America/Chicago
+  - country_name: Kosovo
+    country_code: XKX
+    start_date: 2022-09-08
+    end_date: today
+  - country_name: South Africa
+    country_code: ZAF
+    start_date: 2017-04-01
+    end_date: today

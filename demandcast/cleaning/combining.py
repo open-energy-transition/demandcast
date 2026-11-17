@@ -16,9 +16,11 @@ Description:
        file of the data source, such as CAISO for California).
     2. The data of the system operators before the data that a source
        republishes (compiled in the yaml file of the data source, such
-       as the EIA): a copy cannot count more than the original, even
-       when its definition is less known, as for the CCEI, whose
-       definition differs by province.
+       as the EIA), and that before the data that a source republishes
+       from such sources (republishes in the yaml file, such as the
+       IEA): a copy cannot count more than the original, even when its
+       definition is less known, as for the CCEI, whose definition
+       differs by province.
     3. By the definition of their demand, on average over their hours:
        the gross demand (with the embedded generation included or
        added) before the one that counts only part of it, before the
@@ -361,7 +363,7 @@ def _rank_data_sources(
         The data sources, from the best.
     """
 
-    def key(data_source: str) -> tuple[bool, bool, float, int]:
+    def key(data_source: str) -> tuple[bool, int, float, int]:
         """
         Get the key that sorts a data source, from the best.
 
@@ -372,9 +374,9 @@ def _rank_data_sources(
 
         Returns
         -------
-        tuple[bool, bool, float, int]
-            Whether it covers only part of the area, whether it is
-            compiled, the mean rank of the definition of its hours, and
+        tuple[bool, int, float, int]
+            Whether it covers only part of the area, its compilation
+            level, the mean rank of the definition of its hours, and
             minus its number of hours.
         """
         entity = next(
@@ -384,7 +386,7 @@ def _rank_data_sources(
         )
         return (
             not entity.same_area,
-            utils.data_sources.read_compiled(data_source),
+            utils.data_sources.read_compilation_level(data_source),
             float(ranks[data_source].mean()),
             -len(cleaned[data_source]),
         )

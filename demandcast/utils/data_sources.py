@@ -165,13 +165,16 @@ class _DataSourceFile(BaseModel):
     The content of the yaml file of a data source.
 
     A data source is compiled when it republishes the data of the system
-    operators, such as the EIA, rather than its own.
+    operators, such as the EIA, rather than its own. A compiled data
+    source can also republish the data of other compiled data sources,
+    which it lists in republishes.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     licence: DataSourceLicence
     compiled: bool = False
+    republishes: list[str] = []
     definition: list[DataSourceDefinition]
     entities: list[DataSourceEntity]
 
@@ -196,6 +199,11 @@ class _DataSourceFile(BaseModel):
             raise ValueError(
                 "The definition needs periods with start dates in order, "
                 f"not {dates}."
+            )
+        if self.republishes and not self.compiled:
+            raise ValueError(
+                "A data source that republishes other data sources is "
+                "compiled."
             )
         return self
 
@@ -328,9 +336,9 @@ def read_licence(data_source: str) -> DataSourceLicence:
     return _read_data_source_file(data_source).licence
 
 
-def read_compiled(data_source: str) -> bool:
+def read_compilation_level(data_source: str) -> int:
     """
-    Read whether a data source republishes the data of other sources.
+    Read how far a data source is from the system operators.
 
     Parameters
     ----------
@@ -339,10 +347,19 @@ def read_compiled(data_source: str) -> bool:
 
     Returns
     -------
-    bool
-        Whether the data source is compiled, from its yaml file.
+    int
+        0 for a data source that publishes its own data, 1 for one that
+        republishes the data of the system operators (compiled in its
+        yaml file), and one more than the highest level of the compiled
+        data sources that it republishes (republishes in its yaml file).
     """
-    return _read_data_source_file(data_source).compiled
+    content = _read_data_source_file(data_source)
+    if not content.compiled:
+        return 0
+    return 1 + max(
+        (read_compilation_level(source) for source in content.republishes),
+        default=0,
+    )
 
 
 def read_definition(data_source: str) -> list[DataSourceDefinition]:

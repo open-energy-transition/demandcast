@@ -402,12 +402,26 @@ def test_compiled_data_sources_and_areas():
     """
     Test the compiled data sources and the data of part of an area.
 
-    The EIA republishes the data of others, and the data of CAISO covers
-    only part of the area of its code.
+    The EIA republishes the data of the system operators, the IEA also
+    that of the EIA, and the data of CAISO covers the area of its code.
     """
-    assert utils.data_sources.read_compiled("eia")
-    assert not utils.data_sources.read_compiled("caiso")
+    assert utils.data_sources.read_compilation_level("caiso") == 0
+    assert utils.data_sources.read_compilation_level("eia") == 1
+    assert utils.data_sources.read_compilation_level("iea") == 2
     caiso = utils.data_sources.read_entities("caiso")[0]
     assert caiso.code == "USA_CAISO"
     assert caiso.same_area
     assert utils.data_sources.read_entities("isone")[0].same_area
+
+
+def test_republishing_data_source_is_compiled():
+    """Test that a data source that republishes others is compiled."""
+    with pytest.raises(ValueError, match="republishes"):
+        utils.data_sources._DataSourceFile.model_validate(
+            {
+                "licence": LICENCE,
+                "republishes": ["eia"],
+                "definition": [DEFINITION_PERIOD],
+                "entities": [],
+            }
+        )

@@ -274,6 +274,22 @@ def test_data_source_of_part_of_the_area_ranks_last(monkeypatch):
     assert combined["Source"].eq("eia").all()
 
 
+def test_copy_of_a_compiled_data_source_ranks_after_it():
+    """
+    Test that a copy of a compiled data source ranks after it.
+
+    The IEA republishes the net demand of the EIA, whose definition
+    ranks after the unknown one of the IEA, and its data is longer.
+    """
+    _save_cleaned("USA_TEX", "eia", _hourly("2021-01-01", "2021-12-31 23:00"))
+    _save_cleaned("USA_TEX", "iea", _hourly("2020-01-01", "2021-12-31 23:00"))
+
+    combined = cleaning.combining.combine_data("USA_TEX")
+
+    assert combined is not None
+    assert _on_day(combined, "Source", "2021-06-01").eq("eia").all()
+
+
 def test_longer_data_ranks_first():
     """Test that the longer of two equal data sources ranks first."""
     _save_cleaned(
