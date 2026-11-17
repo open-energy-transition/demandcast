@@ -24,7 +24,12 @@ Description:
       eastern standard time, and those of Baja California and Baja
       California Sur in their own time zones (CODE_TIME_ZONES).
 
-    The times of the countries and regions that DemandCast does not
+    The times of the earlier years of some series follow other rules,
+    which DemandCast does not apply: those of Colombia until 2023 are
+    about three hours later than in the data of XM, and those of Chūbu
+    until 2019 and of Chūgoku and Tōhoku until 2018 two hours later than
+    in the data of OCCTO, so these series start in the next year. The
+    times of the countries and regions that DemandCast does not
     retrieve from another source are taken as those of the others. The
     hour that the API gives twice when daylight saving time ends, or
     once, is left out.
