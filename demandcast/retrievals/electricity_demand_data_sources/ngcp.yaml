@@ -4,14 +4,59 @@ licence:
   url: https://ngcp.ph
 definition:
   - start_date: 2013-01-01
-    quantity: demand of the grids of Luzon, Visayas and Mindanao
+    quantity: demand of the grid
     embedded_generation: unknown
     network_losses: unknown
     storage_charging: unknown
     power_plant_use: unknown
     note: The demand of NGCP is not defined in its public documents. Its midday falls steadily compared with the morning and afternoon, from 1.098 in 2013 to 1.058 in 2025, which can be net-metered solar left out.
 entities:
-  - country_name: Philippines
+  - subdivision_name: Bohol
+    subdivision_code: BOHOL
+    country_name: Philippines
     country_code: PHL
     start_date: 2013-01-01
     end_date: 2025-12-31
+    time_zone: Asia/Manila
+  - subdivision_name: Cebu
+    subdivision_code: CEBU
+    country_name: Philippines
+    country_code: PHL
+    start_date: 2013-01-01
+    end_date: 2025-12-31
+    time_zone: Asia/Manila
+  - subdivision_name: Leyte-Samar
+    subdivision_code: LEYTE-SAMAR
+    country_name: Philippines
+    country_code: PHL
+    start_date: 2013-01-01
+    end_date: 2025-12-31
+    time_zone: Asia/Manila
+  - subdivision_name: Luzon
+    subdivision_code: LUZON
+    country_name: Philippines
+    country_code: PHL
+    start_date: 2013-01-01
+    end_date: 2025-12-31
+    time_zone: Asia/Manila
+  - subdivision_name: Mindanao
+    subdivision_code: MINDANAO
+    country_name: Philippines
+    country_code: PHL
+    start_date: 2013-01-01
+    end_date: 2025-12-31
+    time_zone: Asia/Manila
+  - subdivision_name: Negros
+    subdivision_code: NEGROS
+    country_name: Philippines
+    country_code: PHL
+    start_date: 2013-01-01
+    end_date: 2025-12-31
+    time_zone: Asia/Manila
+  - subdivision_name: Panay
+    subdivision_code: PANAY
+    country_name: Philippines
+    country_code: PHL
+    start_date: 2013-01-01
+    end_date: 2025-12-31
+    time_zone: Asia/Manila

@@ -7,12 +7,17 @@ Description:
     data from the website of the National Grid Corporation of the
     Philippines (NGCP). The data is retrieved all at once.
 
-    The Excel file gives the hourly demand in MW of the grids of Luzon,
-    Visayas and Mindanao, by date and hour ending from 1 to 24 in the
-    time of the Philippines, which has no daylight saving time. The
-    demand of the country is their sum, for the hours with the demand
-    of all three; the other five sheets are parts of Visayas, which the
-    sheet of Visayas already counts.
+    The Excel file gives the hourly demand in MW of each grid, in its
+    own sheet, by date and hour ending from 1 to 24 in the time of the
+    Philippines, which has no daylight saving time: Luzon, Mindanao,
+    and the five grids of the Visayas (Bohol, Cebu, Leyte-Samar, Negros
+    and Panay), whose sum is also given in a sheet of the Visayas, which
+    is not retrieved. The five grids add up to the Visayas, but from
+    April to December 2023, when they are 3% to 4% lower. The grids
+    leave out the islands off the grid, such as Mindoro, Palawan and
+    Masbate, and Basilan, Sulu and Tawi-Tawi. The rows of the names of
+    the columns differ by sheet, so each sheet is read from its row
+    that starts with DATE.
 
     Source: https://www.ngcp.ph/operations#operations
 """
@@ -22,6 +27,17 @@ import datetime as dt
 import pandas as pd
 
 import utils.fetcher
+
+# The first word of the name of the sheet of each grid.
+SHEETS = {
+    "PHL_BOHOL": "BOHOL",
+    "PHL_CEBU": "CEBU",
+    "PHL_LEYTE-SAMAR": "LEY-SAM",
+    "PHL_LUZON": "LUZON",
+    "PHL_MINDANAO": "MINDANAO",
+    "PHL_NEGROS": "NEGROS",
+    "PHL_PANAY": "PANAY",
+}
 
 
 def get_available_requests(
@@ -36,7 +52,7 @@ def get_available_requests(
     Parameters
     ----------
     code : str
-        The code of the Philippines.
+        The code of the grid.
     start_date : datetime.date
         The first day of the data.
     end_date : datetime.date
@@ -73,7 +89,7 @@ def download_and_extract_data_for_request(
     request : None
         The single request of the data, without parameters.
     code : str
-        The code of the Philippines.
+        The code of the grid.
 
     Returns
     -------
@@ -82,92 +98,51 @@ def download_and_extract_data_for_request(
 
     Raises
     ------
-    TypeError
-        If the extracted data is not a pandas ExcelFile or DataFrame.
     ValueError
-        If the Excel file does not have the sheets of the main regions.
+        If the Excel file has no sheet of the grid, or the sheet has no
+        row that starts with DATE.
     """
-    url = get_url()
-
-    # Download the Excel file once, and read its sheets below.
+    # Download the Excel file as a browser.
     excel_file = utils.fetcher.fetch_excel_file(
-        url,
+        get_url(),
         header_params={"User-Agent": "Mozilla/5.0"},
     )
 
-    # Define the main regions in the Philippines.
-    regions = ["LUZON", "VISAYAS", "MINDANAO"]
-
-    # Find the sheets of the main regions.
-    sheet_names = {
-        sheet.split(" ")[0].upper(): sheet
+    sheet_names = [
+        sheet
         for sheet in map(str, excel_file.sheet_names)
-        if sheet.split(" ")[0].upper() in regions
-    }
-
-    if len(sheet_names) < 3:
+        if sheet.split(" ")[0].upper() == SHEETS[code]
+    ]
+    if not sheet_names:
         raise ValueError(
-            "The extracted Excel file from NGCP does not contain all "
-            "the required sheets for the main regions: Luzon, Visayas, "
-            "and Mindanao."
+            f"The Excel file of NGCP has no sheet of {SHEETS[code]}."
         )
 
-    # Define the number of rows to skip for each region's sheet.
-    rows_to_skip = {
-        "LUZON": 1,
-        "VISAYAS": 2,
-        "MINDANAO": 1,
-    }
-
-    all_data = []
-
-    # Read and process each sheet individually.
-    for region in regions:
-        dataset = pd.read_excel(
-            excel_file,
-            sheet_name=sheet_names[region],
-            skiprows=rows_to_skip[region],
+    sheet = pd.read_excel(excel_file, sheet_name=sheet_names[0], header=None)
+    header_rows = sheet.index[
+        sheet.iloc[:, 0].astype(str).str.strip().str.upper() == "DATE"
+    ]
+    if header_rows.empty:
+        raise ValueError(
+            f"The sheet {sheet_names[0]} of NGCP has no row of the names "
+            "of the columns."
         )
 
-        if not isinstance(dataset, pd.DataFrame):
-            raise TypeError(
-                f"The extracted data is a {type(dataset)} object, "
-                "expected a pandas DataFrame."
-            )
-
-        # Keep only "Date" and hours 1 to 24.
-        selected_columns = ["DATE", *range(1, 25)]
-        dataset = dataset.loc[:, selected_columns]
-
-        # Reshape to long format.
-        dataset = dataset.melt(
-            id_vars=["DATE"], var_name="Hour", value_name="Demand"
-        )
-        dataset["Hour"] = pd.to_numeric(dataset["Hour"])
-        dataset["Demand"] = pd.to_numeric(dataset["Demand"])
-
-        # Convert date and hour columns into hourly timestamps.
-        dataset["Datetime"] = pd.to_datetime(
-            dataset["DATE"]
-        ) + pd.to_timedelta(dataset["Hour"], unit="h")
-
-        # Retain only Datetime and Demand columns.
-        dataset = dataset[["Datetime", "Demand"]]
-        all_data.append(dataset)
-
-    # Sum the demand of the regions.
-    combined = pd.concat(all_data)
-    combined = (
-        combined.groupby("Datetime").sum(min_count=len(regions)).sort_index()
+    # Keep the dates and the hours 1 to 24 of the rows of the days.
+    dataset = sheet.iloc[header_rows[0] + 1 :, :25]
+    dataset.columns = ["DATE", *range(1, 25)]
+    dataset = dataset[pd.to_datetime(dataset["DATE"], errors="coerce").notna()]
+    dataset = dataset.melt(
+        id_vars=["DATE"], var_name="Hour", value_name="Demand"
     )
 
+    # The hours ending from 1 to 24 become the ends of the hours.
+    times = pd.to_datetime(dataset["DATE"]) + pd.to_timedelta(
+        dataset["Hour"].astype(int), unit="h"
+    )
     electricity_demand_time_series = pd.Series(
-        combined["Demand"].values, index=combined.index
-    )
+        pd.to_numeric(dataset["Demand"], errors="coerce").to_numpy(),
+        index=times,
+    ).sort_index()
 
-    # Add the timezone information to the index.
-    electricity_demand_time_series = (
-        electricity_demand_time_series.tz_localize("Asia/Manila")
-    )
-
-    return electricity_demand_time_series
+    return electricity_demand_time_series.tz_localize("Asia/Manila")
