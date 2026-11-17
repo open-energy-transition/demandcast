@@ -20,6 +20,7 @@ from pydantic import ValidationError
 
 import utils.config
 import utils.paths
+import utils.relations
 
 # The column of the local year of each row. assemble.py computes the
 # target as the fraction of the annual total of each entity and local
@@ -373,6 +374,8 @@ def _split_temporally(
     validation_set: bool,
     group_column: str,
     splitter_column: str,
+    time_column: str | None = None,
+    related: dict[str, set[str]] | None = None,
 ) -> dict[str, pd.DataFrame]:
     """
     Split the dataset into training, validation, and test sets.
@@ -389,6 +392,11 @@ def _split_temporally(
         The column name representing the entity codes.
     splitter_column : str
         The column name used to split the data temporally.
+    time_column : str | None, optional
+        The column name of the times, which tell the superseded
+        entities.
+    related : dict[str, set[str]] | None, optional
+        The codes related to each code (see utils.relations).
 
     Returns
     -------
@@ -402,6 +410,13 @@ def _split_temporally(
     this order: the testing set the latest one, and the validation set
     the one before it, or the latest one without a testing set, so that
     no year of the training set comes after them.
+
+    A superseded entity, whose related entity has data only after its
+    own ends, has no holdout: all its years are for training, and it is
+    not scored. The years held out of an entity are left out of the
+    training set for its related entities too, so that the model does
+    not see the demand of the same people at the same hours; they are
+    in no set, unless they are held out of the related entity itself.
     """
     logging.info(
         "Splitting dataset into training, testing, and validation sets, "
@@ -416,8 +431,23 @@ def _split_temporally(
         )
         if requested
     ]
+    related = related or {}
+    superseded: set[str] = set()
+    if holdouts and related and time_column is not None:
+        times = dataset.groupby(group_column)[time_column]
+        superseded = utils.relations.get_superseded_entities(
+            times.min(), times.max(), related
+        )
+
     split_indexes: dict[str, list[Any]] = {name: [] for name in holdouts}
+    held_out_years: dict[str, set[Any]] = {}
     for entity_code, entity in dataset.groupby(group_column):
+        if str(entity_code) in superseded:
+            logging.info(
+                f"{entity_code!s} is superseded by a related entity with "
+                "later data: all its years are for training."
+            )
+            continue
         years = sorted(entity[splitter_column].unique(), reverse=True)
         if len(years) <= len(holdouts):
             logging.warning(
@@ -429,15 +459,24 @@ def _split_temporally(
             split_indexes[name].extend(
                 entity.index[entity[splitter_column] == year]
             )
+        held_out_years[str(entity_code)] = set(years[: len(holdouts)])
+
+    left_out = {
+        index for indexes in split_indexes.values() for index in indexes
+    }
+    for code, held_out in held_out_years.items():
+        for other in related.get(code, set()):
+            left_out.update(
+                dataset.index[
+                    (dataset[group_column] == other)
+                    & dataset[splitter_column].isin(held_out)
+                ]
+            )
 
     split_dataset = {
         name: dataset.loc[indexes] for name, indexes in split_indexes.items()
     }
-    split_dataset["training"] = dataset.drop(
-        index=[
-            index for indexes in split_indexes.values() for index in indexes
-        ]
-    )
+    split_dataset["training"] = dataset.drop(index=list(left_out))
 
     for key, split_data in split_dataset.items():
         split_dataset[key] = split_data.reset_index(drop=True)
@@ -662,12 +701,17 @@ def prepare_split_datasets(
         used), and 'validation' (if used). Their target is the load
         relative to the annual mean.
     """
+    dataset = pd.read_parquet(data_path)
     split_dataset = _split_temporally(
-        pd.read_parquet(data_path),
+        dataset,
         testing_set,
         validation_set,
         ml_config.group,
         ml_config.splitter,
+        ml_config.time,
+        utils.relations.read_related_entities(
+            sorted(dataset[ml_config.group].unique())
+        ),
     )
 
     return {

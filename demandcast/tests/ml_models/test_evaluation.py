@@ -155,6 +155,60 @@ def test_cross_validate_by_country():
     assert mapes["Holdout"].eq("country").all()
 
 
+def test_cross_validate_leaves_out_the_related_entities():
+    """
+    Test that a fold does not train on the entities related to its own.
+
+    Argentina is related to its two provinces, which are not related to
+    each other: the fold of a province trains on the other one, and
+    each fold scores only its own entity.
+    """
+    related = {
+        "ARG": {"ARG_B", "ARG_C"},
+        "ARG_B": {"ARG"},
+        "ARG_C": {"ARG"},
+        "BRA": set(),
+    }
+    model_module = ml_models.registry.get_model_module("XGBoost")
+    real_train = model_module.train
+    training_groups: list[list[str]] = []
+
+    def spy_train(prepared_dataset, config):
+        """
+        Record the codes of the training rows, and train the model.
+
+        Returns
+        -------
+        object
+            The trained model.
+        """
+        training_groups.append(
+            sorted(set(prepared_dataset["training"]["group"]))
+        )
+        return real_train(prepared_dataset, config)
+
+    prepared_dataset = _make_prepared_dataset(["ARG", "ARG_B", "ARG_C", "BRA"])
+    with patch.object(model_module, "train", side_effect=spy_train):
+        mapes, _ = ml_models.evaluation.cross_validate(
+            prepared_dataset,
+            1,
+            "XGBoost",
+            _model_config("XGBoost"),
+            related=related,
+        )
+
+    assert training_groups == [
+        ["BRA"],
+        ["ARG_C", "BRA"],
+        ["ARG_B", "BRA"],
+        ["ARG", "ARG_B", "ARG_C"],
+    ]
+    assert mapes["Entity code"].tolist() == ["ARG", "ARG_B", "ARG_C", "BRA"]
+    assert ml_models.evaluation.get_folds(
+        prepared_dataset["group"], "entity", related
+    )["ARG_B"] == {"scored": ["ARG_B"], "left_out": ["ARG", "ARG_B"]}
+
+
 def test_cross_validate_forwards_groups(algorithm):
     """
     Test that the entity codes reach the training and the predictions.

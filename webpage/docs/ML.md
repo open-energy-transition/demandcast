@@ -35,11 +35,20 @@ Unlike typical machine learning where data is randomly split, temporal splitting
 
 The years are those that the region has, so a missing year is skipped: with data for 2019, 2021 and 2023, the test set is 2023, the validation set 2021 and the training set 2019. No year of the training set comes after those held out. A region with fewer years than the held-out sets gives its years to the test set first, then to the validation set, and none to training, which the log reports.
 
+Regions that share people are related (see [related regions](#related-regions)), and two rules follow from it:
+
+- A region superseded by a related one, whose data starts after its own ends, such as the North of Brazil of 2000 (`BRA_N-2000`) after which come the North of 2013 and the later periods, has no held-out year: all its years are for training, and it is not scored.
+- The years held out of a region are left out of the training of its related regions, in no set unless they are held out of those regions too, so that the model does not see the demand of the same people at the same hours.
+
 This ensures the model is evaluated on future time periods it hasn't seen during training, which is critical for time-series forecasting.
 
 #### Leave-One-Group-Out (LOGO) Cross-Validation
 
-LOGO cross-validation tests model generalization across regions by training on all regions except one and evaluating on the held-out region. This process is repeated for each region. By default, each fold holds out one entity code (`holdout: entity`), so a fold that holds out Argentina still trains on the provinces of Argentina: this measures the error on a held-out entity, not on a country that the model has never seen. With `holdout: country`, each fold holds out a country with all its subdivisions, which measures the error on an unseen country. The results say which holdout they used.
+LOGO cross-validation tests model generalization across regions by training on all regions except one and evaluating on the held-out region. This process is repeated for each region. By default, each fold holds out one entity code (`holdout: entity`), and does not train on its related regions either, which it does not score: a fold that holds out a province of Argentina leaves out Argentina, but still trains on the other provinces. With `holdout: country`, each fold holds out a country with all its subdivisions, which measures the error on an unseen country. The results say which holdout they used, and the manifest of the results lists the regions that each fold scores and those that it leaves out.
+
+#### Related regions
+
+Two regions are related when the people of the area that they share are at least 10% of the people of either of them: a country and its subdivisions, a grid and the state that it supplies, or the periods of a grid whose area grew. `check.py` with `check: related_entities` computes the shares for each pair of regions of the same country with data, from the gridded population of 2020, and saves them to `demandcast/checks/related_entities.csv`, with whether each pair is related. `demandcast/config/related_entities.yaml` lists the exceptions: pairs related, or not, whatever their shares. Run the check again after adding a region or changing a shape.
 
 #### Feature Types
 
