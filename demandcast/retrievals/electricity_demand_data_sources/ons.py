@@ -10,13 +10,13 @@ Description:
     2000, under the CC BY license.
 
     The files give the load of each subsystem (North, North-East,
-    South-East and South) as the average power of each hour in MW
-    ("MWmed"), at the start of the hour in the time of Brasília, with
-    its daylight saving time until 2019: the hour skipped when it
+    South-East/Centre-West and South) as the average power of each hour
+    in MW ("MWmed"), at the start of the hour in the time of Brasília,
+    with its daylight saving time until 2019: the hour skipped when it
     started has a row without data, and the hour repeated when it ended
     a single row, which the module leaves out. The hours are their
-    starts: the load of an hour equals the average of the two half
-    hours that follow its time in the load verified every half hour
+    starts: the load of an hour equals the average of the two half hours
+    that follow its time in the load verified every half hour
     (carga-energia-verificada), within 1%.
 
     The load changed its definition twice, as the daily load of ONS,
@@ -40,6 +40,20 @@ Description:
     the cleaning flags them (daylight_saving), but the times follow
     those of Brasília, as in the other subsystems.
 
+    The North and the South-East/Centre-West grew as isolated systems
+    joined the national grid, so each has an entity for each period of
+    its area, named after its first year and drawn as the area was then:
+    the North of 2000 (Maranhão, Pará and Tocantins), of 2013 (with
+    Manaus from 9 July 2013), of 2015 (with Macapá from 13 September
+    2015) and from 2025 (with Roraima from 10 September 2025), and the
+    South-East/Centre-West of 2000, of 2009 (with Acre and Rondônia from
+    November 2009) and from 2023 (with the isolated systems of Rondônia,
+    Mato Grosso and western Acre that joined from about 2014 to 2023).
+    The periods start on 1 January, as in the Awesome Electricity Demand
+    list, so the load of the months of 2009, 2013, 2015 and 2025 before
+    each join is that of the smaller area; it is kept as it is, for the
+    later cleaning.
+
     Source: https://dados.ons.org.br/dataset/curva-carga
 """
 
@@ -50,6 +64,18 @@ import pandas as pd
 
 import utils.fetcher
 import utils.time_series
+
+SUBSYSTEMS = {
+    "BRA_N-2000": "N",
+    "BRA_N-2013": "N",
+    "BRA_N-2015": "N",
+    "BRA_N": "N",
+    "BRA_NE": "NE",
+    "BRA_SE-2000": "SE",
+    "BRA_SE-2009": "SE",
+    "BRA_SE": "SE",
+    "BRA_S": "S",
+}
 
 
 def get_available_requests(
@@ -107,7 +133,7 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     year : int
         The year of the electricity demand data.
     code : str
-        The code of the subdivision of interest.
+        The code of the subsystem.
 
     Returns
     -------
@@ -116,7 +142,7 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     """
     logging.info(f"Retrieving electricity demand data for the year {year}.")
 
-    subdivision_code = code.split("_")[1]
+    subsystem = SUBSYSTEMS[code]
 
     url = get_url(year)
 
@@ -125,7 +151,7 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     )
 
     # Filter the dataset for the subdivision of interest.
-    dataset = dataset[dataset["id_subsistema"] == subdivision_code]
+    dataset = dataset[dataset["id_subsistema"] == subsystem]
 
     electricity_demand_time_series = pd.Series(
         dataset["val_cargaenergiahomwmed"].values,

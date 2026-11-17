@@ -11,9 +11,19 @@ Description:
     every 30 minutes, at the end of each interval in the time of Peru,
     which has no daylight saving time: a year runs from 00:30 of its
     first day to 00:00 of the next year. Until 1999 the values are
-    hourly, each given for both half hours, and about 20% lower, as the
-    demand jumps from 1,651 MW to 1,929 MW at 00:30 of 1 January 2000,
-    so the data starts in 2000.
+    hourly, each given for both half hours, and those of the central-
+    north system (SICN) only, about 20% lower, as the demand jumps from
+    1,651 MW to 1,929 MW with the southern system at 00:30 of 1 January
+    2000, so the data starts in 2000.
+
+    The national interconnected system (SEIN) grew as isolated systems
+    joined it, so the data has two entities, each named and drawn as
+    the system was at its start: the SEIN of 2000, the central-north
+    and southern systems, with Pucallpa and Aguaytía from 2002, Puerto
+    Maldonado from 2008, Bagua and Jaén from 2009, and San Martín and
+    Yurimaguas from December 2010; and the SEIN from 2011, without the
+    isolated systems of Loreto, but Yurimaguas, and of Atalaya and Purús
+    in Ucayali.
 
     Source: https://www.coes.org.pe/Portal/portalinformacion/demanda
 """
@@ -35,7 +45,7 @@ def get_available_requests(
     Parameters
     ----------
     code : str
-        The code of Peru.
+        The code of the national interconnected system.
     start_date : datetime.date
         The first day of the data.
     end_date : datetime.date
@@ -70,7 +80,7 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     year : int
         The year of the electricity demand data.
     code : str
-        The code of Peru.
+        The code of the national interconnected system.
 
     Returns
     -------

@@ -199,6 +199,18 @@ entities:
     subdivision_name: North
   - country_code: BRA
     country_name: Brazil
+    subdivision_code: N-2000
+    subdivision_name: North of 2000
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: N-2013
+    subdivision_name: North of 2013
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: N-2015
+    subdivision_name: North of 2015
+  - country_code: BRA
+    country_name: Brazil
     subdivision_code: NE
     subdivision_name: North-East
   - country_code: BRA
@@ -252,7 +264,15 @@ entities:
   - country_code: BRA
     country_name: Brazil
     subdivision_code: SE
-    subdivision_name: South-East
+    subdivision_name: South-East/Centre-West
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: SE-2000
+    subdivision_name: South-East/Centre-West of 2000
+  - country_code: BRA
+    country_name: Brazil
+    subdivision_code: SE-2009
+    subdivision_name: South-East/Centre-West of 2009
   - country_code: BRA
     country_name: Brazil
     subdivision_code: SP
@@ -325,6 +345,10 @@ entities:
     country_name: Canada
     subdivision_code: YT-INTEGRATED
     subdivision_name: Yukon Integrated System
+  - country_code: CHL
+    country_name: Chile
+    subdivision_code: SEN
+    subdivision_name: National Electric System
   - country_code: CHN
     country_name: China
     subdivision_code: AH
@@ -857,6 +881,14 @@ entities:
     country_name: Panama
     subdivision_code: SIN
     subdivision_name: National Interconnected System
+  - country_code: PER
+    country_name: Peru
+    subdivision_code: SEIN
+    subdivision_name: National Interconnected System
+  - country_code: PER
+    country_name: Peru
+    subdivision_code: SEIN-2000
+    subdivision_name: National Interconnected System of 2000
   - country_code: PRT
     country_name: Portugal
     subdivision_code: MAINLAND

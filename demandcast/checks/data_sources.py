@@ -6,14 +6,14 @@ Description:
     This module checks the electricity demand data sources over the
     network, to notice when a website changes or stops publishing. For
     each data source that is downloaded automatically, it downloads the
-    latest request of the first country or subdivision of its YAML
-    file, and checks the values: they are numbers, at times with a time
-    zone at most one hour apart, they are not negative, and they are
-    recent, or within the dates of the YAML file. The results are saved
-    to a JSON file and a Markdown file in the results of the checks
-    (see utils/paths.py), with the number of checks that each data
-    source has failed in a row, counted from the report of the previous
-    check in that folder.
+    latest request of the first country or subdivision of its YAML file
+    among those whose data ends last, and checks the values: they are
+    numbers, at times with a time zone at most one hour apart, they are
+    not negative, and they are recent, or within the dates of the YAML
+    file. The results are saved to a JSON file and a Markdown file in
+    the results of the checks (see utils/paths.py), with the number of
+    checks that each data source has failed in a row, counted from the
+    report of the previous check in that folder.
 """
 
 import dataclasses
@@ -239,6 +239,31 @@ def _check_sample(
         )
 
 
+def _last_day(entity: utils.data_sources.DataSourceEntity) -> dt.date:
+    """
+    Get the last day of the data of an entity.
+
+    Parameters
+    ----------
+    entity : utils.data_sources.DataSourceEntity
+        The country or subdivision of a data source.
+
+    Returns
+    -------
+    datetime.date
+        The end date of the entity, or the latest date for "today".
+
+    Notes
+    -----
+    An area whose extent changed has an entity for each period, so the
+    entity that ends last is the one whose data the website still
+    publishes.
+    """
+    if entity.end_date == "today":
+        return dt.date.max
+    return entity.end_date
+
+
 def check_data_source(data_source: str, maximum_age_days: int) -> Result:
     """
     Check a data source over the network.
@@ -260,7 +285,10 @@ def check_data_source(data_source: str, maximum_age_days: int) -> Result:
     result = Result(data_source=data_source)
 
     try:
-        entity = utils.data_sources.read_entities(data_source)[0]
+        entity = max(
+            utils.data_sources.read_entities(data_source),
+            key=_last_day,
+        )
         code = entity.code
         result.code = code
 

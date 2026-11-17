@@ -10,16 +10,27 @@ import datetime as dt
 
 import numpy as np
 
+import utils.data_sources
 from retrievals.electricity_demand_data_sources import ons
 
 
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
     requests = ons.get_available_requests(
-        "BRA_SE", dt.date(2000, 1, 1), dt.date(2025, 12, 28)
+        "BRA_SE-2009", dt.date(2000, 1, 1), dt.date(2025, 12, 28)
     )
 
     assert requests == list(range(2000, 2026))
+
+
+def test_subsystems_of_the_entities():
+    """Test that each entity, of any period, reads its subsystem."""
+    codes = utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
+        "ons"
+    )
+
+    assert set(ons.SUBSYSTEMS) == set(codes)
+    assert set(ons.SUBSYSTEMS.values()) == {"N", "NE", "SE", "S"}
 
 
 def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
@@ -30,7 +41,9 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
         "ons_2018.csv",
     )
 
-    time_series = ons.download_and_extract_data_for_request(2018, "BRA_SE")
+    time_series = ons.download_and_extract_data_for_request(
+        2018, "BRA_SE-2009"
+    )
 
     # The 23:00 that repeats when daylight saving time ends, which the
     # file has only once, and the 00:00 that is skipped when it starts,
