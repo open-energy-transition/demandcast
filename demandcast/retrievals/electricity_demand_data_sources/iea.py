@@ -5,7 +5,7 @@ Description:
 
     This module provides functions to retrieve the electricity demand
     data from the Real-Time Electricity Tracker of the International
-    Energy Agency (IEA). The data is retrieved in six-month intervals.
+    Energy Agency (IEA). The data is retrieved in three-month intervals.
 
     The API of the tracker gives the hourly demand of each country, or
     of each region of a country, in GW. Its times are marked as UTC but
@@ -244,19 +244,19 @@ def get_available_requests(
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
-        The first day of each half year of the data, or the start date,
-        and the first day of the next half year, or the day after the
-        end date.
+        The first day of each quarter of the data, or the start date,
+        and the first day of the next quarter, or the day after the end
+        date.
 
     Notes
     -----
-    The requests are six-month periods, because the API answers the
-    requests of a year of a region with an internal error.
+    The requests are quarters, because the API answers some requests
+    of a region with an internal error when they take more than about
+    15 seconds, which a year, and at times half a year, does.
     """
     day_after_end = end_date + dt.timedelta(days=1)
-    starts_of_quarters = pd.date_range(start_date, day_after_end, freq="QS")
     boundaries = (
-        starts_of_quarters[starts_of_quarters.month.isin([1, 7])]
+        pd.date_range(start_date, day_after_end, freq="QS")
         .union(pd.to_datetime([start_date, day_after_end]))
         .drop_duplicates()
     )

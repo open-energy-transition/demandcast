@@ -15,14 +15,14 @@ from retrievals.electricity_demand_data_sources import iea
 
 
 def test_get_available_requests():
-    """Test that the requests are the half years, up to the end date."""
+    """Test that the requests are the quarters, up to the end date."""
     requests = iea.get_available_requests(
-        "UKR_IPS", dt.date(2021, 6, 1), dt.date(2022, 2, 28)
+        "UKR_IPS", dt.date(2021, 8, 15), dt.date(2022, 2, 28)
     )
 
     assert requests == [
-        (pd.Timestamp("2021-06-01"), pd.Timestamp("2021-07-01")),
-        (pd.Timestamp("2021-07-01"), pd.Timestamp("2022-01-01")),
+        (pd.Timestamp("2021-08-15"), pd.Timestamp("2021-10-01")),
+        (pd.Timestamp("2021-10-01"), pd.Timestamp("2022-01-01")),
         (pd.Timestamp("2022-01-01"), pd.Timestamp("2022-03-01")),
     ]
 
