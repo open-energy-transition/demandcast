@@ -1,0 +1,20 @@
+[
+  {
+    "ISO3": "USA",
+    "Region": "Texas",
+    "Date": "2024-07-01T00:00:00.000Z",
+    "Value": 70.0
+  },
+  {
+    "ISO3": "USA",
+    "Region": "Texas",
+    "Date": "2024-07-01T01:00:00.000Z",
+    "Value": 71.0
+  },
+  {
+    "ISO3": "USA",
+    "Region": "Texas",
+    "Date": "2024-07-02T00:00:00.000Z",
+    "Value": 72.0
+  }
+]

@@ -99,6 +99,10 @@ entities:
     subdivision_name: Australian Capital Territory
   - country_code: AUS
     country_name: Australia
+    subdivision_code: DKIS
+    subdivision_name: Darwin-Katherine Interconnected System
+  - country_code: AUS
+    country_name: Australia
     subdivision_code: NSW
     subdivision_name: New South Wales
   - country_code: AUS
@@ -141,6 +145,38 @@ entities:
     country_name: Australia
     subdivision_code: SWIS
     subdivision_name: South West Interconnected System
+  - country_code: BOL
+    country_name: Bolivia, Plurinational State of
+    subdivision_code: C
+    subdivision_name: Cochabamba
+  - country_code: BOL
+    country_name: Bolivia, Plurinational State of
+    subdivision_code: H
+    subdivision_name: Chuquisaca
+  - country_code: BOL
+    country_name: Bolivia, Plurinational State of
+    subdivision_code: L
+    subdivision_name: La Paz
+  - country_code: BOL
+    country_name: Bolivia, Plurinational State of
+    subdivision_code: O
+    subdivision_name: Oruro
+  - country_code: BOL
+    country_name: Bolivia, Plurinational State of
+    subdivision_code: P
+    subdivision_name: Potosí
+  - country_code: BOL
+    country_name: Bolivia, Plurinational State of
+    subdivision_code: SIN-B
+    subdivision_name: National Interconnected System in Beni
+  - country_code: BOL
+    country_name: Bolivia, Plurinational State of
+    subdivision_code: SIN-S
+    subdivision_name: National Interconnected System in Santa Cruz
+  - country_code: BOL
+    country_name: Bolivia, Plurinational State of
+    subdivision_code: T
+    subdivision_name: Tarija
   - country_code: BRA
     country_name: Brazil
     subdivision_code: AC
@@ -505,6 +541,10 @@ entities:
     country_name: Greece
     subdivision_code: INTERCONNECTED
     subdivision_name: Interconnected System of Greece
+  - country_code: HND
+    country_name: Honduras
+    subdivision_code: SIN
+    subdivision_name: National Interconnected System
   - country_code: IDN
     country_name: Indonesia
     subdivision_code: AC
@@ -865,6 +905,22 @@ entities:
     country_name: Mexico
     subdivision_code: PEN
     subdivision_name: Peninsular
+  - country_code: MYS
+    country_name: Malaysia
+    subdivision_code: PENINSULAR
+    subdivision_name: Peninsular Malaysia
+  - country_code: NIC
+    country_name: Nicaragua
+    subdivision_code: SIN
+    subdivision_name: National Interconnected System
+  - country_code: NIC
+    country_name: Nicaragua
+    subdivision_code: SIN-2009
+    subdivision_name: National Interconnected System of 2009
+  - country_code: NIC
+    country_name: Nicaragua
+    subdivision_code: SIN-2011
+    subdivision_name: National Interconnected System of 2011
   - country_code: NOR
     country_name: Norway
     subdivision_code: MAINLAND
@@ -873,6 +929,14 @@ entities:
     country_name: Nepal
     subdivision_code: INPS
     subdivision_name: Integrated Nepal Power System
+  - country_code: NZL
+    country_name: New Zealand
+    subdivision_code: NI
+    subdivision_name: North Island
+  - country_code: NZL
+    country_name: New Zealand
+    subdivision_code: SI
+    subdivision_name: South Island
   - country_code: PAK
     country_name: Pakistan
     subdivision_code: NTDC
@@ -889,6 +953,18 @@ entities:
     country_name: Peru
     subdivision_code: SEIN-2000
     subdivision_name: National Interconnected System of 2000
+  - country_code: PHL
+    country_name: Philippines
+    subdivision_code: LUZON
+    subdivision_name: Luzon
+  - country_code: PHL
+    country_name: Philippines
+    subdivision_code: MINDANAO
+    subdivision_name: Mindanao
+  - country_code: PHL
+    country_name: Philippines
+    subdivision_code: VISAYAS
+    subdivision_name: Visayas
   - country_code: PRT
     country_name: Portugal
     subdivision_code: MAINLAND
@@ -1265,6 +1341,10 @@ entities:
     country_name: Ukraine
     subdivision_code: IPS
     subdivision_name: Integrated Power System of Ukraine
+  - country_code: UKR
+    country_name: Ukraine
+    subdivision_code: IPS-2022
+    subdivision_name: Integrated Power System of Ukraine of 2022
   - country_code: USA
     country_name: United States
     subdivision_code: AK
