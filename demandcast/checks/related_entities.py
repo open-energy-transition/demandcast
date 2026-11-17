@@ -10,7 +10,9 @@ Description:
     population of the year POPULATION_YEAR, each grid cell weighted by
     its fraction in the shapes. The people of an entity and those of
     the area that it shares are counted on the same grid, that of the
-    entity, which covers the shared area.
+    entity, which covers the shared area, or that of its country for a
+    subdivision without gridded data of its own, such as one smaller
+    than 500 km² (see utils/availability.py).
 
     The shares are saved to related_entities.csv in the folder of the
     checks, one row per pair, with whether the pair is related (see
@@ -28,6 +30,7 @@ import pandas as pd
 import xarray
 
 import retrievals.gridded_totals
+import utils.availability
 import utils.data_sources
 import utils.geospatial
 import utils.relations
@@ -49,6 +52,7 @@ def _get_shares(
     other: str,
     shapes: dict[str, geopandas.GeoDataFrame],
     grids: dict[str, xarray.DataArray],
+    grid_codes: dict[str, str],
 ) -> tuple[float, float] | None:
     """
     Get the shares of the people of two entities in their shared area.
@@ -62,8 +66,10 @@ def _get_shares(
     shapes : dict[str, geopandas.GeoDataFrame]
         The shape of each entity, in longitude and latitude.
     grids : dict[str, xarray.DataArray]
-        The gridded population of the entities read so far, to which
-        those of the two entities are added.
+        The gridded population read so far, by the code of its grid, to
+        which those of the two entities are added.
+    grid_codes : dict[str, str]
+        The code of the grid of each entity: its own, or its country's.
 
     Returns
     -------
@@ -86,15 +92,16 @@ def _get_shares(
 
     shares = []
     for entity in (code, other):
-        if entity not in grids:
-            grids[entity] = retrievals.gridded_totals.open_gridded_data(
-                "population", entity, POPULATION_YEAR
+        grid_code = grid_codes[entity]
+        if grid_code not in grids:
+            grids[grid_code] = retrievals.gridded_totals.open_gridded_data(
+                "population", grid_code, POPULATION_YEAR
             )
         people = utils.geospatial.get_total_in_shape(
-            grids[entity], shapes[entity]
+            grids[grid_code], shapes[entity]
         )
         people_in_shared_area = utils.geospatial.get_total_in_shape(
-            grids[entity], shared
+            grids[grid_code], shared
         )
         shares.append(people_in_shared_area / people if people > 0 else 0.0)
     return shares[0], shares[1]
@@ -120,6 +127,14 @@ def get_shares(codes: list[str]) -> pd.DataFrame:
     for code in sorted(codes):
         by_country.setdefault(code.split("_")[0], []).append(code)
 
+    with_gridded_data = set(
+        utils.availability.read_codes_with_historical_data()
+    )
+    grid_codes = {
+        code: code if code in with_gridded_data else code.split("_")[0]
+        for code in codes
+    }
+
     rows = []
     for country_codes in by_country.values():
         if len(country_codes) < 2:
@@ -130,7 +145,7 @@ def get_shares(codes: list[str]) -> pd.DataFrame:
         }
         grids: dict[str, xarray.DataArray] = {}
         for code, other in itertools.combinations(country_codes, 2):
-            shares = _get_shares(code, other, shapes, grids)
+            shares = _get_shares(code, other, shapes, grids, grid_codes)
             if shares is None:
                 continue
             logging.info(

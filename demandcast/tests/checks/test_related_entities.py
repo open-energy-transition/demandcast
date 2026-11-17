@@ -30,7 +30,14 @@ SHAPES = {
 
 @pytest.fixture(autouse=True)
 def uniform_population(monkeypatch):
-    """Give the shapes, and the same population to every grid cell."""
+    """
+    Give the shapes, and the same population to every grid cell.
+
+    Returns
+    -------
+    list[str]
+        The codes of the grids opened, in order.
+    """
     centres_x = np.arange(0.125, 4, 0.25)
     centres_y = np.arange(0.125, 2, 0.25)
     grid = xarray.DataArray(
@@ -38,10 +45,29 @@ def uniform_population(monkeypatch):
         coords={"y": centres_y, "x": centres_x},
         dims=["y", "x"],
     )
+    opened: list[str] = []
+
+    def open_gridded_data(_variable, code, _year):
+        """
+        Record the code of the grid, and give the grid.
+
+        Returns
+        -------
+        xarray.DataArray
+            The grid.
+        """
+        opened.append(code)
+        return grid
+
     monkeypatch.setattr(
         checks.related_entities.retrievals.gridded_totals,
         "open_gridded_data",
-        lambda *_: grid,
+        open_gridded_data,
+    )
+    monkeypatch.setattr(
+        checks.related_entities.utils.availability,
+        "read_codes_with_historical_data",
+        lambda: ["XXX", "XXX_A", "XXX_B", "YYY"],
     )
     monkeypatch.setattr(
         checks.related_entities.utils.shapes,
@@ -50,6 +76,7 @@ def uniform_population(monkeypatch):
             geometry=[SHAPES[code]], crs="EPSG:4326"
         ),
     )
+    return opened
 
 
 def test_get_shares():
@@ -79,8 +106,13 @@ def test_get_shares():
     assert shares["Related"].all()
 
 
-def test_run_check(tmp_path, monkeypatch):
-    """Test that the shares are saved in the folder of the checks."""
+def test_run_check(tmp_path, monkeypatch, uniform_population):
+    """
+    Test that the shares are saved in the folder of the checks.
+
+    C has no gridded data of its own, so it is counted on the grid of
+    its country.
+    """
     monkeypatch.setattr(utils.paths, "CHECKS_FOLDER", str(tmp_path))
     monkeypatch.setattr(
         checks.related_entities.utils.data_sources,
@@ -96,6 +128,7 @@ def test_run_check(tmp_path, monkeypatch):
         ["XXX_A", "XXX_B"],
         ["XXX_A", "XXX_C"],
     ]
+    assert uniform_population == ["XXX_A", "XXX_B", "XXX"]
 
 
 @pytest.mark.parametrize(
@@ -115,6 +148,8 @@ def test_entities_without_shared_area(other):
     }
 
     assert (
-        checks.related_entities._get_shares("XXX_A", "XXX_D", shapes, {})
+        checks.related_entities._get_shares(
+            "XXX_A", "XXX_D", shapes, {}, {"XXX_A": "XXX_A", "XXX_D": "XXX"}
+        )
         is None
     )
