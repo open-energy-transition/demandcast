@@ -268,7 +268,7 @@ def test_retrieve_dispatch(monkeypatch, settings, function, arguments):
 
     assert calls[0][0] == arguments
     if function == "electricity_demand":
-        assert calls[0][1] == {"offline": True}
+        assert calls[0][1] == {"offline": True, "new_requests_only": False}
     assert logs == [
         "retrieval_of_electricity_demand_from_entsoe"
         if function == "electricity_demand"

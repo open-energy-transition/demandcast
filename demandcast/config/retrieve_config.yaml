@@ -22,6 +22,13 @@ electricity_data_source: entsoe
 # again, without downloading it (default: false).
 offline: false
 
+# OPTIONAL - only for the electricity_demand variable.
+# If true, download only the requests that have no version in the raw
+# data yet, and the latest one, whose data can be incomplete; the others
+# are processed from the raw data (default: false). For data sources of
+# many requests, such as the days of SO UES.
+new_requests_only: false
+
 # OPTIONAL.
 # The ISO Alpha-3 code (example: "FRA") or a combination of ISO
 # Alpha-3 code and subdivision code (example: "USA_CAL").

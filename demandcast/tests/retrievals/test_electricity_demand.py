@@ -200,6 +200,80 @@ def test_one_entity_with_the_code_and_the_dates(add_data_source):
     }
 
 
+def test_new_requests_only(add_data_source, monkeypatch):
+    """
+    Test that only the requests without a version are downloaded.
+
+    A second retrieval downloads only the latest request, whose data can
+    be incomplete, and processes the others from the raw data.
+    """
+    download_and_extract_data_for_request = create_autospec(
+        _download_and_extract_data_for_request,
+        side_effect=lambda request, _code: _demand(
+            f"2024-01-0{request} 01:00", [100.0 * request]
+        ),
+    )
+    add_data_source(
+        "daily",
+        ["FRA"],
+        get_available_requests=create_autospec(
+            _get_available_requests, return_value=[1, 2, 3]
+        ),
+        download_and_extract_data_for_request=(
+            download_and_extract_data_for_request
+        ),
+    )
+    retrievals.electricity_demand.run_data_retrieval("daily", None, None)
+
+    # Each download records the responses of its request.
+    recording = utils.raw_data.recording
+    recorded = []
+
+    def count_recordings(data_source):
+        """
+        Count a download, and record its responses.
+
+        Returns
+        -------
+        contextlib.AbstractContextManager
+            The recording of the responses.
+        """
+        recorded.append(data_source)
+        return recording(data_source)
+
+    monkeypatch.setattr(utils.raw_data, "recording", count_recordings)
+    retrievals.electricity_demand.run_data_retrieval(
+        "daily", None, None, new_requests_only=True
+    )
+
+    assert recorded == ["daily"]
+    assert _read_saved_data("FRA", "daily") == {
+        "2024-01-01 00:00": 100.0,
+        "2024-01-02 00:00": 200.0,
+        "2024-01-03 00:00": 300.0,
+    }
+
+
+def test_get_new_requests(monkeypatch):
+    """Test that requests with versions are skipped, but the last."""
+    monkeypatch.setattr(
+        utils.raw_data,
+        "read_manifest",
+        lambda _: {
+            "requests": [
+                {"code": "FRA", "request": 1, "versions": [{}]},
+                {"code": "FRA", "request": 3, "versions": [{}]},
+                {"code": "FRA", "request": 2, "versions": []},
+                {"code": "DEU", "request": 4, "versions": [{}]},
+            ]
+        },
+    )
+
+    assert retrievals.electricity_demand._get_new_requests(
+        "daily", "FRA", [1, 2, 3, 4]
+    ) == [2, 4]
+
+
 def test_several_entities_with_the_code_and_the_dates(add_data_source):
     """Test that each request is passed whole, with the code."""
     get_available_requests = create_autospec(

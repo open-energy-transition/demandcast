@@ -65,6 +65,7 @@ class ConfigModel(utils.config.StrictSettings):
     climate_model: str | None = None
     reanalysis_source: Literal["points", "cds", "arco"] = "points"
     offline: bool = False
+    new_requests_only: bool = False
 
     @field_validator("electricity_data_source")
     @classmethod
@@ -177,6 +178,7 @@ RETRIEVALS: dict[str, Callable[[ConfigModel], None]] = {
             config.code,
             config.file,
             offline=config.offline,
+            new_requests_only=config.new_requests_only,
         )
     ),
     "annual_electricity_demand_per_capita": _retrieve_by_scenario(
