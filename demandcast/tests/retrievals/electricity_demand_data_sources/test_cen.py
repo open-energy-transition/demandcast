@@ -16,7 +16,7 @@ from retrievals.electricity_demand_data_sources import cen
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
     requests = cen.get_available_requests(
-        "CHL", dt.date(1999, 1, 1), dt.date(2025, 12, 28)
+        "CHL_SEN", dt.date(1999, 1, 1), dt.date(2025, 12, 28)
     )
 
     assert requests[0] == (
@@ -39,7 +39,7 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
     )
 
     time_series = cen.download_and_extract_data_for_request(
-        (pd.Timestamp("2025-01-01"), pd.Timestamp("2025-12-28")), "CHL"
+        (pd.Timestamp("2025-01-01"), pd.Timestamp("2025-12-28")), "CHL_SEN"
     )
 
     assert fake_downloads.requests[0][2]["headers"]["Origin"] == (
@@ -69,7 +69,7 @@ def test_download_and_extract_data_for_request_when_daylight_saving_ends(
     )
 
     time_series = cen.download_and_extract_data_for_request(
-        (pd.Timestamp("2025-01-01"), pd.Timestamp("2025-12-28")), "CHL"
+        (pd.Timestamp("2025-01-01"), pd.Timestamp("2025-12-28")), "CHL_SEN"
     )
 
     assert_demand(

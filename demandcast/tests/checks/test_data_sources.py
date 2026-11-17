@@ -48,7 +48,10 @@ def _hourly_demand(end: str, periods: int = 48) -> pd.Series:
 @pytest.fixture
 def ons_downloads(monkeypatch, request):
     """
-    Replace the downloads of ONS, on 2026-01-02.
+    Replace the requests and downloads of ONS, on 2026-01-02.
+
+    The requests are the years 2024 and 2025, so that the check can go
+    back to the request before the latest.
 
     Returns
     -------
@@ -74,12 +77,13 @@ def ons_downloads(monkeypatch, request):
             raise time_series
         return time_series
 
+    monkeypatch.setattr(ons, "get_available_requests", lambda *_: [2024, 2025])
     monkeypatch.setattr(ons, "download_and_extract_data_for_request", download)
     return downloads
 
 
 def test_check_data_source(ons_downloads):
-    """Test that the latest request of the first entity is checked."""
+    """Test that the latest request of the last entity is checked."""
     ons_downloads[2025] = _hourly_demand("2025-12-31 00:00").tz_convert(
         "America/Sao_Paulo"
     )

@@ -6,7 +6,7 @@ AIA,Anguilla,False,,,False,,,False,,,False,False,False,False
 ALA,Åland Islands,False,,,False,,,False,,,False,False,False,True
 ALB,Albania,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
 AND,Andorra,True,1960.0,2025.0,False,,,True,1990.0,2025.0,False,False,False,False
-ARE,United Arab Emirates,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
+ARE,United Arab Emirates,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 ARG,Argentina,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 ARG_A,Subdivision of Argentina,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 ARG_BA,Subdivision of Argentina,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
@@ -37,10 +37,14 @@ ATF,French Southern Territories,False,,,False,,,False,,,False,False,False,True
 ATG,Antigua and Barbuda,True,1960.0,2025.0,True,2000.0,2024.0,True,1980.0,2025.0,True,True,False,False
 AUS,Australia,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 AUS_ACT,Subdivision of Australia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+AUS_DKIS,Subdivision of Australia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 AUS_NSW,Subdivision of Australia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 AUS_NT,Subdivision of Australia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 AUS_QLD,Subdivision of Australia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+AUS_QLD1,Subdivision of Australia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 AUS_SA,Subdivision of Australia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+AUS_SA1,Subdivision of Australia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+AUS_SWIS,Subdivision of Australia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 AUS_TAS,Subdivision of Australia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 AUS_VIC,Subdivision of Australia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 AUS_WA,Subdivision of Australia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
@@ -59,8 +63,16 @@ BIH,Bosnia and Herzegovina,True,1960.0,2025.0,True,1990.0,2025.0,True,1990.0,202
 BLM,Saint Barthélemy,False,,,False,,,False,,,False,False,False,False
 BLR,Belarus,True,1960.0,2025.0,True,1990.0,2025.0,True,1990.0,2025.0,True,True,True,True
 BLZ,Belize,True,1960.0,2025.0,True,2000.0,2024.0,True,1980.0,2025.0,True,True,True,True
-BMU,Bermuda,True,1960.0,2025.0,True,2000.0,2024.0,True,1990.0,2024.0,False,False,False,False
+BMU,Bermuda,True,1960.0,2025.0,False,,,True,1990.0,2024.0,False,False,False,False
 BOL,"Bolivia, Plurinational State of",True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+BOL_C,"Subdivision of Bolivia, Plurinational State of",False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+BOL_H,"Subdivision of Bolivia, Plurinational State of",False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+BOL_L,"Subdivision of Bolivia, Plurinational State of",False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+BOL_O,"Subdivision of Bolivia, Plurinational State of",False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+BOL_P,"Subdivision of Bolivia, Plurinational State of",False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+BOL_SIN-B,"Subdivision of Bolivia, Plurinational State of",False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+BOL_SIN-S,"Subdivision of Bolivia, Plurinational State of",False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+BOL_T,"Subdivision of Bolivia, Plurinational State of",False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 BRA,Brazil,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 BRA_AC,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 BRA_AL,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
@@ -76,6 +88,9 @@ BRA_MG,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False
 BRA_MS,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 BRA_MT,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 BRA_N,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+BRA_N-2000,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+BRA_N-2013,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+BRA_N-2015,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 BRA_NE,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 BRA_PA,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 BRA_PB,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
@@ -90,6 +105,8 @@ BRA_RS,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False
 BRA_S,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 BRA_SC,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 BRA_SE,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+BRA_SE-2000,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+BRA_SE-2009,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 BRA_SP,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 BRA_TO,Subdivision of Brazil,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 BRB,Barbados,True,1960.0,2025.0,True,2000.0,2024.0,True,1980.0,2025.0,True,True,True,False
@@ -103,16 +120,21 @@ CAN_BC,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False
 CAN_MB,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CAN_NB,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CAN_NL,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+CAN_NL-ISLAND,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CAN_NS,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CAN_NT,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CAN_NU,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CAN_ON,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CAN_PE,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CAN_QC,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+CAN_QC-INTEGRATED,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CAN_SK,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CAN_YT,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+CAN_YT-INTEGRATED,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CHE,Switzerland,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 CHL,Chile,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+CHL_SEN,Subdivision of Chile,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+CHL_SIC,Subdivision of Chile,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CHN,China,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 CHN_AH,Subdivision of China,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CHN_BJ,Subdivision of China,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
@@ -151,6 +173,7 @@ COD,"Congo, The Democratic Republic of the",True,1960.0,2025.0,True,1990.0,2024.
 COG,Congo,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
 COK,Cook Islands,False,,,True,2000.0,2024.0,False,,,False,False,False,False
 COL,Colombia,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+COL_SIN,Subdivision of Colombia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 COM,Comoros,True,1960.0,2025.0,True,2000.0,2023.0,True,1980.0,2025.0,True,True,True,True
 CPV,Cabo Verde,True,1960.0,2025.0,True,2000.0,2024.0,True,1980.0,2025.0,True,True,True,True
 CRI,Costa Rica,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
@@ -163,19 +186,24 @@ DEU,Germany,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,T
 DJI,Djibouti,True,1960.0,2025.0,True,2000.0,2024.0,True,1990.0,2025.0,True,True,True,True
 DMA,Dominica,True,1960.0,2025.0,True,2000.0,2023.0,True,1981.0,2025.0,False,False,False,True
 DNK,Denmark,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+DNK_DK1,Subdivision of Denmark,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+DNK_DK2,Subdivision of Denmark,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 DOM,Dominican Republic,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 DZA,Algeria,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
+DZA_RIN,Subdivision of Algeria,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
 ECU,Ecuador,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 EGY,Egypt,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 ERI,Eritrea,True,1960.0,2025.0,True,1990.0,2024.0,False,,,True,True,True,True
-ESH,Western Sahara,False,,,True,2000.0,2009.0,False,,,True,False,True,True
+ESH,Western Sahara,False,,,False,,,False,,,True,False,True,True
 ESP,Spain,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+ESP_PENINSULAR,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 EST,Estonia,True,1960.0,2025.0,True,1990.0,2025.0,True,1990.0,2025.0,True,True,True,True
 ETH,Ethiopia,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 FIN,Finland,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 FJI,Fiji,True,1960.0,2025.0,True,2000.0,2024.0,True,1980.0,2025.0,True,True,True,True
 FLK,Falkland Islands (Malvinas),False,,,True,2000.0,2023.0,False,,,False,False,False,True
 FRA,France,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+FRA_CONTINENTAL,Subdivision of France,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 FRO,Faroe Islands,True,1960.0,2025.0,True,2000.0,2023.0,True,2008.0,2024.0,False,False,False,True
 FSM,"Micronesia, Federated States of",True,1960.0,2025.0,False,,,True,1990.0,2025.0,True,True,True,True
 GAB,Gabon,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
@@ -183,6 +211,7 @@ GBR,United Kingdom,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True
 GBR_GB,Subdivision of United Kingdom,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 GBR_NIR,Subdivision of United Kingdom,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 GEO,Georgia,True,1960.0,2025.0,True,1990.0,2025.0,True,1990.0,2025.0,True,True,True,True
+GEO_GSE,Subdivision of Georgia,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 GGY,Guernsey,False,,,False,,,False,,,False,False,False,False
 GHA,Ghana,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
 GIN,Guinea,True,1960.0,2025.0,True,2000.0,2024.0,True,1990.0,2025.0,True,True,True,True
@@ -190,6 +219,7 @@ GMB,Gambia,True,1960.0,2025.0,True,2000.0,2024.0,True,1980.0,2025.0,True,True,Tr
 GNB,Guinea-Bissau,True,1960.0,2025.0,True,2000.0,2024.0,True,1980.0,2025.0,True,True,True,True
 GNQ,Equatorial Guinea,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
 GRC,Greece,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+GRC_INTERCONNECTED,Subdivision of Greece,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 GRD,Grenada,True,1960.0,2025.0,True,2000.0,2024.0,True,1980.0,2025.0,True,True,True,False
 GRL,Greenland,True,1960.0,2025.0,True,2000.0,2024.0,True,1990.0,2023.0,False,False,False,True
 GTM,Guatemala,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
@@ -198,43 +228,44 @@ GUY,Guyana,True,1960.0,2025.0,True,2000.0,2024.0,True,1980.0,2025.0,True,False,T
 HKG,Hong Kong,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
 HMD,Heard Island and McDonald Islands,False,,,False,,,False,,,False,False,False,False
 HND,Honduras,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
+HND_SIN,Subdivision of Honduras,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
 HRV,Croatia,True,1960.0,2025.0,True,1990.0,2025.0,True,1990.0,2025.0,True,True,True,True
 HTI,Haiti,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
 HUN,Hungary,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
-IDN,Indonesia,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
-IDN_AC,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_BA,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_BB,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_BE,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_BT,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_GO,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_JA,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_JB,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_JI,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_JK,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_JT,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_KB,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_KI,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_KR,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_KS,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_KT,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_LA,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_MA,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_MU,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_NB,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_NT,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_PA,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_PB,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_RI,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_SA,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_SB,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_SG,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_SN,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_SR,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_SS,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_ST,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_SU,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
-IDN_YO,Subdivision of Indonesia,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
+IDN,Indonesia,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+IDN_AC,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_BA,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_BB,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_BE,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_BT,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_GO,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_JA,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_JB,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_JI,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_JK,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_JT,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_KB,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_KI,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_KR,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_KS,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_KT,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_LA,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_MA,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_MU,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_NB,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_NT,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_PA,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_PB,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_RI,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_SA,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_SB,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_SG,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_SN,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_SR,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_SS,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_ST,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_SU,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_YO,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 IMN,Isle of Man,True,1960.0,2025.0,False,,,False,,,False,False,False,True
 IND,India,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 IND_AN,Subdivision of India,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
@@ -346,34 +377,56 @@ MSR,Montserrat,False,,,True,2000.0,2024.0,False,,,False,False,False,False
 MUS,Mauritius,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
 MWI,Malawi,True,1960.0,2025.0,True,2000.0,2024.0,True,1980.0,2025.0,True,True,True,True
 MYS,Malaysia,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+MYS_PENINSULAR,Subdivision of Malaysia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 NAM,Namibia,True,1960.0,2025.0,True,1990.0,2024.0,True,1990.0,2025.0,True,True,True,True
 NCL,New Caledonia,True,1960.0,2025.0,True,2000.0,2024.0,False,,,True,False,True,True
 NER,Niger,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
 NFK,Norfolk Island,False,,,False,,,False,,,False,False,False,False
 NGA,Nigeria,True,1960.0,2025.0,True,1990.0,2025.0,True,1990.0,2025.0,True,True,True,True
 NIC,Nicaragua,True,1960.0,2025.0,True,1990.0,2024.0,True,1990.0,2025.0,True,True,True,True
-NIU,Niue,False,,,True,2000.0,2023.0,False,,,False,False,False,False
+NIC_SIN,Subdivision of Nicaragua,False,,,True,1990.0,2024.0,True,1990.0,2025.0,False,True,True,True
+NIC_SIN-2009,Subdivision of Nicaragua,False,,,True,1990.0,2024.0,True,1990.0,2025.0,False,True,True,True
+NIC_SIN-2011,Subdivision of Nicaragua,False,,,True,1990.0,2024.0,True,1990.0,2025.0,False,True,True,True
+NIU,Niue,False,,,False,,,False,,,False,False,False,False
 NLD,Netherlands,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 NOR,Norway,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+NOR_MAINLAND,Subdivision of Norway,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 NPL,Nepal,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
+NPL_INPS,Subdivision of Nepal,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
 NRU,Nauru,True,1960.0,2025.0,True,2000.0,2024.0,True,1990.0,2025.0,False,False,False,False
 NZL,New Zealand,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+NZL_NI,Subdivision of New Zealand,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+NZL_SI,Subdivision of New Zealand,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 OMN,Oman,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 PAK,Pakistan,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+PAK_NTDC,Subdivision of Pakistan,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 PAN,Panama,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
+PAN_SIN,Subdivision of Panama,False,,,True,1990.0,2024.0,True,1980.0,2025.0,False,True,True,True
 PCN,Pitcairn,False,,,False,,,False,,,False,False,False,False
 PER,Peru,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+PER_SEIN,Subdivision of Peru,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+PER_SEIN-2000,Subdivision of Peru,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+PER_SICN,Subdivision of Peru,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 PHL,Philippines,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+PHL_BOHOL,Subdivision of Philippines,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+PHL_CEBU,Subdivision of Philippines,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+PHL_LEYTE-SAMAR,Subdivision of Philippines,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+PHL_LUZON,Subdivision of Philippines,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+PHL_MINDANAO,Subdivision of Philippines,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+PHL_NEGROS,Subdivision of Philippines,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+PHL_PANAY,Subdivision of Philippines,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+PHL_VISAYAS,Subdivision of Philippines,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 PLW,Palau,True,1960.0,2025.0,False,,,True,1990.0,2025.0,False,False,False,False
 PNG,Papua New Guinea,True,1960.0,2025.0,True,2000.0,2024.0,True,1980.0,2025.0,True,True,True,True
 POL,Poland,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 PRI,Puerto Rico,True,1960.0,2025.0,True,2000.0,2025.0,True,1980.0,2025.0,True,True,True,True
 PRK,"Korea, Democratic People's Republic of",True,1960.0,2025.0,True,1990.0,2024.0,False,,,True,False,True,True
 PRT,Portugal,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+PRT_MAINLAND,Subdivision of Portugal,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 PRY,Paraguay,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 PSE,"Palestine, State of",True,1990.0,2025.0,True,2000.0,2024.0,True,1994.0,2025.0,True,True,True,True
 PYF,French Polynesia,True,1960.0,2025.0,True,2000.0,2024.0,False,,,True,False,True,True
-QAT,Qatar,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+QAT,Qatar,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
 ROU,Romania,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 RUS,Russian Federation,True,1960.0,2025.0,True,1990.0,2025.0,True,1990.0,2025.0,True,True,True,True
 RUS_AD,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
@@ -387,10 +440,12 @@ RUS_BEL,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0
 RUS_BRY,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_BU,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_CE,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
+RUS_CENTER,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_CHE,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_CHU,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_CU,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_DA,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
+RUS_EAST,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_IN,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_IRK,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_IVA,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
@@ -423,6 +478,7 @@ RUS_MUR,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0
 RUS_NEN,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_NGR,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_NIZ,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
+RUS_NORTHWEST,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_NVS,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_OMS,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_ORE,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
@@ -438,7 +494,9 @@ RUS_SAK,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0
 RUS_SAM,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_SAR,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_SE,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
+RUS_SIBERIA,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_SMO,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
+RUS_SOUTH,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_SPE,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_STA,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_SVE,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
@@ -451,21 +509,23 @@ RUS_TY,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,
 RUS_TYU,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_UD,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_ULY,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
+RUS_URALS,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_VGG,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_VLA,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_VLG,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
+RUS_VOLGA,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_VOR,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_YAN,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_YAR,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_YEV,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RUS_ZAB,Subdivision of Russian Federation,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 RWA,Rwanda,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
-SAU,Saudi Arabia,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
+SAU,Saudi Arabia,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 SDN,Sudan,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
 SEN,Senegal,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
 SGP,Singapore,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,False
 SGS,South Georgia and the South Sandwich Islands,False,,,False,,,False,,,False,False,False,True
-SHN,"Saint Helena, Ascension and Tristan da Cunha",False,,,True,2000.0,2023.0,False,,,False,False,False,False
+SHN,"Saint Helena, Ascension and Tristan da Cunha",False,,,False,,,False,,,False,False,False,False
 SLB,Solomon Islands,True,1960.0,2025.0,True,2000.0,2024.0,True,1980.0,2025.0,True,True,True,True
 SLE,Sierra Leone,True,1960.0,2025.0,True,2000.0,2024.0,True,1980.0,2025.0,True,True,True,True
 SLV,El Salvador,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
@@ -489,7 +549,7 @@ TGO,Togo,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True
 THA,Thailand,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 TJK,Tajikistan,True,1960.0,2025.0,True,1990.0,2025.0,True,1990.0,2025.0,True,True,True,True
 TKM,Turkmenistan,True,1960.0,2025.0,True,1990.0,2024.0,True,1990.0,2025.0,True,True,True,True
-TLS,Timor-Leste,True,1960.0,2025.0,True,2003.0,2024.0,True,1990.0,2025.0,True,True,True,True
+TLS,Timor-Leste,True,1960.0,2025.0,False,,,True,1990.0,2025.0,True,True,True,True
 TON,Tonga,True,1960.0,2025.0,True,2000.0,2024.0,True,1980.0,2025.0,True,True,False,False
 TTO,Trinidad and Tobago,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
 TUN,Tunisia,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
@@ -501,6 +561,8 @@ UGA,Uganda,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,Tr
 UKR,Ukraine,True,1960.0,2025.0,True,1990.0,2024.0,True,1990.0,2025.0,True,True,True,True
 UKR_40,Subdivision of Ukraine,False,,,True,1990.0,2024.0,True,1990.0,2025.0,False,True,True,True
 UKR_43,Subdivision of Ukraine,False,,,True,1990.0,2024.0,True,1990.0,2025.0,False,True,True,True
+UKR_IPS,Subdivision of Ukraine,False,,,True,1990.0,2024.0,True,1990.0,2025.0,False,True,True,True
+UKR_IPS-2022,Subdivision of Ukraine,False,,,True,1990.0,2024.0,True,1990.0,2025.0,False,True,True,True
 URY,Uruguay,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 USA,United States,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 USA_AK,Subdivision of United States,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
@@ -508,6 +570,7 @@ USA_AL,Subdivision of United States,False,,,True,1990.0,2025.0,True,1980.0,2025.
 USA_AR,Subdivision of United States,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 USA_AZ,Subdivision of United States,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 USA_CA,Subdivision of United States,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+USA_CAISO,Subdivision of United States,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 USA_CAL,Subdivision of United States,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 USA_CAR,Subdivision of United States,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 USA_CENT,Subdivision of United States,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True

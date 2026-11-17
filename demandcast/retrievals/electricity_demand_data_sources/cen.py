@@ -7,15 +7,17 @@ Description:
     data from the website of the Coordinador Eléctrico Nacional (CEN)
     in Chile. The data is retrieved in one-year intervals.
 
-    The API gives the hourly demand of the national system in MW, by
-    date and hour ending from 1 in local time: the day when daylight
-    saving time ends has an hour 25, and the day when it starts has no
-    hour 1. Until 2015 the demand is the one of the central system (SIC)
-    only, about 30% less, so the data starts in 2016. The API has no
-    data after 2026-05-13: CEN publishes its data on another platform
-    (issue #262). The end date of the YAML file is that day, so
-    that the live check does not report the data as old, and still
-    reports the data after it if the API gives it again.
+    The API gives the hourly demand of the national electric system
+    (SEN) in MW, which leaves out the medium systems of Aysén,
+    Magallanes and the south of Los Lagos, by date and hour ending from
+    1 in local time: the day when daylight saving time ends has an hour
+    25, and the day when it starts has no hour 1. Until 2015 the demand
+    is the one of the central system (SIC) only, about 30% less, so the
+    data starts in 2016. The API has no data after 2026-05-13: CEN
+    publishes its data on another platform (issue #262). The end date of
+    the YAML file is that day, so that the live check does not report
+    the data as old, and still reports the data after it if the API
+    gives it again.
 
     Source: https://www.coordinador.cl/operacion/graficos/operacion-real/demanda-real/
 """
@@ -38,7 +40,7 @@ def get_available_requests(
     Parameters
     ----------
     code : str
-        The code of Chile.
+        The code of the national electric system.
     start_date : datetime.date
         The first day of the data.
     end_date : datetime.date
@@ -97,7 +99,7 @@ def download_and_extract_data_for_request(
     period : tuple[pandas.Timestamp, pandas.Timestamp]
         The start and end date and time of the data retrieval.
     code : str
-        The code of Chile.
+        The code of the national electric system.
 
     Returns
     -------

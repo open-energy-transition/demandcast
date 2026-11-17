@@ -14,7 +14,7 @@ from retrievals.electricity_demand_data_sources import coes
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
     requests = coes.get_available_requests(
-        "PER", dt.date(1997, 1, 1), dt.date(2025, 12, 28)
+        "PER_SEIN", dt.date(1997, 1, 1), dt.date(2025, 12, 28)
     )
 
     assert requests == list(range(1997, 2026))
@@ -28,7 +28,7 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
         method="POST",
     )
 
-    time_series = coes.download_and_extract_data_for_request(2025, "PER")
+    time_series = coes.download_and_extract_data_for_request(2025, "PER_SEIN")
 
     assert fake_downloads.requests[0][2]["params"] == {
         "fechaInicial": "01/01/2025",

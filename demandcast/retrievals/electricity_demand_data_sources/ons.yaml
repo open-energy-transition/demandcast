@@ -18,11 +18,32 @@ definition:
     power_plant_use: unknown
     note: ONS adds its estimate of the micro and mini distributed generation (MMGD).
 entities:
+  - subdivision_name: North of 2000
+    subdivision_code: N-2000
+    country_name: Brazil
+    country_code: BRA
+    start_date: 2000-01-01
+    end_date: 2012-12-31
+    time_zone: America/Belem
+  - subdivision_name: North of 2013
+    subdivision_code: N-2013
+    country_name: Brazil
+    country_code: BRA
+    start_date: 2013-01-01
+    end_date: 2014-12-31
+    time_zone: America/Belem
+  - subdivision_name: North of 2015
+    subdivision_code: N-2015
+    country_name: Brazil
+    country_code: BRA
+    start_date: 2015-01-01
+    end_date: 2024-12-31
+    time_zone: America/Belem
   - subdivision_name: North
     subdivision_code: N
     country_name: Brazil
     country_code: BRA
-    start_date: 2000-01-01
+    start_date: 2025-01-01
     end_date: today
     time_zone: America/Belem
   - subdivision_name: North-East
@@ -32,11 +53,25 @@ entities:
     start_date: 2000-01-01
     end_date: today
     time_zone: America/Fortaleza
-  - subdivision_name: South-East
-    subdivision_code: SE
+  - subdivision_name: South-East/Centre-West of 2000
+    subdivision_code: SE-2000
     country_name: Brazil
     country_code: BRA
     start_date: 2000-01-01
+    end_date: 2008-12-31
+    time_zone: America/Sao_Paulo
+  - subdivision_name: South-East/Centre-West of 2009
+    subdivision_code: SE-2009
+    country_name: Brazil
+    country_code: BRA
+    start_date: 2009-01-01
+    end_date: 2022-12-31
+    time_zone: America/Sao_Paulo
+  - subdivision_name: South-East/Centre-West
+    subdivision_code: SE
+    country_name: Brazil
+    country_code: BRA
+    start_date: 2023-01-01
     end_date: today
     time_zone: America/Sao_Paulo
   - subdivision_name: South

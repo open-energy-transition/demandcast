@@ -33,7 +33,7 @@ reviews:
     verdict: net_demand
     note: The load of ONS leaves out the distributed generation until 2023-04-29.
   - data_source: ons
-    code: BRA_SE
+    code: BRA_SE-2009
     flag: midday_dip
     periods:
       - JJA 2022
@@ -310,7 +310,7 @@ reviews:
     verdict: definition_change
     note: As in the data of CAISO, the load at midday rises from 2023, probably with the charging of batteries counted as load.
   - data_source: cen
-    code: CHL
+    code: CHL_SEN
     flag: midday_rise
     verdict: definition_change
     note: The load at midday rises in 2026, probably with the charging of the batteries that Chile builds counted as load.
@@ -581,7 +581,7 @@ reviews:
     verdict: source_error
     note: Two hours of the morning near zero, without a known blackout, between hours at the usual level.
   - data_source: cen
-    code: CHL
+    code: CHL_SEN
     flag: low_value
     periods:
       - "2025-02-25"

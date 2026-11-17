@@ -59,7 +59,8 @@ def test_get_data_availability(monkeypatch, tmp_path):
 
     The subdivisions have no national population, and the area of a
     shape of a degree by a degree is greater than 500 km², unlike that
-    of a hundredth of a degree.
+    of a hundredth of a degree, also when the shape has several polygons
+    and the first is the small one.
     """
     years = pd.DataFrame(
         {2020: [1.0, 2.0], 2021: [1.0, None]}, index=["FRA", "DEU"]
@@ -83,11 +84,13 @@ def test_get_data_availability(monkeypatch, tmp_path):
         module.utils.shapes,
         "get_entity_shape",
         lambda code, **_: geopandas.GeoDataFrame(
-            geometry=[
-                shapely.box(0, 45, 0.01, 45.01)
-                if code == "LUX"
-                else shapely.box(0, 45, 1, 46)
-            ]
+            geometry={
+                "LUX": [shapely.box(0, 45, 0.01, 45.01)],
+                "FRA_X": [
+                    shapely.box(2, 45, 2.01, 45.01),
+                    shapely.box(0, 45, 1, 46),
+                ],
+            }.get(code, [shapely.box(0, 45, 1, 46)])
         ),
     )
 
