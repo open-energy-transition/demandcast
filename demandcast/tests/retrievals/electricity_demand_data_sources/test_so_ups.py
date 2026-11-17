@@ -14,6 +14,28 @@ import utils.fetcher
 from retrievals.electricity_demand_data_sources import so_ups
 
 
+@pytest.fixture(autouse=True)
+def no_interval(monkeypatch):
+    """Send the requests of the tests without waiting between them."""
+    monkeypatch.setattr(so_ups, "REQUEST_INTERVAL", 0.0)
+
+
+def test_wait_for_the_interval(monkeypatch):
+    """Test that a request waits for the rest of the interval."""
+    sleeps: list[float] = []
+    monkeypatch.setattr(so_ups, "REQUEST_INTERVAL", 2.0)
+    monkeypatch.setattr(so_ups, "_last_request", {"time": 9.5})
+    monkeypatch.setattr(so_ups.time, "monotonic", lambda: 10.0)
+    monkeypatch.setattr(so_ups.time, "sleep", sleeps.append)
+
+    so_ups._wait_for_the_interval()
+    so_ups._last_request["time"] = 5.0
+    so_ups._wait_for_the_interval()
+
+    assert sleeps == [1.5]
+    assert so_ups._last_request == {"time": 10.0}
+
+
 def test_get_available_requests():
     """Test that the requests are the days of the data."""
     requests = so_ups.get_available_requests(

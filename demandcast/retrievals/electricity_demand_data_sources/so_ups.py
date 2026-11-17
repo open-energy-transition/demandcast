@@ -22,6 +22,10 @@ Description:
     which is left out. A day that the page does not have gives the
     chart of another day, so its data is not found.
 
+    The website answers some requests with the error 503 when they
+    follow each other within a second, so the requests are sent at
+    least REQUEST_INTERVAL seconds apart.
+
     The terms of SO UES allow the reproduction of its information in
     unchanged form for non-commercial use only, and any other use with
     its written consent.
@@ -32,6 +36,7 @@ Description:
 import datetime as dt
 import logging
 import re
+import time
 
 import pandas as pd
 
@@ -47,6 +52,12 @@ SYSTEMS = {
     "RUS_URALS": 630000,
     "RUS_VOLGA": 600000,
 }
+
+# The minimum time between two requests, in seconds.
+REQUEST_INTERVAL = 2.0
+
+# The time of the last request, from time.monotonic.
+_last_request = {"time": float("-inf")}
 
 
 def get_available_requests(
@@ -87,6 +98,14 @@ def get_url() -> str:
     )
 
 
+def _wait_for_the_interval() -> None:
+    """Wait until REQUEST_INTERVAL has passed since the last request."""
+    remaining = REQUEST_INTERVAL - (time.monotonic() - _last_request["time"])
+    if remaining > 0:
+        time.sleep(remaining)
+    _last_request["time"] = time.monotonic()
+
+
 def download_and_extract_data_for_request(
     day: dt.date, code: str
 ) -> pd.Series:
@@ -112,6 +131,7 @@ def download_and_extract_data_for_request(
     """
     logging.info(f"Retrieving electricity demand data for {day}.")
 
+    _wait_for_the_interval()
     text = utils.fetcher.fetch_text(
         get_url(),
         request_params={
