@@ -1,0 +1,11 @@
+# Exceptions to the related countries and subdivisions read by
+# utils/relations.py. Two entities are related when the people of their
+# shared area are at least 10% of the people of either of them, from the
+# shares of checks/related_entities.csv, written by check.py.
+
+# Pairs of codes that are related whatever their shares, such as a grid
+# and the country whose demand includes it.
+related: []
+
+# Pairs of codes that are not related whatever their shares.
+unrelated: []

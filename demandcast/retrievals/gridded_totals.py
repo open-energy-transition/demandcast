@@ -51,6 +51,37 @@ def _aggregate_gridded_data(
     float
         The total value of the variable for the country or subdivision.
     """
+    return utils.geospatial.get_total_in_shape(
+        open_gridded_data(variable, code, year, scenario),
+        utils.shapes.get_entity_shape(code, make_plot=False),
+    )
+
+
+def open_gridded_data(
+    variable: str, code: str, year: int, scenario: str | None = None
+) -> xarray.DataArray:
+    """
+    Read the gridded data of a country or subdivision.
+
+    The gridded data in the bounds of the code is extracted first if it
+    is not there yet.
+
+    Parameters
+    ----------
+    variable : str
+        The variable. Available options are "population" and "gdp_ppp".
+    code : str
+        The code of the country or subdivision of interest.
+    year : int
+        The year of the data.
+    scenario : str | None, optional
+        The scenario of the data, none for the historical data.
+
+    Returns
+    -------
+    xarray.DataArray
+        The gridded data, loaded in memory.
+    """
     gridded_data_path = utils.paths.get_gridded_file(
         cast(Literal["population", "gdp_ppp"], variable), code, year, scenario
     )
@@ -66,10 +97,7 @@ def _aggregate_gridded_data(
         )
 
     with xarray.open_dataarray(gridded_data_path) as gridded_data:
-        return utils.geospatial.get_total_in_shape(
-            gridded_data,
-            utils.shapes.get_entity_shape(code, make_plot=False),
-        )
+        return gridded_data.load()
 
 
 def _select_years_of_gridded_data(

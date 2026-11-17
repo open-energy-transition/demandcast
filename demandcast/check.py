@@ -15,13 +15,16 @@ from pydantic import Field
 import checks.data_availability
 import checks.data_sources
 import checks.flags
+import checks.related_entities
 import utils.config
 
 
 class ConfigModel(utils.config.StrictSettings):
     """Settings of check.py."""
 
-    check: Literal["data_availability", "data_sources", "flags"]
+    check: Literal[
+        "data_availability", "data_sources", "flags", "related_entities"
+    ]
     data_sources: list[str] | None = None
     maximum_age_days: int = 60
     maximum_age_days_by_source: dict[str, int] = Field(default_factory=dict)
@@ -51,6 +54,8 @@ def main(config: ConfigModel) -> None:
             config.time_limit_minutes,
             config.skipped_data_sources,
         )
+    elif config.check == "related_entities":
+        checks.related_entities.run_check()
     else:
         checks.flags.run_check()
 
