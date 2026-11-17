@@ -1,0 +1,62 @@
+licence:
+  redistribute: false
+  terms: Reproduction or distribution in unchanged form for non-commercial use only. Any other use needs the written consent of SO UES.
+  url: https://www.so-ups.ru/responsibility/
+definition:
+  - start_date: 2001-01-01
+    quantity: consumption of the interconnected power system
+    embedded_generation: unknown
+    network_losses: unknown
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: SO UES does not define the consumption on the page. It differs from the generation of the system by its exchanges with the other systems and countries.
+entities:
+  - subdivision_name: Centre
+    subdivision_code: CENTER
+    country_name: Russian Federation
+    country_code: RUS
+    start_date: 2001-01-01
+    end_date: today
+    time_zone: Europe/Moscow
+  - subdivision_name: East
+    subdivision_code: EAST
+    country_name: Russian Federation
+    country_code: RUS
+    start_date: 2001-01-01
+    end_date: today
+    time_zone: Asia/Vladivostok
+  - subdivision_name: Middle Volga
+    subdivision_code: VOLGA
+    country_name: Russian Federation
+    country_code: RUS
+    start_date: 2001-01-01
+    end_date: today
+    time_zone: Europe/Moscow
+  - subdivision_name: North-West
+    subdivision_code: NORTHWEST
+    country_name: Russian Federation
+    country_code: RUS
+    start_date: 2001-01-01
+    end_date: today
+    time_zone: Europe/Moscow
+  - subdivision_name: Siberia
+    subdivision_code: SIBERIA
+    country_name: Russian Federation
+    country_code: RUS
+    start_date: 2001-01-01
+    end_date: today
+    time_zone: Asia/Krasnoyarsk
+  - subdivision_name: South
+    subdivision_code: SOUTH
+    country_name: Russian Federation
+    country_code: RUS
+    start_date: 2001-01-01
+    end_date: today
+    time_zone: Europe/Moscow
+  - subdivision_name: Urals
+    subdivision_code: URALS
+    country_name: Russian Federation
+    country_code: RUS
+    start_date: 2001-01-01
+    end_date: today
+    time_zone: Asia/Yekaterinburg
