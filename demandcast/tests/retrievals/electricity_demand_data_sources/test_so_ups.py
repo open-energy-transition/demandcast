@@ -10,7 +10,6 @@ import datetime as dt
 
 import pytest
 
-import utils.fetcher
 from retrievals.electricity_demand_data_sources import so_ups
 
 
@@ -89,11 +88,15 @@ def test_daylight_saving_time(fake_downloads):
     assert time_series.iloc[2] == 20030.0
 
 
-def test_other_day(fake_downloads):
-    """Test that the chart of another day is not taken for the day."""
-    fake_downloads.serve(so_ups.get_url(), "so_ups_other_day.html")
+@pytest.mark.parametrize(
+    "file_name", ["so_ups_other_day.html", "so_ups_without_chart.html"]
+)
+def test_day_without_chart(fake_downloads, file_name):
+    """Test that a day without its chart has no data."""
+    fake_downloads.serve(so_ups.get_url(), file_name)
 
-    with pytest.raises(utils.fetcher.DataNotFoundError):
-        so_ups.download_and_extract_data_for_request(
-            dt.date(2000, 1, 1), "RUS_CENTER"
-        )
+    time_series = so_ups.download_and_extract_data_for_request(
+        dt.date(2002, 2, 1), "RUS_CENTER"
+    )
+
+    assert time_series.empty
