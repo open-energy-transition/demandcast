@@ -386,6 +386,35 @@ def test_run_check(fake_checks):
     ]
 
 
+def test_run_check_imports_the_modules_first(fake_checks, monkeypatch):
+    """
+    Test that the modules are imported before the checks start.
+
+    The modules of the data sources that are checked and the readers of
+    Excel files are imported, and a module that fails to import does not
+    stop the check.
+    """
+    imported = []
+
+    def import_module(name):
+        imported.append((name, list(fake_checks)))
+        if name == "xlrd":
+            raise ImportError("No module named 'xlrd'")
+
+    monkeypatch.setattr(
+        checks.data_sources.importlib, "import_module", import_module
+    )
+
+    results = checks.data_sources.run_check(["ons", "eskom"])
+
+    assert imported == [
+        ("retrievals.electricity_demand_data_sources.ons", []),
+        ("openpyxl", []),
+        ("xlrd", []),
+    ]
+    assert [result.status for result in results] == ["passed", "skipped"]
+
+
 def test_run_check_with_skipped_data_sources(fake_checks):
     """Test that the skipped data sources are reported with a reason."""
     results = checks.data_sources.run_check(
