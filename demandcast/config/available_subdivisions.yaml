@@ -955,12 +955,32 @@ entities:
     subdivision_name: National Interconnected System of 2000
   - country_code: PHL
     country_name: Philippines
+    subdivision_code: BOHOL
+    subdivision_name: Bohol
+  - country_code: PHL
+    country_name: Philippines
+    subdivision_code: CEBU
+    subdivision_name: Cebu
+  - country_code: PHL
+    country_name: Philippines
+    subdivision_code: LEYTE-SAMAR
+    subdivision_name: Leyte-Samar
+  - country_code: PHL
+    country_name: Philippines
     subdivision_code: LUZON
     subdivision_name: Luzon
   - country_code: PHL
     country_name: Philippines
     subdivision_code: MINDANAO
     subdivision_name: Mindanao
+  - country_code: PHL
+    country_name: Philippines
+    subdivision_code: NEGROS
+    subdivision_name: Negros
+  - country_code: PHL
+    country_name: Philippines
+    subdivision_code: PANAY
+    subdivision_name: Panay
   - country_code: PHL
     country_name: Philippines
     subdivision_code: VISAYAS
