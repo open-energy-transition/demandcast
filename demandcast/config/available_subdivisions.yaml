@@ -939,6 +939,10 @@ entities:
     subdivision_name: Chechenskaya Respublika
   - country_code: RUS
     country_name: Russian Federation
+    subdivision_code: CENTER
+    subdivision_name: Centre
+  - country_code: RUS
+    country_name: Russian Federation
     subdivision_code: CHE
     subdivision_name: Chelyabinskaya oblast'
   - country_code: RUS
@@ -953,6 +957,10 @@ entities:
     country_name: Russian Federation
     subdivision_code: DA
     subdivision_name: Dagestan, Respublika
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: EAST
+    subdivision_name: East
   - country_code: RUS
     country_name: Russian Federation
     subdivision_code: IN
@@ -1083,6 +1091,10 @@ entities:
     subdivision_name: Nizhegorodskaya oblast'
   - country_code: RUS
     country_name: Russian Federation
+    subdivision_code: NORTHWEST
+    subdivision_name: North-West
+  - country_code: RUS
+    country_name: Russian Federation
     subdivision_code: NVS
     subdivision_name: Novosibirskaja oblast'
   - country_code: RUS
@@ -1143,8 +1155,16 @@ entities:
     subdivision_name: Severnaja Osetija, Respublika
   - country_code: RUS
     country_name: Russian Federation
+    subdivision_code: SIBERIA
+    subdivision_name: Siberia
+  - country_code: RUS
+    country_name: Russian Federation
     subdivision_code: SMO
     subdivision_name: Smolenskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: SOUTH
+    subdivision_name: South
   - country_code: RUS
     country_name: Russian Federation
     subdivision_code: SPE
@@ -1195,6 +1215,10 @@ entities:
     subdivision_name: Ul'janovskaja oblast'
   - country_code: RUS
     country_name: Russian Federation
+    subdivision_code: URALS
+    subdivision_name: Urals
+  - country_code: RUS
+    country_name: Russian Federation
     subdivision_code: VGG
     subdivision_name: Volgogradskaja oblast'
   - country_code: RUS
@@ -1205,6 +1229,10 @@ entities:
     country_name: Russian Federation
     subdivision_code: VLG
     subdivision_name: Vologodskaja oblast'
+  - country_code: RUS
+    country_name: Russian Federation
+    subdivision_code: VOLGA
+    subdivision_name: Middle Volga
   - country_code: RUS
     country_name: Russian Federation
     subdivision_code: VOR
