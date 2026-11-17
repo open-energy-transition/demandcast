@@ -228,7 +228,7 @@ def test_check_data_source_with_an_end_date(
     _, end_date = (
         utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
             "hydroquebec"
-        )["CAN_QC"]
+        )["CAN_QC-INTEGRATED"]
     )
     end = pd.Timestamp(end_date) + pd.Timedelta(hours=hours_after_end_date)
     monkeypatch.setattr(
@@ -239,7 +239,7 @@ def test_check_data_source_with_an_end_date(
 
     result = checks.data_sources.check_data_source("hydroquebec", 60)
 
-    assert result.code == "CAN_QC"
+    assert result.code == "CAN_QC-INTEGRATED"
     assert result.request == "all the data"
     message = (
         f"The data go until {end:%Y-%m-%d}, after the end date of the "

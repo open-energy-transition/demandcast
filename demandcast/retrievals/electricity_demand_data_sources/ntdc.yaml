@@ -11,8 +11,10 @@ definition:
     power_plant_use: unknown
     note: The load leaves out K-Electric, which supplies Karachi, and the generation of the consumers for their own use.
 entities:
-  - country_name: Pakistan
+  - subdivision_name: NTDC grid
+    subdivision_code: NTDC
+    country_name: Pakistan
     country_code: PAK
     start_date: 2015-01-01
     end_date: 2020-04-30
-    same_area: false
+    time_zone: Asia/Karachi

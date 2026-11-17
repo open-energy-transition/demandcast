@@ -72,13 +72,13 @@ def test_check_and_get_codes_with():
         "electricity_demand_data", data_source="entsoe"
     )
     assert isinstance(entsoe_codes, list)
-    assert "FRA" in entsoe_codes
+    assert "DEU" in entsoe_codes
     assert "USA_TEX" not in entsoe_codes
 
     # Check the validity of a specific code for a specific data source.
     assert utils.availability.check_and_get_codes_with(
-        "electricity_demand_data", code="FRA", data_source="entsoe"
-    ) == ["FRA"]
+        "electricity_demand_data", code="DEU", data_source="entsoe"
+    ) == ["DEU"]
 
     # Read codes from a specified file path and check them.
     with (

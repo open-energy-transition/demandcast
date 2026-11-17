@@ -1,16 +1,16 @@
 reviews:
   - data_source: aemo_nem
-    code: AUS_SA
+    code: AUS_SA1
     flag: midday_dip
     verdict: net_demand
     note: The operational demand of AEMO leaves out the rooftop solar, whose estimate is added from 2017 (#297); before, AEMO has none.
   - data_source: combined
-    code: PAK
+    code: PAK_NTDC
     flag: midday_dip
     verdict: net_demand
     note: ISMO leaves out the solar of the consumers, which grows fast from 2023, so its midday is lower than that of NTDC before 2020.
   - data_source: combined
-    code: PAK
+    code: PAK_NTDC
     flag: time_lag
     verdict: net_demand
     note: The midday dip of ISMO changes its daily profile against that of NTDC before 2020; the hours of ISMO are right, by its solar generation.
@@ -52,7 +52,7 @@ reviews:
     verdict: net_demand
     note: The load of ONS leaves out the distributed generation until 2023-04-29.
   - data_source: caiso
-    code: USA_CAL
+    code: USA_CAISO
     flag: midday_rise
     verdict: definition_change
     note: The load at midday rises by about 4 GW from 2023, probably with the charging of batteries counted as load.
@@ -96,19 +96,19 @@ reviews:
     verdict: net_demand
     note: The demand at midday stays the same from DJF 2025 while that of the morning and the afternoon grows by 3% to 6%, probably as the solar in the distribution networks of Tamil Nadu grows, as in Kerala.
   - data_source: cnd
-    code: PAN
+    code: PAN_SIN
     flag: midday_dip
     periods:
       - MAM 2020
     verdict: real_event
     note: The lockdown of 2020, from 25 March.
   - data_source: aemo_nem
-    code: AUS_QLD
+    code: AUS_QLD1
     flag: midday_dip
     verdict: net_demand
     note: The operational demand of AEMO leaves out the rooftop solar, whose estimate is added from 2017 (#297); before, AEMO has none.
   - data_source: aemo_wem
-    code: AUS_WA
+    code: AUS_SWIS
     flag: midday_dip
     verdict: net_demand
     note: The operational demand of AEMO leaves out the rooftop solar, whose estimate is added from 2020-11-03 (#303); before, AEMO has none.
@@ -226,7 +226,7 @@ reviews:
     verdict: net_demand
     note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
   - data_source: entsoe
-    code: ESP
+    code: ESP_PENINSULAR
     flag: midday_dip
     verdict: net_demand
     note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
@@ -271,7 +271,7 @@ reviews:
     verdict: net_demand
     note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
   - data_source: entsoe
-    code: PRT
+    code: PRT_MAINLAND
     flag: midday_dip
     verdict: net_demand
     note: The demand leaves out the rooftop and other embedded solar, whose growth lowers the midday.
@@ -389,7 +389,7 @@ reviews:
     verdict: false_positive
     note: A few days before the change; the times of 2016-10-30 to 2016-11-17, an hour early, are corrected.
   - data_source: entsoe
-    code: FRA
+    code: FRA_CONTINENTAL
     flag: daylight_saving
     periods:
       - "2024-03-31"
@@ -401,7 +401,7 @@ reviews:
     verdict: false_positive
     note: Only the changes of autumn, with the start of the heating, while the changes of spring are not flagged.
   - data_source: entsoe
-    code: FRA
+    code: FRA_CONTINENTAL
     flag: time_lag
     periods:
       - SON 2023
@@ -443,12 +443,12 @@ reviews:
     verdict: definition_change
     note: With the rooftop solar added, the midday rises from 2023 and most in 2026, probably with the charging of grid batteries counted as load.
   - data_source: aemo_nem
-    code: AUS_QLD
+    code: AUS_QLD1
     flag: midday_rise
     verdict: definition_change
     note: With the rooftop solar added, the midday rises from 2023 and most in 2026, probably with the charging of grid batteries counted as load.
   - data_source: aemo_nem
-    code: AUS_SA
+    code: AUS_SA1
     flag: midday_rise
     verdict: definition_change
     note: With the rooftop solar added, the midday rises from 2023 and most in 2026, probably with the charging of grid batteries counted as load.
@@ -458,7 +458,7 @@ reviews:
     verdict: definition_change
     note: With the rooftop solar added, the midday rises from 2023 and most in 2026, probably with the charging of grid batteries counted as load.
   - data_source: aemo_wem
-    code: AUS_WA
+    code: AUS_SWIS
     flag: midday_rise
     periods:
       - DJF 2021
@@ -468,7 +468,7 @@ reviews:
     verdict: definition_change
     note: The estimate of the rooftop solar is added from 2020-11-03 (#303).
   - data_source: aemo_wem
-    code: AUS_WA
+    code: AUS_SWIS
     flag: midday_rise
     periods:
       - MAM 2026
@@ -545,7 +545,7 @@ reviews:
     verdict: definition_change
     note: The demand is modelled as the demand without the load shedding, so it is higher than the consumption that was supplied.
   - data_source: aemo_nem
-    code: AUS_SA
+    code: AUS_SA1
     flag: low_value
     periods:
       - "2016-09-28"
@@ -588,7 +588,7 @@ reviews:
     verdict: real_event
     note: The national blackout of Chile of 25 February 2025, from 15:16.
   - data_source: xm
-    code: COL
+    code: COL_SIN
     flag: low_value
     periods:
       - "2007-04-26"
@@ -616,7 +616,7 @@ reviews:
     verdict: real_event
     note: The island-wide blackout of Sri Lanka of 9 February 2025.
   - data_source: ntdc
-    code: PAK
+    code: PAK_NTDC
     flag: low_value
     periods:
       - "2015-01-24"
@@ -624,7 +624,7 @@ reviews:
     verdict: real_event
     note: The national blackout of Pakistan of the night of 24 to 25 January 2015.
   - data_source: entsoe
-    code: PRT
+    code: PRT_MAINLAND
     flag: low_value
     periods:
       - "2025-04-28"
@@ -700,7 +700,7 @@ reviews:
     verdict: source_error
     note: Hours far below the load of Great Britain, without a known blackout (that of 9 August 2019 is not one of them), between hours at the usual level.
   - data_source: entsoe
-    code: GRC
+    code: GRC_INTERCONNECTED
     flag: low_value
     periods:
       - "2022-10-31"
@@ -732,7 +732,7 @@ reviews:
     verdict: source_error
     note: A single hour far below the usual load, between hours at the usual level.
   - data_source: cnd
-    code: PAN
+    code: PAN_SIN
     flag: low_value
     periods:
       - "2019-01-20"

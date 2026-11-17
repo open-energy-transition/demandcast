@@ -18,8 +18,8 @@ definition:
     power_plant_use: unknown
     note: AEMO's estimate of the distributed solar is added (#303).
 entities:
-  - subdivision_name: Western Australia
-    subdivision_code: WA
+  - subdivision_name: South West Interconnected System
+    subdivision_code: SWIS
     country_name: Australia
     country_code: AUS
     start_date: 2006-09-20

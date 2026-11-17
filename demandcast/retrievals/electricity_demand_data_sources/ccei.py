@@ -15,6 +15,15 @@ Description:
     at irregular times, and the data has a few spikes, such as about
     20,000 MW in Alberta or 80,000 MW in Quebec.
 
+    The data of three provinces and territories measures their main
+    grid: that of Newfoundland and Labrador, the Island Interconnected
+    System, without Labrador and the isolated communities of the island;
+    that of Quebec, the integrated network, without the off-grid
+    networks, such as those of Nunavik, the Basse-Côte-Nord, Anticosti
+    and the Îles-de-la-Madeleine; and that of Yukon, the Yukon
+    Integrated System, without the off-grid communities of Watson Lake,
+    Old Crow, Beaver Creek and Burwash Landing.
+
     Each row also gives the local time (DATETIME_LOCAL), and for some
     provinces only one of the two times is right, as their daily
     profile shows across the changes of the clocks:
@@ -61,7 +70,7 @@ import utils.time_zones
 
 # The provinces whose data is read in local time, whose times in UTC are
 # wrong.
-LOCAL_TIME_CODES = ["CAN_NL", "CAN_PE", "CAN_QC"]
+LOCAL_TIME_CODES = ["CAN_NL-ISLAND", "CAN_PE", "CAN_QC-INTEGRATED"]
 
 # The period of the summer of 2023 in which the local times of
 # Newfoundland and Labrador are an hour late.
@@ -121,13 +130,13 @@ def get_url(code: str) -> str:
         "AB": ["AB", "INTERNAL_LOAD"],
         "BC": ["BC", "LOAD"],
         "NB": ["NB", "LOAD"],
-        "NL": ["NL", "DEMAND"],
+        "NL-ISLAND": ["NL", "DEMAND"],
         "NS": ["NS", "LOAD"],
         "ON": ["ON", "ONTARIO_DEMAND"],
         "PE": ["PE", "ON_ISL_LOAD"],
-        "QC": ["QC", "DEMAND"],
+        "QC-INTEGRATED": ["QC", "DEMAND"],
         "SK": ["SK", "SYSTEM_DEMAND"],
-        "YT": ["YK", "TOTAL"],
+        "YT-INTEGRATED": ["YK", "TOTAL"],
     }
 
     if subdivision_code not in variable_names:
@@ -191,7 +200,7 @@ def download_and_extract_data_for_request(
         # Read the local times in the time zone of the province, without
         # the hour repeated when daylight saving time ends.
         local_times = pd.to_datetime(dataset["DATETIME_LOCAL"])
-        if code == "CAN_NL":
+        if code == "CAN_NL-ISLAND":
             late = (local_times >= LATE_PERIOD_OF_NL[0]) & (
                 local_times < LATE_PERIOD_OF_NL[1]
             )

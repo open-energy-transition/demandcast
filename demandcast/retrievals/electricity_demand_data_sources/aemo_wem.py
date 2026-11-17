@@ -8,7 +8,9 @@ Description:
     (AEMO) for the Wholesale Electricity Market (WEM) in Western
     Australia. The data is retrieved in one-year intervals in CSV format
     until September 2023, and from October 2023, after the reform of the
-    market, in one-month intervals of daily files in JSON format.
+    market, in one-month intervals of daily files in JSON format. The
+    WEM is the South West Interconnected System (AUS_SWIS), the grid of
+    the south-west of Western Australia.
 
     The files give the operational demand in MW of each interval, of 30
     minutes until September 2023 and 5 minutes since, at its start, in

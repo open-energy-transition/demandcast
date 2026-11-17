@@ -26,8 +26,8 @@ entities:
     start_date: 2016-01-01
     end_date: today
     time_zone: "America/Moncton"
-  - subdivision_name: Newfoundland and Labrador
-    subdivision_code: NL
+  - subdivision_name: Island Interconnected System
+    subdivision_code: NL-ISLAND
     country_name: Canada
     country_code: CAN
     start_date: 2022-09-13
@@ -54,15 +54,15 @@ entities:
     start_date: 2012-11-13
     end_date: today
     time_zone: America/Halifax
-  - subdivision_name: Quebec
-    subdivision_code: QC
+  - subdivision_name: Integrated network of Québec
+    subdivision_code: QC-INTEGRATED
     country_name: Canada
     country_code: CAN
     start_date: 2021-10-05
     end_date: today
     time_zone: America/Montreal
-  - subdivision_name: Yukon
-    subdivision_code: YT
+  - subdivision_name: Yukon Integrated System
+    subdivision_code: YT-INTEGRATED
     country_name: Canada
     country_code: CAN
     start_date: 2024-10-09

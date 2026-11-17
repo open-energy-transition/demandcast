@@ -14,6 +14,7 @@ import pytest
 
 import cleaning.combining
 import cleaning.flags
+import utils.data_sources
 import utils.paths
 
 pytestmark = pytest.mark.usefixtures("longitude")
@@ -209,12 +210,10 @@ def test_source_not_needed():
 @pytest.mark.parametrize(
     ("code", "data_sources", "best"),
     [
-        # CAISO covers only part of the region of California of the EIA.
-        ("USA_CAL", ["caiso", "eia"], "eia"),
         # The demand of ISO-NE is gross, and that of the EIA net.
         ("USA_NE", ["eia", "isone"], "isone"),
         # The CCEI republishes the data of Hydro-Québec.
-        ("CAN_QC", ["ccei", "hydroquebec"], "hydroquebec"),
+        ("CAN_QC-INTEGRATED", ["ccei", "hydroquebec"], "hydroquebec"),
         # The CCEI republishes the data of IESO, whose definition is
         # better known.
         ("CAN_ON", ["ccei", "ieso"], "ieso"),
@@ -243,12 +242,48 @@ def test_ranking_of_the_data_sources(code, data_sources, best):
     )
 
 
+def test_data_source_of_part_of_the_area_ranks_last(monkeypatch):
+    """
+    Test that a data source of part of the area of a code ranks last.
+
+    ISO-NE, whose gross demand ranks first otherwise, is given as
+    covering only part of the area of its code (same_area false).
+    """
+    read_entities = utils.data_sources.read_entities
+
+    def read_entities_of_part_of_the_area(data_source):
+        entities = read_entities(data_source)
+        if data_source != "isone":
+            return entities
+        return [
+            entity.model_copy(update={"same_area": False})
+            for entity in entities
+        ]
+
+    monkeypatch.setattr(
+        utils.data_sources, "read_entities", read_entities_of_part_of_the_area
+    )
+    for data_source in ["eia", "isone"]:
+        _save_cleaned(
+            "USA_NE", data_source, _hourly("2021-01-01", "2021-12-31 23:00")
+        )
+
+    combined = cleaning.combining.combine_data("USA_NE")
+
+    assert combined is not None
+    assert combined["Source"].eq("eia").all()
+
+
 def test_longer_data_ranks_first():
     """Test that the longer of two equal data sources ranks first."""
-    _save_cleaned("PAK", "ntdc", _hourly("2015-01-01", "2020-04-30 23:00"))
-    _save_cleaned("PAK", "ismo", _hourly("2024-07-01", "2025-06-30 23:00"))
+    _save_cleaned(
+        "PAK_NTDC", "ntdc", _hourly("2015-01-01", "2020-04-30 23:00")
+    )
+    _save_cleaned(
+        "PAK_NTDC", "ismo", _hourly("2024-07-01", "2025-06-30 23:00")
+    )
 
-    combined = cleaning.combining.combine_data("PAK")
+    combined = cleaning.combining.combine_data("PAK_NTDC")
 
     assert combined is not None
     assert _on_day(combined, "Source", "2016-01-01").eq("ntdc").all()

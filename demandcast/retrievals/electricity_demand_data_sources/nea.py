@@ -18,6 +18,11 @@ Description:
     is the end of the day. The file of Shrawan gives the times as
     fractions of a day.
 
+    The load is that of the Integrated Nepal Power System (NPL_INPS),
+    without the districts that the grid did not reach: Humla, Mugu,
+    Dolpa, Jumla, Kalikot, Bajura, Bajhang, Darchula, Manang, Solukhumbu
+    and Rukum East.
+
     Source: https://opendatanepal.com/datasets/electricity-load-profile-of-nepal-in-2073-nepal-electricity-authority
 """
 

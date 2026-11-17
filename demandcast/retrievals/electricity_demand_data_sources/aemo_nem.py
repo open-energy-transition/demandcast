@@ -9,6 +9,13 @@ Description:
     data is retrieved from the monthly CSV files on the AEMO website,
     the file of the current month running until the current day.
 
+    The regions of the NEM are New South Wales, Victoria and Tasmania,
+    and the parts of Queensland and South Australia that the NEM
+    supplies, whose codes are the identifiers of their regions, QLD1
+    and SA1: the NEM leaves out north-west Queensland, around Mount Isa,
+    the Gulf and Channel Country towns, Cape York and the Torres Strait,
+    and the remote north and west of South Australia.
+
     The files give the total demand of the region in MW at the end of
     each interval, of 30 minutes until September 2021 and 5 minutes
     since, in NEM time, which is UTC+10 all year.
@@ -51,6 +58,15 @@ ROOFTOP_SOLAR_TYPES = ["MEASUREMENT", "DAILY", "SATELLITE"]
 
 # The time zone of the NEM, UTC+10 all year.
 NEM_TIME = dt.timezone(dt.timedelta(hours=10))
+
+# The identifiers of the regions of the NEM, by code.
+REGIONS = {
+    "AUS_NSW": "NSW1",
+    "AUS_QLD1": "QLD1",
+    "AUS_SA1": "SA1",
+    "AUS_TAS": "TAS1",
+    "AUS_VIC": "VIC1",
+}
 
 
 def get_available_requests(
@@ -97,11 +113,9 @@ def get_url(year: int, month: int, code: str) -> str:
     url : str
         The URL of the electricity demand data.
     """
-    subdivision_code = code.split("_")[1]
-
     url = (
         "https://www.aemo.com.au/aemo/data/nem/priceanddemand/"
-        f"PRICE_AND_DEMAND_{year}{month:02d}_{subdivision_code}1.csv"
+        f"PRICE_AND_DEMAND_{year}{month:02d}_{REGIONS[code]}.csv"
     )
 
     return url
@@ -193,7 +207,7 @@ def _get_rooftop_solar(year: int, month: int, code: str) -> pd.Series | None:
     dataset = pd.read_csv(io.StringIO(text), skiprows=1, low_memory=False)
     dataset = dataset[
         (dataset.iloc[:, 0] == "D")
-        & (dataset["REGIONID"] == code.split("_")[1] + "1")
+        & (dataset["REGIONID"] == REGIONS[code])
         & dataset["TYPE"].isin(ROOFTOP_SOLAR_TYPES)
     ]
 

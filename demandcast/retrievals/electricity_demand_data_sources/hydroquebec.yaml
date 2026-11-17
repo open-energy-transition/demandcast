@@ -11,8 +11,8 @@ definition:
     power_plant_use: unknown
     note: The demand is computed in real time and is not the official data. Hydro-Québec defines it only as the average total demand of the hour. Its midday is flat from 2019, with little rooftop solar in Quebec.
 entities:
-  - subdivision_name: Quebec
-    subdivision_code: QC
+  - subdivision_name: Integrated network of Québec
+    subdivision_code: QC-INTEGRATED
     country_name: Canada
     country_code: CAN
     start_date: 2019-01-01

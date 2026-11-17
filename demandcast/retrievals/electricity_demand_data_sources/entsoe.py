@@ -15,6 +15,19 @@ Description:
     daylight saving time ended. The actual total load is not on the list
     of data that ENTSO-E opens under CC BY 4.0.
 
+    The data of seven countries measures their main system, whose code
+    is a subdivision of the country, with the area of the country:
+    peninsular Spain (ESP_PENINSULAR), without the Balearic and Canary
+    Islands, Ceuta and Melilla; continental France (FRA_CONTINENTAL),
+    without Corsica; the power system of GSE in Georgia (GEO_GSE), with
+    Abkhazia and without the Tskhinvali region; the interconnected
+    system of Greece (GRC_INTERCONNECTED), without the
+    non-interconnected islands, such as Crete, the Dodecanese and the
+    North Aegean; mainland Norway (NOR_MAINLAND) and Portugal
+    (PRT_MAINLAND); and the Integrated Power System of Ukraine
+    (UKR_IPS), without Crimea and the occupied parts of Donetsk and
+    Luhansk.
+
     The United Kingdom has two areas: Great Britain (GB), the area of
     National Grid, from 2014-12-22 to 2021-06-14, when its data ends
     after the United Kingdom left the market of the European Union, and
@@ -75,13 +88,23 @@ import utils.time_series
 
 # The areas of ENTSO-E of the subdivisions, by their code. The areas of
 # the countries are their ISO Alpha-2 codes.
-AREAS = {"GBR_GB": "GB", "GBR_NIR": "GB_NIR"}
+AREAS = {
+    "ESP_PENINSULAR": "ES",
+    "FRA_CONTINENTAL": "FR",
+    "GBR_GB": "GB",
+    "GBR_NIR": "GB_NIR",
+    "GEO_GSE": "GE",
+    "GRC_INTERCONNECTED": "GR",
+    "NOR_MAINLAND": "NO",
+    "PRT_MAINLAND": "PT",
+    "UKR_IPS": "UA",
+}
 
 # The periods whose times are wrong on ENTSO-E, by code, from and to in
 # UTC, with the hours to add to them.
 TIME_CORRECTIONS = {
     "BGR": [("2016-10-30 01:00", "2016-11-17 22:00", 1)],
-    "UKR": [
+    "UKR_IPS": [
         ("2018-03-25 01:00", "2018-10-28 01:00", -1),
         ("2018-10-28 01:00", "2019-03-31 01:00", 1),
         ("2019-10-27 01:00", "2019-11-09 22:00", 1),

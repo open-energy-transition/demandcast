@@ -121,7 +121,7 @@ def test_read_codes():
     # Read codes belonging to a specific data source and check them.
     entsoe_codes = utils.data_sources.read_codes_in(data_source="entsoe")
     assert isinstance(entsoe_codes, list)
-    assert "FRA" in entsoe_codes
+    assert "DEU" in entsoe_codes
     assert "USA_TEX" not in entsoe_codes
 
     # Read all codes available in the yaml files and check them.
@@ -129,7 +129,7 @@ def test_read_codes():
         utils.data_sources.read_all_codes_with_electricity_demand_data()
     )
     assert isinstance(all_codes, list)
-    assert "FRA" in all_codes
+    assert "DEU" in all_codes
     assert "USA_TEX" in all_codes
     assert all_codes == sorted(set(all_codes))
 
@@ -408,6 +408,6 @@ def test_compiled_data_sources_and_areas():
     assert utils.data_sources.read_compiled("eia")
     assert not utils.data_sources.read_compiled("caiso")
     caiso = utils.data_sources.read_entities("caiso")[0]
-    assert caiso.code == "USA_CAL"
-    assert not caiso.same_area
+    assert caiso.code == "USA_CAISO"
+    assert caiso.same_area
     assert utils.data_sources.read_entities("isone")[0].same_area

@@ -7,7 +7,10 @@ Description:
     data from the website of Hydro-Québec in Canada. The data is
     retrieved all at once. Each time marks the end of its hour: the
     value is the average demand in MW of the hour, computed in real time
-    by the control centre of Hydro-Québec and not the official data.
+    by the control centre of Hydro-Québec and not the official data. It
+    is the demand of the integrated network of Québec, without the
+    off-grid networks, such as those of Nunavik, the Basse-Côte-Nord,
+    Anticosti and the Îles-de-la-Madeleine.
 
     Hydro-Québec adds the data of a year some months after the year is
     over, and the end date of the YAML file is then moved by hand to the
