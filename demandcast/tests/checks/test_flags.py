@@ -9,6 +9,7 @@ Description:
 """
 
 import os
+import shutil
 import sys
 from typing import Literal
 
@@ -20,6 +21,9 @@ import checks.flags
 import utils.config
 import utils.data_sources
 import utils.paths
+
+# The summary of the data availability in the folder of the checks.
+AVAILABILITY_FILE = "data_availability_summary.csv"
 
 
 def _save_flags(
@@ -48,6 +52,9 @@ def checks_folder(monkeypatch, tmp_path):
     """
     Point the folder of the checks to a temporary one with reviews.
 
+    The summary of the data availability of the repository is copied
+    there, for the time zones of the subdivisions.
+
     Returns
     -------
     str
@@ -55,6 +62,9 @@ def checks_folder(monkeypatch, tmp_path):
     """
     folder = os.path.join(tmp_path, "checks")
     os.makedirs(folder)
+    shutil.copy(
+        os.path.join(utils.paths.CHECKS_FOLDER, AVAILABILITY_FILE), folder
+    )
     monkeypatch.setattr(utils.paths, "CHECKS_FOLDER", folder)
     with open(os.path.join(folder, "reviewed_flags.yaml"), "w") as file:
         file.write(
@@ -284,3 +294,30 @@ def test_combined_flags(checks_folder):
     assert (
         "| AUS_SA | time_lag | DJF 2024 | net_demand | From the combination. |"
     ) in report
+
+
+def test_main_source_of_the_local_days_of_a_flag():
+    """
+    Test that the main source of a flag is that of its local days.
+
+    In Japan (UTC+9), the hours of 2 January start on that day in local
+    time and end from 16:00 UTC on 1 January to 15:00 UTC on 2 January.
+    The source "a" gives 16 of them, but only 8 of the hours that end on
+    2 January in UTC.
+    """
+    file_path = utils.paths.get_electricity_demand_file("combined", "JPN")
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    hours = pd.date_range("2024-01-01 01:00", "2024-01-03", freq="h")
+    in_a = (hours >= pd.Timestamp("2024-01-01 16:00")) & (
+        hours <= pd.Timestamp("2024-01-02 07:00")
+    )
+    pd.DataFrame(
+        {"Load (MW)": 1000.0, "Source": ["a" if a else "b" for a in in_a]},
+        index=pd.Index(hours, name="Time (UTC)"),
+    ).to_parquet(file_path)
+
+    main_source = checks.flags._get_main_source(
+        "JPN", pd.Timestamp("2024-01-02"), pd.Timestamp("2024-01-02")
+    )
+
+    assert main_source == "a"

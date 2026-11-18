@@ -10,6 +10,7 @@ Description:
 
 import datetime as dt
 
+import pandas as pd
 import pytz
 from countryinfo import CountryInfo, CountryNotFoundError
 from timezonefinder import TimezoneFinder
@@ -307,3 +308,28 @@ def get_time_zone(code: str) -> dt.tzinfo:
     if "_" in code:
         return _get_time_zone_of_subdivision(code)
     return _get_time_zone_of_country(code)
+
+
+def get_local_days(code: str, times: pd.DatetimeIndex) -> pd.DatetimeIndex:
+    """
+    Get the local day of the start of each hour of a code.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+    times : pandas.DatetimeIndex
+        The hours, by their ends in UTC.
+
+    Returns
+    -------
+    pandas.DatetimeIndex
+        The local day of the start of each hour, without time zone.
+    """
+    return (
+        (times - pd.Timedelta(hours=1))
+        .tz_localize("UTC")
+        .tz_convert(get_time_zone(code))
+        .tz_localize(None)
+        .normalize()
+    )
