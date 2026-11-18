@@ -21,16 +21,18 @@ Description:
     training; a forecast stops if the target differs. That of a result
     records its model and dataset, and the metric of the errors.
 
-    The results of a version are read from the latest of its files by
-    the time in their names, and are checked against their manifest,
-    with their summary and their predictions, so that a copied or
-    changed file is neither taken for the latest nor read.
+    The latest model, assembled data or results are those with the
+    latest time in their names, which are a prefix, the time and the
+    extension: a copy, whose name ends otherwise, is never taken for the
+    latest. The results are checked against their manifest, with their
+    summary and their predictions, so that a changed file is not read.
 """
 
 import dataclasses
 import glob
 import logging
 import os
+import re
 import zipfile
 from typing import Any, Literal
 
@@ -53,42 +55,65 @@ METRIC = {
 }
 
 
+def _get_time_in_name(
+    file_name: str, prefix: str, extension: str
+) -> str | None:
+    """
+    Get the time of creation in the name of a file.
+
+    Parameters
+    ----------
+    file_name : str
+        The name of the file.
+    prefix : str
+        The start of the names of the files, with or without the
+        underscore before the time.
+    extension : str
+        The extension of the files, such as ".parquet".
+
+    Returns
+    -------
+    str | None
+        The time in the name, in the format YYYYMMDD_HHMMSS, or None if
+        the name is not the prefix, the time and the extension, such as
+        that of a copy or of a manifest.
+    """
+    match = re.fullmatch(
+        re.escape(prefix.removesuffix("_"))
+        + r"_(\d{8}_\d{6})"
+        + re.escape(extension),
+        file_name,
+    )
+    return match.group(1) if match else None
+
+
 def _get_latest_file(folder: str, prefix: str, extension: str) -> str | None:
     """
     Get the latest file of a folder by the time in its name.
-
-    The names of the files end with the time of their creation, in the
-    format YYYYMMDD_HHMMSS, before the extension. The manifests of the
-    files are not files of the folder.
 
     Parameters
     ----------
     folder : str
         The folder to search.
     prefix : str
-        The start of the names of the files.
+        The start of the names of the files, before the time.
     extension : str
         The extension of the files, such as ".parquet".
 
     Returns
     -------
-    latest_path : str | None
-        The path of the latest file, or None if there is no file.
+    str | None
+        The path of the file with the latest time in its name (see
+        _get_time_in_name), or None if there is none.
     """
-    latest_path = None
-    latest_time = "00000000_000000"
-    for file_name in os.listdir(folder):
-        time = file_name[-len(latest_time) - len(extension) : -len(extension)]
-        if (
-            file_name.startswith(prefix)
-            and file_name.endswith(extension)
-            and not file_name.endswith(utils.manifest.MANIFEST_EXTENSION)
-            and time > latest_time
-        ):
-            latest_time = time
-            latest_path = os.path.join(folder, file_name)
-
-    return latest_path
+    times = {
+        file_name: time
+        for file_name in os.listdir(folder)
+        if (time := _get_time_in_name(file_name, prefix, extension))
+    }
+    if not times:
+        return None
+    return os.path.join(folder, max(times, key=lambda name: times[name]))
 
 
 @dataclasses.dataclass(frozen=True)
@@ -135,19 +160,21 @@ def find_latest_results(
     -------
     str | None
         The path of the Parquet file of the latest results, those with
-        the latest time and then the last path, or None if there is
-        none.
+        the latest time in their name (see _get_time_in_name) and then
+        the last path, or None if there is none.
     """
-    file_paths = glob.glob(
-        os.path.join(
-            results_directory, f"with_{version}", "*", f"{name}_*.parquet"
+    times = {
+        path: time
+        for path in glob.glob(
+            os.path.join(
+                results_directory, f"with_{version}", "*", f"{name}_*.parquet"
+            )
         )
-    )
-    return max(
-        file_paths,
-        key=lambda path: (path.removesuffix(".parquet")[-15:], path),
-        default=None,
-    )
+        if (
+            time := _get_time_in_name(os.path.basename(path), name, ".parquet")
+        )
+    }
+    return max(times, key=lambda path: (times[path], path), default=None)
 
 
 def read_results(file_path: str) -> Results:

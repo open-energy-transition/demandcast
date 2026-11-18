@@ -341,3 +341,55 @@ def test_save_results_with_the_models_of_the_folds(tmp_path):
         name: utils.manifest.get_checksum(str(models_folder / name))
         for name in ("DEU.json", "FRA.json")
     }
+
+
+def test_get_latest_file(tmp_path):
+    """
+    Test that the latest file is found by the time in its name.
+
+    A file whose name has no time after the prefix, such as a copy, is
+    not taken for the latest, even though its name sorts after the
+    others.
+    """
+    for file_name in [
+        "assembled_data_for_training_20250102_000000.parquet",
+        "assembled_data_for_training_20250103_000000.parquet",
+        "assembled_data_for_training_20250101_000000.parquet",
+        "assembled_data_for_training_20250104_000000.csv",
+        "assembled_data_for_training_20250105_000000_copy.parquet",
+        "assembled_data_for_training_tuned.parquet",
+        "assembled_data_for_forecasting_20250106_000000.parquet",
+        "other_data_20250107_000000.parquet",
+    ]:
+        (tmp_path / file_name).touch()
+
+    assert ml_models.files._get_latest_file(
+        str(tmp_path), "assembled_data_for_training_", ".parquet"
+    ) == str(tmp_path / "assembled_data_for_training_20250103_000000.parquet")
+    assert (
+        ml_models.files._get_latest_file(
+            str(tmp_path), "xgboost_model", ".json"
+        )
+        is None
+    )
+
+
+def test_latest_results_are_not_a_copy(tmp_path):
+    """
+    Test that a copy of results is not taken for the latest results.
+
+    The copy has no time in its name, which sorts after the times.
+    """
+    folder = tmp_path / "with_xgboost_model_1" / "using_data_1"
+    folder.mkdir(parents=True)
+    for file_name in [
+        "all_20250101_000000.parquet",
+        "all_20250102_000000.parquet",
+        "all_copy.parquet",
+        "Europe_20250103_000000.parquet",
+    ]:
+        (folder / file_name).touch()
+
+    assert ml_models.files.find_latest_results(
+        str(tmp_path), "xgboost_model_1"
+    ) == str(folder / "all_20250102_000000.parquet")

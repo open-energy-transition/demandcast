@@ -13,7 +13,6 @@ import pandas as pd
 import pytest
 
 import ml_models.data
-import ml_models.files
 
 
 def test_read_and_check_ml_configuration():
@@ -733,26 +732,6 @@ def test_check_model_features_errors(columns):
         ml_models.data.check_model_features(
             model, pd.DataFrame(columns=columns)
         )
-
-
-def test_get_latest_file(tmp_path):
-    """Test that the latest file is found by the time in its name."""
-    for file_name in [
-        "assembled_data_for_training_20250102_000000.parquet",
-        "assembled_data_for_training_20250103_000000.parquet",
-        "assembled_data_for_training_20250101_000000.parquet",
-        "assembled_data_for_training_20250104_000000.csv",
-        "other_data_20250105_000000.parquet",
-    ]:
-        (tmp_path / file_name).touch()
-
-    assert ml_models.files._get_latest_file(
-        str(tmp_path), "assembled_data", ".parquet"
-    ) == str(tmp_path / "assembled_data_for_training_20250103_000000.parquet")
-    assert (
-        ml_models.files._get_latest_file(str(tmp_path), "model", ".json")
-        is None
-    )
 
 
 def _years(sizes: dict[tuple[str, int], int]):

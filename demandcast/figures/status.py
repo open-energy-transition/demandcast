@@ -128,12 +128,12 @@ def get_numbers(date: dt.date) -> Numbers:
     Notes
     -----
     The numbers come from the YAML files of the data sources: the years
-    of a country or subdivision are those of the longest period of data
-    of its data sources.
+    of a country or subdivision are the days that one of its data
+    sources covers.
     """
-    date_ranges = utils.data_sources.read_all_date_ranges()
+    periods_of_codes = utils.data_sources.read_all_periods()
     codes = utils.data_sources.read_all_codes_with_electricity_demand_data()
-    periods = [date_ranges[code] for code in codes]
+    periods = [period for code in codes for period in periods_of_codes[code]]
     subdivisions = [code for code in codes if "_" in code]
     return Numbers(
         date=date,
@@ -142,7 +142,7 @@ def get_numbers(date: dt.date) -> Numbers:
         countries_covered=len({code.split("_")[0] for code in codes}),
         data_sources=len(utils.data_sources.read_data_sources()),
         years=round(
-            sum((end - start).days for start, end in periods) / 365.25
+            sum((end - start).days + 1 for start, end in periods) / 365.25
         ),
         first_year=min(start.year for start, _ in periods),
     )

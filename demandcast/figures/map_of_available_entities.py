@@ -29,16 +29,16 @@ YEAR_CLASSES = {"0-4": 5, "5-9": 10, "10-19": 20, "20+": float("inf")}
 
 
 def get_classes_of_years(
-    date_ranges: Mapping[str, tuple[dt.date, dt.date]],
+    periods: Mapping[str, list[tuple[dt.date, dt.date]]],
 ) -> dict[str, int]:
     """
     Get the class of the years of available data of each code.
 
     Parameters
     ----------
-    date_ranges : Mapping[str, tuple[datetime.date, datetime.date]]
-        The first and last dates of the data of each country or
-        subdivision.
+    periods : Mapping[str, list[tuple[datetime.date, datetime.date]]]
+        The first and last days of each period of the data of each
+        country or subdivision.
 
     Returns
     -------
@@ -51,9 +51,10 @@ def get_classes_of_years(
         code: next(
             number
             for number, upper_bound in enumerate(YEAR_CLASSES.values())
-            if (end - start).days / 365 < upper_bound
+            if sum((end - start).days + 1 for start, end in code_periods) / 365
+            < upper_bound
         )
-        for code, (start, end) in date_ranges.items()
+        for code, code_periods in periods.items()
     }
 
 
@@ -71,10 +72,10 @@ def plot(figure_directory: str) -> None:
     """
     # Get the class of the years of available data of all countries
     # and subdivisions.
-    date_ranges = utils.data_sources.read_all_date_ranges()
+    periods = utils.data_sources.read_all_periods()
     classes_of_years = get_classes_of_years(
         {
-            code: date_ranges[code]
+            code: periods[code]
             for code in utils.data_sources.read_all_codes_with_electricity_demand_data()
         }
     )

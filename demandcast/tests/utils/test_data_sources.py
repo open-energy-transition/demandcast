@@ -196,6 +196,45 @@ def test_date_ranges():
     )
 
 
+def test_read_all_periods():
+    """
+    Test that the periods of a code are the union of its data sources.
+
+    The periods that overlap or follow each other are merged, and a
+    period between them stays apart.
+    """
+    date_ranges = {
+        "a": {
+            "FRA": (dt.date(2015, 1, 1), dt.date(2016, 12, 31)),
+            "DEU": (dt.date(2010, 1, 1), dt.date(2010, 12, 31)),
+        },
+        "b": {"FRA": (dt.date(2016, 6, 1), dt.date(2018, 12, 31))},
+        "c": {"FRA": (dt.date(2019, 1, 1), dt.date(2019, 6, 30))},
+        "d": {"FRA": (dt.date(2022, 1, 1), dt.date(2023, 12, 31))},
+    }
+
+    with (
+        patch(
+            "utils.data_sources.read_data_sources",
+            return_value=list(date_ranges),
+        ),
+        patch(
+            "utils.data_sources."
+            "read_date_ranges_of_electricity_demand_in_data_source",
+            side_effect=date_ranges.get,
+        ),
+    ):
+        periods = utils.data_sources.read_all_periods()
+
+    assert periods == {
+        "FRA": [
+            (dt.date(2015, 1, 1), dt.date(2019, 6, 30)),
+            (dt.date(2022, 1, 1), dt.date(2023, 12, 31)),
+        ],
+        "DEU": [(dt.date(2010, 1, 1), dt.date(2010, 12, 31))],
+    }
+
+
 def test_date_ranges_errors():
     """
     Test if the read_date_ranges function handles errors correctly.
