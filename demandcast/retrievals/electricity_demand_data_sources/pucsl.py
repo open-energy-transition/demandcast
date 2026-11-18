@@ -56,9 +56,17 @@ def get_available_requests(
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
-        The list of available requests.
+        The weeks of the data, from their first day to the first day
+        after them, which the API includes.
+
+    Notes
+    -----
+    The last request ends at the day after the last day of the data,
+    so that the API gives all of its last day.
     """
-    return utils.time_series.split_period(start_date, end_date, "7D")
+    return utils.time_series.split_period(
+        start_date, end_date + dt.timedelta(days=1), "7D"
+    )
 
 
 def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:

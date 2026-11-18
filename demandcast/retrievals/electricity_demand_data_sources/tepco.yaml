@@ -16,5 +16,5 @@ entities:
     country_name: Japan
     country_code: JPN
     start_date: 2016-04-01
-    end_date: today
+    end_date: 2026-10-18
     time_zone: Asia/Tokyo

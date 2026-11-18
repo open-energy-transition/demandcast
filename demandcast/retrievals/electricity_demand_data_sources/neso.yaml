@@ -4,6 +4,13 @@ licence:
   url: https://www.neso.energy/data-portal/neso-open-licence
 definition:
   - start_date: 2001-01-01
+    quantity: national demand
+    embedded_generation: excluded
+    network_losses: included
+    storage_charging: excluded
+    power_plant_use: excluded
+    note: The national demand leaves out the station load, the pumping of storage, the exports and the embedded generation, of which NESO gives no estimate before 2007-10-28.
+  - start_date: 2007-10-28
     quantity: national demand with the embedded wind and solar generation
     embedded_generation: added
     network_losses: included
