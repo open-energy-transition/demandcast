@@ -18,7 +18,10 @@ Description:
     reads, with the flags of the changes that need a review.
 
     The data can also be processed again from the raw data, without
-    downloading it.
+    downloading it. A retrieval can also download only the latest
+    requests of each code, as many as given, which are those whose data
+    can still be revised, and those without a version in the raw data,
+    and process the others from the raw data.
 """
 
 import importlib
@@ -277,7 +280,9 @@ def _keep_dates_of_entity(
     return processed[keep]
 
 
-def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:
+def _retrieve_data(
+    data_source: str, code: str, latest_requests: int | None = None
+) -> pd.DataFrame | None:
     """
     Retrieve the electricity demand data.
 
@@ -290,6 +295,9 @@ def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:
         The data source.
     code : str
         The code of the country or subdivision.
+    latest_requests : int | None, optional
+        If given, download only this many of the latest requests, and
+        the requests without a version in the raw data.
 
     Returns
     -------
@@ -330,6 +338,10 @@ def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:
     requests = retrieval_module.get_available_requests(
         code, start_date, end_date
     )
+    if latest_requests is not None:
+        requests = _get_latest_and_new_requests(
+            data_source, code, requests, latest_requests
+        )
     retrieved = pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%dT%H:%M:%SZ")
     downloads: list[tuple[Any, list[dict[str, Any]], str | None]] = []
     downloaded: dict[str, pd.Series] = {}
@@ -378,6 +390,49 @@ def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:
     return _process_data(data_source, code, downloaded)
 
 
+def _get_latest_and_new_requests(
+    data_source: str, code: str, requests: list[Any], latest_requests: int
+) -> list[Any]:
+    """
+    Get the latest requests, and the earlier ones without a version.
+
+    Parameters
+    ----------
+    data_source : str
+        The data source.
+    code : str
+        The code of the country or subdivision.
+    requests : list[Any]
+        The requests of the code, from the earliest to the latest.
+    latest_requests : int
+        The number of latest requests to download whatever their
+        versions.
+
+    Returns
+    -------
+    list[Any]
+        The requests without a version among the earlier ones, then the
+        latest ones, in their order.
+    """
+    saved = {
+        json.dumps(entry["request"], sort_keys=True)
+        for entry in utils.raw_data.read_manifest(data_source)["requests"]
+        if entry["code"] == code and entry["versions"]
+    }
+    earlier = requests[: max(len(requests) - latest_requests, 0)]
+    new_requests = [
+        request
+        for request in earlier
+        if json.dumps(utils.raw_data.encode_request(request), sort_keys=True)
+        not in saved
+    ]
+    logging.info(
+        f"{len(earlier) - len(new_requests)} earlier requests of {code} "
+        "have versions in the raw data and are not downloaded again."
+    )
+    return [*new_requests, *requests[len(earlier) :]]
+
+
 def _save_data(
     processed: pd.DataFrame,
     code: str,
@@ -413,6 +468,7 @@ def run_data_retrieval(
     code: str | None,
     file: str | None,
     offline: bool = False,
+    latest_requests: int | None = None,
 ) -> None:
     """
     Run the electricity demand data retrieval.
@@ -433,6 +489,10 @@ def run_data_retrieval(
         countries and subdivisions of interest.
     offline : bool, optional
         If True, process the raw data again without downloading it.
+    latest_requests : int | None, optional
+        If given, download only this many of the latest requests of
+        each code, and the requests without a version in the raw data,
+        and process the others from the raw data.
     """
     codes = utils.availability.check_and_get_codes_with(
         "electricity_demand_data",
@@ -452,7 +512,7 @@ def run_data_retrieval(
         processed = (
             _process_data(data_source, entity_code)
             if offline
-            else _retrieve_data(data_source, entity_code)
+            else _retrieve_data(data_source, entity_code, latest_requests)
         )
         if processed is None:
             logging.warning(

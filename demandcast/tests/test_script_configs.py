@@ -13,6 +13,7 @@ import os
 import sys
 import types
 
+import pydantic
 import pytest
 
 import check
@@ -268,7 +269,7 @@ def test_retrieve_dispatch(monkeypatch, settings, function, arguments):
 
     assert calls[0][0] == arguments
     if function == "electricity_demand":
-        assert calls[0][1] == {"offline": True}
+        assert calls[0][1] == {"offline": True, "latest_requests": None}
     assert logs == [
         "retrieval_of_electricity_demand_from_entsoe"
         if function == "electricity_demand"
@@ -468,3 +469,13 @@ def test_scenarios_are_spelt_as_in_the_catalogue():
         assembly.climate_model_for_temperature,
         assembly.scenario_for_temperature,
     ) == ("HadGEM3-GC31-LL", "SSP5-8.5")
+
+
+def test_retrieve_needs_at_least_one_latest_request():
+    """Test that the number of latest requests is at least one."""
+    with pytest.raises(pydantic.ValidationError, match="latest_requests"):
+        retrieve.ConfigModel(
+            variable="electricity_demand",
+            electricity_data_source="entsoe",
+            latest_requests=0,
+        )
