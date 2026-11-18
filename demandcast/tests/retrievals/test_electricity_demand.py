@@ -50,12 +50,18 @@ def add_data_source(tmp_path, monkeypatch):
         utils.paths, "DATA_SOURCES_FOLDER", str(data_sources_folder)
     )
 
-    def add(name: str, codes: list[str], **functions: Mock) -> None:
+    def add(
+        name: str,
+        codes: list[str],
+        end_date: dt.date | str = "today",
+        **functions: Mock,
+    ) -> None:
         """
         Write the YAML file and the module of a fake data source.
 
         The codes are country codes, followed by subdivision codes for
-        subdivisions, which also have a name and a time zone.
+        subdivisions, which also have a name and a time zone. The data
+        of each entity starts on 2020-01-01 and ends on the end date.
         """
         entities = []
         for code in codes:
@@ -64,7 +70,7 @@ def add_data_source(tmp_path, monkeypatch):
                 "country_name": f"Country {country_code}",
                 "country_code": country_code,
                 "start_date": dt.date(2020, 1, 1),
-                "end_date": "today",
+                "end_date": end_date,
             }
             if subdivision_code:
                 entity |= {
@@ -198,6 +204,38 @@ def test_one_entity_with_the_code_and_the_dates(add_data_source):
         "2024-01-01 00:00": 100.0,
         "2024-01-01 01:00": 200.0,
     }
+
+
+def test_data_within_the_dates_of_the_entity(add_data_source):
+    """
+    Test that the values outside the dates of the entity are left out.
+
+    The dates are in the local time of France, one hour ahead of UTC.
+    """
+    add_data_source(
+        "dated",
+        ["FRA"],
+        end_date=dt.date(2020, 1, 2),
+        get_available_requests=create_autospec(
+            _get_available_requests, return_value=[None]
+        ),
+        download_and_extract_data_for_request=create_autospec(
+            _download_and_extract_data_for_request,
+            return_value=_demand(
+                "2020-01-01 00:00", [float(hour) for hour in range(50)]
+            ),
+        ),
+    )
+
+    retrievals.electricity_demand.run_data_retrieval("dated", None, None)
+
+    # The first value, of the hour that ends at local midnight of the
+    # start date, is left out, and the last one ends at local midnight
+    # after the end date.
+    saved = _read_saved_data("FRA", "dated")
+    assert next(iter(saved.items())) == ("2020-01-01 00:00", 1.0)
+    assert list(saved.items())[-1] == ("2020-01-02 23:00", 48.0)
+    assert len(saved) == 48
 
 
 def test_several_entities_with_the_code_and_the_dates(add_data_source):
