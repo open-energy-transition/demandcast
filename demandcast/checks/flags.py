@@ -51,6 +51,7 @@ from pydantic import BaseModel, ConfigDict
 
 import utils.data_sources
 import utils.paths
+import utils.time_zones
 
 # The data source of the flags of the combined electricity demand.
 COMBINED = "combined"
@@ -162,9 +163,9 @@ def _get_main_source(code: str, start: object, end: object) -> str:
     code : str
         The code of the country or subdivision.
     start : object
-        The first day of the period.
+        The first local day of the period.
     end : object
-        The last day of the period.
+        The last local day of the period.
 
     Returns
     -------
@@ -176,7 +177,9 @@ def _get_main_source(code: str, start: object, end: object) -> str:
         utils.paths.get_electricity_demand_file("combined", code),
         columns=["Source"],
     )["Source"]
-    days = pd.DatetimeIndex(sources.index).normalize()
+    days = utils.time_zones.get_local_days(
+        code, pd.DatetimeIndex(sources.index)
+    )
     in_period = (days >= pd.Timestamp(str(start))) & (
         days <= pd.Timestamp(str(end))
     )
