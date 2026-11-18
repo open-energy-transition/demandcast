@@ -24,7 +24,9 @@ Description:
 
     The website answers about one request in four with the error 503
     when they are sent two seconds apart, so the requests are sent at
-    least REQUEST_INTERVAL seconds apart.
+    least REQUEST_INTERVAL seconds apart. It also answers with this
+    error for minutes at a time, so a request is attempted again after
+    RETRY_DELAY seconds.
 
     The terms of SO UES allow the reproduction of its information in
     unchanged form for non-commercial use only, and any other use with
@@ -55,6 +57,9 @@ SYSTEMS = {
 
 # The minimum time between two requests, in seconds.
 REQUEST_INTERVAL = 3.0
+
+# The time between two attempts of a request, in seconds.
+RETRY_DELAY = 60
 
 # The time of the last request, from time.monotonic.
 _last_request = {"time": float("-inf")}
@@ -137,6 +142,7 @@ def download_and_extract_data_for_request(
             "tx_mscdugraph_pi[viewKpo]": str(SYSTEMS[code]),
         },
         timeout=60,
+        retry_delay=RETRY_DELAY,
     )
 
     chart = re.search(r'<div class="big-chart"[^>]*>', text)

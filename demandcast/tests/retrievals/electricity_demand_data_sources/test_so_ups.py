@@ -100,3 +100,28 @@ def test_day_without_chart(fake_downloads, file_name):
     )
 
     assert time_series.empty
+
+
+def test_attempts_a_minute_apart(monkeypatch):
+    """Test that the attempts of a request are a minute apart."""
+    options = {}
+
+    def fetch_text(_url, **kwargs):
+        """
+        Record the options of the request.
+
+        Returns
+        -------
+        str
+            A page without chart.
+        """
+        options.update(kwargs)
+        return "<html></html>"
+
+    monkeypatch.setattr(so_ups.utils.fetcher, "fetch_text", fetch_text)
+
+    so_ups.download_and_extract_data_for_request(
+        dt.date(2024, 3, 11), "RUS_CENTER"
+    )
+
+    assert options["retry_delay"] == 60
