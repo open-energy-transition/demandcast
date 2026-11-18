@@ -39,6 +39,7 @@ import utils.fetcher
 import utils.paths
 import utils.raw_data
 import utils.time_series
+import utils.time_zones
 
 
 def _process_series(
@@ -211,7 +212,69 @@ def _process_data(
     )
     processed = processed[~processed.index.duplicated()].sort_index()
     processed.index.name = "Time (UTC)"
-    return processed
+    return _keep_dates_of_entity(processed, data_source, code)
+
+
+def _keep_dates_of_entity(
+    processed: pd.DataFrame, data_source: str, code: str
+) -> pd.DataFrame:
+    """
+    Keep the electricity demand within the dates of the entity.
+
+    A value is kept if its period ends after the start of the start date
+    of the entity in the yaml file of the data source, and by the end of
+    its end date, in the local time of the entity. A national entity
+    can so cover only the dates without the data of its subdivisions,
+    whatever the requests of its data source give.
+
+    Parameters
+    ----------
+    processed : pandas.DataFrame
+        The processed electricity demand, by the end of its periods in
+        UTC.
+    data_source : str
+        The data source.
+    code : str
+        The code of the country or subdivision.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The processed electricity demand within the dates.
+    """
+    entity = next(
+        entity
+        for entity in utils.data_sources.read_entities(data_source)
+        if entity.code == code
+    )
+    time_zone = utils.time_zones.get_time_zone(code)
+
+    def to_utc(date: Any) -> pd.Timestamp:
+        """
+        Get the UTC time of the start of a local day, without time zone.
+
+        Parameters
+        ----------
+        date : Any
+            The day.
+
+        Returns
+        -------
+        pandas.Timestamp
+            The time.
+        """
+        return (
+            pd.Timestamp(date)
+            .tz_localize(time_zone)
+            .tz_convert("UTC")
+            .tz_localize(None)
+        )
+
+    times = pd.DatetimeIndex(processed.index)
+    keep = times > to_utc(entity.start_date)
+    if entity.end_date != "today":
+        keep &= times <= to_utc(entity.end_date + pd.Timedelta(days=1))
+    return processed[keep]
 
 
 def _retrieve_data(data_source: str, code: str) -> pd.DataFrame | None:

@@ -24,7 +24,12 @@ Description:
       eastern standard time, and those of Baja California and Baja
       California Sur in their own time zones (CODE_TIME_ZONES).
 
-    The times of the countries and regions that DemandCast does not
+    The times of the earlier years of some series follow other rules,
+    which DemandCast does not apply: those of Colombia until 2023 are
+    about three hours later than in the data of XM, and those of Chūbu
+    until 2019 and of Chūgoku and Tōhoku until 2018 two hours later than
+    in the data of OCCTO, so these series start in the next year. The
+    times of the countries and regions that DemandCast does not
     retrieve from another source are taken as those of the others. The
     hour that the API gives twice when daylight saving time ends, or
     once, is left out.
@@ -44,6 +49,7 @@ import datetime as dt
 import itertools
 import json
 import logging
+from typing import Any
 
 import pandas as pd
 
@@ -345,6 +351,78 @@ def download_and_extract_data_for_request(
     ].dropna()
 
 
+def _fetch_records(
+    start_date: pd.Timestamp,
+    end_date: pd.Timestamp,
+    parameter: dict[str, str],
+) -> list[dict[str, Any]]:
+    """
+    Fetch the hourly records of a period, or of each of its months.
+
+    Parameters
+    ----------
+    start_date : pandas.Timestamp
+        The first day of the data.
+    end_date : pandas.Timestamp
+        The day after the last one.
+    parameter : dict[str, str]
+        The country ("ISO3") or the region ("Region") in the API.
+
+    Returns
+    -------
+    list[dict[str, Any]]
+        The records of the API, with the time ("Date") and the demand
+        in GW ("Value") of each hour.
+
+    Raises
+    ------
+    utils.fetcher.DataNotFoundError
+        If the data is not found.
+    ConnectionError
+        If the API cannot answer the request of a month.
+
+    Notes
+    -----
+    The API answers some requests of the largest regions, such as the
+    Mid-Atlantic of the United States, with an internal error even for
+    a quarter, so a period that it cannot answer is requested again
+    month by month.
+    """
+    try:
+        return json.loads(
+            utils.fetcher.fetch_text(
+                get_url(),
+                request_params={
+                    "from": start_date.strftime("%Y-%m-%d"),
+                    "to": end_date.strftime("%Y-%m-%d"),
+                    "precision": "hour",
+                    **parameter,
+                },
+                timeout=120,
+            )
+        )
+    except utils.fetcher.DataNotFoundError:
+        raise
+    except ConnectionError:
+        boundaries = (
+            pd.date_range(start_date, end_date, freq="MS")
+            .union(pd.DatetimeIndex([start_date, end_date]))
+            .drop_duplicates()
+        )
+        if len(boundaries) <= 2:
+            raise
+        logging.warning(
+            f"The IEA cannot answer the request of {parameter} from "
+            f"{start_date.date()} to {end_date.date()}, which is requested "
+            "month by month."
+        )
+        return [
+            record
+            for start, end in itertools.pairwise(boundaries)
+            for record in _fetch_records(start, end, parameter)
+        ]
+
+
 def _download(
     start_date: pd.Timestamp,
     end_date: pd.Timestamp,
@@ -368,18 +446,7 @@ def _download(
         The electricity demand in MW, by local time without time zone,
         without the times that the API gives twice.
     """
-    records = json.loads(
-        utils.fetcher.fetch_text(
-            get_url(),
-            request_params={
-                "from": start_date.strftime("%Y-%m-%d"),
-                "to": end_date.strftime("%Y-%m-%d"),
-                "precision": "hour",
-                **parameter,
-            },
-            timeout=120,
-        )
-    )
+    records = _fetch_records(start_date, end_date, parameter)
     electricity_demand_time_series = pd.Series(
         [record.get("Value") for record in records],
         index=pd.to_datetime(
