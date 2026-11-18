@@ -15,6 +15,11 @@ Description:
     time starts has 23 hours, or 24 with a value of 0 for the hour that
     does not exist, and the day when it ends has 25 hours.
 
+    The balancing authority is BC Hydro's integrated system, without the
+    area of Fort Nelson, which the Alberta Interconnected Electric
+    System supplies, and the areas off it, such as Haida Gwaii, the
+    Central Coast and Atlin.
+
     Source: https://www.bchydro.com/energy-in-bc/operations/transmission/transmission-system/balancing-authority-load-data/historical-transmission-data.html
 """
 
@@ -36,7 +41,7 @@ def get_available_requests(
     Parameters
     ----------
     code : str
-        The code of British Columbia.
+        The code of the integrated system of British Columbia.
     start_date : datetime.date
         The first day of the data.
     end_date : datetime.date
@@ -151,7 +156,7 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     year : int
         The year of the electricity demand data.
     code : str
-        The code of British Columbia.
+        The code of the integrated system of British Columbia.
 
     Returns
     -------

@@ -15,12 +15,14 @@ Description:
     at irregular times, and the data has a few spikes, such as about
     20,000 MW in Alberta or 80,000 MW in Quebec.
 
-    The data of three provinces and territories measures their main
-    grid: that of Newfoundland and Labrador, the Island Interconnected
-    System, without Labrador and the isolated communities of the island;
-    that of Quebec, the integrated network, without the off-grid
-    networks, such as those of Nunavik, the Basse-Côte-Nord, Anticosti
-    and the Îles-de-la-Madeleine; and that of Yukon, the Yukon
+    The data of Alberta measures the Alberta Interconnected Electric
+    System, which also supplies the area of Fort Nelson, in British
+    Columbia. The data of three provinces and territories measures their
+    main grid: that of Newfoundland and Labrador, the Island
+    Interconnected System, without Labrador and the isolated communities
+    of the island; that of Quebec, the integrated network, without the
+    off-grid networks, such as those of Nunavik, the Basse-Côte-Nord,
+    Anticosti and the Îles-de-la-Madeleine; and that of Yukon, the Yukon
     Integrated System, without the off-grid communities of Watson Lake,
     Old Crow, Beaver Creek and Burwash Landing.
 
@@ -127,7 +129,7 @@ def get_url(code: str) -> str:
     # Define the mapping between the subdivision codes and API variable
     # names.
     variable_names = {
-        "AB": ["AB", "INTERNAL_LOAD"],
+        "AB-AIES": ["AB", "INTERNAL_LOAD"],
         "BC": ["BC", "LOAD"],
         "NB": ["NB", "LOAD"],
         "NL-ISLAND": ["NL", "DEMAND"],

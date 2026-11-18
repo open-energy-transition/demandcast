@@ -15,6 +15,10 @@ Description:
     are not used: from May 2020 they leave out the load behind the
     fence, which is about 30% of the AIL.
 
+    The AIL is the load of the Alberta Interconnected Electric System
+    (AIES), which also supplies the area of Fort Nelson, in British
+    Columbia.
+
     Source: https://www.aeso.ca/market/market-and-system-reporting/data-requests/hourly-generation-metered-volumes-and-pool-price-and-ail-data-2001-to-july-2025/
 """
 
@@ -43,7 +47,7 @@ def get_available_requests(
     Parameters
     ----------
     code : str
-        The code of Alberta.
+        The code of the Alberta Interconnected Electric System.
     start_date : datetime.date
         The first day of the data.
     end_date : datetime.date
@@ -90,7 +94,7 @@ def download_and_extract_data_for_request(period: str, code: str) -> pd.Series:
     period : str
         The period of the file, such as "2010-2019".
     code : str
-        The code of Alberta.
+        The code of the Alberta Interconnected Electric System.
 
     Returns
     -------

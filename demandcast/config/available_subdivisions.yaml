@@ -323,8 +323,16 @@ entities:
     subdivision_name: Alberta
   - country_code: CAN
     country_name: Canada
+    subdivision_code: AB-AIES
+    subdivision_name: Alberta Interconnected Electric System
+  - country_code: CAN
+    country_name: Canada
     subdivision_code: BC
     subdivision_name: British Columbia
+  - country_code: CAN
+    country_name: Canada
+    subdivision_code: BC-INTEGRATED
+    subdivision_name: Integrated system of British Columbia
   - country_code: CAN
     country_name: Canada
     subdivision_code: MB

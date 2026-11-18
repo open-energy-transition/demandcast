@@ -23,7 +23,7 @@ URL_FOLDER = (
 def test_get_available_requests():
     """Test that the requests are the years of the data."""
     requests = bchydro.get_available_requests(
-        "CAN_BC", dt.date(2001, 4, 1), dt.date(2025, 12, 28)
+        "CAN_BC-INTEGRATED", dt.date(2001, 4, 1), dt.date(2025, 12, 28)
     )
 
     assert requests == list(range(2001, 2026))
@@ -70,7 +70,9 @@ def test_download_and_extract_data_for_request(
         URL_FOLDER + "BalancingAuthorityLoad%202026.xls", file_path
     )
 
-    time_series = bchydro.download_and_extract_data_for_request(2026, "CAN_BC")
+    time_series = bchydro.download_and_extract_data_for_request(
+        2026, "CAN_BC-INTEGRATED"
+    )
 
     # The hour ending at 01:00 in Vancouver ends at 09:00 in UTC.
     assert_demand(

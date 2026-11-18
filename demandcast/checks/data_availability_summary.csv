@@ -4,7 +4,7 @@ AFG,Afghanistan,True,1960.0,2025.0,True,2000.0,2024.0,True,2000.0,2025.0,True,Tr
 AGO,Angola,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
 AIA,Anguilla,False,,,False,,,False,,,False,False,False,False
 ALA,Åland Islands,False,,,False,,,False,,,False,False,False,True
-ALB,Albania,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,True,True
+ALB,Albania,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 AND,Andorra,True,1960.0,2025.0,False,,,True,1990.0,2025.0,False,False,False,False
 ARE,United Arab Emirates,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 ARG,Argentina,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
@@ -116,7 +116,9 @@ BWA,Botswana,True,1960.0,2025.0,True,1990.0,2024.0,True,1980.0,2025.0,True,True,
 CAF,Central African Republic,True,1960.0,2025.0,True,2000.0,2023.0,True,1980.0,2025.0,True,True,True,True
 CAN,Canada,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 CAN_AB,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+CAN_AB-AIES,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CAN_BC,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+CAN_BC-INTEGRATED,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CAN_MB,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CAN_NB,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 CAN_NL,Subdivision of Canada,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
@@ -196,7 +198,22 @@ EGY,Egypt,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,Tru
 ERI,Eritrea,True,1960.0,2025.0,True,1990.0,2024.0,False,,,True,True,True,True
 ESH,Western Sahara,False,,,False,,,False,,,True,False,True,True
 ESP,Spain,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+ESP_CE,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,False
+ESP_CN,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+ESP_EL-HIERRO,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,False
+ESP_FORMENTERA,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,False
+ESP_FUERTEVENTURA,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+ESP_GRAN-CANARIA,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+ESP_IB,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+ESP_IBIZA,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+ESP_LA-GOMERA,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,False
+ESP_LA-PALMA,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+ESP_LANZAROTE,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+ESP_MALLORCA,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+ESP_MENORCA,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+ESP_ML,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,False
 ESP_PENINSULAR,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+ESP_TENERIFE,Subdivision of Spain,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 EST,Estonia,True,1960.0,2025.0,True,1990.0,2025.0,True,1990.0,2025.0,True,True,True,True
 ETH,Ethiopia,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 FIN,Finland,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True

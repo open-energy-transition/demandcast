@@ -11,8 +11,8 @@ definition:
     power_plant_use: unknown
     note: The AIL includes the load behind the fence of industrial sites, supplied by their own generation, and the transmission losses.
 entities:
-  - subdivision_name: Alberta
-    subdivision_code: AB
+  - subdivision_name: Alberta Interconnected Electric System
+    subdivision_code: AB-AIES
     country_name: Canada
     country_code: CAN
     start_date: 2001-01-01
