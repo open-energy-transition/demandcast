@@ -19,10 +19,9 @@ Description:
 
     The data can also be processed again from the raw data, without
     downloading it. A retrieval can also download only the latest
-    requests of each code, as many as given, and those without a version
-    in the raw data, and process the others from the raw data: for a
-    data source of many requests, such as the days of SO UES, the latest
-    ones are those that its operator can still revise.
+    requests of each code, as many as given, which are those whose data
+    can still be revised, and those without a version in the raw data,
+    and process the others from the raw data.
 """
 
 import importlib
