@@ -19,11 +19,14 @@ import ml_models.files
 import utils.paths
 from figures import status
 
-DATE_RANGES = {
-    "FRA": (dt.date(2015, 1, 1), dt.date(2024, 12, 31)),
-    "USA_TEX": (dt.date(2019, 1, 1), dt.date(2024, 12, 31)),
-    "USA_CAL": (dt.date(2019, 1, 1), dt.date(2024, 12, 31)),
-    "DEU": (dt.date(2010, 1, 1), dt.date(2010, 12, 31)),
+PERIODS = {
+    "FRA": [
+        (dt.date(2015, 1, 1), dt.date(2019, 12, 31)),
+        (dt.date(2021, 1, 1), dt.date(2024, 12, 31)),
+    ],
+    "USA_TEX": [(dt.date(2019, 1, 1), dt.date(2024, 12, 31))],
+    "USA_CAL": [(dt.date(2019, 1, 1), dt.date(2024, 12, 31))],
+    "DEU": [(dt.date(2010, 1, 1), dt.date(2010, 12, 31))],
 }
 
 NUMBERS = status.Numbers(
@@ -38,12 +41,17 @@ NUMBERS = status.Numbers(
 
 
 def test_get_numbers():
-    """Test that the codes of the data sources are counted."""
+    """
+    Test that the codes of the data sources are counted.
+
+    The years are those of all the periods of each code: 9 for France,
+    without 2020, and 6 for each of the two states.
+    """
     with (
         patch.object(
             status.utils.data_sources,
-            "read_all_date_ranges",
-            return_value=DATE_RANGES,
+            "read_all_periods",
+            return_value=PERIODS,
         ),
         patch.object(
             status.utils.data_sources,
@@ -64,7 +72,7 @@ def test_get_numbers():
         subdivisions=2,
         countries_covered=2,
         data_sources=3,
-        years=22,
+        years=21,
         first_year=2015,
     )
 

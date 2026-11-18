@@ -90,19 +90,14 @@ def _get_year_fractions(
     dict[str, dict[int, float]]
         The fraction of each year with data, by year, of each group.
     """
-    data_time_ranges = utils.data_sources.read_all_date_ranges()
+    periods = utils.data_sources.read_all_periods()
 
     fractions_of_years: dict[str, dict[int, float]] = {}
     for country, codes in codes_of_countries.items():
         days = pd.DatetimeIndex([])
         for code in codes:
-            days = days.union(
-                pd.date_range(
-                    start=data_time_ranges[code][0],
-                    end=data_time_ranges[code][1],
-                    freq="D",
-                )
-            )
+            for start, end in periods[code]:
+                days = days.union(pd.date_range(start, end, freq="D"))
         fractions_of_years[country] = {
             int(year): float(
                 (days.year == year).sum()

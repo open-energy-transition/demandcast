@@ -55,12 +55,14 @@ def synthetic_data(monkeypatch):
     )
     monkeypatch.setattr(
         data_availability.utils.data_sources,
-        "read_all_date_ranges",
+        "read_all_periods",
         lambda: {
-            code: (
-                pd.Timestamp(f"{2015 + number % 4}-03-01"),
-                pd.Timestamp(f"{2022 + number % 3}-10-31"),
-            )
+            code: [
+                (
+                    pd.Timestamp(f"{2015 + number % 4}-03-01"),
+                    pd.Timestamp(f"{2022 + number % 3}-10-31"),
+                )
+            ]
             for number, code in enumerate(codes)
         },
     )
