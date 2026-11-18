@@ -8,6 +8,7 @@ Description:
 """
 
 import datetime as dt
+import hashlib
 import os
 import pathlib
 import urllib.request
@@ -218,3 +219,53 @@ def test_save_versions(server):
         ("2026-01-01T00:00:00Z", "2026-01-02T00:00:00Z"),
         ("2026-01-03T00:00:00Z", "2026-01-03T00:00:00Z"),
     ]
+
+
+def test_remove_versions(server):
+    """
+    Test that versions and their files are removed from the raw data.
+
+    A request left without versions is removed, and a file that a
+    version of another code has is kept.
+    """
+    url = "https://example.org/data"
+    first = (pd.Timestamp("2024-01-01"), pd.Timestamp("2024-01-31"))
+    second = (pd.Timestamp("2024-02-01"), pd.Timestamp("2024-02-29"))
+
+    def retrieve(code, request, content, retrieved):
+        """Record the request, and save its responses at a time."""
+        server[url] = content
+        with utils.raw_data.recording("test") as responses:
+            requests.get(url, timeout=10)
+        utils.raw_data.save_versions(
+            "test", code, [(request, responses, None)], retrieved
+        )
+
+    retrieve("FRA", first, b"1", "2026-01-01T00:00:00Z")
+    retrieve("FRA", first, b"2", "2026-01-02T00:00:00Z")
+    retrieve("FRA", second, b"3", "2026-01-01T00:00:00Z")
+    retrieve("DEU", first, b"1", "2026-01-01T00:00:00Z")
+
+    utils.raw_data.remove_versions(
+        "test",
+        "FRA",
+        [(first, "2026-01-01T00:00:00Z"), (second, "2026-01-01T00:00:00Z")],
+    )
+
+    assert [
+        (
+            entry["code"],
+            utils.raw_data.decode_request(entry["request"]),
+            [version["first_retrieved"] for version in entry["versions"]],
+        )
+        for entry in utils.raw_data.read_manifest("test")["requests"]
+    ] == [
+        ("FRA", first, ["2026-01-02T00:00:00Z"]),
+        ("DEU", first, ["2026-01-01T00:00:00Z"]),
+    ]
+    files_folder = os.path.join(
+        utils.paths.get_electricity_demand_folder("raw"), "test", "files"
+    )
+    assert sorted(os.listdir(files_folder)) == sorted(
+        hashlib.sha256(content).hexdigest() for content in (b"1", b"2")
+    )
