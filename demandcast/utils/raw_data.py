@@ -59,9 +59,24 @@ import utils.paths
 # The method of the requests of the files downloaded manually.
 MANUAL_FILE = "FILE"
 
+# Whether saved responses are replayed instead of downloads.
+_replay = {"active": False}
+
 
 class RawDataNotFoundError(LookupError):
     """A request without a saved response, while replaying."""
+
+
+def is_replaying() -> bool:
+    """
+    Tell whether saved responses are replayed instead of downloads.
+
+    Returns
+    -------
+    bool
+        True inside replaying, when the requests send nothing.
+    """
+    return _replay["active"]
 
 
 def _folder(data_source: str) -> str:
@@ -707,6 +722,7 @@ def replaying(
     setattr(  # noqa: B010
         utils.fetcher, "find_manual_files", replaying_find_manual_files
     )
+    _replay["active"] = True
     try:
         yield
     finally:
@@ -716,6 +732,7 @@ def replaying(
             utils.fetcher, "find_manual_files", find_manual_files
         )
         manual_folder.cleanup()
+        _replay["active"] = False
 
 
 def read_manifest(data_source: str) -> dict[str, Any]:

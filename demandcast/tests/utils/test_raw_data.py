@@ -128,6 +128,20 @@ def test_record_and_replay(server, monkeypatch):
     assert ticket.text == ""
 
 
+def test_is_replaying():
+    """Test that the replay is known only inside replaying."""
+    assert not utils.raw_data.is_replaying()
+    with utils.raw_data.replaying("test", []):
+        assert utils.raw_data.is_replaying()
+    assert not utils.raw_data.is_replaying()
+    with (
+        pytest.raises(utils.raw_data.RawDataNotFoundError),
+        utils.raw_data.replaying("test", []),
+    ):
+        requests.get("https://example.org", timeout=1)
+    assert not utils.raw_data.is_replaying()
+
+
 def test_record_and_replay_urllib(tmp_path):
     """Test that the responses of urllib are saved and replayed."""
     file_path = tmp_path / "data.csv"

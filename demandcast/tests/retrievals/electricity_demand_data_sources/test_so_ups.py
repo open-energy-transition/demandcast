@@ -125,3 +125,21 @@ def test_attempts_a_minute_apart(monkeypatch):
     )
 
     assert options["retry_delay"] == 60
+
+
+def test_replay_without_waiting(monkeypatch):
+    """Test that the saved responses are replayed without waiting."""
+    sleeps: list[float] = []
+    monkeypatch.setattr(so_ups, "REQUEST_INTERVAL", 2.0)
+    monkeypatch.setattr(so_ups.time, "sleep", sleeps.append)
+    monkeypatch.setattr(
+        so_ups.utils.fetcher, "fetch_text", lambda _url, **_: "<html></html>"
+    )
+
+    with so_ups.utils.raw_data.replaying("so_ups", []):
+        for day in (11, 12):
+            so_ups.download_and_extract_data_for_request(
+                dt.date(2024, 3, day), "RUS_CENTER"
+            )
+
+    assert sleeps == []

@@ -24,7 +24,8 @@ Description:
 
     The website answers about one request in four with the error 503
     when they are sent two seconds apart, so the requests are sent at
-    least REQUEST_INTERVAL seconds apart. It also answers with this
+    least REQUEST_INTERVAL seconds apart, while the saved responses are
+    replayed without waiting. It also answers with this
     error for minutes at a time, so a request is attempted again after
     RETRY_DELAY seconds.
 
@@ -43,6 +44,7 @@ import time
 import pandas as pd
 
 import utils.fetcher
+import utils.raw_data
 
 # The identifier of each interconnected power system on the page.
 SYSTEMS = {
@@ -132,7 +134,8 @@ def download_and_extract_data_for_request(
     """
     logging.info(f"Retrieving electricity demand data for {day}.")
 
-    _wait_for_the_interval()
+    if not utils.raw_data.is_replaying():
+        _wait_for_the_interval()
     text = utils.fetcher.fetch_text(
         get_url(),
         request_params={
