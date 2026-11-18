@@ -37,6 +37,7 @@ import xarray
 from tqdm import tqdm
 
 import retrievals.gridded
+import retrievals.runs
 import utils.availability
 import utils.catalogue
 import utils.config
@@ -766,7 +767,15 @@ def _retrieve_data_of_each_code(
     )
     os.makedirs(processed_directory, exist_ok=True)
 
-    for entity_code in tqdm(codes, desc="Countries and subdivisions"):
+    def retrieve(entity_code: str) -> None:
+        """
+        Download and save the gridded weather of a code, in each year.
+
+        Parameters
+        ----------
+        entity_code : str
+            The code of the country or subdivision.
+        """
         logging.info(f"Retrieving gridded {variable} data for {entity_code}.")
 
         entity_bounds = utils.shapes.get_entity_bounds(
@@ -810,6 +819,8 @@ def _retrieve_data_of_each_code(
             f"Gridded {variable} data for {entity_code} has been retrieved "
             "and saved."
         )
+
+    retrievals.runs.run_for_each_code(codes, retrieve, f"gridded {variable}")
 
 
 def retrieve_reanalysis(

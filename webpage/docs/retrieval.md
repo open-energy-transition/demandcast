@@ -40,7 +40,7 @@ cd demandcast
 uv run retrieve.py [--config path/to/config.yaml]
 ```
 
-If no config file is specified, the script uses the default `demandcast/config/retrieve_config.yaml` file. All retrieval parameters are configured in the YAML configuration file. The only required parameter is `variable`, which specifies the type of data to retrieve. Below is the description of each retrieval module and its configuration parameters.
+If no config file is specified, the script uses the default `demandcast/config/retrieve_config.yaml` file. All retrieval parameters are configured in the YAML configuration file. The only required parameter is `variable`, which specifies the type of data to retrieve. A retrieval of several countries and subdivisions goes on after one that fails, such as after a change of the format of its data source: the log gives its error, with the API keys and passwords hidden, and the script ends with an error that lists the codes that failed. A retrieval of a single code stops with its own error and traceback. Below is the description of each retrieval module and its configuration parameters.
 
 ### Electricity demand
 

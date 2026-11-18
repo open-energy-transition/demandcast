@@ -44,11 +44,11 @@ import os
 import numpy as np
 import pandas as pd
 import xarray
-from tqdm import tqdm
 
 import retrievals.era5_points
 import retrievals.gridded_population
 import retrievals.gridded_weather
+import retrievals.runs
 import utils.availability
 import utils.catalogue
 import utils.geospatial
@@ -352,7 +352,8 @@ def _get_temperature_of_points(
     xarray.DataArray
         The hourly temperature of the closest point of ERA5 to each of
         the most populous cells, along the "cell" dimension, as given by
-        _extract_temperature_in_most_populous_cells.
+        _extract_temperature_in_most_populous_cells, at the times that
+        all the points have.
     """
     points = [
         retrievals.era5_points.get_grid_point(float(x), float(y))
@@ -366,6 +367,7 @@ def _get_temperature_of_points(
         retrievals.era5_points.get_points_series("temperature", points),
         axis=1,
         keys=range(len(points)),
+        join="inner",
     )
     return xarray.DataArray(
         series.to_numpy(),
@@ -530,8 +532,21 @@ def _build_temperature_database(
     Returns
     -------
     temperature_database : pandas.DataFrame
-        Temperature time series with added statistics.
+        Temperature time series with added statistics, at the times of
+        both time series.
+
+    Notes
+    -----
+    The series of the points of ERA5 are refreshed one by one (see
+    retrievals.era5_points), so in the current year the two time series
+    can end at different times.
     """
+    common_times = temperature_time_series_top_1.index.intersection(
+        temperature_time_series_top_3.index
+    )
+    temperature_time_series_top_1 = temperature_time_series_top_1[common_times]
+    temperature_time_series_top_3 = temperature_time_series_top_3[common_times]
+
     temperature_database = pd.DataFrame(
         index=temperature_time_series_top_1.index
     )
@@ -696,7 +711,15 @@ def run_data_retrieval(
         )
     )
 
-    for entity_code in tqdm(codes, desc="Countries and subdivisions"):
+    def retrieve(entity_code: str) -> None:
+        """
+        Extract and save the temperature of a code, in each year.
+
+        Parameters
+        ----------
+        entity_code : str
+            The code of the country or subdivision.
+        """
         logging.info(f"Retrieving temperature data for {entity_code}.")
 
         entity_time_zone = utils.time_zones.get_time_zone(entity_code)
@@ -798,3 +821,5 @@ def run_data_retrieval(
                     )
                     + " already exists. Skipping extraction."
                 )
+
+    retrievals.runs.run_for_each_code(codes, retrieve, "temperature")
