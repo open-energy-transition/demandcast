@@ -637,6 +637,54 @@ def test_reviewed_low_value_is_excluded(monkeypatch):
 
 
 @pytest.mark.parametrize(
+    ("verdict", "exclusion"),
+    [("net_demand", "net demand"), ("source_error", "reviewed error")],
+)
+def test_reviews_of_the_combined_flags_exclude_their_hours(
+    monkeypatch, verdict, exclusion
+):
+    """
+    Test that the reviews of the combined flags exclude their hours.
+
+    The low hour of Kanto ends at 17:00 UTC on 1 January, in the local
+    day of 2 January (UTC+9), and only the combined series is flagged:
+    the review with the data source "combined" excludes the hours of
+    that local day, which end from 16:00 UTC on 1 January to 15:00 UTC
+    on 2 January.
+    """
+    values = _hourly("2023-01-01", "2023-12-31 23:00")
+    values.loc["2023-01-01 17:00"] = 1.0
+    _save_cleaned("JPN_Kantō", "occto", values)
+    review = cleaning.combining.checks.flags.Review(
+        data_source="combined",
+        code="JPN_Kantō",
+        flag="low_value",
+        periods=["2023-01-02"],
+        verdict=verdict,
+        note="From the combination.",
+    )
+    monkeypatch.setattr(
+        cleaning.combining.checks.flags, "read_reviews", lambda: [review]
+    )
+
+    combined = cleaning.combining.combine_data("JPN_Kantō")
+
+    assert combined is not None
+    day = (combined.index >= "2023-01-01 16:00") & (
+        combined.index <= "2023-01-02 15:00"
+    )
+    assert day.sum() == 24
+    assert not combined["Eligible"][day].any()
+    assert combined["Exclusion"][day].eq(exclusion).all()
+    assert combined["Eligible"][~day].all()
+    saved = pd.read_parquet(
+        utils.paths.get_electricity_demand_file("combined", "JPN_Kantō")
+    )
+    pd.testing.assert_frame_equal(saved, combined)
+    assert cleaning.combining.is_current("JPN_Kantō")
+
+
+@pytest.mark.parametrize(
     ("code", "data_source", "definition"),
     [
         ("JPN_Kantō", "occto", "partial"),

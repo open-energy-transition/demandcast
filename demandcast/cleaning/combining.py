@@ -57,7 +57,10 @@ Description:
     training data has no error that a review has found, and neither are
     those of the seasons that the reviews find to be net demand, whose
     profile leaves out the demand that the embedded generation supplies
-    and would teach the models the wrong shape of the gross demand.
+    and would teach the models the wrong shape of the gross demand. The
+    same holds for the reviews of the flags of the combined series
+    itself (data source "combined" in the reviews), which exclude its
+    hours in the seasons that they find to be errors or net demand.
     The periods of the definitions and the days of the flags are local
     days, so the hours are matched to them by the local day of their
     start.
@@ -133,7 +136,7 @@ LARGEST_UNVERIFIED_MEDIAN_DIFFERENCE = 0.10
 
 # The version of the combination, which changes when the code changes
 # what a combined series is, such as its columns or its rules.
-COMBINATION_VERSION = 3
+COMBINATION_VERSION = 4
 
 # The key of the attributes of a combined series with its fingerprint.
 FINGERPRINT_KEY = "demandcast_combination"
@@ -185,31 +188,6 @@ def _read_cleaned_data(code: str) -> dict[str, pd.Series]:
     return cleaned
 
 
-def _get_local_days(code: str, times: pd.DatetimeIndex) -> pd.DatetimeIndex:
-    """
-    Get the local day of each hour of a code.
-
-    Parameters
-    ----------
-    code : str
-        The code of the country or subdivision.
-    times : pandas.DatetimeIndex
-        The hours, by their ends in UTC.
-
-    Returns
-    -------
-    pandas.DatetimeIndex
-        The local day of the start of each hour.
-    """
-    return (
-        (times - pd.Timedelta(hours=1))
-        .tz_localize("UTC")
-        .tz_convert(utils.time_zones.get_time_zone(code))
-        .tz_localize(None)
-        .normalize()
-    )
-
-
 def _get_definitions(
     code: str, data_source: str, times: pd.DatetimeIndex
 ) -> np.ndarray:
@@ -236,7 +214,7 @@ def _get_definitions(
     definitions = np.full(
         len(times), periods[0].embedded_generation, dtype=object
     )
-    days = _get_local_days(code, times)
+    days = utils.time_zones.get_local_days(code, times)
     for period in periods:
         definitions[days >= pd.Timestamp(period.start_date)] = (
             period.embedded_generation
@@ -296,7 +274,8 @@ def _get_reviewed_verdicts(
     code : str
         The code of the country or subdivision.
     data_source : str
-        The data source.
+        The data source, or "combined" (checks.flags.COMBINED) for the
+        combined electricity demand.
     times : pandas.DatetimeIndex
         The hours of its data, by their ends in UTC.
 
@@ -308,13 +287,16 @@ def _get_reviewed_verdicts(
         else "net_demand" if one finds net demand, else an empty string.
     """
     verdicts = np.full(len(times), "", dtype=object)
-    flags_path = utils.paths.get_electricity_demand_file(
-        "cleaned", code, data_source
-    ).removesuffix(".parquet")
-    flags_path += "_flags.parquet"
+    if data_source == checks.flags.COMBINED:
+        file_path = utils.paths.get_electricity_demand_file("combined", code)
+    else:
+        file_path = utils.paths.get_electricity_demand_file(
+            "cleaned", code, data_source
+        )
+    flags_path = file_path.removesuffix(".parquet") + "_flags.parquet"
     if not os.path.exists(flags_path):
         return verdicts
-    days = _get_local_days(code, times)
+    days = utils.time_zones.get_local_days(code, times)
     reviews = checks.flags.read_reviews()
     flags = pd.read_parquet(flags_path)
     for start, end, flag, period in zip(
@@ -628,6 +610,43 @@ def _combine(
     return combined_data, pd.DataFrame(rows, columns=SOURCE_COLUMNS)
 
 
+def _exclude_reviewed_hours(code: str, combined: pd.DataFrame) -> pd.DataFrame:
+    """
+    Exclude the hours of the reviewed flags of a combined series.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+    combined : pandas.DataFrame
+        The combined electricity demand, with the columns "Eligible"
+        and "Exclusion".
+
+    Returns
+    -------
+    pandas.DataFrame
+        The combined electricity demand, whose eligible hours in the
+        seasons that the reviews of its own flags find to be errors or
+        net demand are no longer eligible ("reviewed error" or "net
+        demand").
+
+    Notes
+    -----
+    A flag of the combined series that its main source does not have
+    comes from the combination, such as a change of profile from one
+    source to the next, and has its own review, with the data source
+    "combined" (see checks.flags). No other source replaces its hours.
+    """
+    verdicts = _get_reviewed_verdicts(
+        code, checks.flags.COMBINED, pd.DatetimeIndex(combined.index)
+    )
+    eligible = combined["Eligible"].to_numpy(dtype=bool)
+    exclusions = combined["Exclusion"].copy()
+    exclusions[eligible & (verdicts == "error")] = "reviewed error"
+    exclusions[eligible & (verdicts == "net_demand")] = "net demand"
+    return combined.assign(Eligible=exclusions == "", Exclusion=exclusions)
+
+
 def get_fingerprint(code: str) -> str:
     """
     Get the fingerprint of what decides the combined series of a code.
@@ -739,6 +758,12 @@ def combine_data(code: str) -> pd.DataFrame | None:
         generation ("Definition"), whether it can be used for training
         ("Eligible") and why not ("Exclusion"), at the ends of the hours
         in UTC, or None if no data source has cleaned data of the code.
+
+    Notes
+    -----
+    The flags of the combined series are found in its saved demand, so
+    the series is saved, flagged, and saved again with the hours that
+    the reviews of its own flags exclude.
     """
     cleaned = _read_cleaned_data(code)
     if not cleaned:
@@ -791,13 +816,15 @@ def combine_data(code: str) -> pd.DataFrame | None:
     combined, sources = _combine(
         sound, ranked, errors, net_demand, definitions
     )
-    combined.attrs[FINGERPRINT_KEY] = get_fingerprint(code)
 
     file_path = utils.paths.get_electricity_demand_file("combined", code)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     combined.to_parquet(file_path)
     sources.to_parquet(file_path.removesuffix(".parquet") + "_sources.parquet")
     cleaning.flags.flag_data(code)
+    combined = _exclude_reviewed_hours(code, combined)
+    combined.attrs[FINGERPRINT_KEY] = get_fingerprint(code)
+    combined.to_parquet(file_path)
     for row in sources.itertuples():
         logging.info(
             f"Combined electricity demand of {code}: {row.data_source} "
