@@ -17,6 +17,7 @@ from typing import Literal
 import xarray
 from tqdm import tqdm
 
+import retrievals.runs
 import utils.availability
 import utils.catalogue
 import utils.paths
@@ -61,16 +62,23 @@ def extract_entity_grids(
     The grid of a country or subdivision covers the bounds of its shape,
     and is saved in a NetCDF file.
     """
-    for entity_code in tqdm(
-        codes, desc="Countries and subdivisions", leave=False
-    ):
+
+    def retrieve(entity_code: str) -> None:
+        """
+        Extract and save the grid of a code, unless it is up to date.
+
+        Parameters
+        ----------
+        entity_code : str
+            The code of the country or subdivision.
+        """
         file_path = get_file_path(entity_code)
         if is_up_to_date(file_path):
             logging.info(
                 f"The gridded {description} of {entity_code} already "
                 "exists. Skipping extraction."
             )
-            continue
+            return
 
         logging.info(f"Extracting the gridded {description} of {entity_code}.")
         bounds = utils.shapes.get_entity_bounds(
@@ -83,6 +91,10 @@ def extract_entity_grids(
         logging.info(
             f"The gridded {description} of {entity_code} has been saved."
         )
+
+    retrievals.runs.run_for_each_code(
+        codes, retrieve, f"gridded {description}", leave=False
+    )
 
 
 def _get_file_path_function(

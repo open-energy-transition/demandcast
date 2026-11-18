@@ -35,11 +35,11 @@ import os
 from typing import Any
 
 import pandas as pd
-from tqdm import tqdm
 
 import cleaning.combining
 import cleaning.electricity_demand
 import cleaning.flags
+import retrievals.runs
 import utils.availability
 import utils.data_sources
 import utils.fetcher
@@ -666,7 +666,15 @@ def run_data_retrieval(
         f"data of {data_source}."
     )
 
-    for entity_code in tqdm(codes, desc="Countries and subdivisions"):
+    def retrieve(entity_code: str) -> None:
+        """
+        Retrieve, clean and combine the electricity demand of a code.
+
+        Parameters
+        ----------
+        entity_code : str
+            The code of the country or subdivision.
+        """
         logging.info(f"Retrieving electricity data for {entity_code}.")
 
         processed = (
@@ -679,7 +687,7 @@ def run_data_retrieval(
                 f"The data source {data_source} has no data for "
                 f"{entity_code}, which is not saved."
             )
-            continue
+            return
 
         # Save the processed electricity demand, clean it, flag the
         # changes of the cleaned demand that need a review, and combine
@@ -688,6 +696,10 @@ def run_data_retrieval(
         cleaning.electricity_demand.clean_data(entity_code, data_source)
         cleaning.flags.flag_data(entity_code, data_source)
         cleaning.combining.combine_data(entity_code)
+
+    retrievals.runs.run_for_each_code(
+        codes, retrieve, f"electricity demand of {data_source}"
+    )
 
     logging.info(
         f"Electricity data of {data_source} has been successfully "
