@@ -238,6 +238,85 @@ def test_data_within_the_dates_of_the_entity(add_data_source):
     assert len(saved) == 48
 
 
+def test_latest_requests(add_data_source, monkeypatch):
+    """
+    Test that only the latest requests and the new ones are downloaded.
+
+    A second retrieval with one latest request downloads only the last
+    day, and processes the two others from the raw data.
+    """
+    add_data_source(
+        "daily",
+        ["FRA"],
+        get_available_requests=create_autospec(
+            _get_available_requests, return_value=[1, 2, 3]
+        ),
+        download_and_extract_data_for_request=create_autospec(
+            _download_and_extract_data_for_request,
+            side_effect=lambda request, _code: _demand(
+                f"2024-01-0{request} 01:00", [100.0 * request]
+            ),
+        ),
+    )
+    retrievals.electricity_demand.run_data_retrieval("daily", None, None)
+
+    # Each download records the responses of its request.
+    recording = utils.raw_data.recording
+    recorded = []
+
+    def count_recordings(data_source):
+        """
+        Count a download, and record its responses.
+
+        Returns
+        -------
+        contextlib.AbstractContextManager
+            The recording of the responses.
+        """
+        recorded.append(data_source)
+        return recording(data_source)
+
+    monkeypatch.setattr(utils.raw_data, "recording", count_recordings)
+    retrievals.electricity_demand.run_data_retrieval(
+        "daily", None, None, latest_requests=1
+    )
+
+    assert recorded == ["daily"]
+    assert _read_saved_data("FRA", "daily") == {
+        "2024-01-01 00:00": 100.0,
+        "2024-01-02 00:00": 200.0,
+        "2024-01-03 00:00": 300.0,
+    }
+
+
+@pytest.mark.parametrize(
+    ("latest_requests", "expected"),
+    [(1, [2, 5]), (2, [2, 4, 5]), (9, [1, 2, 3, 4, 5])],
+)
+def test_get_latest_and_new_requests(monkeypatch, latest_requests, expected):
+    """Test the latest requests and the new earlier ones."""
+    monkeypatch.setattr(
+        utils.raw_data,
+        "read_manifest",
+        lambda _: {
+            "requests": [
+                {"code": "FRA", "request": 1, "versions": [{}]},
+                {"code": "FRA", "request": 3, "versions": [{}]},
+                {"code": "FRA", "request": 4, "versions": [{}]},
+                {"code": "FRA", "request": 2, "versions": []},
+                {"code": "DEU", "request": 2, "versions": [{}]},
+            ]
+        },
+    )
+
+    assert (
+        retrievals.electricity_demand._get_latest_and_new_requests(
+            "daily", "FRA", [1, 2, 3, 4, 5], latest_requests
+        )
+        == expected
+    )
+
+
 def test_several_entities_with_the_code_and_the_dates(add_data_source):
     """Test that each request is passed whole, with the code."""
     get_available_requests = create_autospec(

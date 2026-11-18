@@ -14,7 +14,7 @@ from collections.abc import Callable
 from types import ModuleType
 from typing import Literal
 
-from pydantic import field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.electricity_demand
@@ -65,6 +65,7 @@ class ConfigModel(utils.config.StrictSettings):
     climate_model: str | None = None
     reanalysis_source: Literal["points", "cds", "arco"] = "points"
     offline: bool = False
+    latest_requests: int | None = Field(default=None, ge=1)
 
     @field_validator("electricity_data_source")
     @classmethod
@@ -177,6 +178,7 @@ RETRIEVALS: dict[str, Callable[[ConfigModel], None]] = {
             config.code,
             config.file,
             offline=config.offline,
+            latest_requests=config.latest_requests,
         )
     ),
     "annual_electricity_demand_per_capita": _retrieve_by_scenario(
