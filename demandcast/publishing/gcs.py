@@ -35,6 +35,10 @@ from google.cloud import storage
 # The size of the blocks of a file whose checksum is computed.
 _BLOCK_SIZE = 1024 * 1024
 
+# The temporary file of a download, which an interrupted download leaves
+# next to the file.
+_TEMPORARY_FILE = re.compile(r"\.[0-9a-f]{32}\.part$")
+
 
 @dataclasses.dataclass
 class SyncReport:
@@ -92,31 +96,52 @@ def list_local_files(
     data_folder : str
         The data folder.
     excluded_folders : Iterable[str]
-        The folders of the data folder that are not copied, such as
-        "logs".
+        The folders of the data folder that are not copied, relative to
+        it, such as "logs" or "results/figures".
 
     Returns
     -------
     dict[str, str]
         The path of each file on disk, by its path relative to the data
-        folder, with forward slashes, which is its name in the bucket.
+        folder, with forward slashes, which is its name in the bucket,
+        without the temporary files of the downloads.
     """
-    excluded = set(excluded_folders)
+    excluded_folders = tuple(excluded_folders)
     files = {}
-    for folder, subfolders, file_names in os.walk(data_folder):
+    for folder, _, file_names in os.walk(data_folder):
         relative_folder = os.path.relpath(folder, data_folder)
-        if relative_folder == ".":
-            subfolders[:] = [
-                name for name in subfolders if name not in excluded
-            ]
         for file_name in file_names:
-            relative_path = os.path.normpath(
+            name = os.path.normpath(
                 os.path.join(relative_folder, file_name)
-            )
-            files[relative_path.replace(os.sep, "/")] = os.path.join(
-                folder, file_name
-            )
+            ).replace(os.sep, "/")
+            if not (
+                _is_excluded(name, excluded_folders)
+                or _TEMPORARY_FILE.search(file_name)
+            ):
+                files[name] = os.path.join(folder, file_name)
     return files
+
+
+def _is_in_folders(name: str, folders: Iterable[str]) -> bool:
+    """
+    Tell whether a file is in one of some folders.
+
+    Parameters
+    ----------
+    name : str
+        The path of the file relative to the data folder, with forward
+        slashes, which is its name in the bucket.
+    folders : Iterable[str]
+        The folders, relative to the data folder, such as "assembled" or
+        "results/forecasts".
+
+    Returns
+    -------
+    bool
+        Whether the file is in one of the folders, or in their
+        subfolders.
+    """
+    return any(name.startswith(folder.strip("/") + "/") for folder in folders)
 
 
 def _is_excluded(name: str, excluded_folders: Iterable[str]) -> bool:
@@ -128,7 +153,8 @@ def _is_excluded(name: str, excluded_folders: Iterable[str]) -> bool:
     name : str
         The name of the object.
     excluded_folders : Iterable[str]
-        The folders of the data folder that are not copied.
+        The folders of the data folder that are not copied, relative to
+        it.
 
     Returns
     -------
@@ -136,9 +162,7 @@ def _is_excluded(name: str, excluded_folders: Iterable[str]) -> bool:
         True for a folder placeholder, whose name ends with "/", and for
         the objects of the excluded folders.
     """
-    return name.endswith("/") or name.split("/", maxsplit=1)[0] in set(
-        excluded_folders
-    )
+    return name.endswith("/") or _is_in_folders(name, excluded_folders)
 
 
 def _is_included(name: str, included_folders: Iterable[str] | None) -> bool:
@@ -162,9 +186,7 @@ def _is_included(name: str, included_folders: Iterable[str] | None) -> bool:
     """
     if included_folders is None:
         return True
-    return any(
-        name.startswith(folder.strip("/") + "/") for folder in included_folders
-    )
+    return _is_in_folders(name, included_folders)
 
 
 def get_local_path(data_folder: str, name: str) -> str | None:
@@ -265,7 +287,8 @@ def _download(blob: Any, file_path: str) -> bool:
     -------
     bool
         Whether the object was downloaded, False if the file was written
-        in the meantime.
+        in the meantime, or if a file has the name of one of its
+        folders, such as the file of an object "a" for the object "a/b".
 
     Notes
     -----
@@ -275,7 +298,10 @@ def _download(blob: Any, file_path: str) -> bool:
     """
     if os.path.exists(file_path):
         return False
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    try:
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    except (FileExistsError, NotADirectoryError):
+        return False
     temporary_path = f"{file_path}.{uuid.uuid4().hex}.part"
     try:
         with open(temporary_path, "xb") as file:

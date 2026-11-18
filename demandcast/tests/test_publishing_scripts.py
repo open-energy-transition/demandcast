@@ -52,6 +52,19 @@ def test_sync(monkeypatch):
 
 
 @pytest.mark.parametrize(
+    ("report", "status"),
+    [
+        (sync.publishing.gcs.SyncReport(copied=["a"], identical=["b"]), 0),
+        (sync.publishing.gcs.SyncReport(different=["a"]), 1),
+        (sync.publishing.gcs.SyncReport(unsafe=["../a"]), 1),
+    ],
+)
+def test_exit_status_of_sync(report, status):
+    """Test that a copy with different or unsafe files exits with 1."""
+    assert sync.get_exit_status(report) == status
+
+
+@pytest.mark.parametrize(
     ("record", "expected_record"), [(18374352, 18374352), ("new", None)]
 )
 def test_publish(monkeypatch, record, expected_record):

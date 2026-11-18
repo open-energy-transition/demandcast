@@ -386,3 +386,78 @@ def test_download_leaves_no_temporary_file(tmp_path):
 
     assert [path.name for path in tmp_path.iterdir()] == ["a.csv"]
     assert (tmp_path / "a.csv").read_bytes() == b"content"
+
+
+def test_download_of_an_object_where_a_file_has_its_folder(data_folder):
+    """
+    Test that an object whose folder is the file of another is skipped.
+
+    The object "a" is downloaded as a file, so the object "a/b" has no
+    folder: it is reported as different, and the objects after it are
+    still downloaded.
+    """
+    bucket = _FakeBucket({"a": b"file", "a/b": b"in a folder", "z.csv": b"z"})
+
+    report = gcs.sync(
+        "bucket", "download", str(data_folder), client=_FakeClient(bucket)
+    )
+
+    assert report.copied == ["a", "z.csv"]
+    assert report.different == ["a/b"]
+    assert (data_folder / "a").read_bytes() == b"file"
+    assert (data_folder / "z.csv").read_bytes() == b"z"
+
+
+@pytest.mark.parametrize("direction", ["upload", "download"])
+def test_excluded_subfolders(data_folder, direction):
+    """Test that the files of an excluded subfolder are not copied."""
+    for name in ("results/figures/local.png", "results/forecasts/local.csv"):
+        (data_folder / name).parent.mkdir(parents=True, exist_ok=True)
+        (data_folder / name).write_bytes(b"local")
+    bucket = _FakeBucket(
+        {
+            "results/figures/cloud.png": b"figure",
+            "results/forecasts/cloud.csv": b"forecast",
+        }
+    )
+
+    report = gcs.sync(
+        "bucket",
+        direction,
+        str(data_folder),
+        excluded_folders=["logs", "results/figures"],
+        client=_FakeClient(bucket),
+    )
+
+    assert not any(
+        name.startswith("results/figures") for name in report.copied
+    )
+    if direction == "upload":
+        assert "results/forecasts/local.csv" in report.copied
+        assert "results/figures/local.png" not in bucket.objects
+    else:
+        assert "results/forecasts/cloud.csv" in report.copied
+        assert not (data_folder / "results" / "figures" / "cloud.png").exists()
+
+
+def test_temporary_files_of_downloads_are_not_uploaded(data_folder):
+    """Test that the file left by a killed download is not uploaded."""
+    (data_folder / f"same.csv.{'0123456789abcdef' * 2}.part").write_bytes(
+        b"partial"
+    )
+
+    assert gcs.list_local_files(str(data_folder), ["logs"]) == {
+        "electricity_demand/cleaned/DEU_entsoe.parquet": str(
+            data_folder
+            / "electricity_demand"
+            / "cleaned"
+            / "DEU_entsoe.parquet"
+        ),
+        "electricity_demand/cleaned/FRA_entsoe.parquet": str(
+            data_folder
+            / "electricity_demand"
+            / "cleaned"
+            / "FRA_entsoe.parquet"
+        ),
+        "same.csv": str(data_folder / "same.csv"),
+    }
