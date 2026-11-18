@@ -262,13 +262,9 @@ def get_available_requests(
     of a region with an internal error when they take more than about
     15 seconds, which a year, and at times half a year, does.
     """
-    day_after_end = end_date + dt.timedelta(days=1)
-    boundaries = (
-        pd.date_range(start_date, day_after_end, freq="QS")
-        .union(pd.to_datetime([start_date, day_after_end]))
-        .drop_duplicates()
+    return utils.time_series.split_period(
+        start_date, end_date + dt.timedelta(days=1), "QS"
     )
-    return list(itertools.pairwise(boundaries))
 
 
 def get_url() -> str:

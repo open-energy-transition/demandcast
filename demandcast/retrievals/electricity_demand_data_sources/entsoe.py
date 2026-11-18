@@ -135,14 +135,18 @@ def get_available_requests(
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
-        The list of available requests.
+        The years of the data, from their first day to the first day
+        after them.
 
     Notes
     -----
     The requests are one-year periods, the longest that the platform
-    gives.
+    gives. The platform leaves out the end of a request, so the last
+    request ends at the day after the last day of the data.
     """
-    return utils.time_series.split_period(start_date, end_date, "YS")
+    return utils.time_series.split_period(
+        start_date, end_date + dt.timedelta(days=1), "YS"
+    )
 
 
 def _correct_times(time_series: pd.Series, code: str) -> pd.Series:

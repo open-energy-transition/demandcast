@@ -148,7 +148,7 @@ def get_available_requests(
     start_date : datetime.date
         The first day of the data.
     end_date : datetime.date
-        The day after the last day of the data.
+        The last day of the data.
 
     Returns
     -------
@@ -156,7 +156,9 @@ def get_available_requests(
         The years of the data, from their first day to the first day
         after them.
     """
-    return utils.time_series.split_period(start_date, end_date, "YS")
+    return utils.time_series.split_period(
+        start_date, end_date + dt.timedelta(days=1), "YS"
+    )
 
 
 def get_url() -> str:
