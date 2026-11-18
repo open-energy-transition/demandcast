@@ -589,39 +589,35 @@ def read_date_ranges_of_electricity_demand_in_data_source(
     return start_and_end_dates
 
 
-def read_all_date_ranges() -> dict[str, tuple[dt.date, dt.date]]:
+def read_all_periods() -> dict[str, list[tuple[dt.date, dt.date]]]:
     """
-    Read all the start and end dates of the available data.
-
-    A country or subdivision in more than one data source takes the
-    dates that give the longest period.
+    Read the periods of the available data of each code.
 
     Returns
     -------
-    start_and_end_dates : dict[str, tuple[datetime.date, datetime.date]]
-        The dictionary containing the start and end dates of the
-        available data for the countries and subdivisions.
+    dict[str, list[tuple[datetime.date, datetime.date]]]
+        The first and last days of each period of the data of each
+        country or subdivision, in order: the union of the periods of
+        its data sources, with the periods that overlap or follow each
+        other merged.
     """
-    data_sources = read_data_sources()
+    date_ranges: dict[str, list[tuple[dt.date, dt.date]]] = {}
+    for data_source in read_data_sources():
+        for (
+            code,
+            date_range,
+        ) in read_date_ranges_of_electricity_demand_in_data_source(
+            data_source
+        ).items():
+            date_ranges.setdefault(code, []).append(date_range)
 
-    start_and_end_dates: dict[str, tuple[dt.date, dt.date]] = {}
-    for data_source in data_sources:
-        file_start_and_end_dates = (
-            read_date_ranges_of_electricity_demand_in_data_source(data_source)
-        )
-
-        for code, (start_date, end_date) in file_start_and_end_dates.items():
-            if code in start_and_end_dates:
-                existing_start_date, existing_end_date = start_and_end_dates[
-                    code
-                ]
-                existing_time_difference = (
-                    existing_end_date - existing_start_date
-                ).days
-                new_time_difference = (end_date - start_date).days
-                if new_time_difference > existing_time_difference:
-                    start_and_end_dates[code] = (start_date, end_date)
+    periods: dict[str, list[tuple[dt.date, dt.date]]] = {}
+    for code, ranges in date_ranges.items():
+        merged: list[tuple[dt.date, dt.date]] = []
+        for start, end in sorted(ranges):
+            if merged and start <= merged[-1][1] + dt.timedelta(days=1):
+                merged[-1] = (merged[-1][0], max(merged[-1][1], end))
             else:
-                start_and_end_dates[code] = (start_date, end_date)
-
-    return start_and_end_dates
+                merged.append((start, end))
+        periods[code] = merged
+    return periods

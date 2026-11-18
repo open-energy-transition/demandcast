@@ -10,6 +10,7 @@ Description:
 import datetime as dt
 from unittest.mock import patch
 
+import pandas as pd
 import pytest
 import pytz
 from countryinfo import CountryNotFoundError
@@ -244,3 +245,19 @@ def test_time_zones_errors():
         # zones in multiple yaml files.
         with pytest.raises(ValueError, match="Conflicting time zones"):
             utils.time_zones._get_defined_time_zone_for_code("YY")
+
+
+def test_local_days():
+    """
+    Test the local day of the start of each hour.
+
+    In Japan (UTC+9), the hours that end from 16:00 UTC on 1 January to
+    15:00 UTC on 2 January start on 2 January in local time.
+    """
+    times = pd.date_range("2024-01-01 15:00", "2024-01-02 16:00", freq="h")
+
+    days = utils.time_zones.get_local_days("JPN", times)
+
+    assert days[0] == pd.Timestamp("2024-01-01")
+    assert (days[1:-1] == pd.Timestamp("2024-01-02")).all()
+    assert days[-1] == pd.Timestamp("2024-01-03")
