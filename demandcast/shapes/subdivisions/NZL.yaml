@@ -2,7 +2,22 @@
 # subdivisions of Natural Earth at 1:10m that make them, by their ISO
 # 3166-2 codes, without the parts of some of them that the polygons of
 # `cuts` mark, in WKT, in degrees of longitude and latitude, simplified
-# and rounded to 0.1 degrees.
+# and rounded to 0.01 degrees.
+
+cuts:
+  southland_outside_south_island:
+    description: Stewart Island, of Southland, New Zealand, outside the grid of
+      the South Island, with its own diesel system.
+    polygon: >-
+      POLYGON ((167.45 -47.16, 167.5 -47.16, 167.56 -47.13, 167.59 -47.03,
+      167.68 -46.98, 167.71 -46.92, 167.77 -46.9, 167.72 -46.84, 167.68 -46.84,
+      167.64 -46.83, 167.61 -46.77, 167.64 -46.72, 167.67 -46.71, 167.72
+      -46.71, 167.75 -46.66, 167.8 -46.64, 167.87 -46.65, 167.93 -46.63, 168.01
+      -46.67, 168.13 -46.77, 168.23 -46.84, 168.24 -46.92, 168.31 -46.99, 168.3
+      -47.05, 168.31 -47.1, 168.28 -47.13, 168.16 -47.16, 168.03 -47.17, 167.91
+      -47.24, 167.77 -47.22, 167.74 -47.27, 167.68 -47.31, 167.54 -47.33,
+      167.49 -47.31, 167.47 -47.28, 167.41 -47.29, 167.37 -47.24, 167.4 -47.18,
+      167.45 -47.16))
 
 subdivisions:
   NZL_NI:
@@ -12,3 +27,5 @@ subdivisions:
   NZL_SI:
     name: South Island
     standard_subdivisions: NZ-CAN NZ-MBH NZ-NSN NZ-OTA NZ-STL NZ-TAS NZ-WTC
+    cuts:
+      NZ-STL: southland_outside_south_island
