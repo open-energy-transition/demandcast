@@ -24,7 +24,7 @@ entities:
   - country_name: Argentina
     country_code: ARG
     start_date: 2015-01-01
-    end_date: today
+    end_date: 2026-02-16
   - subdivision_name: New South Wales
     subdivision_code: NSW
     country_name: Australia

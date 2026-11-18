@@ -7,8 +7,10 @@ Description:
 """
 
 import datetime as dt
+import json
 
 import pandas as pd
+import pytest
 
 import utils.data_sources
 from retrievals.electricity_demand_data_sources import iea
@@ -133,3 +135,106 @@ def test_hour_given_once_when_daylight_saving_time_ends(monkeypatch):
 
     assert time_series.tolist() == [50.0, 48.0]
     assert not time_series.index.hasnans
+
+
+def test_period_requested_month_by_month(monkeypatch):
+    """
+    Test that a period that the API cannot answer is split into months.
+
+    The quarter fails, and each of its months is then requested once.
+    """
+    requested = []
+
+    def fetch_text(_url, request_params, **_):
+        """
+        Fail the request of the quarter, and answer those of the months.
+
+        Returns
+        -------
+        str
+            The records of the first hour of the month.
+
+        Raises
+        ------
+        ConnectionError
+            For the request of the quarter.
+        """
+        requested.append((request_params["from"], request_params["to"]))
+        if request_params["from"] == "2024-07-01" and (
+            request_params["to"] == "2024-10-01"
+        ):
+            raise ConnectionError("HTTPError: 500 Server Error")
+        return json.dumps(
+            [{"Date": f"{request_params['from']}T00:00:00.000Z", "Value": 1.5}]
+        )
+
+    monkeypatch.setattr(iea.utils.fetcher, "fetch_text", fetch_text)
+
+    records = iea._fetch_records(
+        pd.Timestamp("2024-07-01"),
+        pd.Timestamp("2024-10-01"),
+        {"Region": "Mid-Atlantic"},
+    )
+
+    assert requested == [
+        ("2024-07-01", "2024-10-01"),
+        ("2024-07-01", "2024-08-01"),
+        ("2024-08-01", "2024-09-01"),
+        ("2024-09-01", "2024-10-01"),
+    ]
+    assert [record["Date"][:10] for record in records] == [
+        "2024-07-01",
+        "2024-08-01",
+        "2024-09-01",
+    ]
+
+
+def test_month_that_the_api_cannot_answer(monkeypatch):
+    """Test that a month that the API cannot answer is an error."""
+
+    def fetch_text(*_, **__):
+        """
+        Fail every request.
+
+        Raises
+        ------
+        ConnectionError
+            Always.
+        """
+        raise ConnectionError("HTTPError: 500 Server Error")
+
+    monkeypatch.setattr(iea.utils.fetcher, "fetch_text", fetch_text)
+
+    with pytest.raises(ConnectionError):
+        iea._fetch_records(
+            pd.Timestamp("2024-07-01"),
+            pd.Timestamp("2024-08-01"),
+            {"Region": "Mid-Atlantic"},
+        )
+
+
+def test_data_not_found_is_not_split(monkeypatch):
+    """Test that data not found is an error, without months."""
+    requested = []
+
+    def fetch_text(_url, request_params, **_):
+        """
+        Answer that the data is not found.
+
+        Raises
+        ------
+        DataNotFoundError
+            Always.
+        """
+        requested.append(request_params["from"])
+        raise iea.utils.fetcher.DataNotFoundError("HTTP error 404")
+
+    monkeypatch.setattr(iea.utils.fetcher, "fetch_text", fetch_text)
+
+    with pytest.raises(iea.utils.fetcher.DataNotFoundError):
+        iea._fetch_records(
+            pd.Timestamp("2024-07-01"),
+            pd.Timestamp("2024-10-01"),
+            {"Region": "Mid-Atlantic"},
+        )
+    assert requested == ["2024-07-01"]
