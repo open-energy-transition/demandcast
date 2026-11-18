@@ -16,3 +16,6 @@ subdivisions:
       FR-62 FR-63 FR-64 FR-65 FR-66 FR-67 FR-68 FR-69 FR-70 FR-71 FR-72 FR-73
       FR-74 FR-75 FR-76 FR-77 FR-78 FR-79 FR-80 FR-81 FR-82 FR-83 FR-84 FR-85
       FR-86 FR-87 FR-88 FR-89 FR-90 FR-91 FR-92 FR-93 FR-94 FR-95
+  FRA_20R:
+    name: Corsica
+    standard_subdivisions: FR-2A FR-2B
