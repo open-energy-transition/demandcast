@@ -481,6 +481,73 @@ def test_unpublished_latest_request(add_data_source):
     assert _read_saved_data("FRA", "yearly") == {"2023-01-01 00:00": 100.0}
 
 
+def test_request_without_data_is_downloaded_again(
+    add_data_source, monkeypatch
+):
+    """
+    Test that a request that gives no data is downloaded again.
+
+    The second day gives no data in the first retrieval, such as a
+    month whose file is not published yet, so it gets no version in
+    the raw data: the retrieval of the latest request downloads it
+    again with the latest one.
+    """
+    published = {1: True, 2: False, 3: True}
+
+    def download(request, _code):
+        """
+        Give the demand of a day, empty if it is not published.
+
+        Returns
+        -------
+        pandas.Series
+            The demand of the request.
+        """
+        if not published[request]:
+            return pd.Series(dtype="float64")
+        return _demand(f"2024-01-0{request} 01:00", [100.0 * request])
+
+    add_data_source(
+        "daily",
+        ["FRA"],
+        get_available_requests=Mock(return_value=[1, 2, 3]),
+        download_and_extract_data_for_request=download,
+    )
+    retrievals.electricity_demand.run_data_retrieval("daily", None, None)
+    assert _read_saved_data("FRA", "daily") == {
+        "2024-01-01 00:00": 100.0,
+        "2024-01-03 00:00": 300.0,
+    }
+
+    published[2] = True
+    recording = utils.raw_data.recording
+    recorded = []
+
+    def count_recordings(data_source):
+        """
+        Count a download, and record its responses.
+
+        Returns
+        -------
+        contextlib.AbstractContextManager
+            The recording of the responses.
+        """
+        recorded.append(data_source)
+        return recording(data_source)
+
+    monkeypatch.setattr(utils.raw_data, "recording", count_recordings)
+    retrievals.electricity_demand.run_data_retrieval(
+        "daily", None, None, latest_requests=1
+    )
+
+    assert recorded == ["daily", "daily"]
+    assert _read_saved_data("FRA", "daily") == {
+        "2024-01-01 00:00": 100.0,
+        "2024-01-02 00:00": 200.0,
+        "2024-01-03 00:00": 300.0,
+    }
+
+
 @pytest.mark.parametrize("requests", [[None], [2023, 2024]])
 def test_missing_data_of_other_requests(add_data_source, requests):
     """Test that the data of another or the only request must exist."""

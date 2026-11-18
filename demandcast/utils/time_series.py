@@ -35,7 +35,9 @@ def split_period(
     start_date : datetime.date
         The start of the period.
     end_date : datetime.date
-        The end of the period.
+        The end of the period, at its start: a data source whose
+        requests leave out their end, or end at the start of their last
+        hour, passes the day after the last day of its data.
     frequency : str
         The frequency of the starts of the shorter periods, as in
         pandas.date_range.

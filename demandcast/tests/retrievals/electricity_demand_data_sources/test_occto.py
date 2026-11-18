@@ -163,7 +163,12 @@ def fake_service(monkeypatch):
 
 
 def test_get_available_requests():
-    """Test that the requests are the years of the data."""
+    """
+    Test that the requests are the years of the data.
+
+    The last request ends at the day after the last day of the data,
+    which the download leaves out.
+    """
     requests = occto.get_available_requests(
         "JPN_Kansai", dt.date(2016, 4, 1), dt.date(2018, 3, 1)
     )
@@ -171,7 +176,7 @@ def test_get_available_requests():
     assert requests == [
         (pd.Timestamp("2016-04-01"), pd.Timestamp("2017-01-01")),
         (pd.Timestamp("2017-01-01"), pd.Timestamp("2018-01-01")),
-        (pd.Timestamp("2018-01-01"), pd.Timestamp("2018-03-01")),
+        (pd.Timestamp("2018-01-01"), pd.Timestamp("2018-03-02")),
     ]
 
 

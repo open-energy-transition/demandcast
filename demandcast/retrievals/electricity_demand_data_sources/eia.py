@@ -59,14 +59,19 @@ def get_available_requests(
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
-        The list of available requests.
+        The six-month periods of the data, from their first day to the
+        first day after them.
 
     Notes
     -----
     The requests are six-month periods, because the API gives at most
-    5000 values per request.
+    5000 values per request. The end of a request is the start of its
+    last hour, so the last request ends at the day after the last day
+    of the data.
     """
-    return utils.time_series.split_period(start_date, end_date, "6MS")
+    return utils.time_series.split_period(
+        start_date, end_date + dt.timedelta(days=1), "6MS"
+    )
 
 
 def get_url(

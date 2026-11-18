@@ -319,13 +319,16 @@ def _retrieve_data(
     -----
     If the data of the latest of several requests is not found, it is
     skipped, because the file of the latest period can be not published
-    yet. If a request fails, the responses of the requests before it
-    are kept in the raw data, so that a long retrieval that fails does
-    not lose them: they can be processed without the network. So are
-    the responses of the request itself, with the error, if its data
-    cannot be extracted from them, such as after a change of their
-    format: they can be processed again once the code of the data
-    source is fixed.
+    yet. A request whose data source gives no data, such as a month of
+    AEMO whose rooftop solar is not published yet, gets no version in
+    the raw data, so that a retrieval of the latest requests downloads
+    it again as a new one. If a request fails, the responses of the
+    requests before it are kept in the raw data, so that a long
+    retrieval that fails does not lose them: they can be processed
+    without the network. So are the responses of the request itself,
+    with the error, if its data cannot be extracted from them, such as
+    after a change of their format: they can be processed again once
+    the code of the data source is fixed.
     """
     retrieval_module = importlib.import_module(
         f"retrievals.electricity_demand_data_sources.{data_source}"
@@ -382,6 +385,13 @@ def _retrieve_data(
                         )
                     )
                 raise
+            if time_series.empty:
+                logging.warning(
+                    f"The request {request} of {data_source} gives no data "
+                    f"of {code}, so it is downloaded again by the next "
+                    "retrieval."
+                )
+                continue
             downloads.append((request, responses, None))
             downloaded[
                 json.dumps(
