@@ -9,11 +9,15 @@ Description:
     cross-validation, which trains a model without each country or
     subdivision in turn and scores it on the one left out.
 
-    The cross-validation can instead hold out each country with its
+    The model of a fold does not train on the entities related to those
+    that it holds out (see utils.relations), such as the country of a
+    subdivision and the subdivisions of a country, a grid and the state
+    that it supplies, or another period of a grid, which are not scored
+    in the fold: holding out a province of Argentina leaves out
+    Argentina, but still trains on the other provinces. The
+    cross-validation can instead hold out each country with its
     subdivisions, so that a model is scored on a country of which it
-    has seen no part: holding out Argentina alone still trains on its
-    provinces, which measures the error on a held-out entity, not on an
-    unseen country. Its results say which holdout they used.
+    has seen no part. Its results say which holdout they used.
 
     Each error is given as the mean absolute percentage error (MAPE)
     and as the weighted absolute percentage error (WAPE).
@@ -37,11 +41,11 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel
 from sklearn.metrics import mean_absolute_percentage_error
-from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.utils.parallel import Parallel, delayed
 
 import ml_models.data
 import ml_models.registry
+import utils.relations
 
 
 def log_summary(name: str, mapes: pd.Series) -> None:
@@ -372,8 +376,10 @@ def calculate_mapes(
 
 
 def get_folds(
-    group: pd.Series, holdout: Literal["entity", "country"]
-) -> dict[str, list[str]]:
+    group: pd.Series,
+    holdout: Literal["entity", "country"],
+    related: dict[str, set[str]] | None = None,
+) -> dict[str, dict[str, list[str]]]:
     """
     Get the entities that each fold of a cross-validation holds out.
 
@@ -384,18 +390,29 @@ def get_folds(
     holdout : str
         What each fold holds out: an "entity", or a "country" with its
         subdivisions.
+    related : dict[str, set[str]] | None, optional
+        The codes related to each code, read from utils.relations if
+        not given.
 
     Returns
     -------
-    dict[str, list[str]]
-        The entity codes held out by each fold, by the name of the fold:
-        the entity code, or the code of the country.
+    dict[str, dict[str, list[str]]]
+        For each fold, by its name (the entity code, or the code of the
+        country), the entity codes that it scores ("scored"), and those
+        that its model does not train on ("left_out"): the scored ones
+        and the entities related to them.
     """
-    codes = sorted(group.unique())
-    return {
-        fold: [code for code in codes if _get_fold(code, holdout) == fold]
-        for fold in sorted({_get_fold(code, holdout) for code in codes})
-    }
+    codes = sorted(str(code) for code in group.unique())
+    if related is None:
+        related = utils.relations.read_related_entities(codes)
+    folds = {}
+    for fold in sorted({_get_fold(code, holdout) for code in codes}):
+        scored = [code for code in codes if _get_fold(code, holdout) == fold]
+        left_out = set(scored).union(
+            *(related.get(code, set()) for code in scored)
+        )
+        folds[fold] = {"scored": scored, "left_out": sorted(left_out)}
+    return folds
 
 
 def _get_fold(code: str, holdout: Literal["entity", "country"]) -> str:
@@ -520,14 +537,15 @@ def cross_validate(
     model_config: BaseModel,
     holdout: Literal["entity", "country"] = "entity",
     models_folder: str | None = None,
+    related: dict[str, set[str]] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame | None]:
     """
     Run the Leave-One-Group-Out cross-validation of a model.
 
     Each entity, or each country with its subdivisions, is held out in
-    turn: a model is trained on the others, and scored on its training
-    rows and on the rows of each held-out entity. The model of each fold
-    can be saved, named after the fold.
+    turn: a model is trained on the others but their related entities,
+    and scored on its training rows and on the rows of each held-out
+    entity. The model of each fold can be saved, named after the fold.
 
     Parameters
     ----------
@@ -546,6 +564,9 @@ def cross_validate(
     models_folder : str | None, optional
         The folder where the model of each fold is saved, as
         <fold><extension of the model>, none to not save them.
+    related : dict[str, set[str]] | None, optional
+        The codes related to each code, read from utils.relations if
+        not given.
 
     Returns
     -------
@@ -561,26 +582,21 @@ def cross_validate(
     # Check that the algorithm is supported.
     model_module = ml_models.registry.get_model_module(algorithm)
 
-    group = prepared_dataset["group"]
-    folds = group.map(lambda code: _get_fold(code, holdout))
+    group = prepared_dataset["group"].astype(str).to_numpy()
+    folds = get_folds(prepared_dataset["group"], holdout, related)
 
     results = Parallel(n_jobs=n_jobs)(
         delayed(_score_fold)(
             algorithm,
             model_config,
             prepared_dataset,
-            train,
-            test,
-            os.path.join(
-                models_folder,
-                f"{folds.iloc[test[0]]}{model_module.FILE_EXTENSION}",
-            )
+            np.flatnonzero(~np.isin(group, codes["left_out"])),
+            np.flatnonzero(np.isin(group, codes["scored"])),
+            os.path.join(models_folder, f"{fold}{model_module.FILE_EXTENSION}")
             if models_folder is not None
             else None,
         )
-        for train, test in LeaveOneGroupOut().split(
-            prepared_dataset["features"], prepared_dataset["target"], folds
-        )
+        for fold, codes in folds.items()
     )
     logging.info("Cross-validation completed successfully.")
 

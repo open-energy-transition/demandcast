@@ -8,4 +8,8 @@
 #   the settings of check_data_sources_config.yaml.
 # - flags: a report of the flags of the cleaned electricity demand, with
 #   check_flags_config.yaml.
+# - related_entities: the shares of the people of the countries and
+#   subdivisions with data that overlap, which tell which are related
+#   (checks/related_entities.csv, with the exceptions of
+#   related_entities.yaml).
 check: data_availability

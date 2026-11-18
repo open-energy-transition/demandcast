@@ -796,7 +796,9 @@ def test_cross_validation_records_its_settings_and_folds():
         os.path.join(folder, f"all_{NOW}.parquet")
     )
     assert manifest is not None
-    assert manifest["folds"] == {code: [code] for code in COUNTRY_CODES}
+    assert manifest["folds"] == {
+        code: {"scored": [code], "left_out": [code]} for code in COUNTRY_CODES
+    }
     assert manifest["holdout"] == "country"
     assert manifest["model_settings"]["random_state"] == 42
     assert manifest["dataset"]["sha256"] == utils.manifest.get_checksum(

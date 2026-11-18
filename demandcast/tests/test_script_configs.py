@@ -308,7 +308,7 @@ def test_retrieve_dispatch_by_scenario(monkeypatch, variable):
 
 
 @pytest.mark.parametrize(
-    "name", ["data_availability", "data_sources", "flags"]
+    "name", ["data_availability", "data_sources", "flags", "related_entities"]
 )
 def test_check_dispatch(monkeypatch, caplog, name):
     """Test that check.py runs its check and logs its settings."""

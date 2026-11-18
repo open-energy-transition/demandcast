@@ -96,6 +96,60 @@ def test_read_and_check_ml_configuration_error():
             ml_models.data.read_and_check_ml_configuration()
 
 
+def test_split_temporally_with_related_entities():
+    """
+    Test that related entities do not train on the held-out years.
+
+    A is superseded by C, whose data starts after A's ends: all the
+    years of A are for training. The held-out year of C is left out of
+    the training of B, which is related to it, and that of B out of the
+    training of C.
+    """
+    dataset = pd.DataFrame(
+        {
+            "entity_code": ["A", "A", "B", "B", "C", "C"],
+            "year": [2010, 2011, 2020, 2021, 2020, 2021],
+            "time": pd.to_datetime(
+                [
+                    "2010-06-01",
+                    "2011-06-01",
+                    "2020-06-01",
+                    "2021-06-01",
+                    "2020-06-01",
+                    "2021-06-01",
+                ]
+            ),
+        }
+    )
+
+    result = ml_models.data._split_temporally(
+        dataset,
+        testing_set=False,
+        validation_set=True,
+        group_column="entity_code",
+        splitter_column="year",
+        time_column="time",
+        related={"A": {"C"}, "B": {"C"}, "C": {"A", "B"}},
+    )
+
+    validation = result["validation"]
+    assert sorted(
+        zip(validation["entity_code"], validation["year"], strict=True)
+    ) == [
+        ("B", 2021),
+        ("C", 2021),
+    ]
+    training = result["training"]
+    assert sorted(
+        zip(training["entity_code"], training["year"], strict=True)
+    ) == [
+        ("A", 2010),
+        ("A", 2011),
+        ("B", 2020),
+        ("C", 2020),
+    ]
+
+
 def test_split_temporally_with_testing_and_validation():
     """Test _split_temporally with both testing and validation sets."""
     dataset = pd.DataFrame(
