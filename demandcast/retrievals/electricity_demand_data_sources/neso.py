@@ -19,15 +19,15 @@ Description:
     which also has the rooftop solar: the embedded solar capacity, 24
     GW in 2026, is about all the solar capacity of Great Britain.
 
-    The embedded generation is missing ("NA") from 2001 to 2006 and the
-    embedded solar until 2008, and is then counted as zero, which leaves
-    out the embedded wind of these years. Its capacity grows from about
-    75 to 770 MW in October and November 2007, when NESO counts more of
-    it. The demand misses about 1% before then, the average embedded
-    wind of 2008 (400 MW) of a national demand of 38 GW. The embedded
-    solar is zero in 2009, and its average grows from 1 MW in 2010 to
-    2.9 GW in 2026. Other embedded generation, such as small hydro and
-    combined heat and power, is not estimated and is left out.
+    The embedded generation is missing ("NA") from 2001 to 2006, and
+    the embedded wind generation and capacity are zero until 2007-10-27,
+    so the demand leaves out the embedded generation until then, about
+    1% of it, the average embedded wind of 2008 (400 MW) of a national
+    demand of 38 GW. The embedded wind capacity is about 1.1 GW from
+    2007-10-28. The embedded solar is missing until 2008, which counts
+    as zero, and zero in 2009, and its average grows from 1 MW in 2010
+    to 2.9 GW in 2026. Other embedded generation, such as small hydro
+    and combined heat and power, is not estimated and is left out.
 
     The settlement dates have three formats: "2024-01-01" in most years,
     "01-JAN-2019" from 2019 to 2022, and "01-Jan-23" in 2023.
