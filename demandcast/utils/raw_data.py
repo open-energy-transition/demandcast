@@ -20,7 +20,9 @@ Description:
     set of responses, with the dates of the first and the last
     retrievals that downloaded it, and the error that the data source
     raised if its data could not be extracted from them, such as after
-    a change of their format.
+    a change of their format. A version whose values a newer download
+    gives too, with the same values, is removed with its files that no
+    other version has (see retrievals.electricity_demand).
 
     The API keys and passwords in the URLs and the bodies of the
     requests are hidden in the manifest. The responses to the requests
@@ -836,3 +838,63 @@ def save_versions(
             latest["error"] = error
 
     _write_manifest(data_source, manifest)
+
+
+def remove_versions(
+    data_source: str, code: str, versions: list[tuple[Any, str]]
+) -> None:
+    """
+    Remove versions of the requests of a code from the raw data.
+
+    The requests left without versions are removed, and so are the
+    files of the removed versions that no other version has.
+
+    Parameters
+    ----------
+    data_source : str
+        The data source.
+    code : str
+        The code of the country or subdivision.
+    versions : list[tuple[Any, str]]
+        The request of each version to remove, and the date of its
+        first retrieval, which tells it from the other versions of the
+        request.
+    """
+    removed = {
+        (json.dumps(encode_request(request), sort_keys=True), first_retrieved)
+        for request, first_retrieved in versions
+    }
+    manifest = read_manifest(data_source)
+    files: set[str] = set()
+    for entry in manifest["requests"]:
+        if entry["code"] != code:
+            continue
+        key = json.dumps(entry["request"], sort_keys=True)
+        kept = []
+        for version in entry["versions"]:
+            if (key, version["first_retrieved"]) in removed:
+                files.update(
+                    response["file"]
+                    for response in version["responses"]
+                    if response["file"] is not None
+                )
+            else:
+                kept.append(version)
+        entry["versions"] = kept
+    manifest["requests"] = [
+        entry
+        for entry in manifest["requests"]
+        if entry["code"] != code or entry["versions"]
+    ]
+    _write_manifest(data_source, manifest)
+
+    referenced = {
+        response["file"]
+        for entry in manifest["requests"]
+        for version in entry["versions"]
+        for response in version["responses"]
+    }
+    for checksum in files - referenced:
+        file_path = os.path.join(_folder(data_source), "files", checksum)
+        if os.path.exists(file_path):
+            os.remove(file_path)

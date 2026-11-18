@@ -11,9 +11,12 @@ Description:
     MW, at the ends of the intervals in UTC, without missing or zero
     values or duplicated times, and combined: the newest version of a
     request gives the values, and the older ones fill the times that it
-    does not have any more. The processed data is saved in the folder of
-    processed electricity demand, with the date when the version of each
-    value was first retrieved. It is then cleaned and saved in the
+    does not have any more. An older version whose values a new download
+    gives too, with the same values, adds nothing and is removed, such
+    as the request of the current year of the earlier retrieval, which
+    ended a few days before. The processed data is saved in the folder
+    of processed electricity demand, with the date when the version of
+    each value was first retrieved. It is then cleaned and saved in the
     folder of cleaned electricity demand, which the assembly of the data
     reads, with the flags of the changes that need a review.
 
@@ -24,6 +27,7 @@ Description:
     and process the others from the raw data.
 """
 
+import datetime as dt
 import importlib
 import json
 import logging
@@ -396,8 +400,154 @@ def _retrieve_data(
             ] = time_series
     finally:
         utils.raw_data.save_versions(data_source, code, downloads, retrieved)
+    _remove_contained_versions(data_source, code, downloaded)
 
     return _process_data(data_source, code, downloaded)
+
+
+def _covers(request: Any, other: Any) -> bool:
+    """
+    Check whether a request asks for all the data of another.
+
+    Parameters
+    ----------
+    request : Any
+        The request.
+    other : Any
+        The other request.
+
+    Returns
+    -------
+    bool
+        Whether the requests are the same, or are periods with the same
+        start whose other one ends first, such as the requests of the
+        current year of a data source whose data ends before today.
+    """
+    if request == other:
+        return True
+    return (
+        isinstance(request, tuple)
+        and isinstance(other, tuple)
+        and len(request) == len(other) == 2
+        and all(isinstance(time, dt.date) for time in (*request, *other))
+        and request[0] == other[0]
+        and other[1] < request[1]
+    )
+
+
+def _has_all_values(values: pd.Series, earlier: pd.Series) -> bool:
+    """
+    Check whether processed values have all the earlier ones.
+
+    Parameters
+    ----------
+    values : pandas.Series
+        The processed electricity demand.
+    earlier : pandas.Series
+        The earlier processed electricity demand.
+
+    Returns
+    -------
+    bool
+        Whether each time of the earlier values has a value, the same.
+    """
+    return bool(
+        earlier.index.isin(values.index).all()
+        and values.reindex(earlier.index).eq(earlier).all()
+    )
+
+
+def _remove_contained_versions(
+    data_source: str, code: str, downloaded: dict[str, pd.Series]
+) -> None:
+    """
+    Remove the earlier versions whose data the new downloads give too.
+
+    An earlier version of a request that a new download covers (see
+    _covers) is removed from the raw data if all its values are in the
+    download, with the same values, once processed.
+
+    Parameters
+    ----------
+    data_source : str
+        The data source.
+    code : str
+        The code of the country or subdivision.
+    downloaded : dict[str, pandas.Series]
+        The electricity demand of the requests just downloaded, by their
+        encoding as JSON.
+
+    Notes
+    -----
+    Such a version adds nothing to the processed data, where the newer
+    version gives the values of its times, so the requests of the
+    current period, which end a few days later at each retrieval, do
+    not keep a copy of the period at each retrieval. A version that
+    has an error, cannot be processed again, or has values that the
+    download changes or leaves out is kept, so that the data that a
+    data source changes or removes is not lost.
+    """
+    retrieval_module = importlib.import_module(
+        f"retrievals.electricity_demand_data_sources.{data_source}"
+    )
+    entries = [
+        entry
+        for entry in utils.raw_data.read_manifest(data_source)["requests"]
+        if entry["code"] == code
+    ]
+    first_retrieved = {
+        json.dumps(entry["request"], sort_keys=True): entry["versions"][-1][
+            "first_retrieved"
+        ]
+        for entry in entries
+    }
+    removed: dict[tuple[str, str], Any] = {}
+    for key, time_series in downloaded.items():
+        if time_series.empty:
+            continue
+        request = utils.raw_data.decode_request(json.loads(key))
+        values = _process_series(time_series, data_source, "")["Load (MW)"]
+        for entry in entries:
+            earlier_request = utils.raw_data.decode_request(entry["request"])
+            if not _covers(request, earlier_request):
+                continue
+            for version in entry["versions"]:
+                version_key = (
+                    json.dumps(entry["request"], sort_keys=True),
+                    version["first_retrieved"],
+                )
+                if (
+                    version["first_retrieved"] >= first_retrieved[key]
+                    or "error" in version
+                    or version_key in removed
+                ):
+                    continue
+                earlier = _replay_version(
+                    retrieval_module,
+                    data_source,
+                    code,
+                    earlier_request,
+                    version,
+                )
+                if earlier is not None and (
+                    earlier.empty
+                    or _has_all_values(
+                        values,
+                        _process_series(earlier, data_source, "")["Load (MW)"],
+                    )
+                ):
+                    removed[version_key] = earlier_request
+    if removed:
+        logging.info(
+            f"{len(removed)} earlier versions of {data_source} for {code} "
+            "have all their values in the new downloads, and are removed "
+            "from the raw data."
+        )
+        utils.raw_data.remove_versions(
+            data_source,
+            code,
+            [(request, first) for (_, first), request in removed.items()],
+        )
 
 
 def _get_latest_and_new_requests(

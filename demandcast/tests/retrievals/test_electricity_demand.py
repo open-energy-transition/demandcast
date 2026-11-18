@@ -165,6 +165,33 @@ def _read_saved_data(code: str, data_source: str) -> dict[str, float]:
     }
 
 
+def _read_versions(code: str, data_source: str) -> dict[str, tuple]:
+    """
+    Read the processed demand of a data source, with its versions.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+    data_source : str
+        The data source.
+
+    Returns
+    -------
+    dict[str, tuple]
+        The value and the date of the version of each time, in UTC.
+    """
+    data = pd.read_parquet(
+        utils.paths.get_electricity_demand_file("processed", code, data_source)
+    )
+    return {
+        f"{time:%Y-%m-%d %H:%M}": (value, retrieved)
+        for time, value, retrieved in zip(
+            data.index, data["Load (MW)"], data["Retrieved"], strict=True
+        )
+    }
+
+
 def _get_available_requests(code, start_date, end_date):
     """Get the requests of a data source, from the code and dates."""
 
@@ -703,6 +730,143 @@ def test_versions_of_the_raw_data(add_data_source, monkeypatch):
     pd.testing.assert_frame_equal(
         pd.read_parquet(file_path), expected, check_freq=False
     )
+
+
+@pytest.mark.parametrize(
+    ("request_", "other", "covers"),
+    [
+        (2024, 2024, True),
+        ((2026, 11), (2026, 10), False),
+        (
+            (pd.Timestamp("2026-01-01"), pd.Timestamp("2026-11-14")),
+            (pd.Timestamp("2026-01-01"), pd.Timestamp("2026-11-13")),
+            True,
+        ),
+        (
+            (pd.Timestamp("2026-01-01"), pd.Timestamp("2026-11-13")),
+            (pd.Timestamp("2026-01-01"), pd.Timestamp("2026-11-14")),
+            False,
+        ),
+        (
+            (pd.Timestamp("2026-01-01"), pd.Timestamp("2026-11-14")),
+            (pd.Timestamp("2026-02-01"), pd.Timestamp("2026-11-13")),
+            False,
+        ),
+    ],
+)
+def test_requests_that_cover_others(request_, other, covers):
+    """
+    Test which requests ask for all the data of others.
+
+    A period covers the periods with the same start that end first, and
+    any other request covers only itself.
+    """
+    assert retrievals.electricity_demand._covers(request_, other) is covers
+
+
+def test_versions_that_a_newer_download_has(add_data_source, monkeypatch):
+    """
+    Test that the versions that a newer download has are removed.
+
+    The request of the current period ends a day later at each
+    retrieval. The second download has all the values of the first,
+    whose version and file are removed. The third changes a value of
+    the second, whose version is kept, since its value is no longer in
+    the data source.
+    """
+    contents: dict[str, bytes] = {}
+
+    def send(_adapter, request, **_kwargs):
+        """
+        Answer a request with the content of its URL.
+
+        Returns
+        -------
+        requests.Response
+            The response.
+        """
+        response = requests.Response()
+        response.status_code = 200
+        response._content = contents[request.url]
+        response.request = request
+        return response
+
+    monkeypatch.setattr(requests.adapters.HTTPAdapter, "send", send)
+
+    def download_and_extract_data_for_request(request, _code):
+        """
+        Download the file of a period and read its values.
+
+        Returns
+        -------
+        pandas.Series
+            The demand in MW, at times in UTC.
+        """
+        text = requests.get(
+            f"https://example.org/demand.csv?end={request[1]:%Y-%m-%d}",
+            timeout=10,
+        ).text
+        values = pd.read_csv(io.StringIO(text), index_col=0, parse_dates=True)
+        return values["value"].astype(float).tz_localize("UTC")
+
+    available_requests = Mock()
+    add_data_source(
+        "growing",
+        ["FRA"],
+        get_available_requests=available_requests,
+        download_and_extract_data_for_request=(
+            download_and_extract_data_for_request
+        ),
+    )
+    downloads = {
+        "2024-01-02": "00:00,1\n2024-01-01 01:00,2\n",
+        "2024-01-03": "00:00,1\n2024-01-01 01:00,2\n2024-01-01 02:00,3\n",
+        "2024-01-04": (
+            "00:00,1\n2024-01-01 01:00,20\n2024-01-01 02:00,3\n"
+            "2024-01-01 03:00,4\n"
+        ),
+    }
+    for number, (end, rows) in enumerate(downloads.items(), start=1):
+        contents[f"https://example.org/demand.csv?end={end}"] = (
+            f"time,value\n2024-01-01 {rows}".encode()
+        )
+        available_requests.return_value = [
+            (pd.Timestamp("2024-01-01"), pd.Timestamp(end))
+        ]
+        monkeypatch.setattr(
+            pd.Timestamp,
+            "now",
+            lambda *_, number=number, **__: pd.Timestamp(f"2026-01-0{number}"),
+        )
+        retrievals.electricity_demand.run_data_retrieval("growing", None, None)
+
+    manifest = utils.raw_data.read_manifest("growing")
+    assert [
+        entry["request"]["tuple"][1] for entry in manifest["requests"]
+    ] == [
+        {"timestamp": "2024-01-03T00:00:00"},
+        {"timestamp": "2024-01-04T00:00:00"},
+    ]
+    files_folder = os.path.join(
+        utils.paths.get_electricity_demand_folder("raw"), "growing", "files"
+    )
+    assert sorted(os.listdir(files_folder)) == sorted(
+        version["responses"][0]["file"]
+        for entry in manifest["requests"]
+        for version in entry["versions"]
+    )
+
+    # The raw data gives the same data without the network.
+    contents.clear()
+    retrievals.electricity_demand.run_data_retrieval(
+        "growing", None, None, offline=True
+    )
+    assert _read_versions("FRA", "growing") == {
+        "2024-01-01 00:00": (1.0, "2026-01-03T00:00:00Z"),
+        "2024-01-01 01:00": (20.0, "2026-01-03T00:00:00Z"),
+        "2024-01-01 02:00": (3.0, "2026-01-03T00:00:00Z"),
+        "2024-01-01 03:00": (4.0, "2026-01-03T00:00:00Z"),
+    }
 
 
 def test_raw_data_kept_when_a_request_fails(add_data_source, monkeypatch):
