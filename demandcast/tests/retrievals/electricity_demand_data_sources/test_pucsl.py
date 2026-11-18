@@ -14,7 +14,12 @@ from retrievals.electricity_demand_data_sources import pucsl
 
 
 def test_get_available_requests():
-    """Test that the requests are the weeks of the data."""
+    """
+    Test that the requests are the weeks of the data.
+
+    The last request ends at the day after the last day of the data,
+    a Sunday that starts a week of its own.
+    """
     requests = pucsl.get_available_requests(
         "LKA", dt.date(2023, 1, 1), dt.date(2025, 12, 28)
     )
@@ -24,10 +29,10 @@ def test_get_available_requests():
         pd.Timestamp("2023-01-08"),
     )
     assert requests[-1] == (
-        pd.Timestamp("2025-12-21"),
         pd.Timestamp("2025-12-28"),
+        pd.Timestamp("2025-12-29"),
     )
-    assert len(requests) == 156
+    assert len(requests) == 157
 
 
 def test_download_and_extract_data_for_request(fake_downloads, assert_demand):

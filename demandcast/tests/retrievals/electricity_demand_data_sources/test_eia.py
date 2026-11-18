@@ -16,7 +16,12 @@ from retrievals.electricity_demand_data_sources import eia
 
 
 def test_get_available_requests():
-    """Test that the requests are the half years of the data."""
+    """
+    Test that the requests are the half years of the data.
+
+    The last request ends at the day after the last day of the data,
+    whose last hour starts at its end.
+    """
     requests = eia.get_available_requests(
         "USA_CAL", dt.date(2020, 1, 1), dt.date(2025, 12, 28)
     )
@@ -27,7 +32,7 @@ def test_get_available_requests():
     )
     assert requests[-1] == (
         pd.Timestamp("2025-07-01"),
-        pd.Timestamp("2025-12-28"),
+        pd.Timestamp("2025-12-29"),
     )
     assert len(requests) == 12
 
