@@ -13,17 +13,15 @@ import pandas as pd
 import pytest
 
 import ml_models.data
+import utils.manifest
 
 
 def test_read_and_check_ml_configuration():
     """Test reading and checking ML configuration."""
     sample_config = {
         "algorithm": "xgboost",
-        "group": "entity_code",
         "features": ["feature1", "feature2"],
         "target": "demand",
-        "splitter": "year",
-        "time": "timestamp",
         "categorical_features": ["feature1"],
         "scaling_variables": ["population"],
     }
@@ -37,11 +35,8 @@ def test_read_and_check_ml_configuration():
         config = ml_models.data.read_and_check_ml_configuration()
 
         assert config.algorithm == "xgboost"
-        assert config.group == "entity_code"
         assert config.features == ["feature1", "feature2"]
         assert config.target == "demand"
-        assert config.splitter == "year"
-        assert config.time == "timestamp"
         assert config.categorical_features == ["feature1"]
         assert config.scaling_variables == ["population"]
 
@@ -54,11 +49,8 @@ def test_read_and_check_ml_configuration_minimal():
     """
     minimal_config = {
         "algorithm": "xgboost",
-        "group": "entity_code",
         "features": ["feature1"],
         "target": "demand",
-        "splitter": "year",
-        "time": "timestamp",
     }
 
     with (
@@ -482,21 +474,18 @@ def test_split_in_groups_missing_columns():
 def test_prepare_split_datasets():
     """Test prepare_split_datasets with testing and validation sets."""
     sample_config = Mock()
-    sample_config.group = "entity_code"
     sample_config.features = ["feature1"]
     sample_config.target = "demand"
-    sample_config.splitter = "Local year"
-    sample_config.time = "timestamp"
     sample_config.categorical_features = None
     sample_config.scaling_variables = None
 
     sample_data = pd.DataFrame(
         {
-            "entity_code": ["A", "A", "A"],
+            "Entity code": ["A", "A", "A"],
             "feature1": [1, 2, 3],
             "demand": [10, 20, 30],
             "Local year": [2020, 2021, 2022],
-            "timestamp": [2020, 2021, 2022],
+            "Time (UTC)": [2020, 2021, 2022],
         }
     )
 
@@ -526,21 +515,18 @@ def test_prepare_split_datasets_with_training_set_only():
     The whole dataset is the training set.
     """
     sample_config = Mock()
-    sample_config.group = "entity_code"
     sample_config.features = ["feature1"]
     sample_config.target = "demand"
-    sample_config.splitter = "Local year"
-    sample_config.time = "timestamp"
     sample_config.categorical_features = None
     sample_config.scaling_variables = None
 
     sample_data = pd.DataFrame(
         {
-            "entity_code": ["A", "A", "A"],
+            "Entity code": ["A", "A", "A"],
             "feature1": [1, 2, 3],
             "demand": [10, 20, 30],
             "Local year": [2020, 2021, 2022],
-            "timestamp": [2020, 2021, 2022],
+            "Time (UTC)": [2020, 2021, 2022],
         }
     )
 
@@ -564,21 +550,18 @@ def test_prepare_split_datasets_with_training_set_only():
 def test_prepare_dataset_without_splits():
     """Test prepare_dataset without testing and validation sets."""
     sample_config = Mock()
-    sample_config.group = "entity_code"
     sample_config.features = ["feature1"]
     sample_config.target = "demand"
-    sample_config.splitter = "Local year"
-    sample_config.time = "timestamp"
     sample_config.categorical_features = None
     sample_config.scaling_variables = None
 
     sample_data = pd.DataFrame(
         {
-            "entity_code": ["A", "B"],
+            "Entity code": ["A", "B"],
             "feature1": [1, 2],
             "demand": [10, 20],
             "Local year": [2020, 2021],
-            "timestamp": [2020, 2021],
+            "Time (UTC)": [2020, 2021],
         }
     )
 
@@ -606,21 +589,18 @@ def test_prepare_dataset_without_splits():
 def test_prepare_dataset_without_target():
     """Test prepare_dataset without target variable."""
     sample_config = Mock()
-    sample_config.group = "entity_code"
     sample_config.features = ["feature1"]
     sample_config.target = "demand"
-    sample_config.splitter = "Local year"
-    sample_config.time = "timestamp"
     sample_config.categorical_features = None
     sample_config.scaling_variables = None
 
     sample_data = pd.DataFrame(
         {
-            "entity_code": ["A", "B"],
+            "Entity code": ["A", "B"],
             "feature1": [1, 2],
             "demand": [10, 20],
             "Local year": [2020, 2021],
-            "timestamp": [2020, 2021],
+            "Time (UTC)": [2020, 2021],
         }
     )
 
@@ -645,20 +625,17 @@ def test_prepare_dataset_without_target():
 def test_prepare_dataset_without_local_year():
     """Test that prepare_dataset needs the local year of each row."""
     sample_config = Mock()
-    sample_config.group = "entity_code"
     sample_config.features = ["feature1"]
     sample_config.target = "demand"
-    sample_config.splitter = "Local year"
-    sample_config.time = "timestamp"
     sample_config.categorical_features = None
     sample_config.scaling_variables = None
 
     sample_data = pd.DataFrame(
         {
-            "entity_code": ["A", "B"],
+            "Entity code": ["A", "B"],
             "feature1": [1, 2],
             "demand": [10, 20],
-            "timestamp": [2020, 2021],
+            "Time (UTC)": [2020, 2021],
         }
     )
 
@@ -849,3 +826,34 @@ def test_normalize_invalid_predictions():
         ml_models.data.normalize_to_annual_totals(
             predictions, group, local_year, repeated
         )
+
+
+def test_assembled_data_is_checked(tmp_path, caplog):
+    """
+    Test that assembled data is checked against its manifest.
+
+    Data assembled for forecasting is not read for training, changed
+    data is not read, and data without a manifest is read with a
+    warning.
+    """
+    file_path = str(tmp_path / "assembled_data_for_forecasting.parquet")
+    pd.DataFrame({"a": [1.0]}).to_parquet(file_path)
+    utils.manifest.write_manifest(
+        file_path, "dataset", {"purpose": "forecasting"}
+    )
+
+    data = ml_models.data.read_assembled_data(file_path, "forecasting")
+    assert data["a"].tolist() == [1.0]
+    with pytest.raises(ValueError, match="assembled for forecasting, not"):
+        ml_models.data.read_assembled_data(file_path, "training")
+
+    pd.DataFrame({"a": [2.0]}).to_parquet(file_path)
+    with pytest.raises(ValueError, match="differs from the one"):
+        ml_models.data.read_assembled_data(file_path, "forecasting")
+
+    other_path = str(tmp_path / "other.parquet")
+    pd.DataFrame({"a": [3.0]}).to_parquet(other_path)
+    assert ml_models.data.read_assembled_data(other_path, "training")[
+        "a"
+    ].tolist() == [3.0]
+    assert "has no manifest" in caplog.text

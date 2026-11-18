@@ -227,7 +227,6 @@ The trained model will be saved in `data/models/xgboost/` with a timestamp in th
 Before using the model, validate it on the year kept for testing, 2023. Edit `demandcast/config/validate_config.yaml`:
 
 ```yaml
-used_validation_set: false   # as use_validation_set in the training
 model_path:                  # empty for the latest model
 data_path:                   # empty for the data of the training of the model
 ```

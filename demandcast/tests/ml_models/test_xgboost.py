@@ -84,6 +84,50 @@ def test_train_splits_on_the_prepared_target():
     assert set(splits["Feature"]) == set(dataset["features"].columns)
 
 
+def test_early_stopping_on_the_validation_set(tmp_path):
+    """
+    Test that the training stops early on the validation set.
+
+    The target of the validation set is noise, so its error stops
+    improving after a few trees. The saved model predicts with the trees
+    up to its best round, as the trained one does.
+    """
+    dataset = _prepared_dataset()
+    rng = np.random.default_rng(1)
+    validation = dataset.copy()
+    validation["target"] = pd.Series(
+        rng.uniform(0.5, 1.5, len(dataset["target"]))
+    )
+    config = ml_models.xgboost.ConfigModel(
+        n_estimators=200, early_stopping_rounds=5
+    )
+
+    model = ml_models.xgboost.train(
+        {"training": dataset, "validation": validation}, config
+    )
+    file_path = str(tmp_path / "model.json")
+    ml_models.xgboost.save(model, file_path)
+    loaded = ml_models.xgboost.load(file_path)
+
+    assert model.best_iteration < 50
+    assert model.get_booster().num_boosted_rounds() < 200
+    np.testing.assert_allclose(
+        loaded.predict(dataset["features"]), model.predict(dataset["features"])
+    )
+
+
+def test_early_stopping_without_a_validation_set(caplog):
+    """Test that early stopping without a validation set is not used."""
+    config = ml_models.xgboost.ConfigModel(
+        n_estimators=20, early_stopping_rounds=5
+    )
+
+    model = ml_models.xgboost.train({"training": _prepared_dataset()}, config)
+
+    assert model.get_booster().num_boosted_rounds() == 20
+    assert "early_stopping_rounds is not used" in caplog.text
+
+
 def test_hyperparameters_reach_the_model():
     """Test that the given hyperparameters are those of the model."""
     config = ml_models.xgboost.ConfigModel(n_estimators=7, max_depth=2)

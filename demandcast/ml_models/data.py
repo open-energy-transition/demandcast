@@ -4,27 +4,34 @@ License: AGPL-3.0.
 Description:
 
     This module prepares the data of the machine learning models: their
-    settings (config/ml_config.yaml), the conversions of the target, the
-    load relative to the annual mean of its local year, to the fraction
-    of the annual total and to MW, the temporal and group splits into
-    training, validation and testing sets, and the check that a model
-    was trained with the features of a dataset.
+    settings (config/ml_config.yaml), the reading of the assembled data,
+    checked against its manifest and its purpose, the conversions of the
+    target, the load relative to the annual mean of its local year, to
+    the fraction of the annual total and to MW, the temporal and group
+    splits into training, validation and testing sets by the entity code
+    and the local year of each row, and the check that a model was
+    trained with the features of a dataset.
 """
 
 import logging
-from typing import Any, NotRequired, TypedDict, cast
+from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import numpy as np
 import pandas as pd
 from pydantic import ValidationError
 
 import utils.config
+import utils.manifest
 import utils.paths
 import utils.relations
 
-# The column of the local year of each row. assemble.py computes the
-# target as the fraction of the annual total of each entity and local
-# year, so converting it needs the local year of each row.
+# The columns of the entity code, of the end of the hour in UTC and of
+# the local year of each row of the assembled data (see assemble.py).
+# assemble.py computes the target as the fraction of the annual total of
+# each entity and local year, so converting it needs the local year of
+# each row, which also splits the data into sets.
+GROUP_COLUMN = "Entity code"
+TIME_COLUMN = "Time (UTC)"
 LOCAL_YEAR_COLUMN = "Local year"
 
 # The transformation of the target that the models learn, which their
@@ -36,11 +43,8 @@ class ConfigModel(utils.config.StrictSettings):
     """Settings of the machine learning models."""
 
     algorithm: str
-    group: str
     features: list[str]
     target: str
-    splitter: str
-    time: str
     categorical_features: list[str] | None = None
     scaling_variables: list[str] | None = None
 
@@ -627,10 +631,10 @@ def _prepare(
 
     prepared_dataset = _split_in_groups(
         dataset,
-        ml_config.group,
+        GROUP_COLUMN,
         ml_config.features,
         ml_config.target,
-        ml_config.time,
+        TIME_COLUMN,
         ml_config.categorical_features,
         ml_config.scaling_variables,
         target,
@@ -645,6 +649,52 @@ def _prepare(
         )
 
     return prepared_dataset
+
+
+def read_assembled_data(
+    data_path: str, purpose: Literal["training", "forecasting"]
+) -> pd.DataFrame:
+    """
+    Read assembled data, checked against its manifest.
+
+    Parameters
+    ----------
+    data_path : str
+        The path to the assembled data file.
+    purpose : str
+        What the data must have been assembled for, "training" or
+        "forecasting".
+
+    Returns
+    -------
+    pandas.DataFrame
+        The assembled data.
+
+    Raises
+    ------
+    ValueError
+        If the data differs from its manifest, or was assembled for
+        another purpose.
+
+    Notes
+    -----
+    Data without a manifest, such as data assembled before the
+    manifests, is read with a warning, since its origin cannot be
+    checked, and so is the purpose of a manifest that does not record
+    it.
+    """
+    manifest = utils.manifest.verify_file(data_path, "dataset")
+    if manifest is None:
+        logging.warning(
+            f"The assembled data {data_path} has no manifest, so its origin "
+            "is not checked."
+        )
+    elif manifest.get("purpose", purpose) != purpose:
+        raise ValueError(
+            f"The data {data_path} was assembled for "
+            f"{manifest.get('purpose')}, not for {purpose}."
+        )
+    return pd.read_parquet(data_path)
 
 
 def prepare_dataset(
@@ -669,7 +719,9 @@ def prepare_dataset(
         factors (if any) of the dataset. The target is the load
         relative to the annual mean.
     """
-    dataset = pd.read_parquet(data_path)
+    dataset = read_assembled_data(
+        data_path, "training" if target else "forecasting"
+    )
 
     return _prepare(dataset, ml_config, target)
 
@@ -701,16 +753,16 @@ def prepare_split_datasets(
         used), and 'validation' (if used). Their target is the load
         relative to the annual mean.
     """
-    dataset = pd.read_parquet(data_path)
+    dataset = read_assembled_data(data_path, "training")
     split_dataset = _split_temporally(
         dataset,
         testing_set,
         validation_set,
-        ml_config.group,
-        ml_config.splitter,
-        ml_config.time,
+        GROUP_COLUMN,
+        LOCAL_YEAR_COLUMN,
+        TIME_COLUMN,
         utils.relations.read_related_entities(
-            sorted(dataset[ml_config.group].unique())
+            sorted(dataset[GROUP_COLUMN].unique())
         ),
     )
 

@@ -1,13 +1,11 @@
 # Configuration of the machine learning model, read by the train.py,
-# validate.py, cross_validate.py and forecast.py scripts.
+# validate.py, cross_validate.py and forecast.py scripts. The data is
+# grouped by its "Entity code", split into sets by its "Local year" and
+# ordered by its "Time (UTC)", the columns of the assembled data.
 
 # REQUIRED.
 # The machine learning algorithm to be used for training.
 algorithm: XGBoost
-
-# REQUIRED.
-# The name of variable used to group data.
-group: "Entity code"
 
 # REQUIRED.
 # The features used for training the model.
@@ -29,14 +27,6 @@ features:
 # REQUIRED.
 # The target variable for the model.
 target: "Load (fraction of annual total)"
-
-# REQUIRED.
-# Variable used to split data into training, validation, and testing sets.
-splitter: "Local year"
-
-# REQUIRED.
-# The time variable in the dataset.
-time: "Time (UTC)"
 
 # OPTIONAL.
 # The categorical features used for training the model.

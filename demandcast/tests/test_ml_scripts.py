@@ -681,10 +681,9 @@ def test_validation_uses_the_data_of_the_training():
         validate.run_model_validation(
             False, None, newer_path, _ml_settings("XGBoost")
         )
-    with pytest.raises(ValueError, match="sets of the validation differ"):
-        validate.run_model_validation(
-            True, None, None, _ml_settings("XGBoost")
-        )
+    # The manifest of the model tells that its training had no
+    # validation set, whatever the setting.
+    validate.run_model_validation(True, None, None, _ml_settings("XGBoost"))
 
 
 def test_forecast_with_another_target():

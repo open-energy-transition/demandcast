@@ -393,3 +393,41 @@ def test_latest_results_are_not_a_copy(tmp_path):
     assert ml_models.files.find_latest_results(
         str(tmp_path), "xgboost_model_1"
     ) == str(folder / "all_20250102_000000.parquet")
+
+
+@pytest.mark.parametrize(
+    ("splits", "setting", "used"),
+    [
+        ({"training": [], "testing": []}, True, False),
+        ({"training": [], "validation": [], "testing": []}, None, True),
+        (None, True, True),
+    ],
+)
+def test_used_validation_set(splits, setting, used):
+    """
+    Test that the sets of the manifest of a model tell the validation.
+
+    The setting is needed only for a model whose manifest does not
+    record its sets.
+    """
+    manifest = None if splits is None else {"splits": splits}
+
+    assert ml_models.files.get_used_validation_set(manifest, setting) is used
+
+
+@pytest.mark.parametrize(
+    ("manifest", "message"),
+    [
+        (None, "must tell whether"),
+        ({"splits": {"training": []}}, "without a testing set"),
+    ],
+)
+def test_used_validation_set_unknown(manifest, message):
+    """
+    Test that the validation stops when its sets are unknown.
+
+    A model without a manifest needs the setting, and a model trained
+    without a testing set has no set to be validated on.
+    """
+    with pytest.raises(ValueError, match=message):
+        ml_models.files.get_used_validation_set(manifest, None)
