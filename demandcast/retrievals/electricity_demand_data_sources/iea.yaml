@@ -206,15 +206,15 @@ entities:
     start_date: 2010-01-01
     end_date: today
     time_zone: America/Sao_Paulo
-  - subdivision_name: Alberta
-    subdivision_code: AB
+  - subdivision_name: Alberta Interconnected Electric System
+    subdivision_code: AB-AIES
     country_name: Canada
     country_code: CAN
     start_date: 2026-03-13
     end_date: today
     time_zone: America/Edmonton
-  - subdivision_name: British Columbia
-    subdivision_code: BC
+  - subdivision_name: Integrated system of British Columbia
+    subdivision_code: BC-INTEGRATED
     country_name: Canada
     country_code: CAN
     start_date: 2026-04-19

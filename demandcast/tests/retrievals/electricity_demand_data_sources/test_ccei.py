@@ -21,7 +21,9 @@ def test_download_and_extract_data_of_alberta(fake_downloads, assert_demand):
         URL.format("AB,1.0/N...INTERNAL_LOAD") + QUERY, "ccei_ab.csv"
     )
 
-    time_series = ccei.download_and_extract_data_for_request(None, "CAN_AB")
+    time_series = ccei.download_and_extract_data_for_request(
+        None, "CAN_AB-AIES"
+    )
 
     # The times in UTC (TIME_PERIOD) are read as they are.
     assert_demand(

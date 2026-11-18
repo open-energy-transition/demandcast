@@ -11,8 +11,8 @@ definition:
     power_plant_use: unknown
     note: BC Hydro calls the load gross telemetered load without defining it. Its midday stays between 0.99 and 1.00 of the morning and afternoon from 2010, with little rooftop solar in British Columbia.
 entities:
-  - subdivision_name: British Columbia
-    subdivision_code: BC
+  - subdivision_name: Integrated system of British Columbia
+    subdivision_code: BC-INTEGRATED
     country_name: Canada
     country_code: CAN
     start_date: 2001-04-01

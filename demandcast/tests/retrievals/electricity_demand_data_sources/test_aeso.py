@@ -40,9 +40,9 @@ URL_FOLDER = (
 )
 def test_get_available_requests(start_date, end_date, periods):
     """Test that the requests are the files with data between dates."""
-    assert aeso.get_available_requests("CAN_AB", start_date, end_date) == (
-        periods
-    )
+    assert aeso.get_available_requests(
+        "CAN_AB-AIES", start_date, end_date
+    ) == (periods)
 
 
 @pytest.mark.parametrize(
@@ -79,6 +79,8 @@ def test_download_and_extract_data_for_request(
     """Test that the AIL is read at the ends of the hours in UTC."""
     fake_downloads.serve(f"{URL_FOLDER}{period}.csv", file_name)
 
-    time_series = aeso.download_and_extract_data_for_request(period, "CAN_AB")
+    time_series = aeso.download_and_extract_data_for_request(
+        period, "CAN_AB-AIES"
+    )
 
     assert_demand(time_series, "UTC", expected, dtype="int64")
