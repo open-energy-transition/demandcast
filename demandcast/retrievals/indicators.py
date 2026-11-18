@@ -25,8 +25,8 @@ import os
 from collections.abc import Callable
 
 import pandas as pd
-from tqdm import tqdm
 
+import retrievals.runs
 import utils.availability
 import utils.paths
 import utils.time_series
@@ -119,7 +119,16 @@ def run_retrieval(
         "historical_data", code=code, file_path=file
     )
     codes_with_projections = set(utils.availability.read_codes_with_all_data())
-    for entity_code in tqdm(codes, desc="Countries and subdivisions"):
+
+    def retrieve(entity_code: str) -> None:
+        """
+        Extract and save the indicator of a code, in each year.
+
+        Parameters
+        ----------
+        entity_code : str
+            The code of the country or subdivision.
+        """
         time_zone = utils.time_zones.get_time_zone(entity_code)
         request = get_request(entity_code)
 
@@ -163,3 +172,5 @@ def run_retrieval(
                     f"The {description} of {entity_code} in scenario "
                     f"{scenario} has been saved."
                 )
+
+    retrievals.runs.run_for_each_code(codes, retrieve, description)

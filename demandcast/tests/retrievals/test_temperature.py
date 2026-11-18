@@ -239,6 +239,57 @@ def test_calendar_of_the_hours():
     assert database.loc[pd.Timestamp("2025-01-01 00:00"), "Local year"] == 2025
 
 
+def test_database_of_series_that_end_at_different_times():
+    """
+    Test that the database keeps the times of both series.
+
+    In the current year, the series of the most populous point can end
+    a day before that of the three most populous points, whose files
+    were refreshed later.
+    """
+    ends = pd.date_range("2026-01-01 01:00", "2026-01-05 00:00", freq="h")
+    top_3 = pd.Series(np.arange(len(ends), dtype=float), index=ends)
+    top_1 = top_3[:-24] + 1000
+
+    database = temperature._build_temperature_database(
+        top_1, top_3, pytz.timezone("Europe/Paris")
+    )
+
+    assert database.index.equals(ends[:-24])
+    assert database["Temperature - Top 1 (K)"].equals(
+        top_1.rename("Temperature - Top 1 (K)")
+    )
+    assert database["Temperature - Top 3 (K)"].equals(
+        top_3[:-24].rename("Temperature - Top 3 (K)")
+    )
+
+
+def test_points_keep_their_common_times():
+    """
+    Test that the temperature of points is at the times of all of them.
+
+    The file of the second point was refreshed later, and has a day more
+    than the first.
+    """
+    ends = pd.date_range("2026-01-01 01:00", "2026-01-05 00:00", freq="h")
+    series = [pd.Series(280.0, index=ends[:-24]), pd.Series(281.0, index=ends)]
+    cells = xarray.DataArray(
+        [1.0, 1.0],
+        coords={"x": ("cell", [2.0, 2.25]), "y": ("cell", [48.0, 48.25])},
+        dims="cell",
+    )
+
+    with patch.object(
+        temperature.retrievals.era5_points,
+        "get_points_series",
+        return_value=series,
+    ):
+        points = temperature._get_temperature_of_points(cells)
+
+    assert pd.DatetimeIndex(points["time"].to_numpy()).equals(ends[:-24])
+    assert not np.isnan(points.to_numpy()).any()
+
+
 def test_points_give_the_temperature_of_the_grid():
     """
     Test that the points and the grid give the same temperature.

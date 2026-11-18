@@ -28,7 +28,7 @@ The scenarios (SSP, IAMC and CMIP6), the climate models and the years of each pr
 ## Layout
 
 - `demandcast/`: the Python project. Run all Python commands from this folder, because modules are imported as top-level packages (`import utils.config`, not `import demandcast.utils.config`).
-  - `retrievals/`: data retrieval. Each electricity demand source is a module plus a YAML file in `retrievals/electricity_demand_data_sources/`. The indicators (population, GDP PPP per capita, annual electricity demand per capita) save their years and scenarios with `retrievals/indicators.py`, and the gridded data extracts each country and subdivision with `retrievals/gridded.py`.
+  - `retrievals/`: data retrieval. Each electricity demand source is a module plus a YAML file in `retrievals/electricity_demand_data_sources/`. The indicators (population, GDP PPP per capita, annual electricity demand per capita) save their years and scenarios with `retrievals/indicators.py`, and the gridded data extracts each country and subdivision with `retrievals/gridded.py`. The retrievals run each country and subdivision with `retrievals/runs.py`, which goes on after those that fail and lists them at the end.
   - `cleaning/`: the cleaning of the electricity demand of each data source (`electricity_demand.py`), its flags (`flags.py`), and the combination of the data sources of each code into one hourly series, with the data source of each hour and whether it can be used for training (`combining.py`).
   - `checks/`: the checks of `check.py`, and the reviews of the flags (`reviewed_flags.yaml`), which tell whether flagged hours are errors of the source, real events or net demand.
   - `figures/` and `publishing/`: the figures of `plot.py`, and the code of `sync.py` and `publish.py`.
