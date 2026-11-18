@@ -42,6 +42,9 @@ Description:
     ENTSO-E, the CCEI and OCCTO, so it is compiled in the yaml file and
     ranks after them (see cleaning/combining.py).
 
+    The demand of India is that of its states, from NITI (see
+    niti.py), so the national series of the IEA is not retrieved.
+
     Source: https://www.iea.org/data-and-statistics/data-tools/real-time-electricity-tracker
 """
 
@@ -88,7 +91,6 @@ TIME_ZONES = {
     "HND": "America/Tegucigalpa",
     "HRV": "Europe/Zagreb",
     "HUN": "Europe/Budapest",
-    "IND": "Asia/Kolkata",
     "IRL": "Europe/Dublin",
     "IRN": "Asia/Tehran",
     "ITA": "Europe/Rome",
