@@ -1,0 +1,14 @@
+# The non-standard subdivisions of Kazakhstan defined by the standard
+# subdivisions of Natural Earth at 1:10m that make them, by their ISO
+# 3166-2 codes, without the parts of some of them that the polygons of
+# `cuts` mark, in WKT, in degrees of longitude and latitude.
+
+subdivisions:
+  KAZ_NORTH-SOUTH:
+    name: North-South zone
+    standard_subdivisions: >-
+      KZ-AKM KZ-AKT KZ-ALA KZ-AST KZ-KAR KZ-KUS KZ-KZY KZ-PAV KZ-SEV KZ-VOS
+      KZ-YUZ KZ-ZHA
+  KAZ_WEST:
+    name: West zone
+    standard_subdivisions: KZ-ATY KZ-MAN KZ-ZAP

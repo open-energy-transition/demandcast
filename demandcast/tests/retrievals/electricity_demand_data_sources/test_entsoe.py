@@ -22,7 +22,12 @@ from retrievals.electricity_demand_data_sources import entsoe
 
 
 def test_get_available_requests():
-    """Test that the requests are periods of one year at most."""
+    """
+    Test that the requests are periods of one year at most.
+
+    The last request ends at the day after the last day of the data,
+    since the platform leaves out the end of a request.
+    """
     requests = entsoe.get_available_requests(
         "BEL", dt.date(2014, 11, 24), dt.date(2025, 12, 28)
     )
@@ -33,7 +38,7 @@ def test_get_available_requests():
     )
     assert requests[-1] == (
         pd.Timestamp("2025-01-01"),
-        pd.Timestamp("2025-12-28"),
+        pd.Timestamp("2025-12-29"),
     )
     assert len(requests) == 12
 
