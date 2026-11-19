@@ -30,13 +30,14 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
     time_series = egat.download_and_extract_data_for_request(2024, "THA")
 
     # The days run from 0:00 to 23:00, the starts of the hours, which
-    # move one hour later to mark their ends. Only the first row of each
-    # file is at 0:05, and each file ends on 1 January of the next year.
+    # move one hour later to mark their ends. The first row of each
+    # file, at 0:05, is the hour of 0:00, and each file ends on 1
+    # January of the next year.
     assert_demand(
         time_series,
         "Asia/Bangkok",
         {
-            "2023-12-31 18:05": 16201.5,
+            "2023-12-31 18:00": 16201.5,
             "2023-12-31 19:00": 15940.0,
             "2025-01-01 17:00": 15450.0,
         },

@@ -238,3 +238,30 @@ def test_data_not_found_is_not_split(monkeypatch):
             {"Region": "Mid-Atlantic"},
         )
     assert requested == ["2024-07-01"]
+
+
+def test_late_times_of_california(monkeypatch):
+    """Test that the late values of California are left out."""
+    monkeypatch.setattr(
+        iea,
+        "_download",
+        lambda *_: pd.Series(
+            [10.0, 11.0, 12.0, 13.0],
+            index=pd.to_datetime(
+                [
+                    "2022-06-15 19:00",
+                    "2022-06-15 20:00",
+                    "2025-12-02 18:00",
+                    "2025-12-02 19:00",
+                ]
+            ),
+        ),
+    )
+
+    time_series = iea.download_and_extract_data_for_request(
+        (pd.Timestamp("2022-06-15"), pd.Timestamp("2025-12-03")), "USA_CAL"
+    )
+
+    # The hours kept end at 2022-06-15 23:00 and 2025-12-03 00:00 in
+    # UTC, just before and at the end of the period.
+    assert time_series.tolist() == [10.0, 13.0]

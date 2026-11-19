@@ -18,7 +18,8 @@ Description:
       United States are the ends of the hours (HOUR_ENDS), those of the
       United States in the time of New York. The times of California
       keep the delay of one hour of CAISO in the data of the EIA, from
-      2022-06-16 to 2025-12-02 (see eia.py).
+      2022-06-16 to 2025-12-02 (see eia.py), so its values of that
+      period are left out (CAL_LATE_PERIOD).
     - The times of Australia are in the standard time of eastern
       Australia, without daylight saving time, those of Ontario in the
       eastern standard time, and those of Baja California and Baja
@@ -150,6 +151,14 @@ CODE_TIME_ZONES = {
 
 # The countries whose times are the ends of the hours.
 HOUR_ENDS = {"COL", "UKR", "URY", "USA"}
+
+# The period in which the times of California are one hour late, from
+# its first day to the day after its last one, in UTC, as
+# CISO_LATE_PERIOD in eia.py.
+CAL_LATE_PERIOD = (
+    pd.Timestamp("2022-06-16", tz="UTC"),
+    pd.Timestamp("2025-12-03", tz="UTC"),
+)
 
 # The names of the regions of each subdivision in the API, in the order
 # of their periods when a region was renamed.
@@ -300,7 +309,10 @@ def download_and_extract_data_for_request(
     Notes
     -----
     A subdivision whose region was renamed takes the values of each of
-    its names, those of the later name where both have values.
+    its names, those of the later name where both have values. The
+    values of California in CAL_LATE_PERIOD are left out, since the EIA
+    corrects them only with the data of CAISO, which the IEA does not
+    give.
     """
     start_date, end_date = period
     logging.info(
@@ -343,9 +355,16 @@ def download_and_extract_data_for_request(
             nonexistent="NaT",
         )
     )
-    return electricity_demand_time_series[
+    electricity_demand_time_series = electricity_demand_time_series[
         electricity_demand_time_series.index.notna()
     ].dropna()
+    if code == "USA_CAL":
+        late_start, late_end = CAL_LATE_PERIOD
+        times = electricity_demand_time_series.index
+        electricity_demand_time_series = electricity_demand_time_series[
+            (times < late_start) | (times >= late_end)
+        ]
+    return electricity_demand_time_series
 
 
 def _fetch_records(
