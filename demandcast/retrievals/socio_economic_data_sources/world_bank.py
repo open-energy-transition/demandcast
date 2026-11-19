@@ -40,14 +40,17 @@ def download(variable: str) -> pd.DataFrame:
     ValueError
         If the variable is not "population",
         "electricity_demand_per_capita" or "gdp_ppp_per_capita", or if
-        the archive of the World Bank has no data file.
+        the archive of the World Bank has no data file or no file of
+        the countries.
 
     Notes
     -----
     The archive of the World Bank has the data in the CSV file whose
     name does not start with "Metadata", after four lines of header,
-    with a column for each year. Only the codes of three characters
-    are kept.
+    with a column for each year. Its file "Metadata_Country" gives the
+    region of each code: the aggregates, such as WLD for the world,
+    have none and are left out. An error of the World Bank raises a
+    requests.HTTPError.
     """
     if variable == "population":
         logging.info("Downloading population data from the World Bank.")
@@ -73,6 +76,7 @@ def download(variable: str) -> pd.DataFrame:
         )
 
     response = requests.get(url, timeout=60)
+    response.raise_for_status()
 
     with zipfile.ZipFile(BytesIO(response.content), "r") as archive:
         world_bank_file_name = next(
@@ -85,6 +89,23 @@ def download(variable: str) -> pd.DataFrame:
         )
         if world_bank_file_name is None:
             raise ValueError("No data file found in the World Bank archive.")
+        countries_file_name = next(
+            (
+                name
+                for name in archive.namelist()
+                if name.startswith("Metadata_Country")
+            ),
+            None,
+        )
+        if countries_file_name is None:
+            raise ValueError(
+                "No file of the countries found in the World Bank archive."
+            )
+
+        countries = pd.read_csv(archive.open(countries_file_name))
+        country_codes = countries.loc[
+            countries["Region"].notna(), "Country Code"
+        ]
 
         world_bank_data = pd.read_csv(
             archive.open(world_bank_file_name), skiprows=4
@@ -104,7 +125,9 @@ def download(variable: str) -> pd.DataFrame:
 
     world_bank_data = world_bank_data.dropna(how="all")
 
-    world_bank_data = world_bank_data[world_bank_data.index.str.len() == 3]
+    world_bank_data = world_bank_data[
+        world_bank_data.index.isin(country_codes)
+    ]
 
     if variable == "population":
         logging.info(

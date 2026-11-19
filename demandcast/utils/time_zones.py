@@ -3,9 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module gives the time zone of a country or subdivision: the
-    one in the YAML files of the data sources, if any, and otherwise
-    the time zone of its capital or of the center of its shape.
+    This module gives the time zone of a country or subdivision. A
+    country has its only time zone, or that of its capital, and a time
+    zone given for it in the YAML files of the data sources must be
+    the same. A subdivision has the time zone given for it in those
+    files, or otherwise that of the center of its shape.
 """
 
 import datetime as dt

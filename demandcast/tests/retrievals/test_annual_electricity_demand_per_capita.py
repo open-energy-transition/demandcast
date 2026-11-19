@@ -152,7 +152,11 @@ def test_download_of_world_bank(monkeypatch):
     )
     archive = io.BytesIO()
     with zipfile.ZipFile(archive, "w") as files:
-        files.writestr("Metadata_Country_API.csv", "metadata")
+        files.writestr(
+            "Metadata_Country_API.csv",
+            '"Country Code","Region",\n"FRA","Europe & Central Asia",\n'
+            '"NWH","Nowhere",\n',
+        )
         files.writestr("API_EG.USE.ELEC.KH.PC.csv", csv)
 
     class Response:
@@ -160,13 +164,16 @@ def test_download_of_world_bank(monkeypatch):
 
         content = archive.getvalue()
 
+        def raise_for_status(self) -> None:
+            """Raise no error, as for a successful response."""
+
     monkeypatch.setattr(
         world_bank.requests, "get", lambda _url, **_kwargs: Response()
     )
 
     demand = world_bank.download("electricity_demand_per_capita")
 
-    # The codes of three letters with data are kept.
+    # The codes of the countries with data are kept.
     assert demand.index.tolist() == ["FRA"]
     assert demand.loc["FRA"].to_dict() == {2020: 6400.0, 2021: 6500.0}
 

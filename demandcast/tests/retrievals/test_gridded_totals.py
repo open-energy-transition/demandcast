@@ -182,3 +182,30 @@ def test_get_total_value_from_gridded_data_errors():
             last_available_historical_years_of_gridded_data=2020,
             scenario=scenario,
         )
+    with pytest.raises(
+        ValueError, match="must be less than the minimum available"
+    ):
+        retrievals.gridded_totals.get_total_value_from_gridded_data(
+            variable,
+            code,
+            selected_years,
+            available_years,
+            last_available_historical_years_of_gridded_data=2000,
+            scenario=scenario,
+        )
+
+
+def test_get_total_value_from_gridded_data_keeps_the_years_given():
+    """Test that the available years given are not sorted in place."""
+    available_years = [2010, 2000, 2005]
+
+    with patch(
+        "retrievals.gridded_totals._aggregate_gridded_data",
+        side_effect=[1.0, 2.0],
+    ):
+        result = retrievals.gridded_totals.get_total_value_from_gridded_data(
+            "population", "XYZ", [2001, 2004], available_years
+        )
+
+    assert available_years == [2010, 2000, 2005]
+    assert list(result.index) == [2000, 2001, 2002, 2003, 2004, 2005]

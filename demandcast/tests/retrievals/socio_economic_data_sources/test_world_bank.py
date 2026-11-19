@@ -15,6 +15,7 @@ import zipfile
 
 import pandas as pd
 import pytest
+import requests
 
 from retrievals.socio_economic_data_sources import world_bank
 
@@ -25,6 +26,16 @@ HEADER = (
     "\n"
     '"Last Updated Date","2026-07-01",\n'
     "\n"
+)
+
+# The countries have a region, and the aggregates, such as the world,
+# none.
+COUNTRIES = (
+    '"Country Code","Region","IncomeGroup","SpecialNotes","TableName",\n'
+    '"CHL","Latin America & Caribbean","High income","","Chile",\n'
+    '"JPN","East Asia & Pacific","High income","","Japan",\n'
+    '"NWH","Nowhere","Low income","","Nowhere",\n'
+    '"WLD","","","","World",\n'
 )
 
 
@@ -76,7 +87,7 @@ def test_download(fake_downloads, tmp_path, variable, indicator):
         tmp_path,
         {
             f"Metadata_Indicator_API_{indicator}.csv": "metadata",
-            f"Metadata_Country_API_{indicator}.csv": "metadata",
+            f"Metadata_Country_API_{indicator}.csv": COUNTRIES,
             f"API_{indicator}_DS2_en_csv_v2.csv": csv,
         },
     )
@@ -84,9 +95,9 @@ def test_download(fake_downloads, tmp_path, variable, indicator):
 
     data = world_bank.download(variable)
 
-    # The aggregates with codes of three letters, such as WLD, stay:
-    # only the codes of other lengths and the rows without data go.
-    assert data.index.tolist() == ["CHL", "JPN", "WLD"]
+    # The aggregates, the codes without a region and the rows without
+    # data are left out.
+    assert data.index.tolist() == ["CHL", "JPN"]
     assert data.index.name == "Country Code"
     assert data.columns.tolist() == [2019, 2020, 2021]
     assert data.columns.name == "Year"
@@ -113,4 +124,30 @@ def test_download_without_data_file(fake_downloads, tmp_path):
     fake_downloads.serve(URL.format("SP.POP.TOTL"), file_path)
 
     with pytest.raises(ValueError, match="No data file"):
+        world_bank.download("population")
+
+
+def test_download_without_file_of_the_countries(fake_downloads, tmp_path):
+    """Test that an archive without its countries is an error."""
+    file_path = _write_archive(
+        tmp_path,
+        {
+            "Metadata_Indicator_API_SP.POP.TOTL.csv": "metadata",
+            "API_SP.POP.TOTL_DS2_en_csv_v2.csv": HEADER,
+        },
+    )
+    fake_downloads.serve(URL.format("SP.POP.TOTL"), file_path)
+
+    with pytest.raises(ValueError, match="No file of the countries"):
+        world_bank.download("population")
+
+
+def test_download_with_an_error_of_the_server(monkeypatch):
+    """Test that an error of the World Bank is raised as such."""
+    response = requests.Response()
+    response.status_code = 503
+    response.url = URL.format("SP.POP.TOTL")
+    monkeypatch.setattr(requests, "get", lambda *_args, **_kwargs: response)
+
+    with pytest.raises(requests.HTTPError, match="503"):
         world_bank.download("population")
