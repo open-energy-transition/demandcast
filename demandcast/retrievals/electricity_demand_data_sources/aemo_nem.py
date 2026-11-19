@@ -251,8 +251,7 @@ def download_and_extract_data_for_request(
 
     dataset = utils.fetcher.fetch_dataframe(
         url,
-        "html",
-        read_with="requests.get",
+        "csv",
         header_params={"User-Agent": "Mozilla/5.0"},
     )
 

@@ -164,11 +164,10 @@ def test_download_of_world_bank(monkeypatch):
 
         content = archive.getvalue()
 
-        def raise_for_status(self) -> None:
-            """Raise no error, as for a successful response."""
-
     monkeypatch.setattr(
-        world_bank.requests, "get", lambda _url, **_kwargs: Response()
+        world_bank.utils.fetcher,
+        "fetch_response",
+        lambda _url, **_kwargs: Response(),
     )
 
     demand = world_bank.download("electricity_demand_per_capita")

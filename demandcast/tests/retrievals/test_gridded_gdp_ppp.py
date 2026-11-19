@@ -160,7 +160,7 @@ def test_download_gdp_ppp_failed(tmp_path, monkeypatch):
     """Test that a failed download raises an error and adds nothing."""
     _serve(monkeypatch, b"Not Found", status_code=404)
 
-    with pytest.raises(requests.HTTPError):
+    with pytest.raises(gridded_gdp_ppp.utils.fetcher.DataNotFoundError):
         gridded_gdp_ppp._download_gdp_ppp(str(tmp_path / "raw"))
 
     assert os.listdir(tmp_path) == []

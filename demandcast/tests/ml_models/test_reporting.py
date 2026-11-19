@@ -237,7 +237,7 @@ def test_summarize(caplog):
     assert summary.loc[0, "Median MAPE"] == pytest.approx(0.20)
 
     with caplog.at_level(logging.INFO):
-        ml_models.reporting.log_summary(summary, "Testing set")
+        ml_models.reporting.log_group_summary(summary, "Testing set")
     assert "Testing set, by group of codes:" in caplog.text
     assert (
         "Seen in training: No (1 codes): median WAPE 25.0%, "

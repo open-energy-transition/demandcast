@@ -108,7 +108,7 @@ def run_model_validation(
         how="left",
     )
     summary = ml_models.reporting.summarize(results, "Testing")
-    ml_models.reporting.log_summary(summary, "Testing set")
+    ml_models.reporting.log_group_summary(summary, "Testing set")
 
     ml_models.files.save_results(
         "validation",

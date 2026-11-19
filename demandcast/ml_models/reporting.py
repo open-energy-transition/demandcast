@@ -35,17 +35,6 @@ import utils.manifest
 # The upper limits of the mean load of the size classes, in MW.
 SIZE_CLASSES = {"Small": 300.0, "Medium": 5000.0, "Large": np.inf}
 
-# The names of the continent codes of config/continents.yaml.
-CONTINENT_NAMES = {
-    "AF": "Africa",
-    "AN": "Antarctica",
-    "AS": "Asia",
-    "EU": "Europe",
-    "NA": "North America",
-    "OC": "Oceania",
-    "SA": "South America",
-}
-
 # The names of the values of the yes-or-no columns of the description.
 _VALUE_NAMES = {True: "Yes", False: "No"}
 
@@ -239,7 +228,7 @@ def describe_entities(
             "Size class": get_size_class(mean_load)
             if np.isfinite(mean_load)
             else None,
-            "Continent": CONTINENT_NAMES[
+            "Continent": utils.codes.CONTINENT_NAMES[
                 utils.codes.get_continent_code(str(code))
             ],
             "Data source": data_source,
@@ -337,7 +326,7 @@ def summarize(results: pd.DataFrame, set_name: str) -> pd.DataFrame:
     return pd.DataFrame(summary)
 
 
-def log_summary(summary: pd.DataFrame, title: str) -> None:
+def log_group_summary(summary: pd.DataFrame, title: str) -> None:
     """
     Log the summary of the errors by group of codes.
 

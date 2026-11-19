@@ -26,6 +26,17 @@ EXTRA_ENTITIES = {
     },
 }
 
+# The names of the continent codes of config/continents.yaml.
+CONTINENT_NAMES = {
+    "AF": "Africa",
+    "AN": "Antarctica",
+    "AS": "Asia",
+    "EU": "Europe",
+    "NA": "North America",
+    "OC": "Oceania",
+    "SA": "South America",
+}
+
 
 def get_iso_alpha_2_code(iso_alpha_3_code: str) -> str:
     """

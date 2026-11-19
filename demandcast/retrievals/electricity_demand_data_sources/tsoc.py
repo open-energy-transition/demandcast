@@ -295,8 +295,7 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     # header.
     dataset = utils.fetcher.fetch_dataframe(
         get_url(year),
-        "html",
-        read_as="excel_table",
+        "excel",
         excel_kwargs={"header": None, "skiprows": 4, "usecols": [0, 6, 8]},
     )
 

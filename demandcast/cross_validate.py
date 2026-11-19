@@ -101,7 +101,7 @@ def run_model_cross_validation(
             how="left",
         )
         summary = ml_models.reporting.summarize(results, "Testing")
-        ml_models.reporting.log_summary(
+        ml_models.reporting.log_group_summary(
             summary, f"Held-out entities, holding out each {holdout}"
         )
 

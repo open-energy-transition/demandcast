@@ -33,20 +33,23 @@ Description:
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict
 
+import utils.config
 import utils.paths
 
 # The data source of the flags of the combined electricity demand.
 COMBINED = "combined"
 
 
-class Review(BaseModel):
-    """The review of a flag of a data source and a code."""
+class Review(utils.config.StrictSettings):
+    """
+    The review of a flag of a data source and a code.
 
-    # A misspelt field is an error, so that a review of some periods
-    # does not become one of all the periods.
-    model_config = ConfigDict(extra="forbid")
+    Notes
+    -----
+    A misspelled field is an error, so that a review of some periods
+    does not become one of all the periods.
+    """
 
     data_source: str
     code: str

@@ -18,11 +18,11 @@ import tempfile
 from io import BytesIO
 
 import py7zr
-import requests
 import xarray
 
 import retrievals.gridded
 import utils.catalogue
+import utils.fetcher
 import utils.geospatial
 import utils.paths
 
@@ -47,9 +47,7 @@ def _download_gdp_ppp(raw_directory: str) -> None:
 
         url = "https://zenodo.org/records/7898409/files/GDP_025d%20(2000-2100).7z?download=1"
 
-        response = requests.get(url, timeout=60)
-
-        response.raise_for_status()
+        response = utils.fetcher.fetch_response(url, timeout=60)
 
         os.makedirs(os.path.dirname(raw_directory), exist_ok=True)
         with (

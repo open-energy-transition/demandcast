@@ -79,185 +79,109 @@ def test_get_years_errors():
     utils.scenarios._get_years(None, 2018, 2022, available_years)
 
 
-def test_get_year_and_scenario_combinations():
+def test_get_year_model_and_scenario_combinations_without_models():
     """
-    Test the get_year_and_scenario_combinations function.
+    Test get_year_model_and_scenario_combinations without models.
 
     The inputs are combinations of year, start_year, end_year and
-    scenario.
+    scenario, with a list of scenarios and no climate models.
     """
     available_historical_years = [2024, 2025]
     available_future_years = [2025, 2026]
     available_scenarios = ["S1", "S2"]
 
-    assert utils.scenarios.get_year_and_scenario_combinations(
+    assert utils.scenarios.get_year_model_and_scenario_combinations(
         2024,
         None,
         None,
         available_historical_years,
         available_future_years,
         None,
+        None,
         available_scenarios,
-    ) == [(2024, None)]
-    assert utils.scenarios.get_year_and_scenario_combinations(
+    ) == [(2024, None, None)]
+    assert utils.scenarios.get_year_model_and_scenario_combinations(
         None,
         2024,
         2025,
         available_historical_years,
         available_future_years,
         None,
-        available_scenarios,
-    ) == [(2024, None), (2025, None), (2025, "S1"), (2025, "S2")]
-    assert utils.scenarios.get_year_and_scenario_combinations(
-        None,
-        None,
-        None,
-        available_historical_years,
-        available_future_years,
-        "S1",
-        available_scenarios,
-    ) == [(2024, None), (2025, None), (2025, "S1"), (2026, "S1")]
-    assert utils.scenarios.get_year_and_scenario_combinations(
-        None,
-        None,
-        None,
-        available_historical_years,
-        available_future_years,
         None,
         available_scenarios,
     ) == [
-        (2024, None),
-        (2025, None),
-        (2025, "S1"),
-        (2025, "S2"),
-        (2026, "S1"),
-        (2026, "S2"),
+        (2024, None, None),
+        (2025, None, None),
+        (2025, None, "S1"),
+        (2025, None, "S2"),
+    ]
+    assert utils.scenarios.get_year_model_and_scenario_combinations(
+        None,
+        None,
+        None,
+        available_historical_years,
+        available_future_years,
+        None,
+        "S1",
+        available_scenarios,
+    ) == [
+        (2024, None, None),
+        (2025, None, None),
+        (2025, None, "S1"),
+        (2026, None, "S1"),
+    ]
+    assert utils.scenarios.get_year_model_and_scenario_combinations(
+        None,
+        None,
+        None,
+        available_historical_years,
+        available_future_years,
+        None,
+        None,
+        available_scenarios,
+    ) == [
+        (2024, None, None),
+        (2025, None, None),
+        (2025, None, "S1"),
+        (2025, None, "S2"),
+        (2026, None, "S1"),
+        (2026, None, "S2"),
     ]
 
 
-def test_get_year_and_scenario_combinations_errors():
+def test_get_year_model_and_scenario_combinations_without_models_errors():
     """
-    Test the get_year_and_scenario_combinations function for errors.
+    Test get_year_model_and_scenario_combinations errors without models.
 
-    Invalid combinations of year, start_year, end_year and scenario
-    raise errors.
+    A scenario that is not available, or a model given for data without
+    climate models, raise errors.
     """
     available_historical_years = [2024, 2025]
     available_future_years = [2025, 2026]
     available_scenarios = ["S1", "S2"]
 
-    # Both year and start_year/end_year provided.
-    with pytest.raises(
-        ValueError, match="start_year and end_year must be None"
-    ):
-        utils.scenarios.get_year_and_scenario_combinations(
-            2025,
-            2024,
-            None,
-            available_historical_years,
-            available_future_years,
-            None,
-            available_scenarios,
-        )
-    with pytest.raises(
-        ValueError, match="start_year and end_year must be None"
-    ):
-        utils.scenarios.get_year_and_scenario_combinations(
-            2025,
-            None,
-            2026,
-            available_historical_years,
-            available_future_years,
-            None,
-            available_scenarios,
-        )
-
-    # Year not in available years.
-    with pytest.raises(
-        ValueError, match="year must be one of the available years"
-    ):
-        utils.scenarios.get_year_and_scenario_combinations(
-            2023,
-            None,
-            None,
-            available_historical_years,
-            available_future_years,
-            None,
-            available_scenarios,
-        )
-
-    # start_year greater than end_year.
-    with pytest.raises(
-        ValueError, match="start_year must not be after end_year"
-    ):
-        utils.scenarios.get_year_and_scenario_combinations(
-            None,
-            2025,
-            2024,
-            available_historical_years,
-            available_future_years,
-            None,
-            available_scenarios,
-        )
-
-    # Only one of start_year or end_year provided.
-    with pytest.raises(
-        ValueError, match="Both start_year and end_year must be specified"
-    ):
-        utils.scenarios.get_year_and_scenario_combinations(
-            None,
-            2024,
-            None,
-            available_historical_years,
-            available_future_years,
-            None,
-            available_scenarios,
-        )
-    with pytest.raises(
-        ValueError, match="Both start_year and end_year must be specified"
-    ):
-        utils.scenarios.get_year_and_scenario_combinations(
-            None,
-            None,
-            2025,
-            available_historical_years,
-            available_future_years,
-            None,
-            available_scenarios,
-        )
-
-    # start_year or end_year out of available years range. This only
-    # raises a warning in the logger.
-    utils.scenarios.get_year_and_scenario_combinations(
-        None,
-        2023,
-        2025,
-        available_historical_years,
-        available_future_years,
-        None,
-        available_scenarios,
-    )
-    utils.scenarios.get_year_and_scenario_combinations(
-        None,
-        2024,
-        2027,
-        available_historical_years,
-        available_future_years,
-        None,
-        available_scenarios,
-    )
-
-    # Scenario not in available scenarios.
     with pytest.raises(
         ValueError, match="scenario must be one of the following"
     ):
-        utils.scenarios.get_year_and_scenario_combinations(
+        utils.scenarios.get_year_model_and_scenario_combinations(
             None,
             None,
             None,
             available_historical_years,
             available_future_years,
+            None,
             "S3",
+            available_scenarios,
+        )
+    with pytest.raises(ValueError, match="model must be None"):
+        utils.scenarios.get_year_model_and_scenario_combinations(
+            None,
+            None,
+            None,
+            available_historical_years,
+            available_future_years,
+            "M1",
+            None,
             available_scenarios,
         )
 

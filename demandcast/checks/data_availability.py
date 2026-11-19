@@ -22,6 +22,7 @@ Description:
 """
 
 import os
+from collections.abc import Callable
 
 import pandas as pd
 import pycountry
@@ -33,6 +34,55 @@ import utils.files
 import utils.paths
 import utils.shapes
 from retrievals.socio_economic_data_sources import iiasa, world_bank
+
+
+def _is_per_capita(variable: str) -> bool:
+    """
+    Tell whether an indicator is per capita.
+
+    Parameters
+    ----------
+    variable : str
+        The name of the indicator.
+
+    Returns
+    -------
+    bool
+        Whether the indicator is per capita.
+
+    Notes
+    -----
+    The subdivisions of a country have its data per capita, but not its
+    population.
+    """
+    return variable.endswith("_per_capita")
+
+
+def _read_iiasa_country_codes() -> pd.DataFrame:
+    """
+    Read the countries of the IIASA electricity demand per capita.
+
+    Returns
+    -------
+    pandas.DataFrame
+        An empty DataFrame with the ISO Alpha-3 codes of the countries
+        as its index.
+
+    Notes
+    -----
+    The IIASA projections of electricity demand per capita are by
+    region, and iam_regions_mapping.yaml maps the countries to their
+    regions.
+    """
+    with open(
+        os.path.join(
+            utils.paths.RETRIEVALS_FOLDER,
+            "socio_economic_data_sources",
+            "iam_regions_mapping.yaml",
+        ),
+    ) as iiasa_mapping_file:
+        iiasa_mapping = yaml.safe_load(iiasa_mapping_file)
+    return pd.DataFrame(index=list(iiasa_mapping))
 
 
 def _add_first_and_last_years(
@@ -57,31 +107,22 @@ def _add_first_and_last_years(
     data_availability : pandas.DataFrame
         The updated data availability DataFrame.
 
-    Raises
-    ------
-    ValueError
-        If the variable is not recognized.
-
     Notes
     -----
-    The years of a second source are appended after those of the first,
-    such as those of the World Bank after those of Ember, so the first
-    and last years are the smallest and largest ones.
+    The subdivisions take the years of their country for the data per
+    capita, and have none for the population. The years of a second
+    source are appended after those of the first, such as those of the
+    World Bank after those of Ember, so the first and last years are the
+    smallest and largest ones.
     """
     first_years: list[int | None] = []
     last_years: list[int | None] = []
 
-    if variable == "historical_population":
-        codes_of_interest = data_availability.index.to_list()
-    elif variable in [
-        "historical_electricity_demand_per_capita",
-        "historical_gdp_ppp_per_capita",
-    ]:
-        codes_of_interest = data_availability[
-            "parent_iso_alpha_3_code"
-        ].to_list()
-    else:
-        raise ValueError(f"Variable not recognized: {variable}")
+    codes_of_interest = (
+        data_availability["parent_iso_alpha_3_code"].to_list()
+        if _is_per_capita(variable)
+        else data_availability.index.to_list()
+    )
 
     for code in codes_of_interest:
         if "_" in code:
@@ -191,85 +232,31 @@ def get_data_availability() -> pd.DataFrame:
         iso_alpha_3_codes_with_shapes
     )
 
-    world_bank_historical_population = world_bank.download("population")
-
-    data_availability["historical_population"] = data_availability[
-        "parent_iso_alpha_3_code"
-    ].isin(world_bank_historical_population.index) & (
-        ~data_availability.index.str.contains("_")
-    )
-
-    data_availability = _add_first_and_last_years(
-        "historical_population",
-        world_bank_historical_population,
-        data_availability,
-    )
-
-    electricity_demand_per_capita = (
-        retrievals.annual_electricity_demand_per_capita.get_historical_data()
-    )
-
-    data_availability["historical_electricity_demand_per_capita"] = (
-        data_availability["parent_iso_alpha_3_code"].isin(
-            electricity_demand_per_capita.index
-        )
-    )
-
-    data_availability = _add_first_and_last_years(
-        "historical_electricity_demand_per_capita",
-        electricity_demand_per_capita,
-        data_availability,
-    )
-
-    gdp_ppp_per_capita = retrievals.gdp_ppp_per_capita.get_historical_data()
-
-    data_availability["historical_gdp_ppp_per_capita"] = data_availability[
-        "parent_iso_alpha_3_code"
-    ].isin(gdp_ppp_per_capita.index)
-
-    data_availability = _add_first_and_last_years(
-        "historical_gdp_ppp_per_capita",
-        gdp_ppp_per_capita,
-        data_availability,
-    )
-
-    iiasa_future_population = iiasa.read("population")
-
-    data_availability["future_population"] = data_availability[
-        "parent_iso_alpha_3_code"
-    ].isin(iiasa_future_population.index) & (
-        ~data_availability.index.str.contains("_")
-    )
-
-    iiasa_future_gdp_ppp_per_capita = iiasa.read("gdp_ppp_per_capita")
-
-    data_availability["future_gdp_ppp_per_capita"] = data_availability[
-        "parent_iso_alpha_3_code"
-    ].isin(iiasa_future_gdp_ppp_per_capita.index)
-
-    retrievals_directory = utils.paths.RETRIEVALS_FOLDER
-
-    # The IIASA projections of electricity demand per capita are by
-    # region, and this file maps the countries to their regions.
-    with open(
-        os.path.join(
-            retrievals_directory,
-            "socio_economic_data_sources",
-            "iam_regions_mapping.yaml",
+    # The data of each indicator, with the codes in its index.
+    indicators: dict[str, Callable[[], pd.DataFrame]] = {
+        "historical_population": lambda: world_bank.download("population"),
+        "historical_electricity_demand_per_capita": (
+            retrievals.annual_electricity_demand_per_capita.get_historical_data
         ),
-    ) as iiasa_mapping_file:
-        iiasa_future_electricity_demand_per_capita_mapping = yaml.safe_load(
-            iiasa_mapping_file
+        "historical_gdp_ppp_per_capita": (
+            retrievals.gdp_ppp_per_capita.get_historical_data
+        ),
+        "future_population": lambda: iiasa.read("population"),
+        "future_gdp_ppp_per_capita": lambda: iiasa.read("gdp_ppp_per_capita"),
+        "future_electricity_demand_per_capita": _read_iiasa_country_codes,
+    }
+    for variable, read_data in indicators.items():
+        data = read_data()
+        available = data_availability["parent_iso_alpha_3_code"].isin(
+            data.index
         )
-    iiasa_future_electricity_demand_per_capita_codes = list(
-        iiasa_future_electricity_demand_per_capita_mapping.keys()
-    )
-
-    data_availability["future_electricity_demand_per_capita"] = (
-        data_availability["parent_iso_alpha_3_code"].isin(
-            iiasa_future_electricity_demand_per_capita_codes
-        )
-    )
+        if not _is_per_capita(variable):
+            available &= ~data_availability.index.str.contains("_")
+        data_availability[variable] = available
+        if variable.startswith("historical_"):
+            data_availability = _add_first_and_last_years(
+                variable, data, data_availability
+            )
 
     data_availability["area_greater_than_500_km2"] = False
 

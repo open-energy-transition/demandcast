@@ -186,13 +186,14 @@ def run_data_retrieval(
             )
         )
 
-        year_scenario_list = (
-            utils.scenarios.get_year_and_scenario_combinations(
+        year_model_scenario_list = (
+            utils.scenarios.get_year_model_and_scenario_combinations(
                 year,
                 start_year,
                 end_year,
                 available_historical_years,
                 available_future_years,
+                None,
                 scenario,
                 list(utils.catalogue.IAMC_SCENARIOS),
             )
@@ -202,21 +203,21 @@ def run_data_retrieval(
             historical_years=list(
                 {
                     year
-                    for year, scenario in year_scenario_list
+                    for year, __, scenario in year_model_scenario_list
                     if scenario is None
                 }
             ),
             future_years=list(
                 {
                     year
-                    for year, scenario in year_scenario_list
+                    for year, __, scenario in year_model_scenario_list
                     if scenario is not None
                 }
             ),
             scenarios=list(
                 {
                     scenario
-                    for __, scenario in year_scenario_list
+                    for _year, _model, scenario in year_model_scenario_list
                     if scenario is not None
                 }
             ),

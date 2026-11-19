@@ -26,8 +26,9 @@ import os
 
 import pandas as pd
 import yaml
-from pydantic import BaseModel, ConfigDict
+from pydantic import Field
 
+import utils.config
 import utils.paths
 
 # The share of the people of an entity, in the area that it shares with
@@ -84,17 +85,15 @@ def read_checked_codes() -> list[str]:
         return [line.strip() for line in file if line.strip()]
 
 
-class _Exceptions(BaseModel):
+class _Exceptions(utils.config.StrictSettings):
     """
     The pairs of entities related or not, whatever their shares.
 
     Each pair is a list of two codes.
     """
 
-    model_config = ConfigDict(extra="forbid")
-
-    related: list[tuple[str, str]] = []
-    unrelated: list[tuple[str, str]] = []
+    related: list[tuple[str, str]] = Field(default_factory=list)
+    unrelated: list[tuple[str, str]] = Field(default_factory=list)
 
 
 def is_related(share_of_entity: float, share_of_other: float) -> bool:
@@ -157,11 +156,17 @@ def read_related_entities(codes: list[str]) -> dict[str, set[str]]:
 
     if os.path.exists(get_shares_file()):
         shares = pd.read_csv(get_shares_file(), keep_default_na=False)
-        for row in shares.itertuples(index=False):
+        for code, other, share_of_entity, share_of_other in zip(
+            shares["Entity code"],
+            shares["Other code"],
+            shares["Share of entity"],
+            shares["Share of other"],
+            strict=True,
+        ):
             relate(
-                str(row[0]),
-                str(row[1]),
-                is_related(float(row[2]), float(row[3])),
+                str(code),
+                str(other),
+                is_related(float(share_of_entity), float(share_of_other)),
             )
 
     exceptions_file = os.path.join(

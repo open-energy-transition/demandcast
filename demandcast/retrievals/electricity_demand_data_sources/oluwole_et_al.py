@@ -94,8 +94,7 @@ def download_and_extract_data_for_request(
 
     dataset = utils.fetcher.fetch_dataframe(
         url,
-        "html",
-        read_as="excel_table",
+        "excel",
         excel_kwargs={"sheet_name": "Demand Timeseries", "skiprows": 3},
     )
 

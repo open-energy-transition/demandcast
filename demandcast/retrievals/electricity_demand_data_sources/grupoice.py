@@ -89,8 +89,7 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
 
     dataset = utils.fetcher.fetch_dataframe(
         url,
-        "html",
-        read_as="csv_table",
+        "csv",
     )
 
     electricity_demand_time_series = pd.Series(

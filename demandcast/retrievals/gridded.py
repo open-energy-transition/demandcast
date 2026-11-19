@@ -376,21 +376,24 @@ def run_retrieval(
         utils.paths.get_gridded_folder(variable, "processed"), exist_ok=True
     )
 
-    year_scenario_list = utils.scenarios.get_year_and_scenario_combinations(
-        year,
-        start_year,
-        end_year,
-        list(historical_years),
-        list(utils.catalogue.PROJECTION_YEARS),
-        scenario,
-        list(utils.catalogue.SSP_SCENARIOS),
+    year_model_scenario_list = (
+        utils.scenarios.get_year_model_and_scenario_combinations(
+            year,
+            start_year,
+            end_year,
+            list(historical_years),
+            list(utils.catalogue.PROJECTION_YEARS),
+            None,
+            scenario,
+            list(utils.catalogue.SSP_SCENARIOS),
+        )
     )
     codes = utils.availability.check_and_get_codes_with(
         "historical_data", code=code, file_path=file
     )
 
-    for selected_year, selected_scenario in tqdm(
-        year_scenario_list, desc="Years and scenarios"
+    for selected_year, __, selected_scenario in tqdm(
+        year_model_scenario_list, desc="Years and scenarios"
     ):
         logging.info(
             f"Processing the gridded {description} of {selected_year}"

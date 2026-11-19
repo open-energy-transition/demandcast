@@ -50,6 +50,7 @@ from matplotlib.transforms import offset_copy
 
 import ml_models.files
 import ml_models.reporting
+import utils.codes
 import utils.columns
 import utils.figures
 import utils.manifest
@@ -979,12 +980,7 @@ def _plot_by_group(
         "lower_middle_income": "Lower middle income",
         "upper_middle_income": "Upper middle income",
         "high_income": "High income",
-        "AF": "Africa",
-        "AS": "Asia",
-        "EU": "Europe",
-        "OC": "Oceania",
-        "NA": "North America",
-        "SA": "South America",
+        **utils.codes.CONTINENT_NAMES,
     }
 
     for case, case_groups in groups.items():

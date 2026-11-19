@@ -47,7 +47,7 @@ import utils.columns
 import utils.relations
 
 
-def log_summary(name: str, mapes: pd.Series) -> None:
+def log_mape_statistics(name: str, mapes: pd.Series) -> None:
     """
     Log the average, median and standard deviation of MAPEs.
 
@@ -330,7 +330,7 @@ def calculate_errors(
         columns[f"{name} WAPE"] = calculate_wape_by_entity(
             predictions[split], data["target"], data["group"]
         )
-        log_summary(name, mapes_of_split)
+        log_mape_statistics(name, mapes_of_split)
         logging.info(
             f" - Median WAPE = {columns[f'{name} WAPE'].median():.4f}"
         )
@@ -613,8 +613,8 @@ def cross_validate(
         ],
     )
     errors["Holdout"] = holdout
-    log_summary("Training", errors["Training MAPE"])
-    log_summary("Testing", errors["Testing MAPE"])
+    log_mape_statistics("Training", errors["Training MAPE"])
+    log_mape_statistics("Testing", errors["Testing MAPE"])
     fold_predictions = [
         predictions for _, predictions in results if predictions is not None
     ]

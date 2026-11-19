@@ -17,7 +17,8 @@ import zipfile
 from io import BytesIO
 
 import pandas as pd
-import requests
+
+import utils.fetcher
 
 
 def download(variable: str) -> pd.DataFrame:
@@ -49,8 +50,7 @@ def download(variable: str) -> pd.DataFrame:
     name does not start with "Metadata", after four lines of header,
     with a column for each year. Its file "Metadata_Country" gives the
     region of each code: the aggregates, such as WLD for the world,
-    have none and are left out. An error of the World Bank raises a
-    requests.HTTPError.
+    have none and are left out.
     """
     if variable == "population":
         logging.info("Downloading population data from the World Bank.")
@@ -75,8 +75,7 @@ def download(variable: str) -> pd.DataFrame:
             "'electricity_demand_per_capita' or 'gdp_ppp_per_capita'."
         )
 
-    response = requests.get(url, timeout=60)
-    response.raise_for_status()
+    response = utils.fetcher.fetch_response(url, timeout=60)
 
     with zipfile.ZipFile(BytesIO(response.content), "r") as archive:
         world_bank_file_name = next(

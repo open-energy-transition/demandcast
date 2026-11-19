@@ -232,74 +232,6 @@ def _get_scenarios_for_model(
     return scenarios_for_model
 
 
-def get_year_and_scenario_combinations(
-    year: int | None,
-    start_year: int | None,
-    end_year: int | None,
-    available_historical_years: list[int],
-    available_future_years: list[int],
-    scenario: str | None,
-    available_scenarios: list[str],
-) -> list[tuple[int, str | None]]:
-    """
-    Get the list of years and scenario combinations.
-
-    A historical year has no scenario, and a future year comes with
-    each scenario. A year that is both comes once without a scenario
-    and once with each scenario.
-
-    Parameters
-    ----------
-    year : int | None
-        The specific year for which the data is to be downloaded.
-    start_year : int | None
-        The start year of the range of years for which the data is to be
-        downloaded.
-    end_year : int | None
-        The end year of the range of years for which the data is to be
-        downloaded.
-    available_historical_years : list[int]
-        The list of available historical years for the data retrieval.
-    available_future_years : list[int]
-        The list of available future years for the data retrieval.
-    scenario : str | None
-        The specific scenario for which the data is to be downloaded.
-    available_scenarios : list[str]
-        The list of available scenarios for the data retrieval.
-
-    Returns
-    -------
-    year_scenario_list : list[tuple[int, str | None]]
-        A list of tuples, where each tuple contains a year and an
-        optional scenario.
-    """
-    available_years = sorted(
-        set(available_historical_years + available_future_years)
-    )
-
-    years = _get_years(year, start_year, end_year, available_years)
-    scenarios = _get_scenarios(scenario, available_scenarios)
-
-    year_scenario_list: list[tuple[int, str | None]] = []
-    for selected_year in years:
-        if (
-            selected_year in available_historical_years
-            and selected_year in available_future_years
-        ):
-            year_scenario_list.append((selected_year, None))
-            year_scenario_list.extend(
-                (selected_year, scenario) for scenario in scenarios
-            )
-        elif selected_year in available_historical_years:
-            year_scenario_list.append((selected_year, None))
-        elif selected_year in available_future_years:
-            year_scenario_list.extend(
-                (selected_year, scenario) for scenario in scenarios
-            )
-
-    return year_scenario_list
-
-
 def get_year_model_and_scenario_combinations(
     year: int | None,
     start_year: int | None,
@@ -308,7 +240,7 @@ def get_year_model_and_scenario_combinations(
     available_future_years: list[int],
     model: str | None,
     scenario: str | None,
-    available_scenarios_for_model: dict[str, list[str]],
+    available_scenarios: list[str] | dict[str, list[str]],
 ) -> list[tuple[int, str | None, str | None]]:
     """
     Get the list of years, model, and scenario combinations.
@@ -336,52 +268,56 @@ def get_year_model_and_scenario_combinations(
         downloaded.
     scenario : str | None
         The specific scenario for which the data is to be downloaded.
-    available_scenarios_for_model : dict[str, list[str]]
-        The available scenarios for each climate model.
+    available_scenarios : list[str] | dict[str, list[str]]
+        The available scenarios for each climate model, or the list of
+        available scenarios of data without climate models.
 
     Returns
     -------
     year_model_scenario_list : list[tuple[int, str | None, str | None]]
         A list of tuples, where each tuple contains a year, an optional
         climate model, and an optional scenario.
+
+    Raises
+    ------
+    ValueError
+        If a model is given for data without climate models.
+
+    Notes
+    -----
+    The future years of data without climate models have no model.
     """
     available_years = sorted(
         set(available_historical_years + available_future_years)
     )
 
     years = _get_years(year, start_year, end_year, available_years)
-    scenarios_for_model = _get_scenarios_for_model(
-        model,
-        scenario,
-        available_scenarios_for_model,
-    )
+    future_combinations: list[tuple[str | None, str]]
+    if isinstance(available_scenarios, dict):
+        future_combinations = [
+            (model_key, scenario_key)
+            for model_key, scenario_keys in _get_scenarios_for_model(
+                model, scenario, available_scenarios
+            ).items()
+            for scenario_key in scenario_keys
+        ]
+    elif model is not None:
+        raise ValueError("model must be None for data without climate models.")
+    else:
+        future_combinations = [
+            (None, scenario_key)
+            for scenario_key in _get_scenarios(scenario, available_scenarios)
+        ]
 
     year_model_scenario_list: list[tuple[int, str | None, str | None]] = []
     for selected_year in years:
-        if (
-            selected_year in available_historical_years
-            and selected_year in available_future_years
-        ):
+        if selected_year in available_historical_years:
             year_model_scenario_list.append((selected_year, None, None))
-            for (
-                model_key,
-                scenario_keys,
-            ) in scenarios_for_model.items():
-                year_model_scenario_list.extend(
-                    (selected_year, model_key, scenario_key)
-                    for scenario_key in scenario_keys
-                )
-        elif selected_year in available_historical_years:
-            year_model_scenario_list.append((selected_year, None, None))
-        elif selected_year in available_future_years:
-            for (
-                model_key,
-                scenario_keys,
-            ) in scenarios_for_model.items():
-                year_model_scenario_list.extend(
-                    (selected_year, model_key, scenario_key)
-                    for scenario_key in scenario_keys
-                )
+        if selected_year in available_future_years:
+            year_model_scenario_list.extend(
+                (selected_year, model_key, scenario_key)
+                for model_key, scenario_key in future_combinations
+            )
 
     return year_model_scenario_list
 
