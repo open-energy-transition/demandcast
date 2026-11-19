@@ -27,6 +27,7 @@ import pandas as pd
 
 import cleaning.reviews
 import utils.data_sources
+import utils.files
 import utils.paths
 import utils.time_zones
 
@@ -404,9 +405,13 @@ def run_check() -> pd.DataFrame:
     checks_directory = utils.paths.get_results_folder("checks")
     os.makedirs(checks_directory, exist_ok=True)
     file_path = os.path.join(checks_directory, REPORT_NAME)
-    flags.to_csv(file_path + ".csv", index=False)
+    with utils.files.writing(file_path + ".csv") as temporary_path:
+        flags.to_csv(temporary_path, index=False)
     checked_at = dt.datetime.now(dt.UTC)
-    with open(file_path + ".md", "w", encoding="utf-8") as file:
+    with (
+        utils.files.writing(file_path + ".md") as temporary_path,
+        open(temporary_path, "w", encoding="utf-8") as file,
+    ):
         file.write(_format_report(flags, unmatched, checked_at))
 
     logging.info(

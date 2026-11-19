@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 
 import geopandas
+import matplotlib.pyplot as plt
 from shapely import Point
 
 import utils.figures
@@ -42,3 +43,16 @@ def test_simple_plot(monkeypatch):
         expected_path = Path(tmpdir) / f"{figure_name}.png"
         assert expected_path.exists()
         assert expected_path.stat().st_size > 0
+
+
+def test_save_figure(tmp_path):
+    """Test that a figure is saved in the format of its extension."""
+    fig, ax = plt.subplots()
+    ax.plot([0, 1], [0, 1])
+    file_path = tmp_path / "figure.png"
+
+    utils.figures.save_figure(fig, str(file_path), transparent=True)
+    plt.close(fig)
+
+    assert file_path.read_bytes().startswith(b"\x89PNG")
+    assert [path.name for path in tmp_path.iterdir()] == ["figure.png"]

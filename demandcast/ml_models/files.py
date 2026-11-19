@@ -40,6 +40,7 @@ import pandas as pd
 from pydantic import BaseModel
 
 import ml_models.data
+import utils.files
 import utils.manifest
 import utils.paths
 
@@ -421,10 +422,12 @@ def save_results(
 
     # Save the results, and their summary, with the manifest of their
     # model, data and metric.
-    output_dataset.to_parquet(results_file_name + ".parquet", index=False)
+    with utils.files.writing(results_file_name + ".parquet") as temporary_path:
+        output_dataset.to_parquet(temporary_path, index=False)
     other_formats: tuple[str, ...] = ()
     if case != "forecasts":
-        output_dataset.to_csv(results_file_name + ".csv", index=False)
+        with utils.files.writing(results_file_name + ".csv") as temporary_path:
+            output_dataset.to_csv(temporary_path, index=False)
         other_formats = (results_file_name + ".csv",)
     # The files that the manifest records besides the results.
     companion_files: dict[str, dict[str, Any]] = {}
@@ -432,7 +435,8 @@ def save_results(
         summary_path = os.path.join(
             model_results_folder, f"summary_{timestamp}.csv"
         )
-        summary.to_csv(summary_path, index=False)
+        with utils.files.writing(summary_path) as temporary_path:
+            summary.to_csv(temporary_path, index=False)
         companion_files["summary"] = {
             "file": os.path.basename(summary_path),
             "sha256": utils.manifest.get_checksum(summary_path),
@@ -441,7 +445,8 @@ def save_results(
         predictions_path = os.path.join(
             model_results_folder, f"predictions_{timestamp}.parquet"
         )
-        predictions.to_parquet(predictions_path, index=False)
+        with utils.files.writing(predictions_path) as temporary_path:
+            predictions.to_parquet(temporary_path, index=False)
         companion_files["predictions"] = {
             "file": os.path.basename(predictions_path),
             "sha256": utils.manifest.get_checksum(predictions_path),
@@ -451,9 +456,12 @@ def save_results(
             model_results_folder, f"models_{timestamp}.zip"
         )
         model_names = sorted(os.listdir(models_folder))
-        with zipfile.ZipFile(
-            archive_path, "w", zipfile.ZIP_DEFLATED
-        ) as archive:
+        with (
+            utils.files.writing(archive_path) as temporary_path,
+            zipfile.ZipFile(
+                temporary_path, "w", zipfile.ZIP_DEFLATED
+            ) as archive,
+        ):
             for name in model_names:
                 archive.write(os.path.join(models_folder, name), name)
         companion_files["models"] = {

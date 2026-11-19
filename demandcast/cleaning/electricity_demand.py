@@ -80,6 +80,7 @@ import os
 import numpy as np
 import pandas as pd
 
+import utils.files
 import utils.paths
 import utils.time_zones
 
@@ -755,12 +756,14 @@ def clean_data(code: str, data_source: str) -> pd.Series:
         "cleaned", code, data_source
     )
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    cleaned.to_frame().to_parquet(file_path)
-    removed_periods.to_parquet(
+    with utils.files.writing(file_path) as temporary_path:
+        cleaned.to_frame().to_parquet(temporary_path)
+    with utils.files.writing(
         utils.paths.get_electricity_demand_file(
             "cleaned", code, data_source, table="removed"
         )
-    )
+    ) as temporary_path:
+        removed_periods.to_parquet(temporary_path)
     logging.info(
         f"Saved the cleaned electricity demand to {file_path}, without "
         f"{int((removed != '').sum())} values of the data source and "

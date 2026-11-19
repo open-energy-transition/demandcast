@@ -32,6 +32,7 @@ import xarray
 import retrievals.gridded_totals
 import utils.availability
 import utils.data_sources
+import utils.files
 import utils.geospatial
 import utils.relations
 import utils.shapes
@@ -183,7 +184,8 @@ def run_check() -> None:
     shares = get_shares(utils.data_sources.read_all_codes())
     file_path = utils.relations.get_shares_file()
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    shares.to_csv(file_path, index=False)
+    with utils.files.writing(file_path) as temporary_path:
+        shares.to_csv(temporary_path, index=False)
     logging.info(
         f"{int(shares['Related'].sum())} pairs of related entities, of "
         f"{len(shares)} that overlap, saved to {file_path}."

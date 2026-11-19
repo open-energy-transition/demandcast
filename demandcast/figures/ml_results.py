@@ -49,6 +49,7 @@ from matplotlib.transforms import offset_copy
 import ml_models.files
 import ml_models.reporting
 import utils.columns
+import utils.figures
 import utils.manifest
 import utils.paths
 import utils.time_zones
@@ -645,12 +646,11 @@ def _plot_best_and_worst(
         fontsize=OVERALL_TEXT_SIZE,
     )
     _add_grid(fig)
-    plt.savefig(
+    utils.figures.save_figure(
+        plt.gcf(),
         os.path.join(
             figure_directory, f"wape_{description[1]}_best_and_worst.png"
         ),
-        bbox_inches="tight",
-        dpi=300,
     )
     plt.close(fig)
 
@@ -845,12 +845,11 @@ def _plot_overall(
     fig.suptitle(description[0], weight="bold", fontsize=OVERALL_TEXT_SIZE + 2)
 
     _add_grid(fig)
-    plt.savefig(
+    utils.figures.save_figure(
+        plt.gcf(),
         os.path.join(
             figure_directory, f"{metric.lower()}_{description[1]}.png"
         ),
-        dpi=300,
-        bbox_inches="tight",
     )
 
 
@@ -915,14 +914,13 @@ def _plot_comparison(
     _add_legend(fig, [descriptions[0][1], descriptions[1][1]])
 
     _add_grid(fig)
-    plt.savefig(
+    utils.figures.save_figure(
+        plt.gcf(),
         os.path.join(
             figure_directory,
             f"{metric.lower()}_{descriptions[0][1]}_vs_"
             f"{descriptions[1][1]}.png",
         ),
-        dpi=300,
-        bbox_inches="tight",
     )
 
 
@@ -1028,13 +1026,12 @@ def _plot_by_group(
         fig.supylabel(METRIC_NAMES[metric], weight="bold", x=-0.03)
 
         _add_grid(fig)
-        plt.savefig(
+        utils.figures.save_figure(
+            plt.gcf(),
             os.path.join(
                 figure_directory,
                 f"{metric.lower()}_{description[1]}_by_{case}.png",
             ),
-            dpi=300,
-            bbox_inches="tight",
         )
 
 
@@ -1211,13 +1208,12 @@ def _plot_distribution(
     )
 
     _add_grid(fig)
-    plt.savefig(
+    utils.figures.save_figure(
+        plt.gcf(),
         os.path.join(
             figure_directory,
             f"{metric.lower()}_{description[1]}_distribution.png",
         ),
-        dpi=300,
-        bbox_inches="tight",
     )
 
 
