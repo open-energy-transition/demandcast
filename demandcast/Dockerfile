@@ -14,6 +14,14 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # removed.
 RUN python -m pip uninstall --yes pip
 
+# The Debian packages of the base image are upgraded, so that the image has
+# the security fixes released since the base image was built: the published
+# image is not pushed with a vulnerability of high severity that has a fix.
+# hadolint ignore=DL3005
+RUN apt-get update \
+    && apt-get upgrade --yes \
+    && rm -rf /var/lib/apt/lists/*
+
 # hadolint ignore=DL3008
 RUN if [ "${INSTALL_GCLOUD}" = "true" ]; then \
         apt-get update \
