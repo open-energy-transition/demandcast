@@ -13,7 +13,8 @@ direction: upload
 bucket:
 
 # OPTIONAL.
-# The folders of the data folder that are not copied.
+# The folders of the data folder that are not copied, relative to it,
+# such as logs or results/figures.
 excluded_folders:
   - logs
 

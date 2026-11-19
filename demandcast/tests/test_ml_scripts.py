@@ -758,6 +758,21 @@ def test_forecast_with_other_scaling_is_rejected():
     forecast.run_forecasting(None, None, ml_config)
 
 
+@pytest.mark.parametrize("scaling_variables", [None, []])
+def test_forecast_without_scaling_variables(scaling_variables):
+    """
+    Test that a forecast without scaling variables stops at its start.
+
+    Without them, the predictions cannot be converted to MW, which the
+    forecast would find only after all its predictions.
+    """
+    ml_config = _ml_settings("XGBoost")
+    ml_config.scaling_variables = scaling_variables
+
+    with pytest.raises(ValueError, match="needs the scaling_variables"):
+        forecast.run_forecasting(None, None, ml_config)
+
+
 def test_validation_without_the_data_of_the_training():
     """Test that missing data of the training is not replaced."""
     _write_assembled_data(TRAINING_DATA, [2021, 2022, 2023], True)
