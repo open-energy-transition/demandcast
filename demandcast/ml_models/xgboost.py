@@ -31,6 +31,7 @@ class ConfigModel(utils.config.StrictSettings):
     random_state: int = 42
     enable_categorical: bool | None = True
     evaluation_metric: str | None = "mape"
+    early_stopping_rounds: int | None = Field(default=None, ge=1)
     n_estimators: int | None = Field(default=None, ge=1)
     max_depth: int | None = Field(default=None, ge=0)
     learning_rate: float | None = Field(default=None, gt=0)
@@ -94,7 +95,12 @@ def get_initialized_model(config: ConfigModel) -> XGBRegressor:
         Initialized XGBoost model.
     """
     hyperparameters = config.model_dump(
-        exclude={"random_state", "enable_categorical", "evaluation_metric"},
+        exclude={
+            "random_state",
+            "enable_categorical",
+            "evaluation_metric",
+            "early_stopping_rounds",
+        },
         exclude_none=True,
     )
     xgb_model = XGBRegressor(
@@ -128,19 +134,39 @@ def train(
     -------
     XGBRegressor
         Trained model.
+
+    Notes
+    -----
+    With a validation set and early_stopping_rounds, the training stops
+    adding trees once the evaluation metric of the validation set has
+    not improved for that many rounds, and the model predicts with the
+    trees up to its best round. Without either, the training does not
+    stop early, and a validation set only leaves its year out of the
+    training.
     """
     logging.info("Starting XGBoost model training.")
 
     xgb_model = get_initialized_model(config)
 
     eval_set = None
-    if "validation" in prepared_dataset:
-        eval_set = [
-            (
-                prepared_dataset["validation"]["features"],
-                prepared_dataset["validation"]["target"],
-            )
-        ]
+    validation = prepared_dataset.get("validation")
+    if validation is not None and config.early_stopping_rounds is not None:
+        eval_set = [(validation["features"], validation["target"])]
+        xgb_model.set_params(
+            early_stopping_rounds=config.early_stopping_rounds
+        )
+    elif validation is not None:
+        logging.warning(
+            "Without early_stopping_rounds in the settings of XGBoost, the "
+            "validation set does not stop the training: its year is only "
+            "left out of the training."
+        )
+    elif config.early_stopping_rounds is not None:
+        logging.warning(
+            "Without a validation set, such as in a cross-validation or "
+            "with use_validation_set false, the training does not stop "
+            "early: early_stopping_rounds is not used."
+        )
 
     xgb_model.fit(
         prepared_dataset["training"]["features"],
@@ -148,6 +174,12 @@ def train(
         eval_set=eval_set,
         verbose=False,
     )
+    if eval_set is not None:
+        logging.info(
+            f"The training stopped at round {xgb_model.best_iteration + 1}, "
+            f"the best {config.evaluation_metric} of the validation set, "
+            f"{xgb_model.best_score:.4g}."
+        )
 
     logging.info("XGBoost model training completed.")
 

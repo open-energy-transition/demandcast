@@ -36,6 +36,7 @@ import pandas as pd
 from pydantic import Field, field_validator
 
 import publishing.zenodo
+import utils.columns
 import utils.config
 import utils.manifest
 import utils.paths
@@ -50,7 +51,11 @@ DEMAND_FILE_PREFIXES = ("assembled_data_for_training_", "predictions_")
 
 # The compact file of the forecasts, and its columns.
 COMPACT_FORECASTS_FILE = "forecasts_on_historical_period.parquet"
-COMPACT_FORECASTS_COLUMNS = ["Time (UTC)", "Entity code", "Forecast load (MW)"]
+COMPACT_FORECASTS_COLUMNS = [
+    utils.columns.TIME,
+    utils.columns.ENTITY_CODE,
+    "Forecast load (MW)",
+]
 
 
 class ConfigModel(utils.config.StrictSettings):

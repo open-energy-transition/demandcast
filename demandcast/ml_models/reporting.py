@@ -29,6 +29,7 @@ import pandas as pd
 
 import ml_models.data
 import utils.codes
+import utils.columns
 import utils.manifest
 
 # The upper limits of the mean load of the size classes, in MW.
@@ -151,8 +152,8 @@ def _get_main_source(
     if provenance is None:
         return None, None
     rows = provenance[
-        (provenance["Entity code"] == code)
-        & provenance["Local year"].isin(years.unique())
+        (provenance[utils.columns.ENTITY_CODE] == code)
+        & provenance[utils.columns.LOCAL_YEAR].isin(years.unique())
     ]
 
     def most_hours(column: str) -> str | None:
@@ -209,16 +210,18 @@ def describe_entities(
     others = scored.get("others", pd.DataFrame(index=scored["group"].index))
     rows = pd.DataFrame(
         {
-            "Entity code": scored["group"],
+            utils.columns.ENTITY_CODE: scored["group"],
             "Time": scored["time"],
-            "Local year": scored["local_year"],
+            utils.columns.LOCAL_YEAR: scored["local_year"],
             "Load (MW)": others.get("Load (MW)", np.nan),
         }
     )
 
     descriptions = []
-    for code, entity_rows in rows.groupby("Entity code", sort=True):
-        description: dict[str, object] = {"Entity code": code}
+    for code, entity_rows in rows.groupby(
+        utils.columns.ENTITY_CODE, sort=True
+    ):
+        description: dict[str, object] = {utils.columns.ENTITY_CODE: code}
         if training is not None:
             training_years = training["local_year"][
                 training["group"] == code
@@ -227,10 +230,10 @@ def describe_entities(
             description["Training years"] = training_years
         mean_load = float(entity_rows["Load (MW)"].mean())
         data_source, embedded_generation = _get_main_source(
-            provenance, str(code), entity_rows["Local year"]
+            provenance, str(code), entity_rows[utils.columns.LOCAL_YEAR]
         )
         description |= {
-            "Scored years": entity_rows["Local year"].nunique(),
+            "Scored years": entity_rows[utils.columns.LOCAL_YEAR].nunique(),
             "Scored hours": len(entity_rows),
             "Mean load (MW)": mean_load,
             "Size class": get_size_class(mean_load)

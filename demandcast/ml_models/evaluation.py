@@ -45,6 +45,7 @@ from sklearn.utils.parallel import Parallel, delayed
 
 import ml_models.data
 import ml_models.registry
+import utils.columns
 import utils.relations
 
 
@@ -185,7 +186,7 @@ def _calculate_by_entity(
     list_mapes_values = []
 
     for entity_code, entity_group in pd.DataFrame(entity_codes).groupby(
-        "Entity code"
+        utils.columns.ENTITY_CODE
     ):
         current_mape = metric(
             actual.iloc[entity_group.index],
@@ -197,7 +198,7 @@ def _calculate_by_entity(
     mapes = pd.Series(
         data=list_mapes_values,
         index=list_entity_codes,
-    ).rename_axis("Entity code")
+    ).rename_axis(utils.columns.ENTITY_CODE)
 
     return mapes
 
@@ -241,14 +242,14 @@ def get_scored_predictions(
         return None
     rows = pd.DataFrame(
         {
-            "Entity code": data["group"].to_numpy(),
-            "Time (UTC)": data["time"].to_numpy(),
-            "Local year": data["local_year"].to_numpy(),
+            utils.columns.ENTITY_CODE: data["group"].to_numpy(),
+            utils.columns.TIME: data["time"].to_numpy(),
+            utils.columns.LOCAL_YEAR: data["local_year"].to_numpy(),
             "Load (MW)": others["Load (MW)"].to_numpy(dtype=float),
             "Target": data["target"].to_numpy(dtype=float),
         }
     )
-    sums = rows.groupby(["Entity code", "Local year"])[
+    sums = rows.groupby([utils.columns.ENTITY_CODE, utils.columns.LOCAL_YEAR])[
         ["Load (MW)", "Target"]
     ].transform("sum")
     rows["Forecast load (MW)"] = np.asarray(predictions, dtype=float) * (
@@ -288,7 +289,7 @@ def calculate_energy_errors_by_entity(
         rows["Forecast load (MW)"] - rows["Load (MW)"]
     ).abs()
     rows["Demand (MWh)"] = rows["Load (MW)"]
-    return rows.groupby("Entity code")[
+    return rows.groupby(utils.columns.ENTITY_CODE)[
         ["Absolute error (MWh)", "Demand (MWh)"]
     ].sum()
 
@@ -358,7 +359,7 @@ def calculate_mapes(
                 pd.MultiIndex.from_frame(
                     status.loc[
                         status["Status"] == "scaled",
-                        ["Entity code", "Local year"],
+                        [utils.columns.ENTITY_CODE, utils.columns.LOCAL_YEAR],
                     ]
                 )
             )
@@ -372,7 +373,11 @@ def calculate_mapes(
                 data["group"].iloc[rows].reset_index(drop=True),
             ).reindex(mapes_of_split.index)
 
-    return pd.DataFrame(columns).rename_axis("Entity code").reset_index()
+    return (
+        pd.DataFrame(columns)
+        .rename_axis(utils.columns.ENTITY_CODE)
+        .reset_index()
+    )
 
 
 def get_folds(
@@ -603,7 +608,7 @@ def cross_validate(
     mapes = pd.DataFrame(
         [row for scores, _ in results for row in scores],
         columns=[
-            "Entity code",
+            utils.columns.ENTITY_CODE,
             "Training MAPE",
             "Testing MAPE",
             "Training WAPE",

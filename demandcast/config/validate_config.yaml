@@ -1,8 +1,9 @@
 # Configuration read by the validate.py script.
 
-# REQUIRED.
-# Whether a validation set was used during training.
-used_validation_set: false
+# OPTIONAL.
+# Whether a validation set was used during training, needed only for a
+# model without a manifest: the manifest of a model records its sets.
+used_validation_set:
 
 # OPTIONAL.
 # The path to the trained model to be validated.

@@ -633,6 +633,11 @@ def train(
         Fitted LSTM model.
     """
     logging.info("Starting LSTM model training.")
+    if "validation" in prepared_dataset:
+        logging.warning(
+            "The LSTM does not use the validation set: its year is only "
+            "left out of the training."
+        )
 
     lstm_model = get_initialized_model(config)
 

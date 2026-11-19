@@ -610,9 +610,6 @@ PREPARATION_SETTINGS = {
     "categorical_features": False,
     "scaling_variables": False,
     "target": True,
-    "group": True,
-    "time": True,
-    "splitter": True,
 }
 
 
@@ -716,8 +713,52 @@ def check_model_manifest(
         ):
             raise ValueError(
                 "The sets of the validation differ from those of the "
-                "training of the model: check used_validation_set."
+                "training of the model."
             )
+
+
+def get_used_validation_set(
+    manifest: dict[str, Any] | None, used_validation_set: bool | None
+) -> bool:
+    """
+    Tell whether the training of a model had a validation set.
+
+    Parameters
+    ----------
+    manifest : dict[str, Any] | None
+        The manifest of the model, None for a model without a manifest.
+    used_validation_set : bool | None
+        The setting of the validation, needed only for a model whose
+        manifest does not record its sets.
+
+    Returns
+    -------
+    bool
+        Whether the sets of the training in the manifest have a
+        validation set, or else the setting.
+
+    Raises
+    ------
+    ValueError
+        If the model was trained without a testing set, on which it is
+        validated, or if neither the manifest nor the setting tells.
+    """
+    splits = (manifest or {}).get("splits")
+    if splits is None:
+        if used_validation_set is None:
+            raise ValueError(
+                "The model has no manifest with its sets, so "
+                "used_validation_set must tell whether its training had a "
+                "validation set."
+            )
+        return used_validation_set
+    if "testing" not in splits:
+        raise ValueError(
+            "The model was trained without a testing set "
+            "(reserve_testing_set: false), so it has no set to be "
+            "validated on."
+        )
+    return "validation" in splits
 
 
 def get_validation_data_path(

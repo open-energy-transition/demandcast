@@ -3,9 +3,12 @@ License: AGPL-3.0.
 
 Description:
 
-    This script validates a trained machine learning model using
-    preprocessed data, reserving a testing set and computing mean
-    absolute percentage error (MAPE) metrics.
+    This script validates a trained machine learning model on the most
+    recent year of each country and subdivision, the testing set of its
+    training, with the mean absolute percentage error (MAPE) and the
+    weighted absolute percentage error (WAPE). The sets of the training,
+    with or without a validation set, are those of the manifest of the
+    model.
 """
 
 # On Windows, PyTorch must be imported before pandas, so the ml_models
@@ -21,6 +24,7 @@ import ml_models.evaluation
 import ml_models.files
 import ml_models.registry
 import ml_models.reporting
+import utils.columns
 import utils.config
 import utils.manifest
 
@@ -28,13 +32,13 @@ import utils.manifest
 class ConfigModel(utils.config.StrictSettings):
     """Settings of validate.py."""
 
-    used_validation_set: bool
+    used_validation_set: bool | None = None
     model_path: str | None = None
     data_path: str | None = None
 
 
 def run_model_validation(
-    used_validation_set: bool,
+    used_validation_set: bool | None,
     model_path: str | None,
     data_path: str | None,
     ml_config: ml_models.data.ConfigModel,
@@ -44,8 +48,9 @@ def run_model_validation(
 
     Parameters
     ----------
-    used_validation_set : bool
-        Whether a validation set was used during training.
+    used_validation_set : bool | None
+        Whether a validation set was used during training, needed only
+        for a model whose manifest does not record its sets.
     model_path : str | None
         The path to the trained model file. If None, the latest file
         in the default directory will be used.
@@ -72,7 +77,10 @@ def run_model_validation(
     data_path = ml_models.files.get_validation_data_path(data_path, manifest)
 
     prepared_dataset = ml_models.data.prepare_split_datasets(
-        data_path, ml_config, True, used_validation_set
+        data_path,
+        ml_config,
+        True,
+        ml_models.files.get_used_validation_set(manifest, used_validation_set),
     )
 
     # Check that the model was trained with the features, target, data
@@ -94,7 +102,7 @@ def run_model_validation(
             prepared_dataset["training"],
             ml_models.reporting.read_provenance(data_path),
         ),
-        on="Entity code",
+        on=utils.columns.ENTITY_CODE,
         how="left",
     )
     summary = ml_models.reporting.summarize(results, "Testing")

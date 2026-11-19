@@ -23,7 +23,7 @@ The assembled datasets, the trained models and the results have a manifest next 
 
 Dependencies go one way: the scripts use `retrievals/`, `cleaning/`, `checks/`, `figures/` and `ml_models/`, which use `utils/`; `utils/` imports none of them (`tests/utils/test_dependencies.py` checks it).
 
-The scenarios (SSP, IAMC and CMIP6), the climate models and the years of each projection and gridded dataset are listed once, in `utils/catalogue.py`; use it instead of writing them again.
+The scenarios (SSP, IAMC and CMIP6), the climate models and the years of each projection and gridded dataset are listed once, in `utils/catalogue.py`; use it instead of writing them again. The names of the columns that the time series, the assembled data and the models share (`Time (UTC)`, `Entity code`, `Local year`) are in `utils/columns.py`; use its constants in the code.
 
 ## Layout
 
