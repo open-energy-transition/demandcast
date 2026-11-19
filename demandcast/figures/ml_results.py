@@ -48,6 +48,7 @@ from matplotlib.transforms import offset_copy
 
 import ml_models.files
 import ml_models.reporting
+import utils.columns
 import utils.manifest
 import utils.paths
 import utils.time_zones
@@ -199,7 +200,7 @@ def _read_results(
         )
     return (
         ml_models.files.read_results(file_path)
-        .results.set_index("Entity code")
+        .results.set_index(utils.columns.ENTITY_CODE)
         .rename_axis("entity_code")
     )
 
@@ -528,7 +529,9 @@ def _plot_best_and_worst(
     the error of the hourly profile, which the WAPE measures.
     """
     errors = errors.dropna()
-    errors = errors[errors.index.isin(predictions["Entity code"].unique())]
+    errors = errors[
+        errors.index.isin(predictions[utils.columns.ENTITY_CODE].unique())
+    ]
     fig, axs = plt.subplots(
         2,
         2,
@@ -542,10 +545,12 @@ def _plot_best_and_worst(
         (("Lowest", errors.idxmin()), ("Highest", errors.idxmax())),
         strict=True,
     ):
-        rows = predictions[predictions["Entity code"] == code]
-        hours = rows.groupby("Local year").size()
+        rows = predictions[predictions[utils.columns.ENTITY_CODE] == code]
+        hours = rows.groupby(utils.columns.LOCAL_YEAR).size()
         year = hours[hours == hours.max()].index.max()
-        rows = rows[rows["Local year"] == year].set_index("Time (UTC)")
+        rows = rows[rows[utils.columns.LOCAL_YEAR] == year].set_index(
+            utils.columns.TIME
+        )
         hourly = rows.reindex(
             pd.date_range(rows.index.min(), rows.index.max(), freq="h")
         )

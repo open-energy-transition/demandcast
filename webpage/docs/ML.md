@@ -250,7 +250,7 @@ uv run train.py [--config path/to/config.yaml]
 
 ```yaml
 reserve_testing_set: true          # Reserve data for testing
-use_validation_set: false          # Use validation set during training
+use_validation_set: false          # Keep the year before the testing year out of training, for the early stopping of XGBoost
 
 data_path:                         # Path to assembled data file
 ```
@@ -288,7 +288,7 @@ uv run validate.py [--config path/to/config.yaml]
 **Configuration variables** (`validate_config.yaml`):
 
 ```yaml
-used_validation_set: false         # Whether validation set was used in training
+used_validation_set:               # Only for a model without a manifest, which records whether its training had a validation set
 
 model_path:                        # Path to trained model file
 data_path:                         # Path to assembled data file (default: that of the training of the model)
@@ -358,12 +358,10 @@ The ML pipeline is configured through YAML files in `demandcast/config/`. The tw
 
 ### ML Configuration (`ml_config.yaml`)
 
-This file defines the core model structure, features, and training parameters:
+This file defines the core model structure, features, and training parameters. The data is grouped by the column `Entity code` of the assembled data, split into sets by `Local year`, and ordered by `Time (UTC)`:
 
 ```yaml
 algorithm: XGBoost                 # ML algorithm to use
-
-group: "Entity code"               # Variable for grouping data (LOGO CV)
 
 features:                          # Features for training
   - "Local hour of the day"
@@ -381,10 +379,6 @@ features:                          # Features for training
   - "Annual electricity demand per capita (kWh)"
 
 target: "Load (fraction of annual total)"  # Target variable
-
-splitter: "Local year"             # Variable for temporal splitting
-
-time: "Time (UTC)"                 # Time variable
 
 categorical_features:              # Categorical feature list
   - "Local hour of the day"
@@ -405,7 +399,8 @@ This file specifies XGBoost-specific hyperparameters:
 ```yaml
 random_state: 42                   # Random seed for reproducibility
 enable_categorical: true           # Enable native categorical feature support
-evaluation_metric: "mape"          # Evaluation metric (Mean Absolute Percentage Error)
+evaluation_metric: "mape"          # Evaluation metric of the validation set (Mean Absolute Percentage Error)
+early_stopping_rounds:             # With a validation set, stop adding trees after this many rounds without improvement
 ```
 
 For additional configuration options and detailed parameter descriptions, refer to the YAML files in `demandcast/config/`.

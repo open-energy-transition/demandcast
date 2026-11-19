@@ -27,6 +27,7 @@ import ml_models.evaluation
 import ml_models.files
 import ml_models.registry
 import ml_models.reporting
+import utils.columns
 import utils.config
 
 
@@ -90,7 +91,7 @@ def run_model_cross_validation(
                 prepared_dataset,
                 provenance=ml_models.reporting.read_provenance(data_path),
             ),
-            on="Entity code",
+            on=utils.columns.ENTITY_CODE,
             how="left",
         )
         summary = ml_models.reporting.summarize(results, "Testing")

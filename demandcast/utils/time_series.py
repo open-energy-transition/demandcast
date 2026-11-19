@@ -17,6 +17,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+import utils.columns
+
 
 def split_period(
     start_date: dt.date,
@@ -294,7 +296,7 @@ def clean_data(time_series: pd.Series, variable_name: str) -> pd.Series:
         raise ValueError("The time series must be timezone-aware.")
     time_series = time_series.tz_convert("UTC").tz_localize(None)
 
-    time_series.index.name = "Time (UTC)"
+    time_series.index.name = utils.columns.TIME
     time_series.name = variable_name
 
     time_series = time_series[time_series.index.notna()]

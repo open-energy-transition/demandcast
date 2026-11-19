@@ -9,6 +9,13 @@ random_state: 42
 # Enable categorical feature support in XGBoost.
 enable_categorical: true
 
-# REQUIRED.
-# Evaluation metric for model training and validation.
+# OPTIONAL.
+# Evaluation metric of the validation set, which stops the training
+# with early_stopping_rounds.
 evaluation_metric: "mape"
+
+# OPTIONAL.
+# With a validation set (use_validation_set in train_config.yaml), stop
+# adding trees once the evaluation metric of the validation set has not
+# improved for this many rounds. Empty for no early stopping.
+early_stopping_rounds:
