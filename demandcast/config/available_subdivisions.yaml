@@ -1,7 +1,7 @@
 # The subdivisions that the data sources can have, with the code and
 # name of their country, in the format of the YAML file of a data
 # source: their ISO 3166-2 codes, or for the others a widely accepted
-# code, with their shapes made by a script in shapes/. The tests of the
+# code, with their shapes in shapes/subdivisions/. The tests of the
 # data sources check the subdivisions of each one against this file.
 
 entities:

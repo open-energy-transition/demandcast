@@ -3,11 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module contains functions to generate a figure showing the
-    availability of hourly and sub-hourly electricity demand data by GDP
-    PPP and annual electricity demand per capita. It uses data from
-    Ember, the World Bank and the IMF to visualize the coverage of
-    electricity demand data across different countries and continents.
+    Draw the figure of the availability of the hourly and sub-hourly
+    electricity demand data, by continent and by GDP PPP and annual
+    electricity demand per capita: the historical annual electricity
+    demand per capita of Ember and the World Bank, and the historical
+    GDP PPP per capita of the World Bank and the IMF.
 
     The bar charts count the years of data of each country and of each
     subdivision, with the GDP PPP and the annual electricity demand per
@@ -139,8 +139,6 @@ def _get_electricity_demand_per_capita(
     electricity_demand_data: dict[str, dict[str, pd.Series]] = {}
 
     for code in codes:
-        # Extract the ISO alpha-3 code for the country itself or the
-        # country to which the subdivision belongs.
         iso_alpha_3_code = code.split("_")[0]
 
         electricity_demand_per_capita_of_country = cast(
@@ -195,8 +193,6 @@ def _get_gdp_ppp_per_capita(
     gdp_data: dict[str, dict[str, pd.Series]] = {}
 
     for code in codes:
-        # Extract the ISO alpha-3 code for the country itself or the
-        # country to which the subdivision belongs.
         iso_alpha_3_code = code.split("_")[0]
 
         gdp_ppp_per_capita_of_country = cast(
@@ -260,8 +256,6 @@ def _get_occurrences(
     }
 
     for code in codes:
-        # Extract the ISO alpha-3 code for the country itself or the
-        # country to which the subdivision belongs.
         iso_alpha_3_code = code.split("_")[0]
 
         for year in data[iso_alpha_3_code][code].index:
@@ -403,9 +397,12 @@ def get_data() -> FigureData:
     -------
     FigureData
         The data of the figure.
+
+    Notes
+    -----
+    A subdivision has the GDP PPP and the annual electricity demand per
+    capita of its country.
     """
-    # Read the codes of all countries and subdivisions, by country, and
-    # the continent and the fractions of the years of data of each code.
     codes = utils.data_sources.read_all_codes()
     codes_of_countries: dict[str, list[str]] = {}
     for code in codes:
@@ -420,17 +417,13 @@ def get_data() -> FigureData:
         code: list(fractions) for code, fractions in fractions_of_years.items()
     }
 
-    # Get the electricity demand data from Ember and the World Bank,
-    # and the GDP PPP per capita data from the World Bank and the IMF,
-    # those of its country for a subdivision.
     electricity_data = _get_electricity_demand_per_capita(
         codes, available_years
     )
     gdp_data = _get_gdp_ppp_per_capita(codes, available_years)
 
-    # Get the first and last years of data of each country, of its own
-    # data or of that of its subdivisions, in the years with both
-    # values.
+    # The first and last years of data of each country, of its own data
+    # or of that of its subdivisions, among the years with both values.
     gdp_points = {}
     electricity_demand_points = {}
     for country in countries:
@@ -525,7 +518,6 @@ def draw(data: FigureData, figure_directory: str) -> None:
     # Add scatter plot for the GDP and annual demand per capita data.
     ax = fig.add_axes((0.55, 0.0, 0.45, 1))
 
-    # Make the x and y axes logarithmic.
     ax.set_xscale("log", base=2)
     ax.set_yscale("log", base=2)
     ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())

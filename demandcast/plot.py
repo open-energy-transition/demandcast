@@ -3,9 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This script plots figures of data availability, geographical
-    coverage, and machine learning results, and the figures and numbers
-    of the "Current state" page of the documentation.
+    This script plots one figure, chosen by its settings: the
+    availability of the data by GDP PPP and annual electricity demand
+    per capita, the map of the countries and subdivisions with data,
+    the errors of the machine learning models, or the figures and
+    numbers of the "Current state" page of the documentation.
 """
 
 import os
@@ -62,7 +64,7 @@ class ConfigModel(utils.config.StrictSettings):
             if self.by_group and self.compare_with_version is not None:
                 raise ValueError(
                     "The variables 'by_group' and 'compare_with_version' "
-                    "cannot be used together at the moment."
+                    "cannot be used together."
                 )
         elif (
             self.version is not None
@@ -128,6 +130,8 @@ if __name__ == "__main__":
         utils.config.read_and_check_configuration(
             "plot",
             ConfigModel,
-            "Plot the specified figure for data availability and coverage.",
+            "Plot a figure: the data availability, the map of the "
+            "available entities, the machine learning results, or the "
+            "figures and numbers of the Current state page.",
         )
     )

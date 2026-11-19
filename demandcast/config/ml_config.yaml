@@ -25,7 +25,8 @@ features:
   - "Annual electricity demand per capita (kWh)"
 
 # REQUIRED.
-# The target variable for the model.
+# The target variable for the model, which the models learn as the load
+# relative to the annual mean of its local year (see ml_models/data.py).
 target: "Load (fraction of annual total)"
 
 # OPTIONAL.

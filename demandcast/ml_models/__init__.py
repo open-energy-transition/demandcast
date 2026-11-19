@@ -3,9 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This package contains modules for various machine learning models.
-    On Windows, PyTorch must be imported before pandas, so the package
-    imports it first when the optional lstm extra is installed.
+    The machine learning models that forecast the electricity demand,
+    with the preparation of their data, the evaluation of their
+    predictions and their files. On Windows, PyTorch must be imported
+    before pandas, so the package imports it first when the optional
+    lstm extra is installed.
 """
 
 import importlib.util

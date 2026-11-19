@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module draws the figures and writes the numbers of the current
-    state of DemandCast, which the "Current state" page of the
-    documentation shows: the countries and subdivisions with retrieval
+    Draw the figures and write the numbers of the current state of
+    DemandCast, which the "Current state" page of the documentation
+    shows: the countries and subdivisions with retrieval
     modules of electricity demand data, on a map and by GDP PPP and
     annual electricity demand per capita, how many countries,
     subdivisions, data sources and years of data there are, and the
@@ -40,7 +40,7 @@ import utils.paths
 # The figures of the page, as figures.data_availability and
 # figures.map_of_available_entities name them. The README shows the map
 # on a white background, which reads with both the light and the dark
-# theme of GitHub, whatever the colour scheme of the browser.
+# theme of GitHub, whatever the color scheme of the browser.
 FIGURE_FILES = (
     "available_entities.png",
     "available_entities_light_mode.png",

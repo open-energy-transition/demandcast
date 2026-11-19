@@ -3,7 +3,8 @@ License: AGPL-3.0.
 
 Description:
 
-    This module contains functions to train and save an XGBoost model.
+    Train, save and load an XGBoost model that forecasts the
+    electricity demand.
 """
 
 import logging

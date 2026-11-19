@@ -63,7 +63,7 @@ METRIC_NAMES = {
     "MAPE": "Mean Absolute Percentage Error (MAPE)",
 }
 
-# The colour of the horizontal grid lines.
+# The color of the horizontal grid lines.
 GRID_COLOR = "#e6e6e6"
 
 # The hatch of the bars of the codes that the model never saw.
@@ -657,7 +657,7 @@ def _plot_best_and_worst(
 
 def _add_grid(fig: plt.Figure) -> None:
     """
-    Add horizontal grid lines, in a very light grey, behind the data.
+    Add horizontal grid lines, in a very light gray, behind the data.
 
     Parameters
     ----------
@@ -724,8 +724,8 @@ def _add_explanatory_text(
     Parameters
     ----------
     target : matplotlib.pyplot.Axes | matplotlib.pyplot.Figure
-        The axes, next to whose right side the arrow is centred on their
-        height, or the figure, on whose right side it is.
+        The axes, next to whose right side the arrow is centered on
+        their height, or the figure, on whose right side it is.
     metric : str, optional
         The metric of the errors, "WAPE" or "MAPE".
     fontsize : float, optional
@@ -1246,8 +1246,8 @@ def plot(
         Whether to plot the results of the models trained on the data
         of each group (income level and continent).
     results_directory : str | None, optional
-        The folder with a folder of MAPE files for each version, by
-        default that of the validation results.
+        The folder of the results, that of the validations or of the
+        cross-validations, by default that of the validations.
     metric : str, optional
         The metric of the errors, "WAPE" or "MAPE".
     results_file : str | None, optional
@@ -1257,8 +1257,7 @@ def plot(
     Raises
     ------
     ValueError
-        If the --by_group and --compare_with_version options are used
-        together.
+        If by_group is true and compare_with_version is given.
 
     Notes
     -----
@@ -1279,8 +1278,8 @@ def plot(
 
     if by_group and compare_with_version is not None:
         raise ValueError(
-            "The --by_group and --compare_with_version options cannot be "
-            "used together at the moment."
+            "The by_group and compare_with_version arguments cannot be "
+            "used together."
         )
     errors = _read_errors(
         results_directory,

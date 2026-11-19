@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module finds and writes the files of the machine learning
-    models: the latest trained model of an algorithm and the latest
-    assembled data, unless a path is given, and the results of the
+    Find and write the files of the machine learning models: the latest
+    trained model of an algorithm and the latest assembled data, unless
+    a path is given, and the results of the
     validation, cross-validation and forecasts, in Parquet files named
     after the model, the data and the time, and also in CSV files for
     the errors of the validation and cross-validation, which are small

@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module describes the countries and subdivisions on which a
-    model is scored, and summarizes its errors by group of them, so
-    that the results tell where the model fails, not only how much.
+    Describe the countries and subdivisions on which a model is scored,
+    and summarize its errors by group of them, so that the results tell
+    where the model fails, not only how much.
 
     Each country or subdivision is described by whether the model saw
     other years of it in training, its number of years, its mean load

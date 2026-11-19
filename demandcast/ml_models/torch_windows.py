@@ -3,11 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides a Windows-specific workaround needed before
-    importing torch. On Windows, importing pandas before torch
-    corrupts the DLL loader state required by torch's c10.dll, so
-    callers must invoke ``enable_torch_dll_directory()`` before
-    importing pandas or torch.
+    Register the DLL directory of PyTorch on Windows. Importing pandas
+    before torch corrupts the state of the Windows DLL loader that
+    torch's c10.dll needs, so callers invoke
+    ``enable_torch_dll_directory()`` before importing pandas or torch.
 """
 
 import os
