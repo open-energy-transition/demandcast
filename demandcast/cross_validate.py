@@ -83,7 +83,7 @@ def run_model_cross_validation(
     # each fold to archive with the results.
     models_folder = tempfile.mkdtemp()
     try:
-        mapes, predictions = ml_models.evaluation.cross_validate(
+        errors, predictions = ml_models.evaluation.cross_validate(
             prepared_dataset,
             n_jobs,
             ml_config.algorithm,
@@ -92,7 +92,7 @@ def run_model_cross_validation(
             models_folder,
         )
 
-        results = mapes.merge(
+        results = errors.merge(
             ml_models.reporting.describe_entities(
                 prepared_dataset,
                 provenance=ml_models.reporting.read_provenance(data_path),

@@ -368,7 +368,7 @@ def test_assembly_for_training():
     years is kept, also the last one, which ends at midnight on
     January 1.
     """
-    assemble.run_data_assemply("training")
+    assemble.run_data_assembly("training")
 
     assembled = _read_assembled("training")
     assert len(assembled) == len(CODES) * len(_hours([2023, 2024]))
@@ -394,7 +394,7 @@ def test_assembly_records_the_sources_of_the_demand():
     definition is unknown, and the manifest of the dataset has the
     checksum of the list.
     """
-    assemble.run_data_assemply("training")
+    assemble.run_data_assembly("training")
 
     parquet_path = next(
         path
@@ -451,7 +451,7 @@ def test_assembly_adds_the_public_holidays(monkeypatch):
         assemble, "_merge_datasets", _merge_with_repeated_labels
     )
 
-    assemble.run_data_assemply("training")
+    assemble.run_data_assembly("training")
 
     assembled = _read_assembled("training").set_index(
         ["Entity code", "Time (UTC)"]
@@ -472,7 +472,7 @@ def test_assembly_adds_the_public_holidays(monkeypatch):
 @pytest.mark.usefixtures("assembly_inputs")
 def test_assembly_for_forecasting_of_some_years():
     """Test the assembly for forecasting, without the demand."""
-    assemble.run_data_assemply("forecasting", start_year=2024, end_year=2024)
+    assemble.run_data_assembly("forecasting", start_year=2024, end_year=2024)
 
     assembled = _read_assembled("forecasting")
     assert len(assembled) == len(CODES) * len(_hours([2024]))
@@ -498,7 +498,7 @@ def test_assembly_for_training_without_incomplete_years():
     summer = (demand.index >= "2023-06-01") & (demand.index < "2023-09-01")
     demand[~summer].to_parquet(file_path)
 
-    assemble.run_data_assemply("training")
+    assemble.run_data_assembly("training")
 
     assembled = _read_assembled("training")
     years = assembled.groupby("Entity code")["Local year"].unique()
@@ -522,9 +522,9 @@ def test_assembly_for_training_without_incomplete_years():
 def test_assembly_with_wrong_inputs():
     """Test that the target use and the years are checked."""
     with pytest.raises(ValueError, match="target_use"):
-        assemble.run_data_assemply("testing")
+        assemble.run_data_assembly("testing")
     with pytest.raises(ValueError, match="start_year and end_year"):
-        assemble.run_data_assemply("training", start_year=2024)
+        assemble.run_data_assembly("training", start_year=2024)
 
 
 @pytest.mark.usefixtures("assembly_inputs")
@@ -561,7 +561,7 @@ def test_assembly_for_forecasting_of_scenarios():
             os.path.join(folder, f"{code}_2024_CESM2_SSP2_4_5.parquet")
         )
 
-    assemble.run_data_assemply(
+    assemble.run_data_assembly(
         "forecasting",
         scenario_for_annual_electricity_demand_per_capita="SSP2-45",
         scenario_for_gdp_ppp_per_capita="SSP3",
@@ -641,7 +641,7 @@ def test_assembly_combines_stale_demand_again(change, monkeypatch):
         )
     assert not cleaning.combining.is_current("DEU")
 
-    assemble.run_data_assemply("training")
+    assemble.run_data_assembly("training")
 
     assert cleaning.combining.is_current("DEU")
     assembled = _read_assembled("training")
@@ -666,4 +666,4 @@ def test_assembly_without_eligibility_stops():
     )
 
     with pytest.raises(ValueError, match="does not say which hours"):
-        assemble.run_data_assemply("training")
+        assemble.run_data_assembly("training")

@@ -94,9 +94,11 @@ def run_model_validation(
 
     predictions = model_module.predict(model, prepared_dataset)
 
-    mapes = ml_models.evaluation.calculate_mapes(prepared_dataset, predictions)
+    errors = ml_models.evaluation.calculate_errors(
+        prepared_dataset, predictions
+    )
 
-    results = mapes.merge(
+    results = errors.merge(
         ml_models.reporting.describe_entities(
             prepared_dataset["testing"],
             prepared_dataset["training"],

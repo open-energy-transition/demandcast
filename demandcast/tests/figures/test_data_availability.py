@@ -137,7 +137,7 @@ def test_plot(tmp_path):
     data_availability.plot(str(tmp_path))
 
     assert os.listdir(tmp_path) == [
-        "data_availability_by_gpd_ppp_and_electricity_demand.png"
+        "data_availability_by_gdp_ppp_and_electricity_demand.png"
     ]
 
 
@@ -153,7 +153,7 @@ def test_plot_without_a_labeled_country(tmp_path, monkeypatch, caplog):
     data_availability.plot(str(tmp_path))
 
     assert os.listdir(tmp_path) == [
-        "data_availability_by_gpd_ppp_and_electricity_demand.png"
+        "data_availability_by_gdp_ppp_and_electricity_demand.png"
     ]
     assert "Luxembourg (LUX) has no points" in caplog.text
 

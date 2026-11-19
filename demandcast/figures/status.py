@@ -45,7 +45,7 @@ FIGURE_FILES = (
     "available_entities.png",
     "available_entities_light_mode.png",
     "available_entities_dark_mode.png",
-    "data_availability_by_gpd_ppp_and_electricity_demand.png",
+    "data_availability_by_gdp_ppp_and_electricity_demand.png",
 )
 
 # The file of the numbers, in the folder of the page.

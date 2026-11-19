@@ -506,7 +506,7 @@ def test_plot_dispatch(monkeypatch, settings, module, arguments):
         ),
         (
             "assemble",
-            "run_data_assemply",
+            "run_data_assembly",
             {"target_use": "forecasting", "start_year": 2030},
             ("forecasting", None, 2030, None, None, None, None, None, None),
         ),

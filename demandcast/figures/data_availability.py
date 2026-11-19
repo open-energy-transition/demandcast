@@ -717,9 +717,10 @@ def draw(data: FigureData, figure_directory: str) -> None:
         fig,
         os.path.join(
             figure_directory,
-            "data_availability_by_gpd_ppp_and_electricity_demand.png",
+            "data_availability_by_gdp_ppp_and_electricity_demand.png",
         ),
     )
+    plt.close(fig)
 
 
 def plot(figure_directory: str) -> None:

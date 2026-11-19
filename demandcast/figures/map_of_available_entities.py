@@ -214,3 +214,4 @@ def plot(figure_directory: str) -> None:
         os.path.join(figure_directory, "available_entities_dark_mode.png"),
         transparent=True,
     )
+    plt.close(fig)

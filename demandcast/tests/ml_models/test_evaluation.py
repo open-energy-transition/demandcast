@@ -103,17 +103,17 @@ def _make_prepared_dataset(
 
 
 def test_cross_validate_returns_one_row_per_entity(algorithm):
-    """Test that there is one row of MAPEs per held-out entity."""
-    mapes, _ = ml_models.evaluation.cross_validate(
+    """Test that there is one row of errors per held-out entity."""
+    errors, _ = ml_models.evaluation.cross_validate(
         _make_prepared_dataset(),
         1,
         algorithm,
         _model_config(algorithm),
     )
 
-    assert mapes["Entity code"].tolist() == _ENTITIES
-    assert (mapes[["Training MAPE", "Testing MAPE"]] >= 0).all().all()
-    assert mapes["Holdout"].eq("entity").all()
+    assert errors["Entity code"].tolist() == _ENTITIES
+    assert (errors[["Training MAPE", "Testing MAPE"]] >= 0).all().all()
+    assert errors["Holdout"].eq("entity").all()
 
 
 def test_cross_validate_by_country():
@@ -142,7 +142,7 @@ def test_cross_validate_by_country():
         return real_train(prepared_dataset, config)
 
     with patch.object(model_module, "train", side_effect=spy_train):
-        mapes, _ = ml_models.evaluation.cross_validate(
+        errors, _ = ml_models.evaluation.cross_validate(
             _make_prepared_dataset(["ARG", "ARG_B", "ARG_C", "BRA"]),
             1,
             "XGBoost",
@@ -151,8 +151,8 @@ def test_cross_validate_by_country():
         )
 
     assert training_groups == [["BRA"], ["ARG", "ARG_B", "ARG_C"]]
-    assert mapes["Entity code"].tolist() == ["ARG", "ARG_B", "ARG_C", "BRA"]
-    assert mapes["Holdout"].eq("country").all()
+    assert errors["Entity code"].tolist() == ["ARG", "ARG_B", "ARG_C", "BRA"]
+    assert errors["Holdout"].eq("country").all()
 
 
 def test_cross_validate_leaves_out_the_related_entities():
@@ -189,7 +189,7 @@ def test_cross_validate_leaves_out_the_related_entities():
 
     prepared_dataset = _make_prepared_dataset(["ARG", "ARG_B", "ARG_C", "BRA"])
     with patch.object(model_module, "train", side_effect=spy_train):
-        mapes, _ = ml_models.evaluation.cross_validate(
+        errors, _ = ml_models.evaluation.cross_validate(
             prepared_dataset,
             1,
             "XGBoost",
@@ -203,7 +203,7 @@ def test_cross_validate_leaves_out_the_related_entities():
         ["ARG_B", "BRA"],
         ["ARG", "ARG_B", "ARG_C"],
     ]
-    assert mapes["Entity code"].tolist() == ["ARG", "ARG_B", "ARG_C", "BRA"]
+    assert errors["Entity code"].tolist() == ["ARG", "ARG_B", "ARG_C", "BRA"]
     assert ml_models.evaluation.get_folds(
         prepared_dataset["group"], "entity", related
     )["ARG_B"] == {"scored": ["ARG_B"], "left_out": ["ARG", "ARG_B"]}
@@ -278,14 +278,14 @@ def test_cross_validate_in_parallel():
     """Test that the results are the same with parallel folds."""
     dataset = _make_prepared_dataset()
 
-    sequential_mapes, _ = ml_models.evaluation.cross_validate(
+    sequential_errors, _ = ml_models.evaluation.cross_validate(
         dataset, 1, "XGBoost", _model_config("XGBoost")
     )
-    parallel_mapes, _ = ml_models.evaluation.cross_validate(
+    parallel_errors, _ = ml_models.evaluation.cross_validate(
         dataset, 2, "XGBoost", _model_config("XGBoost")
     )
 
-    pd.testing.assert_frame_equal(parallel_mapes, sequential_mapes)
+    pd.testing.assert_frame_equal(parallel_errors, sequential_errors)
 
 
 def test_calculate_mape_by_entity():
@@ -302,7 +302,7 @@ def test_calculate_mape_by_entity():
     assert mapes.to_dict() == pytest.approx({"DEU": 0.25, "FRA": 0.1})
 
 
-def test_calculate_mapes(caplog):
+def test_calculate_errors(caplog):
     """Test that the MAPEs of each set are columns, and are logged."""
     entity_codes = pd.Series(["FRA", "DEU"], name="Entity code")
     prepared_dataset: dict[str, ml_models.data.PreparedDataset] = {
@@ -319,25 +319,25 @@ def test_calculate_mapes(caplog):
     }
 
     with caplog.at_level("INFO"):
-        mapes = ml_models.evaluation.calculate_mapes(
+        errors = ml_models.evaluation.calculate_errors(
             prepared_dataset, predictions
         )
 
-    assert mapes.columns.tolist() == [
+    assert errors.columns.tolist() == [
         "Entity code",
         "Training MAPE",
         "Training WAPE",
         "Testing MAPE",
         "Testing WAPE",
     ]
-    assert mapes["Entity code"].tolist() == ["DEU", "FRA"]
-    assert mapes["Training MAPE"].tolist() == pytest.approx([0.5, 0.0])
-    assert mapes["Testing MAPE"].tolist() == pytest.approx([0.0, 0.5])
+    assert errors["Entity code"].tolist() == ["DEU", "FRA"]
+    assert errors["Training MAPE"].tolist() == pytest.approx([0.5, 0.0])
+    assert errors["Testing MAPE"].tolist() == pytest.approx([0.0, 0.5])
     assert "Testing set:" in caplog.text
     assert " - Median MAPE = 0.2500" in caplog.text
 
 
-def test_calculate_mapes_of_the_profile_scaled_to_annual_totals():
+def test_calculate_errors_of_the_profile_scaled_to_annual_totals():
     """
     Test the MAPE of the profile that forecasting gives.
 
@@ -357,14 +357,14 @@ def test_calculate_mapes_of_the_profile_scaled_to_annual_totals():
         }
     }
 
-    mapes = ml_models.evaluation.calculate_mapes(
+    errors = ml_models.evaluation.calculate_errors(
         prepared_dataset, {"testing": pd.Series(np.full(8770, 1.2))}
     ).set_index("Entity code")
 
-    assert mapes["Testing MAPE"].to_dict() == pytest.approx(
+    assert errors["Testing MAPE"].to_dict() == pytest.approx(
         {"DEU": 0.2, "FRA": 0.2}
     )
-    scaled = mapes[
+    scaled = errors[
         "Testing MAPE of the complete years scaled to their annual totals"
     ]
     assert scaled["FRA"] == pytest.approx(0.0)
@@ -395,7 +395,7 @@ def test_errors_in_mwh_weigh_each_year_by_its_demand():
     }
     predictions = pd.Series([2.0] * 10 + [1.0] * 10)
 
-    results = ml_models.evaluation.calculate_mapes(
+    results = ml_models.evaluation.calculate_errors(
         {"testing": data}, {"testing": predictions}
     ).set_index("Entity code")
 

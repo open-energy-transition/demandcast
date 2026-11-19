@@ -274,12 +274,8 @@ def test_read_data_source(write_data_source):
     write_data_source({"licence": LICENCE, "entities": [FRANCE, TEXAS]})
 
     entities = utils.data_sources.read_entities_info(data_source="test_source")
-    licence = utils.data_sources.read_licence("test_source")
 
     assert entities == [FRANCE, TEXAS]
-    assert licence == utils.data_sources.DataSourceLicence.model_validate(
-        LICENCE
-    )
     assert utils.data_sources.read_entities("test_source") == [
         utils.data_sources.DataSourceEntity.model_validate(FRANCE),
         utils.data_sources.DataSourceEntity.model_validate(TEXAS),
@@ -377,8 +373,6 @@ def test_read_invalid_data_source(write_data_source, content, error):
         ValueError, match=f"(?s)data source test_source is not valid.*{error}"
     ):
         utils.data_sources.read_entities_info(data_source="test_source")
-    with pytest.raises(ValueError, match="data source test_source is not"):
-        utils.data_sources.read_licence("test_source")
 
 
 def test_read_definition():

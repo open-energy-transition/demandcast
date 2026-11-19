@@ -181,24 +181,22 @@ def _calculate_by_entity(
         The error of each country or subdivision, indexed by its code.
     """
     list_entity_codes = []
-    list_mapes_values = []
+    list_errors = []
 
     for entity_code, entity_group in pd.DataFrame(entity_codes).groupby(
         utils.columns.ENTITY_CODE
     ):
-        current_mape = metric(
+        error = metric(
             actual.iloc[entity_group.index],
             predictions.iloc[entity_group.index],
         )
         list_entity_codes.append(entity_code)
-        list_mapes_values.append(current_mape)
+        list_errors.append(error)
 
-    mapes = pd.Series(
-        data=list_mapes_values,
+    return pd.Series(
+        data=list_errors,
         index=list_entity_codes,
     ).rename_axis(utils.columns.ENTITY_CODE)
-
-    return mapes
 
 
 def get_scored_predictions(
@@ -292,7 +290,7 @@ def calculate_energy_errors_by_entity(
     ].sum()
 
 
-def calculate_mapes(
+def calculate_errors(
     prepared_dataset: dict[str, ml_models.data.PreparedDataset],
     predictions: dict[str, pd.Series],
 ) -> pd.DataFrame:
@@ -314,7 +312,7 @@ def calculate_mapes(
 
     Returns
     -------
-    mapes : pandas.DataFrame
+    errors : pandas.DataFrame
         The code of each country or subdivision, and its MAPE and WAPE
         in each set, in the columns "<Set> MAPE", "<Set> WAPE" and
         "<Set> MAPE of the complete years scaled to their annual
@@ -573,7 +571,7 @@ def cross_validate(
 
     Returns
     -------
-    mapes : pandas.DataFrame
+    errors : pandas.DataFrame
         The code of each held-out entity, the MAPE and WAPE of its model
         on the training rows and on the rows of the entity, the sums of
         the absolute errors and of the demand of the entity in MWh, and
@@ -602,7 +600,7 @@ def cross_validate(
     )
     logging.info("Cross-validation completed successfully.")
 
-    mapes = pd.DataFrame(
+    errors = pd.DataFrame(
         [row for scores, _ in results for row in scores],
         columns=[
             utils.columns.ENTITY_CODE,
@@ -614,13 +612,13 @@ def cross_validate(
             "Testing demand (MWh)",
         ],
     )
-    mapes["Holdout"] = holdout
-    log_summary("Training", mapes["Training MAPE"])
-    log_summary("Testing", mapes["Testing MAPE"])
+    errors["Holdout"] = holdout
+    log_summary("Training", errors["Training MAPE"])
+    log_summary("Testing", errors["Testing MAPE"])
     fold_predictions = [
         predictions for _, predictions in results if predictions is not None
     ]
-    return mapes, (
+    return errors, (
         pd.concat(fold_predictions, ignore_index=True)
         if fold_predictions
         else None
