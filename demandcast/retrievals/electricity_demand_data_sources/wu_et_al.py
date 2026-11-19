@@ -3,10 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data of the 31 provinces of mainland China from the dataset of Wu
-    and Kan on Zenodo, under the CC BY 4.0 license. The data is
-    retrieved all at once, from a single CSV file of 2018.
+    This module retrieves the electricity demand data of the 31
+    provinces of mainland China from the dataset of Wu and Kan on
+    Zenodo, under the CC BY 4.0 license. The data is retrieved all at
+    once, from a single CSV file of 2018.
 
     The file gives the hourly load of each province in MWh, the average
     power in MW, for the hours that start from 00:00 on 2018-01-01 to
@@ -33,7 +33,7 @@ import utils.fetcher
 import utils.time_series
 
 # The provinces in the order of the columns of the file, by the code of
-# their subdivision. The file names Hebei (HE) "HB", like Hubei.
+# their subdivision.
 PROVINCES = [
     "BJ",
     "TJ",
@@ -97,7 +97,7 @@ def get_available_requests(
 
 def get_url() -> str:
     """
-    Get the URL of the electricity demand data for China.
+    Get the URL of the electricity demand data on Zenodo.
 
     Returns
     -------
@@ -111,7 +111,7 @@ def download_and_extract_data_for_request(
     request: None, code: str
 ) -> pd.Series:
     """
-    Download and extract electricity demand data of a province of China.
+    Download and extract electricity demand data.
 
     Parameters
     ----------
@@ -131,8 +131,8 @@ def download_and_extract_data_for_request(
         If the columns of the file are not the provinces in the expected
         order.
     """
-    # Fetch the data from the URL, with the hours numbered from 1 in the
-    # first column and a column for each province.
+    # The first column numbers the hours from 1, and the others are the
+    # provinces.
     dataset = utils.fetcher.fetch_dataframe(
         get_url(),
         "csv",
@@ -151,8 +151,6 @@ def download_and_extract_data_for_request(
             f"in the expected order: {dataset.columns[1:].tolist()}."
         )
 
-    # Extract the load of the province, at the starts of the hours, and
-    # move them to their ends.
     column = 1 + PROVINCES.index(code.split("_")[1])
     starts = pd.Timestamp("2018-01-01") + pd.to_timedelta(
         dataset.iloc[:, 0] - 1, unit="h"

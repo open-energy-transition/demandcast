@@ -3,9 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module evaluates the machine learning models: the mean
-    absolute percentage error (MAPE) of each country and subdivision,
-    on each set of a validation, and the Leave-One-Group-Out
+    This module evaluates the machine learning models. It computes the
+    mean absolute percentage error (MAPE) and the weighted absolute
+    percentage error (WAPE) of each country and subdivision on each set
+    of a validation. It also runs the Leave-One-Group-Out
     cross-validation, which trains a model without each country or
     subdivision in turn and scores it on the one left out.
 
@@ -18,9 +19,6 @@ Description:
     cross-validation can instead hold out each country with its
     subdivisions, so that a model is scored on a country of which it
     has seen no part. Its results say which holdout they used.
-
-    Each error is given as the mean absolute percentage error (MAPE)
-    and as the weighted absolute percentage error (WAPE).
 
     The errors are those of the target of the models, the load relative
     to the annual mean of its local year (see ml_models.data), so they
@@ -299,7 +297,7 @@ def calculate_mapes(
     predictions: dict[str, pd.Series],
 ) -> pd.DataFrame:
     """
-    Calculate the MAPEs of each set: training, validation and testing.
+    Calculate the errors of each set: training, validation and testing.
 
     Besides the MAPE of the predictions as the model gives them, the
     MAPE of the predictions scaled to the annual total of their year,
@@ -584,7 +582,6 @@ def cross_validate(
         The predictions of the held-out rows in MW (see
         get_scored_predictions), or None if the rows have no load in MW.
     """
-    # Check that the algorithm is supported.
     model_module = ml_models.registry.get_model_module(algorithm)
 
     group = prepared_dataset["group"].astype(str).to_numpy()

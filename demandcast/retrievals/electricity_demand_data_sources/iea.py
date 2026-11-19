@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the Real-Time Electricity Tracker of the International
-    Energy Agency (IEA). The data is retrieved in three-month intervals.
+    This module retrieves the electricity demand data from the Real-Time
+    Electricity Tracker of the International Energy Agency (IEA). The
+    data is retrieved in three-month intervals.
 
     The API of the tracker gives the hourly demand of each country, or
     of each region of a country, in GW. Its times are marked as UTC but
@@ -39,7 +39,7 @@ Description:
     forbid downloading and storing the content of its own website
     without the written consent of TNB; its series is taken from the
     publication of the IEA. The IEA republishes the data of the EIA,
-    ENTSO-E, the CCEI and OCCTO, so it is compiled in the yaml file and
+    ENTSO-E, the CCEI and OCCTO, so it is compiled in its YAML file and
     ranks after them (see cleaning/combining.py).
 
     The demand of India is that of its states, from NITI (see
@@ -252,9 +252,8 @@ def get_available_requests(
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
-        The first day of each quarter of the data, or the start date,
-        and the first day of the next quarter, or the day after the end
-        date.
+        The start and end of each quarter of the data, from the start
+        date to the day after the end date.
 
     Notes
     -----

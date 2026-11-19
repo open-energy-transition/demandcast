@@ -3,10 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of Ontario's Independent Electricity System
-    Operator (IESO) in Canada. The data is retrieved from the available
-    CSV files on the IESO website.
+    This module retrieves the electricity demand data from the website
+    of Ontario's Independent Electricity System Operator (IESO) in
+    Canada. The data is retrieved from the available CSV files on the
+    IESO website.
 
     The times of IESO are in Eastern Standard Time all year, without
     daylight saving time, as on the Power Data page below ("Hour Ending
@@ -66,10 +66,11 @@ def get_url(year: int | None, before_may_2002: bool) -> str:
 
     Parameters
     ----------
-    year : int
-        The year of the electricity demand data.
+    year : int | None
+        The year of the electricity demand data, or None for the file
+        before May 2002.
     before_may_2002 : bool
-        Whether the url is for the time period before May 2002.
+        Whether the data is in the file before May 2002.
 
     Returns
     -------
@@ -143,7 +144,6 @@ def download_and_extract_data_for_request(
             index=pd.to_datetime(dataset["DateTime"], format="mixed"),
         )
 
-        # Move the times from the starts to the ends of the hours.
         electricity_demand_time_series = (
             utils.time_series.localize_interval_starts(
                 electricity_demand_time_series,

@@ -3,14 +3,14 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Australian Energy Market Operator
-    (AEMO) for the Wholesale Electricity Market (WEM) in Western
-    Australia. The data is retrieved in one-year intervals in CSV format
-    until September 2023, and from October 2023, after the reform of the
-    market, in one-month intervals of daily files in JSON format. The
-    WEM is the South West Interconnected System (AUS_SWIS), the grid of
-    the south-west of Western Australia.
+    This module retrieves the electricity demand data from the website
+    of the Australian Energy Market Operator (AEMO) for the Wholesale
+    Electricity Market (WEM) in Western Australia. The data is retrieved
+    in one-year intervals in CSV format until September 2023, and from
+    October 2023, after the reform of the market, in one-month intervals
+    of daily files in JSON format. The WEM is the South West
+    Interconnected System (AUS_SWIS), the grid of the south-west of
+    Western Australia.
 
     The files give the operational demand in MW of each interval, of 30
     minutes until September 2023 and 5 minutes since, at its start, in
@@ -31,7 +31,7 @@ Description:
     or after it, is retrieved until its last day before the end date,
     which its request includes, so that the request gives the same days
     whenever it is processed again. Its daily files of the 7 days before
-    that day, which can be not published yet, are skipped if they are
+    that day, which may not be published yet, are skipped if they are
     missing. The other months are retrieved whole, with all their daily
     files.
 
@@ -56,7 +56,8 @@ POST_REFORM_START = pd.Timestamp("2023-10-01")
 # The first year of the estimates of the distributed solar.
 FIRST_YEAR_OF_DPV = 2020
 
-# The days before today whose daily file can be not published yet.
+# The days before the end date of the data whose daily files may not be
+# published yet.
 DAYS_NOT_PUBLISHED = 7
 
 # The time zone of the WEM, UTC+8 all year.
@@ -86,7 +87,7 @@ def get_available_requests(
     list[tuple[bool, int, int | None, int | None]]
         The requests, as tuples in the format (pre_reform, year, month,
         day), where the month is None for the years before the reform.
-        The day is the last day of a month whose daily files can be not
+        The day is the last day of a month whose daily files may not be
         published yet, and None for the other months and the years.
     """
     # The years before the reform, from 2006 to 2023, and the months
@@ -117,14 +118,13 @@ def get_url(
     Parameters
     ----------
     pre_reform : bool
-        A boolean flag to indicate if the request is for the pre-reform
-        period (until 2023).
+        Whether the data is before the reform, until September 2023.
     year : int
         The year of the data to retrieve.
-    month : int, optional
-        The month of the data to retrieve.
-    day : int, optional
-        The day of the data to retrieve.
+    month : int | None
+        The month of the data to retrieve, or None before the reform.
+    day : int | None
+        The day of the daily file, or None before the reform.
 
     Returns
     -------
@@ -231,11 +231,11 @@ def download_and_extract_data_for_request(
     Parameters
     ----------
     pre_reform_and_date : tuple[bool, int, int | None, int | None]
-        A boolean flag to indicate if the request is for the pre-reform
-        period (until 2023), and the year, month and day of the
-        electricity demand data. The month is None for the pre-reform
-        period. The day is the last day of a month whose daily files can
-        be not published yet, and None otherwise.
+        Whether the data is before the reform, until September 2023, and
+        the year, month and day of the electricity demand data. The
+        month is None before the reform. The day is the last day of a
+        month whose daily files may not be published yet, and None
+        otherwise.
     code : str
         The code of Western Australia.
 

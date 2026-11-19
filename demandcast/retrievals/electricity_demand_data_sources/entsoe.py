@@ -3,10 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the European Network of Transmission System
-    Operators for Electricity (ENTSO-E). The data is retrieved in
-    one-year intervals, with the client of entsoe-py.
+    This module retrieves the electricity demand data from the website
+    of the European Network of Transmission System Operators for
+    Electricity (ENTSO-E). The data is retrieved in one-year intervals,
+    with the client of entsoe-py.
 
     The API gives the actual total load of each country in MW, at the
     start of each interval in UTC: hourly, 30 or 15 minutes depending on
@@ -64,8 +64,8 @@ Description:
     change of large industrial loads rather than of the times, so it is
     not corrected.
 
-    ENTSO-E republishes the data of the TSOs, so it is compiled in the
-    yaml file: the combined demand of a code takes the data of its TSO
+    ENTSO-E republishes the data of the TSOs, so it is compiled in its
+    YAML file: the combined demand of a code takes the data of its TSO
     first (see cleaning/combining.py).
 
     Source: https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html
@@ -126,7 +126,7 @@ def get_available_requests(
     Parameters
     ----------
     code : str
-        The code of the country.
+        The code of the country or subdivision.
     start_date : datetime.date
         The first day of the data.
     end_date : datetime.date
@@ -194,13 +194,13 @@ def download_and_extract_data_for_request(
     Parameters
     ----------
     period : tuple[pandas.Timestamp, pandas.Timestamp]
-        The start and end date of the data retrieval period.
+        The start and end of the period.
     code : str
-        The ISO Alpha-3 code of the country.
+        The code of the country or subdivision.
 
     Returns
     -------
-    pandas.Series
+    electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
 
     Raises
@@ -357,11 +357,11 @@ def _fetch_demand(
     api_key : str
         The API key for the ENTSO-E API.
     iso_alpha_3_code : str
-        The ISO Alpha-3 code of the country.
+        The code of the country or subdivision.
     start_date_and_time : pandas.Timestamp
-        The start date and time of the data retrieval.
+        The start of the period.
     end_date_and_time : pandas.Timestamp
-        The end date and time of the data retrieval.
+        The end of the period.
     retries : int, optional
         The number of attempts, in case of connection errors.
     retry_delay : int, optional

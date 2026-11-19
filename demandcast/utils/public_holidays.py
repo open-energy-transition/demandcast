@@ -127,7 +127,7 @@ def get_holiday_calendar(code: str) -> holidays.HolidayBase | None:
 
 def get_holiday_indicator(times: pd.Series, code: str) -> np.ndarray:
     """
-    Tell which hours are on a public holiday of a country or region.
+    Tell which hours are on a public holiday of a code.
 
     Parameters
     ----------

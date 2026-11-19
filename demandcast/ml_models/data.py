@@ -3,13 +3,13 @@ License: AGPL-3.0.
 
 Description:
 
-    This module prepares the data of the machine learning models: their
-    settings (config/ml_config.yaml), the reading of the assembled data,
-    checked against its manifest and its purpose, the conversions of the
+    This module prepares the data of the machine learning models. It
+    reads their settings (config/ml_config.yaml) and the assembled
+    data, checked against its manifest and its purpose. It converts the
     target, the load relative to the annual mean of its local year, to
-    the fraction of the annual total and to MW, the temporal and group
-    splits into training, validation and testing sets by the entity code
-    and the local year of each row, and the check that a model was
+    the fraction of the annual total and to MW. It splits the rows into
+    training, validation and testing sets, by time or by group, from
+    their entity code and local year. It also checks that a model was
     trained with the features of a dataset.
 """
 
@@ -81,12 +81,12 @@ def select_rows(
 
 def read_and_check_ml_configuration() -> ConfigModel:
     """
-    Read and check the features and target.
+    Read and check the settings of the machine learning models.
 
     Returns
     -------
     config : ConfigModel
-        A Pydantic model containing the ml configuration.
+        The settings of config/ml_config.yaml.
 
     Raises
     ------
@@ -181,7 +181,7 @@ def to_load_relative_to_annual_mean(
     The fraction of the annual total of an average hour is 1/8760 (or
     1/8784 in leap years), which is too small for the models: the gain
     of an XGBoost split scales with the square of the target, so almost
-    no split reaches its minimum gain (issue #145).
+    no split reaches its minimum gain.
     """
     return load_fraction * _hours_in_year(local_year)
 
@@ -550,8 +550,6 @@ def _split_in_groups(  # noqa: C901
             f"dataset: {missing_columns}"
         )
 
-    # Check if additional columns are present in the dataset, and keep
-    # them in the order of the dataset.
     additional_columns = [
         column for column in dataset.columns if column not in columns_to_check
     ]
@@ -609,8 +607,8 @@ def _prepare(
     Returns
     -------
     PreparedDataset
-        The features, target, entity codes, local years and scaling
-        factors (if any) of the dataset.
+        The features, target, entity codes, times, local years and
+        scaling factors (if any) of the dataset.
 
     Raises
     ------
@@ -672,10 +670,9 @@ def read_assembled_data(
 
     Notes
     -----
-    Data without a manifest, such as data assembled before the
-    manifests, is read with a warning, since its origin cannot be
-    checked, and so is the purpose of a manifest that does not record
-    it.
+    Data without a manifest is read with a warning, since its origin
+    cannot be checked. Data whose manifest does not record its purpose
+    is read as if it had the purpose asked for.
     """
     manifest = utils.manifest.verify_file(data_path, "dataset")
     if manifest is None:
@@ -709,8 +706,8 @@ def prepare_dataset(
     Returns
     -------
     PreparedDataset
-        The features, target, entity codes, local years and scaling
-        factors (if any) of the dataset. The target is the load
+        The features, target, entity codes, times, local years and
+        scaling factors (if any) of the dataset. The target is the load
         relative to the annual mean.
     """
     dataset = read_assembled_data(

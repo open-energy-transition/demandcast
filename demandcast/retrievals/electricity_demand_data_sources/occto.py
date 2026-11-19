@@ -79,7 +79,7 @@ AREAS = {
     "JPN_Okinawa": ("oki", "10", "沖縄"),
 }
 
-# The time out of the requests, in seconds: a year takes a few seconds.
+# The timeout of the requests, in seconds: a year takes a few seconds.
 TIMEOUT = 300
 
 
@@ -317,9 +317,8 @@ def download_and_extract_data_for_request(
 
     Returns
     -------
-    pandas.Series
-        The electricity demand in MW, at the ends of the hours in
-        Japanese time.
+    electricity_demand_time_series : pandas.Series
+        The electricity demand time series in MW.
     """
     start, end = request
     content = _download(
@@ -340,7 +339,6 @@ def download_and_extract_data_for_request(
         index=pd.DatetimeIndex(starts),
     )
 
-    # Move the starts of the hours to their ends.
     return utils.time_series.localize_interval_starts(
         electricity_demand_time_series, "Asia/Tokyo", pd.Timedelta(hours=1)
     )

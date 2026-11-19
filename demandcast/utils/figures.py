@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module contains functions to generate a simple plot of data
-    from a GeoDataFrame or xarray DataArray and save the figure in the
-    figures folder of the results.
+    This module draws a simple plot of a GeoDataFrame or an xarray
+    DataArray, such as the shape of a country or subdivision, and saves
+    it in the figures folder of the results.
 """
 
 import os
@@ -21,9 +21,10 @@ def simple_plot(
     data_to_plot: geopandas.GeoDataFrame | xarray.DataArray, figure_name: str
 ) -> None:
     """
-    Generate a simple plot of the provided data.
+    Plot data and save the figure.
 
-    The figure is saved as a PNG file named after the figure.
+    The figure is saved as a PNG file at 300 dpi, named after the
+    figure, in the figures folder of the results.
 
     Parameters
     ----------

@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the System Operator of the Unified Energy
-    System of Russia (SO UES). The data is retrieved one day at a time.
+    This module retrieves the electricity demand data from the website
+    of the System Operator of the Unified Energy System of Russia (SO
+    UES). The data is retrieved one day at a time.
 
     The page of the hourly generation and consumption gives, for a day
     and an interconnected power system (OES), the generation and the
@@ -25,9 +25,9 @@ Description:
     The website answers about one request in four with the error 503
     when they are sent two seconds apart, so the requests are sent at
     least REQUEST_INTERVAL seconds apart, while the saved responses are
-    replayed without waiting. It also answers with this
-    error for minutes at a time, so a request is attempted again after
-    RETRY_DELAY seconds.
+    replayed without waiting. It also answers with this error for
+    minutes at a time, so a request is attempted again after RETRY_DELAY
+    seconds.
 
     The terms of SO UES allow the reproduction of its information in
     unchanged form for non-commercial use only, and any other use with

@@ -3,9 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Energy Market Authority (EMA) in
-    Singapore. The data is retrieved in one-week intervals.
+    This module retrieves the electricity demand data from the website
+    of the Energy Market Authority (EMA) in Singapore. The data is
+    retrieved in one-week intervals, so retrieving several years takes
+    up to 10 minutes.
 
     The weekly files give the system demand in MW of each half hour, at
     its end ("Period Ending Time") in the time of Singapore, which has
@@ -13,11 +14,6 @@ Description:
     system demand includes the demand of the consumers with their own
     embedded generators. The file of the week of 2014-11-03 gives only
     the NEM demand, which leaves them out and is about 3% lower.
-
-    Note:
-    Although data is retrieved in 7-day intervals, retrieving data
-    over a longer historical range (e.g., multiple years) may take
-    considerable time — up to 10 minutes in total.
 
     Source: https://www.ema.gov.sg/resources/statistics/half-hourly-system-demand-data
 """
@@ -49,8 +45,8 @@ def get_available_requests(
 
     Returns
     -------
-    requests : list[tuple[int, int, int]]
-        List of tuples in the format (year, month, day).
+    list[tuple[int, int, int]]
+        The year, month and day of the first day of each week.
 
     Notes
     -----
@@ -123,12 +119,12 @@ def download_and_extract_data_for_request(
     year_month_and_day: tuple[int, int, int], code: str
 ) -> pd.Series:
     """
-    Download and extract electricity demand data from EMA website.
+    Download and extract electricity demand data.
 
     Parameters
     ----------
     year_month_and_day : tuple[int, int, int]
-        The year, month and day of the data.
+        The year, month and day of the first day of the week.
     code : str
         The code of Singapore.
 
@@ -165,7 +161,7 @@ def download_and_extract_data_for_request(
 
     request_date = pd.Timestamp(year=year, month=month, day=day)
 
-    # Keep only the columns with system demand data.
+    # Keep the column of the system demand of each day of the week.
     if request_date == pd.Timestamp("2014-11-03"):
         dataset = dataset.iloc[:, [1 + 2 * i for i in range(7)]]
     elif request_date <= pd.Timestamp("2014-09-22"):
@@ -175,7 +171,7 @@ def download_and_extract_data_for_request(
 
     dataset = dataset.apply(pd.to_numeric)
 
-    # Add a column for the hour of the day.
+    # The starts of the half hours, from 00:00.
     dataset["Hour"] = pd.date_range(
         "00:00", periods=48, freq="30min"
     ).strftime("%H:%M")
@@ -185,11 +181,8 @@ def download_and_extract_data_for_request(
         for date in pd.date_range(start=request_date, periods=7)
     ] + ["Hour"]
 
-    # Reshape the dataset from wide to long format.
     dataset = dataset.melt(id_vars="Hour", var_name="Date", value_name="Value")
 
-    # Define the electricity demand time series, at the starts of the
-    # half hours.
     electricity_demand_time_series = pd.Series(
         dataset["Value"].values,
         index=pd.to_datetime(
@@ -197,7 +190,6 @@ def download_and_extract_data_for_request(
         ),
     )
 
-    # Move the times from the starts to the ends of the half hours.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

@@ -3,10 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module is used to download historical population, electricity
-    demand per capita and GDP PPP per capita data from the World Bank.
-    The unit for electricity demand per capita is kWh and for GDP PPP
-    per capita is 2021 international dollars.
+    This module downloads the historical population, electricity
+    demand per capita (in kWh) and GDP PPP per capita (in 2021
+    international dollars) of the countries from the World Bank.
 
     Source: https://data.worldbank.org/indicator/SP.POP.TOTL
     Source: https://data.worldbank.org/indicator/EG.USE.ELEC.KH.PC
@@ -23,7 +22,7 @@ import requests
 
 def download(variable: str) -> pd.DataFrame:
     """
-    Download historical data from World Bank.
+    Download historical data from the World Bank.
 
     Parameters
     ----------
@@ -46,7 +45,9 @@ def download(variable: str) -> pd.DataFrame:
     Notes
     -----
     The archive of the World Bank has the data in the CSV file whose
-    name does not start with "Metadata", after four lines of header.
+    name does not start with "Metadata", after four lines of header,
+    with a column for each year. Only the codes of three characters
+    are kept.
     """
     if variable == "population":
         logging.info("Downloading population data from the World Bank.")
@@ -91,12 +92,10 @@ def download(variable: str) -> pd.DataFrame:
 
         world_bank_data = world_bank_data.set_index("Country Code")
 
-        # Keep only the columns that are digits (i.e., years).
         world_bank_data = world_bank_data.iloc[
             :, world_bank_data.columns.str.isdigit()
         ]
 
-        # Convert to the correct data types.
         world_bank_data.columns = world_bank_data.columns.astype(int)
         world_bank_data.index = world_bank_data.index.astype(str)
         world_bank_data = world_bank_data.astype(float)
@@ -105,7 +104,6 @@ def download(variable: str) -> pd.DataFrame:
 
     world_bank_data = world_bank_data.dropna(how="all")
 
-    # Remove rows with country codes that are not three letters long.
     world_bank_data = world_bank_data[world_bank_data.index.str.len() == 3]
 
     if variable == "population":

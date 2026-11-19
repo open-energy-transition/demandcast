@@ -3,11 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This script retrieves various types of data for specified countries
-    and subdivisions. The data types include electricity demand,
-    annual electricity demand per capita, population, gridded
-    population, GDP PPP per capita, gridded GDP PPP, gridded weather
-    data, and temperature data.
+    This script retrieves one variable for the countries and
+    subdivisions of interest: the electricity demand of a data source,
+    the annual electricity demand per capita, the population, the
+    gridded population, the GDP PPP per capita, the gridded GDP PPP,
+    the gridded weather or the temperature.
 """
 
 from collections.abc import Callable

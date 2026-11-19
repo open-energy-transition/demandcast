@@ -3,10 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to handle gridded data, such as the
-    population and the weather: harmonize its coordinates, coarsen it,
-    convert densities to counts, and weigh its grid cells by the
-    fractions of them in the shape of a country or subdivision.
+    This module handles gridded data, such as the population and the
+    weather: it harmonizes its coordinates, coarsens it, converts
+    densities to counts, and weighs its grid cells by the fractions of
+    them in the shape of a country or subdivision.
 """
 
 import geopandas
@@ -148,18 +148,15 @@ def _get_fraction_of_grid_cells_in_shape(
             "gridded data."
         )
 
-    # Get the coordinates of the xarray data as a matrix.
     x_coords, y_coords = np.meshgrid(
         xarray_data.x.to_numpy(), xarray_data.y.to_numpy()
     )
 
-    # Reshape the coordinates to a list of (x, y) pairs.
     coords = np.vstack([x_coords.ravel(), y_coords.ravel()]).T
 
-    # Calculate half the grid cell size.
+    # The point at len(x) + 1 is the next one in both x and y.
     half_cell = (coords[len(xarray_data.x) + 1] - coords[0]) / 2
 
-    # Define the grid cells as boxes.
     grid_cells = [
         box(*c) for c in np.hstack((coords - half_cell, coords + half_cell))
     ]
@@ -169,9 +166,7 @@ def _get_fraction_of_grid_cells_in_shape(
         crs="EPSG:4326",
     )
 
-    # Calculate the cell area and the intersection area in an equal
-    # area projection to get the fraction of each grid cell that is in
-    # the shape.
+    # The areas are computed in an equal-area projection.
     cell_area = grid.geometry.to_crs("+proj=cea").area
     intersection_area = (
         grid.geometry.intersection(entity_shape.union_all())
@@ -231,7 +226,7 @@ def from_density_to_count(
     Convert density to count.
 
     The count of each grid cell is its density times its area in square
-    kilometres.
+    kilometers.
 
     Parameters
     ----------
@@ -248,7 +243,6 @@ def from_density_to_count(
     ValueError
         If the grid resolution is not uniform and equal in x and y.
     """
-    # Calculate the x and y resolutions of the grid cells in degrees.
     x_resolution = density.x[1:].to_numpy() - density.x[:-1].to_numpy()
     y_resolution = density.y[1:].to_numpy() - density.y[:-1].to_numpy()
 
@@ -266,7 +260,6 @@ def from_density_to_count(
     longitudes = density.x.to_numpy()
     latitudes = density.y.to_numpy()
 
-    # Calculate the latitude values of the grid cell boundaries.
     boundary_latitudes = np.concatenate(
         [
             [latitudes[0] - resolution / 2],
@@ -289,10 +282,8 @@ def from_density_to_count(
         coords={"y": latitudes, "x": longitudes},
     )
 
-    # Define the radius of the Earth in kilometers.
     earth_radius = 6371.0
 
-    # Calculate the area of each grid cell in square kilometers.
     area = (
         (np.pi / 180)
         * earth_radius**2
@@ -408,11 +399,9 @@ def coarsen(
             "dividing 360."
         )
 
-    # Define the new coarser resolution.
     x_list = np.linspace(-180, 180, int(360 / target_resolution) + 1)
     y_list = np.linspace(-90, 90, int(180 / target_resolution) + 1)
 
-    # Define the left and right bounds of the x bins and y bins.
     x_bins = np.concatenate(
         [
             np.array([-180]),
@@ -424,7 +413,6 @@ def coarsen(
         [np.array([-90]), (y_list[:-1] + y_list[1:]) / 2, np.array([90])]
     )
 
-    # Keep only the bins that are within the specified bounds.
     x_bins = x_bins[
         (x_bins >= bounds[0] - target_resolution / 2)
         & (x_bins <= bounds[2] + target_resolution / 2)
@@ -434,12 +422,9 @@ def coarsen(
         & (y_bins <= bounds[3] + target_resolution / 2)
     ]
 
-    # Calculate the midpoints of the bins in the x and y directions.
     x_bin_centers = (x_bins[:-1] + x_bins[1:]) / 2
     y_bin_centers = (y_bins[:-1] + y_bins[1:]) / 2
 
-    # Aggregate the original data to the new coarser resolution, first
-    # in the x direction and then in the y direction.
     coarsened_xarray = original_xarray.groupby_bins(
         "x", x_bins, labels=x_bin_centers
     ).sum()
@@ -465,7 +450,6 @@ def coarsen(
             )
         )
 
-    # Sum the values of the cells at -180 and 180.
     if coarsened_xarray.x[0] == -180 and coarsened_xarray.x[-1] == 180:
         coarsened_xarray.loc[{"x": -180}] += coarsened_xarray.loc[{"x": 180}]
         coarsened_xarray.loc[{"x": 180}] = coarsened_xarray.loc[{"x": -180}]

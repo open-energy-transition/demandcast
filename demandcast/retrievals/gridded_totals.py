@@ -4,8 +4,12 @@ License: AGPL-3.0.
 Description:
 
     This module gives the totals of the gridded population and GDP PPP
-    of a country or subdivision, for the indicators of subdivisions
-    that have no national data (see retrievals/population.py and
+    in the shape of a country or subdivision, interpolated between the
+    years of the grids. The population of a subdivision is its share of
+    the gridded population of its country times the national
+    population. The indicators of the countries without national data,
+    and of their subdivisions, come from the totals of their own grids
+    (see retrievals/population.py and
     retrievals/gdp_ppp_per_capita.py).
 """
 

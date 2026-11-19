@@ -16,12 +16,14 @@ figure: data_availability
 # of the folder of MAPE files of an earlier version.
 version:
 
-# OPTIONAL.
-# The version of the ML model whose results are to be considered in the comparison.
+# OPTIONAL - only for the ml_results figure.
+# The version of the ML model whose results are to be considered in the
+# comparison.
 compare_with_version:
 
-# OPTIONAL.
-# Whether to plot the results by group (income level and continent).
+# OPTIONAL - only for the ml_results figure, and not with compare_with_version.
+# Whether to plot the results of the models trained on the data of each group
+# (income level and continent).
 by_group: false
 
 # OPTIONAL - only for the ml_results figure.

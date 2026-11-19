@@ -3,12 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data of XM, the operator of the electricity system and market of
-    Colombia. The data is retrieved in one-month intervals, through the
-    proxy of the API of XM that the website of Energía de Colombia uses:
-    the API of XM itself (servapibi.xm.com.co) does not answer from
-    outside Colombia.
+    This module retrieves the electricity demand data of XM, the
+    operator of the electricity system and market of Colombia. The data
+    is retrieved in one-month intervals, through the proxy of the API of
+    XM that the website of Energía de Colombia uses: the API of XM
+    itself (servapibi.xm.com.co) does not answer from outside Colombia.
 
     The data is the real demand of the system (DemaReal) in kWh of each
     hour, which the module converts to MW, from 2000, by date and hour
@@ -55,7 +54,8 @@ def get_available_requests(
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
-        The list of available requests.
+        The start and end of each month of the data, from the start date
+        to the end date.
     """
     return utils.time_series.split_period(start_date, end_date, "MS")
 
@@ -67,9 +67,9 @@ def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
     Parameters
     ----------
     start_date : pandas.Timestamp
-        The start date of the data retrieval.
+        The start of the period.
     end_date : pandas.Timestamp
-        The end date of the data retrieval.
+        The end of the period.
 
     Returns
     -------
@@ -81,7 +81,6 @@ def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
     ValueError
         If the retrieval period is longer than 1 month.
     """
-    # Check that the retrieval period is less than one month.
     if end_date - start_date > pd.Timedelta("31days"):
         raise ValueError(
             "The retrieval period is greater than 1 month. Please reduce the "
@@ -104,7 +103,7 @@ def download_and_extract_data_for_request(
     Parameters
     ----------
     period : tuple[pandas.Timestamp, pandas.Timestamp]
-        The start and end date and time of the data retrieval.
+        The start and end of the period.
     code : str
         The code of Colombia.
 
@@ -134,13 +133,11 @@ def download_and_extract_data_for_request(
     for date in dataset["Date"]:
         values_dict = dataset[dataset["Date"] == date]
 
-        # Extract the values for each hour of the day.
         hourly_values = [
             (values_dict["Values"].to_numpy()[0])[f"Hour{hour:02d}"]
             for hour in range(1, 25)
         ]
 
-        # Define the date and time for each hour of the day.
         date_and_time = [date + f" {hour:02d}:00" for hour in range(24)]
 
         daily_values_list.append(
@@ -155,7 +152,7 @@ def download_and_extract_data_for_request(
         float
     )
 
-    # Values are in kWh with a frequency of 1 hour. Convert to MW.
+    # Convert the kWh of each hour to MW.
     electricity_demand_time_series = electricity_demand_time_series / 1000
 
     # The times above are the starts of the hours, from 00:00 for

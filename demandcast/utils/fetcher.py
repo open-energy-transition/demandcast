@@ -49,10 +49,9 @@ def redact(text: str) -> str:
     """
     Hide the API keys and passwords in a text.
 
-    The URL of a download, and so its errors, can include an API key,
-    which must not end up in logs and reports, and so must passwords.
-    Their values are also hidden as they appear in URLs and forms, with
-    their special characters encoded.
+    The values of the environment variables whose names end with
+    "_API_KEY" or "_PASSWORD" are replaced by "***", also as they appear
+    in URLs and forms, with their special characters encoded.
 
     Parameters
     ----------
@@ -63,6 +62,11 @@ def redact(text: str) -> str:
     -------
     str
         The text without the values of the API keys and passwords.
+
+    Notes
+    -----
+    The URL of a download, and so its errors, can include an API key,
+    which must not end up in logs and reports, and so must passwords.
     """
     for name, value in os.environ.items():
         if name.endswith(("_API_KEY", "_PASSWORD")) and value:
@@ -487,7 +491,7 @@ def _check_table_options(
         raise TypeError(f"Unknown options of the request: {sorted(unknown)}.")
 
 
-# The time out of the download of a CSV or Excel file, in seconds, by
+# The timeout of the download of a CSV or Excel file, in seconds, by
 # default: some servers take tens of seconds to prepare a file, such as
 # ADME for a year of data.
 FILE_TIMEOUT = 300
@@ -565,7 +569,7 @@ def fetch_dataframe(
         The delay between attempts in seconds.
     **kwargs : Any
         The other options of the request, as for fetch_response. The
-        time out of a CSV or Excel file is FILE_TIMEOUT by default.
+        timeout of a CSV or Excel file is FILE_TIMEOUT by default.
 
     Returns
     -------
@@ -626,10 +630,6 @@ def find_manual_files(prefix: str) -> list[str]:
     """
     Find the data files that were downloaded manually.
 
-    The raw data (see utils.raw_data) keeps the files found while a
-    request is downloaded, and gives them back when it is processed
-    again.
-
     Parameters
     ----------
     prefix : str
@@ -641,6 +641,12 @@ def find_manual_files(prefix: str) -> list[str]:
         The paths of the files in the folder of manually downloaded
         electricity demand data whose names start with the prefix, in
         the order of their names.
+
+    Notes
+    -----
+    The raw data (see utils.raw_data) keeps the files found while a
+    request is downloaded, and gives them back when it is processed
+    again.
     """
     data_directory = utils.paths.get_electricity_demand_folder(
         "manual_downloads"
@@ -664,9 +670,8 @@ def read_manual_files(
     """
     Read the data files that were downloaded manually.
 
-    Some data sources have no download that can be automated. Their
-    files are downloaded manually into the folder of manually downloaded
-    electricity demand data, with names that start with a prefix (see
+    The files are those of the folder of manually downloaded
+    electricity demand data whose names start with the prefix (see
     find_manual_files).
 
     Parameters
@@ -695,6 +700,11 @@ def read_manual_files(
     ------
     FileNotFoundError
         If no file starts with the prefix.
+
+    Notes
+    -----
+    Some data sources have no download that can be automated, so their
+    files are downloaded manually.
     """
     file_paths = find_manual_files(prefix)
     if not file_paths:

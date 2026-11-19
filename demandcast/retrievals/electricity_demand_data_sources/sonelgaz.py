@@ -3,11 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from a publicly available repository with data provided by the
-    Société Nationale de l'Electricité et du Gaz (Sonelgaz) in Algeria,
-    on Mendeley Data under the CC BY 4.0 license. The data is retrieved
-    all at once, from a single Excel file.
+    This module retrieves the electricity demand data of the Société
+    Nationale de l'Electricité et du Gaz (Sonelgaz) in Algeria from a
+    dataset on Mendeley Data, under the CC BY 4.0 license. The data is
+    retrieved all at once, from a single Excel file.
 
     The file gives the hourly demand from 2008-01-01 to 2020-02-01, one
     row a day, with the hours ending from "1h" to "24h" in the time of
@@ -62,7 +61,7 @@ def get_available_requests(
 
 def get_url() -> str:
     """
-    Get the URL of the electricity demand data from Sonelgaz.
+    Get the URL of the electricity demand data on Mendeley Data.
 
     Returns
     -------
@@ -95,17 +94,14 @@ def download_and_extract_data_for_request(
     """
     url = get_url()
 
-    # Fetch the data from the URL, with requests: Mendeley Data refuses
-    # the downloads of pandas.
     dataset = utils.fetcher.fetch_dataframe(url, "html", read_as="excel_table")
 
-    # The column names have the time information. Rearrange the
-    # columns to have the time information on another column.
+    # The columns after the date are the hours ending from 1h to 24h.
     dataset = dataset.melt(
         id_vars=dataset.columns[0], var_name="Hour", value_name="Value"
     )
 
-    # Define the new index, at the starts of the hours.
+    # The starts of the hours.
     index = pd.to_datetime(
         dataset.iloc[:, 0].astype(str)
         + " "
@@ -115,8 +111,7 @@ def download_and_extract_data_for_request(
         format="%Y-%m-%d %H",
     )
 
-    # Define the electricity demand time series, in MW: the values are
-    # the demand multiplied by 125/148.
+    # The values are the demand in MW multiplied by 125/148.
     electricity_demand_time_series = pd.Series(
         dataset["Value"].to_numpy(dtype="float64") * 148 / 125,
         index=index,
@@ -126,7 +121,6 @@ def download_and_extract_data_for_request(
         electricity_demand_time_series.sort_index()
     )
 
-    # Move the times to the ends of the hours, in local time.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

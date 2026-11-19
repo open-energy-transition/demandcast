@@ -3,11 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data for Taiwan from a dataset on Zenodo, under the CC BY 4.0
-    license, with the data of Taipower on the open data platform of the
-    government of Taiwan (data.gov.tw), under the Open Government Data
-    License. The data is retrieved all at once, from a single CSV file.
+    This module retrieves the electricity demand data of Taiwan from a
+    dataset on Zenodo, under the CC BY 4.0 license, with the data of
+    Taipower on the open data platform of the government of Taiwan
+    (data.gov.tw), under the Open Government Data License. The data is
+    retrieved all at once, from a single CSV file.
 
     The file gives the load of the four areas of Taiwan (north, central,
     south and east) in MW every 10 minutes, from 2017-01-01 to
@@ -57,7 +57,7 @@ def get_available_requests(
 
 def get_url() -> str:
     """
-    Get the URL of the electricity demand data for Taiwan.
+    Get the URL of the electricity demand data on Zenodo.
 
     Returns
     -------
@@ -92,7 +92,6 @@ def download_and_extract_data_for_request(
         "csv",
     )
 
-    # Sum the load of the four areas.
     dataset["National Demand"] = (
         dataset["south"]
         + dataset["north"]

@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Canadian Centre for Energy Information
-    (CCEI). The data has various time resolutions.
+    This module retrieves the electricity demand data from the website
+    of the Canadian Centre for Energy Information (CCEI). The data has
+    various time resolutions.
 
     CCEI gathers the data of the utilities and system operators of the
     provinces and territories, in MW at times in UTC. The values are
@@ -57,7 +57,7 @@ Description:
     Saskatchewan is left out, since its data is daily.
 
     The CCEI republishes the data of the provincial operators, so it
-    is compiled in the yaml file: the combined demand of a province
+    is compiled in its YAML file: the combined demand of a province
     takes the data of its operator first (see cleaning/combining.py).
 
     Source: https://energy-information.canada.ca/en/resources/high-frequency-electricity-data
@@ -112,7 +112,7 @@ def get_url(code: str) -> str:
     Parameters
     ----------
     code : str
-        The code of the Province or Territory of interest.
+        The code of the subdivision.
 
     Returns
     -------
@@ -126,8 +126,6 @@ def get_url(code: str) -> str:
     """
     subdivision_code = code.split("_")[1]
 
-    # Define the mapping between the subdivision codes and API variable
-    # names.
     variable_names = {
         "AB-AIES": ["AB", "INTERNAL_LOAD"],
         "BC": ["BC", "LOAD"],
@@ -185,7 +183,8 @@ def download_and_extract_data_for_request(
     dataset = utils.fetcher.fetch_dataframe(url, "csv")
 
     if code == "CAN_NB":
-        # Remove unknown code from the time step values.
+        # The times of New Brunswick end with ".000Z", which is removed
+        # to read them without a time zone, as those of the others.
         dataset["TIME_PERIOD"] = dataset["TIME_PERIOD"].str.replace(
             ".000Z", ""
         )
@@ -220,7 +219,6 @@ def download_and_extract_data_for_request(
     else:
         times = pd.DatetimeIndex(pd.to_datetime(dataset["TIME_PERIOD"]))
 
-    # Extract the electricity demand time series with UTC time zone.
     electricity_demand_time_series = pd.Series(
         data=dataset["OBS_VALUE"].values, index=times
     )

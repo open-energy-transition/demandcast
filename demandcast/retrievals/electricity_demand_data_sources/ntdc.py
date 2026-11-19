@@ -3,11 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data of the National Transmission & Despatch Company (NTDC) in
-    Pakistan, from the copy on Zenodo of a dataset published on Kaggle
-    under the CC0 licence. The data is retrieved all at once, from a
-    single CSV file.
+    This module retrieves the electricity demand data of the National
+    Transmission & Despatch Company (NTDC) in Pakistan, from the copy on
+    Zenodo of a dataset published on Kaggle under the CC0 license. The
+    data is retrieved all at once, from a single CSV file.
 
     The dataset has not been on Kaggle since October 2026 at the
     latest: the Wayback Machine keeps its page of 2026-08-04, and Zenodo
@@ -205,8 +204,8 @@ def get_available_requests(
     """
     Get the available requests.
 
-    The data is downloaded at once from a single file, so there is a
-    single request, without parameters.
+    The data is retrieved all at once, so there is a single request,
+    without parameters.
 
     Parameters
     ----------
@@ -227,7 +226,7 @@ def get_available_requests(
 
 def get_url() -> str:
     """
-    Get the URL of the electricity demand data for Pakistan.
+    Get the URL of the electricity demand data on Zenodo.
 
     Returns
     -------
@@ -294,7 +293,6 @@ def download_and_extract_data_for_request(
         load_by_hour[~load_by_hour.index.duplicated()].sort_index()
     )
 
-    # Move the times to the ends of the hours, in local time.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

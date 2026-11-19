@@ -11,13 +11,13 @@ The scripts are in the `demandcast/` folder and run from it, with `uv run <scrip
 | Script | What it does | Reads | Writes |
 |---|---|---|---|
 | `retrieve.py` | Downloads a variable: the electricity demand of a data source, which it then cleans and combines, the population, GDP PPP per capita and annual electricity demand per capita, their gridded data, the gridded weather and the temperature | The data sources | The folder of the variable |
-| `check.py` | Checks the data availability, the data sources over the network, or gathers the flags of the cleaned electricity demand into a report | The data folder, the data sources | `results/checks/`, and the summary of the data availability in the `checks/` folder of the code, which tells the other scripts which codes have all the data |
+| `check.py` | Checks the data availability, the data sources over the network, gathers the flags of the cleaned electricity demand into a report, or computes the related entities: the countries and subdivisions whose shapes overlap, with the share of the people of each in the shared area | The data folder, the data sources | `results/checks/`. In the `checks/` folder of the code: the summary of the data availability, which tells the other scripts which codes have all the data, and the shares of the related entities (`related_entities.csv`), which the splits of the training and the cross-validation read |
 | `assemble.py` | Assembles the variables of each country and subdivision into one dataset, for training or forecasting | The folders of the variables | `assembled/` |
 | `train.py` | Trains a model | `assembled/` | `models/<algorithm>/` |
 | `validate.py` | Validates a model on the most recent year of each country and subdivision | `assembled/`, `models/` | `results/validation/` |
 | `cross_validate.py` | Validates a model on the countries and subdivisions left out of its training | `assembled/` | `results/cross_validation/` |
 | `forecast.py` | Forecasts the hourly electricity demand with a trained model | `assembled/`, `models/` | `results/forecasts/` |
-| `plot.py` | Draws the figures of the data availability and of the results of the models | The data folder | `results/figures/` |
+| `plot.py` | Draws the figure of the data availability, the map of the countries and subdivisions with data, the figures of the results of the models, or the figures and numbers of the current state | The data folder | `results/figures/`, and with `figure: status` the README and `webpage/docs/status/` |
 | `sync.py` | Copies the data folder to or from a private bucket of Google Cloud Storage, without overwriting or deleting files | The data folder or the bucket | The bucket or the data folder |
 | `publish.py` | Uploads a release, the trained model, its settings and its forecasts, to Zenodo as a draft | The files of the release | A draft version of the Zenodo record |
 
@@ -30,11 +30,11 @@ demandcast/                         # the repository
 ├── .github/                        # GitHub workflows and templates
 ├── demandcast/                     # the Python project
 │   ├── benchmark/                  # Configuration and runner of the data of the benchmark of the models
-│   ├── checks/                     # Checks of the data availability, the data sources and the flags
+│   ├── checks/                     # Checks of the data availability, the data sources, the flags and the related entities
 │   ├── cleaning/                   # Cleaning, flags and combination of the electricity demand
 │   ├── config/                     # Configuration files of the scripts and lists of countries and subdivisions
 │   ├── data/                       # Data, models, results and logs written by the scripts (not in the repository)
-│   ├── figures/                    # Figures of the data availability and of the results of the models
+│   ├── figures/                    # Figures of the data availability, the map of the data, the results of the models and the current state
 │   ├── ml_models/                  # Machine learning models, their registry, data preparation and evaluation
 │   ├── publishing/                 # Copies to and from Google Cloud Storage, and releases on Zenodo
 │   ├── retrievals/                 # Retrieval of each variable, and the modules and YAML files of the data sources
@@ -58,7 +58,7 @@ The API keys go in `demandcast/.env`, which is not in the repository (see [getti
 
 ## Data folder
 
-Everything that the scripts write is in the data folder: `demandcast/data/`, or the folder named by the environment variable `DEMANDCAST_DATA_FOLDER`, except two summaries that are part of the repository and that they update on purpose: `check.py` writes the summary of the data availability in `demandcast/checks/`, and `plot.py` with `figure: status` the numbers and figures of the current state in the README and `webpage/docs/status/`. The source inputs in the code, such as the files downloaded by hand next to the retrieval modules, are only read. Each dataset has its own folder, with its stages:
+Everything that the scripts write is in the data folder: `demandcast/data/`, or the folder named by the environment variable `DEMANDCAST_DATA_FOLDER`, except the files that are part of the repository and that they update on purpose: `check.py` writes the summary of the data availability and the shares of the related entities in `demandcast/checks/`, and `plot.py` with `figure: status` the numbers and figures of the current state in the README and `webpage/docs/status/`. The source inputs in the code, such as the files downloaded by hand next to the retrieval modules, are only read. Each dataset has its own folder, with its stages:
 
 ```
 data/

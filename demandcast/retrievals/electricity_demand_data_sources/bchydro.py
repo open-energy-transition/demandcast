@@ -3,11 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the British Columbia Hydro and Power
-    Authority (BC Hydro) in Canada. The data is retrieved from the
-    yearly Excel files on the BC Hydro website, the file of the current
-    year running until the end of a recent month.
+    This module retrieves the electricity demand data from the website
+    of the British Columbia Hydro and Power Authority (BC Hydro) in
+    Canada. The data is retrieved from the yearly Excel files on the BC
+    Hydro website, the file of the current year running until the end
+    of a recent month.
 
     The files give the load of the balancing authority in MWh for each
     hour, the average load in MW, by date and hour ending in local time.
@@ -50,7 +50,7 @@ def get_available_requests(
     Returns
     -------
     list[int]
-        The list of available requests.
+        The years of the data.
     """
     return list(range(start_date.year, end_date.year + 1))
 
@@ -66,13 +66,13 @@ def get_url(year: int) -> str:
 
     Returns
     -------
-    url : str
+    str
         The URL of the electricity demand data.
 
     Raises
     ------
     ValueError
-        If the year is not implemented.
+        If the year has no file.
     """
     url = (
         "https://www.bchydro.com/content/dam/BCHydro/customer-portal/"
@@ -99,10 +99,10 @@ def get_url(year: int) -> str:
     return url
 
 
-# Format of the Excel files from each year until the next one, and the
-# last one also for the later years: the number of rows to skip, the
-# header, the index columns, and the column of the electricity demand
-# data.
+# The format of the Excel files from each year until the next one, and
+# the last one also for the later years: the number of rows to skip,
+# the header, the index columns, and the column of the electricity
+# demand data.
 _EXCEL_FORMATS: dict[
     int, tuple[int, int | None, tuple[str | int, ...], tuple[str | int, ...]]
 ] = {
@@ -187,8 +187,8 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         },
     )
 
-    # Extract the first and last time steps of the electricity
-    # demand time series.
+    # The ends of the first and last hours, from their dates and hours
+    # ending, which go up to 24.
     first_time_step = pd.to_datetime(
         str(dataset[index_columns[0]].iloc[0])
         + " "

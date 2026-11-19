@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module is used to download historical electricity demand per
-    capita data from Ember, in kWh, from the yearly electricity demand
-    of its API, which needs a free API key in EMBER_API_KEY.
+    This module downloads the historical electricity demand per capita
+    of the countries from Ember, in kWh, from the yearly electricity
+    demand of its API, which needs a free API key in EMBER_API_KEY.
 
     Source: https://ember-energy.org/data/yearly-electricity-data/
     API: https://api.ember-energy.org/v1/docs
@@ -46,8 +46,6 @@ def download_electricity_demand_per_capita() -> pd.DataFrame:
     )
     records = pd.DataFrame(response.json()["data"])
 
-    # Pivot the table to have years as columns and country codes as
-    # index.
     electricity_demand_per_capita = records.pivot_table(
         index="entity_code", columns="date", values="demand_kwh_per_capita"
     )

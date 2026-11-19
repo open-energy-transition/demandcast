@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module contains functions to train and save an LSTM model
-    for electricity demand forecasting, wrapped in ``LSTMRegressor``, an
-    sklearn estimator.
+    This module trains, saves and loads an LSTM model that forecasts
+    the electricity demand, wrapped in ``LSTMRegressor``, an sklearn
+    estimator.
 
     Sequence construction respects entity boundaries and time gaps:
     rows from different entities (identified by the ``"group"`` column
@@ -39,7 +39,7 @@ from typing import cast, overload
 
 # isort: off
 # torch must be imported before pandas — pandas side-effects corrupt
-# the Windows DLL loader state for torch's c10.dll initialisation.
+# the Windows DLL loader state for torch's c10.dll initialization.
 import ml_models.torch_windows
 
 ml_models.torch_windows.enable_torch_dll_directory()
@@ -65,10 +65,6 @@ CYCLICAL_FEATURES = {
     "Local hour of the day": (24, 0),
     "Local month of the year": (12, 1),
 }
-
-# ----------------------------------------------------------------------
-# Private PyTorch network
-# ----------------------------------------------------------------------
 
 
 class _LSTMNet(nn.Module):
@@ -101,8 +97,7 @@ class _LSTMNet(nn.Module):
             hidden_size=n_units,
             num_layers=n_layers,
             batch_first=True,
-            # Dropout is applied between layers only; ignored for
-            # single-layer networks.
+            # PyTorch applies dropout only between layers.
             dropout=dropout if n_layers > 1 else 0.0,
         )
         self.fc = nn.Linear(n_units, 1)
@@ -125,18 +120,13 @@ class _LSTMNet(nn.Module):
         return self.fc(out[:, -1, :]).squeeze(-1)
 
 
-# ----------------------------------------------------------------------
-# sklearn-compatible wrapper
-# ----------------------------------------------------------------------
-
-
 class LSTMRegressor(BaseEstimator, RegressorMixin):
     """
-    LSTM regressor with an sklearn-compatible interface.
+    LSTM regressor with the interface of an sklearn estimator.
 
-    Uses a PyTorch ``nn.LSTM`` backend. Compatible with
-    ``sklearn.model_selection.cross_validate`` and
-    ``LeaveOneGroupOut``.
+    The network is a PyTorch ``nn.LSTM``. ``BaseEstimator`` gives the
+    regressor ``get_params`` and ``set_params``, and ``RegressorMixin``
+    gives it ``score``.
 
     Parameters
     ----------
@@ -156,7 +146,7 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
     batch_size : int
         Mini-batch size used for training and inference.
     learning_rate : float
-        Adam optimiser learning rate.
+        Adam optimizer learning rate.
     random_state : int
         Seed passed to ``torch.manual_seed`` for reproducibility.
     """
@@ -181,10 +171,6 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.random_state = random_state
-
-    # ------------------------------------------------------------------
-    # Sequence construction
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _get_run_starts(
@@ -338,10 +324,6 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
             self.dropout,
         )
 
-    # ------------------------------------------------------------------
-    # sklearn estimator interface
-    # ------------------------------------------------------------------
-
     def fit(
         self,
         X: pd.DataFrame | np.ndarray,
@@ -460,13 +442,6 @@ class LSTMRegressor(BaseEstimator, RegressorMixin):
                 parts.append(self.net_(batch).numpy())
         return np.concatenate(parts).flatten()
 
-    # get_params() and set_params() are inherited from BaseEstimator.
-
-
-# ----------------------------------------------------------------------
-# Module-level API (see ml_models/registry.py)
-# ----------------------------------------------------------------------
-
 
 class ConfigModel(utils.config.StrictSettings):
     """Settings of the LSTM model."""
@@ -553,7 +528,7 @@ def save(lstm_model: LSTMRegressor, file_path: str) -> None:
     Parameters
     ----------
     lstm_model : LSTMRegressor
-        Fitted LSTM model to serialise.
+        Fitted LSTM model to serialize.
     file_path : str
         The path of the file, with the extension FILE_EXTENSION.
     """
@@ -578,7 +553,7 @@ def save(lstm_model: LSTMRegressor, file_path: str) -> None:
 
 def get_initialized_model(config: ConfigModel) -> LSTMRegressor:
     """
-    Return an LSTM model initialised from its settings.
+    Get an LSTM model initialized from its settings.
 
     Parameters
     ----------
@@ -601,7 +576,7 @@ def get_initialized_model(config: ConfigModel) -> LSTMRegressor:
         random_state=config.random_state,
     )
 
-    logging.info("LSTM model initialised with configuration.")
+    logging.info("LSTM model initialized with configuration.")
 
     return lstm_model
 
@@ -613,9 +588,10 @@ def train(
     """
     Train an LSTM model on the prepared dataset.
 
-    Only the ``"training"`` split is used to fit the model. Group
-    labels from ``prepared_dataset["training"]["group"]`` are passed
-    to ``fit()`` so that sequences never cross entity boundaries.
+    Only the ``"training"`` split is used to fit the model. The entity
+    codes (``"group"``) and the times (``"time"``) of the training rows
+    are passed to ``fit()`` so that the sequences never cross entity
+    boundaries or time gaps.
 
     Parameters
     ----------

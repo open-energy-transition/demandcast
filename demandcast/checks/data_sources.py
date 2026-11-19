@@ -106,7 +106,7 @@ def _download_sample(data_source: str, code: str, result: Result) -> pd.Series:
     The requests of a data source are in chronological order, so the
     last one is the latest. If it has no values, the one before is
     downloaded, and also if its data is not found, because the file of
-    the latest period can be not published yet.
+    the latest period may not be published yet.
 
     Parameters
     ----------
@@ -547,7 +547,6 @@ def run_check(
             maximum_age_days_by_source.get(data_source, maximum_age_days),
         )
 
-    # Check the data sources at the same time.
     _import_modules(
         [
             data_source
@@ -580,7 +579,6 @@ def run_check(
                 seconds=time_limit_minutes * 60,
             )
 
-    # Count the checks that each data source has failed in a row.
     previous_failures = _read_previous_failures()
     ordered_results = [results[data_source] for data_source in data_sources]
     for result in ordered_results:

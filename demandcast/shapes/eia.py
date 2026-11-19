@@ -286,7 +286,7 @@ def assign_regions(counties: geopandas.GeoDataFrame) -> pd.Series:
 
     Notes
     -----
-    The few counties without sales nor zone take the region of the
+    The few counties without sales or zone take the region of the
     nearest county of their state.
     """
     sales = sales_by_region(counties)

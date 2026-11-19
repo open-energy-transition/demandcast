@@ -3,10 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module includes functions to extract temperature data
-    downloaded from the Copernicus Climate Data Store (CDS) for the most
-    populous grid cells in a given country or subdivision. It calculates
-    the average temperature and saves the results into Parquet files.
+    This module extracts the hourly temperature of each country and
+    subdivision of interest in the most populous cells of its gridded
+    population: that of its most populous cell, and the mean of its
+    three most populous cells. It adds statistics of the year and the
+    local time, and saves them into Parquet files.
 
     The temperature of the reanalysis comes from one of three sources of
     the same ERA5 data (the reanalysis_source of retrieve.py):
@@ -142,8 +143,6 @@ def _load_gridded_temperature_data(
         for y in years_of_interest
     ]
 
-    # Download the temperature data if it does not exist, or if the
-    # reanalysis data may have been updated since.
     for file_path, y in zip(
         temperature_data_file_paths, years_of_interest, strict=True
     ):
@@ -151,8 +150,6 @@ def _load_gridded_temperature_data(
             file_path, y, climate_model, climate_scenario
         ):
             continue
-        # Download the gridded temperature data: the reanalysis of the
-        # year, even the current one, or the projections.
         if climate_model is None:
             retrievals.gridded_weather.retrieve_reanalysis(
                 code, y, "temperature", source
@@ -172,7 +169,6 @@ def _load_gridded_temperature_data(
 
     dataset = xarray.open_mfdataset(temperature_data_file_paths)
 
-    # Extract the temperature variable.
     if "t2m" in dataset:
         temperature_data = dataset["t2m"]
     elif "tas" in dataset:
@@ -392,7 +388,9 @@ def _get_temperature_in_most_populous_cells(
     Get the temperature data for the most populous grid cells.
 
     The temperature is averaged over the most populous grid cells, for
-    the given year in local time.
+    the given year in local time. It comes from the series of the
+    points of ERA5 for the reanalysis source "points", and otherwise
+    from the grids.
 
     Parameters
     ----------
@@ -419,8 +417,6 @@ def _get_temperature_in_most_populous_cells(
     list[pandas.Series]
         Temperature data for each number of most populous grid cells.
     """
-    # Load the gridded temperature data, unless the reanalysis comes
-    # from the series of points.
     temperature_data = None
     if climate_model is not None or reanalysis_source != "points":
         temperature_data = _load_gridded_temperature_data(
@@ -432,11 +428,9 @@ def _get_temperature_in_most_populous_cells(
             "cds" if climate_model is not None else reanalysis_source,
         )
 
-    # Harmonize the time coordinate of the temperature data.
     if temperature_data is None:
         pass
     elif climate_model is None:
-        # Reanalysis data has a time coordinate named "valid_time".
         temperature_data = temperature_data.rename({"valid_time": "time"})
     else:
         # Climate models use different calendars, such as one without
@@ -571,15 +565,11 @@ def _build_temperature_database(
         ascending=False
     )
 
-    # Map the monthly average temperature to the original temperature
-    # time series.
     monthly_average_temperature = local_time.month.map(
         monthly_average_temperature.to_dict()
     ).to_series()
     monthly_average_temperature.index = temperature_time_series_top_1.index
 
-    # Map the monthly average temperature rank to the original
-    # temperature time series.
     monthly_average_temperature_rank = local_time.month.map(
         monthly_average_temperature_rank.to_dict()
     ).to_series()
@@ -601,8 +591,6 @@ def _build_temperature_database(
         index=temperature_time_series_top_1.index,
     )
 
-    # Add the hour of the day, day of the week, month of the year, and
-    # year to the DataFrame.
     temperature_database["Local hour of the day"] = local_time.hour
     temperature_database["Local weekend indicator"] = (
         local_time.day_of_week >= 5
@@ -610,7 +598,6 @@ def _build_temperature_database(
     temperature_database["Local month of the year"] = local_time.month
     temperature_database[utils.columns.LOCAL_YEAR] = local_time.year
 
-    # Add the temperature statistics to the temperature time series.
     temperature_database["Temperature - Top 1 (K)"] = (
         temperature_time_series_top_1.to_numpy()
     )
@@ -754,9 +741,6 @@ def run_data_retrieval(
                 ),
             )
 
-            # Extract the temperature time series if it does not exist,
-            # if it was made by another processing, or if the reanalysis
-            # data may have been updated since.
             if (
                 not os.path.exists(file_path_without_ext + ".parquet")
                 or not has_current_processing(
@@ -791,7 +775,6 @@ def run_data_retrieval(
                     entity_time_zone,
                 )
 
-                # Save the temperature time series, with its processing.
                 temperature_database.attrs[PROCESSING_KEY] = {
                     "version": PROCESSING_VERSION,
                     "reanalysis_source": None

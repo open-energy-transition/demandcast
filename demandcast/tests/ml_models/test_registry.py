@@ -92,7 +92,7 @@ def test_model_module(model_module):
         model_module.__name__.rsplit(".", 1)[-1]
     )
 
-    # The initialised model is not trained yet.
+    # The initialized model is not trained yet.
     with pytest.raises(NotFittedError):
         check_is_fitted(model_module.get_initialized_model(config))
 

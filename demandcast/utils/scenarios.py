@@ -62,7 +62,11 @@ def _get_years(
     available_years: list[int],
 ) -> list[int]:
     """
-    Get the list of years based on the input parameters.
+    Get the years of the data to download.
+
+    The years are the given year, or the available years from the
+    start year to the end year, both included, or all the available
+    years if no year is given.
 
     Parameters
     ----------
@@ -85,7 +89,14 @@ def _get_years(
     Raises
     ------
     ValueError
-        If the input parameters are not valid.
+        If the year is given with a start or end year, if the year is
+        not available, if only one of the start and end years is given,
+        or if the start year is after the end year.
+
+    Notes
+    -----
+    A start or end year that is not available only gives a warning:
+    the range keeps the available years within it.
     """
     if year is not None:
         if start_year is not None or end_year is not None:
@@ -126,7 +137,10 @@ def _get_scenarios(
     available_scenarios: list[str],
 ) -> list[str]:
     """
-    Get the list of scenarios based on the input parameters.
+    Get the scenarios of the data to download.
+
+    The scenarios are the given one, or all the available ones, in
+    uppercase.
 
     Parameters
     ----------
@@ -143,7 +157,7 @@ def _get_scenarios(
     Raises
     ------
     ValueError
-        If the input parameters are not valid.
+        If the scenario is not available.
     """
     available_scenarios = _normalize_scenarios(available_scenarios)
 
@@ -166,7 +180,10 @@ def _get_scenarios_for_model(
     available_scenarios_for_model: dict[str, list[str]],
 ) -> dict[str, list[str]]:
     """
-    Get the list of scenarios for the specified model.
+    Get the scenarios of each climate model of the data to download.
+
+    The models are the given one, or all the available ones, each with
+    the given scenario, or all its available ones, in uppercase.
 
     Parameters
     ----------
@@ -186,7 +203,8 @@ def _get_scenarios_for_model(
     Raises
     ------
     ValueError
-        If the input parameters are not valid.
+        If the model is not available, or the scenario is not available
+        for one of the selected models.
     """
     scenarios_for_model = _normalize_scenarios_for_model(
         available_scenarios_for_model
@@ -226,6 +244,10 @@ def get_year_and_scenario_combinations(
     """
     Get the list of years and scenario combinations.
 
+    A historical year has no scenario, and a future year comes with
+    each scenario. A year that is both comes once without a scenario
+    and once with each scenario.
+
     Parameters
     ----------
     year : int | None
@@ -264,8 +286,6 @@ def get_year_and_scenario_combinations(
             selected_year in available_historical_years
             and selected_year in available_future_years
         ):
-            # If the year is both historical and future, include both
-            # options.
             year_scenario_list.append((selected_year, None))
             year_scenario_list.extend(
                 (selected_year, scenario) for scenario in scenarios
@@ -292,6 +312,10 @@ def get_year_model_and_scenario_combinations(
 ) -> list[tuple[int, str | None, str | None]]:
     """
     Get the list of years, model, and scenario combinations.
+
+    A historical year has no model and no scenario, and a future year
+    comes with each scenario of each model. A year that is both comes
+    once without them and once with each of them.
 
     Parameters
     ----------
@@ -338,8 +362,6 @@ def get_year_model_and_scenario_combinations(
             selected_year in available_historical_years
             and selected_year in available_future_years
         ):
-            # If the year is both historical and future, include both
-            # options.
             year_model_scenario_list.append((selected_year, None, None))
             for (
                 model_key,
@@ -445,7 +467,7 @@ def get_years_and_scenarios(
     Parameters
     ----------
     iso_alpha_3_code : str
-        The ISO Alpha-3 code of the country.
+        The code of the country or subdivision.
     year : int | None
         The specific year for which the data is to be downloaded.
     start_year : int | None
@@ -459,7 +481,8 @@ def get_years_and_scenarios(
     available_scenarios : list[str]
         The list of available scenarios for the data retrieval.
     global_historical_data : pandas.DataFrame
-        The global historical data.
+        The historical data, with a row for each code and a column for
+        each year.
     available_historical_years_of_gridded_data : list[int]
         The list of available historical years for the gridded data.
 
@@ -505,8 +528,6 @@ def get_years_and_scenarios(
             )
         )
 
-    # Get the years of available historical data, extended if needed,
-    # and the years of available future data.
     extended_available_historical_years = earlier_years + (
         _extend_historical_years(available_historical_years)
     )
@@ -528,7 +549,6 @@ def get_years_and_scenarios(
         available_years,
     )
 
-    # Get the list of requested and used historical years.
     requested_historical_years = [
         y
         for y in all_requested_years

@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the National Grid Corporation of the
-    Philippines (NGCP). The data is retrieved all at once.
+    This module retrieves the electricity demand data from the website
+    of the National Grid Corporation of the Philippines (NGCP). The data
+    is retrieved all at once.
 
     The Excel file gives the hourly demand in MW of each grid, in its
     own sheet, by date and hour ending from 1 to 24 in the time of the
@@ -68,7 +68,7 @@ def get_available_requests(
 
 def get_url() -> str:
     """
-    Get the URL of the electricity demand data for Philippines.
+    Get the URL of the electricity demand data on the NGCP website.
 
     Returns
     -------

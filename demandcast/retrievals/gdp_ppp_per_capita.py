@@ -3,12 +3,15 @@ License: AGPL-3.0.
 
 Description:
 
-    This module includes functions to download and extract historical
-    GDP PPP per capita data from the World Bank and the International
-    Monetary Fund (IMF), as well as to calculate future GDP PPP per
-    capita based on growth rates from the IAMC scenarios. The data is
-    extracted for specified countries and subdivisions and saved into
-    Parquet files.
+    This module saves the GDP PPP per capita of the countries and
+    subdivisions of interest into Parquet files, in constant 2021
+    international dollars. The historical values are the mean of the
+    World Bank and the International Monetary Fund (IMF). The future
+    values are the projections of the SSP scenarios of IIASA,
+    interpolated between their years. A subdivision has the GDP PPP per
+    capita of its country. A country without these data, and each of
+    its subdivisions, has the total of its own gridded GDP PPP divided
+    by that of its gridded population.
 """
 
 from typing import cast
@@ -27,7 +30,9 @@ def get_historical_data() -> pd.DataFrame:
     """
     Get the historical GDP PPP per capita data.
 
-    The data of the World Bank and of the IMF are merged.
+    The value of a country and year is the mean of the World Bank and
+    the IMF, or the value of the one that has it, until the year before
+    the current year.
 
     Returns
     -------
@@ -38,18 +43,14 @@ def get_historical_data() -> pd.DataFrame:
 
     imf_gdp_ppp_per_capita = imf.download_gdp_ppp_per_capita()
 
-    # Merge the two datasets by averaging them.
     gdp_ppp_per_capita = (
         world_bank_gdp_ppp_per_capita + imf_gdp_ppp_per_capita
     ) / 2
 
-    # Limit the data up to the year before the current year.
     gdp_ppp_per_capita = gdp_ppp_per_capita.loc[
         :, : pd.Timestamp.now().year - 1
     ]
 
-    # Where the combined DataFrame is NaN because one of the datasets is
-    # missing, use the other dataset.
     return gdp_ppp_per_capita.fillna(world_bank_gdp_ppp_per_capita).fillna(
         imf_gdp_ppp_per_capita
     )
@@ -128,10 +129,11 @@ def _extract_historical_gdp_ppp_per_capita(
     available_historical_years_of_gridded_data: list[int],
 ) -> pd.Series:
     """
-    Extract the historical GDP PPP per capita for a country.
+    Extract the historical GDP PPP per capita of a code.
 
-    The data comes from the global historical GDP PPP per capita data,
-    or else, for a country not in it, from the gridded data.
+    The data of a country or subdivision is that of its country in the
+    global historical GDP PPP per capita data, or else, for a country
+    not in it, that of its gridded data.
 
     Parameters
     ----------
@@ -169,9 +171,7 @@ def _extract_historical_gdp_ppp_per_capita(
             )
         )
 
-    # Map the requested historical years to the used (available)
-    # historical years. This is used when the requested years are not
-    # all available in the historical data.
+    # Each requested year takes the value of its used year.
     return (
         historical_gdp_ppp_per_capita.reindex(used_historical_years)
     ).set_axis(
@@ -189,10 +189,11 @@ def _extract_future_gdp_ppp_per_capita(
     scenario: str,
 ) -> pd.Series:
     """
-    Extract the future GDP PPP per capita for a country.
+    Extract the future GDP PPP per capita of a code.
 
-    The data comes from the global future GDP PPP per capita data, or
-    else, for a country not in it, from the gridded data.
+    The data of a country or subdivision is that of its country in the
+    global future GDP PPP per capita data, interpolated between its
+    years, or else, for a country not in it, that of its gridded data.
 
     Parameters
     ----------
@@ -292,8 +293,6 @@ def run_data_retrieval(
         retrievals.indicators.Request
             The request.
         """
-        # Get the ISO Alpha-3 code of the country itself or the country
-        # to which the subdivision belongs.
         iso_alpha_3_code = entity_code.split("_", maxsplit=1)[0]
         (
             requested_historical_years,

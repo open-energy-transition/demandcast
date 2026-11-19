@@ -212,7 +212,7 @@ def get_electricity_demand_file(
     Returns
     -------
     str
-        The path of the parquet file, named after the code, the data
+        The path of the Parquet file, named after the code, the data
         source and the table, in the folder of the stage.
     """
     name = code if data_source is None else f"{code}_{data_source}"

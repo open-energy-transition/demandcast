@@ -3,11 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Operador Nacional do Sistema Elétrico
-    (ONS) in Brazil. The data is retrieved from the CSV files of the
-    hourly load curve on the open data portal of ONS, one a year from
-    2000, under the CC BY license.
+    This module retrieves the electricity demand data from the website
+    of the Operador Nacional do Sistema Elétrico (ONS) in Brazil. The
+    data is retrieved from the CSV files of the hourly load curve on the
+    open data portal of ONS, one a year from 2000, under the CC BY
+    license.
 
     The files give the load of each subsystem (North, North-East,
     South-East/Centre-West and South) as the average power of each hour
@@ -150,7 +150,6 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         url, "csv", csv_kwargs={"sep": ";"}
     )
 
-    # Filter the dataset for the subdivision of interest.
     dataset = dataset[dataset["id_subsistema"] == subsystem]
 
     electricity_demand_time_series = pd.Series(

@@ -3,8 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This script assembles and preprocesses the retrieved data for
-    training the machine learning models or forecasting.
+    This script merges the retrieved data of the countries and
+    subdivisions into one dataset for training the machine learning
+    models or for forecasting, and saves it with a manifest. The inputs
+    are the rows of DATASETS: the annual indicators, the temperature
+    and, for training only, the combined electricity demand.
 
     Each row is an hour of an entity, at its end in UTC, with the mean
     electricity demand of the hour, the mean temperature of the hour,
@@ -336,9 +339,6 @@ def _load_data_for_entity(
             )
             continue
 
-        # Read the current parquet file, without the hours of the
-        # electricity demand that cannot be used for training, such as
-        # those of the errors of a data source.
         current_data = pd.read_parquet(file_path)
         if "Load (MW)" in numeric_columns and "Eligible" not in current_data:
             raise ValueError(
@@ -361,9 +361,8 @@ def _load_data_for_entity(
         entity_frames.append(current_data)
 
     if entity_frames:
-        # Concatenate all data for the entity, without the columns of
-        # text, such as the data source of each hour of the electricity
-        # demand, which cannot be averaged.
+        # The columns of text, such as the data source of each hour of
+        # the electricity demand, cannot be averaged.
         entity_data = pd.concat(entity_frames)
         entity_data = entity_data.drop(
             columns=entity_data.columns.difference(
@@ -378,7 +377,6 @@ def _load_data_for_entity(
             entity_data[column], errors="coerce"
         )
 
-    # Drop NaN values that may have resulted from coercion.
     entity_data = entity_data.dropna()
 
     entity_data = entity_data.resample(
@@ -880,7 +878,6 @@ def run_data_assemply(
             }
         }
 
-    # Tell what the dataset is for and how it was assembled.
     utils.manifest.write_manifest(
         output_path + ".parquet",
         "dataset",

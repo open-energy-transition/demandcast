@@ -3,6 +3,7 @@ License: AGPL-3.0.
 
 Description:
 
-    This package contains modules that handle the retrieval of data from
-    various sources.
+    This package retrieves the electricity demand, weather and
+    socio-economic data of the countries and subdivisions from their
+    public sources.
 """
