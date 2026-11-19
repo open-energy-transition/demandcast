@@ -17,7 +17,7 @@ Each step is a script in `demandcast/`, configured by `config/<script>_config.ya
 5. `plot.py` draws figures, and `check.py` checks the data availability and the data sources over the network, and gathers the flags of the cleaned electricity demand into a report.
 6. `sync.py` copies the data folder to or from a private bucket of Google Cloud Storage, never overwriting or deleting files, and `publish.py` uploads a release (trained model, settings, forecasts) to Zenodo as a draft; their code is in `publishing/`.
 
-Paths come from `utils/paths.py`; use its functions instead of hard-coding paths. The inputs that come with the code (configuration, shapes, data source YAMLs, flag reviews) stay in the code folder, and everything the scripts write goes under the data folder: `data/`, or the folder named by `DEMANDCAST_DATA_FOLDER`. Each dataset has its own folder there, with its stages (`raw/`, `processed/`, ...), next to `assembled/`, `models/<algorithm>/`, `results/` (validation, cross-validation, forecasts, figures, check reports) and `logs/`.
+Paths come from `utils/paths.py`; use its functions instead of hard-coding paths. Write files through `utils.files.writing`, which gives them their name only once complete, since several steps keep the files that exist. The inputs that come with the code (configuration, shapes, data source YAMLs, flag reviews) stay in the code folder, and everything the scripts write goes under the data folder: `data/`, or the folder named by `DEMANDCAST_DATA_FOLDER`. Each dataset has its own folder there, with its stages (`raw/`, `processed/`, ...), next to `assembled/`, `models/<algorithm>/`, `results/` (validation, cross-validation, forecasts, figures, check reports) and `logs/`.
 
 The assembled datasets, the trained models and the results have a manifest next to them (`<name>.manifest.json`, see `utils/manifest.py`), with the checksums of the file and of its inputs, the version of the code and the settings; the scripts check it before they use a file.
 
@@ -56,12 +56,12 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 
 - Ruff formatting and linting, with lines of at most 79 characters (72 for docstrings and comments), NumPy-style docstrings and type hints, checked by mypy. Import pandas, NumPy, Matplotlib and datetime as `pd`, `np`, `plt` and `dt`.
 - Docstrings follow PEP 257 and numpydoc. Each file starts with a descriptive, concise, clear and simple docstring (or comment, for files that are not Python) that states what the module does and the data behind it. The docstring of each function, class and test states what it does, with the reasons and data facts that apply only to it in a Notes section. Inline comments are only for lines a reader would otherwise misread, such as an unusual timeout or a deliberately hidden error, never to explain ordinary behaviour or to repeat a docstring. Comments, docstrings and documentation describe the current code, with no history of changes and no comparisons with other code: those belong in commit messages and pull requests.
-- Each script validates its YAML settings with a pydantic `ConfigModel`, a subclass of `utils.config.StrictSettings`, which rejects the settings that it does not have. Document new options in the YAML file and in `webpage/docs/`.
+- Each script validates its YAML settings with a pydantic `ConfigModel`, a subclass of `utils.config.StrictSettings`, which rejects the settings that it does not have. Document new options in the YAML file, marked `REQUIRED` or `OPTIONAL` as their default says, and in `webpage/docs/`: `tests/test_script_configs.py` checks both.
 - Data source modules return a `pandas.Series` of demand in MW with a time-zone-aware index; stored timestamps are in UTC.
 - Tests must not use the network: mock downloads (the `fake_downloads` fixture serves synthetic files to the functions of `utils.fetcher`) and write files to `tmp_path`. Mark the rare tests that need real downloaded data with `@pytest.mark.network`: the tests leave them out unless run with `-m network`, as the weekly live check does.
 - The code must also work on Windows: build paths with `os.path.join` or `pathlib`, also in tests.
 - Change dependencies in `pyproject.toml` and run `uv lock`; never edit `uv.lock` by hand.
-- `README.md` is short and links to the documentation site, whose home page, `webpage/docs/index.md`, has the full text; `webpage/docs/architecture.md` describes the scripts, the folders and the dependency rule: update it when they change.
+- `README.md` is short and links to the documentation site, whose home page, `webpage/docs/index.md`, has the full text. Its numbers of the data sources, also in `webpage/docs/status/numbers.md`, follow the YAML files of the data sources: a test gives the new ones when they change, such as with a new data source; `webpage/docs/architecture.md` describes the scripts, the folders and the dependency rule: update it when they change.
 - Never commit data files (`data/`, `*.parquet`, `*.csv`; the small synthetic fixtures of the tests are fine) or `.env` files, which hold the API keys and credentials (`CDS_API_KEY`, `ENTSOE_API_KEY`, `EIA_API_KEY`, `EPIAS_USERNAME`, `EPIAS_PASSWORD`, `ISONE_USERNAME`, `ISONE_PASSWORD`, `ZENODO_API_KEY`, `SANDBOX_ZENODO_API_KEY`).
 
 ## pandas 3 pitfalls
@@ -75,7 +75,7 @@ Run the tests and the pre-commit hooks before you finish: CI runs both.
 
 The interfaces of a data source (its module and YAML file) and of a model are described once, in [CONTRIBUTING.md](CONTRIBUTING.md#adding-an-electricity-demand-data-source); follow them, and:
 
-- keep the YAML file of a data source free of comments: explain the format of the data, its quirks and the entities left out in the docstring at the top of the module, and leave the dates of the data to the YAML file;
+- keep the YAML file of a data source free of comments (a test checks it, and that each data source has a test file): explain the format of the data, its quirks and the entities left out in the docstring at the top of the module, and leave the dates of the data to the YAML file;
 - use the helpers of `utils/` instead of copying their code, and follow `ons.py` or `hydroquebec.py`;
 - add a test that parses a small synthetic fixture of the source's files, served by the `fake_downloads` fixture;
 - make sure the source is in the Awesome Electricity Demand list, in `data/sources/<source>.yaml` with the same name, entities, years and terms of use, or say in the pull request that it needs to be added there;

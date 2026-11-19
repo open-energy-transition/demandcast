@@ -44,6 +44,7 @@ import utils.availability
 import utils.columns
 import utils.data_sources
 import utils.fetcher
+import utils.files
 import utils.paths
 import utils.raw_data
 import utils.time_series
@@ -619,7 +620,8 @@ def _save_data(
         "processed", code, data_source
     )
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    processed.to_parquet(file_path)
+    with utils.files.writing(file_path) as temporary_path:
+        processed.to_parquet(temporary_path)
 
 
 def run_data_retrieval(

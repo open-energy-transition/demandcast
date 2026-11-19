@@ -36,6 +36,7 @@ Description:
     the same.
 """
 
+import logging
 from typing import cast
 
 import numpy as np
@@ -138,9 +139,10 @@ def run_data_retrieval(
         """
         Get the years and scenarios of a country or subdivision.
 
-        A subdivision has the data of its country. The projections
-        start after the last historical year of the country, from its
-        value.
+        A subdivision has the data of its country. A year without data
+        between two years with data takes the value of the year before
+        it, with a warning. The projections start after the last
+        historical year of the country, from its value.
 
         Parameters
         ----------
@@ -156,12 +158,26 @@ def run_data_retrieval(
         # to which the subdivision belongs.
         iso_alpha_3_code = entity_code.split("_", maxsplit=1)[0]
 
-        historical_electricity_demand_per_capita = cast(
+        with_data = cast(
             pd.Series,
             global_historical_electricity_demand_per_capita.loc[
                 iso_alpha_3_code
             ],
         ).dropna()
+
+        historical_electricity_demand_per_capita = with_data.reindex(
+            range(int(with_data.index.min()), int(with_data.index.max()) + 1)
+        ).ffill()
+        gap_years = sorted(
+            set(historical_electricity_demand_per_capita.index)
+            - set(with_data.index)
+        )
+        if gap_years:
+            logging.warning(
+                "The annual electricity demand per capita of "
+                f"{iso_alpha_3_code} has no value in {gap_years}, which "
+                "take the value of the year before them with data."
+            )
 
         available_historical_years = (
             historical_electricity_demand_per_capita.index.tolist()

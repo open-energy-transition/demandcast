@@ -7,8 +7,9 @@
 check: data_sources
 
 # OPTIONAL.
-# The data sources to check. All of them if not specified.
-# data_sources: [ons, hydroquebec]
+# The data sources to check, such as [ons, hydroquebec]. All of them if
+# not given.
+data_sources:
 
 # OPTIONAL.
 # The days after which the latest value of a data source that ends today is

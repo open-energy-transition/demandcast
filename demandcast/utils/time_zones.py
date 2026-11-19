@@ -9,6 +9,7 @@ Description:
 """
 
 import datetime as dt
+import functools
 
 import pandas as pd
 import pytz
@@ -25,6 +26,19 @@ import utils.shapes
 CAPITAL_TIME_ZONES = {
     "BRA": "America/Sao_Paulo",
 }
+
+
+@functools.cache
+def _get_time_zone_finder() -> TimezoneFinder:
+    """
+    Get the finder of the time zones of coordinates.
+
+    Returns
+    -------
+    timezonefinder.TimezoneFinder
+        The finder, made once, since it loads its data when it is made.
+    """
+    return TimezoneFinder()
 
 
 def _get_time_zone_of_country(iso_alpha_3_code: str) -> dt.tzinfo:
@@ -80,7 +94,9 @@ def _get_time_zone_of_country(iso_alpha_3_code: str) -> dt.tzinfo:
                 location = None
 
             capital_time_zone = (
-                TimezoneFinder().timezone_at(lat=location[0], lng=location[1])
+                _get_time_zone_finder().timezone_at(
+                    lat=location[0], lng=location[1]
+                )
                 if location
                 else None
             )
@@ -271,7 +287,7 @@ def _get_time_zone_of_subdivision(code: str) -> dt.tzinfo:
             .iloc[0]
             .coords[0]
         )
-        time_zone_name = TimezoneFinder().timezone_at(
+        time_zone_name = _get_time_zone_finder().timezone_at(
             lat=centroid[1], lng=centroid[0]
         )
         if time_zone_name is None:

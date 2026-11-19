@@ -36,6 +36,7 @@ import requests
 import xarray
 
 import retrievals.gridded_weather
+import utils.files
 import utils.paths
 
 # The dataset of the time series of the CDS.
@@ -241,10 +242,9 @@ def get_point_series(
         latest = _download(variable, longitude, latitude, first_day)
         series = pd.concat([saved[saved.index < latest.index[0]], latest])
 
-    # Replace the file only once it is written.
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    series.to_frame().to_parquet(file_path + ".tmp.parquet")
-    os.replace(file_path + ".tmp.parquet", file_path)
+    with utils.files.writing(file_path) as temporary_path:
+        series.to_frame().to_parquet(temporary_path)
     return series
 
 

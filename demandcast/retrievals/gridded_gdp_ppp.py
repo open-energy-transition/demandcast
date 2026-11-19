@@ -14,6 +14,7 @@ Description:
 
 import logging
 import os
+import tempfile
 from io import BytesIO
 
 import py7zr
@@ -34,6 +35,12 @@ def _download_gdp_ppp(raw_directory: str) -> None:
     ----------
     raw_directory : str
         The directory where the global GDP PPP data will be saved.
+
+    Notes
+    -----
+    The archive is extracted into a temporary folder next to the
+    directory, whose folder "025d" becomes the directory once complete,
+    since the data is not downloaded again once the directory exists.
     """
     if not os.path.exists(raw_directory):
         logging.info("Downloading global gridded GDP PPP data from Zenodo.")
@@ -44,15 +51,15 @@ def _download_gdp_ppp(raw_directory: str) -> None:
 
         response.raise_for_status()
 
-        with py7zr.SevenZipFile(
-            BytesIO(response.content), mode="r"
-        ) as archive:
-            archive.extractall(path=os.path.dirname(raw_directory))
-
-        os.rename(
-            os.path.join(os.path.dirname(raw_directory), "025d"),
-            raw_directory,
-        )
+        os.makedirs(os.path.dirname(raw_directory), exist_ok=True)
+        with (
+            tempfile.TemporaryDirectory(
+                dir=os.path.dirname(raw_directory)
+            ) as temporary_folder,
+            py7zr.SevenZipFile(BytesIO(response.content), mode="r") as archive,
+        ):
+            archive.extractall(path=temporary_folder)
+            os.replace(os.path.join(temporary_folder, "025d"), raw_directory)
 
         logging.info(
             "Global gridded GDP PPP data has been downloaded successfully."
