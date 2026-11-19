@@ -355,10 +355,19 @@ def download_and_extract_data_for_request(
         return pd.Series(dtype=float)
 
     # Read the hours and minutes of the times, such as "00:30", "24:00"
-    # or time objects. The summary rows below the times have none.
+    # or time objects. The summary rows below the times have none. A
+    # "24:00" that Excel stores as a whole day reads as 1900-01-01.
     table = dataset.iloc[header_row + 1 :, [time_column, total_column]]
     hours_and_minutes = (
         table.iloc[:, 0]
+        .map(
+            lambda time: (
+                f"{24 + time.hour}:{time.minute:02d}"
+                if isinstance(time, dt.datetime)
+                and time.date() == dt.date(1900, 1, 1)
+                else time
+            )
+        )
         .astype(str)
         .str.strip()
         .str[:5]

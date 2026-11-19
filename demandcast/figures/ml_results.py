@@ -35,6 +35,7 @@ Description:
     entity_code and MAPE_test, so they are plotted with the MAPE.
 """
 
+import logging
 import os
 from typing import Literal, cast
 
@@ -289,27 +290,28 @@ def _read_errors(
     -------
     errors : pandas.DataFrame
         The errors of each country and subdivision, in percent, in a
-        column "<version>_<name>" for each version and results.
+        column "<version>_<name>" for each version and results, with
+        the codes of any of them.
     """
-    errors = pd.DataFrame()
-    errors[f"{version}_all"] = _read_testing_error(
-        results_directory, version, "all", metric, file_path
-    )
+    columns = {
+        f"{version}_all": _read_testing_error(
+            results_directory, version, "all", metric, file_path
+        )
+    }
 
     if compare_with_version is not None:
-        errors[f"{compare_with_version}_all"] = _read_testing_error(
+        columns[f"{compare_with_version}_all"] = _read_testing_error(
             results_directory, compare_with_version, "all", metric
         )
 
     if by_group:
         for case_groups in groups.values():
             for group in case_groups:
-                errors[f"{version}_{group}"] = _read_testing_error(
+                columns[f"{version}_{group}"] = _read_testing_error(
                     results_directory, version, group, metric
                 )
-    errors = errors * 100
 
-    return errors
+    return pd.concat(columns, axis=1) * 100
 
 
 def _add_box_and_bar_plot(
@@ -884,9 +886,17 @@ def _plot_comparison(
     Notes
     -----
     The two versions are told apart in the legend by the names of their
-    files.
+    files. Only the countries and subdivisions with an error in both
+    versions are compared, and the others are logged.
     """
-    mape_to_plot = mape.sort_values(by=f"{version}_all")
+    columns = [f"{version}_all", f"{compare_with_version}_all"]
+    left_out = mape.index[mape[columns].isna().any(axis=1)]
+    if len(left_out) > 0:
+        logging.warning(
+            f"The codes {sorted(left_out)} have no error in one of the "
+            "versions and are left out of the comparison."
+        )
+    mape_to_plot = mape[columns].dropna().sort_values(by=f"{version}_all")
 
     width = _get_figure_width(len(mape_to_plot))
     fig, axs = plt.subplots(

@@ -12,8 +12,8 @@ Description:
     of Thailand, and the exchanges with the neighbouring countries, in
     MW, in the time of Thailand, which has no daylight saving time. The
     demand is the sum of the regions. Each file starts at 00:05 of its
-    first day and ends with the first day of the next year, which is
-    the same in both files.
+    first day, taken as the hour of 00:00, and ends with the first day
+    of the next year, which is the same in both files.
 
     Source: https://zenodo.org/records/17109911
 """
@@ -108,7 +108,9 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
 
     electricity_demand_time_series = pd.Series(
         dataset["National Demand"].values,
-        index=pd.to_datetime(dataset["datetime"], format="%d/%m/%Y %H:%M"),
+        index=pd.to_datetime(
+            dataset["datetime"], format="%d/%m/%Y %H:%M"
+        ).dt.floor("h"),
     )
 
     electricity_demand_time_series = (

@@ -498,3 +498,20 @@ def test_plot_best_and_worst(tmp_path):
         ]
     )
     plt.close("all")
+
+
+def test_comparison_of_versions_with_other_codes(tmp_path, caplog):
+    """Test that only the codes of both versions are compared."""
+    errors = pd.DataFrame(
+        {"a_all": [1.0, 2.0, np.nan], "b_all": [1.5, np.nan, 3.0]},
+        index=["FRA", "DEU", "ITA"],
+    )
+
+    with patch.object(utils.figures, "save_figure"):
+        ml_results._plot_comparison(
+            str(tmp_path), "a", "b", errors, (("A", "a"), ("B", "b"))
+        )
+
+    bars = plt.gcf().axes[1]
+    assert [label.get_text() for label in bars.get_xticklabels()] == ["FRA"]
+    assert "['DEU', 'ITA']" in caplog.text

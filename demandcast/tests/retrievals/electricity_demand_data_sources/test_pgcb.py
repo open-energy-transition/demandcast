@@ -94,6 +94,16 @@ def _write_report(file_path, times_and_totals):
             ],
             {"2019-03-07 19:00": 6405.0, "2019-03-08 18:00": 6365.0},
         ),
+        # A "24:00" that Excel stores as a whole day reads as
+        # 1900-01-01.
+        (
+            [
+                (dt.time(0, 0), 6365.0),
+                (dt.time(1, 0), 6405.0),
+                (pd.Timestamp("1900-01-01"), 6380.0),
+            ],
+            {"2019-03-07 19:00": 6405.0, "2019-03-08 18:00": 6380.0},
+        ),
         # From 2025, the reports end at "23:00", with midnight at
         # "00:00".
         (
