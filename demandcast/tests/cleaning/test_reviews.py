@@ -38,6 +38,38 @@ def test_reviews_of_the_repository():
         assert review.code in codes
 
 
+def test_order_of_the_reviews_of_the_repository():
+    """
+    Test that a review of the repository comes before those it narrows.
+
+    Notes
+    -----
+    A flagged period takes the first review that matches it, so two
+    reviews of the same period with different verdicts are right only
+    if the first reviews fewer periods than the second, as a review of
+    some periods before a review of all the periods of the flag.
+    """
+    reviews = cleaning.reviews.read_reviews()
+
+    for index, first in enumerate(reviews):
+        for second in reviews[index + 1 :]:
+            if (first.data_source, first.code, first.flag) != (
+                second.data_source,
+                second.code,
+                second.flag,
+            ) or first.verdict == second.verdict:
+                continue
+            if first.periods is None:
+                narrower = False
+            elif second.periods is None:
+                narrower = True
+            elif set(first.periods).isdisjoint(second.periods):
+                continue
+            else:
+                narrower = set(first.periods) < set(second.periods)
+            assert narrower, (first, second)
+
+
 def test_review_with_a_misspelt_field():
     """Test that a misspelt field of a review is an error."""
     with pytest.raises(ValueError, match="period"):

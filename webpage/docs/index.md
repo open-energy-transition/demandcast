@@ -20,7 +20,7 @@
 
 ## About
 
-DemandCast is a Python-based project focused on collecting, processing, and forecasting hourly electricity demand data. The aim of this project is to support energy planning studies by using machine learning models to generate hourly time series of future electricity demand or for countries without available data.
+DemandCast collects hourly electricity demand, weather and socio-economic data from public sources, cleans and combines the electricity demand, and trains machine learning models that generate hourly time series of electricity demand for future years, or for countries and subdivisions without data, to support energy planning studies.
 
 DemandCast models the **gross electricity demand**: the electricity consumed, whatever generation supplies it, including the part that rooftop solar and other generation embedded in the distribution networks supply. Energy system models can then represent that generation explicitly, without counting it twice. Where a data source leaves it out, DemandCast adds an estimate of it when one is published, and flags the series otherwise (see [Data Retrieval](retrieval.md#gross-demand)).
 
@@ -32,7 +32,7 @@ DemandCast models the **gross electricity demand**: the electricity consumed, wh
 - Training and validation of machine learning models.
 - Forecasting using trained machine learning models.
 - Modular design for adding new countries or data sources.
-- Support for reproducible, containerized development.
+- A [Docker image](Dockerfile.md), published for each release, for reproducible runs.
 
 #### Feature roadmap
 
@@ -104,13 +104,22 @@ The retrieved data is not redistributed, since the licences of many data sources
 
 ## Dataset of global forecasts
 
-Forecasted hourly electricity demand for 184 countries from 2000 to 2024 is available in this [Zenodo repository](https://doi.org/10.5281/zenodo.18374351).
+The trained model and the forecasted hourly electricity demand of 184 countries and 135 subdivisions from 2000 to 2025 are available in this [Zenodo repository](https://doi.org/10.5281/zenodo.18374351).
 
 Forecasts for future years, including different climate models and scenarios, will be included in a future release. However, DemandCast is already capable of generating these forecasts for users who wish to produce them independently.
 
 ## Getting started
 
-The [getting started guide](getting_started.md) installs DemandCast and goes from the retrieval of the data to a forecast. To change the code, add a data source or a model, see the [contributing guidelines](https://github.com/open-energy-transition/demandcast/blob/main/CONTRIBUTING.md).
+With [uv](https://docs.astral.sh/uv/getting-started/installation/) installed:
+
+```bash
+git clone https://github.com/open-energy-transition/demandcast.git
+cd demandcast/demandcast
+uv sync
+uv run retrieve.py  # the settings are in config/retrieve_config.yaml
+```
+
+Some data sources need API keys. The [getting started guide](getting_started.md) installs DemandCast, sets up the API keys and goes from the retrieval of the data to a forecast. To change the code, add a data source or a model, see the [contributing guidelines](https://github.com/open-energy-transition/demandcast/blob/main/CONTRIBUTING.md).
 
 ## Citation
 

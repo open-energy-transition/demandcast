@@ -71,7 +71,7 @@ def checks_folder(monkeypatch, tmp_path):
             "  - data_source: aemo_nem\n"
             "    code: AUS_SA1\n"
             "    flag: midday_dip\n"
-            "    periods: [DJF 2024]\n"
+            "    periods: [DJF 2024, DFJ 2024]\n"
             "    verdict: net_demand\n"
             "    note: Rooftop solar.\n"
             "  - data_source: ntdc\n"
@@ -132,8 +132,17 @@ def test_run_check():
         "| ccei | CAN_NL | daylight_saving | 2024-11-03, 2025-03-09 "
         "| source_error | Wrong times in UTC. |"
     ) in report
-    # The review of NTDC matches no flag.
-    assert "| ntdc | PAK | time_lag | source_error |" in report
+    # The reviews of NTDC and of the combined AUS_SA1 match no flag, and
+    # a misspelled period of that of AEMO NEM matches none either.
+    without_flags = report.split("## Reviews without flags")[1].split(
+        "## Combined series"
+    )[0]
+    assert without_flags.count("\n| ") == 4
+    assert "| ntdc | PAK | time_lag | All | source_error |" in without_flags
+    assert "| combined | AUS_SA1 | time_lag | All |" in without_flags
+    assert (
+        "| aemo_nem | AUS_SA1 | midday_dip | DFJ 2024 | net_demand |"
+    ) in without_flags
 
 
 @pytest.mark.usefixtures("checks_folder")

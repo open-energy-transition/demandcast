@@ -12,10 +12,10 @@ Description:
 
     The report, flags_report.csv and flags_report.md in the results of
     the checks (see utils/paths.py), lists the flags that have not been
-    reviewed, those that have, with their verdicts, and the reviews that
-    match no flag any more, such as those of the errors that have been
-    fixed, which can be removed. The combined flags have their own
-    section.
+    reviewed, those that have, with their verdicts, and the reviews, or
+    the periods of the reviews, that match no flag, such as those of the
+    errors that have been fixed, which can be removed, or misspelled
+    periods. The combined flags have their own section.
 """
 
 import datetime as dt
@@ -237,6 +237,59 @@ def _add_reviews(
     ]
 
 
+def _get_reviews_without_flags(
+    flags: pd.DataFrame, reviews: list[cleaning.reviews.Review]
+) -> list[tuple[cleaning.reviews.Review, list[str] | None]]:
+    """
+    Get the reviews, or the periods of the reviews, that match no flag.
+
+    Parameters
+    ----------
+    flags : pandas.DataFrame
+        The flags.
+    reviews : list[cleaning.reviews.Review]
+        The reviews.
+
+    Returns
+    -------
+    list[tuple[cleaning.reviews.Review, list[str] | None]]
+        Each review that matches no flag in some or all of its periods,
+        with those periods, or None for a review of all the periods of
+        a flag that the data source and the code do not have.
+
+    Notes
+    -----
+    A combined flag that takes the review of its main source has the
+    same flag in the same period as the main source, so the flags of
+    the main source alone tell whether the review matches.
+    """
+    flagged = set(
+        zip(
+            flags["data_source"].astype(str),
+            flags["code"].astype(str),
+            flags["flag"].astype(str),
+            flags["period"].astype(str),
+            strict=True,
+        )
+    )
+    keys = {flag[:3] for flag in flagged}
+    without_flags: list[tuple[cleaning.reviews.Review, list[str] | None]] = []
+    for review in reviews:
+        key = (review.data_source, review.code, review.flag)
+        if review.periods is None:
+            if key not in keys:
+                without_flags.append((review, None))
+            continue
+        periods = [
+            period
+            for period in review.periods
+            if (*key, period) not in flagged
+        ]
+        if periods:
+            without_flags.append((review, periods))
+    return without_flags
+
+
 def _table(rows: list[list[str]], header: list[str]) -> str:
     """
     Format rows as a Markdown table.
@@ -263,7 +316,7 @@ def _table(rows: list[list[str]], header: list[str]) -> str:
 
 def _format_report(
     flags: pd.DataFrame,
-    unmatched: list[cleaning.reviews.Review],
+    without_flags: list[tuple[cleaning.reviews.Review, list[str] | None]],
     checked_at: dt.datetime,
 ) -> str:
     """
@@ -273,8 +326,9 @@ def _format_report(
     ----------
     flags : pandas.DataFrame
         The flags, with their reviews.
-    unmatched : list[cleaning.reviews.Review]
-        The reviews that match no flag.
+    without_flags : list[tuple[Review, list[str] | None]]
+        The reviews that match no flag in some or all of their periods,
+        with those periods, or None for all the periods.
     checked_at : datetime.datetime
         The time of the report.
 
@@ -305,9 +359,15 @@ def _format_report(
         [*map(str, key[:3]), ", ".join(group["period"]), *map(str, key[3:])]
         for key, group in reviewed.groupby([*keys, "verdict", "note"])
     ]
-    unmatched_rows = [
-        [review.data_source, review.code, review.flag, review.verdict]
-        for review in unmatched
+    without_flags_rows = [
+        [
+            review.data_source,
+            review.code,
+            review.flag,
+            "All" if periods is None else ", ".join(periods),
+            review.verdict,
+        ]
+        for review, periods in without_flags
     ]
     series = flags[["data_source", "code"]].drop_duplicates().shape[0]
     return (
@@ -326,9 +386,14 @@ def _format_report(
             ["Data source", "Code", "Flag", "Periods", "Verdict", "Note"],
         )
         + "\n## Reviews without flags\n\n"
-        "These reviews match no flag any more, such as when the error has "
-        "been fixed, and can be removed.\n\n"
-        + _table(unmatched_rows, ["Data source", "Code", "Flag", "Verdict"])
+        "These reviews match no flag in the periods given (all those of "
+        "their flag for a review without periods): the error has been "
+        "fixed, and the review or the periods can be removed, or a period "
+        "is misspelled.\n\n"
+        + _table(
+            without_flags_rows,
+            ["Data source", "Code", "Flag", "Periods", "Verdict"],
+        )
         + _format_combined_report(combined)
     )
 
@@ -391,16 +456,7 @@ def run_check() -> pd.DataFrame:
     """
     reviews = cleaning.reviews.read_reviews()
     flags = _add_reviews(read_flags(), reviews)
-    unmatched = [
-        review
-        for review in reviews
-        if not any(
-            review.matches(*map(str, row))
-            for row in flags[
-                ["data_source", "code", "flag", "period"]
-            ].itertuples(index=False)
-        )
-    ]
+    without_flags = _get_reviews_without_flags(flags, reviews)
 
     checks_directory = utils.paths.get_results_folder("checks")
     os.makedirs(checks_directory, exist_ok=True)
@@ -412,11 +468,12 @@ def run_check() -> pd.DataFrame:
         utils.files.writing(file_path + ".md") as temporary_path,
         open(temporary_path, "w", encoding="utf-8") as file,
     ):
-        file.write(_format_report(flags, unmatched, checked_at))
+        file.write(_format_report(flags, without_flags, checked_at))
 
     logging.info(
         f"{len(flags)} flags, {(flags['verdict'] == '').sum()} not reviewed, "
-        f"and {len(unmatched)} reviews without flags. Report saved to "
+        f"and {len(without_flags)} reviews without flags in some or all of "
+        f"their periods. Report saved to "
         f"{file_path}.csv and {file_path}.md."
     )
     return flags
