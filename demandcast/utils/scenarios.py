@@ -392,6 +392,31 @@ def _extend_historical_years(available_years: list[int]) -> list[int]:
     return available_years + missing_years
 
 
+def _get_years_with_data(
+    global_historical_data: pd.DataFrame, code: str
+) -> list[int]:
+    """
+    Get the years with data of a country or subdivision.
+
+    Parameters
+    ----------
+    global_historical_data : pandas.DataFrame
+        The historical data, with a row for each code and a column for
+        each year.
+    code : str
+        The code of the country or subdivision.
+
+    Returns
+    -------
+    list[int]
+        The years whose value is not missing, in order.
+    """
+    return sorted(
+        int(year)
+        for year in pd.Series(global_historical_data.loc[code]).dropna().index
+    )
+
+
 def get_years_and_scenarios(
     iso_alpha_3_code: str,
     year: int | None,
@@ -408,7 +433,9 @@ def get_years_and_scenarios(
     The used historical years can differ from the requested ones: if the
     requested years of a country are 2020 to 2024, and its historical
     data ends in 2023, the used historical years are 2020 to 2023, and
-    2023 is used for 2024.
+    2023 is used for 2024. A year without data between two years with
+    data, such as a gap of the World Bank, uses the year before it with
+    data, with a warning.
 
     The historical years of a subdivision are those of the gridded data,
     and, if its country has historical data, also the years of the
@@ -443,39 +470,40 @@ def get_years_and_scenarios(
         - requested_historical_years: list[int]
             The list of requested historical years.
         - used_historical_years: list[int]
-            The list of used historical years (after interpolation if
-            needed).
+            The year whose data is used for each requested historical
+            year.
         - future_years: list[int]
             The list of future years.
         - scenarios: list[str]
             The list of scenarios.
     """
     if iso_alpha_3_code in global_historical_data.index:
-        national_historical_data = (
-            global_historical_data.loc[iso_alpha_3_code]
-        ).dropna()
-
-        available_historical_years = national_historical_data.index.tolist()
+        years_with_data = _get_years_with_data(
+            global_historical_data, iso_alpha_3_code
+        )
     else:
-        # Define the available years for historical data when
-        # interpolating from gridded data.
-        available_historical_years = list(
+        # Interpolate the years between those of the gridded data.
+        years_with_data = list(
             range(
                 available_historical_years_of_gridded_data[0],
                 available_historical_years_of_gridded_data[-1] + 1,
             )
         )
+    available_historical_years = list(
+        range(years_with_data[0], years_with_data[-1] + 1)
+    )
     country_code = iso_alpha_3_code.split("_", maxsplit=1)[0]
-    earlier_years = []
+    earlier_years: list[int] = []
     if (
         iso_alpha_3_code not in global_historical_data.index
         and country_code in global_historical_data.index
     ):
-        earlier_years = [
-            int(y)
-            for y in global_historical_data.loc[country_code].dropna().index
-            if int(y) < available_historical_years[0]
-        ]
+        earlier_years = list(
+            range(
+                _get_years_with_data(global_historical_data, country_code)[0],
+                available_historical_years[0],
+            )
+        )
 
     # Get the years of available historical data, extended if needed,
     # and the years of available future data.
@@ -507,13 +535,24 @@ def get_years_and_scenarios(
         if y in extended_available_historical_years
     ]
     used_historical_years = [
-        y
-        if y in available_historical_years
-        else available_historical_years[0]
-        if y < available_historical_years[0]
-        else available_historical_years[-1]
+        max(
+            (with_data for with_data in years_with_data if with_data <= y),
+            default=years_with_data[0],
+        )
         for y in requested_historical_years
     ]
+    gap_years = [
+        y
+        for y in requested_historical_years
+        if years_with_data[0] < y < years_with_data[-1]
+        and y not in years_with_data
+    ]
+    if gap_years:
+        logging.warning(
+            f"The historical data of {iso_alpha_3_code} has no value in "
+            f"{gap_years}, which take the value of the year before them "
+            "with data."
+        )
 
     future_years = [
         y for y in all_requested_years if y in available_future_years
