@@ -18,6 +18,7 @@ import pandas as pd
 import pytest
 
 import ml_models.files
+import utils.figures
 import utils.manifest
 import utils.paths
 from figures import ml_results
@@ -249,7 +250,7 @@ def test_plot_described_results(tmp_path, metric):
         }
     ).to_parquet(folder / "all_20261029_161733.parquet")
 
-    with patch.object(plt, "savefig"):
+    with patch.object(utils.figures, "save_figure"):
         ml_results.plot(
             str(tmp_path),
             "xgboost_model_1",
@@ -462,10 +463,10 @@ def test_plot_best_and_worst(tmp_path):
 
     saved = {}
     with patch.object(
-        plt,
-        "savefig",
-        side_effect=lambda path, **_: saved.update(
-            {os.path.basename(path): plt.gcf()}
+        utils.figures,
+        "save_figure",
+        side_effect=lambda fig, path, **_: saved.update(
+            {os.path.basename(path): fig}
         ),
     ):
         ml_results.plot(

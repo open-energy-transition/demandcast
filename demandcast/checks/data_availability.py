@@ -29,6 +29,7 @@ import yaml
 
 import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
+import utils.files
 import utils.paths
 import utils.shapes
 from retrievals.socio_economic_data_sources import iiasa, world_bank
@@ -297,4 +298,8 @@ def run_check() -> None:
     checks of the code, is an input of utils.availability, which reads
     the codes that have all the data from it.
     """
-    get_data_availability().to_csv(utils.paths.get_availability_summary_file())
+    data_availability = get_data_availability()
+    with utils.files.writing(
+        utils.paths.get_availability_summary_file()
+    ) as temporary_path:
+        data_availability.to_csv(temporary_path)

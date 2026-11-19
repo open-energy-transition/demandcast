@@ -33,6 +33,7 @@ import retrievals.annual_electricity_demand_per_capita
 import retrievals.gdp_ppp_per_capita
 import utils.codes
 import utils.data_sources
+import utils.figures
 
 # The levels of annual electricity demand per capita, in kWh.
 ELECTRICITY_DEMAND_LEVELS = {
@@ -715,13 +716,12 @@ def draw(data: FigureData, figure_directory: str) -> None:
         weight="bold",
     )
 
-    fig.savefig(
+    utils.figures.save_figure(
+        fig,
         os.path.join(
             figure_directory,
             "data_availability_by_gpd_ppp_and_electricity_demand.png",
         ),
-        dpi=300,
-        bbox_inches="tight",
     )
 
 

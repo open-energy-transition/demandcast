@@ -54,6 +54,7 @@ import utils.availability
 import utils.catalogue
 import utils.columns
 import utils.config
+import utils.files
 import utils.manifest
 import utils.paths
 import utils.public_holidays
@@ -864,13 +865,18 @@ def run_data_assemply(
     assembled_data = assembled_data.sort_values(
         [utils.columns.ENTITY_CODE, utils.columns.TIME], ignore_index=True
     )
-    assembled_data.to_parquet(output_path + ".parquet", index=False)
+    with utils.files.writing(output_path + ".parquet") as temporary_path:
+        assembled_data.to_parquet(temporary_path, index=False)
     if coverage is not None:
-        coverage.to_csv(output_path + "_coverage.csv", index=False)
+        with utils.files.writing(
+            output_path + "_coverage.csv"
+        ) as temporary_path:
+            coverage.to_csv(temporary_path, index=False)
     provenance_content = {}
     if provenance is not None:
         provenance_path = output_path + "_provenance.csv"
-        provenance.to_csv(provenance_path, index=False)
+        with utils.files.writing(provenance_path) as temporary_path:
+            provenance.to_csv(temporary_path, index=False)
         provenance_content = {
             "provenance": {
                 "file": os.path.basename(provenance_path),

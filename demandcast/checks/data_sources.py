@@ -29,6 +29,7 @@ import pandas as pd
 
 import utils.data_sources
 import utils.fetcher
+import utils.files
 import utils.paths
 import utils.time_series
 
@@ -422,7 +423,10 @@ def _write_report(results: list[Result], checked_at: dt.datetime) -> None:
     os.makedirs(checks_directory, exist_ok=True)
     file_path = os.path.join(checks_directory, REPORT_NAME)
 
-    with open(file_path + ".json", "w", encoding="utf-8") as file:
+    with (
+        utils.files.writing(file_path + ".json") as temporary_path,
+        open(temporary_path, "w", encoding="utf-8") as file,
+    ):
         json.dump(
             {
                 "checked_at": checked_at.isoformat(timespec="seconds"),
@@ -433,7 +437,10 @@ def _write_report(results: list[Result], checked_at: dt.datetime) -> None:
         )
         file.write("\n")
 
-    with open(file_path + ".md", "w", encoding="utf-8") as file:
+    with (
+        utils.files.writing(file_path + ".md") as temporary_path,
+        open(temporary_path, "w", encoding="utf-8") as file,
+    ):
         file.write(_format_report(results, checked_at))
 
     logging.info(f"Report saved to {file_path}.json and {file_path}.md.")

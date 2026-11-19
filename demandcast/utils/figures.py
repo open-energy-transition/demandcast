@@ -3,18 +3,48 @@ License: AGPL-3.0.
 
 Description:
 
-    This module draws a simple plot of a GeoDataFrame or an xarray
-    DataArray, such as the shape of a country or subdivision, and saves
-    it in the figures folder of the results.
+    This module saves the figures, and draws a simple plot of a
+    GeoDataFrame or an xarray DataArray, such as the shape of a country
+    or subdivision, in the figures folder of the results.
 """
 
 import os
+from typing import Any
 
 import geopandas
 import matplotlib.pyplot as plt
 import xarray
 
+import utils.files
 import utils.paths
+
+
+def save_figure(fig: plt.Figure, file_path: str, **kwargs: Any) -> None:
+    """
+    Save a figure at 300 dpi, cropped to its content.
+
+    Parameters
+    ----------
+    fig : matplotlib.figure.Figure
+        The figure.
+    file_path : str
+        The path of the file, whose extension gives its format.
+    **kwargs : Any
+        Other arguments of matplotlib.figure.Figure.savefig.
+
+    Notes
+    -----
+    The figure is written through utils.files.writing, whose temporary
+    name has no extension of an image, so the format is given.
+    """
+    with utils.files.writing(file_path) as temporary_path:
+        fig.savefig(
+            temporary_path,
+            format=os.path.splitext(file_path)[1][1:],
+            dpi=300,
+            bbox_inches="tight",
+            **kwargs,
+        )
 
 
 def simple_plot(
@@ -39,9 +69,5 @@ def simple_plot(
     fig, ax = plt.subplots()
     # xarray types the plot accessor in a way that mypy misreads.
     data_to_plot.plot(ax=ax)  # type: ignore[call-arg]
-    fig.savefig(
-        os.path.join(figure_directory, figure_name + ".png"),
-        dpi=300,
-        bbox_inches="tight",
-    )
+    save_figure(fig, os.path.join(figure_directory, figure_name + ".png"))
     plt.close(fig)

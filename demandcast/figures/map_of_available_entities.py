@@ -22,6 +22,7 @@ import matplotlib.colors
 import matplotlib.pyplot as plt
 
 import utils.data_sources
+import utils.figures
 import utils.shapes
 
 # The classes of the years of available data, with their upper bounds.
@@ -174,10 +175,9 @@ def plot(figure_directory: str) -> None:
         transform=ax.transAxes,
     )
 
-    fig.savefig(
+    utils.figures.save_figure(
+        fig,
         os.path.join(figure_directory, "available_entities_for_aed.png"),
-        dpi=300,
-        bbox_inches="tight",
     )
 
     url.set_visible(False)
@@ -193,16 +193,14 @@ def plot(figure_directory: str) -> None:
         weight="bold",
     )
 
-    fig.savefig(
+    utils.figures.save_figure(
+        fig,
         os.path.join(figure_directory, "available_entities.png"),
-        dpi=300,
-        bbox_inches="tight",
     )
 
-    fig.savefig(
+    utils.figures.save_figure(
+        fig,
         os.path.join(figure_directory, "available_entities_light_mode.png"),
-        dpi=300,
-        bbox_inches="tight",
         transparent=True,
     )
 
@@ -211,9 +209,8 @@ def plot(figure_directory: str) -> None:
         tick.set_color("white")
     cbar.ax.xaxis.label.set_color("white")
 
-    fig.savefig(
+    utils.figures.save_figure(
+        fig,
         os.path.join(figure_directory, "available_entities_dark_mode.png"),
-        dpi=300,
-        bbox_inches="tight",
         transparent=True,
     )

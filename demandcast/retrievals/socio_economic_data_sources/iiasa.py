@@ -24,6 +24,7 @@ import pycountry
 import yaml
 
 import utils.catalogue
+import utils.files
 import utils.paths
 
 
@@ -296,7 +297,10 @@ def read(variable: str) -> pd.DataFrame:
             os.makedirs(
                 os.path.dirname(gdp_ppp_per_capita_file_path), exist_ok=True
             )
-            iiasa_data.to_csv(gdp_ppp_per_capita_file_path, index=False)
+            with utils.files.writing(
+                gdp_ppp_per_capita_file_path
+            ) as temporary_path:
+                iiasa_data.to_csv(temporary_path, index=False)
         else:
             logging.info("Loading future GDP PPP per capita data from IIASA.")
             iiasa_data = pd.read_csv(gdp_ppp_per_capita_file_path)

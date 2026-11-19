@@ -100,6 +100,7 @@ import pandas as pd
 import cleaning.flags
 import cleaning.reviews
 import utils.data_sources
+import utils.files
 import utils.paths
 import utils.time_zones
 
@@ -804,16 +805,19 @@ def combine_data(code: str) -> pd.DataFrame | None:
 
     file_path = utils.paths.get_electricity_demand_file("combined", code)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    combined.to_parquet(file_path)
-    sources.to_parquet(
+    with utils.files.writing(file_path) as temporary_path:
+        combined.to_parquet(temporary_path)
+    with utils.files.writing(
         utils.paths.get_electricity_demand_file(
             "combined", code, table="sources"
         )
-    )
+    ) as temporary_path:
+        sources.to_parquet(temporary_path)
     cleaning.flags.flag_data(code)
     combined = _exclude_reviewed_hours(code, combined)
     combined.attrs[FINGERPRINT_KEY] = get_fingerprint(code)
-    combined.to_parquet(file_path)
+    with utils.files.writing(file_path) as temporary_path:
+        combined.to_parquet(temporary_path)
     for row in sources.itertuples():
         logging.info(
             f"Combined electricity demand of {code}: {row.data_source} "

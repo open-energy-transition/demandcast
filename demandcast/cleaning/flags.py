@@ -153,6 +153,7 @@ from typing import cast
 import numpy as np
 import pandas as pd
 
+import utils.files
 import utils.paths
 import utils.shapes
 import utils.time_zones
@@ -908,7 +909,8 @@ def flag_data(code: str, data_source: str | None = None) -> pd.DataFrame:
         table="flags",
     )
     os.makedirs(os.path.dirname(flags_path), exist_ok=True)
-    flags.to_parquet(flags_path)
+    with utils.files.writing(flags_path) as temporary_path:
+        flags.to_parquet(temporary_path)
     for flag, periods in flags.groupby("flag")["period"]:
         logging.warning(
             f"The electricity demand of {code} from "

@@ -34,6 +34,7 @@ import figures.map_of_available_entities
 import figures.ml_results
 import ml_models.files
 import utils.data_sources
+import utils.files
 import utils.paths
 
 # The figures of the page, as figures.data_availability and
@@ -202,7 +203,10 @@ def update_readme(readme_file: str, text: str) -> None:
     readme = (
         readme[: start + len(STATUS_START)] + "\n" + text + "\n" + readme[end:]
     )
-    with open(readme_file, "w", encoding="utf-8") as file:
+    with (
+        utils.files.writing(readme_file) as temporary_path,
+        open(temporary_path, "w", encoding="utf-8") as file,
+    ):
         file.write(readme)
 
 
