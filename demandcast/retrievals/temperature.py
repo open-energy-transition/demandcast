@@ -35,7 +35,11 @@ Description:
     it gives for the same weather, such as the choice of the cells. A
     file of another version, or without one, is extracted again, from
     the weather already downloaded: the reanalysis is not downloaded
-    again, and neither are the projections.
+    again, and neither are the projections. The file also records the
+    fingerprint of the shape of its code, which decides the cells and
+    their weights (see retrievals.gridded.get_shape_fingerprint): a
+    file of another shape, or without one, is extracted again in the
+    same way, with the weather of the new cells downloaded if needed.
 """
 
 import datetime as dt
@@ -47,6 +51,7 @@ import pandas as pd
 import xarray
 
 import retrievals.era5_points
+import retrievals.gridded
 import retrievals.gridded_population
 import retrievals.gridded_weather
 import retrievals.runs
@@ -147,7 +152,7 @@ def _load_gridded_temperature_data(
         temperature_data_file_paths, years_of_interest, strict=True
     ):
         if not retrievals.gridded_weather.is_outdated(
-            file_path, y, climate_model, climate_scenario
+            file_path, y, climate_model, climate_scenario, code
         ):
             continue
         if climate_model is None:
@@ -191,7 +196,9 @@ def _load_gridded_population_data(
     Load the gridded population data.
 
     The population data is that of the year closest to the year of the
-    temperature data, downloaded if it is not available.
+    temperature data, downloaded if it is not available or not in the
+    bounds of the current shape of the code (see
+    retrievals.gridded.is_current).
 
     Parameters
     ----------
@@ -233,7 +240,7 @@ def _load_gridded_population_data(
         "population", code, int(population_year), population_scenario
     )
 
-    if not os.path.exists(population_data_file_path):
+    if not retrievals.gridded.is_current(population_data_file_path, code):
         retrievals.gridded_population.run_data_retrieval(
             code=code,
             file=None,
@@ -480,7 +487,7 @@ def _get_temperature_in_most_populous_cells(
     return temperatures
 
 
-def has_current_processing(file_path: str) -> bool:
+def has_current_processing(file_path: str, code: str) -> bool:
     """
     Check whether a temperature file was made by the current processing.
 
@@ -488,12 +495,16 @@ def has_current_processing(file_path: str) -> bool:
     ----------
     file_path : str
         The path of the Parquet file.
+    code : str
+        The code of the country or subdivision of the file.
 
     Returns
     -------
     bool
-        Whether the file records the current PROCESSING_VERSION, False
-        if it records another one, none, or cannot be read.
+        Whether the file records the current PROCESSING_VERSION and the
+        fingerprint of the current shape of the code (see
+        retrievals.gridded.get_shape_fingerprint), False if it records
+        others, none, or cannot be read.
     """
     try:
         # The attributes are read without the columns.
@@ -501,7 +512,11 @@ def has_current_processing(file_path: str) -> bool:
     except (OSError, ValueError):
         return False
     processing = attributes.get(PROCESSING_KEY) or {}
-    return processing.get("version") == PROCESSING_VERSION
+    shape = retrievals.gridded.get_shape_fingerprint(code)
+    return (
+        processing.get("version") == PROCESSING_VERSION
+        and processing.get("shape") == shape
+    )
 
 
 def _build_temperature_database(
@@ -744,7 +759,7 @@ def run_data_retrieval(
             if (
                 not os.path.exists(file_path_without_ext + ".parquet")
                 or not has_current_processing(
-                    file_path_without_ext + ".parquet"
+                    file_path_without_ext + ".parquet", entity_code
                 )
                 or retrievals.gridded_weather.is_outdated(
                     file_path_without_ext + ".parquet",
@@ -780,6 +795,9 @@ def run_data_retrieval(
                     "reanalysis_source": None
                     if selected_model
                     else reanalysis_source,
+                    "shape": retrievals.gridded.get_shape_fingerprint(
+                        entity_code
+                    ),
                 }
                 with utils.files.writing(
                     file_path_without_ext + ".parquet"

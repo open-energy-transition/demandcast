@@ -7,13 +7,28 @@ Description:
     share: the extraction of the grid of each country and subdivision
     from a global grid, and, for the gridded population and GDP, the
     loop over the years and scenarios of their global grids.
+
+    The grid of a country or subdivision covers the bounds of its shape
+    (see utils.shapes.get_entity_bounds), and records them in the
+    attribute BOUNDS_KEY of its NetCDF file. A grid whose bounds differ
+    from those of the current shape of its code, such as after a change
+    of the definition of a subdivision or of Natural Earth, or that
+    records none, is extracted again from the global grid. Only the
+    bounds decide what a grid holds, so a change of the shape within
+    the same bounds keeps it. What depends on the whole shape, such as
+    the temperature of the most populous cells, records its fingerprint
+    instead (see get_shape_fingerprint).
 """
 
+import functools
+import hashlib
 import logging
 import os
 from collections.abc import Callable
 from typing import Literal
 
+import numpy as np
+import shapely
 import xarray
 from tqdm import tqdm
 
@@ -27,6 +42,161 @@ import utils.shapes
 
 type Grid = xarray.DataArray | xarray.Dataset
 type Bounds = list[float]
+
+# The attribute of the grid of a country or subdivision with the bounds
+# of the shape that it was extracted with.
+BOUNDS_KEY = "demandcast_bounds"
+
+# The precision of the coordinates of a shape in its fingerprint, in
+# degrees.
+SHAPE_PRECISION = 1e-6
+
+
+@functools.cache
+def get_shape_fingerprint(code: str) -> str:
+    """
+    Get the fingerprint of the shape of a country or subdivision.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+
+    Returns
+    -------
+    str
+        The SHA-256 checksum of the WKB of its current shape (see
+        utils.shapes.get_entity_shape), with its coordinates rounded to
+        SHAPE_PRECISION and its rings and parts in a normal order.
+
+    Notes
+    -----
+    The rounding and the normal order keep the fingerprint when another
+    version of GEOS builds the same shape with other last digits or in
+    another order. The fingerprint is kept for the rest of the run, as
+    the bounds are (see get_bounds).
+    """
+    shape = utils.shapes.get_entity_shape(code, make_plot=False)
+    geometry = shapely.normalize(
+        shapely.set_precision(shape.union_all(), SHAPE_PRECISION)
+    )
+    return hashlib.sha256(
+        shapely.to_wkb(geometry, output_dimension=2, byte_order=1)
+    ).hexdigest()
+
+
+@functools.cache
+def get_bounds(code: str) -> tuple[float, ...]:
+    """
+    Get the bounds of the grid of a country or subdivision.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+
+    Returns
+    -------
+    tuple[float, ...]
+        The western, southern, eastern and northern bounds of its
+        current shape (see utils.shapes.get_entity_bounds).
+
+    Notes
+    -----
+    The bounds are kept for the rest of the run, since they are checked
+    for the grid of each year and scenario, and building a shape can
+    take a second.
+    """
+    return tuple(
+        utils.shapes.get_entity_bounds(
+            utils.shapes.get_entity_shape(code, make_plot=False)
+        )
+    )
+
+
+def record_bounds(grid: Grid, bounds: Bounds) -> Grid:
+    """
+    Record the bounds of the shape of a grid in its attributes.
+
+    Parameters
+    ----------
+    grid : Grid
+        The grid of a country or subdivision.
+    bounds : Bounds
+        The bounds of its shape, west, south, east and north.
+
+    Returns
+    -------
+    Grid
+        The grid, with the bounds in its attribute BOUNDS_KEY.
+    """
+    return grid.assign_attrs({BOUNDS_KEY: [float(bound) for bound in bounds]})
+
+
+def has_current_bounds(
+    file_path: str, code: str, unrecorded: bool = False
+) -> bool:
+    """
+    Check whether the grid of a code has the bounds of its shape.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the NetCDF file of the grid, which exists.
+    code : str
+        The code of the country or subdivision.
+    unrecorded : bool, optional
+        What to answer for a grid that records no bounds, such as one
+        saved before they were recorded.
+
+    Returns
+    -------
+    bool
+        Whether the bounds that the grid records are those of the
+        current shape of the code, false if the file cannot be read.
+    """
+    try:
+        with xarray.open_dataset(file_path) as dataset:
+            recorded = next(
+                (
+                    attributes[BOUNDS_KEY]
+                    for attributes in [
+                        dataset.attrs,
+                        *(variable.attrs for variable in dataset.values()),
+                    ]
+                    if BOUNDS_KEY in attributes
+                ),
+                None,
+            )
+    except (OSError, ValueError) as error:
+        logging.warning(
+            f"The grid {file_path} cannot be read, so it is retrieved "
+            f"again: {error}"
+        )
+        return False
+    if recorded is None:
+        return unrecorded
+    return bool(np.allclose(recorded, get_bounds(code)))
+
+
+def is_current(file_path: str, code: str) -> bool:
+    """
+    Check whether the grid of a code can be read as it is.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the NetCDF file of the grid.
+    code : str
+        The code of the country or subdivision.
+
+    Returns
+    -------
+    bool
+        Whether the grid exists and records the bounds of the current
+        shape of the code.
+    """
+    return os.path.exists(file_path) and has_current_bounds(file_path, code)
 
 
 def extract_entity_grids(
@@ -55,13 +225,15 @@ def extract_entity_grids(
         bounds, before it is saved. By default, the grid is saved as it
         is.
     is_up_to_date : Callable[[str], bool], optional
-        The function that tells whether the file of a code can be
-        kept. By default, a file that exists is kept.
+        The function that tells whether the file of a code can be kept,
+        if it records the bounds of the current shape of the code. By
+        default, a file that exists is kept.
 
     Notes
     -----
     The grid of a country or subdivision covers the bounds of its shape,
-    and is saved in a NetCDF file.
+    and is saved in a NetCDF file, with the bounds (see
+    has_current_bounds).
     """
 
     def retrieve(entity_code: str) -> None:
@@ -74,7 +246,9 @@ def extract_entity_grids(
             The code of the country or subdivision.
         """
         file_path = get_file_path(entity_code)
-        if is_up_to_date(file_path):
+        if is_up_to_date(file_path) and has_current_bounds(
+            file_path, entity_code
+        ):
             logging.info(
                 f"The gridded {description} of {entity_code} already "
                 "exists. Skipping extraction."
@@ -82,14 +256,14 @@ def extract_entity_grids(
             return
 
         logging.info(f"Extracting the gridded {description} of {entity_code}.")
-        bounds = utils.shapes.get_entity_bounds(
-            utils.shapes.get_entity_shape(entity_code, make_plot=False)
-        )  # West, South, East, North
+        bounds = list(get_bounds(entity_code))  # West, South, East, North
         entity_grid = global_grid.sel(
             x=slice(bounds[0], bounds[2]), y=slice(bounds[1], bounds[3])
         )
         with utils.files.writing(file_path) as temporary_path:
-            process(entity_grid, bounds).to_netcdf(temporary_path)
+            record_bounds(process(entity_grid, bounds), bounds).to_netcdf(
+                temporary_path
+            )
         logging.info(
             f"The gridded {description} of {entity_code} has been saved."
         )
@@ -164,8 +338,9 @@ def run_retrieval(
     Save the grids of the countries and subdivisions by year.
 
     The global grid of each year and scenario is read once, and the
-    grids of the countries and subdivisions that are missing are
-    extracted from it. The historical years have no scenario, and the
+    grids of the countries and subdivisions that are missing, or that
+    do not record the bounds of their current shape, are extracted from
+    it. The historical years have no scenario, and the
     future years, those of the SSP projections, one of the SSPs.
 
     Parameters

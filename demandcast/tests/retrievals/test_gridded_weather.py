@@ -18,6 +18,7 @@ import xarray
 
 import utils.paths
 from retrievals import gridded_weather
+from retrievals.gridded import BOUNDS_KEY, record_bounds
 
 pytestmark = pytest.mark.usefixtures("frozen_now")
 
@@ -141,6 +142,58 @@ def test_broken_file_is_retrieved_again(tmp_path, caplog):
     assert "cannot be read, so it is retrieved again" in caplog.text
 
 
+@pytest.mark.parametrize("code", [None, "DEU"])
+def test_broken_projection_of_a_code_is_retrieved_again(tmp_path, code):
+    """
+    Test that a broken grid of a code is outdated, even a projection.
+
+    The projections do not change, but a grid of a code that cannot be
+    read cannot show its bounds; another file is checked by its time.
+    """
+    file_path = tmp_path / "data.nc"
+    file_path.write_bytes(b"not a netCDF file")
+
+    assert gridded_weather.is_outdated(
+        str(file_path), 2030, "CESM2", "SSP2-4.5", code
+    ) == (code is not None)
+
+
+@pytest.mark.parametrize(
+    ("recorded", "outdated"),
+    [
+        # The bounds of another shape, and those of the current one.
+        ([5.0, 47.0, 16.0, 55.0], True),
+        ([5.0, 47.0, 15.0, 55.0], False),
+        # A grid downloaded before the bounds were recorded is kept.
+        (None, False),
+    ],
+)
+def test_grid_of_another_shape_is_outdated(tmp_path, recorded, outdated):
+    """
+    Test that a grid cut with other bounds than the shape's is outdated.
+
+    The projections do not change otherwise, so only the bounds decide.
+    """
+    file_path = str(tmp_path / "DEU_temperature_2030.nc")
+    grid = xarray.Dataset({"tas": ("x", np.zeros(3))})
+    (record_bounds(grid, recorded) if recorded else grid).to_netcdf(file_path)
+
+    with (
+        patch.object(gridded_weather.utils.shapes, "get_entity_shape"),
+        patch.object(
+            gridded_weather.utils.shapes,
+            "get_entity_bounds",
+            return_value=[5.0, 47.0, 15.0, 55.0],
+        ),
+    ):
+        assert (
+            gridded_weather.is_outdated(
+                file_path, 2030, "CESM2", "SSP2-4.5", "DEU"
+            )
+            == outdated
+        )
+
+
 def test_few_codes_complete_the_last_year():
     """
     Test that a year retrieved while in progress is completed.
@@ -184,7 +237,11 @@ def test_few_codes_complete_the_last_year():
 
 
 def test_reanalysis_of_cds_in_a_new_data_folder():
-    """Test that the CDS writes its file in a new data folder."""
+    """
+    Test that the CDS writes its file in a new data folder.
+
+    The file then records the bounds of the shape of its code.
+    """
     folder = utils.paths.get_gridded_folder("weather", "processed")
     assert not os.path.exists(folder)
 
@@ -208,7 +265,10 @@ def test_reanalysis_of_cds_in_a_new_data_folder():
     ):
         gridded_weather.retrieve_reanalysis("DEU", 2024, "temperature")
 
-    assert os.path.exists(os.path.join(folder, "DEU_temperature_2024.nc"))
+    with xarray.open_dataset(
+        os.path.join(folder, "DEU_temperature_2024.nc")
+    ) as data:
+        assert data.attrs[BOUNDS_KEY].tolist() == [5.0, 47.0, 15.0, 55.0]
 
 
 def test_file_names():
@@ -422,9 +482,11 @@ def test_arco_era5():
         "weather", "processed"
     )
     for code, (west, south, east, north) in bounds.items():
-        data = xarray.open_dataset(
+        dataset = xarray.open_dataset(
             os.path.join(folder, f"{code}_temperature_2024.nc")
-        )["t2m"]
+        )
+        assert dataset.attrs[BOUNDS_KEY].tolist() == bounds[code]
+        data = dataset["t2m"]
         assert data.dims == ("valid_time", "y", "x")
         assert data["valid_time"].to_numpy()[-1] == np.datetime64(
             "2024-01-10T23:00"

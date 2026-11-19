@@ -81,13 +81,16 @@ Description:
     errors of the models give (see ml_models.reporting).
 
     A combined series records the fingerprint of what decided it: the
-    version of the combination (COMBINATION_VERSION), the reviews of the
-    flags and the YAML files of its data sources. A series without it,
-    with another one, or older than the cleaned data of one of its data
-    sources is not current, and the assembly of the training data
+    code of the rules of the cleaning, of the flags, of their reviews
+    and of the combination (RULE_FILES), the reviews of the flags, and
+    the YAML files and the flags of its data sources. A series without
+    it, with another one, or older than the cleaned data of one of its
+    data sources is not current, and the assembly of the training data
     combines it again from the cleaned data (see
     ensure_current_combination), so that the training data follows the
-    current rules of the combination and the current reviews.
+    current rules of the combination and the current reviews. The code
+    counts as whole files, so that any change to them, even to a
+    docstring, combines the series again.
 """
 
 import hashlib
@@ -134,9 +137,12 @@ LARGEST_SPREAD = 0.05
 SHORTEST_CHECKED_OVERLAP_HOURS = 24
 LARGEST_UNVERIFIED_MEDIAN_DIFFERENCE = 0.10
 
-# The version of the combination, which changes when the code changes
-# what a combined series is, such as its columns or its rules.
-COMBINATION_VERSION = 4
+# The files of the code of the rules that decide a combined series:
+# the cleaning, the flags, their reviews and the combination.
+RULE_FILES = tuple(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), f"{name}.py")
+    for name in ("combining", "electricity_demand", "flags", "reviews")
+)
 
 # The key of the attributes of a combined series with its fingerprint.
 FINGERPRINT_KEY = "demandcast_combination"
@@ -645,6 +651,30 @@ def _exclude_reviewed_hours(code: str, combined: pd.DataFrame) -> pd.DataFrame:
     return combined.assign(Eligible=exclusions == "", Exclusion=exclusions)
 
 
+def _read_text(file_path: str) -> bytes:
+    """
+    Read a text file with the line endings of Unix.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the file.
+
+    Returns
+    -------
+    bytes
+        The content of the file, with each CRLF replaced by LF.
+
+    Notes
+    -----
+    Git can check the files out with CRLF on Windows, which must not
+    change the fingerprint of a combined series made elsewhere, such as
+    one copied from a bucket.
+    """
+    with open(file_path, "rb") as file:
+        return file.read().replace(b"\r\n", b"\n")
+
+
 def get_fingerprint(code: str) -> str:
     """
     Get the fingerprint of what decides the combined series of a code.
@@ -657,18 +687,30 @@ def get_fingerprint(code: str) -> str:
     Returns
     -------
     str
-        The SHA-256 checksum of the version of the combination, of the
-        reviews of the flags and of the YAML files of the data sources
-        of the code.
+        The SHA-256 checksum of the code of the rules (RULE_FILES), of
+        the reviews of the flags, of the YAML files of the data sources
+        of the code and of the flags of their cleaned data.
     """
-    checksum = hashlib.sha256(f"version {COMBINATION_VERSION}".encode())
-    file_paths = [utils.paths.get_reviews_file()] + [
-        os.path.join(utils.paths.DATA_SOURCES_FOLDER, f"{data_source}.yaml")
-        for data_source in sorted(utils.data_sources.get_data_sources_of(code))
+    data_sources = sorted(utils.data_sources.get_data_sources_of(code))
+    text_paths = [
+        *RULE_FILES,
+        utils.paths.get_reviews_file(),
+        *(
+            os.path.join(utils.paths.DATA_SOURCES_FOLDER, f"{source}.yaml")
+            for source in data_sources
+        ),
     ]
-    for file_path in file_paths:
-        with open(file_path, "rb") as file:
-            checksum.update(file.read())
+    checksum = hashlib.sha256()
+    for file_path in text_paths:
+        checksum.update(hashlib.sha256(_read_text(file_path)).digest())
+    for data_source in data_sources:
+        flags_path = utils.paths.get_electricity_demand_file(
+            "cleaned", code, data_source, table="flags"
+        )
+        if os.path.exists(flags_path):
+            checksum.update(data_source.encode())
+            with open(flags_path, "rb") as file:
+                checksum.update(hashlib.sha256(file.read()).digest())
     return checksum.hexdigest()
 
 
@@ -721,8 +763,9 @@ def ensure_current_combination(code: str) -> None:
         return
     logging.info(
         f"The combined electricity demand of {code} is not current, such "
-        "as after a change of the reviews of the flags or of the data "
-        "sources, so it is combined again from the cleaned data."
+        "as after a change of the rules, of the reviews of the flags or "
+        "of the data sources, so it is combined again from the cleaned "
+        "data."
     )
     combine_data(code)
 
