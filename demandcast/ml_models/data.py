@@ -20,19 +20,11 @@ import numpy as np
 import pandas as pd
 from pydantic import ValidationError
 
+import utils.columns
 import utils.config
 import utils.manifest
 import utils.paths
 import utils.relations
-
-# The columns of the entity code, of the end of the hour in UTC and of
-# the local year of each row of the assembled data (see assemble.py).
-# assemble.py computes the target as the fraction of the annual total of
-# each entity and local year, so converting it needs the local year of
-# each row, which also splits the data into sets.
-GROUP_COLUMN = "Entity code"
-TIME_COLUMN = "Time (UTC)"
-LOCAL_YEAR_COLUMN = "Local year"
 
 # The transformation of the target that the models learn, which their
 # manifests record (see ml_models.files).
@@ -294,8 +286,8 @@ def normalize_to_annual_totals(
     status = (
         pd.DataFrame(
             {
-                "Entity code": group.to_numpy(),
-                "Local year": local_year.to_numpy().astype(int),
+                utils.columns.ENTITY_CODE: group.to_numpy(),
+                utils.columns.LOCAL_YEAR: local_year.to_numpy().astype(int),
                 "Hours": hours.to_numpy(),
                 "Mean before scaling": mean.to_numpy(),
                 "Status": np.where(
@@ -303,7 +295,7 @@ def normalize_to_annual_totals(
                 ),
             }
         )
-        .drop_duplicates(["Entity code", "Local year"])
+        .drop_duplicates([utils.columns.ENTITY_CODE, utils.columns.LOCAL_YEAR])
         .reset_index(drop=True)
     )
     for name, description in (
@@ -318,7 +310,9 @@ def normalize_to_annual_totals(
                 + ", ".join(
                     f"{code} {year}"
                     for code, year in zip(
-                        years["Entity code"], years["Local year"], strict=True
+                        years[utils.columns.ENTITY_CODE],
+                        years[utils.columns.LOCAL_YEAR],
+                        strict=True,
                     )
                 )
                 + "."
@@ -623,25 +617,25 @@ def _prepare(
     ValueError
         If the dataset has no local year column.
     """
-    if LOCAL_YEAR_COLUMN not in dataset.columns:
+    if utils.columns.LOCAL_YEAR not in dataset.columns:
         raise ValueError(
-            f"The dataset has no '{LOCAL_YEAR_COLUMN}' column, which is "
-            "needed to convert the target and the predictions."
+            f"The dataset has no '{utils.columns.LOCAL_YEAR}' column, which "
+            "is needed to convert the target and the predictions."
         )
 
     prepared_dataset = _split_in_groups(
         dataset,
-        GROUP_COLUMN,
+        utils.columns.ENTITY_CODE,
         ml_config.features,
         ml_config.target,
-        TIME_COLUMN,
+        utils.columns.TIME,
         ml_config.categorical_features,
         ml_config.scaling_variables,
         target,
     )
 
     # Keep the local years, to convert the predictions back.
-    prepared_dataset["local_year"] = dataset[LOCAL_YEAR_COLUMN].copy()
+    prepared_dataset["local_year"] = dataset[utils.columns.LOCAL_YEAR].copy()
 
     if target:
         prepared_dataset["target"] = to_load_relative_to_annual_mean(
@@ -758,11 +752,11 @@ def prepare_split_datasets(
         dataset,
         testing_set,
         validation_set,
-        GROUP_COLUMN,
-        LOCAL_YEAR_COLUMN,
-        TIME_COLUMN,
+        utils.columns.ENTITY_CODE,
+        utils.columns.LOCAL_YEAR,
+        utils.columns.TIME,
         utils.relations.read_related_entities(
-            sorted(dataset[GROUP_COLUMN].unique())
+            sorted(dataset[utils.columns.ENTITY_CODE].unique())
         ),
     )
 

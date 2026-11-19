@@ -51,6 +51,7 @@ import retrievals.gridded_weather
 import retrievals.runs
 import utils.availability
 import utils.catalogue
+import utils.columns
 import utils.geospatial
 import utils.paths
 import utils.scenarios
@@ -606,7 +607,7 @@ def _build_temperature_database(
         local_time.day_of_week >= 5
     ).astype(int)
     temperature_database["Local month of the year"] = local_time.month
-    temperature_database["Local year"] = local_time.year
+    temperature_database[utils.columns.LOCAL_YEAR] = local_time.year
 
     # Add the temperature statistics to the temperature time series.
     temperature_database["Temperature - Top 1 (K)"] = (
@@ -630,7 +631,7 @@ def _build_temperature_database(
     temperature_database["95 percentile temperature - Top 1 (K)"] = (
         temperature_95_percentile.to_numpy()
     )
-    temperature_database.index.name = "Time (UTC)"
+    temperature_database.index.name = utils.columns.TIME
 
     return temperature_database
 

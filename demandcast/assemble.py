@@ -49,6 +49,7 @@ from tqdm import tqdm
 import cleaning.combining
 import utils.availability
 import utils.catalogue
+import utils.columns
 import utils.config
 import utils.manifest
 import utils.paths
@@ -395,7 +396,7 @@ def _load_data_for_entity(
     for column in numeric_columns:
         entity_data = entity_data[entity_data[column] > 0]
 
-    entity_data["Entity code"] = entity_code
+    entity_data[utils.columns.ENTITY_CODE] = entity_code
     entity_data = entity_data.reset_index()
 
     return dask.dataframe.from_pandas(entity_data)
@@ -469,7 +470,7 @@ def _load_dataset(
     combined_data = dask.dataframe.concat(result_data)
     logging.info(
         f"Loaded {dataset.description} data for "
-        f"{len(combined_data['Entity code'].unique())} entities "
+        f"{len(combined_data[utils.columns.ENTITY_CODE].unique())} entities "
         "successfully."
     )
     return combined_data
@@ -534,9 +535,9 @@ def _merge_datasets(
     # statistic of the lazy merge would compute it again.
     computed_dataset, *entities = dask.compute(
         merged_dataset,
-        *(dataset["Entity code"].unique() for dataset in datasets),
+        *(dataset[utils.columns.ENTITY_CODE].unique() for dataset in datasets),
     )
-    merged_entities = set(computed_dataset["Entity code"])
+    merged_entities = set(computed_dataset[utils.columns.ENTITY_CODE])
 
     logging.info(f"Merged {len(datasets)} datasets successfully.")
     logging.info(
@@ -580,7 +581,7 @@ def _select_complete_years(
     of its year with data represent the whole year: a year without its
     winter or its summer would have the wrong annual total.
     """
-    keys = ["Entity code", "Local year"]
+    keys = [utils.columns.ENTITY_CODE, utils.columns.LOCAL_YEAR]
     hours_by_month = merged_dataset.pivot_table(
         index=keys,
         columns="Local month of the year",
@@ -593,7 +594,9 @@ def _select_complete_years(
                 pd.Timestamp(int(year), month, 1).days_in_month * 24
                 for month in range(1, 13)
             ]
-            for year in hours_by_month.index.get_level_values("Local year")
+            for year in hours_by_month.index.get_level_values(
+                utils.columns.LOCAL_YEAR
+            )
         ],
         index=hours_by_month.index,
         columns=hours_by_month.columns,
@@ -645,7 +648,7 @@ def _get_provenance(assembled_data: pd.DataFrame) -> pd.DataFrame:
         it does not give them.
     """
     counts = []
-    for entity_code, rows in assembled_data.groupby("Entity code"):
+    for entity_code, rows in assembled_data.groupby(utils.columns.ENTITY_CODE):
         file_path = utils.paths.get_electricity_demand_file(
             "combined", str(entity_code)
         )
@@ -655,13 +658,15 @@ def _get_provenance(assembled_data: pd.DataFrame) -> pd.DataFrame:
             else pd.DataFrame(index=pd.DatetimeIndex([]))
         ).reindex(columns=["Source", "Definition"])
         combined.index = pd.DatetimeIndex(combined.index).as_unit("ns")
-        times = pd.DatetimeIndex(rows["Time (UTC)"]).as_unit("ns")
+        times = pd.DatetimeIndex(rows[utils.columns.TIME]).as_unit("ns")
         labels = combined.reindex(times).astype("string").fillna("")
         counts.append(
             pd.DataFrame(
                 {
-                    "Entity code": entity_code,
-                    "Local year": rows["Local year"].to_numpy(),
+                    utils.columns.ENTITY_CODE: entity_code,
+                    utils.columns.LOCAL_YEAR: rows[
+                        utils.columns.LOCAL_YEAR
+                    ].to_numpy(),
                     "Source": labels["Source"].to_numpy(),
                     "Definition": labels["Definition"].to_numpy(),
                 }
@@ -670,7 +675,13 @@ def _get_provenance(assembled_data: pd.DataFrame) -> pd.DataFrame:
             .rename("Hours")
             .reset_index()
         )
-    columns = ["Entity code", "Local year", "Source", "Definition", "Hours"]
+    columns = [
+        utils.columns.ENTITY_CODE,
+        utils.columns.LOCAL_YEAR,
+        "Source",
+        "Definition",
+        "Hours",
+    ]
     if not counts:
         return pd.DataFrame(columns=columns)
     return pd.concat(counts, ignore_index=True)[columns].sort_values(
@@ -703,11 +714,13 @@ def _calculate_load_fraction(merged_dataset: pd.DataFrame) -> pd.DataFrame:
     """
     logging.info("Calculating load fraction for each timestamp.")
 
-    groups = merged_dataset.groupby(["Entity code", "Local year"])["Load (MW)"]
+    groups = merged_dataset.groupby(
+        [utils.columns.ENTITY_CODE, utils.columns.LOCAL_YEAR]
+    )["Load (MW)"]
     annual_load = groups.transform("sum")
     amount_of_hours_tracked = groups.transform("count")
 
-    years = merged_dataset["Local year"]
+    years = merged_dataset[utils.columns.LOCAL_YEAR]
     is_leap_year = (years % 4 == 0) & ((years % 100 != 0) | (years % 400 == 0))
     amount_of_hours_in_year = np.where(is_leap_year, 8784, 8760)
 
@@ -811,25 +824,25 @@ def run_data_assemply(
             # other inputs have no local year, and the merges keep only
             # the rows of all the inputs.
             data = data[
-                (data["Local year"] >= start_year)
-                & (data["Local year"] <= end_year)
+                (data[utils.columns.LOCAL_YEAR] >= start_year)
+                & (data[utils.columns.LOCAL_YEAR] <= end_year)
             ]
         datasets_to_merge.append(data)
 
     assembled_data = _merge_datasets(
         datasets_to_merge,
-        ["Time (UTC)", "Entity code"],
+        [utils.columns.TIME, utils.columns.ENTITY_CODE],
     )
 
     # The rows are taken by their positions: the index of the merge
     # repeats the labels of each of its partitions.
     holiday_indicator = np.zeros(len(assembled_data), dtype=int)
     for entity_code, positions in assembled_data.groupby(
-        "Entity code"
+        utils.columns.ENTITY_CODE
     ).indices.items():
         rows = np.asarray(positions)
         holiday_indicator[rows] = utils.public_holidays.get_holiday_indicator(
-            assembled_data["Time (UTC)"].iloc[rows], str(entity_code)
+            assembled_data[utils.columns.TIME].iloc[rows], str(entity_code)
         )
     assembled_data["Local holiday indicator"] = holiday_indicator
 
@@ -851,7 +864,7 @@ def run_data_assemply(
     # Sort the dataset in the order of the entities and of the times,
     # since the windows of the LSTM need consecutive hours.
     assembled_data = assembled_data.sort_values(
-        ["Entity code", "Time (UTC)"], ignore_index=True
+        [utils.columns.ENTITY_CODE, utils.columns.TIME], ignore_index=True
     )
     assembled_data.to_parquet(output_path + ".parquet", index=False)
     if coverage is not None:
@@ -894,7 +907,9 @@ def run_data_assemply(
                 for column, dtype in assembled_data.dtypes.items()
             },
             "rows": len(assembled_data),
-            "entities": sorted(assembled_data["Entity code"].unique()),
+            "entities": sorted(
+                assembled_data[utils.columns.ENTITY_CODE].unique()
+            ),
             "inputs": {
                 name: _get_inputs_identity(file_paths)
                 for name, file_paths in read_files.items()

@@ -41,6 +41,7 @@ import cleaning.electricity_demand
 import cleaning.flags
 import retrievals.runs
 import utils.availability
+import utils.columns
 import utils.data_sources
 import utils.fetcher
 import utils.paths
@@ -218,7 +219,7 @@ def _process_data(
         "Retrieved", ascending=False, kind="stable"
     )
     processed = processed[~processed.index.duplicated()].sort_index()
-    processed.index.name = "Time (UTC)"
+    processed.index.name = utils.columns.TIME
     return _keep_dates_of_entity(processed, data_source, code)
 
 
