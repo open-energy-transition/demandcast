@@ -323,7 +323,7 @@ def _retrieve_data(
     Notes
     -----
     If the data of the latest of several requests is not found, it is
-    skipped, because the file of the latest period can be not published
+    skipped, because the file of the latest period may not be published
     yet. A request whose data source gives no data, such as a month of
     AEMO whose rooftop solar is not published yet, gets no version in
     the raw data, so that a retrieval of the latest requests downloads
@@ -363,7 +363,7 @@ def _retrieve_data(
                         )
                     )
             except utils.fetcher.DataNotFoundError:
-                # The file of the latest period can be not published
+                # The file of the latest period may not be published
                 # yet.
                 if index < len(requests) - 1 or len(requests) == 1:
                     raise

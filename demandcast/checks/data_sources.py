@@ -106,7 +106,7 @@ def _download_sample(data_source: str, code: str, result: Result) -> pd.Series:
     The requests of a data source are in chronological order, so the
     last one is the latest. If it has no values, the one before is
     downloaded, and also if its data is not found, because the file of
-    the latest period can be not published yet.
+    the latest period may not be published yet.
 
     Parameters
     ----------

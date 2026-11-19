@@ -31,7 +31,7 @@ Description:
     or after it, is retrieved until its last day before the end date,
     which its request includes, so that the request gives the same days
     whenever it is processed again. Its daily files of the 7 days before
-    that day, which can be not published yet, are skipped if they are
+    that day, which may not be published yet, are skipped if they are
     missing. The other months are retrieved whole, with all their daily
     files.
 
@@ -56,7 +56,7 @@ POST_REFORM_START = pd.Timestamp("2023-10-01")
 # The first year of the estimates of the distributed solar.
 FIRST_YEAR_OF_DPV = 2020
 
-# The days before the end date of the data whose daily files can be not
+# The days before the end date of the data whose daily files may not be
 # published yet.
 DAYS_NOT_PUBLISHED = 7
 
@@ -87,7 +87,7 @@ def get_available_requests(
     list[tuple[bool, int, int | None, int | None]]
         The requests, as tuples in the format (pre_reform, year, month,
         day), where the month is None for the years before the reform.
-        The day is the last day of a month whose daily files can be not
+        The day is the last day of a month whose daily files may not be
         published yet, and None for the other months and the years.
     """
     # The years before the reform, from 2006 to 2023, and the months
@@ -234,7 +234,7 @@ def download_and_extract_data_for_request(
         Whether the data is before the reform, until September 2023, and
         the year, month and day of the electricity demand data. The
         month is None before the reform. The day is the last day of a
-        month whose daily files can be not published yet, and None
+        month whose daily files may not be published yet, and None
         otherwise.
     code : str
         The code of Western Australia.
