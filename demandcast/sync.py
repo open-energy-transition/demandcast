@@ -8,9 +8,12 @@ Description:
     or deleting any file at the destination: only the missing files are
     copied, and the files that differ are reported in the log (see
     publishing.gcs). The copy can be limited to some folders, such as
-    "assembled" to download only the assembled data.
+    "assembled" to download only the assembled data. The script exits
+    with the status 1 if files differ or objects of the bucket are not
+    paths inside the data folder, so that a scheduled copy shows it.
 """
 
+import sys
 from typing import Literal
 
 from pydantic import Field, field_validator
@@ -58,7 +61,7 @@ class ConfigModel(utils.config.StrictSettings):
         return bucket
 
 
-def main(config: ConfigModel) -> None:
+def main(config: ConfigModel) -> publishing.gcs.SyncReport:
     """
     Copy the data folder to or from the bucket of the settings.
 
@@ -66,11 +69,16 @@ def main(config: ConfigModel) -> None:
     ----------
     config : ConfigModel
         The settings.
+
+    Returns
+    -------
+    publishing.gcs.SyncReport
+        The files copied, identical, different and unsafe.
     """
     utils.config.set_up_logging(f"sync_{config.direction}")
     utils.config.log_configuration(config)
 
-    publishing.gcs.sync(
+    return publishing.gcs.sync(
         str(config.bucket),
         config.direction,
         utils.paths.get_data_folder(),
@@ -80,12 +88,34 @@ def main(config: ConfigModel) -> None:
     )
 
 
+def get_exit_status(report: publishing.gcs.SyncReport) -> int:
+    """
+    Get the exit status of a copy.
+
+    Parameters
+    ----------
+    report : publishing.gcs.SyncReport
+        The files of the copy.
+
+    Returns
+    -------
+    int
+        1 if files differ between the two ends or objects were not
+        downloaded, so that a scheduled copy shows it, else 0.
+    """
+    return 1 if report.different or report.unsafe else 0
+
+
 if __name__ == "__main__":
-    main(
-        utils.config.read_and_check_configuration(
-            "sync",
-            ConfigModel,
-            "Copy the data folder to or from a bucket of Google Cloud "
-            "Storage, without overwriting or deleting files.",
+    sys.exit(
+        get_exit_status(
+            main(
+                utils.config.read_and_check_configuration(
+                    "sync",
+                    ConfigModel,
+                    "Copy the data folder to or from a bucket of Google "
+                    "Cloud Storage, without overwriting or deleting files.",
+                )
+            )
         )
     )

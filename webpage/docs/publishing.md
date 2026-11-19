@@ -8,7 +8,7 @@ DemandCast keeps the retrieved data in a private bucket of Google Cloud Storage,
 
 A file at the same path at both ends is compared by its size and its CRC32C checksum. An identical file is skipped, and a file that differs, such as a cleaned file computed again with a newer version of the code, is left as it is at both ends and listed in the log, for you to decide which one to keep. The logs are not copied.
 
-A download is written to a temporary file and given its name only once complete, so a copy that stops leaves no partial file. An object of the bucket whose name is not a path inside the data folder, such as one with `..`, is not downloaded and is listed in the log. A weather file of a past year that ends before the year does is retrieved again a day after it was written, even when it was copied from the bucket.
+A download is written to a temporary file and given its name only once complete, so a copy that stops leaves no partial file, and the temporary file of a download that was killed is never uploaded. An object of the bucket whose name is not a path inside the data folder, such as one with `..`, is not downloaded and is listed in the log, and so is an object that needs a folder where the data folder has a file of the same name, such as `a/b` next to the file of `a`. The script exits with the status 1 when files differ or objects are not downloaded, so that a scheduled copy shows it. A weather file of a past year that ends before the year does is retrieved again a day after it was written, even when it was copied from the bucket.
 
 The bucket should be private. Log in once with your Google account, which needs access to the bucket:
 
@@ -27,7 +27,7 @@ included_folders:        # empty copies all the folders that are not excluded
 dry_run: false           # true lists the files to copy, without copying them
 ```
 
-To copy only some folders, list them in `included_folders`, relative to the data folder. For example, to download only the assembled data, or also the forecasts:
+The folders in `excluded_folders` are relative to the data folder too, such as `results/figures`. To copy only some folders, list them in `included_folders`, relative to the data folder. For example, to download only the assembled data, or also the forecasts:
 
 ```yaml
 direction: download

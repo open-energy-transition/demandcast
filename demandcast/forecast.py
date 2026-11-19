@@ -117,7 +117,19 @@ def run_forecasting(
     ml_config : ml_models.data.ConfigModel
         The settings of the machine learning models, with the
         algorithm.
+
+    Raises
+    ------
+    ValueError
+        If the settings have no scaling variables, whose product is the
+        annual demand that converts the predictions to MW.
     """
+    if not ml_config.scaling_variables:
+        raise ValueError(
+            "A forecast needs the scaling_variables of the settings of the "
+            "models, whose product is the annual demand that converts the "
+            "predictions to MW."
+        )
     logging.info("Starting model forecasting process.")
 
     algorithm = ml_config.algorithm

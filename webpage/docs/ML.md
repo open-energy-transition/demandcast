@@ -393,7 +393,7 @@ categorical_features:              # Categorical feature list
   - "Local month of the year"
   - "Monthly average temperature rank - Top 1"
 
-scaling_variables:                 # Variables for scaling predictions
+scaling_variables:                 # Variables for scaling predictions, needed to forecast
   - "Annual electricity demand per capita (kWh)"
   - "Population"
 ```
