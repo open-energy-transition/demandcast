@@ -130,14 +130,14 @@ The LSTM-specific configuration is specified in `demandcast/config/lstm_config.y
 
 | Name | Type | Default | Required / Optional | Description |
 |---|---|---|---|---|
-| `n_timesteps` | `int` | `24` | Required | Lookback window length in timesteps. Each prediction draws on the preceding `n_timesteps` rows of the same entity. |
-| `n_units` | `int` | `32` | Required | Number of LSTM hidden units per layer. Smaller values train faster on CPU. |
-| `n_layers` | `int` | `1` | Required | Number of stacked LSTM layers. Dropout only takes effect when `n_layers > 1`. |
-| `dropout` | `float` | `0.0` | Required | Dropout rate applied between LSTM layers. Only meaningful when `n_layers > 1`. |
-| `epochs` | `int` | `5` | Required | Number of full passes over the training data. Increase for better accuracy at the cost of training time. |
-| `batch_size` | `int` | `256` | Required | Mini-batch size used for both training and inference. |
-| `learning_rate` | `float` | `0.001` | Required | Adam optimiser learning rate. |
-| `random_state` | `int` | `42` | Required | Random seed passed to `torch.manual_seed` for reproducibility. |
+| `n_timesteps` | `int` | `24` | Optional | Lookback window length in timesteps. Each prediction draws on the preceding `n_timesteps` rows of the same entity. |
+| `n_units` | `int` | `32` | Optional | Number of LSTM hidden units per layer. Smaller values train faster on CPU. |
+| `n_layers` | `int` | `1` | Optional | Number of stacked LSTM layers. Dropout only takes effect when `n_layers > 1`. |
+| `dropout` | `float` | `0.0` | Optional | Dropout rate applied between LSTM layers. Only meaningful when `n_layers > 1`. |
+| `epochs` | `int` | `5` | Optional | Number of full passes over the training data. Increase for better accuracy at the cost of training time. |
+| `batch_size` | `int` | `256` | Optional | Mini-batch size used for both training and inference. |
+| `learning_rate` | `float` | `0.001` | Optional | Adam optimiser learning rate. |
+| `random_state` | `int` | `42` | Optional | Random seed passed to `torch.manual_seed` for reproducibility. |
 
 To use the LSTM algorithm, set `algorithm: LSTM` in `ml_config.yaml`.
 
