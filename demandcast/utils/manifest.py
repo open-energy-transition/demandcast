@@ -34,6 +34,7 @@ import os
 import subprocess
 from typing import Any
 
+import utils.files
 import utils.paths
 
 # The version of the content of the manifests.
@@ -211,7 +212,10 @@ def write_manifest(
         **content,
     }
     manifest_path = get_manifest_path(file_path)
-    with open(manifest_path, "w", encoding="utf-8") as file:
+    with (
+        utils.files.writing(manifest_path) as temporary_path,
+        open(temporary_path, "w", encoding="utf-8") as file,
+    ):
         json.dump(manifest, file, indent=2, default=str)
         file.write("\n")
     return manifest_path

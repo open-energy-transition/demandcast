@@ -20,6 +20,7 @@ from tqdm import tqdm
 import retrievals.runs
 import utils.availability
 import utils.catalogue
+import utils.files
 import utils.paths
 import utils.scenarios
 import utils.shapes
@@ -87,7 +88,8 @@ def extract_entity_grids(
         entity_grid = global_grid.sel(
             x=slice(bounds[0], bounds[2]), y=slice(bounds[1], bounds[3])
         )
-        process(entity_grid, bounds).to_netcdf(file_path)
+        with utils.files.writing(file_path) as temporary_path:
+            process(entity_grid, bounds).to_netcdf(temporary_path)
         logging.info(
             f"The gridded {description} of {entity_code} has been saved."
         )

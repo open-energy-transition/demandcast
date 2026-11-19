@@ -453,3 +453,24 @@ def test_republishing_data_source_is_compiled():
                 "entities": [],
             }
         )
+
+
+def test_changed_yaml_file_is_read_again(write_data_source):
+    """
+    Test that the content of a yaml file that changes is read again.
+
+    The content of each file is kept once it is read, until the file
+    changes.
+    """
+    write_data_source({"licence": LICENCE, "entities": [FRANCE]})
+    assert [
+        entity.code
+        for entity in utils.data_sources.read_entities("test_source")
+    ] == ["FRA"]
+
+    write_data_source({"licence": LICENCE, "entities": [FRANCE, TEXAS]})
+
+    assert [
+        entity.code
+        for entity in utils.data_sources.read_entities("test_source")
+    ] == ["FRA", "USA_TEX"]

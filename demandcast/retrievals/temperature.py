@@ -52,6 +52,7 @@ import retrievals.runs
 import utils.availability
 import utils.catalogue
 import utils.columns
+import utils.files
 import utils.geospatial
 import utils.paths
 import utils.scenarios
@@ -797,9 +798,10 @@ def run_data_retrieval(
                     if selected_model
                     else reanalysis_source,
                 }
-                temperature_database.to_parquet(
+                with utils.files.writing(
                     file_path_without_ext + ".parquet"
-                )
+                ) as temporary_path:
+                    temperature_database.to_parquet(temporary_path)
 
                 logging.info(
                     f"Temperature time series for the year {selected_year}"
