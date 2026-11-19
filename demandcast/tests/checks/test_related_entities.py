@@ -108,7 +108,7 @@ def test_get_shares():
 
 def test_run_check(tmp_path, monkeypatch, uniform_population):
     """
-    Test that the shares are saved in the folder of the checks.
+    Test that the shares and the codes are saved in the checks folder.
 
     C has no gridded data of its own, so it is counted on the grid of
     its country.
@@ -129,6 +129,9 @@ def test_run_check(tmp_path, monkeypatch, uniform_population):
         ["XXX_A", "XXX_C"],
     ]
     assert uniform_population == ["XXX_A", "XXX_B", "XXX"]
+    assert (tmp_path / "related_entities_codes.txt").read_text() == (
+        "XXX_A\nXXX_B\nXXX_C\n"
+    )
 
 
 @pytest.mark.parametrize(

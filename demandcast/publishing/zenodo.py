@@ -20,7 +20,11 @@ Description:
     identifiers of the release are in publishing/release/metadata.yaml,
     which describes the files and the errors of the release and is
     updated for each release. A new version takes them, and keeps the
-    creators, contributors and communities of the record.
+    creators, contributors and communities of the record. Before a
+    draft is created, the metadata is checked against the release: it
+    must name its version, in the links to its tag and after
+    "DemandCast", and no other, and every file that it names must be
+    uploaded.
 
     The API key is read from ZENODO_API_KEY, or from
     SANDBOX_ZENODO_API_KEY for the sandbox of Zenodo, which can be used
@@ -30,6 +34,7 @@ Description:
 import json
 import logging
 import os
+import re
 from typing import Any
 
 import pandas as pd
@@ -53,6 +58,22 @@ RELEASE_METADATA_KEYS = (
     "description",
     "keywords",
     "related_identifiers",
+)
+
+# The versions of DemandCast that the metadata of a release names: in
+# the links to the tags of the repository and after "DemandCast".
+_VERSION = r"v?(\d+(?:\.\d+)+(?:[-+][0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?)"
+VERSION_PATTERNS = (
+    re.compile(rf"releases/tag/{_VERSION}"),
+    re.compile(rf"DemandCast\s+{_VERSION}"),
+)
+
+# The names of the files of a release in the metadata of the release:
+# names with one of these extensions that are not part of a longer
+# name or of an address, such as ".manifest.json" alone or the end of
+# a link.
+FILE_NAME_PATTERN = re.compile(
+    r"(?<![\w./-])[\w-][\w.-]*\.(?:csv|json|md|parquet|zip)(?![\w-])"
 )
 
 
@@ -159,15 +180,16 @@ class ZenodoApi:
 
 
 def read_release_metadata(
-    release_metadata_file: str = RELEASE_METADATA_FILE,
+    release_metadata_file: str | None = None,
 ) -> dict[str, Any]:
     """
     Read the title, description, keywords and links of the release.
 
     Parameters
     ----------
-    release_metadata_file : str, optional
-        The file of the metadata of the release.
+    release_metadata_file : str | None, optional
+        The file of the metadata of the release, RELEASE_METADATA_FILE
+        if None.
 
     Returns
     -------
@@ -180,6 +202,8 @@ def read_release_metadata(
     ValueError
         If one of them is missing, or the file has other keys.
     """
+    if release_metadata_file is None:
+        release_metadata_file = RELEASE_METADATA_FILE
     with open(release_metadata_file, encoding="utf-8") as file:
         metadata = yaml.safe_load(file)
     if set(metadata) != set(RELEASE_METADATA_KEYS):
@@ -189,6 +213,93 @@ def read_release_metadata(
             f"{', '.join(metadata)}."
         )
     return {key: metadata[key] for key in RELEASE_METADATA_KEYS}
+
+
+def _get_texts(value: Any) -> list[str]:
+    """
+    Get the texts in a value read from YAML.
+
+    Parameters
+    ----------
+    value : Any
+        A text, a number, or a list or dictionary of them.
+
+    Returns
+    -------
+    list[str]
+        The texts, and those of the lists and dictionaries in it.
+    """
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        value = list(value.values())
+    if isinstance(value, list):
+        return [text for item in value for text in _get_texts(item)]
+    return []
+
+
+def check_release_metadata(
+    metadata: dict[str, Any], version: str, file_names: list[str]
+) -> None:
+    """
+    Check that the metadata of a release names its version and files.
+
+    Parameters
+    ----------
+    metadata : dict[str, Any]
+        The title, description, keywords and related identifiers of the
+        release.
+    version : str
+        The version of the release, such as "1.1.0".
+    file_names : list[str]
+        The names of the files uploaded in the release.
+
+    Raises
+    ------
+    ValueError
+        If the metadata does not name the version, names another
+        version, or names a file that is not uploaded.
+
+    Notes
+    -----
+    publishing/release/metadata.yaml is written by hand for each
+    release, with the version in the links to its tag and after
+    "DemandCast", and the names of its files, which have the times when
+    they were made. Other versions, such as that of a list of changes
+    from version 1.0.0, are not checked.
+    """
+    texts = _get_texts(metadata)
+    version = version.removeprefix("v")
+    versions = {
+        match
+        for pattern in VERSION_PATTERNS
+        for text in texts
+        for match in pattern.findall(text)
+    }
+    problems = []
+    if version not in versions:
+        problems.append(
+            f"it does not name the version {version} (in a link to "
+            f"'releases/tag/v{version}' or as 'DemandCast {version}')"
+        )
+    others = sorted(versions - {version})
+    if others:
+        problems.append(f"it names other versions: {', '.join(others)}")
+    missing = sorted(
+        {name for text in texts for name in FILE_NAME_PATTERN.findall(text)}
+        - set(file_names)
+    )
+    if missing:
+        problems.append(
+            f"it names files that are not uploaded: {', '.join(missing)}"
+        )
+    if problems:
+        raise ValueError(
+            "The metadata of the release does not match it: "
+            + "; ".join(problems)
+            + f". Update {RELEASE_METADATA_FILE} or the files of the "
+            "release."
+        )
 
 
 def build_metadata(metadata_file: str, version: str) -> dict:
@@ -343,12 +454,15 @@ def publish_release(
     FileNotFoundError
         If a file does not exist.
     ValueError
-        If two files have the same name.
+        If two files have the same name, or the metadata of the release
+        does not name its version or names a file that is not uploaded
+        (see check_release_metadata).
 
     Notes
     -----
     The files are uploaded to the bucket of the draft, which takes large
-    files.
+    files. The address of the draft is logged as soon as it is created,
+    so that a draft left by a failed upload can be found and deleted.
     """
     for file_path in file_paths:
         if not os.path.isfile(file_path):
@@ -356,9 +470,14 @@ def publish_release(
     names = [os.path.basename(file_path) for file_path in file_paths]
     if len(set(names)) < len(names):
         raise ValueError(f"The files have the same names: {names}.")
+    check_release_metadata(read_release_metadata(), version, names)
 
     api = ZenodoApi(sandbox)
     draft = _create_draft(api, record, metadata_file, version)
+    logging.info(
+        f"The draft {draft['id']} of the release {version} is at "
+        f"{draft['links']['html']}; delete it there if the upload fails."
+    )
 
     for file_path, name in zip(file_paths, names, strict=True):
         logging.info(f"Uploading {file_path} to the draft {draft['id']}.")

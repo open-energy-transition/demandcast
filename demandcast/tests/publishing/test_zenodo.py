@@ -12,6 +12,7 @@ import os
 from unittest.mock import patch
 
 import pytest
+import yaml
 
 from publishing import zenodo
 
@@ -49,6 +50,7 @@ class _FakeZenodo:
         self.requests: list[tuple[str, str]] = []
         self.metadata: dict = {}
         self.uploaded: dict[str, bytes] = {}
+        self.failing_uploads = False
         self.dates: list[dict[str, str]] = [
             {"type": "available"},
             {"type": "collected", "start": "2026-01-01"},
@@ -93,6 +95,8 @@ class _FakeZenodo:
             self.metadata = json.loads(kwargs["data"])["metadata"]
             return _FakeResponse(200 if method == "PUT" else 201, draft)
         if method == "PUT" and url.startswith(BUCKET):
+            if self.failing_uploads:
+                return _FakeResponse(500, {"message": "upload failed"})
             self.uploaded[url.removeprefix(BUCKET + "/")] = kwargs[
                 "data"
             ].read()
@@ -116,10 +120,46 @@ def fake_zenodo(monkeypatch):
         yield fake
 
 
-@pytest.fixture
-def release_files(tmp_path):
+def _write_release_metadata(folder, version, file_names):
     """
-    Make the files of a release.
+    Write the metadata of a release.
+
+    Returns
+    -------
+    pathlib.Path
+        The file of the metadata.
+    """
+    tag = (
+        "https://github.com/open-energy-transition/demandcast/releases/"
+        f"tag/v{version}"
+    )
+    files = "".join(f"<li><em>{name}</em></li>" for name in file_names)
+    metadata_file = folder / "metadata.yaml"
+    metadata_file.write_text(
+        yaml.safe_dump(
+            {
+                "title": "Forecasts",
+                "keywords": ["Electricity demand"],
+                "related_identifiers": [
+                    {"relation": "isCompiledBy", "identifier": tag}
+                ],
+                "description": (
+                    f'<p>Made with <a href="{tag}">DemandCast {version}'
+                    f"</a>.</p><ul>{files}</ul><p>Each file has a "
+                    "manifest, <em>.manifest.json</em>.</p>"
+                ),
+            }
+        )
+    )
+    return metadata_file
+
+
+@pytest.fixture
+def release_files(tmp_path, monkeypatch):
+    """
+    Make the files of a release, and its metadata.
+
+    The metadata names version 1.1.0 and the two files.
 
     Returns
     -------
@@ -128,6 +168,15 @@ def release_files(tmp_path):
     """
     (tmp_path / "model.json").write_bytes(b"model")
     (tmp_path / "forecasts.parquet").write_bytes(b"forecasts")
+    monkeypatch.setattr(
+        zenodo,
+        "RELEASE_METADATA_FILE",
+        str(
+            _write_release_metadata(
+                tmp_path, "1.1.0", ["model.json", "forecasts.parquet"]
+            )
+        ),
+    )
     return [str(tmp_path / "model.json"), str(tmp_path / "forecasts.parquet")]
 
 
@@ -170,15 +219,15 @@ def test_new_version_without_dates(fake_zenodo, release_files):
     """Test that a record whose only date has no value gets no dates."""
     fake_zenodo.dates = [{"type": "available"}]
 
-    zenodo.publish_release(release_files, "2.0.0", 100)
+    zenodo.publish_release(release_files, "1.1.0", 100)
 
     assert "dates" not in fake_zenodo.metadata
-    assert fake_zenodo.metadata["version"] == "2.0.0"
+    assert fake_zenodo.metadata["version"] == "1.1.0"
 
 
 def test_publish_a_new_record(fake_zenodo, release_files):
     """Test that a new record has the metadata of the forecasts."""
-    zenodo.publish_release(release_files, "1.0.0", None)
+    zenodo.publish_release(release_files, "1.1.0", None)
 
     assert fake_zenodo.requests[0] == ("POST", "")
     assert (
@@ -219,6 +268,118 @@ def test_publish_with_wrong_files(fake_zenodo, tmp_path, release_files):
         )
 
     assert fake_zenodo.requests == []
+
+
+@pytest.mark.parametrize(
+    ("version", "files", "messages"),
+    [
+        (
+            "1.2.0",
+            ["model.json", "forecasts.parquet"],
+            [
+                "does not name the version 1.2.0",
+                "names other versions: 1.1.0",
+            ],
+        ),
+        (
+            "1.1.0",
+            ["model.json"],
+            ["names files that are not uploaded: forecasts.parquet"],
+        ),
+    ],
+)
+def test_publish_with_wrong_metadata(
+    fake_zenodo, release_files, version, files, messages
+):
+    """
+    Test that metadata of another release stops it before any request.
+
+    The metadata names version 1.1.0, the model and the forecasts.
+    """
+    file_paths = [
+        path for path in release_files if os.path.basename(path) in files
+    ]
+
+    with pytest.raises(ValueError, match="does not match it") as error:
+        zenodo.publish_release(file_paths, version, 100)
+
+    for message in messages:
+        assert message in str(error.value)
+    assert fake_zenodo.requests == []
+
+
+def test_names_in_the_metadata(tmp_path):
+    """
+    Test that only the names of the files and versions are checked.
+
+    The links to other files, the extension of the manifests alone and
+    other mentions of versions are not names of the release.
+    """
+    metadata = zenodo.read_release_metadata(
+        str(_write_release_metadata(tmp_path, "2.0.0", ["model.json"]))
+    )
+    metadata["description"] += (
+        "<p>Changes from version 1.0.0, the version of "
+        '<a href="https://example.org/data/old_model.json">the paper</a> '
+        "on https://open-energy-transition.github.io/demandcast/ and "
+        "https://github.com/x/y/blob/main/README.md.</p>"
+    )
+
+    zenodo.check_release_metadata(metadata, "v2.0.0", ["model.json"])
+    with pytest.raises(ValueError, match=r"not uploaded: model\.json"):
+        zenodo.check_release_metadata(metadata, "2.0.0", ["model.zip"])
+
+
+def test_metadata_of_the_current_release():
+    """
+    Test that the metadata of the current release names one version.
+
+    Its files are the forecasts, their inputs, the model, the archives
+    of the validations and the README, without the manifests.
+    """
+    metadata = zenodo.read_release_metadata()
+    texts = [
+        metadata["title"],
+        metadata["description"],
+        *(link["identifier"] for link in metadata["related_identifiers"]),
+    ]
+    versions = {
+        version
+        for pattern in zenodo.VERSION_PATTERNS
+        for text in texts
+        for version in pattern.findall(text)
+    }
+    names = {
+        name
+        for text in texts
+        for name in zenodo.FILE_NAME_PATTERN.findall(text)
+    }
+
+    assert len(versions) == 1
+    assert {
+        "forecasts_on_historical_period.parquet",
+        "validation.zip",
+        "cross_validation.zip",
+        "README.md",
+    } <= names
+    assert not any("manifest" in name for name in names)
+    zenodo.check_release_metadata(metadata, versions.pop(), sorted(names))
+
+
+def test_draft_is_logged_before_the_uploads(
+    fake_zenodo, release_files, caplog
+):
+    """Test that the address of the draft is logged before an upload."""
+    fake_zenodo.failing_uploads = True
+
+    with (
+        caplog.at_level("INFO"),
+        pytest.raises(zenodo.ZenodoError, match="upload failed"),
+    ):
+        zenodo.publish_release(release_files, "1.1.0", 100)
+
+    assert "The draft 200 of the release 1.1.0 is at " in caplog.text
+    assert "https://zenodo.org/deposit/200" in caplog.text
 
 
 @pytest.mark.usefixtures("fake_zenodo")

@@ -9,6 +9,7 @@ Description:
 import pandas as pd
 import pytest
 
+import utils.data_sources
 import utils.paths
 import utils.relations
 
@@ -93,3 +94,36 @@ def test_superseded_entities():
     assert utils.relations.get_superseded_entities(
         first_times, last_times, related
     ) == {"BRA_N-2000"}
+
+
+def test_read_checked_codes(tmp_path, monkeypatch):
+    """Test that the checked codes are read, and none before a check."""
+    monkeypatch.setattr(utils.paths, "CHECKS_FOLDER", str(tmp_path))
+    assert utils.relations.read_checked_codes() == []
+
+    (tmp_path / "related_entities_codes.txt").write_text("USA\nUSA_CAL\n\n")
+
+    assert utils.relations.read_checked_codes() == ["USA", "USA_CAL"]
+
+
+def test_all_codes_were_checked():
+    """
+    Test that the related entities were computed for all the codes.
+
+    Notes
+    -----
+    A code of a data source that the check never considered has no
+    shares, so the cross-validation would not keep it apart from the
+    entities that share its people.
+    """
+    unchecked = sorted(
+        set(utils.data_sources.read_all_codes())
+        - set(utils.relations.read_checked_codes())
+    )
+
+    assert not unchecked, (
+        f"The related entities were not computed for {unchecked}: run "
+        "`python check.py` with `check: related_entities`, which "
+        f"updates {utils.relations.get_shares_file()} and "
+        f"{utils.relations.get_codes_file()}."
+    )

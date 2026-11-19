@@ -1,5 +1,6 @@
 # Labels pull requests by the files they change (.github/labeler.yml) and by
-# the type in their Conventional Commits title. pull_request_target gives
+# the type in their Conventional Commits title, and removes these labels when
+# they no longer apply. pull_request_target gives
 # write access on pull requests from forks, so this workflow must never check
 # out or run their code.
 
@@ -23,10 +24,14 @@ jobs:
       contents: read # Read the labeler configuration.
       pull-requests: write
     steps:
-      - name: Add labels for the changed files
+      # The labels of the files that a pull request no longer changes are
+      # removed, so that the release notes file it under its last state.
+      - name: Label the changed files
         uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        with:
+          sync-labels: true
 
-      - name: Add labels for the type in the Conventional Commits title
+      - name: Label the type in the Conventional Commits title
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
@@ -36,22 +41,35 @@ jobs:
             if (!match) {
               return; // The pull request checks report invalid titles.
             }
-            const labels = [];
             const byType = {
               feat: "Enhancement",
               fix: "Bug",
               docs: "Documentation",
             };
+            const wanted = [];
             if (match[2]) {
-              labels.push("Breaking change");
+              wanted.push("Breaking change");
             }
             if (byType[match[1]]) {
-              labels.push(byType[match[1]]);
+              wanted.push(byType[match[1]]);
             }
-            if (labels.length > 0) {
+            const managed = [...Object.values(byType), "Breaking change"];
+            const current = context.payload.pull_request.labels.map(
+              (label) => label.name,
+            );
+            const issue = {
+              ...context.repo,
+              issue_number: context.payload.pull_request.number,
+            };
+            for (const name of current) {
+              if (managed.includes(name) && !wanted.includes(name)) {
+                await github.rest.issues.removeLabel({ ...issue, name });
+              }
+            }
+            const missing = wanted.filter((name) => !current.includes(name));
+            if (missing.length > 0) {
               await github.rest.issues.addLabels({
-                ...context.repo,
-                issue_number: context.payload.pull_request.number,
-                labels,
+                ...issue,
+                labels: missing,
               });
             }
