@@ -86,9 +86,8 @@ Description:
     with another one, or older than the cleaned data of one of its data
     sources is not current, and the assembly of the training data
     combines it again from the cleaned data (see
-    ensure_current_combination), so that a series made by older code or
-    before a review, such as one copied from a bucket, does not become
-    training data.
+    ensure_current_combination), so that the training data follows the
+    current rules of the combination and the current reviews.
 """
 
 import hashlib

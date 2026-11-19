@@ -3,10 +3,15 @@ License: AGPL-3.0.
 
 Description:
 
-    This script performs a cross-validation of a machine learning model
-    using a preprocessed dataset, implementing a Leave-One-Group-Out
-    (LOGO) strategy and saving the results, with the trained model of
-    each fold in a ZIP archive next to them (see ml_models.files).
+    This script cross-validates the machine learning model of
+    config/ml_config.yaml on the latest data assembled for training,
+    leaving one group out: each country or subdivision, or each country
+    with its subdivisions, is held out in turn, and a model trained
+    without it and its related entities is scored on it with the mean
+    absolute percentage error (MAPE) and the weighted absolute
+    percentage error (WAPE). The errors are saved with the folds, the
+    settings, the predictions in MW, and the model of each fold in a ZIP
+    archive (see ml_models.files).
 """
 
 # On Windows, PyTorch must be imported before pandas, so the ml_models
@@ -49,7 +54,8 @@ def run_model_cross_validation(
     """
     Run cross-validation of the machine learning model and save results.
 
-    The models are scored by their MAPE.
+    The model of each fold is scored by its MAPE and WAPE on its
+    training rows and on each held-out entity.
 
     Parameters
     ----------

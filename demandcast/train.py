@@ -3,9 +3,13 @@ License: AGPL-3.0.
 
 Description:
 
-    This script trains a machine learning model using a preprocessed
-    dataset, with configuration options for algorithm selection,
-    feature selection, and data splitting.
+    This script trains the machine learning model of
+    config/ml_config.yaml, with the settings of its algorithm in
+    config/<algorithm>_config.yaml, on the latest data assembled for
+    training. The latest year of each country and subdivision can be
+    kept for testing, and the year before it for validation. The model
+    is saved in the folder of its algorithm, with a manifest of its
+    data, sets and settings.
 """
 
 # On Windows, PyTorch must be imported before pandas, so the ml_models
@@ -75,7 +79,6 @@ def run_model_training(
         f"{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
     )
 
-    # Train the model and save it.
     model = model_module.train(prepared_dataset, model_config)
     model_folder = utils.paths.get_models_folder(algorithm.lower())
     os.makedirs(model_folder, exist_ok=True)

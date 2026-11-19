@@ -88,7 +88,6 @@ def _add_first_and_last_years(
             first_years.append(None)
             last_years.append(None)
         elif not data_availability[variable].loc[code]:
-            # Data for the entity is not available from the source.
             first_years.append(None)
             last_years.append(None)
         else:
@@ -160,8 +159,6 @@ def get_data_availability() -> pd.DataFrame:
     """
     entity_codes_with_shape = utils.shapes.get_all_codes_with_shapes()
 
-    # Get the ISO Alpha-3 codes for all countries and the parent
-    # countries of the subdivisions with available shapes.
     iso_alpha_3_codes_with_shapes = [
         code.split("_")[0] for code in entity_codes_with_shape
     ]
@@ -182,7 +179,6 @@ def get_data_availability() -> pd.DataFrame:
     data_availability = pd.DataFrame(index=entity_codes_with_shape)
     data_availability.index.name = "entity_code"
 
-    # Add a column with the entity names.
     data_availability["entity_name"] = [
         f"Subdivision of {_get_country_name(code.split('_')[0])}"
         if "_" in code
@@ -196,8 +192,6 @@ def get_data_availability() -> pd.DataFrame:
 
     world_bank_historical_population = world_bank.download("population")
 
-    # Add a column to indicate the availability of historical population
-    # data.
     data_availability["historical_population"] = data_availability[
         "parent_iso_alpha_3_code"
     ].isin(world_bank_historical_population.index) & (
@@ -214,8 +208,6 @@ def get_data_availability() -> pd.DataFrame:
         retrievals.annual_electricity_demand_per_capita.get_historical_data()
     )
 
-    # Add a column to indicate the availability of historical
-    # electricity demand per capita data.
     data_availability["historical_electricity_demand_per_capita"] = (
         data_availability["parent_iso_alpha_3_code"].isin(
             electricity_demand_per_capita.index
@@ -230,8 +222,6 @@ def get_data_availability() -> pd.DataFrame:
 
     gdp_ppp_per_capita = retrievals.gdp_ppp_per_capita.get_historical_data()
 
-    # Add a column to indicate the availability of historical GDP PPP
-    # per capita data.
     data_availability["historical_gdp_ppp_per_capita"] = data_availability[
         "parent_iso_alpha_3_code"
     ].isin(gdp_ppp_per_capita.index)
@@ -244,8 +234,6 @@ def get_data_availability() -> pd.DataFrame:
 
     iiasa_future_population = iiasa.read("population")
 
-    # Add a column to indicate the availability of future population
-    # data.
     data_availability["future_population"] = data_availability[
         "parent_iso_alpha_3_code"
     ].isin(iiasa_future_population.index) & (
@@ -254,16 +242,14 @@ def get_data_availability() -> pd.DataFrame:
 
     iiasa_future_gdp_ppp_per_capita = iiasa.read("gdp_ppp_per_capita")
 
-    # Add a column to indicate the availability of future GDP PPP per
-    # capita data.
     data_availability["future_gdp_ppp_per_capita"] = data_availability[
         "parent_iso_alpha_3_code"
     ].isin(iiasa_future_gdp_ppp_per_capita.index)
 
     retrievals_directory = utils.paths.RETRIEVALS_FOLDER
 
-    # Read codes available for future electricity demand per capita
-    # projections from the IIASA SSP database.
+    # The IIASA projections of electricity demand per capita are by
+    # region, and this file maps the countries to their regions.
     with open(
         os.path.join(
             retrievals_directory,
@@ -278,8 +264,6 @@ def get_data_availability() -> pd.DataFrame:
         iiasa_future_electricity_demand_per_capita_mapping.keys()
     )
 
-    # Add a column to indicate the availability of future electricity
-    # demand per capita data.
     data_availability["future_electricity_demand_per_capita"] = (
         data_availability["parent_iso_alpha_3_code"].isin(
             iiasa_future_electricity_demand_per_capita_codes
@@ -288,13 +272,10 @@ def get_data_availability() -> pd.DataFrame:
 
     data_availability["area_greater_than_500_km2"] = False
 
-    # Loop over all countries and subdivisions to check if their area is
-    # greater than 500 km2.
     for entity_code in data_availability.index:
         shape = utils.shapes.get_entity_shape(entity_code, make_plot=False)
 
-        # Get the area of all the polygons of the shape in square
-        # kilometers.
+        # The area in km², in an equal-area projection.
         area = (
             shape.geometry.set_crs(epsg=4326).to_crs("+proj=cea").area.sum()
             / 10**6

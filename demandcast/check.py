@@ -3,9 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This script performs checks on the data quality and availability,
-    on the electricity demand data sources, and gathers
-    the flags of the cleaned electricity demand into a report.
+    This script runs one of four checks, chosen by its settings: the
+    socio-economic data available for each country and subdivision,
+    the electricity demand data sources over the network, a report of
+    the flags of the cleaned electricity demand, or the shares of the
+    people of the entities with data whose shapes overlap.
 """
 
 from typing import Literal
@@ -65,6 +67,7 @@ if __name__ == "__main__":
         utils.config.read_and_check_configuration(
             "check",
             ConfigModel,
-            "Perform checks on the data data quality and availability.",
+            "Check the data availability, the data sources, the flags "
+            "or the related entities.",
         )
     )

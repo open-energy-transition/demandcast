@@ -1,8 +1,9 @@
 # Configuration read by the cross_validate.py script.
 
 # OPTIONAL.
-# Number of parallel jobs to run for cross-validation. The models are
-# scored by their mean absolute percentage error (MAPE).
+# The number of folds to run in parallel. The model of each fold is
+# scored by its mean absolute percentage error (MAPE) and its weighted
+# absolute percentage error (WAPE).
 n_jobs: 1
 
 # OPTIONAL.

@@ -547,7 +547,6 @@ def run_check(
             maximum_age_days_by_source.get(data_source, maximum_age_days),
         )
 
-    # Check the data sources at the same time.
     _import_modules(
         [
             data_source
@@ -580,7 +579,6 @@ def run_check(
                 seconds=time_limit_minutes * 60,
             )
 
-    # Count the checks that each data source has failed in a row.
     previous_failures = _read_previous_failures()
     ordered_results = [results[data_source] for data_source in data_sources]
     for result in ordered_results:

@@ -3,12 +3,13 @@ License: AGPL-3.0.
 
 Description:
 
-    This script validates a trained machine learning model on the most
-    recent year of each country and subdivision, the testing set of its
-    training, with the mean absolute percentage error (MAPE) and the
-    weighted absolute percentage error (WAPE). The sets of the training,
-    with or without a validation set, are those of the manifest of the
-    model.
+    This script scores a trained machine learning model on the testing
+    set of its training, the latest year of each country and
+    subdivision, with the mean absolute percentage error (MAPE) and the
+    weighted absolute percentage error (WAPE) of each entity. The data
+    and the sets, with or without a validation set, are those of the
+    manifest of the model. The errors are saved with a summary and the
+    predictions in MW.
 """
 
 # On Windows, PyTorch must be imported before pandas, so the ml_models
@@ -67,7 +68,6 @@ def run_model_validation(
     algorithm = ml_config.algorithm
     model_module = ml_models.registry.get_model_module(algorithm)
 
-    # Load the trained model, after checking it against its manifest.
     trained_model_path = ml_models.files.get_trained_model_path(
         model_path, algorithm.lower(), model_module.FILE_EXTENSION
     )

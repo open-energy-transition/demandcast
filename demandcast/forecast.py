@@ -3,11 +3,13 @@ License: AGPL-3.0.
 
 Description:
 
-    This script produces forecasts using a trained machine learning
-    model and input features, saving the predictions to a specified
-    output file. The forecasts of each complete year of each country or
-    subdivision sum to the annual demand of its scenario (see
-    ml_models.data.normalize_to_annual_totals).
+    This script forecasts the hourly electricity demand in MW of each
+    country and subdivision with a trained machine learning model, from
+    the latest data assembled for forecasting, and saves the forecasts
+    with a manifest. The forecasts of each complete year of each country
+    or subdivision sum to the annual demand of its scenario (see
+    ml_models.data.normalize_to_annual_totals), the product of the
+    scaling variables of config/ml_config.yaml.
 """
 
 # On Windows, PyTorch must be imported before pandas, so the ml_models
@@ -143,8 +145,6 @@ def run_forecasting(
         data_path, ml_config, target=False
     )
 
-    # Load the trained model, and check that it was trained with the
-    # features of the prepared dataset.
     trained_model_path = ml_models.files.get_trained_model_path(
         model_path, algorithm.lower(), model_module.FILE_EXTENSION
     )
