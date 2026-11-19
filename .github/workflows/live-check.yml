@@ -1,6 +1,7 @@
 # Checks the electricity demand data sources over the network every week,
 # and keeps one issue open with the data sources that fail two checks in a
-# row. The API keys and the accounts of EPIAS and ISO New England are
+# row. It also runs the tests that need network access, which the other
+# runs of the tests leave out. The API keys and the accounts of EPIAS and ISO New England are
 # secrets of the environment live-checks, which only the main branch can
 # use. The keys belong to the account esmtools@openenergytransition.org.
 
@@ -121,3 +122,27 @@ jobs:
             gh issue close "$issue" --comment \
               "No data source fails two [live checks]($RUN_URL) in a row any more."
           fi
+
+  network-tests:
+    name: "Tests with network access"
+    if: github.ref == 'refs/heads/main'
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ./demandcast
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: "Install uv and Python"
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          python-version: "3.12"
+          enable-cache: false
+
+      - name: "Run the tests that need network access"
+        run: uv run --locked pytest -m network

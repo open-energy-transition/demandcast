@@ -75,7 +75,7 @@ def checks_folder(monkeypatch, tmp_path):
             "    verdict: source_error\n"
             "    note: Wrong times in UTC.\n"
             "  - data_source: aemo_nem\n"
-            "    code: AUS_SA\n"
+            "    code: AUS_SA1\n"
             "    flag: midday_dip\n"
             "    periods: [DJF 2024]\n"
             "    verdict: net_demand\n"
@@ -86,7 +86,7 @@ def checks_folder(monkeypatch, tmp_path):
             "    verdict: source_error\n"
             "    note: Fixed.\n"
             "  - data_source: combined\n"
-            "    code: AUS_SA\n"
+            "    code: AUS_SA1\n"
             "    flag: time_lag\n"
             "    verdict: net_demand\n"
             "    note: From the combination.\n"
@@ -101,9 +101,9 @@ def test_run_check():
         "CAN_NL_ccei",
         [("daylight_saving", "2024-11-03"), ("daylight_saving", "2025-03-09")],
     )
-    # The data source of AUS_SA, aemo_nem, has an underscore.
+    # The data source of AUS_SA1, aemo_nem, has an underscore.
     _save_flags(
-        "AUS_SA_aemo_nem",
+        "AUS_SA1_aemo_nem",
         [("midday_dip", "DJF 2024"), ("midday_dip", "MAM 2024")],
     )
     _save_flags("PAN_cnd", [])
@@ -113,8 +113,8 @@ def test_run_check():
     # A review without periods covers all the periods of its flag, and
     # one with periods only those.
     assert flags[["code", "period", "verdict"]].to_numpy().tolist() == [
-        ["AUS_SA", "DJF 2024", "net_demand"],
-        ["AUS_SA", "MAM 2024", ""],
+        ["AUS_SA1", "DJF 2024", "net_demand"],
+        ["AUS_SA1", "MAM 2024", ""],
         ["CAN_NL", "2024-11-03", "source_error"],
         ["CAN_NL", "2025-03-09", "source_error"],
     ]
@@ -133,7 +133,7 @@ def test_run_check():
     ) as file:
         report = file.read()
     assert "4 flags of 2 series, 1 not reviewed" in report
-    assert "| aemo_nem | AUS_SA | midday_dip | MAM 2024 |" in report
+    assert "| aemo_nem | AUS_SA1 | midday_dip | MAM 2024 |" in report
     assert (
         "| ccei | CAN_NL | daylight_saving | 2024-11-03, 2025-03-09 "
         "| source_error | Wrong times in UTC. |"
@@ -184,7 +184,7 @@ def test_reviews_of_the_repository():
     for review in reviews:
         assert review.flag in flags
         if review.data_source == checks.flags.COMBINED:
-            codes = utils.data_sources.read_all_codes_with_electricity_demand_data()
+            codes = utils.data_sources.read_all_codes()
         else:
             codes = utils.data_sources.read_codes_in(
                 data_source=review.data_source
@@ -238,13 +238,13 @@ def test_combined_flags(checks_folder):
     with open(os.path.join(checks_folder, "reviewed_flags.yaml"), "a") as file:
         file.write(
             "  - data_source: aemo_nem\n"
-            "    code: AUS_SA\n"
+            "    code: AUS_SA1\n"
             "    flag: annual_change\n"
             "    verdict: false_positive\n"
             "    note: Not a change.\n"
         )
-    _save_flags("AUS_SA_aemo_nem", [("midday_dip", "DJF 2024")])
-    file_path = utils.paths.get_electricity_demand_file("combined", "AUS_SA")
+    _save_flags("AUS_SA1_aemo_nem", [("midday_dip", "DJF 2024")])
+    file_path = utils.paths.get_electricity_demand_file("combined", "AUS_SA1")
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     hours = pd.date_range("2023-12-01", "2024-03-31 23:00", freq="h")
     pd.DataFrame(
@@ -257,7 +257,7 @@ def test_combined_flags(checks_folder):
         index=pd.Index(hours, name="Time (UTC)"),
     ).to_parquet(file_path)
     _save_flags(
-        "AUS_SA",
+        "AUS_SA1",
         [
             ("midday_dip", "DJF 2024"),
             ("midday_dip", "MAM 2024"),
@@ -290,9 +290,10 @@ def test_combined_flags(checks_folder):
         "4 flags of 1 codes: 1 with the review of the same flag of their "
         "main source, 1 with their own review, and 2 not reviewed."
     ) in report
-    assert "| AUS_SA | midday_dip | MAM 2024 | aemo_nem |" in report
+    assert "| AUS_SA1 | midday_dip | MAM 2024 | aemo_nem |" in report
     assert (
-        "| AUS_SA | time_lag | DJF 2024 | net_demand | From the combination. |"
+        "| AUS_SA1 | time_lag | DJF 2024 | net_demand | "
+        "From the combination. |"
     ) in report
 
 

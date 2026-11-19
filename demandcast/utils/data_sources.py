@@ -452,7 +452,7 @@ def read_entities_info(
     return content["entities"]
 
 
-def get_electricity_demand_data_sources_containing_code(
+def get_data_sources_of(
     code: str,
 ) -> list[str]:
     """
@@ -507,7 +507,7 @@ def read_codes_in(file_path: str = "", data_source: str = "") -> list[str]:
     return [get_code_of(entity) for entity in entities]
 
 
-def read_all_codes_with_electricity_demand_data() -> list[str]:
+def read_all_codes() -> list[str]:
     """
     Read the codes of all countries and subdivisions with demand data.
 
@@ -535,7 +535,7 @@ def read_all_codes_with_electricity_demand_data() -> list[str]:
     return sorted(set(codes))
 
 
-def read_date_ranges_of_electricity_demand_in_data_source(
+def read_date_ranges(
     data_source: str,
 ) -> dict[str, tuple[dt.date, dt.date]]:
     """
@@ -606,9 +606,7 @@ def read_all_periods() -> dict[str, list[tuple[dt.date, dt.date]]]:
         for (
             code,
             date_range,
-        ) in read_date_ranges_of_electricity_demand_in_data_source(
-            data_source
-        ).items():
+        ) in read_date_ranges(data_source).items():
             date_ranges.setdefault(code, []).append(date_range)
 
     periods: dict[str, list[tuple[dt.date, dt.date]]] = {}

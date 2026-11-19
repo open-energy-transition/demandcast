@@ -138,11 +138,9 @@ def test_requests(data_source, monkeypatch):
     # The requests cover the dates of the data in the YAML file, and
     # each one is passed whole, with the code. A source that downloads
     # its data at once has a single request.
-    start_date, end_date = (
-        utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
-            data_source
-        )[codes[0]]
-    )
+    start_date, end_date = utils.data_sources.read_date_ranges(data_source)[
+        codes[0]
+    ]
     requests = module.get_available_requests(codes[0], start_date, end_date)
     assert requests
     inspect.signature(module.download_and_extract_data_for_request).bind(

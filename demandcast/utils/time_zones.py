@@ -190,11 +190,7 @@ def _get_defined_time_zone_for_code(code: str) -> dt.tzinfo:
         If the provided code is not recognized or not available, or if
         conflicting time zones are found for the subdivision.
     """
-    data_sources = (
-        utils.data_sources.get_electricity_demand_data_sources_containing_code(
-            code
-        )
-    )
+    data_sources = utils.data_sources.get_data_sources_of(code)
 
     if len(data_sources) == 0:
         raise ValueError(f"Code {code} is not available in any data source.")
@@ -245,7 +241,7 @@ def _get_time_zone_of_subdivision(code: str) -> dt.tzinfo:
     equal-area projection, to get accurate coordinates.
     """
     all_codes_with_electricity_demand_data = (
-        utils.data_sources.read_all_codes_with_electricity_demand_data()
+        utils.data_sources.read_all_codes()
     )
 
     # Extract the subdivisions that have the time zone defined in the
