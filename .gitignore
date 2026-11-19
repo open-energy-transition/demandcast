@@ -85,7 +85,8 @@ venv.bak/
 
 .ropeproject
 
-/site
+# The site that mkdocs builds.
+webpage/site/
 
 .mypy_cache/
 .dmypy.json
@@ -101,7 +102,3 @@ cython_debug/
 
 .DS_Store
 .claude/
-
-# Report of the live check of the data sources.
-demandcast/checks/data_sources_report.*
-demandcast/checks/flags_report.*

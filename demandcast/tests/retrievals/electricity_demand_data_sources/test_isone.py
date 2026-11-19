@@ -152,7 +152,8 @@ def test_real_time_solar(fake_downloads, assert_demand, tmp_path):
     samples = [
         {
             "interval_begin_date": (
-                f"2025-07-15T{minutes // 60:02d}:{minutes % 60:02d}:00.000-04:00"
+                f"2025-07-15T{minutes // 60:02d}:{minutes % 60:02d}"
+                ":00.000-04:00"
             ),
             "load_zone_id": zone,
             "load_zone_name": f".Z.ZONE{zone}",

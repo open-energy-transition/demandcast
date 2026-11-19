@@ -406,7 +406,7 @@ def get_data() -> FigureData:
     """
     # Read the codes of all countries and subdivisions, by country, and
     # the continent and the fractions of the years of data of each code.
-    codes = utils.data_sources.read_all_codes_with_electricity_demand_data()
+    codes = utils.data_sources.read_all_codes()
     codes_of_countries: dict[str, list[str]] = {}
     for code in codes:
         codes_of_countries.setdefault(code.split("_")[0], []).append(code)

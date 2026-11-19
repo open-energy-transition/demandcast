@@ -9,8 +9,8 @@ src = ["demandcast"]
 
 [lint]
 select = [
-    # Errors, warnings and Pyflakes.
-    "E4", "E7", "E9", "F", "W",
+    # Errors, the length of the lines, warnings and Pyflakes.
+    "E4", "E501", "E7", "E9", "F", "W",
     # Imports, docstrings and pandas.
     "I", "TID", "D", "PD",
     # Docstring parameters, returns and raises (pydoclint, preview rules).

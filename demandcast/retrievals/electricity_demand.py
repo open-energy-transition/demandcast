@@ -338,11 +338,9 @@ def _retrieve_data(
     # Get the requests for the dates of the entity in the yaml file of
     # the data source, and download each of them with the code, keeping
     # the responses.
-    start_date, end_date = (
-        utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
-            data_source
-        )[code]
-    )
+    start_date, end_date = utils.data_sources.read_date_ranges(data_source)[
+        code
+    ]
     requests = retrieval_module.get_available_requests(
         code, start_date, end_date
     )

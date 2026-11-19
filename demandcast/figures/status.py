@@ -132,7 +132,7 @@ def get_numbers(date: dt.date) -> Numbers:
     sources covers.
     """
     periods_of_codes = utils.data_sources.read_all_periods()
-    codes = utils.data_sources.read_all_codes_with_electricity_demand_data()
+    codes = utils.data_sources.read_all_codes()
     periods = [period for code in codes for period in periods_of_codes[code]]
     subdivisions = [code for code in codes if "_" in code]
     return Numbers(

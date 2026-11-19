@@ -163,7 +163,10 @@ def test_default_configuration_names_no_target(script, message, monkeypatch):
         ),
         (
             "retrieve",
-            "variable: temperature\nclimate_model: CESM2\nscenario: SSP1-1.9\n",
+            (
+                "variable: temperature\nclimate_model: CESM2\n"
+                "scenario: SSP1-1.9\n"
+            ),
             "'SSP1-1.9' is not available",
         ),
         (

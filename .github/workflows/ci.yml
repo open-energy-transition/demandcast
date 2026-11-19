@@ -1,6 +1,7 @@
-# Runs the pre-commit hooks, the tests, mypy and a Docker build on pull
-# requests and on pushes to main. Pull requests that only change
-# documentation skip the tests, mypy and the Docker build.
+# Runs the pre-commit hooks, the tests, mypy, the build of the
+# documentation and a Docker build on pull requests and on pushes to
+# main. Pull requests that only change documentation skip the tests,
+# mypy and the Docker build.
 
 name: CI
 
@@ -45,7 +46,7 @@ jobs:
             });
             const isDocs = (path) =>
               /^(webpage\/|\.github\/ISSUE_TEMPLATE\/)/.test(path) ||
-              /^(\.github\/PULL_REQUEST_TEMPLATE\.md|CITATION\.cff|LICENSE)$/.test(path) ||
+              /^(\.github\/PULL_REQUEST_TEMPLATE\.md|LICENSE)$/.test(path) ||
               (path.endsWith(".md") && !path.startsWith(".github/workflows/"));
             const docsOnly =
               files.length > 0 &&
@@ -121,28 +122,40 @@ jobs:
           python-version: ${{ matrix.python }}
           cache-dependency-glob: demandcast/uv.lock
 
+      - name: "Install the dependencies"
+        run: uv sync --locked --extra lstm
+
+      # The tests must not use the network: the proxy is a closed port, so
+      # a test that downloads, such as the shapes of Natural Earth, fails.
       - name: "Run the tests"
         if: ${{ !matrix.coverage }}
-        run: uv run --locked --extra lstm pytest
+        env:
+          HTTP_PROXY: http://127.0.0.1:9
+          HTTPS_PROXY: http://127.0.0.1:9
+        run: uv run --no-sync pytest
 
       - name: "Run the tests with coverage"
         if: ${{ matrix.coverage }}
-        run: uv run --locked --extra lstm pytest --cov --cov-report=xml
+        env:
+          HTTP_PROXY: http://127.0.0.1:9
+          HTTPS_PROXY: http://127.0.0.1:9
+        run: uv run --no-sync pytest --cov --cov-report=xml
 
-      # Raise the floor of the total coverage as tests are added.
+      # The floors are just below the coverage, so that a change that
+      # leaves code untested fails.
       - name: "Check the coverage"
         if: ${{ matrix.coverage }}
         run: |
-          uv run --locked coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
-          uv run --locked coverage report --fail-under=57
-          uv run --locked coverage report --include="utils/*" --fail-under=95
+          uv run --no-sync coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+          uv run --no-sync coverage report --fail-under=95
+          uv run --no-sync coverage report --include="utils/*" --fail-under=95
 
       # Maintainers can skip this check for mechanical changes, such as
       # renames or lint fixes in untested code, with a label.
       - name: "Check the coverage of the changed lines"
         if: ${{ matrix.coverage && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'skip-diff-cover') }}
         run: |
-          uv run --locked diff-cover coverage.xml --compare-branch=origin/main --fail-under=80 --format markdown:diff-cover.md || status=$?
+          uv run --no-sync diff-cover coverage.xml --compare-branch=origin/main --fail-under=80 --format markdown:diff-cover.md || status=$?
           cat diff-cover.md >> "$GITHUB_STEP_SUMMARY"
           exit "${status:-0}"
 
@@ -170,6 +183,30 @@ jobs:
 
       - name: "Check the types"
         run: uv run --locked --extra lstm mypy
+
+  # Builds the documentation, which deploys from main (see docs.yml), so
+  # that a pull request cannot break it.
+  docs:
+    name: "Documentation"
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ./webpage
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: "Install uv"
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          cache-dependency-glob: webpage/uv.lock
+
+      - name: "Build the documentation"
+        run: uv run --locked mkdocs build --strict
 
   docker-image:
     name: "Docker image"
@@ -221,7 +258,7 @@ jobs:
   ci-result:
     name: "CI result"
     if: always()
-    needs: [changes, pre-commit, tests, mypy, docker-image]
+    needs: [changes, pre-commit, tests, mypy, docs, docker-image]
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:

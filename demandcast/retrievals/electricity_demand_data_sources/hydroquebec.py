@@ -138,10 +138,10 @@ def download_and_extract_data_for_request(
             if not np.isnan(around):
                 positions = positions[[np.abs(values - around).argmin()]]
             keep[positions[0]] = True
+            kept = electricity_demand_time_series.iloc[positions[0]]
             logging.warning(
                 f"Hydro-Québec gives the values {values.tolist()} at {time}. "
-                f"The value {electricity_demand_time_series.iloc[positions[0]]}"
-                " is kept."
+                f"The value {kept} is kept."
             )
         electricity_demand_time_series = electricity_demand_time_series[keep]
 

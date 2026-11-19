@@ -116,7 +116,7 @@ def test_run_check(tmp_path, monkeypatch, uniform_population):
     monkeypatch.setattr(utils.paths, "CHECKS_FOLDER", str(tmp_path))
     monkeypatch.setattr(
         checks.related_entities.utils.data_sources,
-        "read_all_codes_with_electricity_demand_data",
+        "read_all_codes",
         lambda: ["XXX_A", "XXX_B", "XXX_C"],
     )
 

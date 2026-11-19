@@ -25,9 +25,7 @@ def test_get_available_requests():
 
 def test_subsystems_of_the_entities():
     """Test that each entity, of any period, reads its subsystem."""
-    codes = utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
-        "ons"
-    )
+    codes = utils.data_sources.read_date_ranges("ons")
 
     assert set(ons.SUBSYSTEMS) == set(codes)
     assert set(ons.SUBSYSTEMS.values()) == {"N", "NE", "SE", "S"}
