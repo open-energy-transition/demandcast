@@ -280,3 +280,49 @@ def test_run_data_retrieval_of_historical_years(code):
         saved[pd.Timestamp(last_hour_of_2020) + pd.Timedelta(hours=1)]
         == (values[1])
     )
+
+
+def test_year_without_data_takes_the_year_before(caplog):
+    """
+    Test that a year without data between two others is not left out.
+
+    France has no demand per capita in 2021: the year is saved, with the
+    value of 2020, and a warning.
+    """
+    historical_data = pd.DataFrame(
+        {2020: [7000.0], 2021: [None], 2022: [7200.0]}, index=["FRA"]
+    )
+
+    with (
+        patch.object(
+            annual_demand, "get_historical_data", return_value=historical_data
+        ),
+        patch.object(annual_demand.iiasa, "read"),
+    ):
+        annual_demand.run_data_retrieval(
+            code="FRA",
+            file=None,
+            year=None,
+            start_year=2020,
+            end_year=2022,
+            scenario=None,
+        )
+
+    saved = pd.read_parquet(
+        os.path.join(
+            utils.paths.get_indicator_folder(
+                "annual_electricity_demand_per_capita"
+            ),
+            "FRA.parquet",
+        )
+    )["Annual electricity demand per capita (kWh)"]
+    # The local year of the start of each hour, in Paris.
+    years = (
+        (pd.DatetimeIndex(saved.index) - pd.Timedelta(hours=1))
+        .tz_localize("UTC")
+        .tz_convert("Europe/Paris")
+        .year
+    )
+    assert sorted(set(years)) == [2020, 2021, 2022]
+    assert set(saved[years == 2021]) == {7000.0}
+    assert "FRA has no value in [2021]" in caplog.text
