@@ -116,9 +116,7 @@ def get_name_from_code(code: str) -> str:  # noqa: C901
         else:
             name = pycountry.countries.lookup(iso_alpha_3_code).name
     else:
-        data_sources = utils.data_sources.get_electricity_demand_data_sources_containing_code(
-            code
-        )
+        data_sources = utils.data_sources.get_data_sources_of(code)
 
         if len(data_sources) > 0:
             data_source = data_sources[0]

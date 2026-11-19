@@ -10,9 +10,11 @@ Description:
 import datetime as dt
 from unittest.mock import patch
 
+import geopandas
 import pandas as pd
 import pytest
 import pytz
+import shapely
 from countryinfo import CountryNotFoundError
 
 import utils.time_zones
@@ -75,6 +77,27 @@ def test_time_zone_of_subdivision_from_shapes():
     assert utils.time_zones.get_time_zone("RUS_AD") == pytz.timezone(
         "Europe/Moscow"
     )
+
+
+def test_time_zone_of_subdivision_from_the_centre_of_its_shape():
+    """
+    Test the time zone at the centre of the shape of a subdivision.
+
+    A square of a degree around Maykop, in Adygea, which no yaml file
+    gives a time zone, is in the time zone of Moscow.
+    """
+    shape = geopandas.GeoDataFrame(
+        geometry=[shapely.geometry.box(39.6, 44.1, 40.6, 45.1)],
+        crs="EPSG:4326",
+    )
+    with patch.object(
+        utils.time_zones.utils.shapes,
+        "get_standard_shape",
+        return_value=shape,
+    ):
+        time_zone = utils.time_zones.get_time_zone("RUS_AD")
+
+    assert time_zone == pytz.timezone("Europe/Moscow")
 
 
 @pytest.mark.parametrize(
@@ -215,7 +238,7 @@ def test_time_zones_errors():
     # conflicting time zones in multiple yaml files.
     with (
         patch(
-            "utils.data_sources.get_electricity_demand_data_sources_containing_code"
+            "utils.data_sources.get_data_sources_of"
         ) as mock_get_data_sources,
         patch(
             "utils.time_zones._get_time_zones_in_data_source"

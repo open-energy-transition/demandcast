@@ -169,7 +169,7 @@ def check_and_get_codes_with(  # noqa: C901
                 data_source=data_source
             )
         else:
-            all_codes = utils.data_sources.read_all_codes_with_electricity_demand_data()
+            all_codes = utils.data_sources.read_all_codes()
     elif feature in ("historical_data", "all_data"):
         if data_source is not None:
             raise ValueError(

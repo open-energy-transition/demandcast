@@ -229,11 +229,9 @@ def test_check_data_source_with_an_end_date(
     monkeypatch, hours_after_end_date, found
 ):
     """Test that data after the end date of the YAML file are found."""
-    _, end_date = (
-        utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
-            "hydroquebec"
-        )["CAN_QC-INTEGRATED"]
-    )
+    _, end_date = utils.data_sources.read_date_ranges("hydroquebec")[
+        "CAN_QC-INTEGRATED"
+    ]
     end = pd.Timestamp(end_date) + pd.Timedelta(hours=hours_after_end_date)
     monkeypatch.setattr(
         hydroquebec,

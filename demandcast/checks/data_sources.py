@@ -134,11 +134,9 @@ def _download_sample(data_source: str, code: str, result: Result) -> pd.Series:
         f"retrievals.electricity_demand_data_sources.{data_source}"
     )
 
-    start_date, end_date = (
-        utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
-            data_source
-        )[code]
-    )
+    start_date, end_date = utils.data_sources.read_date_ranges(data_source)[
+        code
+    ]
     requests = module.get_available_requests(code, start_date, end_date)
     if not requests:
         raise ValueError("The data source has no requests.")

@@ -143,7 +143,10 @@ def get_url(year: int, month: int | None) -> str:
                 f"{base_url}historicalemshourlyloadfor{month_name}{year}.xlsx"
             )
         elif year >= 2024:  # April 2024 onwards
-            url = f"{base_url}historical-ems-hourly-load-for-{month_name}-{year}.xlsx"
+            url = (
+                f"{base_url}historical-ems-hourly-load-for-{month_name}-"
+                f"{year}.xlsx"
+            )
         else:
             raise ValueError(f"The CAISO data of {year} is in a yearly file.")
 

@@ -45,7 +45,7 @@ def synthetic_data(monkeypatch):
     codes = list(CONTINENTS)
     monkeypatch.setattr(
         data_availability.utils.data_sources,
-        "read_all_codes_with_electricity_demand_data",
+        "read_all_codes",
         lambda: codes,
     )
     monkeypatch.setattr(

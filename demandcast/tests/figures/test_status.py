@@ -57,7 +57,7 @@ def test_get_numbers():
         ),
         patch.object(
             status.utils.data_sources,
-            "read_all_codes_with_electricity_demand_data",
+            "read_all_codes",
             return_value=["FRA", "USA_CAL", "USA_TEX"],
         ),
         patch.object(

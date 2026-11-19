@@ -83,9 +83,7 @@ def test_check_and_get_codes_with():
     # Read codes from a specified file path and check them.
     with (
         patch("utils.data_sources.read_codes_in") as mock_read_codes,
-        patch(
-            "utils.data_sources.read_all_codes_with_electricity_demand_data"
-        ) as mock_read_all_codes,
+        patch("utils.data_sources.read_all_codes") as mock_read_all_codes,
     ):
         mock_read_codes.return_value = ["FRA", "DEU"]
         mock_read_all_codes.return_value = [
@@ -155,9 +153,7 @@ def test_check_and_get_codes_with_errors():
     # a file.
     with (
         patch("utils.data_sources.read_codes_in") as mock_read_codes,
-        patch(
-            "utils.data_sources.read_all_codes_with_electricity_demand_data"
-        ) as mock_read_all_codes,
+        patch("utils.data_sources.read_all_codes") as mock_read_all_codes,
     ):
         mock_read_codes.return_value = ["USA_CAL", "USA_TEX"]
         mock_read_all_codes.return_value = [

@@ -180,9 +180,7 @@ def run_check() -> None:
     The entities are the countries and subdivisions in the yaml files of
     the data sources.
     """
-    shares = get_shares(
-        utils.data_sources.read_all_codes_with_electricity_demand_data()
-    )
+    shares = get_shares(utils.data_sources.read_all_codes())
     file_path = utils.relations.get_shares_file()
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     shares.to_csv(file_path, index=False)

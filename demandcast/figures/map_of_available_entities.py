@@ -73,11 +73,9 @@ def plot(figure_directory: str) -> None:
     # Get the class of the years of available data of all countries
     # and subdivisions.
     periods = utils.data_sources.read_all_periods()
+    codes = utils.data_sources.read_all_codes()
     classes_of_years = get_classes_of_years(
-        {
-            code: periods[code]
-            for code in utils.data_sources.read_all_codes_with_electricity_demand_data()
-        }
+        {code: periods[code] for code in codes}
     )
 
     # Define the map projection and the coordinate reference system of
@@ -167,7 +165,8 @@ def plot(figure_directory: str) -> None:
     aed_title = plt.text(
         0.5,
         1.05,
-        "Countries and subdivisions with publicly available\nhigh-resolution electricity demand data",
+        "Countries and subdivisions with publicly available\n"
+        "high-resolution electricity demand data",
         fontsize=18,
         ha="center",
         weight="bold",

@@ -225,7 +225,8 @@ def download_and_extract_data_for_request(
         )
 
     logging.info(
-        f"Retrieving electricity demand data from {start_date.date()} to {end_date.date()}."
+        "Retrieving electricity demand data from "
+        f"{start_date.date()} to {end_date.date()}."
     )
 
     api_key = utils.config.read_api_key("ENTSOE_API_KEY", "ENTSO-E")

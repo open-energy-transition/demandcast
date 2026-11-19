@@ -615,7 +615,7 @@ def test_file_paths_of_inputs(caplog):
     assert "No temperature files found for entity code DEU." in caplog.text
 
 
-@pytest.mark.usefixtures("assembly_inputs")
+@pytest.mark.usefixtures("assembly_inputs", "longitude")
 @pytest.mark.parametrize("change", ["legacy file", "changed review"])
 def test_assembly_combines_stale_demand_again(change, monkeypatch):
     """

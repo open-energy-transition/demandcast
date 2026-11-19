@@ -1,13 +1,9 @@
-# Builds the documentation site on pull requests that change it, and deploys it
-# to GitHub Pages from main.
+# Builds the documentation site and deploys it to GitHub Pages from main.
+# The CI workflow builds it on pull requests.
 
 name: docs
 
 on:
-  pull_request:
-    paths:
-      - "webpage/**"
-      - ".github/workflows/docs.yml"
   push:
     branches: [main]
     paths:
@@ -17,7 +13,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 permissions: {}
 
@@ -44,13 +40,12 @@ jobs:
           uv run mkdocs build --strict
 
       - name: Upload the site
-        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: webpage/site
 
   deploy:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     needs: build
     timeout-minutes: 10
     runs-on: ubuntu-latest

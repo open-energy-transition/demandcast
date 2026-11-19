@@ -173,11 +173,7 @@ def _read_cleaned_data(code: str) -> dict[str, pd.Series]:
         UTC, of each data source that has cleaned data of the code.
     """
     cleaned = {}
-    for data_source in (
-        utils.data_sources.get_electricity_demand_data_sources_containing_code(
-            code
-        )
-    ):
+    for data_source in utils.data_sources.get_data_sources_of(code):
         file_path = utils.paths.get_electricity_demand_file(
             "cleaned", code, data_source
         )
@@ -670,11 +666,7 @@ def get_fingerprint(code: str) -> str:
         )
     ] + [
         os.path.join(utils.paths.DATA_SOURCES_FOLDER, f"{data_source}.yaml")
-        for data_source in sorted(
-            utils.data_sources.get_electricity_demand_data_sources_containing_code(
-                code
-            )
-        )
+        for data_source in sorted(utils.data_sources.get_data_sources_of(code))
     ]
     for file_path in file_paths:
         with open(file_path, "rb") as file:
@@ -709,11 +701,7 @@ def is_current(code: str) -> bool:
     written = os.path.getmtime(file_path)
     return all(
         os.path.getmtime(cleaned_path) <= written
-        for data_source in (
-            utils.data_sources.get_electricity_demand_data_sources_containing_code(
-                code
-            )
-        )
+        for data_source in (utils.data_sources.get_data_sources_of(code))
         if os.path.exists(
             cleaned_path := utils.paths.get_electricity_demand_file(
                 "cleaned", code, data_source
@@ -843,10 +831,7 @@ def combine_all_data() -> list[str]:
     list[str]
         The codes whose electricity demand was combined.
     """
-    combined = [
-        code
-        for code in utils.data_sources.read_all_codes_with_electricity_demand_data()
-        if combine_data(code) is not None
-    ]
+    codes = utils.data_sources.read_all_codes()
+    combined = [code for code in codes if combine_data(code) is not None]
     logging.info(f"Combined the electricity demand of {len(combined)} codes.")
     return combined

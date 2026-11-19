@@ -125,9 +125,7 @@ def test_read_codes():
     assert "USA_TEX" not in entsoe_codes
 
     # Read all codes available in the yaml files and check them.
-    all_codes = (
-        utils.data_sources.read_all_codes_with_electricity_demand_data()
-    )
+    all_codes = utils.data_sources.read_all_codes()
     assert isinstance(all_codes, list)
     assert "DEU" in all_codes
     assert "USA_TEX" in all_codes
@@ -185,9 +183,7 @@ def test_date_ranges():
         "utils.data_sources.read_entities_info",
         return_value=entities,
     ):
-        date_ranges = utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
-            "dummy_data_source"
-        )
+        date_ranges = utils.data_sources.read_date_ranges("dummy_data_source")
 
     assert isinstance(date_ranges, dict)
     assert date_ranges["FRA"] == (
@@ -219,8 +215,7 @@ def test_read_all_periods():
             return_value=list(date_ranges),
         ),
         patch(
-            "utils.data_sources."
-            "read_date_ranges_of_electricity_demand_in_data_source",
+            "utils.data_sources.read_date_ranges",
             side_effect=date_ranges.get,
         ),
     ):
@@ -257,9 +252,7 @@ def test_date_ranges_errors():
             return_value=entities,
         ),
     ):
-        utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
-            "dummy_data_source"
-        )
+        utils.data_sources.read_date_ranges("dummy_data_source")
 
 
 def test_read_data_source_with_dates_as_text(write_data_source):
@@ -271,11 +264,7 @@ def test_read_data_source_with_dates_as_text(write_data_source):
         }
     )
 
-    start_date, _ = (
-        utils.data_sources.read_date_ranges_of_electricity_demand_in_data_source(
-            "test_source"
-        )["FRA"]
-    )
+    start_date, _ = utils.data_sources.read_date_ranges("test_source")["FRA"]
 
     assert start_date == dt.date(2020, 1, 1)
 
