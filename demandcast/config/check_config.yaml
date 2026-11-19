@@ -11,5 +11,6 @@
 # - related_entities: the shares of the people of the countries and
 #   subdivisions with data that overlap, which tell which are related
 #   (checks/related_entities.csv, with the exceptions of
-#   related_entities.yaml).
+#   related_entities.yaml), and the codes considered
+#   (checks/related_entities_codes.txt).
 check: data_availability

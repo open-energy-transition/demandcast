@@ -18,12 +18,15 @@ Description:
     checks, one row per pair, with whether the pair is related (see
     utils/relations.py). Pairs whose shared area is under
     MINIMUM_SHARED_AREA of the area of the smaller entity, such as
-    neighbours whose shapes touch, are left out.
+    neighbours whose shapes touch, are left out. The codes of all the
+    entities considered are saved to related_entities_codes.txt, next
+    to it, so that a code added to a data source later is noticed.
 """
 
 import itertools
 import logging
 import os
+import pathlib
 
 import geopandas
 import pandas as pd
@@ -179,13 +182,20 @@ def run_check() -> None:
     Compute the shares of the entities with data and save them.
 
     The entities are the countries and subdivisions in the yaml files of
-    the data sources.
+    the data sources. Their codes are saved too, one per line, so that
+    a test can tell when a data source has a code that was not checked.
     """
-    shares = get_shares(utils.data_sources.read_all_codes())
+    codes = sorted(utils.data_sources.read_all_codes())
+    shares = get_shares(codes)
     file_path = utils.relations.get_shares_file()
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with utils.files.writing(file_path) as temporary_path:
         shares.to_csv(temporary_path, index=False)
+    codes_path = utils.relations.get_codes_file()
+    with utils.files.writing(codes_path) as temporary_path:
+        pathlib.Path(temporary_path).write_text(
+            "".join(f"{code}\n" for code in codes), encoding="utf-8"
+        )
     logging.info(
         f"{int(shares['Related'].sum())} pairs of related entities, of "
         f"{len(shares)} that overlap, saved to {file_path}."

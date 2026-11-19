@@ -11,7 +11,9 @@ Description:
     of either of them, from the shares of the population that
     checks/related_entities.py computes (related_entities.csv in the
     folder of the checks), with the exceptions of
-    config/related_entities.yaml.
+    config/related_entities.yaml. The check also saves the codes that
+    it considered (related_entities_codes.txt), so that a code without
+    shares can be told apart from a code that was never checked.
 
     A model must not train on an entity related to the one that it is
     scored on, which would let it see the demand of the same people at
@@ -36,6 +38,10 @@ RELATED_SHARE = 0.1
 # that overlap, in the folder of the checks.
 SHARES_FILE_NAME = "related_entities.csv"
 
+# The file of the codes whose shares were computed, one per line, in
+# the folder of the checks.
+CODES_FILE_NAME = "related_entities_codes.txt"
+
 
 def get_shares_file() -> str:
     """
@@ -47,6 +53,35 @@ def get_shares_file() -> str:
         The path of related_entities.csv in the folder of the checks.
     """
     return os.path.join(utils.paths.CHECKS_FOLDER, SHARES_FILE_NAME)
+
+
+def get_codes_file() -> str:
+    """
+    Get the path of the codes whose shares were computed.
+
+    Returns
+    -------
+    str
+        The path of related_entities_codes.txt in the folder of the
+        checks.
+    """
+    return os.path.join(utils.paths.CHECKS_FOLDER, CODES_FILE_NAME)
+
+
+def read_checked_codes() -> list[str]:
+    """
+    Read the codes whose shares were computed.
+
+    Returns
+    -------
+    list[str]
+        The codes that the check of the related entities considered,
+        empty if it has not been run.
+    """
+    if not os.path.exists(get_codes_file()):
+        return []
+    with open(get_codes_file(), encoding="utf-8") as file:
+        return [line.strip() for line in file if line.strip()]
 
 
 class _Exceptions(BaseModel):

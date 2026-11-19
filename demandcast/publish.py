@@ -11,7 +11,11 @@ Description:
     model and data gave the forecasts, is uploaded with it, and so is
     the README of the release (publishing/release/README.md), with the
     sources, licences and attributions of the data and how to replicate
-    the results.
+    the results. The metadata of the release
+    (publishing/release/metadata.yaml), written by hand for each
+    release, must name the version of the settings and only files that
+    are uploaded, such as the archives of the folders, or the release
+    stops before anything is uploaded.
 
     The forecasts are uploaded as their compact file
     (COMPACT_FORECASTS_FILE), made from them at the upload, with the

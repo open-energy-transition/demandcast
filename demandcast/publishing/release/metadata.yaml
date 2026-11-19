@@ -1,6 +1,7 @@
 # The title, description, keywords and related identifiers of the
 # release on Zenodo, read by publishing/zenodo.py and updated for each
-# release.
+# release. It must name the version of the release (in the links to
+# its tag and as "DemandCast X.Y.Z"), and only files that are uploaded.
 
 title: Global Dataset of Forecasted Hourly Electricity Demand from 2000 to 2025 Using DemandCast
 
