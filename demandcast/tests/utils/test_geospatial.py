@@ -311,6 +311,43 @@ def test_coarsen_function():
     assert result.x[-1] == 180
 
 
+@pytest.mark.parametrize("target_resolution", [0.1, 0.2])
+def test_coarsen_to_decimal_resolutions(target_resolution):
+    """
+    Test the coarsening to resolutions with no exact binary value.
+
+    They divide 360, and the grid spans -180 to 180 degrees.
+    """
+    lon = np.arange(-181.0, 181.0, 0.04)
+    lat = np.arange(-0.2, 0.21, 0.04)
+    da = xarray.DataArray(
+        np.ones((len(lat), len(lon))),
+        coords={"y": lat, "x": lon},
+        dims=["y", "x"],
+    )
+
+    result = utils.geospatial.coarsen(
+        da, [-180, -0.1, 180, 0.1], target_resolution
+    )
+
+    assert result.x[0] == -180
+    assert result.x[-1] == 180
+    assert np.allclose(np.diff(result["x"][1:-1]), target_resolution)
+
+
+def test_coarsen_to_a_resolution_that_does_not_divide_360():
+    """Test that a resolution that does not divide 360 is an error."""
+    lon = np.arange(-1.0, 1.01, 0.1)
+    da = xarray.DataArray(
+        np.ones((len(lon), len(lon))),
+        coords={"y": lon, "x": lon},
+        dims=["y", "x"],
+    )
+
+    with pytest.raises(ValueError, match="dividing 360"):
+        utils.geospatial.coarsen(da, [-0.5, -0.5, 0.5, 0.5], 0.7)
+
+
 def test_get_total_in_shape():
     """Test that the cells count for their fraction within the shape."""
     gridded_data = xarray.DataArray(

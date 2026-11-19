@@ -122,7 +122,8 @@ def download_and_extract_data_for_request(
     Returns
     -------
     electricity_demand_time_series : pandas.Series
-        The electricity demand time series in MW.
+        The electricity demand time series in MW, empty if the API
+        gives no data for the period.
     """
     start_date, end_date = period
 
@@ -140,6 +141,8 @@ def download_and_extract_data_for_request(
         timeout=20,
         retry_delay=20,
     )
+    if dataset.empty:
+        return pd.Series(dtype=float)
 
     dataset["reportTimestamp"] = pd.to_datetime(dataset["reportTimestamp"])
 

@@ -201,6 +201,38 @@ def test_fetch_from_an_aspx_page():
     assert mock_post.call_args.kwargs["data"]["__VIEWSTATE"] == "VS"
 
 
+def test_fetch_from_a_minified_aspx_page():
+    """
+    Test the form parameters of an ASPX page written on one line.
+
+    Each value ends at its closing quote, and a missing parameter is an
+    error that names it.
+    """
+    with (
+        patch("requests.get") as mock_get,
+        patch("requests.post") as mock_post,
+    ):
+        mock_get.return_value.text = (
+            '<input id="__VIEWSTATE" value="VS" class="a" />'
+            '<input id="__EVENTVALIDATION" value="EV" class="b" />'
+        )
+        mock_post.return_value.text = "ticket"
+        utils.fetcher.fetch_text(
+            "http://example.com", "POST", query_aspx_webpage=True
+        )
+
+        assert mock_post.call_args.kwargs["data"] == {
+            "__VIEWSTATE": "VS",
+            "__EVENTVALIDATION": "EV",
+        }
+
+        mock_get.return_value.text = '<input id="__VIEWSTATE" value="VS" />'
+        with pytest.raises(ValueError, match="no __EVENTVALIDATION field"):
+            utils.fetcher.fetch_text(
+                "http://example.com", "POST", query_aspx_webpage=True
+            )
+
+
 def test_fetch_dataframe_with_invalid_arguments():
     """Test that the options that are not supported are errors."""
     with pytest.raises(
@@ -230,6 +262,14 @@ def test_fetch_dataframe_with_invalid_arguments():
         utils.fetcher.fetch_dataframe(
             "http://example.com", "html", read_as="json", jsonkeys=["a"]
         )
+    with (
+        patch("requests.get") as mock_get,
+        pytest.raises(TypeError, match="given by read_with"),
+    ):
+        utils.fetcher.fetch_dataframe(
+            "http://example.com", "html", method="POST"
+        )
+    mock_get.assert_not_called()
 
 
 def test_read_manual_files():

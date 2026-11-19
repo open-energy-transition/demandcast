@@ -99,7 +99,14 @@ def _get_file_path(variable: str, longitude: float, latitude: float) -> str:
     -------
     str
         The path of the Parquet file of the series.
+
+    Notes
+    -----
+    Adding 0.0 turns -0.0 into 0.0, so that a point at 0 degrees has
+    one name, "+0.00".
     """
+    latitude = round(latitude, 2) + 0.0
+    longitude = round(longitude, 2) + 0.0
     return os.path.join(
         utils.paths.get_gridded_folder("weather", "raw"),
         "points",
@@ -195,8 +202,13 @@ def _is_outdated(file_path: str, series: pd.Series) -> bool:
     bool
         Whether the series ends before the data of the CDS usually ends
         and it was written more than a day ago.
+
+    Notes
+    -----
+    The time of the file and the times of the series are in UTC, so the
+    current time is too.
     """
-    now = pd.Timestamp.now()
+    now = pd.Timestamp.now(tz="UTC").tz_localize(None)
     written = pd.Timestamp(os.path.getmtime(file_path), unit="s")
     return (
         series.index[-1] < now - retrievals.gridded_weather.REANALYSIS_DELAY

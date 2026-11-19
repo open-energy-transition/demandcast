@@ -7,6 +7,8 @@ Description:
 """
 
 import json
+import ntpath
+import types
 
 import pytest
 
@@ -147,3 +149,29 @@ def test_data_references(tmp_path, monkeypatch):
         str(inside)
     )
     assert utils.manifest.resolve_data_reference(str(outside)) == str(outside)
+
+
+def test_data_references_on_windows(monkeypatch):
+    """
+    Test the references of Windows paths.
+
+    A path that differs from the data folder only in case is inside
+    it, and a path on another drive is kept absolute.
+    """
+    monkeypatch.setattr(
+        utils.manifest,
+        "os",
+        types.SimpleNamespace(path=ntpath, sep=ntpath.sep),
+    )
+    monkeypatch.setattr(
+        utils.manifest.utils.paths,
+        "get_data_folder",
+        lambda: "C:\\Users\\me\\Data",
+    )
+    inside = "c:\\users\\me\\data\\assembled\\data.parquet"
+    other_drive = "D:\\data.parquet"
+
+    assert utils.manifest.get_data_reference(inside) == (
+        "assembled/data.parquet"
+    )
+    assert utils.manifest.get_data_reference(other_drive) == other_drive

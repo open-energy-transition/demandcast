@@ -26,6 +26,9 @@ import pandas as pd
 
 import utils.fetcher
 
+# The time zone of the times of the archive.
+TIME_ZONE = "America/Moncton"
+
 
 def get_available_requests(
     code: str, start_date: dt.date, end_date: dt.date
@@ -91,7 +94,10 @@ def download_and_extract_data_for_request(
     Notes
     -----
     Each value is the average of the hour that ends at its time, as the
-    5-minute data of New Brunswick from CCEI shows.
+    5-minute data of New Brunswick from CCEI shows. When daylight saving
+    time ends, 01:00 comes twice, first in daylight time. A time that
+    cannot be read, does not exist, or is ambiguous but comes only once
+    is dropped, since it cannot be placed.
     """
     year, month = year_and_month
 
@@ -114,17 +120,24 @@ def download_and_extract_data_for_request(
         query_aspx_webpage=True,
     )
 
-    electricity_demand_time_series = pd.Series(
-        dataset["NB_LOAD"].values,
-        index=pd.to_datetime(dataset["HOUR"].values, format="%Y-%m-%d %H:%M"),
-    )
-
-    # Localize the ends of the hours: when daylight saving time ends,
-    # 01:00 comes twice.
-    electricity_demand_time_series = (
-        electricity_demand_time_series.tz_localize(
-            "America/Moncton", ambiguous="infer"
+    times = pd.DatetimeIndex(
+        pd.to_datetime(
+            dataset["HOUR"], format="%Y-%m-%d %H:%M", errors="coerce"
         )
     )
+    electricity_demand_time_series = pd.Series(
+        dataset["NB_LOAD"].to_numpy(),
+        index=times.tz_localize(
+            TIME_ZONE, ambiguous=~times.duplicated(), nonexistent="NaT"
+        ),
+    )
+    placed = (
+        times.duplicated(keep=False)
+        | times.tz_localize(
+            TIME_ZONE, ambiguous="NaT", nonexistent="NaT"
+        ).notna()
+    )
 
-    return electricity_demand_time_series
+    return electricity_demand_time_series[
+        electricity_demand_time_series.index.notna() & placed
+    ]

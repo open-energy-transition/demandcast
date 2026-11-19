@@ -350,16 +350,15 @@ def test_plot_ml_results(tmp_path):
     """
     Test that the results of the models go to the page.
 
-    The figures of the validation are copied with fixed names, and a
-    case without results, here the cross-validation, has none.
+    The figures of the validation are drawn for fixed names of the
+    page, and a case without results, here the cross-validation, has
+    none.
     """
     summary = _summary({("All", "All"): 0.1})
     file_path = _save_results("validation", "xgboost_model_1", summary)
-    status_folder = tmp_path / "status"
-    status_folder.mkdir()
 
-    validation, cross_validation = status._plot_ml_results(
-        str(tmp_path), str(status_folder)
+    drawn_files, (validation, cross_validation) = status._plot_ml_results(
+        str(tmp_path)
     )
 
     assert validation is not None
@@ -368,9 +367,39 @@ def test_plot_ml_results(tmp_path):
     assert validation[1].summary is not None
     pd.testing.assert_frame_equal(validation[1].summary, summary)
     assert cross_validation is None
-    assert sorted(os.listdir(status_folder)) == sorted(
-        status.ML_FIGURE_FILES["validation"]
-    )
+    assert sorted(drawn_files) == sorted(status.ML_FIGURE_FILES["validation"])
+    assert all(os.path.isfile(drawn) for drawn in drawn_files.values())
+
+
+def test_failed_plot_writes_nothing(tmp_path):
+    """
+    Test that a failure of the figures of the models writes nothing.
+
+    The README and the page keep their content when the results of the
+    models cannot be described.
+    """
+    figure_directory = tmp_path / "figures"
+    figure_directory.mkdir()
+    status_folder = tmp_path / "status"
+    readme = f"{status.STATUS_START}\nold\n{status.STATUS_END}\n"
+    readme_file = tmp_path / "README.md"
+    readme_file.write_text(readme, encoding="utf-8")
+
+    with (
+        patch.object(status.figures.map_of_available_entities, "plot"),
+        patch.object(status.figures.data_availability, "plot"),
+        patch.object(status, "get_numbers", return_value=NUMBERS),
+        patch.object(
+            status, "_find_results", side_effect=ValueError("no summary")
+        ),
+        pytest.raises(ValueError, match="no summary"),
+    ):
+        status.plot(
+            str(figure_directory), str(status_folder), str(readme_file)
+        )
+
+    assert readme_file.read_text(encoding="utf-8") == readme
+    assert not status_folder.exists()
 
 
 def test_given_results_are_published(monkeypatch):

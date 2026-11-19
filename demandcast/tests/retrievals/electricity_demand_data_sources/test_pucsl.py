@@ -91,3 +91,21 @@ def test_download_and_extract_data_without_dispatch(
         time_series.dropna(), "Asia/Colombo", {"2025-12-21 00:15": 300.5}
     )
     assert time_series.isna().sum() == 1
+
+
+def test_download_and_extract_data_without_data(fake_downloads, tmp_path):
+    """Test that a period without any data gives no data."""
+    file_path = tmp_path / "pucsl.json"
+    file_path.write_text('{"data": [], "message": "ok"}', encoding="utf-8")
+    fake_downloads.serve(
+        "https://gendata.pucsl.gov.lk/api/actual-system-dispatch?"
+        "dateAggregation=15min&from=2025-12-21T00:00:00.000Z"
+        "&to=2025-12-28T00:00:00.000Z",
+        file_path,
+    )
+
+    time_series = pucsl.download_and_extract_data_for_request(
+        (pd.Timestamp("2025-12-21"), pd.Timestamp("2025-12-28")), "LKA"
+    )
+
+    assert time_series.empty

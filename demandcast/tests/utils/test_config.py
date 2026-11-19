@@ -62,6 +62,26 @@ def test_read_configuration_with_existing_file(tmp_path, monkeypatch):
         utils.config.read_configuration("my_script", "Test script")
 
 
+def test_read_configuration_default_from_any_folder(tmp_path, monkeypatch):
+    """
+    Test that the default file is the one of the config folder.
+
+    It is found whatever the current folder.
+    """
+    config_folder = tmp_path / "code" / "config"
+    config_folder.mkdir(parents=True)
+    (config_folder / "my_script_config.yaml").write_text(
+        "foo: 1\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(utils.paths, "CONFIG_FOLDER", str(config_folder))
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["my_script.py"])
+
+    config = utils.config.read_configuration("my_script", "Test script")
+
+    assert config == {"foo": 1}
+
+
 def test_set_up_logging(tmp_path, monkeypatch):
     """
     Test the set_up_logging function.

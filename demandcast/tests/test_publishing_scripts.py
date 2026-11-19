@@ -333,6 +333,41 @@ def test_release_with_the_compact_forecasts(monkeypatch):
     )
 
 
+def test_release_with_forecasts_without_a_manifest(monkeypatch):
+    """
+    Test that forecasts without a manifest stop the release.
+
+    Without their manifest, the forecasts cannot be made compact, so
+    they would be uploaded with all the inputs of the model.
+    """
+    folder = utils.paths.get_results_folder("forecasts")
+    os.makedirs(folder)
+    pd.DataFrame(
+        {
+            "Entity code": ["FRA"],
+            "Temperature - Top 1 (K)": [280.0],
+            "Forecast load (MW)": [50000.0],
+        }
+    ).to_parquet(os.path.join(folder, "all.parquet"))
+    calls = []
+    monkeypatch.setattr(
+        publish.publishing.zenodo,
+        "publish_release",
+        lambda *args: calls.append(args),
+    )
+
+    with pytest.raises(ValueError, match="have no manifest"):
+        publish.main(
+            publish.ConfigModel(
+                zenodo_record=1,
+                version="2.0.0",
+                files=[os.path.join("results", "forecasts", "all.parquet")],
+            )
+        )
+
+    assert calls == []
+
+
 def test_release_with_several_forecasts(monkeypatch):
     """Test that a release with several forecasts stops."""
     folder = os.path.join(utils.paths.get_data_folder(), "forecasts")

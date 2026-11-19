@@ -289,3 +289,36 @@ def test_download_and_extract_data_for_request_with_days_without_data(
     assert cenace.download_and_extract_data_for_request(
         (pd.Timestamp("2024-03-09"), pd.Timestamp("2024-03-09")), "MEX_CEN"
     ).empty
+
+
+def test_download_and_extract_data_for_request_with_a_missing_hour(
+    fake_downloads, assert_demand, tmp_path
+):
+    """Test that the hours after a missing one keep their times."""
+    lines = _daily_file(
+        "10/03/2024",
+        0,
+        {("SIN", "CEN"): [6000.5 + hour for hour in range(24)]},
+    ).split("\n")
+    _serve_archive(
+        fake_downloads,
+        tmp_path,
+        {
+            "Demanda Real Balance_0_v3 Dia Operacion 2024-03-10 "
+            "v2024 03 24_12 25 01.csv": "\n".join(
+                line
+                for line in lines
+                if not line.startswith('"SIN","CEN","2",')
+            ),
+        },
+    )
+
+    time_series = cenace.download_and_extract_data_for_request(
+        (pd.Timestamp("2024-03-10"), pd.Timestamp("2024-03-10")), "MEX_CEN"
+    )
+
+    times = pd.date_range("2024-03-10 07:00", periods=24, freq="h")
+    values = [6000.5 + hour for hour in range(24)]
+    expected = dict(zip(times.strftime("%Y-%m-%d %H:%M"), values, strict=True))
+    del expected["2024-03-10 08:00"]
+    assert_demand(time_series, "America/Mexico_City", expected)

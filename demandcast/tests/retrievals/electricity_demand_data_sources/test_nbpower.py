@@ -59,3 +59,45 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
         },
         dtype="int64",
     )
+
+
+def test_times_that_cannot_be_placed_are_dropped(
+    fake_downloads, assert_demand, tmp_path
+):
+    """
+    Test that a time that cannot be placed drops only its own value.
+
+    The second 01:00 of the day when daylight saving time ends is
+    missing, so the first one could be in either time, a time cannot be
+    read, and 02:00 does not exist on the day when it starts.
+    """
+    file_path = tmp_path / "nbpower.csv"
+    file_path.write_text(
+        "HOUR,NB_LOAD\n"
+        "2024-03-10 01:00,1700\n"
+        "2024-03-10 02:00,1690\n"
+        "2024-03-10 03:00,1680\n"
+        "2024-11-03 00:00,1480\n"
+        "2024-11-03 01:00,1460\n"
+        "2024-11-03 02:00,1420\n"
+        "2024-11-03 2:00 AM,1410\n",
+        encoding="utf-8",
+    )
+    fake_downloads.serve(URL, "nbpower_page.html")
+    fake_downloads.serve(URL, file_path, method="POST")
+
+    time_series = nbpower.download_and_extract_data_for_request(
+        (2024, 11), "CAN_NB"
+    )
+
+    assert_demand(
+        time_series,
+        "America/Moncton",
+        {
+            "2024-03-10 05:00": 1700,
+            "2024-03-10 06:00": 1680,
+            "2024-11-03 03:00": 1480,
+            "2024-11-03 06:00": 1420,
+        },
+        dtype="int64",
+    )

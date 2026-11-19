@@ -7,6 +7,7 @@ Description:
 """
 
 import datetime as dt
+import json
 
 from retrievals.electricity_demand_data_sources import coes
 
@@ -43,4 +44,45 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
             "2025-01-01 06:00": 6900.25,
             "2025-01-02 05:00": 7100.0,
         },
+    )
+
+
+def test_actual_demand_after_the_schedules(
+    fake_downloads, assert_demand, tmp_path
+):
+    """Test that the actual demand is found after another series."""
+    file_path = tmp_path / "coes.json"
+    file_path.write_text(
+        json.dumps(
+            {
+                "Chart": {
+                    "Series": [
+                        {
+                            "Name": "Programado",
+                            "Data": [
+                                {"Nombre": "2025/01/01 00:30:00", "Valor": 1}
+                            ],
+                        },
+                        {
+                            "Name": "Ejecutado",
+                            "Data": [
+                                {"Nombre": "2025/01/01 00:30:00", "Valor": 2}
+                            ],
+                        },
+                    ]
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    fake_downloads.serve(
+        "https://www.coes.org.pe/Portal/portalinformacion/demanda",
+        file_path,
+        method="POST",
+    )
+
+    time_series = coes.download_and_extract_data_for_request(2025, "PER_SEIN")
+
+    assert_demand(
+        time_series, "America/Lima", {"2025-01-01 05:30": 2}, dtype="int64"
     )

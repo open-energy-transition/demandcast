@@ -141,21 +141,20 @@ def _read_aspx_params(
     -------
     dict[str, str | int]
         The updated POST data parameters with the ASPX parameters added.
+
+    Raises
+    ------
+    ValueError
+        If the page does not have one of the ASPX parameters.
     """
-    html_content = response.text
+    fields = {}
+    for field in ("__VIEWSTATE", "__EVENTVALIDATION"):
+        match = re.search(rf'id="{field}" value="([^"]*)"', response.text)
+        if match is None:
+            raise ValueError(f"The ASPX page has no {field} field.")
+        fields[field] = match.group(1)
 
-    viewstate = re.findall(r"id=\"__VIEWSTATE\" value=\"(.+)\"", html_content)[
-        0
-    ]
-    eventvalidation = re.findall(
-        r"id=\"__EVENTVALIDATION\" value=\"(.+)\"", html_content
-    )[0]
-
-    return {
-        **post_data_params,
-        "__VIEWSTATE": viewstate,
-        "__EVENTVALIDATION": eventvalidation,
-    }
+    return {**post_data_params, **fields}
 
 
 def _with_retries[T](
@@ -478,7 +477,8 @@ def _check_table_options(
     ValueError
         If the content type or the way of reading is not supported.
     TypeError
-        If an option of the request is unknown.
+        If an option of the request is unknown, or is the method, which
+        read_with gives.
     """
     if content_type not in {"csv", "excel", "html"}:
         raise ValueError(f"The content type {content_type} is not supported.")
@@ -486,6 +486,10 @@ def _check_table_options(
         raise ValueError(f"The read_as parameter {read_as} is not supported.")
     if read_with not in {"requests.get", "requests.post"}:
         raise ValueError(f"Library {read_with} is not supported.")
+    if "method" in kwargs:
+        raise TypeError(
+            "The method of the request is given by read_with, not method."
+        )
     unknown = set(kwargs) - set(inspect.signature(fetch_response).parameters)
     if unknown:
         raise TypeError(f"Unknown options of the request: {sorted(unknown)}.")
@@ -579,51 +583,34 @@ def fetch_dataframe(
     csv_kwargs = csv_kwargs or {}
     excel_kwargs = excel_kwargs or {}
 
-    def fetch() -> pd.DataFrame:
-        """
-        Fetch and read the table once.
-
-        Returns
-        -------
-        pandas.DataFrame
-            The data.
-        """
-        response = _send(
-            url,
-            "POST" if read_with == "requests.post" else "GET",
-            kwargs.get(
-                "timeout",
-                FILE_TIMEOUT if content_type in ("csv", "excel") else 10,
-            ),
-            kwargs.get("verify_ssl", True),
-            kwargs.get("header_params"),
-            kwargs.get("request_params"),
-            kwargs.get("post_data_params"),
-            kwargs.get("post_json"),
-            kwargs.get("query_aspx_webpage", False),
-            kwargs.get("get_cookies", False),
-            kwargs.get("encoding_type"),
-        )
-        if content_type == "csv":
-            # The file is read as pandas reads it from its URL, with the
-            # compression of the extension of its name.
-            return pd.read_csv(
-                BytesIO(response.content),
-                **{"compression": _get_compression(url), **csv_kwargs},
-            )
-        if content_type == "excel":
-            return pd.read_excel(BytesIO(response.content), **excel_kwargs)
-        if read_as == "csv_table":
-            return pd.read_csv(StringIO(response.text), **csv_kwargs)
-        if read_as == "excel_table":
-            return pd.read_excel(BytesIO(response.content), **excel_kwargs)
-        content = response.json()
-        for json_key in json_keys or []:
-            content = content[json_key]
-        return pd.DataFrame(content)
-
     _check_table_options(content_type, read_with, read_as, kwargs)
-    return _with_retries(url, fetch, retries, retry_delay)
+    if content_type in ("csv", "excel"):
+        kwargs = {"timeout": FILE_TIMEOUT, **kwargs}
+    response = fetch_response(
+        url,
+        "POST" if read_with == "requests.post" else "GET",
+        retries=retries,
+        retry_delay=retry_delay,
+        **kwargs,
+    )
+
+    if content_type == "csv":
+        # The file is read as pandas reads it from its URL, with the
+        # compression of the extension of its name.
+        return pd.read_csv(
+            BytesIO(response.content),
+            **{"compression": _get_compression(url), **csv_kwargs},
+        )
+    if content_type == "excel":
+        return pd.read_excel(BytesIO(response.content), **excel_kwargs)
+    if read_as == "csv_table":
+        return pd.read_csv(StringIO(response.text), **csv_kwargs)
+    if read_as == "excel_table":
+        return pd.read_excel(BytesIO(response.content), **excel_kwargs)
+    content = response.json()
+    for json_key in json_keys or []:
+        content = content[json_key]
+    return pd.DataFrame(content)
 
 
 def find_manual_files(prefix: str) -> list[str]:
