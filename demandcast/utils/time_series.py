@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 
 import utils.columns
+import utils.files
 
 
 def split_period(
@@ -258,9 +259,10 @@ def save_yearly_values(
         if not saved.empty:
             time_series = pd.concat([saved, time_series]).sort_index()
 
-    temporary_path = file_path_without_ext + ".tmp.parquet"
-    time_series.to_frame().to_parquet(temporary_path)
-    os.replace(temporary_path, file_path_without_ext + ".parquet")
+    with utils.files.writing(
+        file_path_without_ext + ".parquet"
+    ) as temporary_path:
+        time_series.to_frame().to_parquet(temporary_path)
 
 
 def clean_data(time_series: pd.Series, variable_name: str) -> pd.Series:

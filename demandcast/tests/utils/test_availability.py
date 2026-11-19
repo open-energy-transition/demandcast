@@ -246,3 +246,23 @@ def test_codes_with_historical_and_all_data(tmp_path, monkeypatch):
         utils.availability.check_and_get_codes_with(
             "historical_data", data_source="entsoe"
         )
+
+
+def test_flag_that_is_not_true_or_false(monkeypatch, tmp_path):
+    """
+    Test that a flag of the summary that is not True or False fails.
+
+    An empty cell would otherwise be read as text, and any text counts
+    as true.
+    """
+    (tmp_path / "data_availability_summary.csv").write_text(
+        "entity_code,historical_population,"
+        "historical_electricity_demand_per_capita,"
+        "historical_gdp_ppp_per_capita,area_greater_than_500_km2\n"
+        "XY1,True,True,True,True\n"
+        "XY2,,True,True,True\n"
+    )
+    monkeypatch.setattr(utils.paths, "CHECKS_FOLDER", str(tmp_path))
+
+    with pytest.raises(ValueError, match="historical_population"):
+        utils.availability.read_codes_with_historical_data()

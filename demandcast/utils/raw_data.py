@@ -54,6 +54,7 @@ import pandas as pd
 import requests
 
 import utils.fetcher
+import utils.files
 import utils.paths
 
 # The method of the requests of the files downloaded manually.
@@ -246,9 +247,11 @@ def _save_file(data_source: str, content: bytes) -> str:
     file_path = os.path.join(_folder(data_source), "files", checksum)
     if not os.path.exists(file_path):
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        with open(file_path + ".tmp", "wb") as file:
+        with (
+            utils.files.writing(file_path) as temporary_path,
+            open(temporary_path, "wb") as file,
+        ):
             file.write(content)
-        os.replace(file_path + ".tmp", file_path)
     return checksum
 
 
@@ -770,9 +773,11 @@ def _write_manifest(data_source: str, manifest: dict[str, Any]) -> None:
     """
     file_path = os.path.join(_folder(data_source), "manifest.json")
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path + ".tmp", "w", encoding="utf-8") as file:
+    with (
+        utils.files.writing(file_path) as temporary_path,
+        open(temporary_path, "w", encoding="utf-8") as file,
+    ):
         json.dump(manifest, file, indent=1)
-    os.replace(file_path + ".tmp", file_path)
 
 
 def save_versions(

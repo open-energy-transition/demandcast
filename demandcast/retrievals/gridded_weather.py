@@ -41,6 +41,7 @@ import retrievals.runs
 import utils.availability
 import utils.catalogue
 import utils.config
+import utils.files
 import utils.geospatial
 import utils.paths
 import utils.scenarios
@@ -177,12 +178,11 @@ def _extract_from_arco(
             .rename(time="valid_time")
             .to_dataset(name=name)
         )
-        # Replace the file only once it is written.
-        dataset.to_netcdf(
-            file_path + ".tmp",
-            encoding={name: {"zlib": True, "complevel": 1}},
-        )
-        os.replace(file_path + ".tmp", file_path)
+        with utils.files.writing(file_path) as temporary_path:
+            dataset.to_netcdf(
+                temporary_path,
+                encoding={name: {"zlib": True, "complevel": 1}},
+            )
     logging.info(
         f"Gridded {variable} data of ARCO-ERA5 for year {year} has been "
         f"extracted for {len(file_paths)} codes."
@@ -439,7 +439,11 @@ def _download_data(
         raise ValueError(f"Dataset {dataset} is not supported.")
 
     request = _get_request(variable, years, model, scenario, bounds)
-    client.retrieve(dataset, request, file_path)
+    if dataset == "projections-cmip6":
+        client.retrieve(dataset, request, file_path)
+    else:
+        with utils.files.writing(file_path) as temporary_path:
+            client.retrieve(dataset, request, temporary_path)
 
     if dataset == "projections-cmip6":
         with zipfile.ZipFile(file_path, "r") as zip_ref:

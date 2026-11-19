@@ -43,52 +43,67 @@ def _read_codes(future: bool) -> list[str]:
         than 500 km², whose population and GDP PPP per capita are
         estimated from the gridded data.
     """
-    data = pd.read_csv(
-        os.path.join(
-            utils.paths.CHECKS_FOLDER,
-            "data_availability_summary.csv",
-        ),
-        index_col=0,
-        na_filter=False,
+    file_path = os.path.join(
+        utils.paths.CHECKS_FOLDER, "data_availability_summary.csv"
     )
+    data = pd.read_csv(file_path, index_col=0)
 
-    def has(code: str, *columns: str) -> bool:
+    def flag(column: str) -> pd.Series:
         """
-        Check whether a country or subdivision has some of the data.
+        Read a column of whether each code has some data.
 
         Parameters
         ----------
-        code : str
-            The code of the country or subdivision.
+        column : str
+            The name of the column, such as "historical_population".
+
+        Returns
+        -------
+        pandas.Series
+            Whether each code has the data.
+
+        Raises
+        ------
+        ValueError
+            If a value of the column is not True or False, such as an
+            empty one.
+        """
+        if data[column].dtype != bool:
+            raise ValueError(
+                f"The column {column} of {file_path} has values that are "
+                "not True or False."
+            )
+        return data[column]
+
+    def has(*columns: str) -> pd.Series:
+        """
+        Check whether each country or subdivision has some of the data.
+
+        Parameters
+        ----------
         *columns : str
             The names of the data, such as "population".
 
         Returns
         -------
-        bool
-            Whether the code has the historical data, and the future
+        pandas.Series
+            Whether each code has the historical data, and the future
             data if they are needed, of all the columns.
         """
-        return all(
-            data.loc[code, f"historical_{column}"]
-            and (not future or data.loc[code, f"future_{column}"])
-            for column in columns
-        )
+        result = pd.Series(True, index=data.index)
+        for column in columns:
+            result &= flag(f"historical_{column}")
+            if future:
+                result &= flag(f"future_{column}")
+        return result
 
-    return [
-        code
-        for code in data.index
-        if has(
-            code,
-            "population",
-            "electricity_demand_per_capita",
-            "gdp_ppp_per_capita",
-        )
-        or (
-            has(code, "electricity_demand_per_capita")
-            and data.loc[code, "area_greater_than_500_km2"]
-        )
-    ]
+    selected = has(
+        "population", "electricity_demand_per_capita", "gdp_ppp_per_capita"
+    ) | (
+        has("electricity_demand_per_capita")
+        & flag("area_greater_than_500_km2")
+    )
+    return [str(code) for code in data.index[selected]]
 
 
 def read_codes_with_all_data() -> list[str]:

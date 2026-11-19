@@ -17,6 +17,7 @@ Description:
 
 import logging
 import os
+import tempfile
 import zipfile
 from typing import cast
 
@@ -25,8 +26,18 @@ import xarray
 
 import retrievals.gridded
 import utils.catalogue
+import utils.files
 import utils.geospatial
 import utils.paths
+
+# The folders of the scenarios in their archives, when they have
+# another name.
+ARCHIVE_FOLDERS = {
+    "SSP1": "SPP1",
+    "SSP2": "SPP2",
+    "SSP4": "SPP4",
+    "SSP5": "SPP5",
+}
 
 
 def _download_historical_gridded_population_density(
@@ -70,7 +81,10 @@ def _download_historical_gridded_population_density(
 
         response.raise_for_status()
 
-        with open(file_path, "wb") as file:
+        with (
+            utils.files.writing(file_path) as temporary_path,
+            open(temporary_path, "wb") as file,
+        ):
             file.write(response.content)
 
         logging.info(
@@ -84,7 +98,7 @@ def _download_historical_gridded_population_density(
         )
 
 
-def _download_future_gridded_population(  # noqa: C901
+def _download_future_gridded_population(
     downloaded_data_directory: str, scenario: str
 ) -> None:
     """
@@ -108,8 +122,11 @@ def _download_future_gridded_population(  # noqa: C901
     which its API gives as their download URL, since the links of its
     website, under figshare.com, answer scripts with a challenge for
     bots. An archive, of about 2.5 GB, is downloaded into a file in
-    chunks. The folders of SSP1, SSP2, SSP4 and SSP5 in their archives
-    are named SPP1, SPP2, SPP4 and SPP5.
+    chunks, and extracted into a temporary folder next to the folder of
+    the scenario, to which its folder is moved once complete, since the
+    folder of a scenario is not downloaded again once it exists. The
+    folders of SSP1, SSP2, SSP4 and SSP5 in their archives are named
+    SPP1, SPP2, SPP4 and SPP5.
     """
     if scenario not in utils.catalogue.SSP_SCENARIOS:
         raise ValueError(
@@ -140,42 +157,26 @@ def _download_future_gridded_population(  # noqa: C901
                 url = "https://ndownloader.figshare.com/files/34829391"
 
         os.makedirs(downloaded_data_directory, exist_ok=True)
-        archive_path = os.path.join(
-            downloaded_data_directory, f"{scenario}.zip"
-        )
-        try:
-            with requests.get(url, stream=True, timeout=60) as response:
+        with tempfile.TemporaryDirectory(
+            dir=downloaded_data_directory
+        ) as temporary_folder:
+            archive_path = os.path.join(temporary_folder, f"{scenario}.zip")
+            with (
+                requests.get(url, stream=True, timeout=60) as response,
+                open(archive_path, "wb") as archive_file,
+            ):
                 response.raise_for_status()
-                with open(archive_path, "wb") as archive_file:
-                    archive_file.writelines(
-                        response.iter_content(chunk_size=1 << 20)
-                    )
+                archive_file.writelines(
+                    response.iter_content(chunk_size=1 << 20)
+                )
             with zipfile.ZipFile(archive_path) as archive:
-                archive.extractall(path=downloaded_data_directory)
-        finally:
-            if os.path.exists(archive_path):
-                os.remove(archive_path)
-
-        # Fix the folder name if necessary.
-        if scenario == "SSP1":
-            os.rename(
-                os.path.join(downloaded_data_directory, "SPP1"),
-                os.path.join(downloaded_data_directory, "SSP1"),
-            )
-        elif scenario == "SSP2":
-            os.rename(
-                os.path.join(downloaded_data_directory, "SPP2"),
-                os.path.join(downloaded_data_directory, "SSP2"),
-            )
-        elif scenario == "SSP4":
-            os.rename(
-                os.path.join(downloaded_data_directory, "SPP4"),
-                os.path.join(downloaded_data_directory, "SSP4"),
-            )
-        elif scenario == "SSP5":
-            os.rename(
-                os.path.join(downloaded_data_directory, "SPP5"),
-                os.path.join(downloaded_data_directory, "SSP5"),
+                archive.extractall(path=temporary_folder)
+            os.replace(
+                os.path.join(
+                    temporary_folder,
+                    ARCHIVE_FOLDERS.get(scenario, scenario),
+                ),
+                folder_name,
             )
 
         logging.info(

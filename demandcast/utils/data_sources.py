@@ -10,6 +10,7 @@ Description:
 """
 
 import datetime as dt
+import functools
 import os
 import zoneinfo
 from collections.abc import Mapping
@@ -53,7 +54,7 @@ class DataSourceEntity(BaseModel):
     part of it.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     country_name: str
     country_code: str
@@ -120,7 +121,7 @@ class DataSourceLicence(BaseModel):
     retrieved data in a private bucket.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     redistribute: bool
     terms: str
@@ -149,7 +150,7 @@ class DataSourceDefinition(BaseModel):
     (unknown).
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     start_date: dt.date
     quantity: str
@@ -170,7 +171,7 @@ class _DataSourceFile(BaseModel):
     which it lists in republishes.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     licence: DataSourceLicence
     compiled: bool = False
@@ -289,6 +290,54 @@ def _read_data_source_file(data_source: str) -> _DataSourceFile:
         utils.paths.DATA_SOURCES_FOLDER,
         f"{data_source.lower()}.yaml",
     )
+    status = os.stat(file_path)
+    return _parse_data_source_file(
+        data_source, file_path, status.st_mtime_ns, status.st_size
+    )
+
+
+@functools.cache
+def _parse_data_source_file(
+    data_source: str,
+    file_path: str,
+    modified: int,  # noqa: ARG001
+    size: int,  # noqa: ARG001
+) -> _DataSourceFile:
+    """
+    Parse and check the yaml file of a data source.
+
+    Parameters
+    ----------
+    data_source : str
+        The name of the data source.
+    file_path : str
+        The path of its yaml file.
+    modified : int
+        The time of the last modification of the file, in nanoseconds,
+        which only keys the kept content.
+    size : int
+        The size of the file, in bytes, which only keys the kept
+        content.
+
+    Returns
+    -------
+    _DataSourceFile
+        The content of the file, checked.
+
+    Raises
+    ------
+    ValueError
+        If the yaml file is not valid.
+
+    Notes
+    -----
+    The content is kept for each path, modification time and size, so
+    that each file is parsed once, and again once it changes: most
+    functions of the countries and subdivisions, such as their time
+    zones, read all the files. Its models are frozen, and the functions
+    that give its lists give copies of them, so that the kept content
+    cannot be changed.
+    """
     with open(file_path, encoding="utf-8") as file:
         content = yaml.safe_load(file)
 
@@ -316,7 +365,7 @@ def read_entities(data_source: str) -> list[DataSourceEntity]:
         The countries and subdivisions, from the yaml file of the data
         source.
     """
-    return _read_data_source_file(data_source).entities
+    return list(_read_data_source_file(data_source).entities)
 
 
 def read_licence(data_source: str) -> DataSourceLicence:
@@ -377,7 +426,7 @@ def read_definition(data_source: str) -> list[DataSourceDefinition]:
         The periods of the definition, from the yaml file of the data
         source, in the order of their start dates.
     """
-    return _read_data_source_file(data_source).definition
+    return list(_read_data_source_file(data_source).definition)
 
 
 def get_definition(data_source: str, date: dt.date) -> DataSourceDefinition:
