@@ -110,16 +110,16 @@ def _get_years(
         years = [year]
     elif start_year is not None and end_year is not None:
         if start_year > end_year:
-            raise ValueError("start_year must be less than end_year.")
+            raise ValueError("start_year must not be after end_year.")
         if start_year not in available_years:
             logging.warning(
-                "start_year is less than the earliest available year, "
-                f"which is {available_years[0]}."
+                f"start_year {start_year} is not one of the available "
+                f"years: {available_years}."
             )
         if end_year not in available_years:
             logging.warning(
-                "end_year is greater than the latest available year, "
-                f"which is {available_years[-1]}."
+                f"end_year {end_year} is not one of the available years: "
+                f"{available_years}."
             )
         years = [y for y in available_years if start_year <= y <= end_year]
     elif (start_year is not None and end_year is None) or (

@@ -88,7 +88,7 @@ def read_configuration(
     Returns
     -------
     config : dict
-        The settings of the file, or None if the file is empty.
+        The settings of the file, empty if the file is empty.
 
     Raises
     ------
@@ -119,7 +119,7 @@ def read_configuration(
     with open(config_file_path, encoding="utf-8") as file:
         config = yaml.safe_load(file)
 
-    return config
+    return config or {}
 
 
 def read_and_check_configuration[ConfigModelT: BaseModel](
@@ -152,8 +152,7 @@ def read_and_check_configuration[ConfigModelT: BaseModel](
     """
     raw_config = read_configuration(script_name, script_description)
     try:
-        # An empty file has no settings.
-        return config_model(**(raw_config or {}))
+        return config_model(**raw_config)
     except ValidationError as e:
         raise ValueError(f"Configuration validation error: {e}") from e
 
