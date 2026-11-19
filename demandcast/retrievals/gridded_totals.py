@@ -188,8 +188,8 @@ def get_total_value_from_gridded_data(
         If the variable is not "population" or "gdp_ppp".
         If only one of scenario or
         last_available_historical_years_of_gridded_data is provided.
-        If last_available_historical_years_of_gridded_data is greater
-        than the minimum available year of gridded data.
+        If last_available_historical_years_of_gridded_data is not
+        before the minimum available year of gridded data.
 
     Notes
     -----
@@ -219,20 +219,18 @@ def get_total_value_from_gridded_data(
 
     if last_available_historical_years_of_gridded_data and (
         last_available_historical_years_of_gridded_data
-        > min(available_years_of_gridded_data)
+        >= min(available_years_of_gridded_data)
     ):
         raise ValueError(
             "last_available_historical_years_of_gridded_data must be less "
             "than the minimum available (future) year of gridded data."
         )
 
+    available_years_of_gridded_data = sorted(available_years_of_gridded_data)
     if last_available_historical_years_of_gridded_data:
-        available_years_of_gridded_data = [
-            last_available_historical_years_of_gridded_data,
-            *available_years_of_gridded_data,
-        ]
-
-    available_years_of_gridded_data.sort()
+        available_years_of_gridded_data.insert(
+            0, last_available_historical_years_of_gridded_data
+        )
 
     selected_years_of_gridded_data = _select_years_of_gridded_data(
         available_years_of_gridded_data,

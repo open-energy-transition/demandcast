@@ -59,7 +59,7 @@ def test_get_years_errors():
 
     # start_year greater than end_year.
     with pytest.raises(
-        ValueError, match="start_year must be less than end_year"
+        ValueError, match="start_year must not be after end_year"
     ):
         utils.scenarios._get_years(None, 2020, 2019, available_years)
 
@@ -188,7 +188,7 @@ def test_get_year_and_scenario_combinations_errors():
 
     # start_year greater than end_year.
     with pytest.raises(
-        ValueError, match="start_year must be less than end_year"
+        ValueError, match="start_year must not be after end_year"
     ):
         utils.scenarios.get_year_and_scenario_combinations(
             None,
@@ -391,7 +391,7 @@ def test_get_year_model_and_scenario_combinations_errors():
 
     # start_year greater than end_year.
     with pytest.raises(
-        ValueError, match="start_year must be less than end_year"
+        ValueError, match="start_year must not be after end_year"
     ):
         utils.scenarios.get_year_model_and_scenario_combinations(
             None,

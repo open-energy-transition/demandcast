@@ -45,6 +45,11 @@ def test_read_configuration_with_existing_file(tmp_path, monkeypatch):
 
     assert config == {"foo": 1, "bar": True, "baz": "hello"}
 
+    # An empty file has no settings.
+    config_file.write_text("", encoding="utf-8")
+
+    assert utils.config.read_configuration("my_script", "Test script") == {}
+
     # Create a non-existing configuration file path.
     missing_file = tmp_path / "non_existing_config.yaml"
     monkeypatch.setattr(

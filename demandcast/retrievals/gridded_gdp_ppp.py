@@ -105,7 +105,7 @@ def run_data_retrieval(
     start_year: int | None,
     end_year: int | None,
     scenario: str | None,
-):
+) -> None:
     """
     Download and extract gridded GDP PPP data.
 

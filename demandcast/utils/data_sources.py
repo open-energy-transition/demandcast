@@ -633,7 +633,6 @@ def read_date_ranges(
             raise ValueError(
                 f"The start date {start_date} is after the end date "
                 f"{end_date} for {code}."
-                ""
             )
 
     return start_and_end_dates
