@@ -757,7 +757,9 @@ def clean_data(code: str, data_source: str) -> pd.Series:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     cleaned.to_frame().to_parquet(file_path)
     removed_periods.to_parquet(
-        file_path.removesuffix(".parquet") + "_removed.parquet"
+        utils.paths.get_electricity_demand_file(
+            "cleaned", code, data_source, table="removed"
+        )
     )
     logging.info(
         f"Saved the cleaned electricity demand to {file_path}, without "

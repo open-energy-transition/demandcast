@@ -81,6 +81,33 @@ type Indicator = Literal[
 type ResultKind = Literal[
     "validation", "cross_validation", "forecasts", "figures", "checks"
 ]
+type ElectricityDemandTable = Literal["flags", "removed", "sources"]
+
+
+def get_reviews_file() -> str:
+    """
+    Get the path of the reviews of the flags of the electricity demand.
+
+    Returns
+    -------
+    str
+        The YAML file of the reviews, in the folder of the checks (see
+        cleaning/reviews.py).
+    """
+    return os.path.join(CHECKS_FOLDER, "reviewed_flags.yaml")
+
+
+def get_availability_summary_file() -> str:
+    """
+    Get the path of the summary of the availability of the data.
+
+    Returns
+    -------
+    str
+        The CSV file of the summary, in the folder of the checks, which
+        check.py writes (see checks/data_availability.py).
+    """
+    return os.path.join(CHECKS_FOLDER, "data_availability_summary.csv")
 
 
 def get_config_file(name: str) -> str:
@@ -141,10 +168,31 @@ def get_electricity_demand_folder(stage: ElectricityDemandStage) -> str:
     return get_data_folder("electricity_demand", stage)
 
 
+def get_table_suffix(table: ElectricityDemandTable) -> str:
+    """
+    Get the end of the names of the files of a table of the demand.
+
+    Parameters
+    ----------
+    table : ElectricityDemandTable
+        The table saved next to the electricity demand: its flags
+        ("flags"), its removed values ("removed") or its data sources
+        ("sources").
+
+    Returns
+    -------
+    str
+        The end of the names, after the code and the data source, with
+        the extension.
+    """
+    return f"_{table}.parquet"
+
+
 def get_electricity_demand_file(
     stage: Literal["processed", "cleaned", "combined"],
     code: str,
     data_source: str | None = None,
+    table: ElectricityDemandTable | None = None,
 ) -> str:
     """
     Get the path of the file of the electricity demand of a stage.
@@ -157,16 +205,23 @@ def get_electricity_demand_file(
         The code of the country or subdivision.
     data_source : str | None, optional
         The data source, none for the combined data of all of them.
+    table : ElectricityDemandTable | None, optional
+        A table saved next to the demand (see get_table_suffix), none
+        for the demand itself.
 
     Returns
     -------
     str
-        The path of the parquet file, named after the code and the data
-        source, in the folder of the stage.
+        The path of the parquet file, named after the code, the data
+        source and the table, in the folder of the stage.
     """
     name = code if data_source is None else f"{code}_{data_source}"
+    if table is None:
+        return os.path.join(
+            get_electricity_demand_folder(stage), f"{name}.parquet"
+        )
     return os.path.join(
-        get_electricity_demand_folder(stage), f"{name}.parquet"
+        get_electricity_demand_folder(stage), name + get_table_suffix(table)
     )
 
 

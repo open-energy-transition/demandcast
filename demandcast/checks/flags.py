@@ -6,30 +6,9 @@ Description:
     This module gathers the flags of the cleaned electricity demand of
     all the countries, subdivisions and data sources, which the cleaning
     saves next to the cleaned data (see cleaning/flags.py), into one
-    report, and compares them with the flags that have been reviewed.
-
-    The reviews, in checks/reviewed_flags.yaml, give a data source, a
-    code, a flag, the periods of the flag that they review (all of them
-    if not given), the verdict of the review and a note. The verdicts
-    are:
-
-    - source_error: the data of the source is wrong.
-    - reading_error: DemandCast reads the data of the source wrongly.
-    - definition_change: what the data of the source covers changes.
-    - net_demand: the data leaves out the demand that the generation
-      embedded in the distribution networks supplies, while DemandCast
-      models the gross demand.
-    - real_event: the demand itself changes, such as in a lockdown.
-    - false_positive: the flag comes from its rule, not from the data.
-
-    The flags of the combined electricity demand of each code (see
-    cleaning/combining.py) have the data source "combined". A combined
-    flag takes the review that has the data source "combined", if there
-    is one, and otherwise, if its main source, the data source of most
-    of the hours of the flagged period, has the same flag in the same
-    period, the review of that flag: a flag that comes from the data of
-    a source is reviewed once. A flag that its main source does not
-    have comes from the combination and needs its own review.
+    report, and compares them with the flags that have been reviewed, in
+    checks/reviewed_flags.yaml (see cleaning/reviews.py for the reviews,
+    their verdicts and those of the flags of the combined demand).
 
     The report, flags_report.csv and flags_report.md in the results of
     the checks (see utils/paths.py), lists the flags that have not been
@@ -43,22 +22,15 @@ import datetime as dt
 import glob
 import logging
 import os
-from typing import Literal
 
 import pandas as pd
-import yaml
-from pydantic import BaseModel, ConfigDict
 
+import cleaning.reviews
 import utils.data_sources
 import utils.paths
 import utils.time_zones
 
-# The data source of the flags of the combined electricity demand.
-COMBINED = "combined"
-
-# The name of the file of the reviews, and of the files of the report,
-# without extension.
-REVIEWS_NAME = "reviewed_flags"
+# The name of the files of the report, without extension.
 REPORT_NAME = "flags_report"
 
 # The columns of the flags, and of the report, with the verdict and the
@@ -75,56 +47,6 @@ FLAG_COLUMNS = [
     "reference",
 ]
 COLUMNS = [*FLAG_COLUMNS, "verdict", "note", "review_of"]
-
-
-class Review(BaseModel):
-    """The review of a flag of a data source and a code."""
-
-    # A misspelt field is an error, so that a review of some periods
-    # does not become one of all the periods.
-    model_config = ConfigDict(extra="forbid")
-
-    data_source: str
-    code: str
-    flag: str
-    periods: list[str] | None = None
-    verdict: Literal[
-        "source_error",
-        "reading_error",
-        "definition_change",
-        "net_demand",
-        "real_event",
-        "false_positive",
-    ]
-    note: str
-
-    def matches(
-        self, data_source: str, code: str, flag: str, period: str
-    ) -> bool:
-        """
-        Check whether the review is of a flagged period.
-
-        Parameters
-        ----------
-        data_source : str
-            The data source.
-        code : str
-            The code of the country or subdivision.
-        flag : str
-            The flag.
-        period : str
-            The flagged period.
-
-        Returns
-        -------
-        bool
-            Whether the review is of the flagged period.
-        """
-        return (self.data_source, self.code, self.flag) == (
-            data_source,
-            code,
-            flag,
-        ) and (self.periods is None or period in self.periods)
 
 
 def _split_name(name: str, data_sources: list[str]) -> tuple[str, str]:
@@ -203,16 +125,17 @@ def read_flags() -> pd.DataFrame:
         ("code").
     """
     data_sources = utils.data_sources.read_data_sources()
+    suffix = utils.paths.get_table_suffix("flags")
     frames = []
     for file_path in sorted(
         glob.glob(
             os.path.join(
                 utils.paths.get_electricity_demand_folder("cleaned"),
-                "*_flags.parquet",
+                f"*{suffix}",
             )
         )
     ):
-        name = os.path.basename(file_path).removesuffix("_flags.parquet")
+        name = os.path.basename(file_path).removesuffix(suffix)
         code, data_source = _split_name(name, data_sources)
         flags = pd.read_parquet(file_path)
         if not flags.empty:
@@ -225,11 +148,11 @@ def read_flags() -> pd.DataFrame:
         glob.glob(
             os.path.join(
                 utils.paths.get_electricity_demand_folder("combined"),
-                "*_flags.parquet",
+                f"*{suffix}",
             )
         )
     ):
-        code = os.path.basename(file_path).removesuffix("_flags.parquet")
+        code = os.path.basename(file_path).removesuffix(suffix)
         flags = pd.read_parquet(file_path)
         if not flags.empty:
             main_sources = [
@@ -240,7 +163,9 @@ def read_flags() -> pd.DataFrame:
             ]
             frames.append(
                 flags.assign(
-                    data_source=COMBINED, main_source=main_sources, code=code
+                    data_source=cleaning.reviews.COMBINED,
+                    main_source=main_sources,
+                    code=code,
                 )
             )
     if not frames:
@@ -248,25 +173,9 @@ def read_flags() -> pd.DataFrame:
     return pd.concat(frames, ignore_index=True)[FLAG_COLUMNS]
 
 
-def read_reviews() -> list[Review]:
-    """
-    Read the reviews of the flags.
-
-    Returns
-    -------
-    list[Review]
-        The reviews.
-    """
-    file_path = os.path.join(
-        utils.paths.CHECKS_FOLDER,
-        REVIEWS_NAME + ".yaml",
-    )
-    with open(file_path, encoding="utf-8") as file:
-        reviews = yaml.safe_load(file)["reviews"] or []
-    return [Review(**review) for review in reviews]
-
-
-def _add_reviews(flags: pd.DataFrame, reviews: list[Review]) -> pd.DataFrame:
+def _add_reviews(
+    flags: pd.DataFrame, reviews: list[cleaning.reviews.Review]
+) -> pd.DataFrame:
     """
     Add the verdict and the note of its review to each flag.
 
@@ -274,7 +183,7 @@ def _add_reviews(flags: pd.DataFrame, reviews: list[Review]) -> pd.DataFrame:
     ----------
     flags : pandas.DataFrame
         The flags.
-    reviews : list[Review]
+    reviews : list[cleaning.reviews.Review]
         The reviews.
 
     Returns
@@ -298,7 +207,7 @@ def _add_reviews(flags: pd.DataFrame, reviews: list[Review]) -> pd.DataFrame:
     for row in flags.itertuples():
         data_sources = [str(row.data_source)]
         if (
-            row.data_source == COMBINED
+            row.data_source == cleaning.reviews.COMBINED
             and (
                 str(row.main_source),
                 str(row.code),
@@ -352,7 +261,9 @@ def _table(rows: list[list[str]], header: list[str]) -> str:
 
 
 def _format_report(
-    flags: pd.DataFrame, unmatched: list[Review], checked_at: dt.datetime
+    flags: pd.DataFrame,
+    unmatched: list[cleaning.reviews.Review],
+    checked_at: dt.datetime,
 ) -> str:
     """
     Format the flags and their reviews as a Markdown text.
@@ -361,7 +272,7 @@ def _format_report(
     ----------
     flags : pandas.DataFrame
         The flags, with their reviews.
-    unmatched : list[Review]
+    unmatched : list[cleaning.reviews.Review]
         The reviews that match no flag.
     checked_at : datetime.datetime
         The time of the report.
@@ -372,8 +283,8 @@ def _format_report(
         The report.
     """
     keys = ["data_source", "code", "flag"]
-    combined = flags[flags["data_source"] == COMBINED]
-    flags = flags[flags["data_source"] != COMBINED]
+    combined = flags[flags["data_source"] == cleaning.reviews.COMBINED]
+    flags = flags[flags["data_source"] != cleaning.reviews.COMBINED]
     not_reviewed = flags[flags["verdict"] == ""]
     reviewed = flags[flags["verdict"] != ""]
     summary = [
@@ -436,7 +347,7 @@ def _format_combined_report(combined: pd.DataFrame) -> str:
         The section of the report on the combined flags.
     """
     keys = ["code", "flag"]
-    own = combined[combined["review_of"] == COMBINED]
+    own = combined[combined["review_of"] == cleaning.reviews.COMBINED]
     not_reviewed = combined[combined["verdict"] == ""]
     inherited = len(combined) - len(own) - len(not_reviewed)
     not_reviewed_rows = [
@@ -477,7 +388,7 @@ def run_check() -> pd.DataFrame:
     pandas.DataFrame
         The flags, with the verdicts and notes of their reviews.
     """
-    reviews = read_reviews()
+    reviews = cleaning.reviews.read_reviews()
     flags = _add_reviews(read_flags(), reviews)
     unmatched = [
         review

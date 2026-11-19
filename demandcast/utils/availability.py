@@ -15,7 +15,6 @@ Description:
 """
 
 import logging
-import os
 
 import pandas as pd
 
@@ -43,9 +42,7 @@ def _read_codes(future: bool) -> list[str]:
         than 500 km², whose population and GDP PPP per capita are
         estimated from the gridded data.
     """
-    file_path = os.path.join(
-        utils.paths.CHECKS_FOLDER, "data_availability_summary.csv"
-    )
+    file_path = utils.paths.get_availability_summary_file()
     data = pd.read_csv(file_path, index_col=0)
 
     def flag(column: str) -> pd.Series:

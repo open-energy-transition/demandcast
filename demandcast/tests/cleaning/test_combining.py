@@ -14,6 +14,7 @@ import pytest
 
 import cleaning.combining
 import cleaning.flags
+import cleaning.reviews
 import utils.data_sources
 import utils.paths
 
@@ -391,7 +392,7 @@ def _review_errors(code: str, data_source: str, values: pd.Series) -> None:
 @pytest.fixture
 def error_review(monkeypatch):
     """Review the midday dip of ISO-NE in spring 2023 as an error."""
-    review = cleaning.combining.checks.flags.Review(
+    review = cleaning.reviews.Review(
         data_source="isone",
         code="USA_NE",
         flag="midday_dip",
@@ -399,9 +400,7 @@ def error_review(monkeypatch):
         verdict="source_error",
         note="Wrong data.",
     )
-    monkeypatch.setattr(
-        cleaning.combining.checks.flags, "read_reviews", lambda: [review]
-    )
+    monkeypatch.setattr(cleaning.reviews, "read_reviews", lambda: [review])
 
 
 @pytest.mark.usefixtures("error_review")
@@ -517,7 +516,7 @@ def test_reviewed_net_demand_is_not_for_training(monkeypatch):
     They stay in the combined demand, from their source, but cannot be
     used to train the models, which learn the gross demand.
     """
-    review = cleaning.combining.checks.flags.Review(
+    review = cleaning.reviews.Review(
         data_source="isone",
         code="USA_NE",
         flag="midday_dip",
@@ -525,9 +524,7 @@ def test_reviewed_net_demand_is_not_for_training(monkeypatch):
         verdict="net_demand",
         note="The rooftop solar is left out.",
     )
-    monkeypatch.setattr(
-        cleaning.combining.checks.flags, "read_reviews", lambda: [review]
-    )
+    monkeypatch.setattr(cleaning.reviews, "read_reviews", lambda: [review])
     _review_errors(
         "USA_NE", "isone", _hourly("2023-01-01", "2023-12-31 23:00")
     )
@@ -578,7 +575,7 @@ def test_reviews_apply_to_the_local_days_of_their_flags(
             "reference": [0.1],
         }
     ).to_parquet(flags_path + "_flags.parquet")
-    review = cleaning.combining.checks.flags.Review(
+    review = cleaning.reviews.Review(
         data_source="entsoe",
         code=code,
         flag="low_value",
@@ -586,9 +583,7 @@ def test_reviews_apply_to_the_local_days_of_their_flags(
         verdict="source_error",
         note="Wrong data.",
     )
-    monkeypatch.setattr(
-        cleaning.combining.checks.flags, "read_reviews", lambda: [review]
-    )
+    monkeypatch.setattr(cleaning.reviews, "read_reviews", lambda: [review])
 
     verdicts = cleaning.combining._get_reviewed_verdicts(
         code, "entsoe", pd.DatetimeIndex(values.index)
@@ -615,7 +610,7 @@ def test_reviewed_low_value_is_excluded(monkeypatch):
     assert flags.loc[flags["flag"] == "low_value", "period"].tolist() == [
         "2023-01-02"
     ]
-    review = cleaning.combining.checks.flags.Review(
+    review = cleaning.reviews.Review(
         data_source="occto",
         code="JPN_Kantō",
         flag="low_value",
@@ -623,9 +618,7 @@ def test_reviewed_low_value_is_excluded(monkeypatch):
         verdict="source_error",
         note="Wrong data.",
     )
-    monkeypatch.setattr(
-        cleaning.combining.checks.flags, "read_reviews", lambda: [review]
-    )
+    monkeypatch.setattr(cleaning.reviews, "read_reviews", lambda: [review])
 
     combined = cleaning.combining.combine_data("JPN_Kantō")
 
@@ -655,7 +648,7 @@ def test_reviews_of_the_combined_flags_exclude_their_hours(
     values = _hourly("2023-01-01", "2023-12-31 23:00")
     values.loc["2023-01-01 17:00"] = 1.0
     _save_cleaned("JPN_Kantō", "occto", values)
-    review = cleaning.combining.checks.flags.Review(
+    review = cleaning.reviews.Review(
         data_source="combined",
         code="JPN_Kantō",
         flag="low_value",
@@ -663,9 +656,7 @@ def test_reviews_of_the_combined_flags_exclude_their_hours(
         verdict=verdict,
         note="From the combination.",
     )
-    monkeypatch.setattr(
-        cleaning.combining.checks.flags, "read_reviews", lambda: [review]
-    )
+    monkeypatch.setattr(cleaning.reviews, "read_reviews", lambda: [review])
 
     combined = cleaning.combining.combine_data("JPN_Kantō")
 

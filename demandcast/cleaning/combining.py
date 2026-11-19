@@ -98,8 +98,8 @@ import os
 import numpy as np
 import pandas as pd
 
-import checks.flags
 import cleaning.flags
+import cleaning.reviews
 import utils.data_sources
 import utils.paths
 import utils.time_zones
@@ -270,8 +270,8 @@ def _get_reviewed_verdicts(
     code : str
         The code of the country or subdivision.
     data_source : str
-        The data source, or "combined" (checks.flags.COMBINED) for the
-        combined electricity demand.
+        The data source, or "combined" (cleaning.reviews.COMBINED) for
+        the combined electricity demand.
     times : pandas.DatetimeIndex
         The hours of its data, by their ends in UTC.
 
@@ -283,17 +283,18 @@ def _get_reviewed_verdicts(
         else "net_demand" if one finds net demand, else an empty string.
     """
     verdicts = np.full(len(times), "", dtype=object)
-    if data_source == checks.flags.COMBINED:
-        file_path = utils.paths.get_electricity_demand_file("combined", code)
-    else:
-        file_path = utils.paths.get_electricity_demand_file(
-            "cleaned", code, data_source
+    if data_source == cleaning.reviews.COMBINED:
+        flags_path = utils.paths.get_electricity_demand_file(
+            "combined", code, table="flags"
         )
-    flags_path = file_path.removesuffix(".parquet") + "_flags.parquet"
+    else:
+        flags_path = utils.paths.get_electricity_demand_file(
+            "cleaned", code, data_source, table="flags"
+        )
     if not os.path.exists(flags_path):
         return verdicts
     days = utils.time_zones.get_local_days(code, times)
-    reviews = checks.flags.read_reviews()
+    reviews = cleaning.reviews.read_reviews()
     flags = pd.read_parquet(flags_path)
     for start, end, flag, period in zip(
         flags["start"].tolist(),
@@ -631,10 +632,11 @@ def _exclude_reviewed_hours(code: str, combined: pd.DataFrame) -> pd.DataFrame:
     A flag of the combined series that its main source does not have
     comes from the combination, such as a change of profile from one
     source to the next, and has its own review, with the data source
-    "combined" (see checks.flags). No other source replaces its hours.
+    "combined" (see cleaning.reviews). No other source replaces its
+    hours.
     """
     verdicts = _get_reviewed_verdicts(
-        code, checks.flags.COMBINED, pd.DatetimeIndex(combined.index)
+        code, cleaning.reviews.COMBINED, pd.DatetimeIndex(combined.index)
     )
     eligible = combined["Eligible"].to_numpy(dtype=bool)
     exclusions = combined["Exclusion"].copy()
@@ -660,11 +662,7 @@ def get_fingerprint(code: str) -> str:
         of the code.
     """
     checksum = hashlib.sha256(f"version {COMBINATION_VERSION}".encode())
-    file_paths = [
-        os.path.join(
-            utils.paths.CHECKS_FOLDER, checks.flags.REVIEWS_NAME + ".yaml"
-        )
-    ] + [
+    file_paths = [utils.paths.get_reviews_file()] + [
         os.path.join(utils.paths.DATA_SOURCES_FOLDER, f"{data_source}.yaml")
         for data_source in sorted(utils.data_sources.get_data_sources_of(code))
     ]
@@ -808,7 +806,11 @@ def combine_data(code: str) -> pd.DataFrame | None:
     file_path = utils.paths.get_electricity_demand_file("combined", code)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     combined.to_parquet(file_path)
-    sources.to_parquet(file_path.removesuffix(".parquet") + "_sources.parquet")
+    sources.to_parquet(
+        utils.paths.get_electricity_demand_file(
+            "combined", code, table="sources"
+        )
+    )
     cleaning.flags.flag_data(code)
     combined = _exclude_reviewed_hours(code, combined)
     combined.attrs[FINGERPRINT_KEY] = get_fingerprint(code)
