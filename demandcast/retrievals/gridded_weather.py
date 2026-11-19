@@ -18,6 +18,12 @@ Description:
       rounding (0.001 K) and the preliminary data until about a week
       ago. Google gives no commitment to keep it up to date.
 
+    The grid of each country and subdivision records the bounds of the
+    shape that it was cut with, and is extracted or downloaded again
+    when they change (see retrievals/gridded.py). A grid downloaded
+    before the bounds were recorded is kept, and one extracted from the
+    global data is extracted again.
+
     The temperature of the most populous cells (see
     retrievals/temperature.py) can also come from the time series of
     single points of the CDS (see retrievals/era5_points.py).
@@ -45,7 +51,6 @@ import utils.files
 import utils.geospatial
 import utils.paths
 import utils.scenarios
-import utils.shapes
 
 # The sources of the gridded reanalysis data.
 SOURCES = ("cds", "arco")
@@ -144,7 +149,8 @@ def _extract_from_arco(
     Extract the gridded data of a year of ARCO-ERA5 for some codes.
 
     The hours are read a week at a time, for all the codes at once, and
-    the files have the variables and coordinates of those of the CDS.
+    the files have the variables and coordinates of those of the CDS,
+    and the bounds of each code (see retrievals.gridded.record_bounds).
 
     Parameters
     ----------
@@ -173,10 +179,11 @@ def _extract_from_arco(
 
     name = ARCO_VARIABLES[variable][1]
     for code, file_path in file_paths.items():
-        dataset = (
+        dataset = retrievals.gridded.record_bounds(
             xarray.concat(parts.pop(code), dim="time")
             .rename(time="valid_time")
-            .to_dataset(name=name)
+            .to_dataset(name=name),
+            bounds[code],
         )
         with utils.files.writing(file_path) as temporary_path:
             dataset.to_netcdf(
@@ -253,7 +260,11 @@ def _get_last_time(file_path: str) -> pd.Timestamp:
 
 
 def is_outdated(
-    file_path: str, year: int, model: str | None, scenario: str | None
+    file_path: str,
+    year: int,
+    model: str | None,
+    scenario: str | None,
+    code: str | None = None,
 ) -> bool:
     """
     Check whether a file of weather data must be retrieved again.
@@ -268,14 +279,18 @@ def is_outdated(
         The model of the weather data, None for reanalysis data.
     scenario : str | None
         The scenario of the weather data, None for reanalysis data.
+    code : str | None, optional
+        The code of the country or subdivision of a NetCDF file of its
+        grid, None for other files.
 
     Returns
     -------
     bool
-        Whether the file does not exist, or has reanalysis data written
-        more than a day ago, when the data may have been updated since,
-        and either written before the data of its year was complete or
-        ending before the last hour of a past year.
+        Whether the file does not exist, records other bounds than
+        those of the current shape of the code, or has reanalysis data
+        written more than a day ago, when the data may have been
+        updated since, and either written before the data of its year
+        was complete or ending before the last hour of a past year.
 
     Notes
     -----
@@ -285,9 +300,16 @@ def is_outdated(
     bucket, is that of its copy. Other files, such as the temperature
     of a local year, which ends before the last hour of the year in UTC
     east of UTC, are checked by their time only. The times of the files
-    and of the data are in UTC, so the current time is too.
+    and of the data are in UTC, so the current time is too. A grid that
+    records no bounds is kept, since it would be downloaded again; the
+    extraction from the global data, which needs no download, redoes
+    it (see retrievals.gridded.extract_entity_grids).
     """
     if not os.path.exists(file_path):
+        return True
+    if code is not None and not retrievals.gridded.has_current_bounds(
+        file_path, code, unrecorded=True
+    ):
         return True
     if model is not None or scenario is not None:
         return False
@@ -684,7 +706,9 @@ def _retrieve_global_data(
 
     The global data of each year, model and scenario is downloaded
     once, in the raw folder, and the data of a country or subdivision
-    is extracted again when the global data is newer.
+    is extracted again when the global data is newer, or when it does
+    not record the bounds of the current shape of the code (see
+    retrievals.gridded.extract_entity_grids).
 
     Parameters
     ----------
@@ -740,6 +764,23 @@ def _retrieve_global_data(
         logging.info(f"The gridded {description} has been processed.")
 
 
+def _record_bounds_in_file(file_path: str, bounds: list[float]) -> None:
+    """
+    Record the bounds of the shape of a code in the file of its grid.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the NetCDF file of the grid, as downloaded.
+    bounds : list[float]
+        The bounds of the shape of the code (West, South, East, North).
+    """
+    with xarray.open_dataset(file_path) as dataset:
+        grid = retrievals.gridded.record_bounds(dataset.load(), bounds)
+    with utils.files.writing(file_path) as temporary_path:
+        grid.to_netcdf(temporary_path)
+
+
 def _retrieve_data_of_each_code(
     variable: str,
     codes: list[str],
@@ -749,7 +790,8 @@ def _retrieve_data_of_each_code(
     Download the weather data of each code on its own.
 
     The data of a country or subdivision is downloaded within its
-    bounds, straight into the processed folder.
+    bounds, straight into the processed folder, and is downloaded again
+    when they change (see is_outdated).
 
     Parameters
     ----------
@@ -776,9 +818,8 @@ def _retrieve_data_of_each_code(
         """
         logging.info(f"Retrieving gridded {variable} data for {entity_code}.")
 
-        entity_bounds = utils.shapes.get_entity_bounds(
-            utils.shapes.get_entity_shape(entity_code, make_plot=False)
-        )  # West, South, East, North
+        # West, South, East, North
+        entity_bounds = list(retrievals.gridded.get_bounds(entity_code))
 
         for (
             selected_year,
@@ -801,6 +842,7 @@ def _retrieve_data_of_each_code(
                 selected_year,
                 selected_model,
                 selected_scenario,
+                entity_code,
             ):
                 _download(
                     entity_file_path_without_ext,
@@ -809,6 +851,9 @@ def _retrieve_data_of_each_code(
                     selected_model,
                     selected_scenario,
                     bounds=entity_bounds,
+                )
+                _record_bounds_in_file(
+                    entity_file_path_without_ext + ".nc", entity_bounds
                 )
 
         logging.info(
@@ -880,16 +925,14 @@ def _retrieve_from_arco(
         outdated = {
             code: get_file_path(code)
             for code in codes
-            if is_outdated(get_file_path(code), year, None, None)
+            if is_outdated(get_file_path(code), year, None, None, code)
         }
         if outdated:
             _extract_from_arco(
                 variable,
                 year,
                 {
-                    code: utils.shapes.get_entity_bounds(
-                        utils.shapes.get_entity_shape(code, make_plot=False)
-                    )
+                    code: list(retrievals.gridded.get_bounds(code))
                     for code in outdated
                 },
                 outdated,

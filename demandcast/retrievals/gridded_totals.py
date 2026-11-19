@@ -13,12 +13,12 @@ Description:
     retrievals/gdp_ppp_per_capita.py).
 """
 
-import os
 from typing import Literal, cast
 
 import pandas as pd
 import xarray
 
+import retrievals.gridded
 import retrievals.gridded_gdp_ppp
 import retrievals.gridded_population
 import utils.geospatial
@@ -68,7 +68,8 @@ def open_gridded_data(
     Read the gridded data of a country or subdivision.
 
     The gridded data in the bounds of the code is extracted first if it
-    is not there yet.
+    is not there yet, or not in the bounds of the current shape of the
+    code (see retrievals.gridded.is_current).
 
     Parameters
     ----------
@@ -90,7 +91,7 @@ def open_gridded_data(
         cast(Literal["population", "gdp_ppp"], variable), code, year, scenario
     )
 
-    if not os.path.exists(gridded_data_path):
+    if not retrievals.gridded.is_current(gridded_data_path, code):
         RETRIEVALS[variable].run_data_retrieval(
             code=code,
             file=None,

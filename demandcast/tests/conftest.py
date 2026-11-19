@@ -25,6 +25,7 @@ import pandas as pd
 import pytest
 
 import cleaning.flags
+import retrievals.gridded
 import utils.paths
 
 # Draw figures without a display: interactive backends need Tcl/Tk,
@@ -52,6 +53,27 @@ def tmp_data_folder(tmp_path, monkeypatch):
     data_folder = str(tmp_path / "data")
     monkeypatch.setenv(utils.paths.DATA_FOLDER_VARIABLE, data_folder)
     return data_folder
+
+
+@pytest.fixture(autouse=True)
+def fresh_shapes():
+    """
+    Forget the bounds and fingerprints of shapes of an earlier test.
+
+    The tests give the same code other shapes, which the bounds and
+    fingerprints kept for the rest of a run would hide.
+    """
+    for function in (
+        retrievals.gridded.get_bounds,
+        retrievals.gridded.get_shape_fingerprint,
+    ):
+        function.cache_clear()
+    yield
+    for function in (
+        retrievals.gridded.get_bounds,
+        retrievals.gridded.get_shape_fingerprint,
+    ):
+        function.cache_clear()
 
 
 @pytest.fixture

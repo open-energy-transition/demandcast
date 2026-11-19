@@ -8,12 +8,15 @@ Description:
 """
 
 import datetime as dt
+import os
 from unittest.mock import patch
 
+import geopandas
 import numpy as np
 import pandas as pd
 import pytest
 import pytz
+import shapely
 import xarray
 
 from retrievals import temperature
@@ -419,36 +422,101 @@ def test_reanalysis_of_the_last_complete_year():
     assert retrieved == [2024, 2025, 2026]
 
 
+@pytest.fixture
+def square_shape(monkeypatch):
+    """
+    Give every code the shape of a square, which a test can change.
+
+    Returns
+    -------
+    list[float]
+        The bounds of the square, west, south, east and north.
+    """
+    bounds = [0.0, 0.0, 1.0, 1.0]
+    monkeypatch.setattr(
+        temperature.utils.shapes,
+        "get_entity_shape",
+        lambda *_, **__: geopandas.GeoDataFrame(
+            geometry=[
+                shapely.geometry.box(
+                    bounds[0], bounds[1], bounds[2], bounds[3]
+                )
+            ],
+            crs=4326,
+        ),
+    )
+    return bounds
+
+
+@pytest.mark.usefixtures("square_shape")
 def test_processing_of_a_temperature_file(tmp_path):
-    """Test that a temperature file records its processing."""
+    """
+    Test that a temperature file records its processing and its shape.
+
+    A file of another version, of another shape, or without them, is
+    not current.
+    """
+    shape = temperature.retrievals.gridded.get_shape_fingerprint("FRA")
+    version = temperature.PROCESSING_VERSION
     data = pd.DataFrame({"Temperature - Top 1 (K)": [280.0]})
-    current = tmp_path / "current.parquet"
-    data.attrs[temperature.PROCESSING_KEY] = {
-        "version": temperature.PROCESSING_VERSION
-    }
-    data.to_parquet(current)
-    other = tmp_path / "other.parquet"
-    data.attrs[temperature.PROCESSING_KEY] = {"version": 0}
-    data.to_parquet(other)
-    legacy = tmp_path / "legacy.parquet"
-    data.attrs = {}
-    data.to_parquet(legacy)
+    files = {}
+    for name, processing in [
+        ("current", {"version": version, "shape": shape}),
+        ("other", {"version": 0, "shape": shape}),
+        ("old shape", {"version": version, "shape": "other"}),
+        ("legacy", {"version": version}),
+    ]:
+        files[name] = str(tmp_path / f"{name}.parquet")
+        data.attrs = {temperature.PROCESSING_KEY: processing}
+        data.to_parquet(files[name])
     broken = tmp_path / "broken.parquet"
     broken.write_bytes(b"not parquet")
 
-    assert temperature.has_current_processing(str(current))
-    assert not temperature.has_current_processing(str(other))
-    assert not temperature.has_current_processing(str(legacy))
-    assert not temperature.has_current_processing(str(broken))
-    assert not temperature.has_current_processing(str(tmp_path / "none"))
+    assert temperature.has_current_processing(files["current"], "FRA")
+    for name in ("other", "old shape", "legacy"):
+        assert not temperature.has_current_processing(files[name], "FRA")
+    assert not temperature.has_current_processing(str(broken), "FRA")
+    assert not temperature.has_current_processing(
+        str(tmp_path / "none"), "FRA"
+    )
 
 
-def test_files_of_another_processing_are_extracted_again():
+def test_shape_fingerprint_ignores_the_last_digits_and_the_order(
+    square_shape, monkeypatch
+):
+    """
+    Test that only a real change of a shape changes its fingerprint.
+
+    The same square, with its coordinates off by less than the
+    precision, or from another start, as another version of GEOS can
+    build it, has the same fingerprint, and a larger square another.
+    """
+    fingerprint = temperature.retrievals.gridded.get_shape_fingerprint
+    square = fingerprint("FRA")
+
+    for bounds in ([1e-9, 0.0, 1.0, 1.0 - 1e-9], [0.0, 0.0, 1.0, 2.0]):
+        square_shape[:] = bounds
+        fingerprint.cache_clear()
+        assert (fingerprint("FRA") == square) == (bounds[3] < 2)
+
+    monkeypatch.setattr(
+        temperature.utils.shapes,
+        "get_entity_shape",
+        lambda *_, **__: geopandas.GeoDataFrame(
+            geometry=[shapely.Polygon([(1, 1), (0, 1), (0, 0), (1, 0)])],
+            crs=4326,
+        ),
+    )
+    fingerprint.cache_clear()
+    assert fingerprint("FRA") == square
+
+
+def test_files_of_another_processing_are_extracted_again(square_shape):
     """
     Test that only the files of another processing are extracted again.
 
     A file of the current processing is reused, and one without its
-    version is extracted again.
+    version, or made for another shape of its code, is extracted again.
     """
     times = pd.date_range("2023-01-01 01:00", periods=8760, freq="h")
     series = pd.Series(280.0, index=times)
@@ -503,4 +571,55 @@ def test_files_of_another_processing_are_extracted_again():
     legacy.to_parquet(file_path)
     retrieve()
     assert len(calls) == 2
-    assert temperature.has_current_processing(file_path)
+    assert temperature.has_current_processing(file_path, "FRA")
+
+    # The shape of France changes, in a later run.
+    square_shape[2] = 2.0
+    temperature.retrievals.gridded.get_shape_fingerprint.cache_clear()
+    retrieve()
+    retrieve()
+    assert len(calls) == 3
+    assert temperature.has_current_processing(file_path, "FRA")
+
+
+def test_population_of_another_shape_is_extracted_again():
+    """
+    Test that a gridded population of an older shape is not read.
+
+    The grid of France records other bounds than those of its current
+    shape, so its population is extracted again before it is read.
+    """
+    file_path = temperature.utils.paths.get_gridded_file(
+        "population", "FRA", 2020
+    )
+    os.makedirs(os.path.dirname(file_path))
+    old_grid = temperature.retrievals.gridded.record_bounds(
+        _grid([[1.0]]), [0, 0, 1, 1]
+    )
+    old_grid.to_netcdf(file_path)
+
+    def extract(**_):
+        """Save the grid with the bounds of the current shape."""
+        temperature.retrievals.gridded.record_bounds(
+            _grid([[1.0, 2.0]]), [0, 0, 2, 2]
+        ).to_netcdf(file_path)
+
+    with (
+        patch.object(temperature.utils.shapes, "get_entity_shape"),
+        patch.object(
+            temperature.utils.shapes,
+            "get_entity_bounds",
+            return_value=[0, 0, 2, 2],
+        ),
+        patch.object(
+            temperature.retrievals.gridded_population,
+            "run_data_retrieval",
+            side_effect=extract,
+        ) as retrieval,
+    ):
+        population = temperature._load_gridded_population_data(
+            "FRA", 2021, None
+        )
+
+    retrieval.assert_called_once()
+    assert population.to_numpy().tolist() == [[1.0, 2.0]]

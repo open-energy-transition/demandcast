@@ -7,13 +7,18 @@ Description:
     country or subdivision, with the gridded data mocked.
 """
 
+import os
 from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pandas as pd
 import pytest
+import xarray
 
+import retrievals.gridded
 import retrievals.gridded_totals
+import utils.paths
+import utils.shapes
 
 
 def test_aggregate_gridded_data():
@@ -47,6 +52,46 @@ def test_aggregate_gridded_data():
         "scenario": "SSP2",
     }
     assert get_total_in_shape.call_count == 1
+
+
+def test_grid_of_another_shape_is_extracted_again(monkeypatch):
+    """
+    Test that a grid cut with the bounds of an older shape is not read.
+
+    The grid of the code records other bounds than those of its current
+    shape, so it is extracted again before it is read, and is then read
+    as it is.
+    """
+    file_path = utils.paths.get_gridded_file("population", "XYZ", 2020)
+    os.makedirs(os.path.dirname(file_path))
+    grid = xarray.DataArray(np.ones((2, 2)), dims=["y", "x"])
+    retrievals.gridded.record_bounds(grid, [0, 0, 1, 1]).to_netcdf(file_path)
+    monkeypatch.setattr(
+        utils.shapes, "get_entity_shape", lambda *_, **__: None
+    )
+    monkeypatch.setattr(
+        utils.shapes, "get_entity_bounds", lambda _shape: [0, 0, 2, 2]
+    )
+
+    def extract(**_):
+        """Save the grid with the bounds of the current shape."""
+        retrievals.gridded.record_bounds(grid * 2, [0, 0, 2, 2]).to_netcdf(
+            file_path
+        )
+
+    retrieval = MagicMock()
+    retrieval.run_data_retrieval.side_effect = extract
+    monkeypatch.setitem(
+        retrievals.gridded_totals.RETRIEVALS, "population", retrieval
+    )
+
+    for _ in range(2):
+        read = retrievals.gridded_totals.open_gridded_data(
+            "population", "XYZ", 2020
+        )
+        assert float(read.sum()) == 8.0
+
+    assert retrieval.run_data_retrieval.call_count == 1
 
 
 def test_selected_years():

@@ -509,6 +509,52 @@ def test_combined_demand_is_current_until_its_inputs_change():
     assert cleaning.combining.is_current("CYP")
 
 
+def test_combined_demand_follows_the_code_of_the_rules(tmp_path, monkeypatch):
+    """
+    Test that a change of the code of the rules combines it again.
+
+    The combined demand is not current once a file of the rules
+    changes, but stays current when only its line endings do, as on
+    Windows.
+    """
+    rule_path = tmp_path / "rules.py"
+    rule_path.write_bytes(b"LARGEST_SPREAD = 0.05\n")
+    monkeypatch.setattr(cleaning.combining, "RULE_FILES", (str(rule_path),))
+    _save_cleaned("CYP", "tsoc", _hourly("2021-01-01", "2021-01-31 23:00"))
+    cleaning.combining.combine_data("CYP")
+
+    rule_path.write_bytes(b"LARGEST_SPREAD = 0.05\r\n")
+    assert cleaning.combining.is_current("CYP")
+
+    rule_path.write_bytes(b"LARGEST_SPREAD = 0.10\n")
+    assert not cleaning.combining.is_current("CYP")
+
+    cleaning.combining.ensure_current_combination("CYP")
+    assert cleaning.combining.is_current("CYP")
+
+
+def test_fingerprint_covers_the_flags_and_the_rule_files():
+    """
+    Test that the fingerprint covers the flags of the data sources.
+
+    The flags of the cleaned data of a data source are an input of the
+    combination, and each file of the rules exists.
+    """
+    fingerprint = cleaning.combining.get_fingerprint("CYP")
+    flags_path = utils.paths.get_electricity_demand_file(
+        "cleaned", "CYP", "tsoc", table="flags"
+    )
+    os.makedirs(os.path.dirname(flags_path), exist_ok=True)
+    pd.DataFrame({"flag": ["low_values"]}).to_parquet(flags_path)
+
+    assert cleaning.combining.get_fingerprint("CYP") != fingerprint
+    assert {
+        os.path.basename(file_path)
+        for file_path in cleaning.combining.RULE_FILES
+        if os.path.isfile(file_path)
+    } == {"combining.py", "electricity_demand.py", "flags.py", "reviews.py"}
+
+
 def test_reviewed_net_demand_is_not_for_training(monkeypatch):
     """
     Test that the seasons reviewed as net demand are not for training.
