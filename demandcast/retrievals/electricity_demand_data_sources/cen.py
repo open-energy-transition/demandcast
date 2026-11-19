@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Coordinador Eléctrico Nacional (CEN)
-    in Chile. The data is retrieved in one-year intervals.
+    This module retrieves the electricity demand data from the website
+    of the Coordinador Eléctrico Nacional (CEN) in Chile. The data is
+    retrieved in one-year intervals.
 
     The API gives the hourly demand of the national electric system
     (SEN) in MW, which leaves out the medium systems of Aysén,
@@ -14,10 +14,10 @@ Description:
     25, and the day when it starts has no hour 1. Until 2015 the demand
     is the one of the central system (SIC) only, about 30% less, so the
     data starts in 2016. The API has no data after 2026-05-13: CEN
-    publishes its data on another platform (issue #262). The end date of
-    the YAML file is that day, so that the live check does not report
-    the data as old, and still reports the data after it if the API
-    gives it again.
+    publishes its data on another platform. The end date of the YAML
+    file is that day, so that the live check does not report the data
+    as old, and still reports the data after it if the API gives it
+    again.
 
     Source: https://www.coordinador.cl/operacion/graficos/operacion-real/demanda-real/
 """
@@ -49,7 +49,8 @@ def get_available_requests(
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
-        The list of available requests.
+        The start and end of each year of the data, from the start date
+        to the end date.
     """
     return utils.time_series.split_period(start_date, end_date, "YS")
 
@@ -61,9 +62,9 @@ def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
     Parameters
     ----------
     start_date : pandas.Timestamp
-        The start date of the data retrieval.
+        The start of the period.
     end_date : pandas.Timestamp
-        The end date of the data retrieval.
+        The end of the period.
 
     Returns
     -------
@@ -97,7 +98,7 @@ def download_and_extract_data_for_request(
     Parameters
     ----------
     period : tuple[pandas.Timestamp, pandas.Timestamp]
-        The start and end date and time of the data retrieval.
+        The start and end of the period.
     code : str
         The code of the national electric system.
 
@@ -154,7 +155,6 @@ def download_and_extract_data_for_request(
         index=pd.to_datetime(dataset["date and time"]),
     )
 
-    # Localize the starts of the hours and move them to their ends.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

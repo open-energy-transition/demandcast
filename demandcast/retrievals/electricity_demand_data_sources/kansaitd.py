@@ -3,10 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of Kansai Transmission and Distribution
-    (KansaiTD) in Japan. The data is retrieved from the available CSV
-    files on the KansaiTD website.
+    This module retrieves the electricity demand data from the website
+    of Kansai Transmission and Distribution (KansaiTD) in Japan. The
+    data is retrieved from the available CSV files on the KansaiTD
+    website.
 
     The files of the years until 2023 are fiscal years, from April to
     March, the first one from April 2016, and give the area demand in
@@ -17,15 +17,11 @@ Description:
     daylight saving time. OCCTO republishes the same demand (see
     occto.py).
 
-    The area demand counts the solar fed into the networks, but not the
-    solar that the consumers of the surplus purchase scheme use
-    themselves, which lowers the area demand: Kyushu states it for the
-    national format ("「エリア需要」および「太陽光」には、
-    余剰買取による太陽光発電の自家消費分は含んでいません"), so the
+    The area demand leaves out the solar that the consumers use
+    themselves, as in the national format (see occto.py), so the
     embedded generation is partial in the YAML file.
 
     Source: https://www.kansai-td.co.jp/english/home/denkiyoho/area-performance/index.html
-    Source: https://www.kyuden.co.jp/td_area_jukyu/jukyu.html
 """
 
 import datetime as dt
@@ -55,16 +51,15 @@ def get_available_requests(
     Returns
     -------
     list[tuple[int, int | None]]
-        The list of available requests.
+        The year and month of each file, without a month for the files
+        of the fiscal years before March 2024.
     """
     march_2024 = pd.Timestamp("2024-03-01")
 
-    # Requests before March 2024.
     requests_before: list[tuple[int, int | None]] = [
         (year, None) for year in range(start_date.year, march_2024.year)
     ]
 
-    # Requests from March 2024.
     requests_after: list[tuple[int, int | None]] = [
         (year, month)
         for year in range(march_2024.year, end_date.year + 1)
@@ -85,11 +80,11 @@ def get_url(year: int, month: int | None) -> str:
     year : int
         The year of the data to retrieve.
     month : int | None
-        The month of the data to retrieve.
+        The month of the data to retrieve, or None for a yearly file.
 
     Returns
     -------
-    url : str
+    str
         The URL of the electricity demand data.
     """
     if month is None:
@@ -167,7 +162,7 @@ def download_and_extract_data_for_request(
         interval = pd.Timedelta(hours=1)
 
     else:
-        # Convert date and hour columns into hourly timestamps.
+        # The times are the starts of the half hours, such as "0:30".
         index = pd.to_datetime(dataset["DATE"]) + pd.to_timedelta(
             dataset["TIME"].astype(str) + ":00"
         )
@@ -177,10 +172,8 @@ def download_and_extract_data_for_request(
             index=index,
         )
 
-        # The times are the starts of the half hours.
         interval = pd.Timedelta(minutes=30)
 
-    # Move the times to the ends of the intervals, in Japan time.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series, "Asia/Tokyo", interval

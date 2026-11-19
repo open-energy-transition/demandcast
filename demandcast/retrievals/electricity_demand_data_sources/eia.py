@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the US Energy Information Administration
-    (EIA). The data is retrieved in six-month intervals.
+    This module retrieves the electricity demand data from the website
+    of the US Energy Information Administration (EIA). The data is
+    retrieved in six-month intervals.
 
     The API gives the hourly demand of each region in MW at the end of
     each hour in UTC. From 2022-06-16 to 2025-12-02, the times of the
@@ -18,7 +18,7 @@ Description:
     of ISO New England of this solar added.
 
     The EIA republishes the data of the balancing authorities, so it
-    is compiled in the yaml file: the combined demand of a code takes
+    is compiled in its YAML file: the combined demand of a code takes
     the data of its system operator first (see cleaning/combining.py).
 
     Source: https://www.eia.gov/opendata/browser/electricity/rto/region-data
@@ -85,11 +85,11 @@ def get_url(
     Parameters
     ----------
     start_date : pandas.Timestamp
-        The start date of the data retrieval.
+        The start of the period.
     end_date : pandas.Timestamp
-        The end date of the data retrieval.
+        The end of the period.
     code : str
-        The code of the subdivision of interest.
+        The code of the region or of the balancing authority.
 
     Returns
     -------
@@ -130,9 +130,9 @@ def download_and_extract_data_for_request(
     Parameters
     ----------
     period : tuple[pandas.Timestamp, pandas.Timestamp]
-        The start and end date of the data retrieval.
+        The start and end of the period.
     code : str
-        The code of the subdivision of interest.
+        The code of the subdivision.
 
     Returns
     -------
@@ -186,9 +186,9 @@ def _download(
     Parameters
     ----------
     start_date : pandas.Timestamp
-        The start date of the data retrieval.
+        The start of the period.
     end_date : pandas.Timestamp
-        The end date of the data retrieval.
+        The end of the period.
     code : str
         The code of the region or of the balancing authority, such as
         USA_CAL or USA_CISO.

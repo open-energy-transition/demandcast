@@ -3,10 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of Administrador del Mercado Eléctrico (ADME)
-    in Uruguay. The data is retrieved from the available CSV files on
-    the ADME website.
+    This module retrieves the electricity demand data from the website
+    of the Administrador del Mercado Eléctrico (ADME) in Uruguay. The
+    data is retrieved from the available CSV files on the ADME website.
 
     The files give the hourly generation of each source, the imports
     and the exports in MW, and the demand ("Demanda"), which is the
@@ -46,7 +45,8 @@ def get_available_requests(
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
-        The list of available requests.
+        The start and end of each year of the data, from the start date
+        to the end date.
     """
     return utils.time_series.split_period(start_date, end_date, "YS")
 
@@ -58,9 +58,9 @@ def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
     Parameters
     ----------
     start_date : pandas.Timestamp
-        The start date and time of the data retrieval.
+        The start of the period.
     end_date : pandas.Timestamp
-        The end date and time of the data retrieval.
+        The end of the period.
 
     Returns
     -------
@@ -98,7 +98,7 @@ def download_and_extract_data_for_request(
     Parameters
     ----------
     period : tuple[pandas.Timestamp, pandas.Timestamp]
-        The start and end date and time of the data retrieval.
+        The start and end of the period.
     code : str
         The code of Uruguay.
 

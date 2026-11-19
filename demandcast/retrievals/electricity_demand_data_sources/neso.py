@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the National Energy System Operator (NESO)
-    in the UK. The data is retrieved in one-year intervals.
+    This module retrieves the electricity demand data from the website
+    of the National Energy System Operator (NESO) in the UK. The data is
+    retrieved in one-year intervals.
 
     The datasets give the national demand (ND) in MW of each settlement
     period, the half hours from the local midnight of each day, 46 or 50
@@ -129,7 +129,6 @@ def get_url(year: int) -> str:
     ValueError
         If the catalogue has no dataset for the year.
     """
-    # Fetch the datasets in the catalogue, one for each year.
     datasets = utils.fetcher.fetch_dataframe(
         "https://api.neso.energy/api/3/action/package_show?"
         "id=historic-demand-data",
@@ -139,7 +138,6 @@ def get_url(year: int) -> str:
         json_keys=["result", "resources"],
     )
 
-    # Get the identifier of the dataset of the year.
     dataset_ids = datasets.loc[
         datasets["name"] == f"Historic Demand Data {year}", "id"
     ]
@@ -190,7 +188,6 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
     if "FORECAST_ACTUAL_INDICATOR" in dataset.columns:
         dataset = dataset[dataset["FORECAST_ACTUAL_INDICATOR"] != "F"]
 
-    # Find the ends of the settlement periods.
     midnights = _read_dates(dataset["SETTLEMENT_DATE"]).tz_localize(
         "Europe/London"
     )

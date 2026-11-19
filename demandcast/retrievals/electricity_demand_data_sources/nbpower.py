@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the New Brunswick Power Corporation
-    (NB Power) in Canada. The data is retrieved in one-month intervals.
+    This module retrieves the electricity demand data from the website
+    of the New Brunswick Power Corporation (NB Power) in Canada. The
+    data is retrieved in one-month intervals.
 
     The archive gives the hourly load in MW of each month that has
     ended, by hour ending in Atlantic time with daylight saving time, so
@@ -102,7 +102,6 @@ def download_and_extract_data_for_request(
 
     url = get_url()
 
-    # Fetch the CSV file of the month.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "html",

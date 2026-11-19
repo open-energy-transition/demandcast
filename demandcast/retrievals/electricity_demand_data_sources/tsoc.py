@@ -3,12 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Transmission System Operator of Cyprus
-    (TSOC). The data is the total demand every 15 minutes in MW, which
-    TSOC publishes in one Excel file per year from 2018, on the archive
-    page below. The data is retrieved in one-year intervals, for the
-    years that have ended.
+    This module retrieves the electricity demand data from the website
+    of the Transmission System Operator of Cyprus (TSOC). The data is
+    the total demand every 15 minutes in MW, which TSOC publishes in one
+    Excel file per year from 2018, on the archive page below. The data
+    is retrieved in one-year intervals, for the years that have ended.
 
     The times of the files do not always follow the same convention:
     some years are 15 or 30 minutes early, and daylight saving time is
@@ -81,7 +80,7 @@ def get_available_requests(
     Returns
     -------
     list[int]
-        The list of available requests.
+        The years of the data that have ended.
     """
     last_year = min(end_date.year, pd.Timestamp.today().year - 1)
     return list(range(start_date.year, last_year + 1))
@@ -286,15 +285,14 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
 
     Returns
     -------
-    pandas.Series
+    electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
     """
     logging.info(f"Retrieving electricity demand data for the year {year}.")
 
     # Read the start of each interval, the total demand and the
     # estimated distributed generation, below the four rows of the
-    # header. The file is downloaded with requests, because the website
-    # rejects the downloads of pandas, made with urllib.
+    # header.
     dataset = utils.fetcher.fetch_dataframe(
         get_url(year),
         "html",
@@ -319,7 +317,6 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         shift_of_rows.to_numpy(), unit="min"
     )
 
-    # Correct the shifts of whole hours that remain.
     local_start = _correct_whole_hours(
         local_start,
         pd.to_numeric(dataset["distributed"], errors="coerce"),

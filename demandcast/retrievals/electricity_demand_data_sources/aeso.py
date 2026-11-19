@@ -3,11 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Alberta Electric System Operator (AESO)
-    in Canada. The data is retrieved from the CSV files of the hourly
-    metered volumes, pool price and Alberta Internal Load (AIL), one
-    for each period of several years.
+    This module retrieves the electricity demand data from the website
+    of the Alberta Electric System Operator (AESO) in Canada. The data
+    is retrieved from the CSV files of the hourly metered volumes, pool
+    price and Alberta Internal Load (AIL), one for each period of
+    several years.
 
     The demand is the AIL in MW, which includes the load behind the
     fence of industrial sites and the transmission losses, at the start
@@ -116,7 +116,6 @@ def download_and_extract_data_for_request(period: str, code: str) -> pd.Series:
         csv_kwargs={"usecols": ["Date_Begin_GMT", "ACTUAL_AIL"]},
     )
 
-    # Move the times from the starts to the ends of the hours.
     electricity_demand_time_series = pd.Series(
         dataset["ACTUAL_AIL"].to_numpy(),
         index=pd.to_datetime(dataset["Date_Begin_GMT"], format="mixed"),

@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Grupo ICE (GRUPOICE) in Costa Rica.
-    The data is retrieved in one-year intervals.
+    This module retrieves the electricity demand data from the website
+    of the Grupo ICE (GRUPOICE) in Costa Rica. The data is retrieved in
+    one-year intervals.
 
     The API gives the demand of the national system in MW every 15
     minutes, at the start of each interval in the time of Costa Rica,
@@ -42,7 +42,7 @@ def get_available_requests(
     Returns
     -------
     list[int]
-        The list of available requests.
+        The years of the data.
     """
     return list(range(start_date.year, end_date.year + 1))
 
@@ -98,7 +98,6 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         index=pd.to_datetime(dataset["fechaHora"]),
     )
 
-    # Move the starts of the 15 minutes to their ends.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

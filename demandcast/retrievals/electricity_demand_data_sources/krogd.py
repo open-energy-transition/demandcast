@@ -3,11 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of Korean Open Government Data (KROGD) portal
-    in South Korea. The data is retrieved from the versions of the file
-    data of the hourly national demand of the Korea Power Exchange
-    (KPX), which the portal keeps and gives without login.
+    This module retrieves the electricity demand data from the Korean
+    Open Government Data (KROGD) portal in South Korea. The data is
+    retrieved from the versions of the file data of the hourly national
+    demand of the Korea Power Exchange (KPX), which the portal keeps and
+    gives without login.
 
     The portal publishes a new version every year, and keeps the
     earlier ones in its history: the version that ends on 2020-12-31
@@ -151,8 +151,6 @@ def _read_versions() -> dict[str, str]:
     ValueError
         If the dataset page has no current version.
     """
-    # The page of the dataset gives the current version, and the
-    # request of its download button gives its file.
     page = _read_text(f"{PORTAL_URL}/data/{DATASET_ID}/fileData.do")
     current = re.search(r"전력수요량_(\d{8})", page)
     detail_id = re.search(
@@ -162,8 +160,6 @@ def _read_versions() -> dict[str, str]:
         raise ValueError("The dataset page of KROGD has no current version.")
     versions = {current.group(1): _read_current_file_id(detail_id.group(1))}
 
-    # The history gives the earlier versions, and their details give
-    # their files.
     history = _read_text(
         f"{PORTAL_URL}/tcs/dss/selectHistAndCsvData.do",
         {"publicDataPk": DATASET_ID, "publicDataDetailPk": detail_id.group(1)},
@@ -273,20 +269,19 @@ def download_and_extract_data_for_request(
         f"{first_day.date()} to {last_day.date()}."
     )
 
-    # Fetch the file, with Korean characters, without its empty rows.
     _check_download_limit(file_id)
+    # The file is in the Korean code page 949, with empty rows.
     dataset = utils.fetcher.fetch_dataframe(
         get_url(file_id), "csv", csv_kwargs={"encoding": "cp949"}
     )
     dataset = dataset.dropna(subset=[dataset.columns[0]])
 
-    # The column names have the time information. Rearrange the
-    # columns to have the time information on another column.
+    # The columns after the date are the hours ending from 1시 to 24시.
     dataset = dataset.melt(
         id_vars=dataset.columns[0], var_name="Hour", value_name="Value"
     )
 
-    # Define the new index, at the starts of the hours.
+    # The starts of the hours.
     index = pd.to_datetime(
         dataset.iloc[:, 0].astype(str)
         + " "
@@ -302,7 +297,6 @@ def download_and_extract_data_for_request(
         index=index,
     )
 
-    # Move the times to the ends of the hours, in local time.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series, "Asia/Seoul", pd.Timedelta(hours=1)

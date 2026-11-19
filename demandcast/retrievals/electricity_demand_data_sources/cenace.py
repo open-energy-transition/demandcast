@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Centro Nacional de Control de Energía
-    (CENACE) in Mexico. The data is retrieved in one-year intervals.
+    This module retrieves the electricity demand data from the website
+    of the Centro Nacional de Control de Energía (CENACE) in Mexico. The
+    data is retrieved in one-year intervals.
 
     The daily files give the demand of each area in MWh for each hour,
     the average demand in MW, by hour ending from 1 in local time, with
@@ -63,7 +63,7 @@ def get_available_requests(
     Parameters
     ----------
     code : str
-        The code of the subdivision of interest.
+        The code of the subdivision.
     start_date : datetime.date
         The first day of the data.
     end_date : datetime.date
@@ -72,7 +72,8 @@ def get_available_requests(
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
-        The list of available requests.
+        The first and last day of each year of the data, both included,
+        with the first day of the next year as the last day.
 
     Notes
     -----
@@ -109,9 +110,9 @@ def download_and_extract_data_for_request(
     Parameters
     ----------
     period : tuple[pandas.Timestamp, pandas.Timestamp]
-        The start and end date of the data retrieval.
+        The first and last day of the data.
     code : str
-        The code of the subdivision of interest.
+        The code of the subdivision.
 
     Returns
     -------
@@ -139,7 +140,6 @@ def download_and_extract_data_for_request(
 
     url = get_url()
 
-    # Define the parameters for the POST request.
     post_data_params = {
         "ctl00$ContentPlaceHolder1$RadDatePickerFIVisualizarPorBalance"
         "$dateInput": start_date.strftime("%d/%m/%Y"),
@@ -201,7 +201,6 @@ def download_and_extract_data_for_request(
         for file_name in reversed(
             [name for name in file_names if date in name]
         ):
-            # Find the line that contains the header of the CSV file.
             content = archive.open(file_name).read().decode("utf-8")
             lines = content.split("\n")
             skip_rows = next(
@@ -237,8 +236,8 @@ def download_and_extract_data_for_request(
             " Estimacion de Demanda por Balance (MWh) "
         ].reset_index(drop=True)
 
-        # Set a new index with the date and time for each hour of
-        # the day.
+        # The starts of the hours of the day in local time, 23 or 25 on
+        # the days when the clocks change.
         daily_values.index = pd.date_range(
             start=date + " 00:00:00",
             end=date + " 23:59:59",
@@ -253,7 +252,6 @@ def download_and_extract_data_for_request(
 
     electricity_demand_time_series = pd.concat(daily_values_list)
 
-    # Add 1 hour to the index to indicate the end of the hour.
     electricity_demand_time_series.index = (
         electricity_demand_time_series.index + pd.Timedelta("1h")
     )

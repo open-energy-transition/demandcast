@@ -3,11 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Australian Energy Market Operator
-    (AEMO) for the National Electricity Market (NEM) in Australia. The
-    data is retrieved from the monthly CSV files on the AEMO website,
-    the file of the current month running until the current day.
+    This module retrieves the electricity demand data from the website
+    of the Australian Energy Market Operator (AEMO) for the National
+    Electricity Market (NEM) in Australia. The data is retrieved from
+    the monthly CSV files on the AEMO website, the file of the current
+    month running until the current day.
 
     The regions of the NEM are New South Wales, Victoria and Tasmania,
     and the parts of Queensland and South Australia that the NEM
@@ -86,8 +86,8 @@ def get_available_requests(
 
     Returns
     -------
-    available_requests : list[tuple[int, int]]
-        The list of available requests.
+    list[tuple[int, int]]
+        The year and month of each month of the data.
     """
     return [
         (period.year, period.month)
@@ -110,7 +110,7 @@ def get_url(year: int, month: int, code: str) -> str:
 
     Returns
     -------
-    url : str
+    str
         The URL of the electricity demand data.
     """
     url = (
@@ -188,7 +188,6 @@ def _get_rooftop_solar(year: int, month: int, code: str) -> pd.Series | None:
     The file is found by its name in the folder of the month, because
     its name is not the same in all the years.
     """
-    # Find the file of the month in its folder.
     folder_url = get_rooftop_solar_folder_url(year, month)
     try:
         folder = _fetch_content(folder_url).decode()
@@ -234,7 +233,7 @@ def download_and_extract_data_for_request(
     year_and_month : tuple[int, int]
         The year and month of the electricity demand data.
     code : str
-        The subdivision code of the electricity demand data.
+        The code of the subdivision.
 
     Returns
     -------

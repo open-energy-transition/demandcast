@@ -3,12 +3,12 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Independent System and Market Operator
-    (ISMO) of Pakistan, which took over the system and market operation
-    of the National Transmission & Despatch Company (NTDC) in 2024. The
-    data is retrieved from the Excel file of each fiscal year, from July
-    to June, in the library of the website.
+    This module retrieves the electricity demand data from the website
+    of the Independent System and Market Operator (ISMO) of Pakistan,
+    which took over the system and market operation of the National
+    Transmission & Despatch Company (NTDC) in 2024. The data is
+    retrieved from the Excel file of each fiscal year, from July to
+    June, in the library of the website.
 
     The library lists its files only through an API that needs the
     authorization of the website, and their names end with random
@@ -16,9 +16,9 @@ Description:
     has only the file of the fiscal year 2025, from July 2024 to June
     2025.
 
-    The file gives the actual metered demand of the system without
-    K-Electric, which supplies Karachi, in MW, by date and hour from 0
-    to 23 in the time of Pakistan, which has no daylight saving time.
+    The file gives the actual metered demand of the system in MW, by
+    date and hour from 0 to 23 in the time of Pakistan, which has no
+    daylight saving time.
     The hours are their starts: the solar generation of the hourly
     generation file of the same year is centered at 11:44 by these
     hours, about half an hour before solar noon. The demand is at the
@@ -130,7 +130,6 @@ def download_and_extract_data_for_request(
         excel_kwargs={"usecols": [0, 1, 2]},
     )
 
-    # Move the starts of the hours to their ends.
     electricity_demand_time_series = pd.Series(
         dataset.iloc[:, 2].to_numpy(dtype="float64"),
         index=pd.to_datetime(dataset["Date"])

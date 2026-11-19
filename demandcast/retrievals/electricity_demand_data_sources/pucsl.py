@@ -3,11 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Public Utilities Commission of Sri
-    Lanka (PUCSL) in Sri Lanka. The data is retrieved in one-week
-    intervals from the API of the website, which takes up to an hour
-    for all the data, from 2023.
+    This module retrieves the electricity demand data from the website
+    of the Public Utilities Commission of Sri Lanka (PUCSL). The data is
+    retrieved in one-week intervals from the API of the website, which
+    takes up to an hour for all the data, from 2023.
 
     The API gives the dispatch in MW of each power plant every 15
     minutes, at times in UTC, which include the end of the request, so
@@ -76,9 +75,9 @@ def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
     Parameters
     ----------
     start_date : pandas.Timestamp
-        The start date and time of the data retrieval.
+        The start of the period.
     end_date : pandas.Timestamp
-        The end date and time of the data retrieval.
+        The end of the period, which the API includes.
 
     Returns
     -------
@@ -90,14 +89,12 @@ def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
     ValueError
         If the retrieval period is longer than 7 days.
     """
-    # Check if the retrieval period is within a week.
     if end_date - start_date > pd.Timedelta("7days"):
         raise ValueError(
             "The retrieval period must be 7 days or less. "
             f"start_date: {start_date}, end_date: {end_date}"
         )
 
-    # Convert timestamps to string format expected by the API
     from_str = start_date.strftime("%Y-%m-%dT%H:%M:%S.000Z")
     to_str = end_date.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
@@ -118,7 +115,7 @@ def download_and_extract_data_for_request(
     Parameters
     ----------
     period : tuple[pandas.Timestamp, pandas.Timestamp]
-        The start and end date and time of the data retrieval.
+        The start and end of the period.
     code : str
         The code of Sri Lanka.
 
@@ -160,7 +157,6 @@ def download_and_extract_data_for_request(
     # Move the starts of the 15 minutes to their ends.
     electricity_demand_time_series.index += pd.Timedelta(minutes=15)
 
-    # Convert the times from UTC to the time of Sri Lanka.
     electricity_demand_time_series = electricity_demand_time_series.tz_convert(
         "Asia/Colombo"
     )

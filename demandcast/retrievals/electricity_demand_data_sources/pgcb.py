@@ -3,12 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve electricity demand data
-    from the website of the Power Grid Company of Bangladesh (PGCB),
-    now Power Grid Bangladesh PLC. The data is obtained from the daily
-    reports on the website, one Excel file a day from 2014, which the
-    website lists on about 150 pages. Retrieving all the data takes a
-    few hours.
+    This module retrieves the electricity demand data from the website
+    of the Power Grid Company of Bangladesh (PGCB), now Power Grid
+    Bangladesh PLC. The data is obtained from the daily reports on the
+    website, one Excel file a day from 2014, which the website lists on
+    about 150 pages. Retrieving all the data takes a few hours.
 
     The report of a day has the data of the day before. Its load curve
     gives the total generation of the East and West grids in MW at the
@@ -91,12 +90,12 @@ def _get_certificates() -> str:
 
 def _clean_and_format(date: str) -> str:
     """
-    Clean and format the date string to YYYY-MM-DD.
+    Convert the date of a report name to the format YYYY-MM-DD.
 
     Parameters
     ----------
     date : str
-        The date string to be cleaned and formatted.
+        The date of the report name, day first.
 
     Returns
     -------
@@ -112,9 +111,10 @@ def _clean_and_format(date: str) -> str:
     -----
     Some report names have typos in their dates, which are fixed by
     their known corrections. The name of the report of 2022-04-25 has no
-    date, so the regular expression captures only "t" from it.
+    date, so the regular expression captures only "t" from it. The
+    dates use dots, slashes or hyphens as separators, and some have
+    trailing dots, months of one digit or years of two digits.
     """
-    # Fix known typos in the date strings.
     fix_typo = {
         "t": "25-04-2022",
         "2209-2023": "22-09-2023",
@@ -128,29 +128,22 @@ def _clean_and_format(date: str) -> str:
     if date in fix_typo:
         date = fix_typo[date]
 
-    # Clean the date strings from trailing whitespaces and dots and
-    # replace different separators with a hyphen.
     date = date.strip().strip(".").replace(".", "-").replace("/", "-")
 
-    # Extract the date components.
     date_components = date.split("-")
     if len(date_components) != 3:
         raise ValueError(f"Cannot infer the date from the string: {date}.")
     day, month, year = date_components
 
-    # Add leading zero to month if needed.
     if len(month) == 1:
         month = f"0{month}"
 
-    # Add the century to the year if needed.
     if len(year) == 2:
         year = f"20{year}"
 
-    # Reconstruct the date string.
     date = f"{year}-{month}-{day}"
 
     try:
-        # Validate the date format.
         pd.to_datetime(date, format="%Y-%m-%d")
     except ValueError as e:
         raise ValueError(
@@ -180,7 +173,7 @@ def get_available_requests(
 
     Returns
     -------
-    available_requests : list[tuple[str, str, str]]
+    list[tuple[str, str, str]]
         The number and extension of the file of each report, and the
         date of the report in the format YYYY-MM-DD, in chronological
         order.
@@ -192,36 +185,38 @@ def get_available_requests(
     spreadsheet or a date, such as a test row that appeared on the
     website in September 2026, are skipped. The website lists the
     reports from the newest, so the requests are sorted by date.
+
+    The reports known to be unavailable are those whose files are
+    missing, and those of 2014-04-12, whose file lacks some data, and of
+    2016-01-07, whose file is corrupted.
     """
     logging.info("Retrieving the available requests from the PGCB website.")
 
-    # List of dates for which the files are known to be unavailable.
     file_dates_not_available = [
-        "2014-04-12",  # Some data is missing in this file.
-        "2016-01-07",  # File corrupted.
-        "2016-01-23",  # Missing file.
-        "2016-01-24",  # Missing file.
-        "2016-01-25",  # Missing file.
-        "2016-01-26",  # Missing file.
-        "2016-01-27",  # Missing file.
-        "2016-01-28",  # Missing file.
-        "2016-01-29",  # Missing file.
-        "2016-01-30",  # Missing file.
-        "2016-01-31",  # Missing file.
-        "2016-02-01",  # Missing file.
-        "2016-02-02",  # Missing file.
-        "2017-02-13",  # Missing file.
-        "2017-02-14",  # Missing file.
-        "2017-02-15",  # Missing file.
-        "2017-02-16",  # Missing file.
-        "2018-02-26",  # Missing file.
-        "2018-11-10",  # Missing file.
-        "2022-06-14",  # Missing file.
+        "2014-04-12",
+        "2016-01-07",
+        "2016-01-23",
+        "2016-01-24",
+        "2016-01-25",
+        "2016-01-26",
+        "2016-01-27",
+        "2016-01-28",
+        "2016-01-29",
+        "2016-01-30",
+        "2016-01-31",
+        "2016-02-01",
+        "2016-02-02",
+        "2017-02-13",
+        "2017-02-14",
+        "2017-02-15",
+        "2017-02-16",
+        "2018-02-26",
+        "2018-11-10",
+        "2022-06-14",
     ]
 
     available_requests = []
 
-    # Read the pages until the first one without reports.
     for page_number in range(1, 1000):
         page_url = (
             "https://erp.powergrid.gov.bd/w/report/eyJpdiI6IldsU2ZQTGkvbkRnQU9"
@@ -265,7 +260,6 @@ def get_available_requests(
             except ValueError:
                 date = None
 
-            # Skip the rows without a spreadsheet or a date.
             if file_info is None or date is None:
                 logging.warning(
                     f"Skipping the report '{report_name.group(1)}' on page "
@@ -298,7 +292,7 @@ def get_url(file_number: str, extension: str) -> str:
     Returns
     -------
     str
-        The URL for the electricity demand data request.
+        The URL of the electricity demand data.
     """
     return (
         "https://erp.powergrid.gov.bd/web/files/download?"
@@ -373,7 +367,8 @@ def download_and_extract_data_for_request(
     )
     hours, minutes = hours_and_minutes[0], hours_and_minutes[1]
 
-    # Keep the readings at the full hours.
+    # Keep the readings at the full hours, with midnight from "24:00"
+    # when the report has it.
     is_reading = minutes.eq(0)
     if hours[is_reading].eq(24).any():
         is_reading &= hours.ne(0)

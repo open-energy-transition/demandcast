@@ -3,11 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of Eskom in South Africa. The data is
-    retrieved by submitting a request to the Eskom website. The user
-    then receives a link on the provided email address to download the
-    data.
+    This module reads the electricity demand data of Eskom in South
+    Africa from the files downloaded manually from its data portal: a
+    request on the Eskom website sends a link to download the data to
+    the email address given.
 
     The files give the hourly RSA contracted demand in MW, the larger of
     the two demands of the data portal, by the start of each hour
@@ -68,7 +67,7 @@ def get_available_requests(
 
 def get_url() -> str:
     """
-    Get the URL of the electricity demand data from the Eskom website.
+    Get the URL of the electricity demand data on the Eskom website.
 
     Returns
     -------
@@ -82,9 +81,7 @@ def download_and_extract_data_for_request(
     request: None, code: str
 ) -> pd.Series:
     """
-    Extract electricity demand data.
-
-    The data must already be downloaded into the specified folder.
+    Extract electricity demand data from the files downloaded manually.
 
     Parameters
     ----------
@@ -123,8 +120,6 @@ def download_and_extract_data_for_request(
             f"left out, such as {not_numbers.iloc[0]!r}."
         )
 
-    # Extract the electricity demand time series, with one value of
-    # each hour from the latest download.
     electricity_demand_time_series = utils.time_series.keep_latest_download(
         pd.Series(
             load.to_numpy(),
@@ -136,7 +131,6 @@ def download_and_extract_data_for_request(
         dataset["File"],
     )
 
-    # Move the times from the starts to the ends of the hours.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

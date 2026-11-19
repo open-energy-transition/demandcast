@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Comité de Operación Económica (COES)
-    of Peru. The data is retrieved in one-year intervals.
+    This module retrieves the electricity demand data from the website
+    of the Comité de Operación Económica (COES) of Peru. The data is
+    retrieved in one-year intervals.
 
     The portal gives the executed demand of the national system in MW
     every 30 minutes, at the end of each interval in the time of Peru,
@@ -54,7 +54,7 @@ def get_available_requests(
     Returns
     -------
     list[int]
-        The list of available requests.
+        The years of the data.
     """
     return list(range(start_date.year, end_date.year + 1))
 

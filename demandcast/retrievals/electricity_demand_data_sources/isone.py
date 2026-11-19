@@ -3,11 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data of ISO New England (ISO-NE) in the United States, from its web
-    services, which need an account of ISO Express (the ISONE_USERNAME
-    and ISONE_PASSWORD environment variables). The data is retrieved
-    one year at a time, one day at a time.
+    This module retrieves the electricity demand data of ISO New England
+    (ISO-NE) in the United States, from its web services, which need an
+    account of ISO Express (the ISONE_USERNAME and ISONE_PASSWORD
+    environment variables). The data is retrieved one year at a time,
+    one day at a time.
 
     The hourly system load gives the demand of New England in MW for
     each hour, by its start in local time with its offset to UTC. Its
@@ -122,8 +122,8 @@ def get_available_requests(
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
-        The first day and the day after the last one of each year of
-        the data, in local time.
+        The years of the data, from their first day to the first day
+        after them, in local time.
     """
     return utils.time_series.split_period(
         start_date, end_date + dt.timedelta(days=1), "YS"
@@ -374,7 +374,7 @@ def download_and_extract_data_for_request(
 
     Returns
     -------
-    pandas.Series
+    electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW, in UTC.
 
     Notes

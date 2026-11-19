@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data for Nigeria from a dataset on Mendeley Data, under the CC BY
-    4.0 license, which has a single Excel file of 2016.
+    This module retrieves the electricity demand data of Nigeria from a
+    dataset on Mendeley Data, under the CC BY 4.0 license, which has a
+    single Excel file of 2016.
 
     The file gives the hourly national demand in MW of 2016,
     unsuppressed and suppressed. The module reads the unsuppressed
@@ -59,7 +59,7 @@ def get_available_requests(
 
 def get_url() -> str:
     """
-    Get the URL of the electricity demand data for Nigeria.
+    Get the URL of the electricity demand data on Mendeley Data.
 
     Returns
     -------
@@ -92,8 +92,6 @@ def download_and_extract_data_for_request(
     """
     url = get_url()
 
-    # Fetch the data from the URL, with requests: Mendeley Data refuses
-    # the downloads of pandas.
     dataset = utils.fetcher.fetch_dataframe(
         url,
         "html",
@@ -110,7 +108,6 @@ def download_and_extract_data_for_request(
         electricity_demand_time_series.index
     ).round("s")
 
-    # Move the starts of the hours to their ends.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

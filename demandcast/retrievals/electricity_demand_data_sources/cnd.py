@@ -3,11 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data for Panama from a publicly available repository containing
-    data from the Centro Nacional de Despacho (CND). The data is
-    retrieved all at once, from the file of the daily post-dispatch
-    reports.
+    This module retrieves the electricity demand data of Panama from a
+    dataset on Mendeley Data with the data of the Centro Nacional de
+    Despacho (CND). The data is retrieved all at once, from the file of
+    the daily post-dispatch reports.
 
     The file gives the hourly load ("Carga Real"), generation, imports
     and exports in MW, at the start of each hour in the time of Panama,
@@ -56,7 +55,7 @@ def get_available_requests(
 
 def get_url() -> str:
     """
-    Get the URL of the electricity demand data from CND.
+    Get the URL of the electricity demand data on Mendeley Data.
 
     Returns
     -------
@@ -93,7 +92,6 @@ def download_and_extract_data_for_request(
         index=pd.to_datetime(dataset["Fecha Hora"]),
     )
 
-    # Move the times from the starts to the ends of the hours.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

@@ -3,13 +3,12 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data of the Indian states from the India Climate and Energy
-    Dashboard (ICED) of National Institution for Transforming India
-    (NITI) Aayog. The data is retrieved by submitting a request on the
-    website, with a reCAPTCHA, for a year and two states at a time,
-    which downloads a file named "Yearly Demand Profile.xlsx". The file
-    needs a name that starts with "NIT", such as
+    This module reads the electricity demand data of the Indian states
+    from the files downloaded manually from the India Climate and Energy
+    Dashboard (ICED) of the National Institution for Transforming India
+    (NITI) Aayog. A request on the website, with a reCAPTCHA, for a year
+    and two states at a time, downloads a file named "Yearly Demand
+    Profile.xlsx", which needs a name that starts with "NIT", such as
     "NITI_2024_Assam_Bihar.xlsx". The API of the dashboard encrypts its
     responses for its own pages. Where several files have the same
     state and hour, the latest download, whose data ends last, is kept.
@@ -27,10 +26,10 @@ Description:
 
     The DVC supplies parts of Jharkhand and West Bengal, so the three
     make one subdivision, in the shape of the two states (see
-    shapes/niti.py). The data of Jammu and Kashmir includes Ladakh,
-    which it does not list, so it is in the shape of the two union
-    territories. Andaman and Nicobar and Lakshadweep, which are not
-    connected to the grid, have no data.
+    shapes/subdivisions/IND.yaml). The data of Jammu and Kashmir
+    includes Ladakh, which it does not list, so it is in the shape of
+    the two union territories. Andaman and Nicobar and Lakshadweep,
+    which are not connected to the grid, have no data.
 
     The dashboard has the data of every state from 2017 to March 2026
     without gaps, and in every year their sum is the demand of India of
@@ -168,7 +167,6 @@ def _read_states_of_files(
         access=" after submitting a request via the form on the website",
     )
 
-    # Keep the rows of the states.
     states = dataset[
         dataset.reindex(columns=["State"])["State"]
         .astype("string")
@@ -189,7 +187,6 @@ def _read_states_of_files(
         }
     )
 
-    # Keep one value of each state and hour.
     return (
         utils.time_series.keep_latest_download(
             states.set_index(["name", "time"])["Hourly Demand Met (in MW)"],
@@ -241,7 +238,7 @@ def get_available_requests(
 
 def get_url() -> str:
     """
-    Get the URL of the electricity demand data from NITI Aayog website.
+    Get the URL of the electricity demand data on the ICED website.
 
     Returns
     -------
@@ -269,7 +266,6 @@ def download_and_extract_data_for_request(
     electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
     """
-    # Read the demand of the states of the subdivision.
     states = _read_states()
     states = states[states["name"].isin(SUBDIVISIONS[code])]
 
@@ -283,7 +279,6 @@ def download_and_extract_data_for_request(
         electricity_demand_time_series.index
     )
 
-    # Move the starts of the hours to their ends.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

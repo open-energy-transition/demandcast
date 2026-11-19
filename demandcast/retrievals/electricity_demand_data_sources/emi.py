@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Electricity Market Information (EMI)
-    in New Zealand. The data is retrieved in one-year intervals.
+    This module retrieves the electricity demand data from the website
+    of the Electricity Market Information (EMI) in New Zealand. The data
+    is retrieved in one-year intervals.
 
     The files give the demand in GWh of each half hour, by its start and
     end in the time of New Zealand. When daylight saving time starts,
@@ -44,7 +44,8 @@ def get_available_requests(
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
-        The list of available requests.
+        The start and end of each year of the data, from the start date
+        to the end date.
     """
     return utils.time_series.split_period(start_date, end_date, "YS")
 
@@ -56,9 +57,9 @@ def get_url(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
     Parameters
     ----------
     start_date : pandas.Timestamp
-        The start date and time of the data retrieval.
+        The start of the period.
     end_date : pandas.Timestamp
-        The end date and time of the data retrieval.
+        The end of the period.
 
     Returns
     -------
@@ -93,7 +94,7 @@ def download_and_extract_data_for_request(
     Parameters
     ----------
     period : tuple[pandas.Timestamp, pandas.Timestamp]
-        The start and end date and time of the data retrieval.
+        The start and end of the period.
     code : str
         The code of New Zealand.
 
@@ -142,7 +143,6 @@ def download_and_extract_data_for_request(
         index=pd.DatetimeIndex(starts),
     )
 
-    # Move the starts to the ends of the half hours, in absolute time.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

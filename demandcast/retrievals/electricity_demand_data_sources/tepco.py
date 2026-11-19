@@ -3,11 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Tokyo Electric Power Company (TEPCO) in
-    Japan. The data is retrieved from one CSV file per year until 2024,
-    and from 2025 from one ZIP file per month, with one CSV file per
-    day, since the yearly file of 2025 stops in July.
+    This module retrieves the electricity demand data from the website
+    of the Tokyo Electric Power Company (TEPCO) in Japan. The data is
+    retrieved from one CSV file per year until 2024, and from 2025 from
+    one ZIP file per month, with one CSV file per day, since the yearly
+    file of 2025 stops in July.
 
     The files give the actual demand of the service area of TEPCO, the
     Kantō region, in units of 10 MW ("万kW") for each hour, at its start
@@ -18,15 +18,11 @@ Description:
     without the rounding to 10 MW (see occto.py), which fills the hours
     after the data of TEPCO.
 
-    The area demand counts the solar fed into the networks, but not the
-    solar that the consumers of the surplus purchase scheme use
-    themselves, which lowers the area demand: Kyushu states it for the
-    national format ("「エリア需要」および「太陽光」には、
-    余剰買取による太陽光発電の自家消費分は含んでいません"), so the
+    The area demand leaves out the solar that the consumers use
+    themselves, as in the national format (see occto.py), so the
     embedded generation is partial in the YAML file.
 
     Source: https://www.tepco.co.jp/en/forecast/html/download-e.html
-    Source: https://www.kyuden.co.jp/td_area_jukyu/jukyu.html
 """
 
 import datetime as dt
@@ -67,9 +63,9 @@ def get_available_requests(
     Returns
     -------
     list[tuple[int, int | None]]
-        The list of available requests.
+        The year of each yearly file, without a month, and then the
+        year and month of each monthly file.
     """
-    # Requests of the yearly files.
     requests_of_years: list[tuple[int, int | None]] = [
         (year, None)
         for year in range(
@@ -77,7 +73,6 @@ def get_available_requests(
         )
     ]
 
-    # Requests of the monthly files.
     requests_of_months: list[tuple[int, int | None]] = [
         (date.year, date.month)
         for date in pd.date_range(
@@ -210,7 +205,7 @@ def download_and_extract_data_for_request(
 
     Returns
     -------
-    pandas.Series
+    electricity_demand_time_series : pandas.Series
         The electricity demand time series in MW.
     """
     year, month = year_and_month
@@ -220,7 +215,7 @@ def download_and_extract_data_for_request(
         + (f"-{month:02d}." if month is not None else ".")
     )
 
-    # Fetch the file. The website rejects the user agent of requests.
+    # The website rejects the user agent of requests.
     response = utils.fetcher.fetch_response(
         get_url(year, month),
         header_params={"User-Agent": "Mozilla/5.0"},

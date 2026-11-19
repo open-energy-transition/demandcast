@@ -3,6 +3,6 @@ License: AGPL-3.0.
 
 Description:
 
-    This package contains modules that handle the retrieval of
-    electricity demand data from various sources.
+    This package retrieves the electricity demand data of each data
+    source, with a module and a YAML file for each.
 """

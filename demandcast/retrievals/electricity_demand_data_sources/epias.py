@@ -3,12 +3,12 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the transparency platform of Enerji Piyasaları İşletme
-    A.Ş. (EPIAS) in Turkey. The data is retrieved in one-year intervals
-    from the API of the platform, which needs the username and password
-    of a free account of EPIAS, in the environment variables
-    EPIAS_USERNAME and EPIAS_PASSWORD.
+    This module retrieves the electricity demand data from the
+    transparency platform of Enerji Piyasaları İşletme A.Ş. (EPIAS) in
+    Turkey. The data is retrieved in one-year intervals from the API of
+    the platform, which needs the username and password of a free
+    account of EPIAS, in the environment variables EPIAS_USERNAME and
+    EPIAS_PASSWORD.
 
     The API gives the real-time consumption in MWh of each hour, the
     average demand in MW, from 2015-12-31, at the start of the hour with
@@ -75,7 +75,8 @@ def get_available_requests(
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
-        The first and last day of each one-year period.
+        The first and last day of each year of the data, both included,
+        with the first day of the next year as the last day.
     """
     return utils.time_series.split_period(start_date, end_date, "YS")
 
@@ -176,7 +177,7 @@ def download_and_extract_data_for_request(
     Parameters
     ----------
     period : tuple[pandas.Timestamp, pandas.Timestamp]
-        The first and last day of the data retrieval.
+        The first and last day of the data, both included.
     code : str
         The code of Turkey.
 
@@ -192,7 +193,6 @@ def download_and_extract_data_for_request(
         f"{start_date.date()} to {end_date.date()}."
     )
 
-    # Fetch the hourly consumption, with a ticket of the account.
     ticket = _get_ticket()
     dataset = _fetch_hourly_data(get_url(), start_date, end_date, ticket)
     if dataset.empty:
@@ -226,7 +226,6 @@ def download_and_extract_data_for_request(
         consumption[before] += generation.reindex(consumption.index[before])
         consumption = consumption.dropna()
 
-    # Move the times to the ends of the hours.
     return pd.Series(
         consumption.to_numpy(),
         index=(

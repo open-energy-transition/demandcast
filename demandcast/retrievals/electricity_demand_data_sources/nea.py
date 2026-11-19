@@ -3,11 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of Open Data Nepal where data from Nepal
-    Electricity Authority is published. The data is retrieved in
-    one-month intervals. Even though the year specified in the dataset
-    is 2073 in the Bikram Sambat calendar, the numbers of days of its
+    This module retrieves the electricity demand data of the Nepal
+    Electricity Authority (NEA) from the website of Open Data Nepal. The
+    data is retrieved in one-month intervals. The dataset is of the year
+    2073 in the Bikram Sambat calendar, but the numbers of days of its
     twelve months are those of the year 2074 BS (April 2017 to April
     2018), and five of them differ from those of 2073, so the data is
     read in 2074 BS.
@@ -34,7 +33,8 @@ import pandas as pd
 
 import utils.fetcher
 
-# Bikram Sambat year for dataset (April 2017 to April 2018).
+# The year of the data in the Bikram Sambat calendar (April 2017 to
+# April 2018).
 DATASET_BS_YEAR = 2074
 
 # The hour of the time 0:00 of the files, which is the end of the day.
@@ -67,19 +67,18 @@ def get_available_requests(
 
 def get_url(bs_month: int) -> str:
     """
-    Get the URL of the electricity demand data provided by NEA.
+    Get the URL of the electricity demand data on Open Data Nepal.
 
     Parameters
     ----------
     bs_month : int
-        The Bikram Sambat month number.
+        The number of the month in the Bikram Sambat calendar.
 
     Returns
     -------
     str
-        The URL for the given month.
+        The URL of the electricity demand data.
     """
-    # Mapping of Bikram Sambat month numbers to file ID numbers.
     file_id_number = {
         1: "0c8d8aa5-ccbe-434b-86f9-d94c3bc0e045",  # Baisakh
         2: "c7c75530-1dbb-4aae-a83e-795391f1766f",  # Jestha
@@ -110,14 +109,14 @@ def download_and_extract_data_for_request(
     Parameters
     ----------
     bs_month : int
-        The Bikram Sambat month number.
+        The number of the month in the Bikram Sambat calendar.
     code : str
         The code of Nepal.
 
     Returns
     -------
-    pandas.Series
-        The electricity demand time series in MW for the given month.
+    electricity_demand_time_series : pandas.Series
+        The electricity demand time series in MW.
 
     Notes
     -----
@@ -141,11 +140,10 @@ def download_and_extract_data_for_request(
     )
 
     if "Day" not in dataset.columns:
-        # Reset the column names with the first row.
+        # The column names are in the first row.
         dataset.columns = dataset.iloc[0]
         dataset = dataset.drop(dataset.index[0]).reset_index(drop=True)
 
-    # Remove the first column and set the index.
     dataset = dataset[dataset.columns[1:]]
     dataset = dataset.set_index(dataset.columns[0])
 
@@ -160,7 +158,6 @@ def download_and_extract_data_for_request(
         for column in dataset.columns
     ]
 
-    # Melt the dataset to have 'Time' and 'Demand' columns.
     dataset = dataset.melt(
         ignore_index=False,
         var_name="Time",
@@ -198,8 +195,6 @@ def download_and_extract_data_for_request(
         for _, row in dataset.iterrows()
     ]
 
-    # Convert the dates of the Bikram Sambat calendar to the Gregorian
-    # calendar.
     index = []
     for date_and_time in nepali_date_and_time:
         bs_date = nepali_datetime.date(*date_and_time[:3])

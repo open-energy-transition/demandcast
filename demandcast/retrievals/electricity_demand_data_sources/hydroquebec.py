@@ -3,14 +3,14 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of Hydro-Québec in Canada. The data is
-    retrieved all at once. Each time marks the end of its hour: the
-    value is the average demand in MW of the hour, computed in real time
-    by the control centre of Hydro-Québec and not the official data. It
-    is the demand of the integrated network of Québec, without the
-    off-grid networks, such as those of Nunavik, the Basse-Côte-Nord,
-    Anticosti and the Îles-de-la-Madeleine.
+    This module retrieves the electricity demand data from the website
+    of Hydro-Québec in Canada. The data is retrieved all at once. Each
+    time marks the end of its hour: the value is the average demand in
+    MW of the hour, computed in real time by the control centre of
+    Hydro-Québec and not the official data. It is the demand of the
+    integrated network of Québec, without the off-grid networks, such
+    as those of Nunavik, the Basse-Côte-Nord, Anticosti and the
+    Îles-de-la-Madeleine.
 
     Hydro-Québec adds the data of a year some months after the year is
     over, and the end date of the YAML file is then moved by hand to the
@@ -56,7 +56,7 @@ def get_available_requests(
 
 def get_url() -> str:
     """
-    Get the URL of the electricity demand on the Hydro-Québec website.
+    Get the URL of the electricity demand data of Hydro-Québec.
 
     Returns
     -------

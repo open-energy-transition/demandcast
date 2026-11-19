@@ -3,10 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data for Thailand from a publicly available repository containing
-    data from the Electricity Generating Authority of Thailand (EGAT).
-    The data is retrieved one year at a time.
+    This module retrieves the electricity demand data of Thailand from a
+    dataset on Zenodo with the data of the Electricity Generating
+    Authority of Thailand (EGAT). The data is retrieved one year at a
+    time.
 
     The files give the hourly generation and demand of the five regions
     of Thailand, and the exchanges with the neighbouring countries, in
@@ -45,14 +45,14 @@ def get_available_requests(
     Returns
     -------
     list[int]
-        The list of available requests.
+        The years of the data.
     """
     return list(range(start_date.year, end_date.year + 1))
 
 
 def get_url(year: int) -> str:
     """
-    Get the URL of the electricity demand data from EGAT.
+    Get the URL of the electricity demand data on Zenodo.
 
     Parameters
     ----------
@@ -61,7 +61,7 @@ def get_url(year: int) -> str:
 
     Returns
     -------
-    url : str
+    str
         The URL of the electricity demand data.
     """
     return (
@@ -111,7 +111,6 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         index=pd.to_datetime(dataset["datetime"], format="%d/%m/%Y %H:%M"),
     )
 
-    # Move the times from the starts to the ends of the hours.
     electricity_demand_time_series = (
         utils.time_series.localize_interval_starts(
             electricity_demand_time_series,

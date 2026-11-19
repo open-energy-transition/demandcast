@@ -3,10 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the California ISO (CAISO) in California
-    USA. The data is retrieved from the available Excel files on the
-    CAISO website.
+    This module retrieves the electricity demand data from the website
+    of the California ISO (CAISO) in California, USA. The data is
+    retrieved from the available Excel files on the CAISO website.
 
     The files give the hourly load in MW of each utility and of CAISO,
     by date and hour ending in local time, with 23 hours on the day when
@@ -60,7 +59,8 @@ def get_available_requests(
     Returns
     -------
     list[tuple[int, int | None]]
-        The list of available requests.
+        The year and month of each file, without a month for the yearly
+        files until 2023.
 
     Notes
     -----
@@ -72,7 +72,6 @@ def get_available_requests(
         (year, None) for year in range(start_date.year, 2024)
     ]
 
-    # Read the page that lists the files.
     page = utils.fetcher.fetch_text(
         "https://www.caiso.com/library/historical-ems-hourly-load",
     )
@@ -113,11 +112,11 @@ def get_url(year: int, month: int | None) -> str:
     year : int
         The year of the data to retrieve.
     month : int | None
-        The month of the data to retrieve.
+        The month of the data to retrieve, or None for a yearly file.
 
     Returns
     -------
-    url : str
+    str
         The URL of the electricity demand data.
 
     Raises
@@ -128,7 +127,6 @@ def get_url(year: int, month: int | None) -> str:
     base_url = "https://www.caiso.com/documents/"
 
     if month is None:
-        # Yearly data before 2024.
         if year <= 2022:
             url = f"{base_url}historicalemshourlyload-{year}.xlsx"
         elif year == 2023:
@@ -136,13 +134,12 @@ def get_url(year: int, month: int | None) -> str:
         else:
             raise ValueError(f"The CAISO data of {year} is in monthly files.")
     else:
-        # Monthly data from 2024 onward.
         month_name = calendar.month_name[month]
-        if year == 2024 and month in [1, 2, 3]:  # January to March 2024
+        if year == 2024 and month in [1, 2, 3]:
             url = (
                 f"{base_url}historicalemshourlyloadfor{month_name}{year}.xlsx"
             )
-        elif year >= 2024:  # April 2024 onwards
+        elif year >= 2024:
             url = (
                 f"{base_url}historical-ems-hourly-load-for-{month_name}-"
                 f"{year}.xlsx"
@@ -200,7 +197,6 @@ def download_and_extract_data_for_request(
         read_as="excel_table",
     )
 
-    # Keep only rows with valid data.
     dataset = dataset[pd.to_datetime(dataset["Date"], errors="coerce").notna()]
 
     if year <= 2020:
@@ -210,7 +206,8 @@ def download_and_extract_data_for_request(
         hourly_column = "HR"
         demand_column = "CAISO"
 
-    # Read the dates and the hours ending in local time.
+    # Read the dates and the hours ending in local time, with the hour
+    # 24 that starts a day moved to the day before.
     dates = pd.to_datetime(dataset["Date"])
     hours = dataset[hourly_column].astype(int)
     first_of_day = dates != dates.shift()

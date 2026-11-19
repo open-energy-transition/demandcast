@@ -3,10 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions to retrieve the electricity demand
-    data from the website of the Compañía Administradora del Mercado
-    Mayorista Eléctrico S.A. (CAMMESA) in Argentina. The data is
-    retrieved in one-day intervals.
+    This module retrieves the electricity demand data from the website
+    of the Compañía Administradora del Mercado Mayorista Eléctrico S.A.
+    (CAMMESA) in Argentina. The data is retrieved in one-day intervals.
 
     The API gives the demand of the national system (SADI) in MW every
     5 minutes, at times with their offset from UTC, from 00:00 to 00:00
@@ -76,7 +75,7 @@ def get_available_requests(
     Parameters
     ----------
     code : str
-        The code of Argentina or of the subdivision.
+        The code of the province.
     start_date : datetime.date
         The first day of the data.
     end_date : datetime.date
@@ -85,7 +84,7 @@ def get_available_requests(
     Returns
     -------
     list[str]
-        The list of available requests.
+        The days of the data, in the format YYYY-MM-DD.
 
     Notes
     -----
@@ -145,7 +144,7 @@ def _download_region(date: str, region_id: int) -> pd.Series:
     Returns
     -------
     pandas.Series
-        The electricity demand time series in MW.
+        The electricity demand time series of the region in MW.
 
     Notes
     -----
@@ -182,7 +181,7 @@ def download_and_extract_data_for_request(date: str, code: str) -> pd.Series:
         The date of the electricity demand data in the format
         YYYY-MM-DD.
     code : str
-        The code of Argentina or of the subdivision.
+        The code of the province.
 
     Returns
     -------
@@ -196,7 +195,7 @@ def download_and_extract_data_for_request(date: str, code: str) -> pd.Series:
     """
     logging.info(f"Retrieving electricity demand data for {date}.")
 
-    # Add up the demand of the regions of the country or subdivision.
+    # Add up the demand of the regions of the province.
     region_time_series = [
         _download_region(date, region_id) for region_id in REGION_IDS[code]
     ]
