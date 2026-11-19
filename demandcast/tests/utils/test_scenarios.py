@@ -482,6 +482,51 @@ def test_get_year_model_and_scenario_combinations_errors():
         )
 
 
+def test_years_without_data_between_years_with_data(caplog):
+    """
+    Test that a year without data uses the year before it with data.
+
+    The data of the country misses 2015, which is requested and uses
+    2014, with a warning. A subdivision has the years of its country
+    before its gridded data, also those without data, which use the
+    first year of the gridded data.
+    """
+    data = pd.DataFrame(
+        {2013: [1.0], 2014: [2.0], 2015: [None], 2016: [4.0], 2017: [5.0]},
+        index=["AAA"],
+    )
+
+    requested, used, future, _ = utils.scenarios.get_years_and_scenarios(
+        iso_alpha_3_code="AAA",
+        year=None,
+        start_year=2013,
+        end_year=2017,
+        scenario=None,
+        available_scenarios=["SSP2"],
+        global_historical_data=data,
+        available_historical_years_of_gridded_data=[2016, 2017],
+    )
+
+    assert requested == [2013, 2014, 2015, 2016, 2017]
+    assert used == [2013, 2014, 2014, 2016, 2017]
+    assert future == []
+    assert "AAA has no value in [2015]" in caplog.text
+
+    requested, used, _, _ = utils.scenarios.get_years_and_scenarios(
+        iso_alpha_3_code="AAA_BB",
+        year=None,
+        start_year=2013,
+        end_year=2017,
+        scenario=None,
+        available_scenarios=["SSP2"],
+        global_historical_data=data,
+        available_historical_years_of_gridded_data=[2016, 2017],
+    )
+
+    assert requested == [2013, 2014, 2015, 2016, 2017]
+    assert used == [2016, 2016, 2016, 2016, 2017]
+
+
 def test_get_years_and_scenarios():
     """
     Test the get_years_and_scenarios function.

@@ -7,9 +7,11 @@ Description:
     reject misspelt options, and run the step of their settings.
 """
 
+import glob
 import importlib
 import logging
 import os
+import re
 import sys
 import types
 
@@ -37,6 +39,103 @@ SCRIPTS = [
     "train",
     "validate",
 ]
+
+
+# The configuration files of each settings, by the module that defines
+# them: a script, or a module of the machine learning models.
+CONFIGURATION_FILES = {
+    **{script: [f"{script}_config.yaml"] for script in SCRIPTS},
+    "check": [
+        "check_config.yaml",
+        "check_data_sources_config.yaml",
+        "check_flags_config.yaml",
+    ],
+    "publish": ["publish_config.yaml"],
+    "sync": ["sync_config.yaml"],
+    "ml_models.data": ["ml_config.yaml"],
+    "ml_models.xgboost": ["xgboost_config.yaml"],
+    "ml_models.lstm": ["lstm_config.yaml"],
+}
+
+
+def _read_markers(file_path: str) -> dict[str, str | None]:
+    """
+    Read whether each setting of a configuration file is required.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the configuration file.
+
+    Returns
+    -------
+    dict[str, str | None]
+        "REQUIRED" or "OPTIONAL", from the first line of the comments
+        above each setting, or those of the setting above it when it
+        has none, or None without a marker.
+    """
+    with open(file_path, encoding="utf-8") as file:
+        lines = file.read().splitlines()
+    markers: dict[str, str | None] = {}
+    marker = None
+    for number, line in enumerate(lines):
+        setting = re.match(r"^([A-Za-z_]+):", line)
+        if setting is None:
+            continue
+        comments: list[str] = []
+        above = number - 1
+        while above >= 0 and lines[above].startswith("#"):
+            comments.insert(0, lines[above])
+            above -= 1
+        if comments:
+            marker = next(
+                (
+                    word
+                    for word in ("REQUIRED", "OPTIONAL")
+                    if comments[0].startswith(f"# {word}")
+                ),
+                None,
+            )
+        elif above < 0 or not re.match(r"^[A-Za-z_]+:", lines[above]):
+            marker = None
+        markers[setting.group(1)] = marker
+    return markers
+
+
+@pytest.mark.parametrize("module", sorted(CONFIGURATION_FILES))
+def test_settings_are_in_their_files_and_documentation(module):
+    """
+    Test that each setting is in a configuration file and documented.
+
+    Each setting of a ConfigModel is in one of its configuration files,
+    marked REQUIRED if it has no default and OPTIONAL if it has one, and
+    named in the documentation of webpage/docs.
+    """
+    config_model = importlib.import_module(module).ConfigModel
+    markers: dict[str, str | None] = {}
+    for file_name in CONFIGURATION_FILES[module]:
+        markers |= _read_markers(
+            os.path.join(utils.paths.CONFIG_FOLDER, file_name)
+        )
+    documentation = ""
+    for file_path in glob.glob(
+        os.path.join(
+            utils.paths.REPOSITORY_FOLDER, "webpage", "docs", "**", "*.md"
+        ),
+        recursive=True,
+    ):
+        with open(file_path, encoding="utf-8") as file:
+            documentation += file.read()
+
+    for name, field in config_model.model_fields.items():
+        expected = "REQUIRED" if field.is_required() else "OPTIONAL"
+        assert markers.get(name) == expected, (
+            f"{name} is not marked {expected} in "
+            f"{', '.join(CONFIGURATION_FILES[module])}"
+        )
+        assert re.search(rf"\b{name}\b", documentation), (
+            f"{name} is not in the documentation"
+        )
 
 
 def _use_configuration(monkeypatch, tmp_path, script, content):

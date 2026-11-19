@@ -1,39 +1,39 @@
 # Configuration of the LSTM model, read by ml_models/registry.py when
-# the algorithm of ml_config.yaml is LSTM.
+# the algorithm of ml_config.yaml is LSTM. The values are the defaults.
 
-# REQUIRED.
+# OPTIONAL.
 # Lookback window length in timesteps. Each prediction draws on the
 # preceding n_timesteps rows of the same entity.
 n_timesteps: 24
 
-# REQUIRED.
+# OPTIONAL.
 # Number of LSTM hidden units per layer. Smaller values train faster
 # on CPU.
 n_units: 32
 
-# REQUIRED.
+# OPTIONAL.
 # Number of stacked LSTM layers. Dropout only takes effect when
 # n_layers > 1.
 n_layers: 1
 
-# REQUIRED.
+# OPTIONAL.
 # Dropout rate applied between LSTM layers (0.0 = disabled). Only
 # meaningful when n_layers > 1.
 dropout: 0.0
 
-# REQUIRED.
+# OPTIONAL.
 # Number of full passes over the training data. Increase for better
 # accuracy at the cost of training time.
 epochs: 5
 
-# REQUIRED.
+# OPTIONAL.
 # Mini-batch size used for both training and inference.
 batch_size: 256
 
-# REQUIRED.
+# OPTIONAL.
 # Adam optimiser learning rate.
 learning_rate: 0.001
 
-# REQUIRED.
+# OPTIONAL.
 # Random seed passed to torch.manual_seed for reproducibility.
 random_state: 42
