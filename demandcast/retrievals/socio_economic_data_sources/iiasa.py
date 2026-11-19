@@ -3,12 +3,13 @@ License: AGPL-3.0.
 
 Description:
 
-    This module is used to read CSV and Excel files already downloaded
-    from the Shared Socioeconomic Pathways (SSP) database of the
-    International Institute for Applied Systems Analysis (IIASA). The
-    files contain future projections of population, GDP PPP and the
-    growth rate of the electricity demand per capita for different
-    scenarios.
+    This module reads the CSV and Excel files downloaded by hand, in
+    manual_downloads/, from the Shared Socioeconomic Pathways (SSP)
+    database of the International Institute for Applied Systems
+    Analysis (IIASA): the projections of the population and GDP PPP of
+    the countries in the SSP scenarios, and the growth rate of the
+    electricity demand per capita of the regions of the integrated
+    assessment models in the IAMC scenarios.
 
     Source: https://tntcat.iiasa.ac.at/SspDb
     Source: https://data.ece.iiasa.ac.at/ssp
@@ -101,7 +102,6 @@ def _calculate_gdp_ppp_per_capita(
     """
     common_regions = sorted(set(gdp_ppp["Region"]) & set(population["Region"]))
 
-    # Filter the datasets to keep only the common regions.
     gdp_ppp = gdp_ppp[gdp_ppp["Region"].isin(common_regions)].reset_index(
         drop=True
     )
@@ -119,7 +119,6 @@ def _calculate_gdp_ppp_per_capita(
         suffixes=("_gdp", "_pop"),
     )
 
-    # Calculate the GDP PPP per capita for each year of interest.
     for year in years_of_interest:
         gdp_ppp_per_capita[year] = (
             gdp_ppp_per_capita[f"{year}_gdp"]
@@ -146,7 +145,6 @@ def _calculate_gdp_ppp_per_capita(
 
     cpi.update()
 
-    # Convert from constant 2017 to constant 2021 international dollars.
     for year in years_of_interest:
         gdp_ppp_per_capita[year] = gdp_ppp_per_capita[year].apply(
             lambda x: cpi.inflate(x, 2017, to=2021)
@@ -243,7 +241,6 @@ def read(variable: str) -> pd.DataFrame:
             os.path.join(base_file_path, "IAM_national_population.csv"),
         ).iloc[:-1, :]
 
-        # Convert the region names to ISO Alpha-3 codes.
         for region in iiasa_data["Region"]:
             iiasa_data.loc[iiasa_data["Region"] == region, "Region"] = (
                 _from_iiasa_name_to_iso_alpha_3_code(region)
@@ -304,7 +301,6 @@ def read(variable: str) -> pd.DataFrame:
             logging.info("Loading future GDP PPP per capita data from IIASA.")
             iiasa_data = pd.read_csv(gdp_ppp_per_capita_file_path)
 
-        # Convert the region names to ISO Alpha-3 codes.
         for region in iiasa_data["Region"]:
             iiasa_data.loc[iiasa_data["Region"] == region, "Region"] = (
                 _from_iiasa_name_to_iso_alpha_3_code(region)
@@ -359,8 +355,6 @@ def _extract(
             f"{scenario}, but got {len(iiasa_data_of_country)}."
         )
 
-    # Convert to a Series with years as index by selecting only the
-    # columns that are digits and dropping NaN values.
     values_by_year = iiasa_data_of_country.iloc[
         0,
         iiasa_data_of_country.columns.astype(str).str.isdigit(),
@@ -420,10 +414,8 @@ def extrapolate(
     """
     Extrapolate the data for a given country, scenario and future years.
 
-    Future data is extrapolated based on growth rates. The function
-    first looks for the growth rates corresponding to the country and
-    scenario of interest, and then applies them to the last historical
-    value to obtain the future values.
+    The growth rates of the country and scenario are applied to the
+    last historical value, year after year.
 
     Parameters
     ----------

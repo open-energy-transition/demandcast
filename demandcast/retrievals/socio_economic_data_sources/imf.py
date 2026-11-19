@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module is used to download historical GDP PPP per capita data
-    from the International Monetary Fund (IMF). The unit is 2021
-    international dollars.
+    This module downloads the historical GDP PPP per capita of the
+    countries from the World Economic Outlook of the International
+    Monetary Fund (IMF), in constant 2021 international dollars.
 
     Source: https://data.imf.org/en/Data-Explorer?datasetUrn=IMF.RES:WEO(6.0.0)&INDICATOR=NGDPRPPPPC
 """
@@ -28,8 +28,9 @@ def download_gdp_ppp_per_capita() -> pd.DataFrame:
 
     Notes
     -----
-    The codes of the IMF for Kosovo (KOS) and Palestine (WBG) are
-    replaced by their ISO Alpha-3 codes, XKX and PSE.
+    Only the codes of three characters are kept, and the codes of the
+    IMF for Kosovo (KOS) and Palestine (WBG) are replaced by their ISO
+    Alpha-3 codes, XKX and PSE.
     """
     logging.info("Downloading GDP PPP per capita data from the IMF.")
 
@@ -41,8 +42,6 @@ def download_gdp_ppp_per_capita() -> pd.DataFrame:
         pd.Series, sdmx.to_pandas(imf_gdp_ppp_per_capita)
     )
 
-    # Reshape the DataFrame, drop NaN values, and set the index to
-    # the country code.
     imf_gdp_ppp_per_capita = imf_gdp_ppp_per_capita.reset_index(
         name="value"
     ).pivot_table(
@@ -51,7 +50,6 @@ def download_gdp_ppp_per_capita() -> pd.DataFrame:
         values="value",
     )
 
-    # Convert to the correct data types.
     imf_gdp_ppp_per_capita.columns = imf_gdp_ppp_per_capita.columns.astype(int)
     imf_gdp_ppp_per_capita.index = imf_gdp_ppp_per_capita.index.astype(str)
     imf_gdp_ppp_per_capita = imf_gdp_ppp_per_capita.astype(float)
@@ -61,7 +59,6 @@ def download_gdp_ppp_per_capita() -> pd.DataFrame:
 
     imf_gdp_ppp_per_capita = imf_gdp_ppp_per_capita.dropna(how="all")
 
-    # Remove rows with country codes that are not three letters long.
     imf_gdp_ppp_per_capita = imf_gdp_ppp_per_capita[
         imf_gdp_ppp_per_capita.index.str.len() == 3
     ]

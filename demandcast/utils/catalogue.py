@@ -118,14 +118,16 @@ def get_reanalysis_years() -> list[int]:
     """
     Get the years of the reanalysis of the weather.
 
-    The current year, incomplete, belongs to the projections only, so
-    that a year is never retrieved both ways, and the statistics of a
-    year, such as its mean temperature, cover the whole year.
-
     Returns
     -------
     list[int]
         The years from the first one needed to the last complete one.
+
+    Notes
+    -----
+    The current year, incomplete, belongs to the projections only, so
+    that a year is never retrieved both ways, and the statistics of a
+    year, such as its mean temperature, cover the whole year.
     """
     return list(range(FIRST_REANALYSIS_YEAR, pd.Timestamp.now().year))
 
@@ -184,7 +186,7 @@ def get_scenario(scenario: str, scenarios: tuple[str, ...]) -> str:
     Returns
     -------
     str
-        The scenario, spelt as in the list.
+        The scenario, spelled as in the list.
 
     Raises
     ------
@@ -216,7 +218,7 @@ def get_climate_model_and_scenario(
     Returns
     -------
     tuple[str | None, str | None]
-        The climate model and the scenario, spelt as in the catalogue.
+        The climate model and the scenario, spelled as in the catalogue.
 
     Raises
     ------

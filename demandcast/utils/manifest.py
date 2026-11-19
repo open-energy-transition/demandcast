@@ -23,8 +23,8 @@ Description:
     folder, so that they stay valid in another copy of the data folder,
     such as one synchronized from a bucket.
 
-    The manifests have a version (MANIFEST_VERSION), which grows when
-    their content changes in a way that older code cannot read.
+    The manifests have a version (MANIFEST_VERSION), and a manifest of
+    a higher version than the one of the code is rejected.
 """
 
 import datetime as dt
@@ -233,8 +233,7 @@ def read_manifest(file_path: str) -> dict[str, Any] | None:
     Returns
     -------
     dict[str, Any] | None
-        The manifest, or None if the file has none, such as a file made
-        before the manifests.
+        The manifest, or None if the file has none.
 
     Raises
     ------
@@ -270,8 +269,8 @@ def verify_file(file_path: str, kind: str | None) -> dict[str, Any] | None:
     Returns
     -------
     dict[str, Any] | None
-        The manifest, or None if the file has none, such as a file made
-        before the manifests, whose origin cannot be checked.
+        The manifest, or None if the file has none, in which case its
+        origin cannot be checked.
 
     Raises
     ------

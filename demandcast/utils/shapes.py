@@ -328,8 +328,6 @@ def _remove_islands_and_clip_to_180(  # noqa: C901
     """
     new_bounds = None
 
-    # Create a GeoSeries containing the new bounds of the country or
-    # subdivision of interest.
     match code:
         case "CHL":  # Chile
             new_bounds = geopandas.GeoSeries(
@@ -427,9 +425,6 @@ def get_standard_shape(
 
         iso_alpha_3_code, subdivision_code = code.split("_")
         iso_alpha_2_code = utils.codes.get_iso_alpha_2_code(iso_alpha_3_code)
-
-        # Combine the ISO Alpha-2 code and the subdivision code to
-        # match the format used in the shapefile database.
         code_to_search = f"{iso_alpha_2_code}-{subdivision_code}"
 
     all_shapes = cartopy.io.shapereader.natural_earth(
@@ -568,17 +563,18 @@ def get_entity_bounds(
 
 def get_all_codes_with_shapes() -> list[str]:
     """
-    Get the list of all available codes for which shapes are available.
+    Get the codes of all the countries and subdivisions with a shape.
 
     The codes are those of the countries and standard subdivisions of
-    the Natural Earth shapefile database, and of the non-standard
-    subdivisions defined in the folder ``subdivisions`` of the shapes
-    directory.
+    the Natural Earth shapefile database at 1:50m, and of the
+    non-standard subdivisions defined in the folder ``subdivisions`` of
+    the shapes directory. The ISO Alpha-2 code of each standard
+    subdivision is replaced by the ISO Alpha-3 code of its country.
 
     Returns
     -------
     all_codes : list[str]
-        List of all available codes for which shapes are available.
+        The sorted codes, without duplicates.
 
     Raises
     ------
@@ -611,7 +607,6 @@ def get_all_codes_with_shapes() -> list[str]:
     )
     reader = cartopy.io.shapereader.Reader(shapes_of_all_countries)
 
-    # Get the list of ISO Alpha-3 codes of all countries.
     codes_of_extra_entities = {
         info["name"]: code for code, info in utils.codes.EXTRA_ENTITIES.items()
     }
@@ -631,13 +626,10 @@ def get_all_codes_with_shapes() -> list[str]:
     )
     reader = cartopy.io.shapereader.Reader(shapes_of_all_standard_subdivisions)
 
-    # Get the list of codes of all standard subdivisions.
     codes_of_all_standard_subdivisions = [
         shape.attributes["iso_3166_2"] for shape in list(reader.records())
     ]
 
-    # Replace the ISO Alpha-2 code in the subdivision codes with the
-    # corresponding ISO Alpha-3 code.
     for i, code in enumerate(codes_of_all_standard_subdivisions):
         iso_alpha_2_code, subdivision_code = code.split("-")
         country = pycountry.countries.get(alpha_2=iso_alpha_2_code)

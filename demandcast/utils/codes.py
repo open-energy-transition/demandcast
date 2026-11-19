@@ -16,8 +16,7 @@ import yaml
 import utils.data_sources
 import utils.paths
 
-# Define information for entities not fully recognized in pycountry or
-# pytz.
+# The entities that pycountry or pytz do not fully recognize.
 EXTRA_ENTITIES = {
     "XKX": {
         "name": "Kosovo",
@@ -97,10 +96,9 @@ def get_name_from_code(code: str) -> str:  # noqa: C901
 
     Notes
     -----
-    A subdivision takes its name from the yaml file of the first data
+    A subdivision takes its name from the YAML file of the first data
     source that has it, or else from pycountry.
     """
-    # Extract the ISO Alpha-3 code from the code.
     if "_" not in code and "-" not in code:
         iso_alpha_3_code = code
     elif "_" in code:
@@ -131,7 +129,6 @@ def get_name_from_code(code: str) -> str:  # noqa: C901
                     break
 
         else:
-            # Reconstruct the subdivision code of pycountry.
             if "_" in code:
                 subdivision_code = iso_alpha_2_code + "-" + code.split("_")[1]
             else:
@@ -139,7 +136,6 @@ def get_name_from_code(code: str) -> str:  # noqa: C901
 
             subdivision = pycountry.subdivisions.get(code=subdivision_code)
 
-            # Handle if subdivision is a list or a single object.
             if isinstance(subdivision, list):
                 raise ValueError(
                     "pycountry.subdivisions should not return a list."
@@ -177,8 +173,6 @@ def get_continent_code(code: str) -> str:
     ValueError
         If no continent code is available for the country.
     """
-    # Get the ISO Alpha-3 code of the country or of the country to
-    # which the subdivision belongs.
     iso_alpha_3_code = code.split("_", maxsplit=1)[0]
 
     continent_codes = _read_continent_codes()

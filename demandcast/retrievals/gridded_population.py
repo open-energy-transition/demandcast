@@ -3,12 +3,13 @@ License: AGPL-3.0.
 
 Description:
 
-    This module includes functions to download population density from
-    SEDAC for historical years (2000-2020) and population count from
-    Figshare for future years (2025-2100) under different Shared
-    Socioeconomic Pathways (SSPs). It then extracts the population data
-    for the countries and subdivisions of interest at a 0.25-degree
-    resolution, and saves it into NetCDF files.
+    This module downloads the global gridded population: the population
+    density of the Gridded Population of the World (version 4.11) of
+    SEDAC, every five years from 2000 to 2020, and the population count
+    of each Shared Socioeconomic Pathway (SSP) from Figshare, every five
+    years from 2025 to 2100. It saves the population count of each
+    country and subdivision of interest, at a 0.25-degree resolution,
+    into NetCDF files.
 
     Source: https://doi.org/10.7927/H49C6VHW
     Source: https://doi.org/10.6084/m9.figshare.19608594
@@ -194,10 +195,10 @@ def _read_population_dataset(
     downloaded_data_directory: str, year: int, scenario: str | None
 ) -> xarray.DataArray:
     """
-    Read the population dataset.
+    Read the global population of a year.
 
-    The population dataset can be either for density in case of
-    historical years or for count in case of future years.
+    The dataset is the population density of a historical year, or the
+    population count of a future year.
 
     Parameters
     ----------
@@ -219,7 +220,7 @@ def _read_population_dataset(
     The rasters of the future population give their coordinates in
     pixels, not in degrees. Their cells are of 30 arc seconds and cover
     the longitudes from -180 to 180 and the latitudes from -72 to 84
-    (their .tfw world files), so the pixels are mapped to the centres
+    (their .tfw world files), so the pixels are mapped to the centers
     of the cells, half a cell inside these limits.
     """
     if scenario is None:

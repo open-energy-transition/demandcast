@@ -3,9 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module includes functions to download hourly or sub-hourly
-    electricity demand data from various data sources. The responses of
-    the websites are kept in the folder of raw electricity demand, with
+    This module downloads the hourly or sub-hourly electricity demand
+    of a data source for each of its countries and subdivisions, and
+    processes, cleans and combines it. The responses of the websites
+    are kept in the folder of raw electricity demand, with
     a version for each set of responses that a request gets (see
     utils.raw_data). The data of all the versions is then processed to
     MW, at the ends of the intervals in UTC, without missing or zero
@@ -17,8 +18,10 @@ Description:
     ended a few days before. The processed data is saved in the folder
     of processed electricity demand, with the date when the version of
     each value was first retrieved. It is then cleaned and saved in the
-    folder of cleaned electricity demand, which the assembly of the data
-    reads, with the flags of the changes that need a review.
+    folder of cleaned electricity demand, with the flags of the changes
+    that need a review, and combined with the cleaned demand of the
+    other data sources of the code in the folder of combined electricity
+    demand, which the assembly of the data reads.
 
     The data can also be processed again from the raw data, without
     downloading it. A retrieval can also download only the latest
@@ -336,9 +339,6 @@ def _retrieve_data(
         f"retrievals.electricity_demand_data_sources.{data_source}"
     )
 
-    # Get the requests for the dates of the entity in the yaml file of
-    # the data source, and download each of them with the code, keeping
-    # the responses.
     start_date, end_date = utils.data_sources.read_date_ranges(data_source)[
         code
     ]
@@ -635,8 +635,8 @@ def run_data_retrieval(
     Run the electricity demand data retrieval.
 
     The electricity demand of each country and subdivision is
-    retrieved, or its raw data is processed again, and then cleaned and
-    saved.
+    retrieved, or its raw data is processed again, and then saved,
+    cleaned, flagged and combined with the other data sources.
 
     Parameters
     ----------
@@ -690,9 +690,6 @@ def run_data_retrieval(
             )
             return
 
-        # Save the processed electricity demand, clean it, flag the
-        # changes of the cleaned demand that need a review, and combine
-        # it with the cleaned demand of the other data sources.
         _save_data(processed, entity_code, data_source)
         cleaning.electricity_demand.clean_data(entity_code, data_source)
         cleaning.flags.flag_data(entity_code, data_source)

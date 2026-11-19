@@ -143,11 +143,13 @@ def check_and_get_codes_with(  # noqa: C901
     file_path: str | None = None,
 ) -> list[str]:
     """
-    Check code validity (if provided) or get all available codes.
+    Get the codes of interest that have a feature.
 
-    A code is valid when the feature is available for it. Without a
-    code or a file path, all the codes for which the feature is
-    available are returned.
+    A code is valid when the feature is available for it. With a code,
+    it is checked and returned alone. With a file path, the codes of
+    the file are read, and those without the feature are logged as
+    errors and left out. Without a code or a file path, all the codes
+    with the feature are returned.
 
     Parameters
     ----------
@@ -173,8 +175,6 @@ def check_and_get_codes_with(  # noqa: C901
         If the feature is not valid, or if the code is not available,
         or if none of the codes in the file are available.
     """
-    # Get the list of available countries and subdivisions according to
-    # the arguments.
     if feature == "electricity_demand_data":
         if data_source is not None:
             all_codes = utils.data_sources.read_codes_in(

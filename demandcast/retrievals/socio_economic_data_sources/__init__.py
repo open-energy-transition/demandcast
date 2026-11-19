@@ -3,6 +3,7 @@ License: AGPL-3.0.
 
 Description:
 
-    This package contains modules that handle the retrieval of
-    socio-economic data from various sources.
+    This package downloads or reads the socio-economic data of the
+    countries: from the World Bank, the IMF, Ember and the SSP database
+    of IIASA.
 """

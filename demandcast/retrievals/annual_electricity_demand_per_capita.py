@@ -3,12 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module includes functions to download and extract historical
-    annual electricity demand per capita data from Ember and the World
-    Bank, and to calculate future annual electricity demand per capita
-    based on growth rates from the IAMC scenarios. The electricity
-    demand data is extracted for the countries and subdivisions of
-    interest and saved into Parquet files.
+    This module downloads the historical annual electricity demand per
+    capita of Ember and the World Bank, projects it with the growth
+    rates of the IAMC scenarios of IIASA, and saves that of the
+    countries and subdivisions of interest into Parquet files. A
+    subdivision has the electricity demand per capita of its country.
 
     The two historical sources define the demand differently. The
     demand of Ember is the electricity generated and imported, less the
@@ -81,7 +80,6 @@ def get_historical_data() -> pd.DataFrame:
         "electricity_demand_per_capita"
     )
 
-    # The ratio of Ember to the World Bank of each country.
     ratios = (
         ember_electricity_demand_per_capita
         / world_bank_electricity_demand_per_capita
@@ -154,8 +152,6 @@ def run_data_retrieval(
         retrievals.indicators.Request
             The request.
         """
-        # Get the ISO Alpha-3 code of the country itself or the country
-        # to which the subdivision belongs.
         iso_alpha_3_code = entity_code.split("_", maxsplit=1)[0]
 
         with_data = cast(

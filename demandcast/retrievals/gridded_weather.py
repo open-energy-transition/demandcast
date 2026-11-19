@@ -3,10 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module includes functions to download gridded weather data and
-    extract the weather data of the countries and subdivisions of
-    interest into NetCDF files, from one of two sources of the same
-    ERA5 reanalysis:
+    This module downloads the gridded weather, of the ERA5 reanalysis
+    or of the projections of the climate models, and saves the grid of
+    each country and subdivision of interest into NetCDF files. The
+    reanalysis comes from one of two sources of the same ERA5 data:
 
     - cds: the Copernicus Climate Data Store (CDS), which prepares each
       request, of a year of the globe or of a country, in a queue, from
@@ -245,8 +245,6 @@ def _get_last_time(file_path: str) -> pd.Timestamp:
                 if name in dataset.coords and dataset.sizes.get(name, 1):
                     return pd.Timestamp(dataset[name].to_numpy().max())
     except (OSError, ValueError) as error:
-        # A file that cannot be read, such as one whose download
-        # stopped, has no data, so that it is retrieved again.
         logging.warning(
             f"The weather file {file_path} cannot be read, so it is "
             f"retrieved again: {error}"
@@ -343,14 +341,12 @@ def _get_request(
     }
 
     if model is None and scenario is None:
-        # Historical reanalysis data.
         request["product_type"] = ["reanalysis"]
         request["variable"] = [variable]
         request["data_format"] = "netcdf"
         request["download_format"] = "unarchived"
         request["time"] = [f"{tt:02d}:00" for tt in range(24)]
     else:
-        # Climate projections.
         if model is None or scenario is None:
             raise ValueError(
                 "Both model and scenario must be provided for climate "
@@ -403,15 +399,16 @@ def _download_data(
         The climate model of interest.
     scenario : str | None
         The scenario of interest.
-    bounds : list of float, optional
+    bounds : list[float] | None, optional
         The lateral bounds of the area of interest
         (West, South, East, North).
 
     Raises
     ------
     ValueError
-        If the dataset is not supported or if the zip file contains
-        multiple .nc files.
+        If the dataset is not supported, if only one of model or
+        scenario is provided, or if the zip file contains multiple .nc
+        files.
     """
     logging.info(
         f"Downloading gridded {variable} data for the "
@@ -449,13 +446,10 @@ def _download_data(
         with zipfile.ZipFile(file_path, "r") as zip_ref:
             zip_ref.extractall(os.path.dirname(file_path))
 
-            # Delete the extracted files that do not have a .nc
-            # extension.
             for file in zip_ref.namelist():
                 if not file.endswith(".nc"):
                     os.remove(os.path.join(os.path.dirname(file_path), file))
 
-            # Rename the extracted .nc file to the desired file path.
             extracted_nc_files = [
                 file for file in zip_ref.namelist() if file.endswith(".nc")
             ]
@@ -712,8 +706,6 @@ def _retrieve_global_data(
         )
         logging.info(f"Processing the gridded {description}.")
 
-        # Download the global data if it does not exist, or if the
-        # reanalysis data may have been updated since.
         global_file_path_without_ext = os.path.join(
             raw_directory,
             get_file_name(
@@ -802,8 +794,6 @@ def _retrieve_data_of_each_code(
                 ),
             )
 
-            # Download the data if it does not exist, or if the
-            # reanalysis data may have been updated since.
             if is_outdated(
                 entity_file_path_without_ext + ".nc",
                 selected_year,

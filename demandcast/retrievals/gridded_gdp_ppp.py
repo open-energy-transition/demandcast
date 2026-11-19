@@ -3,10 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module includes functions to download and extract GDP PPP data
-    from a Zenodo repository. The GDP data is extracted for the
-    countries and subdivisions of interest at a 0.25-degree resolution
-    and saved into NetCDF files.
+    This module downloads the global gridded GDP PPP of Zenodo, at a
+    0.25-degree resolution, historical and for the SSP scenarios, and
+    saves the grid of each country and subdivision of interest into
+    NetCDF files.
 
     Source: https://zenodo.org/records/7898409
     Source: https://doi.org/10.1038/s41597-022-01300-x
@@ -127,7 +127,6 @@ def run_data_retrieval(
     scenario : str | None
         The scenario of the GDP PPP data to be retrieved.
     """
-    # Download the GDP PPP data from Zenodo.
     raw_directory = utils.paths.get_gridded_folder("gdp_ppp", "raw")
     os.makedirs(os.path.dirname(raw_directory), exist_ok=True)
     _download_gdp_ppp(raw_directory)

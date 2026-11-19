@@ -30,7 +30,7 @@ def get_code_of(entity: Mapping[str, Any]) -> str:
     Parameters
     ----------
     entity : Mapping[str, Any]
-        The fields of the country or subdivision, as in a yaml file.
+        The fields of the country or subdivision, as in a YAML file.
 
     Returns
     -------
@@ -45,7 +45,7 @@ def get_code_of(entity: Mapping[str, Any]) -> str:
 
 class DataSourceEntity(BaseModel):
     """
-    A country or subdivision in the yaml file of a data source.
+    A country or subdivision in the YAML file of a data source.
 
     A subdivision has a name, a code and a time zone, and a country none
     of them. The data is available from the start date to the end date,
@@ -115,8 +115,11 @@ class DataSourceLicence(BaseModel):
     """
     The licence of the data of a data source.
 
-    The terms summarise the licence, which is at the URL, and
+    The terms summarize the licence, which is at the URL, and
     redistribute says whether they allow the data to be redistributed.
+
+    Notes
+    -----
     DemandCast publishes only its forecasts and models, and keeps the
     retrieved data in a private bucket.
     """
@@ -163,7 +166,7 @@ class DataSourceDefinition(BaseModel):
 
 class _DataSourceFile(BaseModel):
     """
-    The content of the yaml file of a data source.
+    The content of the YAML file of a data source.
 
     A data source is compiled when it republishes the data of the system
     operators, such as the EIA, rather than its own. A compiled data
@@ -234,7 +237,7 @@ def read_data_sources() -> list[str]:
     """
     Read the names of the data sources.
 
-    The names are those of the yaml files in the folder of the modules
+    The names are those of the YAML files in the folder of the modules
     for electricity demand retrievals.
 
     Returns
@@ -260,7 +263,7 @@ def read_data_sources() -> list[str]:
 
 def _read_data_source_file(data_source: str) -> _DataSourceFile:
     """
-    Read the yaml file of a data source, and check its content.
+    Read the YAML file of a data source, and check its content.
 
     Parameters
     ----------
@@ -277,7 +280,7 @@ def _read_data_source_file(data_source: str) -> _DataSourceFile:
     Raises
     ------
     ValueError
-        If the data source is not valid, or if its yaml file is not
+        If the data source is not valid, or if its YAML file is not
         valid.
     """
     if data_source not in read_data_sources():
@@ -304,14 +307,14 @@ def _parse_data_source_file(
     size: int,  # noqa: ARG001
 ) -> _DataSourceFile:
     """
-    Parse and check the yaml file of a data source.
+    Parse and check the YAML file of a data source.
 
     Parameters
     ----------
     data_source : str
         The name of the data source.
     file_path : str
-        The path of its yaml file.
+        The path of its YAML file.
     modified : int
         The time of the last modification of the file, in nanoseconds,
         which only keys the kept content.
@@ -327,7 +330,7 @@ def _parse_data_source_file(
     Raises
     ------
     ValueError
-        If the yaml file is not valid.
+        If the YAML file is not valid.
 
     Notes
     -----
@@ -362,7 +365,7 @@ def read_entities(data_source: str) -> list[DataSourceEntity]:
     Returns
     -------
     list[DataSourceEntity]
-        The countries and subdivisions, from the yaml file of the data
+        The countries and subdivisions, from the YAML file of the data
         source.
     """
     return list(_read_data_source_file(data_source).entities)
@@ -380,7 +383,7 @@ def read_licence(data_source: str) -> DataSourceLicence:
     Returns
     -------
     DataSourceLicence
-        The licence, from the yaml file of the data source.
+        The licence, from the YAML file of the data source.
     """
     return _read_data_source_file(data_source).licence
 
@@ -399,8 +402,8 @@ def read_compilation_level(data_source: str) -> int:
     int
         0 for a data source that publishes its own data, 1 for one that
         republishes the data of the system operators (compiled in its
-        yaml file), and one more than the highest level of the compiled
-        data sources that it republishes (republishes in its yaml file).
+        YAML file), and one more than the highest level of the compiled
+        data sources that it republishes (republishes in its YAML file).
     """
     content = _read_data_source_file(data_source)
     if not content.compiled:
@@ -423,7 +426,7 @@ def read_definition(data_source: str) -> list[DataSourceDefinition]:
     Returns
     -------
     list[DataSourceDefinition]
-        The periods of the definition, from the yaml file of the data
+        The periods of the definition, from the YAML file of the data
         source, in the order of their start dates.
     """
     return list(_read_data_source_file(data_source).definition)
@@ -457,32 +460,31 @@ def read_entities_info(
     """
     Get the information of the countries and subdivisions.
 
+    Exactly one of the file path and the data source is given.
+
     Parameters
     ----------
     file_path : str, optional
-        The path to the file containing the information of the countries
-        and subdivisions. If provided, the function will read the yaml
-        file from this path.
+        The path of a YAML file with the information of the countries
+        and subdivisions, whose entities are read as they are.
     data_source : str, optional
-        The name of the data source. If provided, the function will look
-        for a yaml file with the same name in the retrieval scripts
-        folder, and check its content with `DataSourceEntity`.
+        The name of the data source, whose YAML file in the folder of
+        the data sources is read and checked with `DataSourceEntity`.
 
     Returns
     -------
-    list[dict[str, str | datetime.date]]
-        The list of dictionaries containing the information for each
-        country and subdivision.
+    list[dict]
+        The information of each country and subdivision.
 
     Raises
     ------
     ValueError
-        If the data source is provided but not valid or its yaml file
+        If the data source is provided but not valid or its YAML file
         is not valid, or if both file_path and data_source are
         provided, or if neither is provided.
     """
     if file_path == "" and data_source != "":
-        # Read and check the yaml file of the data source, with the
+        # Read and check the YAML file of the data source, with the
         # values converted and only the fields that it has.
         return [
             entity.model_dump(exclude_unset=True)
@@ -537,19 +539,18 @@ def read_codes_in(file_path: str = "", data_source: str = "") -> list[str]:
     Parameters
     ----------
     file_path : str, optional
-        The path to the file containing the information of the countries
-        and subdivisions. If provided, the function will read the yaml
-        file from this path.
+        The path of a YAML file with the information of the countries
+        and subdivisions.
     data_source : str, optional
-        The name of the data source. If provided, the function will look
-        for a yaml file with the same name in the retrieval scripts
-        folder.
+        The name of the data source, whose YAML file in the folder of
+        the data sources is read.
 
     Returns
     -------
     list[str]
-        A list of ISO Alpha-3 codes of the countries or the
-        combination of the ISO Alpha-3 codes and the subdivision codes.
+        The ISO Alpha-3 codes of the countries, or the combinations of
+        the ISO Alpha-3 code and the subdivision code of the
+        subdivisions.
     """
     entities = read_entities_info(file_path=file_path, data_source=data_source)
 
@@ -590,7 +591,7 @@ def read_date_ranges(
     """
     Read the start and end dates of the available data.
 
-    The dates are read from the yaml file of the data source.
+    The dates are read from the YAML file of the data source.
 
     Parameters
     ----------

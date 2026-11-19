@@ -3,9 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides utility functions to read the configuration
-    files of the scripts, the API keys and to set up the logging. The
-    paths of the folders and files are in utils/paths.py.
+    This module reads the configuration files of the scripts and the API
+    keys, and sets up the logging. The paths of the folders and files
+    are in utils/paths.py.
 """
 
 import argparse
@@ -72,19 +72,24 @@ def read_configuration(
     script_description: str,
 ) -> dict:
     """
-    Read a configuration file in yaml format.
+    Read the YAML configuration file given on the command line.
+
+    The command line (sys.argv) is parsed for the option -c/--config,
+    the path of the file, which defaults to
+    ./config/<script_name>_config.yaml.
 
     Parameters
     ----------
     script_name : str
-        The name of the script for which the configuration is read.
+        The name of the script, which names its default configuration
+        file.
     script_description : str
-        A brief description of the script.
+        A brief description of the script, for its help message.
 
     Returns
     -------
-    config : dict[str, Any]
-        A dictionary containing the configuration parameters.
+    config : dict
+        The settings of the file, or None if the file is empty.
 
     Raises
     ------
@@ -170,7 +175,10 @@ def log_configuration(config: BaseModel) -> None:
 
 def set_up_logging(process: str) -> None:
     """
-    Set up the logging configuration.
+    Set up the logging to a file.
+
+    The messages of level INFO and above go to a new file in the logs
+    folder, named after the process and the local time.
 
     Parameters
     ----------

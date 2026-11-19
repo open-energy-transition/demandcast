@@ -3,10 +3,10 @@ License: AGPL-3.0.
 
 Description:
 
-    This module provides functions for time series: the split of a
-    period into shorter ones, the local time of the starts of
-    intervals, the local years, the conversion of yearly values into
-    hourly ones and their saving, and the cleaning of the data.
+    This module handles time series: it splits a period into shorter
+    ones, localizes the starts of intervals, gives the local years,
+    converts yearly values into hourly ones and saves them, cleans the
+    data, and keeps the latest download of each time.
 """
 
 import datetime as dt
@@ -67,11 +67,8 @@ def localize_interval_starts(
     """
     Localize the starts of intervals and mark their ends.
 
-    Many data sources give the value of each interval at its start, in
-    local time, while DemandCast marks each value with the end of its
-    interval. The starts are localized first and the interval is then
-    added in absolute time, so that the ends are right also when
-    daylight saving time starts or ends.
+    The starts are localized first and the interval is then added in
+    absolute time.
 
     Parameters
     ----------
@@ -94,6 +91,13 @@ def localize_interval_starts(
     pandas.Series
         The time series, with the ends of the intervals in the time
         zone.
+
+    Notes
+    -----
+    Many data sources give the value of each interval at its start, in
+    local time, while DemandCast marks each value with the end of its
+    interval. Adding the interval in absolute time keeps the ends right
+    also when daylight saving time starts or ends.
     """
     localized_time_series = time_series.tz_localize(
         time_zone, ambiguous=ambiguous, nonexistent=nonexistent
@@ -108,9 +112,8 @@ def get_local_year_bounds(
     """
     Get the start and the end of a year in local time.
 
-    A year can start at a midnight that does not exist, when daylight
-    saving time starts then, as in Peru on 1990-01-01, so it starts at
-    the first time after it.
+    A year whose midnight does not exist starts at the first time after
+    it.
 
     Parameters
     ----------
@@ -124,6 +127,11 @@ def get_local_year_bounds(
     tuple[pandas.Timestamp, pandas.Timestamp]
         The local midnights of January 1 of the year and of the next
         year, in UTC.
+
+    Notes
+    -----
+    The midnight of January 1 does not exist when daylight saving time
+    starts then, as in Peru on 1990-01-01.
     """
 
     def new_year(year: int) -> pd.Timestamp:
@@ -313,13 +321,10 @@ def keep_latest_download(values: pd.Series, files: pd.Series) -> pd.Series:
     """
     Keep one value of each time, from the latest download of the data.
 
-    The files that were downloaded manually can overlap: a later
-    download repeats times of an earlier one, sometimes with values
-    that the data source revised. The files are ranked by the last time
-    at which they have a number, so that the latest download comes
-    last. Each time takes the number of the latest file that has one,
-    or no number if no file has one; within a file, the first value of
-    a time is kept.
+    The files are ranked by the last time at which they have a number,
+    so that the latest download comes last. Each time takes the number
+    of the latest file that has one, or no number if no file has one;
+    within a file, the first value of a time is kept.
 
     Parameters
     ----------
@@ -333,6 +338,12 @@ def keep_latest_download(values: pd.Series, files: pd.Series) -> pd.Series:
     -------
     pandas.Series
         One value of each index, sorted by the index.
+
+    Notes
+    -----
+    The files that were downloaded manually can overlap: a later
+    download repeats times of an earlier one, sometimes with values
+    that the data source revised.
     """
     times = values.index.get_level_values(-1)
     file_names = np.asarray(files)

@@ -4,9 +4,9 @@ License: AGPL-3.0.
 Description:
 
     This module downloads the population of the countries, historical
-    from the World Bank and future from the IAMC scenarios of IIASA,
-    and saves the population of the countries and subdivisions of
-    interest into Parquet files.
+    from the World Bank and future from the projections of the SSP
+    scenarios of IIASA, and saves the population of the countries and
+    subdivisions of interest into Parquet files.
 
     The population of a subdivision is its share of the population of
     its country times the population of its country, so that the
@@ -199,14 +199,14 @@ def _extract_future_population(
     scenario: str,
 ) -> pd.Series:
     """
-    Extract the future population for the country or subdivision.
+    Extract the future population of a country or subdivision.
 
     Parameters
     ----------
     code : str
         The code of the country or subdivision of interest.
     global_future_population : pandas.DataFrame
-        The global future population data.
+        The population of each country and scenario, from IIASA.
     future_years : list[int]
         The future years of interest.
     available_future_years_of_gridded_data : list[int]
