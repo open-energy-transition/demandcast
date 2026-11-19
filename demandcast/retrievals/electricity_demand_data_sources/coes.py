@@ -105,7 +105,9 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         json_keys=["Chart", "Series"],
     )
 
-    dataset = pd.DataFrame(dataset[dataset["Name"] == "Ejecutado"]["Data"][0])
+    dataset = pd.DataFrame(
+        dataset.loc[dataset["Name"] == "Ejecutado", "Data"].iloc[0]
+    )
 
     electricity_demand_time_series = pd.Series(
         dataset["Valor"].values,

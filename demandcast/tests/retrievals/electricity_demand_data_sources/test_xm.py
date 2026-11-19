@@ -60,3 +60,21 @@ def test_download_and_extract_data_for_request(fake_downloads, assert_demand):
             )
         ),
     )
+
+
+def test_download_and_extract_data_without_data(fake_downloads, tmp_path):
+    """Test that a month without any data gives no data."""
+    file_path = tmp_path / "xm.json"
+    file_path.write_text("[]", encoding="utf-8")
+    fake_downloads.serve(
+        "https://50uclmn31c.execute-api.us-east-1.amazonaws.com/prod/xmproxy?"
+        "metricId=DemaReal&entity=Sistema&start=2025-12-01&end=2026-01-01",
+        file_path,
+        method="POST",
+    )
+
+    time_series = xm.download_and_extract_data_for_request(
+        (pd.Timestamp("2025-12-01"), pd.Timestamp("2026-01-01")), "COL"
+    )
+
+    assert time_series.empty

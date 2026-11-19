@@ -133,6 +133,45 @@ def test_outdated_series_is_updated(client):
     assert (updated["2025-08-22":] == first["2025-08-22":] + 1).all()
 
 
+def test_series_is_checked_in_utc(client, monkeypatch, frozen_now):
+    """
+    Test that a series written less than a day ago in UTC is kept.
+
+    The local time is 14 hours ahead of UTC, so the series was written
+    more than a day ago on the local clock.
+    """
+    era5_points.get_point_series("temperature", 2.25, 48.75)
+    file_path = era5_points._get_file_path("temperature", 2.25, 48.75)
+    written = (frozen_now - pd.Timedelta(hours=15)).timestamp()
+    os.utime(file_path, (written, written))
+    utc_now = frozen_now.tz_localize("UTC")
+    monkeypatch.setattr(
+        pd.Timestamp,
+        "now",
+        lambda *_, tz=None: (
+            utc_now.tz_convert(tz)
+            if tz
+            else utc_now.tz_convert("Pacific/Kiritimati").tz_localize(None)
+        ),
+    )
+
+    era5_points.get_point_series("temperature", 2.25, 48.75)
+
+    assert len(client.requests) == 1
+
+
+def test_points_at_zero_degrees_have_one_file():
+    """Test that -0.0 and 0.0 give the same file name."""
+    longitude, latitude = era5_points.get_grid_point(-0.1, -0.1)
+
+    assert era5_points._get_file_path(
+        "temperature", longitude, latitude
+    ) == era5_points._get_file_path("temperature", 0.0, 0.0)
+    assert era5_points._get_file_path("temperature", 0.0, 0.0).endswith(
+        "temperature_+0.00_+0.00.parquet"
+    )
+
+
 def test_series_of_several_points(client):
     """Test that the series of several points are given in order."""
     series = era5_points.get_points_series(

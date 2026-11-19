@@ -19,6 +19,7 @@ Description:
 """
 
 import dataclasses
+import logging
 import os
 from typing import cast
 
@@ -69,6 +70,21 @@ COLORS = {
     "NA": TAILWIND_COLORS_HEX.PINK_700,
     "SA": TAILWIND_COLORS_HEX.RED_350,
     "OC": TAILWIND_COLORS_HEX.CYAN_500,
+}
+
+
+# The labels of a few countries on the scatter plot: their name, the
+# point they label (0 for the first year of data, -1 for the last), the
+# factors of the position of the label from that point, on the GDP and
+# on the electricity demand axes, its horizontal and vertical alignment,
+# and whether it can go outside the axes.
+COUNTRY_LABELS = {
+    "NGA": ("Nigeria", 0, 1.08, 1.0, "left", "center", False),
+    "PER": ("Peru", 0, 1.10, 1.0, "left", "center", False),
+    "NPL": ("Nepal", -1, 1.08, 1.0, "left", "center", False),
+    "CAN": ("Canada", 0, 1.01, 1.07, "left", "bottom", False),
+    "NOR": ("Norway", 0, 0.93, 1.04, "right", "center", False),
+    "LUX": ("Luxembourg", 0, 1.15, 1.10, "right", "bottom", True),
 }
 
 
@@ -472,6 +488,54 @@ def get_data() -> FigureData:
     )
 
 
+def _add_country_labels(ax: matplotlib.axes.Axes, data: FigureData) -> None:
+    """
+    Add the names of the countries of COUNTRY_LABELS to the figure.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The axes of the scatter plot.
+    data : FigureData
+        The data of the figure.
+
+    Notes
+    -----
+    A country without points, because it has no data or no year with
+    both the GDP and the annual electricity demand per capita, has no
+    label, with a warning, so that the figure is still drawn.
+    """
+    for code, (
+        name,
+        point,
+        gdp_factor,
+        demand_factor,
+        horizontal_alignment,
+        vertical_alignment,
+        outside,
+    ) in COUNTRY_LABELS.items():
+        if code not in data.gdp_points:
+            logging.warning(
+                f"{name} ({code}) has no points on the figure of the "
+                "availability of the data, so it has no label."
+            )
+            continue
+        ax.annotate(
+            text=name,
+            xy=(
+                data.gdp_points[code].iloc[point] * gdp_factor / 1000,
+                data.electricity_demand_points[code].iloc[point]
+                * demand_factor
+                / 1000,
+            ),
+            ha=horizontal_alignment,
+            va=vertical_alignment,
+            fontsize=13,
+            color=COLORS[data.continents[code]],
+            annotation_clip=False if outside else None,
+        )
+
+
 def draw(data: FigureData, figure_directory: str) -> None:
     """
     Draw the figure of the availability of the data.
@@ -598,74 +662,7 @@ def draw(data: FigureData, figure_directory: str) -> None:
         text="Last year\nof data", xy=(110, 0.36), ha="center", fontsize=13
     )
 
-    # Add the names of a few countries to the plot.
-    ax.annotate(
-        text="Nigeria",
-        xy=(
-            data.gdp_points["NGA"].iloc[0] * 1.08 / 1000,
-            data.electricity_demand_points["NGA"].iloc[0] / 1000,
-        ),
-        ha="left",
-        va="center",
-        fontsize=13,
-        color=COLORS["AF"],
-    )
-    ax.annotate(
-        text="Peru",
-        xy=(
-            data.gdp_points["PER"].iloc[0] * 1.10 / 1000,
-            data.electricity_demand_points["PER"].iloc[0] / 1000,
-        ),
-        ha="left",
-        va="center",
-        fontsize=13,
-        color=COLORS["SA"],
-    )
-    ax.annotate(
-        text="Nepal",
-        xy=(
-            data.gdp_points["NPL"].iloc[-1] * 1.08 / 1000,
-            data.electricity_demand_points["NPL"].iloc[-1] / 1000,
-        ),
-        ha="left",
-        va="center",
-        fontsize=13,
-        color=COLORS["AS"],
-    )
-    ax.annotate(
-        text="Canada",
-        xy=(
-            data.gdp_points["CAN"].iloc[0] * 1.01 / 1000,
-            data.electricity_demand_points["CAN"].iloc[0] * 1.07 / 1000,
-        ),
-        ha="left",
-        va="bottom",
-        fontsize=13,
-        color=COLORS["NA"],
-    )
-    ax.annotate(
-        text="Norway",
-        xy=(
-            data.gdp_points["NOR"].iloc[0] * 0.93 / 1000,
-            data.electricity_demand_points["NOR"].iloc[0] * 1.04 / 1000,
-        ),
-        ha="right",
-        va="center",
-        fontsize=13,
-        color=COLORS["EU"],
-    )
-    ax.annotate(
-        text="Luxembourg",
-        xy=(
-            data.gdp_points["LUX"].iloc[0] * 1.15 / 1000,
-            data.electricity_demand_points["LUX"].iloc[0] * 1.10 / 1000,
-        ),
-        ha="right",
-        va="bottom",
-        fontsize=13,
-        color=COLORS["EU"],
-        annotation_clip=False,
-    )
+    _add_country_labels(ax, data)
 
     # Add a legend to the plot.
     for count, continent_code in enumerate(CONTINENT_NAMES.keys()):

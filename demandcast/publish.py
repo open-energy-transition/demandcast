@@ -16,7 +16,8 @@ Description:
     The forecasts are uploaded as their compact file
     (COMPACT_FORECASTS_FILE), made from them at the upload, with the
     name and the columns of the file of the first release of
-    DemandCast, which PyPSA-Earth downloads.
+    DemandCast, which PyPSA-Earth downloads. Forecasts without their
+    manifest stop the release before anything is uploaded.
 
     A release cannot have the electricity demand, whose redistribution
     the licences of many data sources do not allow: the files of the
@@ -28,6 +29,7 @@ Description:
 
 import logging
 import os
+import pathlib
 import re
 import tempfile
 import zipfile
@@ -269,6 +271,10 @@ def _use_compact_forecasts(file_paths: list[str], folder: str) -> list[str]:
     name, checksum and code version of the forecasts that it comes
     from, after they are checked against their manifest.
 
+    The forecasts are the Parquet files whose manifest has the case of
+    the forecasts, or, without a manifest, that are in the folder of
+    the results of the forecasts.
+
     Parameters
     ----------
     file_paths : list[str]
@@ -285,16 +291,36 @@ def _use_compact_forecasts(file_paths: list[str], folder: str) -> list[str]:
     Raises
     ------
     ValueError
-        If the release has the forecasts of several Parquet files.
+        If the release has the forecasts of several Parquet files, or
+        forecasts without a manifest.
+
+    Notes
+    -----
+    Forecasts without a manifest cannot be checked or made compact, and
+    have all the inputs of the model.
     """
+    forecasts_folder = pathlib.Path(
+        utils.paths.get_results_folder("forecasts")
+    ).resolve()
     forecasts = {}
     for file_path in file_paths:
         if not file_path.endswith(".parquet"):
             continue
         manifest = utils.manifest.read_manifest(file_path)
+        if manifest is None:
+            if (
+                pathlib.Path(file_path)
+                .resolve()
+                .is_relative_to(forecasts_folder)
+            ):
+                raise ValueError(
+                    f"The forecasts {file_path} have no manifest, so they "
+                    "cannot be checked or uploaded as their compact file. "
+                    "Forecast again with forecast.py, which writes it."
+                )
+            continue
         if (
-            manifest is not None
-            and manifest["kind"] == "results"
+            manifest["kind"] == "results"
             and manifest.get("case") == "forecasts"
         ):
             forecasts[file_path] = manifest

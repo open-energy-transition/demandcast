@@ -379,7 +379,9 @@ def coarsen(
     Notes
     -----
     The grid cells at -180 and 180 are on the same meridian, so both
-    take the sum of their values.
+    take the sum of their values. The target resolution divides 360
+    within a tolerance, since resolutions such as 0.1 have no exact
+    binary representation.
     """
     original_x_resolution = abs(
         original_xarray.x[1] - original_xarray.x[0]
@@ -393,14 +395,15 @@ def coarsen(
         raise ValueError(
             "Target resolution must be at least twice the original resolution."
         )
-    if 360 % target_resolution != 0:
+    number_of_columns = round(360 / target_resolution)
+    if not np.isclose(number_of_columns * target_resolution, 360):
         raise ValueError(
             "Target resolution must result in an integer number when "
             "dividing 360."
         )
 
-    x_list = np.linspace(-180, 180, int(360 / target_resolution) + 1)
-    y_list = np.linspace(-90, 90, int(180 / target_resolution) + 1)
+    x_list = np.linspace(-180, 180, number_of_columns + 1)
+    y_list = np.linspace(-90, 90, round(180 / target_resolution) + 1)
 
     x_bins = np.concatenate(
         [
@@ -437,13 +440,13 @@ def coarsen(
     # If the bounds are at the edges of the longitude range, adjust the
     # first and last x coordinates to be exactly -180 and 180,
     # respectively.
-    if coarsened_xarray.x[0] == -180 + target_resolution / 4:
+    if np.isclose(coarsened_xarray.x[0], -180 + target_resolution / 4):
         coarsened_xarray = coarsened_xarray.assign_coords(
             x=coarsened_xarray.x.where(
                 coarsened_xarray.x != coarsened_xarray.x[0], -180
             )
         )
-    if coarsened_xarray.x[-1] == 180 - target_resolution / 4:
+    if np.isclose(coarsened_xarray.x[-1], 180 - target_resolution / 4):
         coarsened_xarray = coarsened_xarray.assign_coords(
             x=coarsened_xarray.x.where(
                 coarsened_xarray.x != coarsened_xarray.x[-1], 180

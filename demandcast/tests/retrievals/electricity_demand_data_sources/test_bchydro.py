@@ -85,3 +85,38 @@ def test_download_and_extract_data_for_request(
         },
         dtype="int64",
     )
+
+
+def test_missing_values_drop_only_their_hours(
+    fake_downloads, assert_demand, tmp_path
+):
+    """
+    Test that the values after a missing one keep their hours.
+
+    A day of 24 hours places its values by their hours ending, and the
+    day when daylight saving time ends, 2 November 2025, by their order
+    only if it has all its 25 hours: here it has only 3, which are
+    skipped.
+    """
+    file_path = tmp_path / "BalancingAuthorityLoad 2025.xlsx"
+    with pd.ExcelWriter(file_path) as writer:
+        pd.DataFrame(
+            {
+                "Date ": ["01/01/2025"] * 3 + ["11/02/2025"] * 3,
+                "HE": [1, 2, 3, 1, 2, "2*"],
+                "Control Area Load": [8000, None, 7800, 6000, 5900, 5800],
+            }
+        ).to_excel(writer, startrow=3, index=False)
+    fake_downloads.serve(
+        URL_FOLDER + "BalancingAuthorityLoad%202025.xls", file_path
+    )
+
+    time_series = bchydro.download_and_extract_data_for_request(
+        2025, "CAN_BC-INTEGRATED"
+    )
+
+    assert_demand(
+        time_series,
+        "America/Vancouver",
+        {"2025-01-01 09:00": 8000.0, "2025-01-01 11:00": 7800.0},
+    )

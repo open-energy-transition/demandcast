@@ -407,28 +407,30 @@ def describe_cross_validation(
 
 def _plot_ml_results(
     figure_directory: str,
-    status_folder: str,
     results_files: dict[str, str | None] | None = None,
-) -> tuple[tuple[str, ml_models.files.Results] | None, ...]:
+) -> tuple[
+    dict[str, str], tuple[tuple[str, ml_models.files.Results] | None, ...]
+]:
     """
-    Draw the figures of the errors of the models into the page.
+    Draw the figures of the errors of the models for the page.
 
     Parameters
     ----------
     figure_directory : str
         The directory where the figures are drawn.
-    status_folder : str
-        The folder of the files of the "Current state" page.
     results_files : dict[str, str | None] | None, optional
         The Parquet file of the results of each case, by default the
         latest.
 
     Returns
     -------
+    dict[str, str]
+        The path of the drawn figure of each file of the page.
     tuple[tuple[str, ml_models.files.Results] | None, ...]
         The version and results of the validation and of the
         cross-validation, or None for a case without results.
     """
+    drawn_files = {}
     published = []
     for case, file_names in ML_FIGURE_FILES.items():
         found = _find_results(case, (results_files or {}).get(case))
@@ -455,11 +457,8 @@ def _plot_ml_results(
             file_names,
             strict=True,
         ):
-            shutil.copyfile(
-                os.path.join(figure_directory, drawn),
-                os.path.join(status_folder, file_name),
-            )
-    return tuple(published)
+            drawn_files[file_name] = os.path.join(figure_directory, drawn)
+    return drawn_files, tuple(published)
 
 
 def plot(
@@ -483,35 +482,37 @@ def plot(
         The Parquet file of the results of the validation and of the
         cross-validation to publish ("validation" and
         "cross_validation"), by default the latest of each.
+
+    Notes
+    -----
+    All the figures and numbers are made before the README and the page
+    are written, so that a failure leaves both as they were.
     """
     figures.map_of_available_entities.plot(figure_directory)
     figures.data_availability.plot(figure_directory)
-
-    os.makedirs(status_folder, exist_ok=True)
-    for file_name in FIGURE_FILES:
-        shutil.copyfile(
-            os.path.join(figure_directory, file_name),
-            os.path.join(status_folder, file_name),
-        )
-
+    drawn_files = {
+        file_name: os.path.join(figure_directory, file_name)
+        for file_name in FIGURE_FILES
+    }
     text = describe(get_numbers(dt.datetime.now().astimezone().date()))
-    with open(
-        os.path.join(status_folder, NUMBERS_FILE), "w", encoding="utf-8"
-    ) as file:
-        file.write(text + "\n")
-    update_readme(readme_file, text)
-
-    validation, cross_validation = _plot_ml_results(
-        figure_directory, status_folder, results_files
+    ml_drawn_files, (validation, cross_validation) = _plot_ml_results(
+        figure_directory, results_files
     )
-    for case, text in (
+    drawn_files.update(ml_drawn_files)
+    texts = {NUMBERS_FILE: text}
+    for case, ml_text in (
         ("model", describe_model(validation, cross_validation)),
         ("validation", describe_validation(validation)),
         ("cross_validation", describe_cross_validation(cross_validation)),
     ):
+        texts[ML_RESULTS_FILES[case]] = ml_text
+
+    update_readme(readme_file, text)
+    os.makedirs(status_folder, exist_ok=True)
+    for file_name, drawn in drawn_files.items():
+        shutil.copyfile(drawn, os.path.join(status_folder, file_name))
+    for file_name, file_text in texts.items():
         with open(
-            os.path.join(status_folder, ML_RESULTS_FILES[case]),
-            "w",
-            encoding="utf-8",
+            os.path.join(status_folder, file_name), "w", encoding="utf-8"
         ) as file:
-            file.write(text + "\n")
+            file.write(file_text + "\n")

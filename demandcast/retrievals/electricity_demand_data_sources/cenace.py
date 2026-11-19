@@ -125,6 +125,12 @@ def download_and_extract_data_for_request(
     ValueError
         If the retrieval period is longer than 1 year, or if a file of
         the archive has no header.
+
+    Notes
+    -----
+    The values are placed by their hours (Hora), so that a missing hour
+    leaves the others at their times, and an hour that is not in the
+    day is skipped.
     """
     start_date, end_date = period
 
@@ -233,17 +239,22 @@ def download_and_extract_data_for_request(
             "Sistema" if subdivision_code in {"BCA", "BCS"} else " Area"
         )
 
-        daily_values = dataset[dataset[column_name] == subdivision_code][
-            " Estimacion de Demanda por Balance (MWh) "
-        ].reset_index(drop=True)
+        area_dataset = dataset[dataset[column_name] == subdivision_code]
 
-        # The starts of the hours of the day in local time, 23 or 25 on
-        # the days when the clocks change.
-        daily_values.index = pd.date_range(
-            start=date + " 00:00:00",
-            end=date + " 23:59:59",
-            freq="h",
-            tz=time_zone,
+        # The hours ending count the hours from midnight, up to 23 or 25
+        # on the days when the clocks change.
+        midnight = pd.Timestamp(date).tz_localize(time_zone)
+        day_length = (
+            (pd.Timestamp(date) + pd.Timedelta(days=1)).tz_localize(time_zone)
+            - midnight
+        ) / pd.Timedelta(hours=1)
+        hours = pd.to_numeric(area_dataset[" Hora"], errors="coerce")
+        placed = hours.between(1, day_length)
+        daily_values = area_dataset[
+            " Estimacion de Demanda por Balance (MWh) "
+        ][placed]
+        daily_values.index = midnight + pd.to_timedelta(
+            hours[placed].to_numpy(), unit="h"
         )
 
         daily_values_list.append(daily_values)
@@ -251,10 +262,4 @@ def download_and_extract_data_for_request(
     if not daily_values_list:
         return pd.Series(dtype="float64")
 
-    electricity_demand_time_series = pd.concat(daily_values_list)
-
-    electricity_demand_time_series.index = (
-        electricity_demand_time_series.index + pd.Timedelta("1h")
-    )
-
-    return electricity_demand_time_series
+    return pd.concat(daily_values_list)

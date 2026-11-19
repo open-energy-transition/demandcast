@@ -284,18 +284,20 @@ def is_outdated(
     since the time of a file copied from elsewhere, such as from a
     bucket, is that of its copy. Other files, such as the temperature
     of a local year, which ends before the last hour of the year in UTC
-    east of UTC, are checked by their time only.
+    east of UTC, are checked by their time only. The times of the files
+    and of the data are in UTC, so the current time is too.
     """
     if not os.path.exists(file_path):
         return True
     if model is not None or scenario is not None:
         return False
+    now = pd.Timestamp.now(tz="UTC").tz_localize(None)
     written = pd.Timestamp(os.path.getmtime(file_path), unit="s")
-    if written >= pd.Timestamp.now() - REANALYSIS_UPDATE:
+    if written >= now - REANALYSIS_UPDATE:
         return False
     return written < pd.Timestamp(year + 1, 1, 1) + REANALYSIS_DELAY or (
         file_path.endswith(".nc")
-        and year < pd.Timestamp.now().year
+        and year < now.year
         and _get_last_time(file_path) < pd.Timestamp(year, 12, 31, 23)
     )
 

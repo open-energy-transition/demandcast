@@ -83,6 +83,30 @@ def test_is_outdated(tmp_path, year, written, last, model, outdated):
     )
 
 
+def test_is_outdated_in_utc(tmp_path, monkeypatch, frozen_now):
+    """
+    Test that a file written less than a day ago in UTC is kept.
+
+    The local time is 14 hours ahead of UTC, so the file was written
+    more than a day ago on the local clock.
+    """
+    file_path = _write(
+        str(tmp_path / "data.nc"), "2026-01-01 12:00", "2026-01-01 00:00"
+    )
+    utc_now = frozen_now.tz_localize("UTC")
+    monkeypatch.setattr(
+        pd.Timestamp,
+        "now",
+        lambda *_, tz=None: (
+            utc_now.tz_convert(tz)
+            if tz
+            else utc_now.tz_convert("Pacific/Kiritimati").tz_localize(None)
+        ),
+    )
+
+    assert not gridded_weather.is_outdated(file_path, 2026, None, None)
+
+
 def test_other_files_are_checked_by_their_time(tmp_path, caplog):
     """
     Test that a file that is not netCDF is checked by its time only.

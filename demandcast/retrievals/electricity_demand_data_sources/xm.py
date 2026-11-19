@@ -110,7 +110,8 @@ def download_and_extract_data_for_request(
     Returns
     -------
     electricity_demand_time_series : pandas.Series
-        The electricity demand time series in MW.
+        The electricity demand time series in MW, empty if the API
+        gives no data for the period.
     """
     start_date, end_date = period
 
@@ -128,6 +129,8 @@ def download_and_extract_data_for_request(
         read_with="requests.post",
         read_as="json",
     )
+    if dataset.empty:
+        return pd.Series(dtype=float)
 
     daily_values_list = []
     for date in dataset["Date"]:

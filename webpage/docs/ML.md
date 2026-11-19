@@ -271,7 +271,7 @@ The paths of the data in the manifests are relative to the data folder, so they 
 |---|---|
 | `validate.py` | The model file is the one of its manifest (its checksum). The dataset is that of the training, by default, and stops if it is missing rather than using another one; the dataset, the target and its transformation, the preparation of the data and the sets are those of the training. |
 | `forecast.py` | The model file is the one of its manifest. The target and its transformation and the preparation of the data are those of the training: the features in their order, the categorical features and the scaling variables, which convert the predictions to MW, in any order. |
-| `publish.py` | Each file with a manifest is the one of its manifest, each manifest is uploaded once, and results are those of the model of the release; otherwise nothing is uploaded. |
+| `publish.py` | Each file with a manifest is the one of its manifest, each manifest is uploaded once, the forecasts have a manifest, and results are those of the model of the release; otherwise nothing is uploaded. |
 
 A model trained before the manifests is used without these checks, which the log reports.
 

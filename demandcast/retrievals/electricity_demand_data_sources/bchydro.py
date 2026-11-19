@@ -31,6 +31,9 @@ import pandas as pd
 
 import utils.fetcher
 
+# The time zone of the dates and hours of the files.
+TIME_ZONE = "America/Vancouver"
+
 
 def get_available_requests(
     code: str, start_date: dt.date, end_date: dt.date
@@ -165,9 +168,12 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
 
     Notes
     -----
-    A missing value, other than the value of 0 of the hour that does not
-    exist when daylight saving time starts, leaves fewer values than
-    hours, so building the time series raises an error.
+    The hours ending of a day of 24 hours give the times of its values.
+    Those of the days when the clocks change differ from year to year,
+    such as "2" and "2*" for the repeated hour, or no hour 2 or 3 when
+    daylight saving time starts, so the values of such a day are placed
+    by their order, if it has a value for each hour, and are skipped
+    otherwise.
     """
     logging.info(f"Retrieving electricity demand data for the year {year}.")
 
@@ -187,41 +193,44 @@ def download_and_extract_data_for_request(year: int, code: str) -> pd.Series:
         },
     )
 
-    # The ends of the first and last hours, from their dates and hours
-    # ending, which go up to 24.
-    first_time_step = pd.to_datetime(
-        str(dataset[index_columns[0]].iloc[0])
-        + " "
-        + str(int(dataset[index_columns[1]].iloc[0]) - 1)
-        + ":00"
-    ) + pd.Timedelta("1h")
-    last_time_step = pd.to_datetime(
-        str(dataset[index_columns[0]].iloc[-1])
-        + " "
-        + str(int(dataset[index_columns[1]].iloc[-1]) - 1)
-        + ":00"
-    ) + pd.Timedelta("1h")
+    # Remove the missing values, and the value of 0 of the hour that
+    # does not exist when daylight saving time starts.
+    values = dataset[load_column[0]]
+    days = pd.to_datetime(dataset[index_columns[0]], errors="coerce")
+    available = values.notna() & (values != 0) & days.notna()
+    values, days = values[available], days[available]
+    hours_ending = pd.to_numeric(
+        dataset[index_columns[1]][available], errors="coerce"
+    ).to_numpy()
 
-    # Remove the value of 0 of the hour that does not exist when
-    # daylight saving time starts.
-    available_data = dataset[load_column[0]][
+    midnights = pd.DatetimeIndex(days).tz_localize(TIME_ZONE)
+    day_lengths = (
         (
-            np.logical_and(
-                dataset[load_column[0]] != 0,
-                dataset[load_column[0]].notna(),
+            pd.DatetimeIndex(days + pd.Timedelta(days=1)).tz_localize(
+                TIME_ZONE
             )
+            - midnights
         )
-    ]
+        / pd.Timedelta(hours=1)
+    ).to_numpy()
+    positions = days.groupby(days).cumcount().to_numpy() + 1
+    counts = days.groupby(days).transform("size").to_numpy()
 
-    timestamps = pd.date_range(
-        start=first_time_step,
-        end=last_time_step,
-        freq="h",
-        tz="America/Vancouver",
+    hours = np.where(day_lengths == 24, hours_ending, positions)
+    placed = np.where(
+        day_lengths == 24,
+        (hours_ending >= 1) & (hours_ending <= 24),
+        counts == day_lengths,
     )
+    if not placed.all():
+        logging.warning(
+            f"{(~placed).sum()} values of {year} cannot be placed in "
+            "time and are skipped."
+        )
 
     electricity_demand_time_series = pd.Series(
-        available_data.values, index=timestamps
+        values.to_numpy()[placed],
+        index=midnights[placed] + pd.to_timedelta(hours[placed], unit="h"),
     )
 
     return electricity_demand_time_series

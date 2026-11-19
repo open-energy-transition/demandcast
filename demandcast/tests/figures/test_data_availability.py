@@ -141,6 +141,23 @@ def test_plot(tmp_path):
     ]
 
 
+def test_plot_without_a_labeled_country(tmp_path, monkeypatch, caplog):
+    """Test that a labeled country without points is skipped."""
+    codes = [code for code in CONTINENTS if code != "LUX"]
+    monkeypatch.setattr(
+        data_availability.utils.data_sources,
+        "read_all_codes",
+        lambda: codes,
+    )
+
+    data_availability.plot(str(tmp_path))
+
+    assert os.listdir(tmp_path) == [
+        "data_availability_by_gpd_ppp_and_electricity_demand.png"
+    ]
+    assert "Luxembourg (LUX) has no points" in caplog.text
+
+
 def test_get_height_of_bar_charts():
     """Test that the tallest stack of either chart sets the height."""
     gdp = {

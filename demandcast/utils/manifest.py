@@ -143,10 +143,21 @@ def get_data_reference(file_path: str) -> str:
     str
         Its path relative to the data folder, with forward slashes, or
         its absolute path if it is outside the data folder.
+
+    Notes
+    -----
+    On Windows, the paths are compared without regard to case, and a
+    file on another drive than the data folder is outside it.
     """
     absolute_path = os.path.abspath(file_path)
     data_folder = os.path.abspath(utils.paths.get_data_folder())
-    if os.path.commonpath([absolute_path, data_folder]) != data_folder:
+    try:
+        common_path = os.path.commonpath(
+            [os.path.normcase(absolute_path), os.path.normcase(data_folder)]
+        )
+    except ValueError:
+        return absolute_path
+    if common_path != os.path.normcase(data_folder):
         return absolute_path
     return os.path.relpath(absolute_path, data_folder).replace(os.sep, "/")
 
