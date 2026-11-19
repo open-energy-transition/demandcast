@@ -7,8 +7,10 @@ Description:
     documentation.
 """
 
+import dataclasses
 import datetime as dt
 import os
+import re
 from typing import Literal
 from unittest.mock import patch
 
@@ -445,3 +447,46 @@ def test_results_without_predictions():
 
     with pytest.raises(ValueError, match="no predictions"):
         status._find_results("cross_validation")
+
+
+def test_numbers_of_the_readme_are_current():
+    """
+    Test that the README and the status page give the current numbers.
+
+    The numbers of the block of the README and of numbers.md are those
+    of the YAML files of the data sources, but the years of data, which
+    grow every day with the data sources that end today. A change of the
+    data sources, such as a new one, also needs new numbers: the message
+    gives them, to replace the block of the README and numbers.md.
+    """
+    with open(utils.paths.README_FILE, encoding="utf-8") as file:
+        readme = file.read()
+    block = readme[
+        readme.index(status.STATUS_START) + len(status.STATUS_START) : (
+            readme.index(status.STATUS_END)
+        )
+    ].strip()
+    with open(
+        os.path.join(utils.paths.STATUS_FOLDER, status.NUMBERS_FILE),
+        encoding="utf-8",
+    ) as file:
+        numbers_page = file.read().strip()
+    date_match = re.search(r"As of (\d{2} \w+ \d{4})", block)
+    years_match = re.search(r"about \*\*([\d,]+) years", block)
+    assert date_match is not None
+    assert years_match is not None
+    date = pd.Timestamp(date_match.group(1)).date()
+    years = int(years_match.group(1).replace(",", ""))
+
+    current = status.get_numbers(date)
+
+    assert numbers_page == block
+    assert status.describe(dataclasses.replace(current, years=years)) == (
+        block
+    ), (
+        "The numbers of the README and of webpage/docs/status/numbers.md "
+        "are not those of the data sources. Replace them with:\n"
+        + status.describe(
+            status.get_numbers(dt.datetime.now().astimezone().date())
+        )
+    )

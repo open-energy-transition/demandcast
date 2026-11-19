@@ -74,6 +74,38 @@ def test_each_data_source_has_a_module():
 
 
 @pytest.mark.parametrize("data_source", DATA_SOURCES)
+def test_each_data_source_has_a_test(data_source):
+    """
+    Test that each data source has its own test file.
+
+    The test reads a small synthetic file of the source, served by the
+    fake_downloads fixture (see CONTRIBUTING.md).
+    """
+    test_file = os.path.join(
+        os.path.dirname(__file__), f"test_{data_source}.py"
+    )
+
+    assert os.path.exists(test_file)
+
+
+@pytest.mark.parametrize("data_source", DATA_SOURCES)
+def test_yaml_file_has_no_comments(data_source):
+    """
+    Test that the YAML file of a data source has no comments.
+
+    The format of the data, its quirks and the entities left out are
+    explained in the docstring of the module (see AGENTS.md).
+    """
+    file_path = os.path.join(
+        utils.paths.DATA_SOURCES_FOLDER, f"{data_source}.yaml"
+    )
+    with open(file_path, encoding="utf-8") as file:
+        lines = file.read().splitlines()
+
+    assert not [line for line in lines if line.lstrip().startswith("#")]
+
+
+@pytest.mark.parametrize("data_source", DATA_SOURCES)
 def test_entities(data_source):
     """Test that the YAML file describes known countries and regions."""
     countries = {

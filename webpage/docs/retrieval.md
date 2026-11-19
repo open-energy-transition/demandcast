@@ -65,6 +65,8 @@ code:                              # ISO Alpha-3 code (e.g., FRA) or subdivision
 file:                              # Path to YAML file with list of codes for which to retrieve data
 
 offline:                           # If true, process the raw data already downloaded again, without downloading it
+
+latest_requests:                   # If given, download only this many of the latest requests of each code, and those without a version in the raw data
 ```
 
 The script stores the electricity demand data in `data/electricity_demand/`:

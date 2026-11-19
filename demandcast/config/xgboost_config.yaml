@@ -1,12 +1,12 @@
 # Configuration of the XGBoost model, read by ml_models/registry.py when
 # the algorithm of ml_config.yaml is XGBoost.
 
-# REQUIRED.
-# Random seed for reproducibility.
+# OPTIONAL.
+# Random seed for reproducibility (default: 42).
 random_state: 42
 
-# REQUIRED.
-# Enable categorical feature support in XGBoost.
+# OPTIONAL.
+# Enable categorical feature support in XGBoost (default: true).
 enable_categorical: true
 
 # OPTIONAL.
@@ -19,3 +19,17 @@ evaluation_metric: "mape"
 # adding trees once the evaluation metric of the validation set has not
 # improved for this many rounds. Empty for no early stopping.
 early_stopping_rounds:
+
+# OPTIONAL.
+# The hyperparameters of XGBoost, which keep its defaults when they are
+# empty: the number of trees, their maximum depth, the learning rate,
+# the fractions of the rows and of the features of each tree, the
+# minimum weight of a leaf, and the L1 and L2 regularization.
+n_estimators:
+max_depth:
+learning_rate:
+subsample:
+colsample_bytree:
+min_child_weight:
+reg_alpha:
+reg_lambda:
