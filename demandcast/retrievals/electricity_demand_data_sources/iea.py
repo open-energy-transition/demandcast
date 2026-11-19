@@ -252,8 +252,8 @@ def get_available_requests(
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
-        The quarters of the data, from their first day to the first day
-        after them.
+        The start and end of each quarter of the data, from the start
+        date to the day after the end date.
 
     Notes
     -----

@@ -3,12 +3,12 @@ License: AGPL-3.0.
 
 Description:
 
-    Draw a map of the countries and subdivisions with electricity
-    demand data, colored by their years of data. The countries and the
-    standard subdivisions have the shapes of the Natural Earth database,
-    and the non-standard subdivisions the shapes of their definitions
-    in the YAML files of shapes/subdivisions/, made of standard
-    subdivisions of Natural Earth (see utils.shapes).
+    This module draws a map of the countries and subdivisions with
+    electricity demand data, colored by their years of data. The
+    countries and the standard subdivisions have the shapes of the
+    Natural Earth database. The non-standard subdivisions are made of
+    standard subdivisions, as defined in the YAML files of
+    shapes/subdivisions/ (see utils.shapes).
 """
 
 import datetime as dt
@@ -72,11 +72,12 @@ def plot(figure_directory: str) -> None:
 
     Notes
     -----
-    The map is saved with the title of the Awesome Electricity Demand
-    list (available_entities_for_aed.png), with that of DemandCast
-    (available_entities.png), and with that title on a transparent
-    background, with black text (available_entities_light_mode.png) and
-    with white text (available_entities_dark_mode.png).
+    The map is saved four times: with the title of the Awesome
+    Electricity Demand list (available_entities_for_aed.png), with the
+    title of DemandCast (available_entities.png), and with the title of
+    DemandCast on a transparent background, in black text
+    (available_entities_light_mode.png) and in white text
+    (available_entities_dark_mode.png).
     """
     periods = utils.data_sources.read_all_periods()
     codes = utils.data_sources.read_all_codes()

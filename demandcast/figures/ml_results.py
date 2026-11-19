@@ -1246,8 +1246,8 @@ def plot(
         Whether to plot the results of the models trained on the data
         of each group (income level and continent).
     results_directory : str | None, optional
-        The folder of the results, that of the validations or of the
-        cross-validations, by default that of the validations.
+        The folder of the validation or cross-validation results, by
+        default that of the validation results.
     metric : str, optional
         The metric of the errors, "WAPE" or "MAPE".
     results_file : str | None, optional

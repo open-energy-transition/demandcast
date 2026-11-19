@@ -6,7 +6,7 @@ Description:
     This module retrieves the electricity demand data from the website
     of Hydro-Québec in Canada. The data is retrieved all at once. Each
     time marks the end of its hour: the value is the average demand in
-    MW of the hour, computed in real time by the control centre of
+    MW of the hour, computed in real time by the control center of
     Hydro-Québec and not the official data. It is the demand of the
     integrated network of Québec, without the off-grid networks, such
     as those of Nunavik, the Basse-Côte-Nord, Anticosti and the

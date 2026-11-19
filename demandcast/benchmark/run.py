@@ -16,9 +16,9 @@ Description:
 
         uv run python -m benchmark.run [--from-step 5]
 
-    The progress is logged in the terminal and in the benchmark log of
+    The progress is logged in the terminal and in the benchmark log, in
     the logs folder of the data (see utils/paths.py), where each step
-    writes its own log.
+    also writes its own log.
 """
 
 import argparse

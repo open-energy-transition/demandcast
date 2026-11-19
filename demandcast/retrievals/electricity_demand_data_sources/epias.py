@@ -75,8 +75,9 @@ def get_available_requests(
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
-        The first and last day of each year of the data, both included,
-        with the first day of the next year as the last day.
+        The start and end of each year of the data, from the start date
+        to the end date. A request includes its end, the first day of
+        the next year.
     """
     return utils.time_series.split_period(start_date, end_date, "YS")
 

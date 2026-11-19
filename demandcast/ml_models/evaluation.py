@@ -3,12 +3,12 @@ License: AGPL-3.0.
 
 Description:
 
-    Evaluate the machine learning models: the mean absolute percentage
-    error (MAPE) and the weighted absolute percentage error (WAPE) of
-    each country and subdivision, on each set of a validation, and the
-    Leave-One-Group-Out cross-validation, which trains a model without
-    each country or subdivision in turn and scores it on the one left
-    out.
+    This module evaluates the machine learning models. It computes the
+    mean absolute percentage error (MAPE) and the weighted absolute
+    percentage error (WAPE) of each country and subdivision on each set
+    of a validation. It also runs the Leave-One-Group-Out
+    cross-validation, which trains a model without each country or
+    subdivision in turn and scores it on the one left out.
 
     The model of a fold does not train on the entities related to those
     that it holds out (see utils.relations), such as the country of a

@@ -4,10 +4,10 @@ License: AGPL-3.0.
 Description:
 
     This script merges the retrieved data of the countries and
-    subdivisions (the inputs of DATASETS: the annual indicators, the
-    temperature and, for training only, the combined electricity
-    demand) into one dataset for training the machine learning models
-    or for forecasting, and saves it with a manifest.
+    subdivisions into one dataset for training the machine learning
+    models or for forecasting, and saves it with a manifest. The inputs
+    are the rows of DATASETS: the annual indicators, the temperature
+    and, for training only, the combined electricity demand.
 
     Each row is an hour of an entity, at its end in UTC, with the mean
     electricity demand of the hour, the mean temperature of the hour,

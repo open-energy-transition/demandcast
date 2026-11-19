@@ -5,12 +5,13 @@ Description:
 
     This module saves the GDP PPP per capita of the countries and
     subdivisions of interest into Parquet files, in constant 2021
-    international dollars: historical, the mean of the World Bank and
-    the International Monetary Fund (IMF), and future, the projections
-    of the SSP scenarios of IIASA, interpolated between their years. A
-    subdivision has the GDP PPP per capita of its country. A country
-    without these data, or a subdivision of such a country, has the
-    total of its gridded GDP PPP over that of its gridded population.
+    international dollars. The historical values are the mean of the
+    World Bank and the International Monetary Fund (IMF). The future
+    values are the projections of the SSP scenarios of IIASA,
+    interpolated between their years. A subdivision has the GDP PPP per
+    capita of its country. A country without these data, and each of
+    its subdivisions, has the total of its own gridded GDP PPP divided
+    by that of its gridded population.
 """
 
 from typing import cast

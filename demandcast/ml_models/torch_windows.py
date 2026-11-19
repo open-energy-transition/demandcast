@@ -3,7 +3,8 @@ License: AGPL-3.0.
 
 Description:
 
-    Register the DLL directory of PyTorch on Windows. Importing pandas
+    This module registers the DLL directory of PyTorch on Windows.
+    Importing pandas
     before torch corrupts the state of the Windows DLL loader that
     torch's c10.dll needs, so callers invoke
     ``enable_torch_dll_directory()`` before importing pandas or torch.

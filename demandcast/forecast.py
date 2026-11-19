@@ -7,9 +7,9 @@ Description:
     country and subdivision with a trained machine learning model, from
     the latest data assembled for forecasting, and saves the forecasts
     with a manifest. The forecasts of each complete year of each country
-    or subdivision sum to the annual demand of its scenario (see
-    ml_models.data.normalize_to_annual_totals), the product of the
-    scaling variables of config/ml_config.yaml.
+    or subdivision sum to the annual demand of its scenario, the product
+    of the scaling variables of config/ml_config.yaml (see
+    ml_models.data.normalize_to_annual_totals).
 """
 
 # On Windows, PyTorch must be imported before pandas, so the ml_models

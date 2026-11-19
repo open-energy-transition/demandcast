@@ -206,8 +206,8 @@ def download_and_extract_data_for_request(
         hourly_column = "HR"
         demand_column = "CAISO"
 
-    # Read the dates and the hours ending in local time, with the hour
-    # 24 that starts a day moved to the day before.
+    # Read the dates and the hours ending in local time. An hour 24 in
+    # the first row of a date belongs to the day before.
     dates = pd.to_datetime(dataset["Date"])
     hours = dataset[hourly_column].astype(int)
     first_of_day = dates != dates.shift()

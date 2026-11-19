@@ -3,8 +3,9 @@ License: AGPL-3.0.
 
 Description:
 
-    Train, save and load an LSTM model that forecasts the electricity
-    demand, wrapped in ``LSTMRegressor``, an sklearn estimator.
+    This module trains, saves and loads an LSTM model that forecasts
+    the electricity demand, wrapped in ``LSTMRegressor``, an sklearn
+    estimator.
 
     Sequence construction respects entity boundaries and time gaps:
     rows from different entities (identified by the ``"group"`` column

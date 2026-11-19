@@ -5,7 +5,7 @@ Description:
 
     This module retrieves the electricity demand data of the National
     Transmission & Despatch Company (NTDC) in Pakistan, from the copy on
-    Zenodo of a dataset published on Kaggle under the CC0 licence. The
+    Zenodo of a dataset published on Kaggle under the CC0 license. The
     data is retrieved all at once, from a single CSV file.
 
     The dataset has not been on Kaggle since October 2026 at the

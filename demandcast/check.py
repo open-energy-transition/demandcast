@@ -6,8 +6,9 @@ Description:
     This script runs one of four checks, chosen by its settings: the
     socio-economic data available for each country and subdivision,
     the electricity demand data sources over the network, a report of
-    the flags of the cleaned electricity demand, or the shares of the
-    people of the entities with data whose shapes overlap.
+    the flags of the cleaned electricity demand, or the related
+    entities: for the entities with data whose shapes overlap, the
+    share of the people of each that live in the shared area.
 """
 
 from typing import Literal

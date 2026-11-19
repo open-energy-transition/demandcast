@@ -5,13 +5,13 @@ Description:
 
     This script cross-validates the machine learning model of
     config/ml_config.yaml on the latest data assembled for training,
-    leaving one group out: each country or subdivision, or each country
-    with its subdivisions, is held out in turn, and a model trained
-    without it and its related entities is scored on it with the mean
-    absolute percentage error (MAPE) and the weighted absolute
-    percentage error (WAPE). The errors are saved with the folds, the
-    settings, the predictions in MW, and the model of each fold in a ZIP
-    archive (see ml_models.files).
+    leaving one group out. Each country or subdivision, or each country
+    with its subdivisions, is held out in turn. A model trained without
+    it and its related entities is scored on it with the mean absolute
+    percentage error (MAPE) and the weighted absolute percentage error
+    (WAPE). The errors are saved with the folds, the settings, the
+    predictions in MW, and the model of each fold in a ZIP archive (see
+    ml_models.files).
 """
 
 # On Windows, PyTorch must be imported before pandas, so the ml_models

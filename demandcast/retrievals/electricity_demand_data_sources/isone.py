@@ -122,8 +122,8 @@ def get_available_requests(
     Returns
     -------
     list[tuple[pandas.Timestamp, pandas.Timestamp]]
-        The years of the data, from their first day to the first day
-        after them, in local time.
+        The start and end of each year of the data, from the start date
+        to the day after the end date, in local time.
     """
     return utils.time_series.split_period(
         start_date, end_date + dt.timedelta(days=1), "YS"

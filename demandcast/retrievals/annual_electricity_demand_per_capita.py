@@ -5,7 +5,7 @@ Description:
 
     This module downloads the historical annual electricity demand per
     capita of Ember and the World Bank, projects it with the growth
-    rates of the IAMC scenarios of IIASA, and saves that of the
+    rates of the IAMC scenarios of IIASA, and saves the values of the
     countries and subdivisions of interest into Parquet files. A
     subdivision has the electricity demand per capita of its country.
 

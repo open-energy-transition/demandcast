@@ -3,13 +3,13 @@ License: AGPL-3.0.
 
 Description:
 
-    This module reads the CSV and Excel files downloaded by hand, in
-    manual_downloads/, from the Shared Socioeconomic Pathways (SSP)
+    This module reads the CSV and Excel files downloaded by hand into
+    manual_downloads/ from the Shared Socioeconomic Pathways (SSP)
     database of the International Institute for Applied Systems
-    Analysis (IIASA): the projections of the population and GDP PPP of
-    the countries in the SSP scenarios, and the growth rate of the
-    electricity demand per capita of the regions of the integrated
-    assessment models in the IAMC scenarios.
+    Analysis (IIASA). The files hold the projections of the population
+    and GDP PPP of the countries in the SSP scenarios, and the growth
+    rate of the electricity demand per capita of the regions of the
+    integrated assessment models in the IAMC scenarios.
 
     Source: https://tntcat.iiasa.ac.at/SspDb
     Source: https://data.ece.iiasa.ac.at/ssp

@@ -74,9 +74,8 @@ def read_configuration(
     """
     Read the YAML configuration file given on the command line.
 
-    The command line (sys.argv) is parsed for the option -c/--config,
-    the path of the file, which defaults to
-    ./config/<script_name>_config.yaml.
+    The option -c/--config of the command line (sys.argv) gives the
+    path of the file, by default ./config/<script_name>_config.yaml.
 
     Parameters
     ----------

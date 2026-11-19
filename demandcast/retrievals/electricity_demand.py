@@ -6,8 +6,8 @@ Description:
     This module downloads the hourly or sub-hourly electricity demand
     of a data source for each of its countries and subdivisions, and
     processes, cleans and combines it. The responses of the websites
-    are kept in the folder of raw electricity demand, with
-    a version for each set of responses that a request gets (see
+    are kept in the folder of raw electricity demand, with a version
+    for each set of responses that a request gets (see
     utils.raw_data). The data of all the versions is then processed to
     MW, at the ends of the intervals in UTC, without missing or zero
     values or duplicated times, and combined: the newest version of a
@@ -19,9 +19,9 @@ Description:
     of processed electricity demand, with the date when the version of
     each value was first retrieved. It is then cleaned and saved in the
     folder of cleaned electricity demand, with the flags of the changes
-    that need a review, and combined with the cleaned demand of the
-    other data sources of the code in the folder of combined electricity
-    demand, which the assembly of the data reads.
+    that need a review. Last, it is combined with the cleaned demand of
+    the other data sources of the code, in the folder of combined
+    electricity demand, which the assembly of the data reads.
 
     The data can also be processed again from the raw data, without
     downloading it. A retrieval can also download only the latest

@@ -3,11 +3,12 @@ License: AGPL-3.0.
 
 Description:
 
-    Draw the figure of the availability of the hourly and sub-hourly
-    electricity demand data, by continent and by GDP PPP and annual
-    electricity demand per capita: the historical annual electricity
-    demand per capita of Ember and the World Bank, and the historical
-    GDP PPP per capita of the World Bank and the IMF.
+    This module draws the figure of the availability of the hourly and
+    sub-hourly electricity demand data, by continent and by GDP PPP and
+    annual electricity demand per capita. The historical annual
+    electricity demand per capita comes from Ember and the World Bank,
+    and the historical GDP PPP per capita from the World Bank and the
+    IMF.
 
     The bar charts count the years of data of each country and of each
     subdivision, with the GDP PPP and the annual electricity demand per

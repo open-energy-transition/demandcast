@@ -89,9 +89,9 @@ def _get_years(
     Raises
     ------
     ValueError
-        If the year is given with a start or end year, or is not
-        available, if only one of the start and end years is given, or
-        if the start year is after the end year.
+        If the year is given with a start or end year, if the year is
+        not available, if only one of the start and end years is given,
+        or if the start year is after the end year.
 
     Notes
     -----

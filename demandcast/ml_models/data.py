@@ -3,13 +3,13 @@ License: AGPL-3.0.
 
 Description:
 
-    Prepare the data of the machine learning models: their settings
-    (config/ml_config.yaml), the reading of the assembled data, checked
-    against its manifest and its purpose, the conversions of the
+    This module prepares the data of the machine learning models. It
+    reads their settings (config/ml_config.yaml) and the assembled
+    data, checked against its manifest and its purpose. It converts the
     target, the load relative to the annual mean of its local year, to
-    the fraction of the annual total and to MW, the temporal and group
-    splits into training, validation and testing sets by the entity code
-    and the local year of each row, and the check that a model was
+    the fraction of the annual total and to MW. It splits the rows into
+    training, validation and testing sets, by time or by group, from
+    their entity code and local year. It also checks that a model was
     trained with the features of a dataset.
 """
 

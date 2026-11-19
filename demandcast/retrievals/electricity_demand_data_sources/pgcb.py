@@ -186,9 +186,9 @@ def get_available_requests(
     website in September 2026, are skipped. The website lists the
     reports from the newest, so the requests are sorted by date.
 
-    The reports known to be unavailable are those whose files are
-    missing, and those of 2014-04-12, whose file lacks some data, and of
-    2016-01-07, whose file is corrupted.
+    The files of the reports known to be unavailable are missing,
+    except that of 2014-04-12, which lacks some data, and that of
+    2016-01-07, which is corrupted.
     """
     logging.info("Retrieving the available requests from the PGCB website.")
 

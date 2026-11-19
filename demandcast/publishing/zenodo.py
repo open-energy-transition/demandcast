@@ -3,15 +3,15 @@ License: AGPL-3.0.
 
 Description:
 
-    Publish a release of DemandCast on Zenodo: the trained model, its
-    settings and its forecasts, as a new version of a record, so that
-    the DOI of all the versions stays the same. The retrieved data is
-    not published, since the licences of many data sources do not allow
-    it.
+    This module publishes a release of DemandCast on Zenodo: the
+    trained model, its settings and its forecasts, as a new version of
+    a record, so that the DOI of all the versions stays the same. The
+    retrieved data is not published, since the licences of many data
+    sources do not allow it.
 
     The new version is left as a draft, for the user to check and
     publish on the website of Zenodo. The draft does not have the files
-    of the previous version, which that version keeps. A record can
+    of the previous version, which keeps them. A record can
     also be created, with the creators and contributors of a metadata
     file in the config folder (oet_zenodo_metadata.yaml for those of
     Open Energy Transition).
@@ -249,11 +249,11 @@ def _create_draft(
     Notes
     -----
     Zenodo copies the files of the previous version into the draft of a
-    new version, and they are removed from the draft; the previous
-    version keeps them. The metadata of the draft
-    leaves out the dates without a start or an end, such as {"type":
-    "available"}, which the metadata of a published record can have
-    and Zenodo rejects in that of a draft.
+    new version. They are removed from the draft, and the previous
+    version keeps them. The metadata of the draft leaves out the dates
+    without a start or an end, such as {"type": "available"}, which the
+    metadata of a published record can have and Zenodo rejects in that
+    of a draft.
     """
     if record is None:
         return api.request(

@@ -3,17 +3,16 @@ License: AGPL-3.0.
 
 Description:
 
-    Draw the figures and write the numbers of the current state of
-    DemandCast, which the "Current state" page of the documentation
-    shows: the countries and subdivisions with retrieval
-    modules of electricity demand data, on a map and by GDP PPP and
-    annual electricity demand per capita, how many countries,
-    subdivisions, data sources and years of data there are, and the
-    errors of a validation and of a cross-validation of the models (see
-    figures.ml_results): the error of each code, their distribution and
-    the hourly demand of the codes with the lowest and the highest
-    error, with the median WAPE of each case in ml_validation.md and
-    ml_cross_validation.md.
+    This module draws the figures and writes the numbers of the
+    "Current state" page of the documentation. They show the countries
+    and subdivisions with retrieval modules of electricity demand data,
+    on a map and by GDP PPP and annual electricity demand per capita,
+    and how many countries, subdivisions, data sources and years of
+    data there are. They also show the errors of a validation and of a
+    cross-validation of the models (see figures.ml_results): the error
+    of each code, their distribution, and the hourly demand of the codes
+    with the lowest and the highest error. The median WAPE of each case
+    is in ml_validation.md and ml_cross_validation.md.
 
     The figures are drawn into the folder of the figures and copied
     into webpage/docs/status/, with the numbers in numbers.md, which the

@@ -3,11 +3,11 @@ License: AGPL-3.0.
 
 Description:
 
-    This module extracts the hourly temperature of the most populous
-    cells of the gridded population of each country and subdivision of
-    interest, the mean of its most populous cell and of its three most
-    populous cells, adds statistics of the year and the local time, and
-    saves them into Parquet files.
+    This module extracts the hourly temperature of each country and
+    subdivision of interest in the most populous cells of its gridded
+    population: that of its most populous cell, and the mean of its
+    three most populous cells. It adds statistics of the year and the
+    local time, and saves them into Parquet files.
 
     The temperature of the reanalysis comes from one of three sources of
     the same ERA5 data (the reanalysis_source of retrieve.py):
