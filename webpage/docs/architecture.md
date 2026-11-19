@@ -93,7 +93,7 @@ scripts (retrieve.py, assemble.py, train.py, ...)  and  benchmark/
             └── utils/
 ```
 
-The modules of `utils/` import none of the packages and scripts above them, so that they can be used and tested alone; `tests/utils/test_dependencies.py` checks it. Among the packages, the retrieval of the electricity demand (`retrievals/electricity_demand.py`) cleans and combines it with `cleaning/`, the combination reads the reviews of the flags of `checks/flags.py`, and the check of the data availability and its figure read the annual data with the modules of `retrievals/`.
+The modules of `utils/` import none of the packages and scripts above them, so that they can be used and tested alone; `tests/utils/test_dependencies.py` checks it. Among the packages, the retrieval of the electricity demand (`retrievals/electricity_demand.py`) cleans and combines it with `cleaning/`, the combination reads the reviews of the flags with `cleaning/reviews.py`, which the report of the flags of `checks/flags.py` also uses, and the check of the data availability and its figure read the annual data with the modules of `retrievals/`.
 
 Each list that the code needs is written once:
 

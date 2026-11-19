@@ -901,7 +901,12 @@ def flag_data(code: str, data_source: str | None = None) -> pd.DataFrame:
         ignore_index=True,
     ).sort_values(["start", "flag"], ignore_index=True)
 
-    flags_path = file_path.removesuffix(".parquet") + "_flags.parquet"
+    flags_path = utils.paths.get_electricity_demand_file(
+        "cleaned" if data_source else "combined",
+        code,
+        data_source,
+        table="flags",
+    )
     os.makedirs(os.path.dirname(flags_path), exist_ok=True)
     flags.to_parquet(flags_path)
     for flag, periods in flags.groupby("flag")["period"]:

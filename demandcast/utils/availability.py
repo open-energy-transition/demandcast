@@ -15,7 +15,6 @@ Description:
 """
 
 import logging
-import os
 
 import pandas as pd
 
@@ -44,10 +43,7 @@ def _read_codes(future: bool) -> list[str]:
         estimated from the gridded data.
     """
     data = pd.read_csv(
-        os.path.join(
-            utils.paths.CHECKS_FOLDER,
-            "data_availability_summary.csv",
-        ),
+        utils.paths.get_availability_summary_file(),
         index_col=0,
         na_filter=False,
     )

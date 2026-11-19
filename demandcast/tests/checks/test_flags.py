@@ -19,11 +19,7 @@ import pytest
 import check
 import checks.flags
 import utils.config
-import utils.data_sources
 import utils.paths
-
-# The summary of the data availability in the folder of the checks.
-AVAILABILITY_FILE = "data_availability_summary.csv"
 
 
 def _save_flags(
@@ -62,9 +58,7 @@ def checks_folder(monkeypatch, tmp_path):
     """
     folder = os.path.join(tmp_path, "checks")
     os.makedirs(folder)
-    shutil.copy(
-        os.path.join(utils.paths.CHECKS_FOLDER, AVAILABILITY_FILE), folder
-    )
+    shutil.copy(utils.paths.get_availability_summary_file(), folder)
     monkeypatch.setattr(utils.paths, "CHECKS_FOLDER", folder)
     with open(os.path.join(folder, "reviewed_flags.yaml"), "w") as file:
         file.write(
@@ -165,46 +159,6 @@ def test_flags_of_unknown_data_source():
 
     with pytest.raises(ValueError, match="FRA_unknown"):
         checks.flags.run_check()
-
-
-def test_reviews_of_the_repository():
-    """Test that the reviews of the repository are of known flags."""
-    reviews = checks.flags.read_reviews()
-
-    assert reviews
-    flags = [
-        "midday_dip",
-        "midday_rise",
-        "time_lag",
-        "daylight_saving",
-        "annual_total",
-        "annual_change",
-        "low_value",
-    ]
-    for review in reviews:
-        assert review.flag in flags
-        if review.data_source == checks.flags.COMBINED:
-            codes = utils.data_sources.read_all_codes()
-        else:
-            codes = utils.data_sources.read_codes_in(
-                data_source=review.data_source
-            )
-        assert review.code in codes
-
-
-def test_review_with_a_misspelt_field():
-    """Test that a misspelt field of a review is an error."""
-    with pytest.raises(ValueError, match="period"):
-        checks.flags.Review.model_validate(
-            {
-                "data_source": "neso",
-                "code": "GBR",
-                "flag": "time_lag",
-                "period": ["DJF 2024"],
-                "verdict": "false_positive",
-                "note": "A misspelt field.",
-            }
-        )
 
 
 def test_configuration_of_the_report(monkeypatch):

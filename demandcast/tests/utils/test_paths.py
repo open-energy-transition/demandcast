@@ -32,6 +32,12 @@ def test_inputs_are_in_the_code_folder():
         == utils.paths.DATA_SOURCES_FOLDER
     )
     assert os.path.join(CODE_FOLDER, ".env") == utils.paths.ENV_FILE
+    assert utils.paths.get_reviews_file() == os.path.join(
+        CODE_FOLDER, "checks", "reviewed_flags.yaml"
+    )
+    assert utils.paths.get_availability_summary_file() == os.path.join(
+        CODE_FOLDER, "checks", "data_availability_summary.csv"
+    )
     for folder in (
         utils.paths.CONFIG_FOLDER,
         utils.paths.SHAPES_FOLDER,
@@ -99,6 +105,18 @@ def test_data_folder_from_the_environment(monkeypatch, tmp_path):
                 "combined", "USA_CAL"
             ),
             ("electricity_demand", "combined", "USA_CAL.parquet"),
+        ),
+        (
+            lambda: utils.paths.get_electricity_demand_file(
+                "cleaned", "FRA", "rte", table="flags"
+            ),
+            ("electricity_demand", "cleaned", "FRA_rte_flags.parquet"),
+        ),
+        (
+            lambda: utils.paths.get_electricity_demand_file(
+                "combined", "USA_CAL", table="sources"
+            ),
+            ("electricity_demand", "combined", "USA_CAL_sources.parquet"),
         ),
         (
             lambda: utils.paths.get_gridded_folder("weather", "raw"),

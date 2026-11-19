@@ -316,8 +316,4 @@ def run_check() -> None:
     checks of the code, is an input of utils.availability, which reads
     the codes that have all the data from it.
     """
-    get_data_availability().to_csv(
-        os.path.join(
-            utils.paths.CHECKS_FOLDER, "data_availability_summary.csv"
-        )
-    )
+    get_data_availability().to_csv(utils.paths.get_availability_summary_file())
