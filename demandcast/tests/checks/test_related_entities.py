@@ -11,7 +11,7 @@ import geopandas
 import numpy as np
 import pandas as pd
 import pytest
-import xarray
+import shapely
 from shapely.geometry import box
 
 import checks.related_entities
@@ -33,41 +33,38 @@ def uniform_population(monkeypatch):
     """
     Give the shapes, and the same population to every grid cell.
 
+    The cells are of 0.05 degrees, each with one person, and are counted
+    in a shape by their centers.
+
     Returns
     -------
-    list[str]
-        The codes of the grids opened, in order.
+    list[float]
+        The populations counted, in order.
     """
-    centres_x = np.arange(0.125, 4, 0.25)
-    centres_y = np.arange(0.125, 2, 0.25)
-    grid = xarray.DataArray(
-        np.ones((len(centres_y), len(centres_x))),
-        coords={"y": centres_y, "x": centres_x},
-        dims=["y", "x"],
+    x_grid, y_grid = np.meshgrid(
+        np.arange(0.025, 4, 0.05), np.arange(0.025, 2, 0.05)
     )
-    opened: list[str] = []
+    counted: list[float] = []
 
-    def open_gridded_data(_variable, code, _year):
+    def get_total_in_geometry(geometry, year, scenario):
         """
-        Record the code of the grid, and give the grid.
+        Count the cells whose centers are in the shape.
 
         Returns
         -------
-        xarray.DataArray
-            The grid.
+        float
+            The number of cells.
         """
-        opened.append(code)
-        return grid
+        assert (year, scenario) == (2020, None)
+        counted.append(
+            float(shapely.contains_xy(geometry, x_grid, y_grid).sum())
+        )
+        return counted[-1]
 
     monkeypatch.setattr(
-        checks.related_entities.retrievals.gridded_totals,
-        "open_gridded_data",
-        open_gridded_data,
-    )
-    monkeypatch.setattr(
-        checks.related_entities.utils.availability,
-        "read_codes_with_historical_data",
-        lambda: ["XXX", "XXX_A", "XXX_B", "YYY"],
+        checks.related_entities.retrievals.gridded_population,
+        "get_total_in_geometry",
+        get_total_in_geometry,
     )
     monkeypatch.setattr(
         checks.related_entities.utils.shapes,
@@ -76,7 +73,7 @@ def uniform_population(monkeypatch):
             geometry=[SHAPES[code]], crs="EPSG:4326"
         ),
     )
-    return opened
+    return counted
 
 
 def test_get_shares():
@@ -110,8 +107,8 @@ def test_run_check(tmp_path, monkeypatch, uniform_population):
     """
     Test that the shares and the codes are saved in the checks folder.
 
-    C has no gridded data of its own, so it is counted on the grid of
-    its country.
+    The people of each entity are counted once, and those of each shared
+    area once.
     """
     monkeypatch.setattr(utils.paths, "CHECKS_FOLDER", str(tmp_path))
     monkeypatch.setattr(
@@ -128,7 +125,8 @@ def test_run_check(tmp_path, monkeypatch, uniform_population):
         ["XXX_A", "XXX_B"],
         ["XXX_A", "XXX_C"],
     ]
-    assert uniform_population == ["XXX_A", "XXX_B", "XXX"]
+    # The strip of A and B, A, B, the area that A and C share, and C.
+    assert uniform_population == [10 * 30, 30 * 30, 50 * 30, 10 * 10, 10 * 10]
     assert (tmp_path / "related_entities_codes.txt").read_text() == (
         "XXX_A\nXXX_B\nXXX_C\n"
     )
@@ -151,8 +149,6 @@ def test_entities_without_shared_area(other):
     }
 
     assert (
-        checks.related_entities._get_shares(
-            "XXX_A", "XXX_D", shapes, {}, {"XXX_A": "XXX_A", "XXX_D": "XXX"}
-        )
+        checks.related_entities._get_shares("XXX_A", "XXX_D", shapes, {})
         is None
     )

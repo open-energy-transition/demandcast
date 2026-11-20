@@ -291,7 +291,7 @@ def _get_global_grid(year: int, scenario: str | None) -> xarray.DataArray:
     return _read_population_dataset(raw_directory, year, scenario)
 
 
-def _sum_cells_in_shape(
+def get_total_in_geometry(
     geometry: shapely.Geometry, year: int, scenario: str | None
 ) -> float:
     """
@@ -379,7 +379,7 @@ def get_total_in_shape(code: str, year: int, scenario: str | None) -> float:
         if saved["shape"] == fingerprint:
             totals = saved["totals"]
     if key not in totals:
-        totals[key] = _sum_cells_in_shape(
+        totals[key] = get_total_in_geometry(
             utils.shapes.get_entity_shape(code, make_plot=False).union_all(),
             year,
             scenario,
