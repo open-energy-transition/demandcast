@@ -52,6 +52,9 @@ def _retrieve(code: str, start_year: int = 2019) -> pd.Series:
     """
     Retrieve the population from a year to 2025 and read it by year.
 
+    Each hour is checked to have the value of the local year of its
+    start, as the hours are stamped at their ends.
+
     Returns
     -------
     pandas.Series
@@ -85,13 +88,20 @@ def _retrieve(code: str, start_year: int = 2019) -> pd.Series:
             utils.paths.get_indicator_folder("population"), f"{code}.parquet"
         )
     )["Population"]
+    index = pd.DatetimeIndex(values.index)
+    assert (index[1:] - index[:-1] == pd.Timedelta(hours=1)).all()
     local_years = (
-        pd.DatetimeIndex(values.index)
+        (index - pd.Timedelta(hours=1))
         .tz_localize("UTC")
         .tz_convert("Asia/Kolkata")
         .year
     )
-    return values.groupby(local_years).median()
+    yearly = values.groupby(local_years)
+    assert (yearly.min() == yearly.max()).all()
+    assert index[0].tz_localize("UTC").tz_convert("Asia/Kolkata") == (
+        pd.Timestamp(f"{local_years[0]}-01-01 01:00", tz="Asia/Kolkata")
+    )
+    return yearly.first()
 
 
 def test_population_of_country():

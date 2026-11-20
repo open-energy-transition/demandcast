@@ -61,9 +61,7 @@ def test_time_zones():
             "dummy_data_source"
         )
 
-        assert isinstance(time_zones, dict)
-        assert "FRA" in time_zones
-        assert time_zones["FRA"] == pytz.timezone("Europe/Paris")
+        assert time_zones == {"FRA": pytz.timezone("Europe/Paris")}
 
 
 @pytest.mark.network

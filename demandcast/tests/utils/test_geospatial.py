@@ -94,8 +94,8 @@ def test_clean_raster():
 
     cleaned = utils.geospatial.clean_raster(data, "cleaned_var")
 
-    assert isinstance(cleaned, xarray.DataArray)
     assert cleaned.name == "cleaned_var"
+    np.testing.assert_array_equal(cleaned.to_numpy(), data.to_numpy()[0])
     assert "band" not in cleaned.dims
     assert "band" not in cleaned.coords
     assert "spatial_ref" not in cleaned.coords
@@ -309,6 +309,90 @@ def test_coarsen_function():
 
     assert result.x[0] == -180
     assert result.x[-1] == 180
+
+
+def _random_fine_grid(x_edges, y_edges):
+    """
+    Make a grid of random counts, 0.025 degrees wide, within edges.
+
+    The centers of the cells are never on the edges of the cells of
+    0.1, 0.25 or 0.5 degrees, which are multiples of 0.025 degrees.
+
+    Parameters
+    ----------
+    x_edges : tuple[float, float]
+        The western and eastern edges of the grid.
+    y_edges : tuple[float, float]
+        The southern and northern edges of the grid.
+
+    Returns
+    -------
+    xarray.DataArray
+        The counts, such as the population of each cell.
+    """
+    step = 0.025
+    x = np.arange(x_edges[0] + step / 2, x_edges[1], step)
+    y = np.arange(y_edges[0] + step / 2, y_edges[1], step)
+    return xarray.DataArray(
+        np.random.default_rng(0).random((len(y), len(x))) * 1000,
+        coords={"y": y, "x": x},
+        dims=["y", "x"],
+    )
+
+
+@pytest.mark.parametrize("target_resolution", [0.1, 0.25, 0.5])
+def test_coarsen_keeps_the_total(target_resolution):
+    """
+    Test that the coarse cells sum the fine cells inside them.
+
+    The fine grid is inside the bounds, so the total of all the cells
+    is kept.
+    """
+    fine = _random_fine_grid((-0.75, 0.75), (-0.25, 0.25))
+
+    result = utils.geospatial.coarsen(
+        fine, [-1.0, -0.5, 1.0, 0.5], target_resolution
+    )
+
+    assert np.allclose(np.diff(result["x"]), target_resolution)
+    assert np.allclose(np.diff(result["y"]), target_resolution)
+    assert result.sum().item() == pytest.approx(fine.sum().item(), rel=1e-12)
+
+    # The cell at 0, 0 sums the fine cells within half its resolution.
+    half = target_resolution / 2
+    inside = fine.where((abs(fine.x) < half) & (abs(fine.y) < half), drop=True)
+    assert inside.size == round(target_resolution / 0.025) ** 2
+    assert result.sel(x=0, y=0, method="nearest").item() == pytest.approx(
+        inside.sum().item(), rel=1e-12
+    )
+
+
+@pytest.mark.parametrize("target_resolution", [0.1, 0.25, 0.5])
+def test_coarsen_keeps_the_total_across_180_degrees(target_resolution):
+    """
+    Test the total of a grid around the world.
+
+    The cells at -180 and 180 degrees are the same: each sums the fine
+    cells of both edges, so the total is kept once they are counted
+    once.
+    """
+    fine = _random_fine_grid((-180, 180), (-0.05, 0.05))
+
+    result = utils.geospatial.coarsen(
+        fine, [-180, -0.05, 180, 0.05], target_resolution
+    )
+
+    assert result.x[0] == -180
+    assert result.x[-1] == 180
+    assert result.sizes["y"] == 1
+    edge = fine.where(abs(fine.x) > 180 - target_resolution / 2, drop=True)
+    assert result.sel(x=-180).item() == pytest.approx(
+        edge.sum().item(), rel=1e-12
+    )
+    assert result.sel(x=180).item() == result.sel(x=-180).item()
+    assert result.sum().item() - result.sel(x=180).item() == pytest.approx(
+        fine.sum().item(), rel=1e-12
+    )
 
 
 @pytest.mark.parametrize("target_resolution", [0.1, 0.2])

@@ -13,22 +13,47 @@ import pandas as pd
 import pytest
 
 import utils.availability
+import utils.data_sources
 import utils.paths
 
 
-def test_get_all_codes_with_all_data():
+@pytest.fixture
+def write_summary(tmp_path, monkeypatch):
     """
-    Test if the function read_codes_with_all_data works correctly.
+    Point the folder of the checks to a temporary folder.
 
-    The codes are read from the CSV file of the available data.
+    Returns
+    -------
+    Callable[[pandas.DataFrame], None]
+        A function that writes a summary of the availability of the
+        data there.
     """
-    with (
-        patch("pandas.read_csv") as mock_read_csv,
-        patch("os.path.join") as mock_path_join,
-    ):
-        mock_path_join.return_value = "/checks/available_data_summary.csv"
+    monkeypatch.setattr(utils.paths, "CHECKS_FOLDER", str(tmp_path))
 
-        mock_read_csv.return_value = pd.DataFrame(
+    def write(summary: pd.DataFrame) -> None:
+        """
+        Write the summary of the availability of the data.
+
+        Parameters
+        ----------
+        summary : pandas.DataFrame
+            The flags of the data of each code, with the codes as
+            index.
+        """
+        summary.to_csv(utils.paths.get_availability_summary_file())
+
+    return write
+
+
+def test_get_all_codes_with_all_data(write_summary):
+    """
+    Test the codes with all the data, read from the summary.
+
+    A code needs all the data, or the electricity demand per capita
+    with an area of more than 500 km².
+    """
+    write_summary(
+        pd.DataFrame(
             {
                 "historical_population": [True, True, True, False],
                 "historical_electricity_demand_per_capita": [
@@ -50,14 +75,13 @@ def test_get_all_codes_with_all_data():
             },
             index=["XY1", "XY2", "XY3", "XY4"],
         )
+    )
 
-        all_data_codes = utils.availability.read_codes_with_all_data()
-
-        assert isinstance(all_data_codes, list)
-        assert "XY1" in all_data_codes
-        assert "XY2" in all_data_codes
-        assert "XY3" not in all_data_codes
-        assert "XY4" in all_data_codes
+    assert utils.availability.read_codes_with_all_data() == [
+        "XY1",
+        "XY2",
+        "XY4",
+    ]
 
 
 def test_check_and_get_codes_with():
@@ -71,7 +95,9 @@ def test_check_and_get_codes_with():
     entsoe_codes = utils.availability.check_and_get_codes_with(
         "electricity_demand_data", data_source="entsoe"
     )
-    assert isinstance(entsoe_codes, list)
+    assert entsoe_codes == utils.data_sources.read_codes_in(
+        data_source="entsoe"
+    )
     assert "DEU" in entsoe_codes
     assert "USA_TEX" not in entsoe_codes
 
@@ -85,7 +111,7 @@ def test_check_and_get_codes_with():
         patch("utils.data_sources.read_codes_in") as mock_read_codes,
         patch("utils.data_sources.read_all_codes") as mock_read_all_codes,
     ):
-        mock_read_codes.return_value = ["FRA", "DEU"]
+        mock_read_codes.return_value = ["FRA", "USA_TEX", "DEU"]
         mock_read_all_codes.return_value = [
             "FRA",
             "DEU",
@@ -96,9 +122,7 @@ def test_check_and_get_codes_with():
             "electricity_demand_data", file_path="dummy.yaml"
         )
 
-        assert isinstance(dummy_codes, list)
-        assert "FRA" in dummy_codes
-        assert "USA_TEX" not in dummy_codes
+        assert dummy_codes == ["FRA", "DEU"]
 
     # Read codes for which all data is available.
     with patch(
@@ -108,10 +132,7 @@ def test_check_and_get_codes_with():
 
         shape_codes = utils.availability.check_and_get_codes_with("all_data")
 
-        assert isinstance(shape_codes, list)
-        assert "XYZ1" in shape_codes
-        assert "XYZ2" in shape_codes
-        assert "XYZ3" not in shape_codes
+        assert shape_codes == ["XYZ1", "XYZ2"]
 
 
 def test_check_and_get_codes_with_errors():
@@ -210,7 +231,7 @@ def test_check_and_get_codes_with_errors():
             )
 
 
-def test_codes_with_historical_and_all_data(tmp_path, monkeypatch):
+def test_codes_with_historical_and_all_data(write_summary):
     """Test that the codes without projections have historical data."""
     columns = ["population", "electricity_demand_per_capita"]
     columns.append("gdp_ppp_per_capita")
@@ -224,14 +245,15 @@ def test_codes_with_historical_and_all_data(tmp_path, monkeypatch):
         # No electricity demand per capita.
         "ABC": [True, False, True, True, False, True, True],
     }
-    pd.DataFrame.from_dict(
-        rows,
-        orient="index",
-        columns=[f"historical_{column}" for column in columns]
-        + [f"future_{column}" for column in columns]
-        + ["area_greater_than_500_km2"],
-    ).to_csv(tmp_path / "data_availability_summary.csv")
-    monkeypatch.setattr(utils.paths, "CHECKS_FOLDER", str(tmp_path))
+    write_summary(
+        pd.DataFrame.from_dict(
+            rows,
+            orient="index",
+            columns=[f"historical_{column}" for column in columns]
+            + [f"future_{column}" for column in columns]
+            + ["area_greater_than_500_km2"],
+        )
+    )
 
     assert utils.availability.read_codes_with_all_data() == ["FRA", "USA_TX"]
     assert utils.availability.read_codes_with_historical_data() == [

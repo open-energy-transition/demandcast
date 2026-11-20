@@ -8,8 +8,10 @@ Description:
 """
 
 import datetime as dt
+import os
 from unittest.mock import patch
 
+import pandas as pd
 import pytest
 import yaml
 
@@ -118,18 +120,43 @@ def test_read_codes():
         sample_codes = utils.data_sources.read_codes_in(file_path="dummy.yaml")
     assert sample_codes == ["FRA", "USA_TEX"]
 
-    # Read codes belonging to a specific data source and check them.
+    # Read codes belonging to a specific data source and check them
+    # against the entities of its YAML file, in their order.
     entsoe_codes = utils.data_sources.read_codes_in(data_source="entsoe")
-    assert isinstance(entsoe_codes, list)
+    with open(
+        os.path.join(utils.paths.DATA_SOURCES_FOLDER, "entsoe.yaml"),
+        encoding="utf-8",
+    ) as file:
+        entsoe_entities = yaml.safe_load(file)["entities"]
+    assert entsoe_codes == [
+        utils.data_sources.get_code_of(entity) for entity in entsoe_entities
+    ]
     assert "DEU" in entsoe_codes
     assert "USA_TEX" not in entsoe_codes
 
     # Read all codes available in the yaml files and check them.
     all_codes = utils.data_sources.read_all_codes()
-    assert isinstance(all_codes, list)
     assert "DEU" in all_codes
     assert "USA_TEX" in all_codes
     assert all_codes == sorted(set(all_codes))
+
+
+def test_read_all_codes_of_several_data_sources():
+    """Test that the codes of all data sources are merged and sorted."""
+    codes = {"first": ["FRA", "DEU"], "second": ["USA_TEX", "DEU", "BRA"]}
+    with (
+        patch(
+            "utils.data_sources.read_data_sources",
+            return_value=["first", "second"],
+        ),
+        patch(
+            "utils.data_sources.read_codes_in",
+            side_effect=lambda data_source: codes[data_source],
+        ),
+    ):
+        all_codes = utils.data_sources.read_all_codes()
+
+    assert all_codes == ["BRA", "DEU", "FRA", "USA_TEX"]
 
 
 def test_read_codes_errors():
@@ -185,11 +212,11 @@ def test_date_ranges():
     ):
         date_ranges = utils.data_sources.read_date_ranges("dummy_data_source")
 
-    assert isinstance(date_ranges, dict)
-    assert date_ranges["FRA"] == (
-        dt.date(2014, 12, 15),
-        (dt.datetime.now().astimezone() - dt.timedelta(days=5)).date(),
-    )
+    five_days_ago = (pd.Timestamp.now() - pd.Timedelta(days=5)).date()
+    assert date_ranges == {
+        "FRA": (dt.date(2014, 12, 15), five_days_ago),
+        "USA_TEX": (dt.date(2020, 1, 1), five_days_ago),
+    }
 
 
 def test_read_all_periods():
