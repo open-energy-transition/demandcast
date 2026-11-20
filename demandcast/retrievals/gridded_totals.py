@@ -13,6 +13,7 @@ Description:
     retrievals/gdp_ppp_per_capita.py).
 """
 
+from collections.abc import Callable
 from typing import Literal, cast
 
 import pandas as pd
@@ -59,6 +60,73 @@ def _aggregate_gridded_data(
         open_gridded_data(variable, code, year, scenario),
         utils.shapes.get_entity_shape(code, make_plot=False),
     )
+
+
+def _aggregate_at_native_resolution(
+    _variable: str, code: str, year: int, scenario: str | None
+) -> float:
+    """
+    Sum the population of a global grid in a shape at its resolution.
+
+    Parameters
+    ----------
+    _variable : str
+        The variable, "population", the only one summed so.
+    code : str
+        The code of the country or subdivision of interest.
+    year : int
+        The year of the data.
+    scenario : str | None
+        The scenario of the data, none for a historical year.
+
+    Returns
+    -------
+    float
+        The population of the cells of the global grid whose centers are
+        in the shape of the country or subdivision.
+    """
+    return retrievals.gridded_population.get_total_in_shape(
+        code, year, scenario
+    )
+
+
+def _get_aggregation(
+    variable: str, at_native_resolution: bool
+) -> Callable[[str, str, int, str | None], float]:
+    """
+    Get the function that sums a gridded variable in a shape.
+
+    Parameters
+    ----------
+    variable : str
+        The variable, "population" or "gdp_ppp".
+    at_native_resolution : bool
+        Whether the population is summed at the resolution of the global
+        grids.
+
+    Returns
+    -------
+    Callable[[str, str, int, str | None], float]
+        The function that sums the variable of a code, year and
+        scenario.
+
+    Raises
+    ------
+    ValueError
+        If the variable is not "population" or "gdp_ppp", or is not
+        "population" at the native resolution.
+    """
+    if variable not in ["population", "gdp_ppp"]:
+        raise ValueError(
+            "The variable must be either 'population' or 'gdp_ppp'."
+        )
+    if not at_native_resolution:
+        return _aggregate_gridded_data
+    if variable != "population":
+        raise ValueError(
+            "Only the population is summed at the native resolution."
+        )
+    return _aggregate_at_native_resolution
 
 
 def open_gridded_data(
@@ -156,6 +224,7 @@ def get_total_value_from_gridded_data(
     available_years_of_gridded_data: list[int],
     last_available_historical_years_of_gridded_data: int | None = None,
     scenario: str | None = None,
+    at_native_resolution: bool = False,
 ) -> pd.Series:
     """
     Get the total value of a variable from gridded data.
@@ -177,6 +246,12 @@ def get_total_value_from_gridded_data(
         scenario.
     scenario : str | None, optional
         The scenario of interest for future projections.
+    at_native_resolution : bool, optional
+        Whether the population is summed over the cells of the global
+        grids, at their resolution, whose centers are in the shape (see
+        retrievals.gridded_population.get_total_in_shape), instead of
+        over the cells of the grid of the code, each weighted by its
+        fraction in the shape.
 
     Returns
     -------
@@ -186,7 +261,8 @@ def get_total_value_from_gridded_data(
     Raises
     ------
     ValueError
-        If the variable is not "population" or "gdp_ppp".
+        If the variable is not "population" or "gdp_ppp", or is not
+        "population" at the native resolution.
         If only one of scenario or
         last_available_historical_years_of_gridded_data is provided.
         If last_available_historical_years_of_gridded_data is not
@@ -200,10 +276,7 @@ def get_total_value_from_gridded_data(
     scenario, the last historical year of the grids, without scenario,
     is added before the years of the scenario.
     """
-    if variable not in ["population", "gdp_ppp"]:
-        raise ValueError(
-            "The variable must be either 'population' or 'gdp_ppp'."
-        )
+    aggregate = _get_aggregation(variable, at_native_resolution)
 
     if scenario is None and last_available_historical_years_of_gridded_data:
         raise ValueError(
@@ -245,15 +318,9 @@ def get_total_value_from_gridded_data(
             last_available_historical_years_of_gridded_data
             and year == last_available_historical_years_of_gridded_data
         ):
-            total_value_list.append(
-                _aggregate_gridded_data(variable, code, year, scenario=None)
-            )
+            total_value_list.append(aggregate(variable, code, year, None))
         else:
-            total_value_list.append(
-                _aggregate_gridded_data(
-                    variable, code, year, scenario=scenario
-                )
-            )
+            total_value_list.append(aggregate(variable, code, year, scenario))
 
     total_values = pd.Series(
         data=total_value_list,

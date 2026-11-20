@@ -22,6 +22,13 @@ RUN apt-get update \
     && apt-get upgrade --yes \
     && rm -rf /var/lib/apt/lists/*
 
+# The GDAL of rasterio, which reads the rasters, loads the XML parser of the
+# system.
+# hadolint ignore=DL3008
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends libexpat1 \
+    && rm -rf /var/lib/apt/lists/*
+
 # hadolint ignore=DL3008
 RUN if [ "${INSTALL_GCLOUD}" = "true" ]; then \
         apt-get update \

@@ -226,7 +226,7 @@ def get_electricity_demand_file(
 
 
 def get_gridded_folder(
-    variable: GriddedVariable, stage: Literal["raw", "processed"]
+    variable: GriddedVariable, stage: Literal["raw", "processed", "totals"]
 ) -> str:
     """
     Get the folder of a stage of a gridded variable.
@@ -237,7 +237,8 @@ def get_gridded_folder(
         The variable: "weather", "population" or "gdp_ppp".
     stage : str
         "raw" for the global grids as downloaded, "processed" for the
-        grids of each country and subdivision.
+        grids of each country and subdivision, "totals" for the totals
+        in their shapes.
 
     Returns
     -------

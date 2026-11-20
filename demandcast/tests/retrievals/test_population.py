@@ -28,18 +28,22 @@ def _clear_gridded_population():
     population._get_gridded_population.cache_clear()
 
 
-def _gridded_population(_variable, code, selected_years, *_):
+def _gridded_population(
+    _variable, code, selected_years, *_, at_native_resolution=False, **__
+):
     """
     Give the gridded population of a subdivision or of its country.
 
     The subdivision has 30 million plus 1 million a year, and its
-    country a flat 1 billion.
+    country a flat 1 billion. The population is checked to be summed at
+    the resolution of the global grids.
 
     Returns
     -------
     pandas.Series
         The population of each selected year.
     """
+    assert at_native_resolution
     return pd.Series(
         {
             year: 1e9 if "_" not in code else 30e6 + 1e6 * (year - 2000)

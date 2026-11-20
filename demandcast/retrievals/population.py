@@ -12,7 +12,10 @@ Description:
     its country times the population of its country, so that the
     subdivisions of a country add up to its national population. The
     share is that of the gridded population, in the shape of the
-    subdivision over that of the whole country: for the past, from the
+    subdivision over that of the whole country, summed over the cells of
+    30 arc seconds whose centers are in the shape, so that the people of
+    the cells cut by a coast or a border are counted where they live:
+    for the past, from the
     Gridded Population of the World (version 4.11, of SEDAC), every five
     years from 2000 to 2020, with the share of 2000 before 2000 and that
     of 2020 after 2020; for the future, from the gridded population of
@@ -22,8 +25,8 @@ Description:
     grew by 29%. The demand of Ontario since 1994 and of the regions of
     the Australian market since 1998 can then be used for training.
 
-    A subdivision of a country without national data has its gridded
-    population.
+    A country without national data, and each of its subdivisions, has
+    its gridded population, summed in the same way.
 """
 
 import functools
@@ -77,7 +80,11 @@ def _get_gridded_population(
         code,
         list(years),
         list(available_years),
-        *(() if scenario is None else (last_historical_year, scenario)),
+        last_available_historical_years_of_gridded_data=(
+            None if scenario is None else last_historical_year
+        ),
+        scenario=scenario,
+        at_native_resolution=True,
     )
 
 
@@ -168,6 +175,7 @@ def _extract_historical_population(
                 code,
                 used_historical_years,
                 available_historical_years_of_gridded_data,
+                at_native_resolution=True,
             )
             .reindex(used_historical_years)
             .set_axis(requested_historical_years)
@@ -236,6 +244,7 @@ def _extract_future_population(
             available_future_years_of_gridded_data,
             last_historical_year,
             scenario,
+            at_native_resolution=True,
         )
 
     return iiasa.extract_and_interpolate(

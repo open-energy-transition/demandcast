@@ -13,6 +13,7 @@ from unittest.mock import patch
 import geopandas
 import numpy as np
 import pytest
+import shapely
 import xarray
 from shapely import box
 
@@ -448,3 +449,27 @@ def test_get_total_in_shape():
         )
 
     assert total == pytest.approx(10.0 + 10.0 + 10.0)
+
+
+@pytest.mark.parametrize("ascending", [True, False])
+def test_get_total_of_cells_in_shape(ascending):
+    """
+    Test that the cells whose centers are in the shape are summed.
+
+    The total is that of the centers that shapely finds in the shape,
+    with the latitudes in either order, and without a missing value.
+    """
+    x = np.arange(0.05, 3, 0.1)
+    y = np.arange(0.05, 2, 0.1)
+    values = np.random.default_rng(0).random((len(y), len(x)))
+    values[5, 5] = np.nan
+    shape = shapely.Polygon([(0.2, 0.3), (2.6, 0.1), (1.7, 1.9), (0.4, 1.4)])
+    x_grid, y_grid = np.meshgrid(x, y)
+    expected = np.nansum(values[shapely.contains_xy(shape, x_grid, y_grid)])
+    gridded_data = xarray.DataArray(
+        values, coords={"y": y, "x": x}, dims=["y", "x"]
+    ).sortby("y", ascending=ascending)
+
+    total = utils.geospatial.get_total_of_cells_in_shape(gridded_data, shape)
+
+    assert total == pytest.approx(expected)

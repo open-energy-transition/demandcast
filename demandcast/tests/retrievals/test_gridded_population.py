@@ -11,16 +11,19 @@ Description:
 """
 
 import io
+import json
 import os
 import zipfile
 from typing import Any
 
+import geopandas
 import numpy as np
 import pytest
 import requests
 
 # Imported for the rio accessor of xarray, which writes the rasters.
 import rioxarray  # noqa: F401
+import shapely
 import xarray
 
 import utils.paths
@@ -578,3 +581,134 @@ def test_run_data_retrieval(monkeypatch):
     assert sorted(
         os.listdir(utils.paths.get_gridded_folder("population", "processed"))
     ) == ["FRA_0.25_deg_2020.nc", "FRA_0.25_deg_2030_SSP2.nc"]
+
+
+@pytest.mark.parametrize("scenario", [None, "SSP2"])
+def test_sum_cells_in_shape(monkeypatch, scenario):
+    """
+    Test that the population of each part of a shape is summed in bands.
+
+    Bands of two rows leave a last row, which is read with the band
+    before it. The density of a historical year is converted to a count,
+    and the counts of a scenario are kept.
+    """
+    x = np.arange(0.5, 10)
+    y = np.arange(0.5, 10)
+    global_grid = xarray.DataArray(
+        np.arange(100.0).reshape(10, 10),
+        coords={"y": y, "x": x},
+        dims=["y", "x"],
+    )
+    bands = []
+    converted = []
+
+    def from_density_to_count(grid):
+        """
+        Record a conversion and double the grid.
+
+        Returns
+        -------
+        xarray.DataArray
+            The doubled grid.
+        """
+        converted.append(grid.sizes["y"])
+        return grid * 2
+
+    def get_total_of_cells_in_shape(grid, part):
+        """
+        Record the rows of a band and sum its cells in the part.
+
+        Returns
+        -------
+        float
+            The sum of the cells whose centers are in the part.
+        """
+        bands.append(grid.sizes["y"])
+        x_grid, y_grid = np.meshgrid(grid.x, grid.y)
+        return float(
+            grid.to_numpy()[shapely.contains_xy(part, x_grid, y_grid)].sum()
+        )
+
+    monkeypatch.setattr(gridded_population, "RESOLUTION", 1.0)
+    monkeypatch.setattr(gridded_population, "ROWS_PER_READ", 2)
+    monkeypatch.setattr(
+        gridded_population, "_get_global_grid", lambda *_: global_grid
+    )
+    monkeypatch.setattr(
+        gridded_population.utils.geospatial,
+        "from_density_to_count",
+        from_density_to_count,
+    )
+    monkeypatch.setattr(
+        gridded_population.utils.geospatial,
+        "get_total_of_cells_in_shape",
+        get_total_of_cells_in_shape,
+    )
+    shape = shapely.MultiPolygon(
+        [shapely.box(1, 1, 3, 4), shapely.box(6, 6, 7, 7)]
+    )
+
+    total = gridded_population._sum_cells_in_shape(shape, 2020, scenario)
+
+    # The first part holds the cells of rows 1 to 3 and of columns 1 and
+    # 2, read from rows 0 to 4, and the second the cell of row and
+    # column 6, read from rows 5 to 7.
+    expected = (
+        sum(10 * row + column for row in (1, 2, 3) for column in (1, 2)) + 66
+    )
+    assert total == (expected if scenario else 2 * expected)
+    assert bands == [2, 3, 3]
+    assert converted == ([] if scenario else [2, 3, 3])
+
+
+def test_get_total_in_shape(monkeypatch):
+    """
+    Test that the totals of a code are kept with its shape.
+
+    A total is computed once for a year and scenario, and again after
+    the fingerprint of the shape changes.
+    """
+    sums = []
+    fingerprint = {"value": "a"}
+
+    def sum_cells_in_shape(_geometry, year, scenario):
+        """
+        Record a sum and give a total.
+
+        Returns
+        -------
+        float
+            The total of the year.
+        """
+        sums.append((year, scenario))
+        return float(year)
+
+    monkeypatch.setattr(
+        gridded_population, "_sum_cells_in_shape", sum_cells_in_shape
+    )
+    monkeypatch.setattr(
+        gridded_population.retrievals.gridded,
+        "get_shape_fingerprint",
+        lambda _code: fingerprint["value"],
+    )
+    monkeypatch.setattr(
+        gridded_population.utils.shapes,
+        "get_entity_shape",
+        lambda *_, **__: geopandas.GeoDataFrame(
+            geometry=[shapely.box(0, 0, 1, 1)]
+        ),
+    )
+
+    assert gridded_population.get_total_in_shape("ABC", 2020, None) == 2020
+    assert gridded_population.get_total_in_shape("ABC", 2030, "SSP2") == 2030
+    assert gridded_population.get_total_in_shape("ABC", 2020, None) == 2020
+    fingerprint["value"] = "b"
+    assert gridded_population.get_total_in_shape("ABC", 2020, None) == 2020
+
+    assert sums == [(2020, None), (2030, "SSP2"), (2020, None)]
+    with open(
+        os.path.join(
+            utils.paths.get_gridded_folder("population", "totals"), "ABC.json"
+        )
+    ) as file:
+        assert json.load(file) == {"shape": "b", "totals": {"2020": 2020.0}}
