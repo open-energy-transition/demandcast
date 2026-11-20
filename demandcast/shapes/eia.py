@@ -546,7 +546,8 @@ def write(new: dict[str, dict]) -> None:
                 f"      {iso_code}: {cut}"
                 for iso_code, cut in subdivision["cuts"].items()
             ]
-    with open(SUBDIVISIONS_FILE, "w", encoding="utf-8") as file:
+    # Git keeps the file with LF line ends, also on Windows.
+    with open(SUBDIVISIONS_FILE, "w", encoding="utf-8", newline="\n") as file:
         file.write("\n".join(lines) + "\n")
 
 
