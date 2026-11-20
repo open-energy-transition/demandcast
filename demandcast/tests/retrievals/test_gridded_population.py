@@ -584,7 +584,7 @@ def test_run_data_retrieval(monkeypatch):
 
 
 @pytest.mark.parametrize("scenario", [None, "SSP2"])
-def test_sum_cells_in_shape(monkeypatch, scenario):
+def test_get_total_in_geometry(monkeypatch, scenario):
     """
     Test that the population of each part of a shape is summed in bands.
 
@@ -648,7 +648,7 @@ def test_sum_cells_in_shape(monkeypatch, scenario):
         [shapely.box(1, 1, 3, 4), shapely.box(6, 6, 7, 7)]
     )
 
-    total = gridded_population._sum_cells_in_shape(shape, 2020, scenario)
+    total = gridded_population.get_total_in_geometry(shape, 2020, scenario)
 
     # The first part holds the cells of rows 1 to 3 and of columns 1 and
     # 2, read from rows 0 to 4, and the second the cell of row and
@@ -684,7 +684,7 @@ def test_get_total_in_shape(monkeypatch):
         return float(year)
 
     monkeypatch.setattr(
-        gridded_population, "_sum_cells_in_shape", sum_cells_in_shape
+        gridded_population, "get_total_in_geometry", sum_cells_in_shape
     )
     monkeypatch.setattr(
         gridded_population.retrievals.gridded,
