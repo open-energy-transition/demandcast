@@ -76,7 +76,7 @@ def _future(_data, code, scenario, *_args) -> pd.Series:
     )
 
 
-def _gridded(variable, code, selected_years, *_args) -> pd.Series:
+def _gridded(variable, code, selected_years, *_args, **_kwargs) -> pd.Series:
     """
     Give the total of a gridded variable of a subdivision or country.
 

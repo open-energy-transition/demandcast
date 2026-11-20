@@ -5,13 +5,17 @@ Description:
 
     This module handles gridded data, such as the population and the
     weather: it harmonizes its coordinates, coarsens it, converts
-    densities to counts, and weighs its grid cells by the fractions of
-    them in the shape of a country or subdivision.
+    densities to counts, weighs its grid cells by the fractions of them
+    in the shape of a country or subdivision, and sums the grid cells
+    whose centers are in a shape.
 """
 
 import geopandas
 import numpy as np
+import rasterio.features
+import shapely
 import xarray
+from rasterio.transform import Affine
 from shapely import box
 
 import utils.figures
@@ -483,3 +487,40 @@ def get_total_in_shape(
         gridded_data, shape, make_plot=False
     )
     return (gridded_data * fraction_of_grid_cells_in_shape).sum().item()
+
+
+def get_total_of_cells_in_shape(
+    gridded_data: xarray.DataArray, geometry: shapely.Geometry
+) -> float:
+    """
+    Get the total of the grid cells whose centers are in a shape.
+
+    Parameters
+    ----------
+    gridded_data : xarray.DataArray
+        The gridded data, such as a population count, with uniform
+        coordinates x and y of at least two cells each.
+    geometry : shapely.Geometry
+        The shape, in the coordinates of the grid.
+
+    Returns
+    -------
+    float
+        The sum of the grid cells whose centers are in the shape,
+        without the missing values.
+    """
+    x = gridded_data.x.to_numpy()
+    y = gridded_data.y.to_numpy()
+    x_step = float(x[1] - x[0])
+    y_step = float(y[1] - y[0])
+    inside = rasterio.features.geometry_mask(
+        [geometry],
+        out_shape=(len(y), len(x)),
+        transform=Affine(
+            x_step, 0, x[0] - x_step / 2, 0, y_step, y[0] - y_step / 2
+        ),
+        invert=True,
+    )
+    return float(
+        np.nansum(gridded_data.transpose("y", "x").to_numpy()[inside])
+    )

@@ -9,13 +9,15 @@ Description:
     of each Shared Socioeconomic Pathway (SSP) from Figshare, every five
     years from 2025 to 2100. It saves the population count of each
     country and subdivision of interest, at a 0.25-degree resolution,
-    into NetCDF files.
+    into NetCDF files, and gives the population in the shape of a
+    country or subdivision at the resolution of the global grids.
 
     Source: https://doi.org/10.7927/H49C6VHW
     Source: https://doi.org/10.6084/m9.figshare.19608594
     Source: https://doi.org/10.1038/s41597-022-01675-x
 """
 
+import json
 import logging
 import os
 import tempfile
@@ -23,6 +25,7 @@ import zipfile
 from typing import cast
 
 import requests
+import shapely
 import xarray
 
 import retrievals.gridded
@@ -31,6 +34,14 @@ import utils.fetcher
 import utils.files
 import utils.geospatial
 import utils.paths
+import utils.shapes
+
+# The resolution of the global grids, in degrees.
+RESOLUTION = 30 / 3600
+
+# The number of rows of a global grid read at once for the population in
+# a shape.
+ROWS_PER_READ = 600
 
 # The folders of the scenarios in their archives, when they have
 # another name.
@@ -255,6 +266,138 @@ def _read_population_dataset(
     )
 
 
+def _get_global_grid(year: int, scenario: str | None) -> xarray.DataArray:
+    """
+    Download, if needed, and read the global population of a year.
+
+    Parameters
+    ----------
+    year : int
+        The year.
+    scenario : str | None
+        The scenario, none for a historical year.
+
+    Returns
+    -------
+    xarray.DataArray
+        The population density of a historical year, or the population
+        of a future year, read lazily.
+    """
+    raw_directory = utils.paths.get_gridded_folder("population", "raw")
+    if year <= 2020:
+        _download_historical_gridded_population_density(raw_directory, year)
+    elif year >= 2025 and scenario is not None:
+        _download_future_gridded_population(raw_directory, scenario)
+    return _read_population_dataset(raw_directory, year, scenario)
+
+
+def _sum_cells_in_shape(
+    geometry: shapely.Geometry, year: int, scenario: str | None
+) -> float:
+    """
+    Sum the population of the global grid in a shape.
+
+    Parameters
+    ----------
+    geometry : shapely.Geometry
+        The shape.
+    year : int
+        The year.
+    scenario : str | None
+        The scenario, none for a historical year.
+
+    Returns
+    -------
+    float
+        The population of the cells of the global grid whose centers are
+        in the shape.
+
+    Notes
+    -----
+    Each part of the shape is read in bands of ROWS_PER_READ rows of the
+    grid, within its bounds and one cell around them, so that a large
+    country is never read whole. A last band of one row is read with the
+    band before it, since the area of a cell is computed from the
+    distance between the rows.
+    """
+    global_grid = _get_global_grid(year, scenario)
+    total = 0.0
+    for part in shapely.get_parts(geometry):
+        west, south, east, north = part.bounds
+        window = global_grid.sel(
+            x=slice(west - RESOLUTION, east + RESOLUTION),
+            y=slice(south - RESOLUTION, north + RESOLUTION),
+        )
+        rows = window.sizes["y"]
+        starts = list(range(0, rows, ROWS_PER_READ))
+        if len(starts) > 1 and rows - starts[-1] < 2:
+            starts.pop()
+        for start, end in zip(starts, [*starts[1:], rows], strict=True):
+            band = window.isel(y=slice(start, end)).load()
+            if scenario is None:
+                band = utils.geospatial.from_density_to_count(band)
+            total += utils.geospatial.get_total_of_cells_in_shape(band, part)
+    return total
+
+
+def get_total_in_shape(code: str, year: int, scenario: str | None) -> float:
+    """
+    Get the population in the shape of a country or subdivision.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+    year : int
+        The year of the global grid.
+    scenario : str | None
+        The scenario of the global grid, none for a historical year.
+
+    Returns
+    -------
+    float
+        The population of the cells of the global grid, at its
+        resolution, whose centers are in the shape.
+
+    Notes
+    -----
+    At the 30 arc seconds of the grids, the people of the cells cut by
+    a coast or a border are counted in the shape where they live. The
+    totals of a code are kept in a JSON file of the folder of the
+    totals, with the fingerprint of its shape (see
+    retrievals.gridded.get_shape_fingerprint), and computed again when
+    the shape changes.
+    """
+    folder = utils.paths.get_gridded_folder("population", "totals")
+    file_path = os.path.join(folder, f"{code}.json")
+    fingerprint = retrievals.gridded.get_shape_fingerprint(code)
+    key = str(year) if scenario is None else f"{year}_{scenario}"
+    totals: dict[str, float] = {}
+    if os.path.exists(file_path):
+        with open(file_path) as file:
+            saved = json.load(file)
+        if saved["shape"] == fingerprint:
+            totals = saved["totals"]
+    if key not in totals:
+        totals[key] = _sum_cells_in_shape(
+            utils.shapes.get_entity_shape(code, make_plot=False).union_all(),
+            year,
+            scenario,
+        )
+        os.makedirs(folder, exist_ok=True)
+        with (
+            utils.files.writing(file_path) as temporary_path,
+            open(temporary_path, "w") as file,
+        ):
+            json.dump(
+                {"shape": fingerprint, "totals": totals},
+                file,
+                indent=1,
+                sort_keys=True,
+            )
+    return totals[key]
+
+
 def run_data_retrieval(
     code: str | None,
     file: str | None,
@@ -282,38 +425,6 @@ def run_data_retrieval(
     scenario : str | None
         The scenario of the population data to be retrieved.
     """
-    raw_directory = utils.paths.get_gridded_folder("population", "raw")
-
-    def get_global_grid(
-        selected_year: int, selected_scenario: str | None
-    ) -> xarray.DataArray:
-        """
-        Download, if needed, and read the global population of a year.
-
-        Parameters
-        ----------
-        selected_year : int
-            The year.
-        selected_scenario : str | None
-            The scenario, none for a historical year.
-
-        Returns
-        -------
-        xarray.DataArray
-            The population density of a historical year, or the
-            population of a future year.
-        """
-        if selected_year <= 2020:
-            _download_historical_gridded_population_density(
-                raw_directory, selected_year
-            )
-        elif selected_year >= 2025 and selected_scenario is not None:
-            _download_future_gridded_population(
-                raw_directory, selected_scenario
-            )
-        return _read_population_dataset(
-            raw_directory, selected_year, selected_scenario
-        )
 
     def process(
         population: retrievals.gridded.Grid,
@@ -353,6 +464,6 @@ def run_data_retrieval(
         end_year,
         scenario,
         utils.catalogue.GRIDDED_POPULATION_YEARS,
-        get_global_grid,
+        _get_global_grid,
         process,
     )
