@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import geopandas
 import pytest
+import shapely
 import yaml
 from shapely import Polygon
 
@@ -36,145 +37,141 @@ def dummy_geodf():
     return geodataframe
 
 
-def test_remove_islands_and_clip_to_180(dummy_geodf):
-    """Test _remove_islands_and_clip_to_180 with various codes."""
-    countries = [
-        "CHL",
-        "ESP",
-        "FJI",
-        "FRA",
-        "NLD",
-        "NOR",
-        "NZL",
-        "PRT",
-        "RUS",
-        "RUS_CHU",
-        "USA",
-    ]
-    for code in countries:
-        result = utils.shapes._remove_islands_and_clip_to_180(
-            dummy_geodf.copy(), code
-        )
-        assert isinstance(result, geopandas.GeoDataFrame)
-
-    dummy_bounds = geopandas.GeoSeries(
-        Polygon([(0, 0), (0.5, 0), (0.5, 0.5), (0, 0.5)])
-    )
-    dummy_bounds_frame = geopandas.GeoDataFrame.from_features(
-        dummy_bounds, crs=4326
+@pytest.mark.parametrize(
+    ("code", "expected_bounds"),
+    [
+        ("CHL", [-80, -60, -60, 0]),
+        ("ESP", [-10, 35, 5, 45]),
+        ("FJI", [172, -22, 180, -10]),
+        ("FRA", [-5, 40, 10, 55]),
+        ("NLD", [0, 50, 10, 55]),
+        ("NOR", [0, 55, 35, 73]),
+        ("NZL", [165, -50, 180, -30]),
+        ("PRT", [-10, 35, 0, 45]),
+        ("RUS", [0, 0, 180, 90]),
+        ("RUS_CHU", [150, 60, 180, 75]),
+        ("USA", [-180, 10, -50, 90]),
+    ],
+)
+def test_remove_islands_and_clip_to_180(code, expected_bounds):
+    """Test that the shape of the world is cut to the box of a code."""
+    world = geopandas.GeoDataFrame(
+        geometry=[shapely.box(-180, -90, 180, 90)], crs="EPSG:4326"
     )
 
-    with patch("geopandas.GeoDataFrame.from_features") as mock_from_features:
-        mock_from_features.return_value = dummy_bounds_frame
+    result = utils.shapes._remove_islands_and_clip_to_180(world, code)
 
-        # Test the function with a country code that has islands.
-        result = utils.shapes._remove_islands_and_clip_to_180(
-            dummy_geodf.copy(), "CHL"
-        )
+    assert len(result) == 1
+    assert result.geometry[0].equals(shapely.box(*expected_bounds))
 
-        assert result.bounds.minx[0] >= dummy_bounds_frame.bounds.minx[0]
-        assert result.bounds.miny[0] >= dummy_bounds_frame.bounds.miny[0]
-        assert result.bounds.maxx[0] <= dummy_bounds_frame.bounds.maxx[0]
-        assert result.bounds.maxy[0] <= dummy_bounds_frame.bounds.maxy[0]
+
+def test_shape_without_box_is_kept(dummy_geodf):
+    """Test that the shape of a code without a box is not cut."""
+    result = utils.shapes._remove_islands_and_clip_to_180(dummy_geodf, "ITA")
+
+    assert result.geometry[0].equals(dummy_geodf.geometry[0])
+
+
+class DummyShape:
+    """A record of the cartopy Reader."""
+
+    def __init__(self, attributes: dict[str, str], polygon: Polygon):
+        """Set the attributes and the shape of the record."""
+        self.attributes = attributes
+        self.geometry = polygon
+
+
+# The squares of the records, one in France and one in Italy, and one
+# in Victoria and one in Ontario.
+FRANCE = shapely.box(2, 46, 3, 47)
+ITALY = shapely.box(12, 42, 13, 43)
+VICTORIA = shapely.box(144, -38, 145, -37)
+ONTARIO = shapely.box(-80, 44, -79, 45)
 
 
 def test_get_standard_shape_by_code():
     """
-    Test the get_standard_shape function with valid country codes.
+    Test that the shape of the record with the code is returned.
 
-    The cartopy Reader is mocked to give square shapes.
+    The cartopy Reader is mocked to give a square for each record.
     """
-
-    class DummyShape:
-        """A record of the cartopy Reader."""
-
-        def __init__(self, attr):
-            """Set the attributes and the square shape of the record."""
-            self.attributes = attr
-            self.geometry = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
-
     with (
         patch("cartopy.io.shapereader.natural_earth"),
         patch("cartopy.io.shapereader.Reader") as mock_reader,
     ):
         mock_reader.return_value.records.return_value = [
-            DummyShape({"ISO_A3": "FRA", "ISO_A3_EH": "FRA"}),
-            DummyShape({"ISO_A3": "ITA", "ISO_A3_EH": "ITA"}),
+            DummyShape({"ISO_A3": "ITA", "ISO_A3_EH": "ITA"}, ITALY),
+            DummyShape({"ISO_A3": "-99", "ISO_A3_EH": "FRA"}, FRANCE),
         ]
 
-        # Test the get_standard_shape function for France.
         shape = utils.shapes.get_standard_shape(
             "FRA", remove_remote_islands=True
         )
-        assert isinstance(shape, geopandas.GeoDataFrame)
+        assert shape.crs == "EPSG:4326"
+        assert len(shape) == 1
+        assert shape.geometry[0].equals(FRANCE)
 
         mock_reader.return_value.records.return_value = [
-            DummyShape({"iso_3166_2": "AU-VIC"}),
-            DummyShape({"iso_3166_2": "CA-ON"}),
+            DummyShape({"iso_3166_2": "CA-ON"}, ONTARIO),
+            DummyShape({"iso_3166_2": "AU-VIC"}, VICTORIA),
         ]
 
-        # Test the get_standard_shape function for Victoria, Australia.
         shape = utils.shapes.get_standard_shape(
             "AUS_VIC", remove_remote_islands=False
         )
-        assert isinstance(shape, geopandas.GeoDataFrame)
+        assert len(shape) == 1
+        assert shape.geometry[0].equals(VICTORIA)
 
 
 def test_get_standard_shape_invalid_code():
     """
-    Test the get_standard_shape function with invalid country codes.
+    Test that a shape is found by its name when no code matches it.
 
-    The shapes of the mocked cartopy Reader have invalid codes, and
-    are found by their names.
+    The records of the mocked cartopy Reader have invalid codes.
     """
-
-    class DummyShape:
-        """A record of the cartopy Reader."""
-
-        def __init__(self, attr):
-            """Set the attributes and the square shape of the record."""
-            self.attributes = attr
-            self.geometry = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
-
     with (
         patch("cartopy.io.shapereader.natural_earth"),
         patch("cartopy.io.shapereader.Reader") as mock_reader,
     ):
         mock_reader.return_value.records.return_value = [
-            DummyShape(
-                {
-                    "ISO_A3": "INVALID",
-                    "ISO_A3_EH": "INVALID",
-                    "NAME": "France",
-                    "NAME_LONG": "France",
-                }
-            ),
             DummyShape(
                 {
                     "ISO_A3": "INVALID",
                     "ISO_A3_EH": "INVALID",
                     "NAME": "Italy",
                     "NAME_LONG": "Italy",
-                }
+                },
+                ITALY,
+            ),
+            DummyShape(
+                {
+                    "ISO_A3": "INVALID",
+                    "ISO_A3_EH": "INVALID",
+                    "NAME": "France",
+                    "NAME_LONG": "France",
+                },
+                FRANCE,
             ),
         ]
 
-        # Test the get_standard_shape function for France.
         shape = utils.shapes.get_standard_shape(
             "FRA", remove_remote_islands=False
         )
-        assert isinstance(shape, geopandas.GeoDataFrame)
+        assert len(shape) == 1
+        assert shape.geometry[0].equals(FRANCE)
 
         mock_reader.return_value.records.return_value = [
-            DummyShape({"iso_3166_2": "INVALID", "name": "Victoria"}),
-            DummyShape({"iso_3166_2": "INVALID", "name": "Ontario"}),
+            DummyShape({"iso_3166_2": "INVALID", "name": "Ontario"}, ONTARIO),
+            DummyShape(
+                {"iso_3166_2": "INVALID", "name": "Victoria"}, VICTORIA
+            ),
         ]
 
-        # Test the get_standard_shape function for Victoria, Australia.
         shape = utils.shapes.get_standard_shape(
             "AUS_VIC", remove_remote_islands=False
         )
-        assert isinstance(shape, geopandas.GeoDataFrame)
+        assert len(shape) == 1
+        assert shape.geometry[0].equals(VICTORIA)
 
 
 def test_get_entity_shape(dummy_geodf):
@@ -213,13 +210,7 @@ def test_get_entity_bounds(dummy_geodf):
     """
     bounds = utils.shapes.get_entity_bounds(dummy_geodf)
 
-    assert isinstance(bounds, list)
-    assert len(bounds) == 4
-
-    assert bounds[0] == dummy_geodf.bounds.minx[0] - 1
-    assert bounds[1] == dummy_geodf.bounds.miny[0] - 1
-    assert bounds[2] == dummy_geodf.bounds.maxx[0] + 1
-    assert bounds[3] == dummy_geodf.bounds.maxy[0] + 1
+    assert bounds == [-1, -1, 2, 2]
 
     # Define a GeoDataFrame with bounds exceeding the range [-180, 180]
     # for the longitude.
@@ -243,8 +234,6 @@ def test_get_all_codes_with_shapes():
     """Test the get_all_codes_with_shapes function."""
     shape_codes = utils.shapes.get_all_codes_with_shapes()
 
-    assert isinstance(shape_codes, list)
-    assert len(shape_codes) > 0
     assert "FRA" in shape_codes
     assert "USA_TEX" in shape_codes
     assert "RUS_AD" in shape_codes

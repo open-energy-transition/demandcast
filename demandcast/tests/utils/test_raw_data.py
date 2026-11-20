@@ -103,7 +103,9 @@ def test_record_and_replay(server, monkeypatch):
     # The API key is hidden, and the response to the request that sends
     # the password is not saved.
     assert responses[0]["key"][1] == "https://example.org/data?api_key=***"
-    assert responses[0]["file"] is not None
+    assert responses[0]["file"] == (
+        hashlib.sha256(b"time,value\n").hexdigest()
+    )
     assert responses[1]["file"] is None
     assert "key123" not in str(responses)
 

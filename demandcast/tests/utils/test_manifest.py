@@ -6,6 +6,7 @@ Description:
     Tests of the manifests of the files that the scripts produce.
 """
 
+import hashlib
 import json
 import ntpath
 import types
@@ -118,8 +119,14 @@ def test_verify_file(tmp_path):
         str(parquet), "results", {}, other_formats=(str(csv),)
     )
 
-    assert utils.manifest.verify_file(str(csv), "results") is not None
-    assert utils.manifest.verify_file(str(parquet), None) is not None
+    manifest = utils.manifest.read_manifest(str(parquet))
+    assert manifest is not None
+    assert manifest["files"] == {
+        "all.parquet": hashlib.sha256(b"parquet").hexdigest(),
+        "all.csv": hashlib.sha256(b"csv").hexdigest(),
+    }
+    assert utils.manifest.verify_file(str(csv), "results") == manifest
+    assert utils.manifest.verify_file(str(parquet), None) == manifest
     with pytest.raises(ValueError, match="not of a model"):
         utils.manifest.verify_file(str(parquet), "model")
     other = tmp_path / "all.json"

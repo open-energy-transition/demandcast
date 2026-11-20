@@ -24,12 +24,12 @@ import retrievals.annual_electricity_demand_per_capita as annual_demand
 import retrievals.indicators
 import utils.availability
 import utils.paths
-import utils.time_zones
 from retrievals import gdp_ppp_per_capita, population
 
 pytestmark = pytest.mark.usefixtures("frozen_now")
 
-# The values of each file, by local year, of each retrieval.
+# The hourly values of each file of each retrieval, as runs of hours
+# with the same value: the first and last hours, in UTC, and the value.
 SNAPSHOTS_FILE = os.path.join(
     os.path.dirname(__file__), "indicator_snapshots.json"
 )
@@ -169,43 +169,56 @@ def _run(retrieval: str, code: str) -> None:
             active_patch.stop()
 
 
-def _snapshot(retrieval: str, code: str) -> dict[str, dict[str, float]]:
+def _read_files(retrieval: str) -> dict[str, pd.Series]:
     """
-    Read the files that a retrieval wrote, by local year.
+    Read the files that a retrieval wrote.
 
     Parameters
     ----------
     retrieval : str
         The retrieval.
-    code : str
-        The code of the country or subdivision.
 
     Returns
     -------
-    dict[str, dict[str, float]]
-        The median value of each local year, rounded, of each file.
+    dict[str, pandas.Series]
+        The hourly values of each Parquet file, by the name of the
+        file.
     """
     folder = utils.paths.get_indicator_folder(
         cast(utils.paths.Indicator, retrieval)
     )
-    time_zone = utils.time_zones.get_time_zone(code)
-    snapshot = {}
+    files = {}
     for file_name in sorted(os.listdir(folder)):
         if not file_name.endswith(".parquet"):
             assert file_name.endswith(".csv")
             continue
-        values = pd.read_parquet(os.path.join(folder, file_name)).iloc[:, 0]
-        local_years = (
-            pd.DatetimeIndex(values.index)
-            .tz_localize("UTC")
-            .tz_convert(time_zone)
-            .year
-        )
-        yearly = values.groupby(local_years).median()
-        snapshot[file_name] = {
-            str(year): round(float(value), 6) for year, value in yearly.items()
-        }
-    return snapshot
+        files[file_name] = pd.read_parquet(
+            os.path.join(folder, file_name)
+        ).iloc[:, 0]
+    return files
+
+
+def _from_runs(runs: list[tuple[str, str, float]]) -> pd.Series:
+    """
+    Make the hourly values of a file from its runs in the snapshot.
+
+    Parameters
+    ----------
+    runs : list[tuple[str, str, float]]
+        The first and last hours, in UTC, and the value of each run of
+        hours with the same value.
+
+    Returns
+    -------
+    pandas.Series
+        The value of each hour.
+    """
+    return pd.concat(
+        [
+            pd.Series(value, index=pd.date_range(first, last, freq="h"))
+            for first, last, value in runs
+        ]
+    )
 
 
 @pytest.mark.parametrize(
@@ -223,7 +236,20 @@ def test_retrieval_of_indicator(retrieval, code):
 
     with open(SNAPSHOTS_FILE, encoding="utf-8") as file:
         expected = json.load(file)[f"{retrieval}/{code}"]
-    assert _snapshot(retrieval, code) == expected
+    files = _read_files(retrieval)
+    assert sorted(files) == sorted(expected)
+    for file_name, values in files.items():
+        expected_values = _from_runs(expected[file_name])
+        pd.testing.assert_series_equal(
+            values.set_axis(pd.DatetimeIndex(values.index).as_unit("ns")),
+            expected_values.set_axis(
+                pd.DatetimeIndex(expected_values.index).as_unit("ns")
+            ),
+            check_names=False,
+            check_freq=False,
+            rtol=1e-9,
+            obj=file_name,
+        )
 
 
 def test_retrieval_without_projections(monkeypatch, caplog):

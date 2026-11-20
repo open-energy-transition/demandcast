@@ -78,9 +78,8 @@ def test_fetch_of_each_type():
         assert utils.fetcher.fetch_dataframe(
             "http://example.com", "html", read_as="excel_table"
         )["b"].tolist() == [30, 40]
-        assert isinstance(
-            utils.fetcher.fetch_excel_file("http://example.com"), pd.ExcelFile
-        )
+        excel_file = utils.fetcher.fetch_excel_file("http://example.com")
+        assert pd.read_excel(excel_file)["a"].tolist() == [10, 20]
 
         mock_get.return_value.text = "text content"
         assert (
@@ -91,12 +90,10 @@ def test_fetch_of_each_type():
         )
         assert mock_get.return_value.encoding == "utf-8"
 
-        mock_get.return_value = requests.Response()
-        mock_get.return_value.status_code = 200
-        assert isinstance(
-            utils.fetcher.fetch_response("http://example.com"),
-            requests.Response,
-        )
+        response = requests.Response()
+        response.status_code = 200
+        mock_get.return_value = response
+        assert utils.fetcher.fetch_response("http://example.com") is response
 
 
 def test_fetch_with_cookies():
