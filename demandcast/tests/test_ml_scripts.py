@@ -441,17 +441,17 @@ def test_validate(algorithm, use_validation_set, expected_mapes):
         results["Testing WAPE"].median()
     )
 
-    mapes = results.drop(columns=description_columns)
+    errors = results.drop(columns=description_columns)
     scaled = " of the complete years scaled to their annual totals"
     assert [
         column
-        for column in mapes.columns
+        for column in errors.columns
         if not column.endswith((scaled, "WAPE", "(MWh)"))
     ] == ["Entity code", *expected_mapes]
     # Each set also has the sums of its absolute errors and of its
     # demand in MWh.
     assert {
-        column for column in mapes.columns if column.endswith("(MWh)")
+        column for column in errors.columns if column.endswith("(MWh)")
     } == {
         column.replace("MAPE", name)
         for column in expected_mapes
@@ -459,17 +459,17 @@ def test_validate(algorithm, use_validation_set, expected_mapes):
     }
     # Each set also has its WAPE, and the MAPE of the profile that
     # forecasting gives.
-    assert {column for column in mapes.columns if column.endswith(scaled)} == {
-        column + scaled for column in expected_mapes
-    }
-    assert {column for column in mapes.columns if column.endswith("WAPE")} == {
-        column.replace("MAPE", "WAPE") for column in expected_mapes
-    }
-    wapes = [column for column in mapes.columns if column.endswith("WAPE")]
-    assert (mapes[wapes] > 0).all(axis=None)
-    assert mapes["Entity code"].tolist() == COUNTRY_CODES
+    assert {
+        column for column in errors.columns if column.endswith(scaled)
+    } == {column + scaled for column in expected_mapes}
+    assert {
+        column for column in errors.columns if column.endswith("WAPE")
+    } == {column.replace("MAPE", "WAPE") for column in expected_mapes}
+    wapes = [column for column in errors.columns if column.endswith("WAPE")]
+    assert (errors[wapes] > 0).all(axis=None)
+    assert errors["Entity code"].tolist() == COUNTRY_CODES
     for column, values in expected_mapes.items():
-        assert mapes[column].tolist() == pytest.approx(
+        assert errors[column].tolist() == pytest.approx(
             values, rel=RELATIVE_TOLERANCES[algorithm]
         )
 
@@ -517,13 +517,13 @@ def test_cross_validate(algorithm, expected_mapes):
 
     cross_validate.run_model_cross_validation(1, None, *_settings(algorithm))
 
-    mapes, summary = _read_scores(
+    errors, summary = _read_scores(
         utils.paths.get_results_folder("cross_validation"),
         algorithm.lower(),
         TRAINING_DATA,
     )
     # The held-out countries were not seen in training, by design.
-    assert mapes.columns.tolist() == [
+    assert errors.columns.tolist() == [
         "Entity code",
         *expected_mapes,
         "Training WAPE",
@@ -533,8 +533,8 @@ def test_cross_validate(algorithm, expected_mapes):
         "Holdout",
         *DESCRIPTION_COLUMNS,
     ]
-    assert (mapes["Testing demand (MWh)"] > 0).all()
-    assert mapes["Scored years"].tolist() == [3, 3, 3]
+    assert (errors["Testing demand (MWh)"] > 0).all()
+    assert errors["Scored years"].tolist() == [3, 3, 3]
     assert summary["Group"].tolist() == [
         "All",
         "Size class",
@@ -543,9 +543,9 @@ def test_cross_validate(algorithm, expected_mapes):
         "Continent",
         "Embedded generation",
     ]
-    assert mapes["Entity code"].tolist() == COUNTRY_CODES
+    assert errors["Entity code"].tolist() == COUNTRY_CODES
     for column, values in expected_mapes.items():
-        assert mapes[column].tolist() == pytest.approx(
+        assert errors[column].tolist() == pytest.approx(
             values, rel=RELATIVE_TOLERANCES[algorithm]
         )
 

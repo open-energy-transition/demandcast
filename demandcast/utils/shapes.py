@@ -22,8 +22,7 @@ import pycountry
 import shapely
 import yaml
 from pydantic import (
-    BaseModel,
-    ConfigDict,
+    Field,
     ValidationError,
     field_validator,
     model_validator,
@@ -31,11 +30,12 @@ from pydantic import (
 from shapely import Polygon
 
 import utils.codes
+import utils.config
 import utils.figures
 import utils.paths
 
 
-class Cut(BaseModel):
+class Cut(utils.config.StrictSettings):
     """
     Polygon of the part of standard subdivisions outside subdivisions.
 
@@ -47,8 +47,6 @@ class Cut(BaseModel):
         The polygon or multipolygon, in WKT, in degrees of longitude
         and latitude.
     """
-
-    model_config = ConfigDict(extra="forbid")
 
     description: str
     polygon: str
@@ -86,7 +84,7 @@ class Cut(BaseModel):
         return polygon
 
 
-class SubdivisionDefinition(BaseModel):
+class SubdivisionDefinition(utils.config.StrictSettings):
     """
     Non-standard subdivision defined by standard subdivisions.
 
@@ -102,11 +100,9 @@ class SubdivisionDefinition(BaseModel):
         their ISO 3166-2 code.
     """
 
-    model_config = ConfigDict(extra="forbid")
-
     name: str
     standard_subdivisions: list[str]
-    cuts: dict[str, str] = {}
+    cuts: dict[str, str] = Field(default_factory=dict)
 
     @field_validator("standard_subdivisions", mode="before")
     @classmethod
@@ -128,7 +124,7 @@ class SubdivisionDefinition(BaseModel):
         return codes.split() if isinstance(codes, str) else codes
 
 
-class SubdivisionDefinitions(BaseModel):
+class SubdivisionDefinitions(utils.config.StrictSettings):
     """
     Content of a file of the folder ``subdivisions``, or of all of them.
 
@@ -140,9 +136,7 @@ class SubdivisionDefinitions(BaseModel):
         The non-standard subdivisions, by code.
     """
 
-    model_config = ConfigDict(extra="forbid")
-
-    cuts: dict[str, Cut] = {}
+    cuts: dict[str, Cut] = Field(default_factory=dict)
     subdivisions: dict[str, SubdivisionDefinition]
 
     @model_validator(mode="after")

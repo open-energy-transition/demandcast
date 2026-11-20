@@ -24,10 +24,6 @@ def test_get_name_from_code():
     name = utils.codes.get_name_from_code("AUS_VIC")
     assert name == "Victoria"
 
-    # Test the function with a valid iso_3166_2 code with a hyphen.
-    name = utils.codes.get_name_from_code("USA-CA")
-    assert name == "California"
-
     # Test the function with a code for a not fully recognized country.
     name = utils.codes.get_name_from_code("XKX")
     assert name == "Kosovo"

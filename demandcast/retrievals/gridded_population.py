@@ -27,6 +27,7 @@ import xarray
 
 import retrievals.gridded
 import utils.catalogue
+import utils.fetcher
 import utils.files
 import utils.geospatial
 import utils.paths
@@ -78,9 +79,7 @@ def _download_historical_gridded_population_density(
             f"gpw_v4_population_density_rev11_{year}_30_sec_{year}.tif"
         )
 
-        response = requests.get(url, timeout=60)
-
-        response.raise_for_status()
+        response = utils.fetcher.fetch_response(url, timeout=60)
 
         with (
             utils.files.writing(file_path) as temporary_path,

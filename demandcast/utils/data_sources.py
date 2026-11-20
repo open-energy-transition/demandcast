@@ -371,23 +371,6 @@ def read_entities(data_source: str) -> list[DataSourceEntity]:
     return list(_read_data_source_file(data_source).entities)
 
 
-def read_licence(data_source: str) -> DataSourceLicence:
-    """
-    Read the licence of the data of a data source.
-
-    Parameters
-    ----------
-    data_source : str
-        The name of the data source.
-
-    Returns
-    -------
-    DataSourceLicence
-        The licence, from the YAML file of the data source.
-    """
-    return _read_data_source_file(data_source).licence
-
-
 def read_compilation_level(data_source: str) -> int:
     """
     Read how far a data source is from the system operators.

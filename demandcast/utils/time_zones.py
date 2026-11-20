@@ -4,10 +4,9 @@ License: AGPL-3.0.
 Description:
 
     This module gives the time zone of a country or subdivision. A
-    country has its only time zone, or that of its capital, and a time
-    zone given for it in the YAML files of the data sources must be
-    the same. A subdivision has the time zone given for it in those
-    files, or otherwise that of the center of its shape.
+    country has its only time zone, or that of its capital. A
+    subdivision has the time zone given for it in the YAML files of the
+    data sources, or otherwise that of the center of its shape.
 """
 
 import datetime as dt
@@ -125,9 +124,8 @@ def _get_time_zones_in_data_source(
     Get the time zones of countries and subdivisions in a data source.
 
     A subdivision takes the time zone of the YAML file of the data
-    source, which must give it. A country takes the time zone of its
-    code (see ``_get_time_zone_of_country``), which must match the one
-    of the file, if the file gives one.
+    source, and a country the time zone of its code (see
+    ``_get_time_zone_of_country``).
 
     Parameters
     ----------
@@ -140,12 +138,11 @@ def _get_time_zones_in_data_source(
         A dictionary containing the time zones of all countries and
         subdivisions defined for the specified data source.
 
-    Raises
-    ------
-    ValueError
-        If the time zone is not defined for a country or subdivision, or
-        if the time zone in the file does not match the expected time
-        zone for a country or subdivision.
+    Notes
+    -----
+    The YAML files of the data sources are checked with
+    ``utils.data_sources.DataSourceEntity``, which gives a time zone to
+    each subdivision and none to each country.
     """
     entities = utils.data_sources.read_entities_info(data_source=data_source)
 
@@ -153,24 +150,10 @@ def _get_time_zones_in_data_source(
     for entity in entities:
         entity_code = utils.data_sources.get_code_of(entity)
 
-        if "time_zone" in entity and "_" in entity_code:
-            time_zone: dt.tzinfo = pytz.timezone(entity["time_zone"])
-        elif "time_zone" not in entity and "_" not in entity_code:
-            time_zone = _get_time_zone_of_country(entity_code)
-        elif "time_zone" in entity and "_" not in entity_code:
-            time_zone = _get_time_zone_of_country(entity_code)
-            if time_zone != pytz.timezone(entity["time_zone"]):
-                raise ValueError(
-                    f"The time zone {entity['time_zone']} in "
-                    f"{data_source} for {entity_code} does "
-                    f"not match the expected time zone {time_zone}."
-                )
+        if "_" in entity_code:
+            time_zones[entity_code] = pytz.timezone(entity["time_zone"])
         else:
-            raise ValueError(
-                f"The time zone is not defined for {entity_code}."
-            )
-
-        time_zones[entity_code] = time_zone
+            time_zones[entity_code] = _get_time_zone_of_country(entity_code)
 
     return time_zones
 

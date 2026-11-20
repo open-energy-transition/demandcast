@@ -235,7 +235,7 @@ def test_download_historical_gridded_population_density_errors(
         )
     assert downloads == []
 
-    with pytest.raises(requests.HTTPError):
+    with pytest.raises(gridded_population.utils.fetcher.DataNotFoundError):
         gridded_population._download_historical_gridded_population_density(
             str(tmp_path), 2015
         )

@@ -52,17 +52,7 @@ GDP_LEVELS = {
     "High income": (60000, float("inf")),
 }
 
-# The names of the continents.
-CONTINENT_NAMES = {
-    "AF": "Africa",
-    "AS": "Asia",
-    "EU": "Europe",
-    "NA": "North America",
-    "SA": "South America",
-    "OC": "Oceania",
-}
-
-# The colors of the continents.
+# The colors of the continents, in the order of the legend.
 COLORS = {
     "AF": TAILWIND_COLORS_HEX.VIOLET_900,
     "AS": TAILWIND_COLORS_HEX.GREEN_800,
@@ -70,6 +60,12 @@ COLORS = {
     "NA": TAILWIND_COLORS_HEX.PINK_700,
     "SA": TAILWIND_COLORS_HEX.RED_350,
     "OC": TAILWIND_COLORS_HEX.CYAN_500,
+}
+
+# The names of the continents of the figure, in the order of the legend.
+CONTINENT_NAMES = {
+    continent_code: utils.codes.CONTINENT_NAMES[continent_code]
+    for continent_code in COLORS
 }
 
 
@@ -127,15 +123,20 @@ def _get_year_fractions(
     return fractions_of_years
 
 
-def _get_electricity_demand_per_capita(
+def _get_per_capita_data(
+    data_per_capita: pd.DataFrame,
     codes: list[str],
     years_of_interest: dict[str, list[int]],
 ) -> dict[str, dict[str, pd.Series]]:
     """
-    Get the electricity demand per capita data.
+    Get the data per capita of the country of each code.
 
     Parameters
     ----------
+    data_per_capita : pandas.DataFrame
+        The historical data per capita, such as the GDP PPP or the
+        annual electricity demand per capita, with a row for each ISO
+        alpha-3 code and a column for each year.
     codes : list[str]
         A list of ISO alpha-3 or a combination of ISO alpha-3 and
         subdivision codes.
@@ -146,87 +147,23 @@ def _get_electricity_demand_per_capita(
     Returns
     -------
     dict[str, dict[str, pandas.Series]]
-        The annual electricity demand per capita of the country of each
-        code, in the years of interest of the code, by code and by ISO
-        alpha-3 code of its country.
-    """
-    electricity_demand_per_capita = (
-        retrievals.annual_electricity_demand_per_capita.get_historical_data()
-    )
-
-    electricity_demand_data: dict[str, dict[str, pd.Series]] = {}
-
-    for code in codes:
-        iso_alpha_3_code = code.split("_")[0]
-
-        electricity_demand_per_capita_of_country = cast(
-            pd.Series, electricity_demand_per_capita.loc[iso_alpha_3_code]
-        )
-
-        electricity_demand_per_capita_of_country = (
-            electricity_demand_per_capita_of_country[
-                electricity_demand_per_capita_of_country.index.isin(
-                    years_of_interest[code]
-                )
-            ]
-        )
-
-        if iso_alpha_3_code in electricity_demand_data:
-            electricity_demand_data[iso_alpha_3_code][code] = (
-                electricity_demand_per_capita_of_country
-            )
-        else:
-            electricity_demand_data[iso_alpha_3_code] = {
-                code: electricity_demand_per_capita_of_country
-            }
-
-    return electricity_demand_data
-
-
-def _get_gdp_ppp_per_capita(
-    codes: list[str],
-    years_of_interest: dict[str, list[int]],
-) -> dict[str, dict[str, pd.Series]]:
-    """
-    Get the GDP PPP per capita data.
-
-    Parameters
-    ----------
-    codes : list[str]
-        A list of ISO alpha-3 or a combination of ISO alpha-3 and
-        subdivision codes.
-    years_of_interest : dict[str, list[int]]
-        A dictionary where the keys are entity codes and the values are
-        lists of the years of interest.
-
-    Returns
-    -------
-    gdp_data : dict[str, dict[str, pandas.Series]]
-        The GDP PPP per capita of the country of each code, in the years
+        The data per capita of the country of each code, in the years
         of interest of the code, by code and by ISO alpha-3 code of its
         country.
     """
-    gdp_ppp_per_capita = retrievals.gdp_ppp_per_capita.get_historical_data()
-
-    gdp_data: dict[str, dict[str, pd.Series]] = {}
+    data_of_codes: dict[str, dict[str, pd.Series]] = {}
 
     for code in codes:
         iso_alpha_3_code = code.split("_")[0]
 
-        gdp_ppp_per_capita_of_country = cast(
-            pd.Series, gdp_ppp_per_capita.loc[iso_alpha_3_code]
+        data_of_country = cast(
+            pd.Series, data_per_capita.loc[iso_alpha_3_code]
         )
-
-        gdp_ppp_per_capita_of_country = gdp_ppp_per_capita_of_country[
-            gdp_ppp_per_capita_of_country.index.isin(years_of_interest[code])
+        data_of_codes.setdefault(iso_alpha_3_code, {})[code] = data_of_country[
+            data_of_country.index.isin(years_of_interest[code])
         ]
 
-        if iso_alpha_3_code in gdp_data:
-            gdp_data[iso_alpha_3_code][code] = gdp_ppp_per_capita_of_country
-        else:
-            gdp_data[iso_alpha_3_code] = {code: gdp_ppp_per_capita_of_country}
-
-    return gdp_data
+    return data_of_codes
 
 
 def _get_occurrences(
@@ -435,10 +372,16 @@ def get_data() -> FigureData:
         code: list(fractions) for code, fractions in fractions_of_years.items()
     }
 
-    electricity_data = _get_electricity_demand_per_capita(
-        codes, available_years
+    electricity_data = _get_per_capita_data(
+        retrievals.annual_electricity_demand_per_capita.get_historical_data(),
+        codes,
+        available_years,
     )
-    gdp_data = _get_gdp_ppp_per_capita(codes, available_years)
+    gdp_data = _get_per_capita_data(
+        retrievals.gdp_ppp_per_capita.get_historical_data(),
+        codes,
+        available_years,
+    )
 
     # The first and last years of data of each country, of its own data
     # or of that of its subdivisions, among the years with both values.
@@ -717,9 +660,10 @@ def draw(data: FigureData, figure_directory: str) -> None:
         fig,
         os.path.join(
             figure_directory,
-            "data_availability_by_gpd_ppp_and_electricity_demand.png",
+            "data_availability_by_gdp_ppp_and_electricity_demand.png",
         ),
     )
+    plt.close(fig)
 
 
 def plot(figure_directory: str) -> None:

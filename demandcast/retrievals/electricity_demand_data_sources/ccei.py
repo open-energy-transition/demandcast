@@ -128,14 +128,12 @@ def get_url(code: str) -> str:
 
     variable_names = {
         "AB-AIES": ["AB", "INTERNAL_LOAD"],
-        "BC": ["BC", "LOAD"],
         "NB": ["NB", "LOAD"],
         "NL-ISLAND": ["NL", "DEMAND"],
         "NS": ["NS", "LOAD"],
         "ON": ["ON", "ONTARIO_DEMAND"],
         "PE": ["PE", "ON_ISL_LOAD"],
         "QC-INTEGRATED": ["QC", "DEMAND"],
-        "SK": ["SK", "SYSTEM_DEMAND"],
         "YT-INTEGRATED": ["YK", "TOTAL"],
     }
 

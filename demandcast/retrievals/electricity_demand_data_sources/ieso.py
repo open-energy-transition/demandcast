@@ -135,9 +135,7 @@ def download_and_extract_data_for_request(
             "Retrieving electricity demand data for the years 1994 to 2002."
         )
 
-        dataset = utils.fetcher.fetch_dataframe(
-            url, "html", read_with="requests.get"
-        )
+        dataset = utils.fetcher.fetch_dataframe(url, "csv")
 
         electricity_demand_time_series = pd.Series(
             dataset["OntarioDemand"].values,

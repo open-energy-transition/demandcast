@@ -143,11 +143,17 @@ def test_download_without_file_of_the_countries(fake_downloads, tmp_path):
 
 
 def test_download_with_an_error_of_the_server(monkeypatch):
-    """Test that an error of the World Bank is raised as such."""
+    """
+    Test that an error of the World Bank is raised after the retries.
+
+    An error 503 can be temporary, so the download is tried again, with
+    no wait in the test.
+    """
     response = requests.Response()
     response.status_code = 503
     response.url = URL.format("SP.POP.TOTL")
     monkeypatch.setattr(requests, "get", lambda *_args, **_kwargs: response)
+    monkeypatch.setattr(world_bank.utils.fetcher.time, "sleep", lambda _: None)
 
-    with pytest.raises(requests.HTTPError, match="503"):
+    with pytest.raises(ConnectionError, match="503"):
         world_bank.download("population")

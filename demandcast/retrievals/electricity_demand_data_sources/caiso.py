@@ -193,8 +193,7 @@ def download_and_extract_data_for_request(
 
     dataset = utils.fetcher.fetch_dataframe(
         url,
-        "html",
-        read_as="excel_table",
+        "excel",
     )
 
     dataset = dataset[pd.to_datetime(dataset["Date"], errors="coerce").notna()]

@@ -94,7 +94,7 @@ def download_and_extract_data_for_request(
     """
     url = get_url()
 
-    dataset = utils.fetcher.fetch_dataframe(url, "html", read_as="excel_table")
+    dataset = utils.fetcher.fetch_dataframe(url, "excel")
 
     # The columns after the date are the hours ending from 1h to 24h.
     dataset = dataset.melt(

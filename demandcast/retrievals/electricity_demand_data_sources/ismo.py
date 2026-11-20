@@ -125,8 +125,7 @@ def download_and_extract_data_for_request(
 
     dataset = utils.fetcher.fetch_dataframe(
         get_url(fiscal_year),
-        "html",
-        read_as="excel_table",
+        "excel",
         excel_kwargs={"usecols": [0, 1, 2]},
     )
 

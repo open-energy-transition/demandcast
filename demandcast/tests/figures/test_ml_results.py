@@ -37,15 +37,15 @@ def _close_figures():
 def test_plot_by_group_and_comparison(tmp_path):
     """Test that the two options are refused before any file is read."""
     with (
-        patch.object(ml_results, "_read_errors") as read_mape,
+        patch.object(ml_results, "_read_errors") as read_errors,
         pytest.raises(ValueError, match="cannot be used together"),
     ):
         ml_results.plot(str(tmp_path), "a", "b", by_group=True)
 
-    read_mape.assert_not_called()
+    read_errors.assert_not_called()
 
 
-def test_read_mape():
+def test_read_errors():
     """Test that the MAPE values are read in percent, by version."""
     groups = {"income": ["high_income"], "continent": ["AF"]}
 
@@ -104,14 +104,15 @@ def test_plot(tmp_path, compare_with_version, by_group, file_names):
 def test_plot_reads_validation_results(tmp_path):
     """Test that the MAPE files are read from the validation results."""
     with (
-        patch.object(ml_results, "_read_errors") as read_mape,
+        patch.object(ml_results, "_read_errors") as read_errors,
         patch.object(ml_results, "_read_results"),
         patch.object(ml_results, "_plot_overall"),
         patch.object(ml_results, "_plot_distribution"),
+        patch.object(ml_models.files, "read_predictions", return_value=None),
     ):
         ml_results.plot(str(tmp_path), "a")
 
-    assert read_mape.call_args.args[0] == utils.paths.get_results_folder(
+    assert read_errors.call_args.args[0] == utils.paths.get_results_folder(
         "validation"
     )
 
@@ -190,16 +191,23 @@ def test_plot_saved_results(tmp_path, case, version, title, file_name):
         title,
         file_name.removeprefix("wape_").removesuffix(".png"),
     )
-    ml_results.plot(
-        str(tmp_path), version, results_directory=str(tmp_path / case)
-    )
+    saved = []
+    save_figure = utils.figures.save_figure
+
+    def save_and_keep(fig, file_path, **kwargs):
+        """Save a figure, and keep it to check it."""
+        saved.append(fig)
+        save_figure(fig, file_path, **kwargs)
+
+    with patch.object(utils.figures, "save_figure", side_effect=save_and_keep):
+        ml_results.plot(
+            str(tmp_path), version, results_directory=str(tmp_path / case)
+        )
 
     assert (tmp_path / file_name).exists()
     # The figure of the bars and that of the distribution have the same
     # title, the second with a line on what it shows.
-    assert [
-        plt.figure(number).get_suptitle() for number in plt.get_fignums()
-    ] == [
+    assert [figure.get_suptitle() for figure in saved] == [
         title,
         f"{title}\nDistribution of the WAPE of the countries and subdivisions",
     ]
@@ -250,16 +258,19 @@ def test_plot_described_results(tmp_path, metric):
         }
     ).to_parquet(folder / "all_20261029_161733.parquet")
 
-    with patch.object(utils.figures, "save_figure"):
+    saved = []
+    with patch.object(
+        utils.figures,
+        "save_figure",
+        side_effect=lambda fig, *_, **__: saved.append(fig),
+    ):
         ml_results.plot(
             str(tmp_path),
             "xgboost_model_1",
             results_directory=str(tmp_path),
             metric=metric,
         )
-        bars, distribution = (
-            plt.figure(number) for number in plt.get_fignums()
-        )
+    bars, distribution = saved
 
     # The figure of the bars has no panel of their distribution.
     [ax] = bars.axes
@@ -507,11 +518,11 @@ def test_comparison_of_versions_with_other_codes(tmp_path, caplog):
         index=["FRA", "DEU", "ITA"],
     )
 
-    with patch.object(utils.figures, "save_figure"):
+    with patch.object(utils.figures, "save_figure") as save_figure:
         ml_results._plot_comparison(
             str(tmp_path), "a", "b", errors, (("A", "a"), ("B", "b"))
         )
 
-    bars = plt.gcf().axes[1]
+    bars = save_figure.call_args.args[0].axes[1]
     assert [label.get_text() for label in bars.get_xticklabels()] == ["FRA"]
     assert "['DEU', 'ITA']" in caplog.text

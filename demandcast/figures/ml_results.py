@@ -35,6 +35,7 @@ Description:
     entity_code and MAPE_test, so they are plotted with the MAPE.
 """
 
+import dataclasses
 import logging
 import os
 from typing import Literal, cast
@@ -49,6 +50,7 @@ from matplotlib.transforms import offset_copy
 
 import ml_models.files
 import ml_models.reporting
+import utils.codes
 import utils.columns
 import utils.figures
 import utils.manifest
@@ -155,7 +157,7 @@ def _read_results(
     version: str,
     name: str,
     file_path: str | None = None,
-) -> pd.DataFrame:
+) -> ml_models.files.Results:
     """
     Read the results of each country and subdivision of a version.
 
@@ -174,10 +176,10 @@ def _read_results(
 
     Returns
     -------
-    pandas.DataFrame
-        The results of each country and subdivision, indexed by their
-        code, checked against their manifest: only the column "Testing
-        MAPE" for an earlier version.
+    ml_models.files.Results
+        The results, checked against their manifest, with those of each
+        country and subdivision indexed by their code: only the column
+        "Testing MAPE", and no manifest, for an earlier version.
 
     Raises
     ------
@@ -186,11 +188,16 @@ def _read_results(
     """
     legacy_path = os.path.join(results_directory, version, f"{name}.csv")
     if os.path.exists(legacy_path):
-        return pd.read_csv(
+        return ml_models.files.Results(
             legacy_path,
-            usecols=["entity_code", "MAPE_test"],
-            index_col="entity_code",
-        ).rename(columns={"MAPE_test": "Testing MAPE"})
+            pd.read_csv(
+                legacy_path,
+                usecols=["entity_code", "MAPE_test"],
+                index_col="entity_code",
+            ).rename(columns={"MAPE_test": "Testing MAPE"}),
+            None,
+            None,
+        )
     file_path = file_path or ml_models.files.find_latest_results(
         results_directory, version, name
     )
@@ -200,27 +207,29 @@ def _read_results(
             f"{results_directory}: no with_{version}/*/{name}_*.parquet, "
             f"and no {version}/{name}.csv."
         )
-    return (
-        ml_models.files.read_results(file_path)
-        .results.set_index(utils.columns.ENTITY_CODE)
-        .rename_axis("entity_code")
+    results = ml_models.files.read_results(file_path)
+    return dataclasses.replace(
+        results,
+        results=results.results.set_index(
+            utils.columns.ENTITY_CODE
+        ).rename_axis("entity_code"),
     )
 
 
-def _read_testing_error(
-    results_directory: str,
+def _get_testing_error(
+    results: pd.DataFrame,
     version: str,
     name: str,
     metric: Literal["WAPE", "MAPE"],
-    file_path: str | None = None,
 ) -> pd.Series:
     """
-    Read the testing error of each country and subdivision of a version.
+    Get the testing error of each country and subdivision of a version.
 
     Parameters
     ----------
-    results_directory : str
-        The folder of the results, such as that of the validations.
+    results : pandas.DataFrame
+        The results of each country and subdivision, indexed by their
+        code (see _read_results).
     version : str
         The trained model, or the algorithm of a cross-validation, or
         the folder of the MAPE files of an earlier version.
@@ -228,9 +237,6 @@ def _read_testing_error(
         The name of the results: "all", or the name of a group.
     metric : str
         The metric of the error, "WAPE" or "MAPE".
-    file_path : str | None, optional
-        The Parquet file of the results, by default the latest of the
-        version and name.
 
     Returns
     -------
@@ -244,7 +250,6 @@ def _read_testing_error(
         If the results have no error of the metric, such as the WAPE
         of an earlier version.
     """
-    results = _read_results(results_directory, version, name, file_path)
     column = f"Testing {metric}"
     if column not in results:
         raise ValueError(
@@ -261,7 +266,7 @@ def _read_errors(
     by_group: bool,
     groups: dict[str, list[str]],
     metric: Literal["WAPE", "MAPE"],
-    file_path: str | None = None,
+    results: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """
     Read the testing errors of the versions, in percent.
@@ -282,9 +287,9 @@ def _read_errors(
         Dictionary mapping case names to their respective groups.
     metric : str
         The metric of the errors, "WAPE" or "MAPE".
-    file_path : str | None, optional
-        The Parquet file of the results of the version, by default the
-        latest.
+    results : pandas.DataFrame | None, optional
+        The results "all" of the version, indexed by their code (see
+        _read_results), by default the latest.
 
     Returns
     -------
@@ -293,22 +298,30 @@ def _read_errors(
         column "<version>_<name>" for each version and results, with
         the codes of any of them.
     """
+    if results is None:
+        results = _read_results(results_directory, version, "all").results
     columns = {
-        f"{version}_all": _read_testing_error(
-            results_directory, version, "all", metric, file_path
-        )
+        f"{version}_all": _get_testing_error(results, version, "all", metric)
     }
 
     if compare_with_version is not None:
-        columns[f"{compare_with_version}_all"] = _read_testing_error(
-            results_directory, compare_with_version, "all", metric
+        columns[f"{compare_with_version}_all"] = _get_testing_error(
+            _read_results(
+                results_directory, compare_with_version, "all"
+            ).results,
+            compare_with_version,
+            "all",
+            metric,
         )
 
     if by_group:
         for case_groups in groups.values():
             for group in case_groups:
-                columns[f"{version}_{group}"] = _read_testing_error(
-                    results_directory, version, group, metric
+                columns[f"{version}_{group}"] = _get_testing_error(
+                    _read_results(results_directory, version, group).results,
+                    version,
+                    group,
+                    metric,
                 )
 
     return pd.concat(columns, axis=1) * 100
@@ -649,7 +662,7 @@ def _plot_best_and_worst(
     )
     _add_grid(fig)
     utils.figures.save_figure(
-        plt.gcf(),
+        fig,
         os.path.join(
             figure_directory, f"wape_{description[1]}_best_and_worst.png"
         ),
@@ -770,7 +783,7 @@ def _add_explanatory_text(
 def _plot_overall(
     figure_directory: str,
     version: str,
-    mape: pd.DataFrame,
+    errors: pd.DataFrame,
     description: tuple[str, str],
     metric: Literal["WAPE", "MAPE"] = "MAPE",
     unseen: pd.Series | None = None,
@@ -785,7 +798,7 @@ def _plot_overall(
         The directory where the figure will be saved.
     version : str
         The version of the ML model whose results are to be plotted.
-    mape : pandas.DataFrame
+    errors : pandas.DataFrame
         The errors of each country and subdivision, in percent.
     description : tuple[str, str]
         The title of the version and the part of the name of the file
@@ -805,15 +818,15 @@ def _plot_overall(
     otherwise overlap. The legend has the hatches of the figure, in the
     same order in every figure.
     """
-    mape_to_plot = mape.dropna(subset=[f"{version}_all"]).sort_values(
+    errors_to_plot = errors.dropna(subset=[f"{version}_all"]).sort_values(
         by=f"{version}_all"
     )
 
     fig, ax = plt.subplots(
-        figsize=(_get_figure_width(len(mape_to_plot)), 6),
+        figsize=(_get_figure_width(len(errors_to_plot)), 6),
         layout="constrained",
     )
-    _add_bar_plot(ax, mape_to_plot[f"{version}_all"], unseen, small)
+    _add_bar_plot(ax, errors_to_plot[f"{version}_all"], unseen, small)
     name, abbreviation = METRIC_NAMES[metric].removesuffix(")").split(" (")
     ax.set_ylabel(
         f"{name}\n({abbreviation}, %)",
@@ -836,7 +849,7 @@ def _plot_overall(
                 f"Mean demand {get_size_class_labels()['Small']}",
             ),
         )
-        if flags is not None and flags.reindex(mape_to_plot.index).any()
+        if flags is not None and flags.reindex(errors_to_plot.index).any()
     ]
     if handles:
         ax.legend(
@@ -848,18 +861,19 @@ def _plot_overall(
 
     _add_grid(fig)
     utils.figures.save_figure(
-        plt.gcf(),
+        fig,
         os.path.join(
             figure_directory, f"{metric.lower()}_{description[1]}.png"
         ),
     )
+    plt.close(fig)
 
 
 def _plot_comparison(
     figure_directory: str,
     version: str,
     compare_with_version: str,
-    mape: pd.DataFrame,
+    errors: pd.DataFrame,
     descriptions: tuple[tuple[str, str], tuple[str, str]],
     metric: Literal["WAPE", "MAPE"] = "MAPE",
 ) -> None:
@@ -875,7 +889,7 @@ def _plot_comparison(
     compare_with_version : str
         The version of the ML model whose results are to be considered
         in the comparison.
-    mape : pandas.DataFrame
+    errors : pandas.DataFrame
         The errors of each country and subdivision, in percent.
     descriptions : tuple[tuple[str, str], tuple[str, str]]
         The title and the part of the name of the file of each version
@@ -890,15 +904,15 @@ def _plot_comparison(
     versions are compared, and the others are logged.
     """
     columns = [f"{version}_all", f"{compare_with_version}_all"]
-    left_out = mape.index[mape[columns].isna().any(axis=1)]
+    left_out = errors.index[errors[columns].isna().any(axis=1)]
     if len(left_out) > 0:
         logging.warning(
             f"The codes {sorted(left_out)} have no error in one of the "
             "versions and are left out of the comparison."
         )
-    mape_to_plot = mape[columns].dropna().sort_values(by=f"{version}_all")
+    errors_to_plot = errors[columns].dropna().sort_values(by=f"{version}_all")
 
-    width = _get_figure_width(len(mape_to_plot))
+    width = _get_figure_width(len(errors_to_plot))
     fig, axs = plt.subplots(
         1,
         2,
@@ -911,8 +925,8 @@ def _plot_comparison(
     _add_box_and_bar_plot(
         [axs[0], axs[1]],
         [
-            mape_to_plot[f"{version}_all"],
-            mape_to_plot[f"{compare_with_version}_all"],
+            errors_to_plot[f"{version}_all"],
+            errors_to_plot[f"{compare_with_version}_all"],
         ],
         fontsize=7.0,
     )
@@ -925,19 +939,20 @@ def _plot_comparison(
 
     _add_grid(fig)
     utils.figures.save_figure(
-        plt.gcf(),
+        fig,
         os.path.join(
             figure_directory,
             f"{metric.lower()}_{descriptions[0][1]}_vs_"
             f"{descriptions[1][1]}.png",
         ),
     )
+    plt.close(fig)
 
 
 def _plot_by_group(
     figure_directory: str,
     version: str,
-    mape: pd.DataFrame,
+    errors: pd.DataFrame,
     groups: dict[str, list[str]],
     description: tuple[str, str],
     metric: Literal["WAPE", "MAPE"] = "MAPE",
@@ -951,7 +966,7 @@ def _plot_by_group(
         The directory where the figure will be saved.
     version : str
         The version of the ML model whose results are to be plotted.
-    mape : pandas.DataFrame
+    errors : pandas.DataFrame
         The errors of each country and subdivision, in percent.
     groups : dict[str, list[str]]
         Dictionary mapping case names to their respective groups.
@@ -965,12 +980,7 @@ def _plot_by_group(
         "lower_middle_income": "Lower middle income",
         "upper_middle_income": "Upper middle income",
         "high_income": "High income",
-        "AF": "Africa",
-        "AS": "Asia",
-        "EU": "Europe",
-        "OC": "Oceania",
-        "NA": "North America",
-        "SA": "South America",
+        **utils.codes.CONTINENT_NAMES,
     }
 
     for case, case_groups in groups.items():
@@ -996,17 +1006,17 @@ def _plot_by_group(
         axs = axs.flatten()
 
         for i, group in enumerate(case_groups):
-            mape_to_plot = mape[[f"{version}_all", f"{version}_{group}"]][
-                mape[f"{version}_{group}"].notna()
+            errors_to_plot = errors[[f"{version}_all", f"{version}_{group}"]][
+                errors[f"{version}_{group}"].notna()
             ]
 
-            mape_to_plot = mape_to_plot.sort_values(by=f"{version}_all")
+            errors_to_plot = errors_to_plot.sort_values(by=f"{version}_all")
 
             _add_box_and_bar_plot(
                 [axs[3 * i], axs[3 * i + 1]],
                 [
-                    mape_to_plot[f"{version}_all"],
-                    mape_to_plot[f"{version}_{group}"],
+                    errors_to_plot[f"{version}_all"],
+                    errors_to_plot[f"{version}_{group}"],
                 ],
                 marker_size=4,
                 line_width=1.5,
@@ -1037,12 +1047,13 @@ def _plot_by_group(
 
         _add_grid(fig)
         utils.figures.save_figure(
-            plt.gcf(),
+            fig,
             os.path.join(
                 figure_directory,
                 f"{metric.lower()}_{description[1]}_by_{case}.png",
             ),
         )
+        plt.close(fig)
 
 
 def _format_load(load: float) -> str:
@@ -1219,12 +1230,13 @@ def _plot_distribution(
 
     _add_grid(fig)
     utils.figures.save_figure(
-        plt.gcf(),
+        fig,
         os.path.join(
             figure_directory,
             f"{metric.lower()}_{description[1]}_distribution.png",
         ),
     )
+    plt.close(fig)
 
 
 def plot(
@@ -1287,6 +1299,7 @@ def plot(
             "The by_group and compare_with_version arguments cannot be "
             "used together."
         )
+    checked = _read_results(results_directory, version, "all", results_file)
     errors = _read_errors(
         results_directory,
         version,
@@ -1294,7 +1307,7 @@ def plot(
         by_group,
         groups,
         metric,
-        results_file,
+        checked.results,
     )
     description = describe_version(results_directory, version, results_file)
     if by_group:
@@ -1314,9 +1327,7 @@ def plot(
             metric,
         )
     else:
-        results = _read_results(
-            results_directory, version, "all", results_file
-        )
+        results = checked.results
         unseen = (
             ~results["Seen in training"].astype(bool)
             if "Seen in training" in results
@@ -1337,13 +1348,8 @@ def plot(
             small,
         )
         _plot_distribution(figure_directory, results, description, metric)
-        file_path = results_file or ml_models.files.find_latest_results(
-            results_directory, version
-        )
-        if metric == "WAPE" and file_path is not None:
-            predictions = ml_models.files.read_predictions(
-                ml_models.files.read_results(file_path)
-            )
+        if metric == "WAPE":
+            predictions = ml_models.files.read_predictions(checked)
             if predictions is not None:
                 _plot_best_and_worst(
                     figure_directory,

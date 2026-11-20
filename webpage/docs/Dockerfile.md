@@ -1,6 +1,6 @@
 # Docker
 
-DemandCast provides a Dockerfile to build an image with Python, the locked dependencies and the DemandCast code, so that the scripts run the same way on every system.
+DemandCast provides a Dockerfile to build an image with Python, the locked dependencies and the DemandCast code, so that the scripts run the same way on every system, and publishes the image.
 
 ## Prerequisites
 
@@ -13,6 +13,31 @@ Check that Docker is installed and running:
 
 ```bash
 docker --version
+```
+
+## Using the published image
+
+Each push to `main` and each release publishes the image to the GitHub Container Registry as `ghcr.io/open-energy-transition/demandcast-demandcast`, with these tags:
+
+- `latest` and `main`: the latest commit of `main`;
+- the version of each release, such as `2.0.0` for the release `v2.0.0`, and `2.0` and `2` for the latest release of its minor and major versions;
+- `sha-<commit>`: a commit, by the first seven characters of its hash.
+
+To run a script with the image of a release:
+
+```bash
+docker pull ghcr.io/open-energy-transition/demandcast-demandcast:2.0.0
+docker run --rm ghcr.io/open-energy-transition/demandcast-demandcast:2.0.0 uv run retrieve.py
+```
+
+The options of [running the container](#running-the-container) apply with the name of the published image in place of `demandcast`. The image has the dependencies without the optional `lstm` extra, so it does not train or run the LSTM model: for it, add `--extra lstm` to the `uv sync` command of the Dockerfile and [build the image](#building-the-image).
+
+The image is scanned for vulnerabilities before it is published, and is not published if it has one of high or critical severity that has a fix. It is signed with [cosign](https://docs.sigstore.dev/cosign/) without a key, by the GitHub workflow that builds it, and comes with an attestation of its provenance and a software bill of materials. To check the signature:
+
+```bash
+cosign verify ghcr.io/open-energy-transition/demandcast-demandcast:2.0.0 \
+  --certificate-identity-regexp '^https://github.com/open-energy-transition/demandcast/\.github/workflows/docker-publish\.yml@' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
 ## Building the image

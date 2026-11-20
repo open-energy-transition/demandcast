@@ -734,7 +734,7 @@ def _calculate_load_fraction(merged_dataset: pd.DataFrame) -> pd.DataFrame:
     return merged_dataset
 
 
-def run_data_assemply(
+def run_data_assembly(
     target_use: str,
     file: str | None = None,
     start_year: int | None = None,
@@ -936,7 +936,7 @@ def main(config: ConfigModel) -> None:
     utils.config.set_up_logging("assembly_of_retrieved_data")
     utils.config.log_configuration(config)
 
-    run_data_assemply(
+    run_data_assembly(
         config.target_use,
         config.file,
         config.start_year,

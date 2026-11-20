@@ -26,6 +26,17 @@ EXTRA_ENTITIES = {
     },
 }
 
+# The names of the continent codes of config/continents.yaml.
+CONTINENT_NAMES = {
+    "AF": "Africa",
+    "AN": "Antarctica",
+    "AS": "Asia",
+    "EU": "Europe",
+    "NA": "North America",
+    "OC": "Oceania",
+    "SA": "South America",
+}
+
 
 def get_iso_alpha_2_code(iso_alpha_3_code: str) -> str:
     """
@@ -74,7 +85,7 @@ def _read_continent_codes() -> dict[str, str]:
         return yaml.safe_load(file)["continents"]
 
 
-def get_name_from_code(code: str) -> str:  # noqa: C901
+def get_name_from_code(code: str) -> str:
     """
     Get the name of a country or subdivision from its code.
 
@@ -99,16 +110,10 @@ def get_name_from_code(code: str) -> str:  # noqa: C901
     A subdivision takes its name from the YAML file of the first data
     source that has it, or else from pycountry.
     """
-    if "_" not in code and "-" not in code:
-        iso_alpha_3_code = code
-    elif "_" in code:
-        iso_alpha_3_code = code.split("_", maxsplit=1)[0]
-    else:
-        iso_alpha_3_code = code.split("-", maxsplit=1)[0]
-
+    iso_alpha_3_code = code.split("_", maxsplit=1)[0]
     iso_alpha_2_code = get_iso_alpha_2_code(iso_alpha_3_code)
 
-    if "_" not in code and "-" not in code:
+    if "_" not in code:
         if iso_alpha_3_code in EXTRA_ENTITIES:
             name = EXTRA_ENTITIES[iso_alpha_3_code]["name"]
         else:
@@ -122,17 +127,12 @@ def get_name_from_code(code: str) -> str:  # noqa: C901
                 data_source=data_source
             )
             for entity in entities:
-                if utils.data_sources.get_code_of(entity) == code.replace(
-                    "-", "_"
-                ):
+                if utils.data_sources.get_code_of(entity) == code:
                     name = entity["subdivision_name"]
                     break
 
         else:
-            if "_" in code:
-                subdivision_code = iso_alpha_2_code + "-" + code.split("_")[1]
-            else:
-                subdivision_code = iso_alpha_2_code + "-" + code.split("-")[1]
+            subdivision_code = iso_alpha_2_code + "-" + code.split("_")[1]
 
             subdivision = pycountry.subdivisions.get(code=subdivision_code)
 

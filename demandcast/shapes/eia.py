@@ -409,7 +409,9 @@ def build(
     return {"cuts": cuts, "subdivisions": subdivisions}
 
 
-def _wrap(text: str, indent: str) -> list[str]:
+def _wrap(
+    text: str, indent: str, first_indent: str | None = None
+) -> list[str]:
     """
     Wrap a text at its spaces into lines of at most 79 characters.
 
@@ -418,22 +420,25 @@ def _wrap(text: str, indent: str) -> list[str]:
     text : str
         The text.
     indent : str
-        The indentation of each line.
+        The indentation of each line after the first.
+    first_indent : str, optional
+        The indentation of the first line, `indent` if not given.
 
     Returns
     -------
     list[str]
-        The lines.
+        The lines, with their indentation.
     """
+    prefix = indent if first_indent is None else first_indent
     lines, line = [], ""
     for word in text.split(" "):
         longer = f"{line} {word}" if line else word
-        if line and len(indent) + len(longer) > 79:
-            lines.append(indent + line)
-            line = word
+        if line and len(prefix) + len(longer) > 79:
+            lines.append(prefix + line)
+            line, prefix = word, indent
         else:
             line = longer
-    return [*lines, indent + line]
+    return [*lines, prefix + line]
 
 
 def _quote(text: str) -> str:
@@ -464,6 +469,12 @@ def write(new: dict[str, dict]) -> None:
     new : dict[str, dict]
         The cuts and the definitions of the regions, from `build`.
 
+    Raises
+    ------
+    ValueError
+        If the file has keys that this function does not write, which
+        rewriting the file would drop.
+
     Notes
     -----
     The definitions of the regions replace the earlier ones, and the
@@ -477,6 +488,25 @@ def write(new: dict[str, dict]) -> None:
             break
         header.append(line)
     data = yaml.safe_load(text)
+    unknown = [
+        *(set(data) - {"cuts", "subdivisions"}),
+        *(
+            f"{key}: {field}"
+            for key, cut in data["cuts"].items()
+            for field in set(cut) - {"description", "polygon"}
+        ),
+        *(
+            f"{code}: {field}"
+            for code, subdivision in data["subdivisions"].items()
+            for field in set(subdivision)
+            - {"name", "standard_subdivisions", "cuts"}
+        ),
+    ]
+    if unknown:
+        raise ValueError(
+            f"{SUBDIVISIONS_FILE} has keys that would be dropped: "
+            + ", ".join(sorted(unknown))
+        )
     data["subdivisions"].update(new["subdivisions"])
     data["cuts"].update(new["cuts"])
     used = {
@@ -487,12 +517,14 @@ def write(new: dict[str, dict]) -> None:
     lines = [*header, "", "cuts:"]
     for key in sorted(used):
         cut = data["cuts"][key]
-        description = _wrap(
-            f"description: {_quote(cut['description'])}", "    "
-        )
-        lines += [f"  {key}:", description[0]]
-        lines += ["  " + line for line in description[1:]]
-        lines += ["    polygon: >-", *_wrap(cut["polygon"], "      ")]
+        lines += [
+            f"  {key}:",
+            *_wrap(
+                f"description: {_quote(cut['description'])}", "      ", "    "
+            ),
+            "    polygon: >-",
+            *_wrap(cut["polygon"], "      "),
+        ]
     lines += ["", "subdivisions:"]
     for code in sorted(data["subdivisions"]):
         subdivision = data["subdivisions"][code]

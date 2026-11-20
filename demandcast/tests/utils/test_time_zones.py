@@ -174,8 +174,8 @@ def test_time_zones_errors():
     """
     Test if the time zone functions handle errors correctly.
 
-    Invalid codes, missing time zones, and conflicting time zones in
-    several yaml files raise errors.
+    Invalid codes, codes in no data source, and conflicting time zones
+    in several yaml files raise errors.
     """
     # Test if invalid codes raise errors.
     with pytest.raises(ValueError, match="is not recognized or not available"):
@@ -190,52 +190,9 @@ def test_time_zones_errors():
         "Europe/Belgrade"
     )
 
-    # Define a sample yaml file content with invalid time zone.
-    entity_with_invalid_time_zone = [
-        {
-            "country_name": "France",
-            "country_code": "FRA",
-            "start_date": dt.date(2014, 12, 15).isoformat(),
-            "end_date": "today",
-            "time_zone": "America/Chicago",
-        }
-    ]
-
-    with (
-        pytest.raises(
-            ValueError, match="does not match the expected time zone"
-        ),
-        patch(
-            "utils.data_sources.read_entities_info",
-            return_value=entity_with_invalid_time_zone,
-        ),
-    ):
-        utils.time_zones._get_time_zones_in_data_source("dummy_data_source")
-
-    # Define sample yaml file content with missing time zone.
-    entity_with_missing_time_zone = [
-        {
-            "subdivision_name": "Texas",
-            "subdivision_code": "TEX",
-            "country_name": "United States",
-            "country_code": "USA",
-            "start_date": dt.date(2020, 1, 1).isoformat(),
-            "end_date": "today",
-        }
-    ]
-
-    with (
-        pytest.raises(ValueError, match="The time zone is not defined"),
-        patch(
-            "utils.data_sources.read_entities_info",
-            return_value=entity_with_missing_time_zone,
-        ),
-    ):
-        utils.time_zones._get_time_zones_in_data_source("dummy_data_source")
-
     # Check if the function raises errors when the code is not found in
-    # any data source, the time zone is not found, or there are
-    # conflicting time zones in multiple yaml files.
+    # any data source, or there are conflicting time zones in multiple
+    # yaml files.
     with (
         patch(
             "utils.data_sources.get_data_sources_of"

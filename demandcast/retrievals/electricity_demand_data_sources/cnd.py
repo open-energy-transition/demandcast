@@ -85,7 +85,7 @@ def download_and_extract_data_for_request(
     """
     url = get_url()
 
-    dataset = utils.fetcher.fetch_dataframe(url, "html", read_as="excel_table")
+    dataset = utils.fetcher.fetch_dataframe(url, "excel")
 
     electricity_demand_time_series = pd.Series(
         dataset["Carga Real"].values,
