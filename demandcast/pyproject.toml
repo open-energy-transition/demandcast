@@ -87,7 +87,15 @@ warn_redundant_casts = true
 
 [[tool.mypy.overrides]]
 # Libraries without type information.
-module = ["cartopy.*", "cdsapi", "cpi", "nepali_datetime", "sklearn.*"]
+module = [
+    "cartopy.*",
+    "cdsapi",
+    "cpi",
+    "nepali_datetime",
+    "rasterio",
+    "rasterio.*",
+    "sklearn.*",
+]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

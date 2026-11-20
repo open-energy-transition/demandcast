@@ -162,8 +162,8 @@ def test_get_total_value_from_gridded_data():
     # first future year cover the selected years, and that the values
     # are interpolated between them.
     assert mock_aggregate.call_args_list == [
-        call(variable, code, 2030, scenario=None),
-        call(variable, code, 2035, scenario=scenario),
+        call(variable, code, 2030, None),
+        call(variable, code, 2035, scenario),
     ]
     assert isinstance(result, pd.Series)
     assert result.name == "GDP PPP"
@@ -254,3 +254,42 @@ def test_get_total_value_from_gridded_data_keeps_the_years_given():
 
     assert available_years == [2010, 2000, 2005]
     assert list(result.index) == [2000, 2001, 2002, 2003, 2004, 2005]
+
+
+def test_total_value_at_native_resolution():
+    """
+    Test that the population can be summed at the native resolution.
+
+    The totals come from the global grids, and the GDP PPP cannot be
+    summed so.
+    """
+    with patch(
+        "retrievals.gridded_population.get_total_in_shape",
+        side_effect=[100.0, 200.0],
+    ) as get_total_in_shape:
+        result = retrievals.gridded_totals.get_total_value_from_gridded_data(
+            "population",
+            "XYZ",
+            [2001],
+            [2000, 2005],
+            at_native_resolution=True,
+        )
+
+    assert get_total_in_shape.call_args_list == [
+        call("XYZ", 2000, None),
+        call("XYZ", 2005, None),
+    ]
+    assert result.to_dict() == pytest.approx(
+        {
+            2000: 100.0,
+            2001: 120.0,
+            2002: 140.0,
+            2003: 160.0,
+            2004: 180.0,
+            2005: 200.0,
+        }
+    )
+    with pytest.raises(ValueError, match="Only the population"):
+        retrievals.gridded_totals.get_total_value_from_gridded_data(
+            "gdp_ppp", "XYZ", [2001], [2000, 2005], at_native_resolution=True
+        )
