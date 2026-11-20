@@ -159,3 +159,119 @@ def test_bounds_of_a_dataset_and_of_a_missing_grid(tmp_path):
     with xarray.open_dataset(file_path) as saved:
         assert retrievals.gridded.BOUNDS_KEY in saved.attrs
     assert retrievals.gridded.is_current(file_path, "FRA")
+
+
+def test_grids_of_several_codes_are_processed_and_saved(tmp_path, monkeypatch):
+    """
+    Test the grids of several codes, each cut to its own bounds.
+
+    The processing gets the bounds of the shape of each code, the grid
+    saved is the processed one, and a file that is not up to date is
+    extracted again although it records the current bounds.
+    """
+    bounds_of = {"FRA": [0.0, 0.0, 2.0, 1.0], "DEU": [3.0, 2.0, 5.0, 5.0]}
+    monkeypatch.setattr(
+        utils.shapes, "get_entity_shape", lambda code, **_: code
+    )
+    monkeypatch.setattr(
+        utils.shapes, "get_entity_bounds", lambda code: bounds_of[code]
+    )
+    processed: list[list[float]] = []
+
+    def process(grid, bounds):
+        """
+        Record the bounds and double the grid.
+
+        Returns
+        -------
+        xarray.DataArray
+            The grid, doubled.
+        """
+        processed.append(bounds)
+        return grid * 2
+
+    def extract(is_up_to_date):
+        """Extract the grids of FRA and DEU."""
+        retrievals.gridded.extract_entity_grids(
+            _global_grid(),
+            ["FRA", "DEU"],
+            lambda code: os.path.join(tmp_path, f"{code}.nc"),
+            "test",
+            process,
+            is_up_to_date,
+        )
+
+    extract(os.path.exists)
+    extract(os.path.exists)
+    assert processed == [bounds_of["FRA"], bounds_of["DEU"]]
+    extract(lambda _file_path: False)
+    assert processed == 2 * [bounds_of["FRA"], bounds_of["DEU"]]
+
+    for code, x, y in [
+        ("FRA", [0, 1, 2], [0, 1]),
+        ("DEU", [3, 4, 5], [2, 3, 4, 5]),
+    ]:
+        file_path = os.path.join(tmp_path, f"{code}.nc")
+        with xarray.open_dataarray(file_path) as grid:
+            assert grid["x"].to_numpy().tolist() == x
+            assert grid["y"].to_numpy().tolist() == y
+            assert (grid.to_numpy() == 2.0).all()
+            assert (
+                grid.attrs[retrievals.gridded.BOUNDS_KEY].tolist()
+                == (bounds_of[code])
+            )
+
+
+def test_failed_code_does_not_stop_the_others(tmp_path, monkeypatch):
+    """Test that the grids of the other codes are saved if one fails."""
+    monkeypatch.setattr(
+        utils.shapes, "get_entity_shape", lambda code, **_: code
+    )
+
+    def get_entity_bounds(code):
+        """
+        Give the bounds of FRA, and fail for the other codes.
+
+        Returns
+        -------
+        list[float]
+            The bounds of FRA.
+
+        Raises
+        ------
+        ValueError
+            For a code other than FRA.
+        """
+        if code != "FRA":
+            raise ValueError(f"No shape for {code}")
+        return [0.0, 0.0, 2.0, 2.0]
+
+    monkeypatch.setattr(utils.shapes, "get_entity_bounds", get_entity_bounds)
+
+    with pytest.raises(RuntimeError, match="1 of 2 codes: XXX"):
+        retrievals.gridded.extract_entity_grids(
+            _global_grid(),
+            ["XXX", "FRA"],
+            lambda code: os.path.join(tmp_path, f"{code}.nc"),
+            "test",
+        )
+
+    assert sorted(os.listdir(tmp_path)) == ["FRA.nc"]
+    assert retrievals.gridded.is_current(
+        os.path.join(tmp_path, "FRA.nc"), "FRA"
+    )
+
+
+@pytest.mark.usefixtures("shape_bounds")
+def test_unreadable_grid_is_extracted_again(tmp_path, caplog):
+    """Test that a grid whose file cannot be read is extracted again."""
+    file_path = os.path.join(tmp_path, "FRA.nc")
+    with open(file_path, "wb") as file:
+        file.write(b"not a NetCDF file")
+
+    extracted: list[str] = []
+    _extract(tmp_path, extracted)
+
+    assert extracted == ["FRA"]
+    assert "cannot be read, so it is retrieved again" in caplog.text
+    assert retrievals.gridded.is_current(file_path, "FRA")
