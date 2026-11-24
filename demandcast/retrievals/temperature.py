@@ -342,7 +342,7 @@ def _extract_temperature_in_local_year(
 
 
 def _get_temperature_of_points(
-    most_populous_grid_cells: xarray.DataArray,
+    most_populous_grid_cells: xarray.DataArray, year: int
 ) -> xarray.DataArray:
     """
     Get the temperature of the points of the most populous cells.
@@ -351,6 +351,8 @@ def _get_temperature_of_points(
     ----------
     most_populous_grid_cells : xarray.DataArray
         The grid cells with the largest population.
+    year : int
+        The year of the temperature data, in local time.
 
     Returns
     -------
@@ -359,6 +361,13 @@ def _get_temperature_of_points(
         the most populous cells, along the "cell" dimension, as given by
         _extract_temperature_in_most_populous_cells, at the times that
         all the points have.
+
+    Notes
+    -----
+    The points are needed until the second day of the next year in UTC,
+    when the local year has ended in every time zone, so that the saved
+    series of the earlier years are not downloaded again (see
+    retrievals.era5_points.get_point_series).
     """
     points = [
         retrievals.era5_points.get_grid_point(float(x), float(y))
@@ -369,7 +378,9 @@ def _get_temperature_of_points(
         )
     ]
     series = pd.concat(
-        retrievals.era5_points.get_points_series("temperature", points),
+        retrievals.era5_points.get_points_series(
+            "temperature", points, needed_until=pd.Timestamp(year + 1, 1, 2)
+        ),
         axis=1,
         keys=range(len(points)),
         join="inner",
@@ -467,7 +478,7 @@ def _get_temperature_in_most_populous_cells(
 
         temperature_in_most_populous_grid_cells = (
             _extract_temperature_in_local_year(
-                _get_temperature_of_points(most_populous_grid_cells)
+                _get_temperature_of_points(most_populous_grid_cells, year)
                 if temperature_data is None
                 else _extract_temperature_in_most_populous_cells(
                     temperature_data, most_populous_grid_cells

@@ -286,8 +286,12 @@ def test_points_keep_their_common_times():
         temperature.retrievals.era5_points,
         "get_points_series",
         return_value=series,
-    ):
-        points = temperature._get_temperature_of_points(cells)
+    ) as get_points_series:
+        points = temperature._get_temperature_of_points(cells, 2025)
+
+    assert get_points_series.call_args.kwargs == {
+        "needed_until": pd.Timestamp("2026-01-02")
+    }
 
     assert pd.DatetimeIndex(points["time"].to_numpy()).equals(ends[:-24])
     assert not np.isnan(points.to_numpy()).any()
@@ -322,15 +326,18 @@ def test_points_give_the_temperature_of_the_grid():
         dims=("valid_time", "y", "x"),
     )
 
-    def points_series(_variable, points):
+    def points_series(_variable, points, needed_until):
         """
         Give the series of the cells of the grid at the points.
+
+        The points are needed until the second day after the year.
 
         Returns
         -------
         list[pandas.Series]
             The series of each point.
         """
+        assert needed_until == pd.Timestamp("2025-01-02")
         return [
             grid.sel(x=longitude, y=latitude).to_series()
             for longitude, latitude in points
