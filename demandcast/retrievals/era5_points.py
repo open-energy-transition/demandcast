@@ -14,12 +14,13 @@ Description:
 
     The series of each point is saved in the raw folder of the gridded
     weather, in points/. It is downloaded again from 120 days before its
-    last hour, once a day at most, when the CDS may have later hours:
-    the preliminary data of the last months (ERA5T) is replaced by the
-    final data about two to three months later. The points are
-    downloaded one at a time, since the CDS rejects the requests beyond
-    a few queued at the same time for this dataset; a rejected request
-    is sent again every minute, for up to an hour.
+    last hour, once a day at most, when the CDS may have later hours and
+    the hours that are needed reach these 120 days: the preliminary data
+    of the last months (ERA5T) is replaced by the final data about two
+    to three months later, and the earlier hours are final. The points
+    are downloaded one at a time, since the CDS rejects the requests
+    beyond a few queued at the same time for this dataset; a rejected
+    request is sent again every minute, for up to an hour.
 
     Source: https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels-timeseries
 """
@@ -186,7 +187,26 @@ def _download(
             )
 
 
-def _is_outdated(file_path: str, series: pd.Series) -> bool:
+def _get_revision_start(series: pd.Series) -> pd.Timestamp:
+    """
+    Get the first day of a saved series that is downloaded again.
+
+    Parameters
+    ----------
+    series : pandas.Series
+        The saved series.
+
+    Returns
+    -------
+    pandas.Timestamp
+        The day REVISION_DAYS before its last hour.
+    """
+    return (series.index[-1] - pd.Timedelta(days=REVISION_DAYS)).normalize()
+
+
+def _is_outdated(
+    file_path: str, series: pd.Series, needed_until: pd.Timestamp | None
+) -> bool:
     """
     Check whether the CDS may have later hours of a saved series.
 
@@ -196,12 +216,17 @@ def _is_outdated(file_path: str, series: pd.Series) -> bool:
         The file of the series.
     series : pandas.Series
         The saved series.
+    needed_until : pandas.Timestamp | None
+        The last hour that is needed, in UTC without time zone, or None
+        for all the hours of the CDS.
 
     Returns
     -------
     bool
-        Whether the series ends before the data of the CDS usually ends
-        and it was written more than a day ago.
+        Whether the series ends before the data of the CDS usually ends,
+        it was written more than a day ago, and the hours that are
+        needed reach the days that are downloaded again (see
+        _get_revision_start).
 
     Notes
     -----
@@ -213,11 +238,17 @@ def _is_outdated(file_path: str, series: pd.Series) -> bool:
     return (
         series.index[-1] < now - retrievals.gridded_weather.REANALYSIS_DELAY
         and written < now - retrievals.gridded_weather.REANALYSIS_UPDATE
+        and (
+            needed_until is None or needed_until >= _get_revision_start(series)
+        )
     )
 
 
 def get_point_series(
-    variable: str, longitude: float, latitude: float
+    variable: str,
+    longitude: float,
+    latitude: float,
+    needed_until: pd.Timestamp | None = None,
 ) -> pd.Series:
     """
     Get the hourly series of a point of the grid of ERA5.
@@ -230,28 +261,31 @@ def get_point_series(
         The longitude of a point of the grid, in degrees.
     latitude : float
         The latitude of a point of the grid, in degrees.
+    needed_until : pandas.Timestamp | None, optional
+        The last hour that is needed, in UTC without time zone. By
+        default, all the hours of the CDS are.
 
     Returns
     -------
     pandas.Series
         The hourly values from FIRST_DAY, at times in UTC without time
-        zone, downloaded if they are not saved or may be outdated.
+        zone, downloaded if they are not saved or may be outdated (see
+        _is_outdated).
     """
     file_path = _get_file_path(variable, longitude, latitude)
     saved = None
     if os.path.exists(file_path):
         saved = pd.read_parquet(file_path)[VARIABLES[variable][1]]
-        if not _is_outdated(file_path, saved):
+        if not _is_outdated(file_path, saved, needed_until):
             return saved
 
     logging.info(f"Downloading the {variable} of a point from the CDS.")
     if saved is None:
         series = _download(variable, longitude, latitude, FIRST_DAY)
     else:
-        first_day = (
-            saved.index[-1] - pd.Timedelta(days=REVISION_DAYS)
-        ).normalize()
-        latest = _download(variable, longitude, latitude, first_day)
+        latest = _download(
+            variable, longitude, latitude, _get_revision_start(saved)
+        )
         series = pd.concat([saved[saved.index < latest.index[0]], latest])
 
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -261,7 +295,9 @@ def get_point_series(
 
 
 def get_points_series(
-    variable: str, points: list[tuple[float, float]]
+    variable: str,
+    points: list[tuple[float, float]],
+    needed_until: pd.Timestamp | None = None,
 ) -> list[pd.Series]:
     """
     Get the hourly series of points of the grid of ERA5.
@@ -272,6 +308,9 @@ def get_points_series(
         The weather variable.
     points : list[tuple[float, float]]
         The longitude and latitude of each point of the grid.
+    needed_until : pandas.Timestamp | None, optional
+        The last hour that is needed, in UTC without time zone. By
+        default, all the hours of the CDS are.
 
     Returns
     -------
@@ -279,6 +318,6 @@ def get_points_series(
         The series of each point (see get_point_series).
     """
     return [
-        get_point_series(variable, longitude, latitude)
+        get_point_series(variable, longitude, latitude, needed_until)
         for longitude, latitude in points
     ]

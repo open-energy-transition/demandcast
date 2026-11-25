@@ -160,6 +160,35 @@ def test_series_is_checked_in_utc(client, monkeypatch, frozen_now):
     assert len(client.requests) == 1
 
 
+@pytest.mark.parametrize(
+    ("needed_until", "downloads"),
+    [("2025-08-21 23:00", 1), ("2025-08-22", 2), (None, 2)],
+    ids=["final hours", "revised hours", "all hours"],
+)
+def test_series_is_updated_for_the_hours_needed(
+    client, needed_until, downloads
+):
+    """
+    Test that an outdated series is updated only for the hours needed.
+
+    The series ends on 2025-12-20, so its days from 2025-08-22 are
+    downloaded again: hours needed until before them are read as saved.
+    """
+    era5_points.get_point_series("temperature", 2.25, 48.75)
+    file_path = era5_points._get_file_path("temperature", 2.25, 48.75)
+    written = pd.Timestamp("2025-12-23").timestamp()
+    os.utime(file_path, (written, written))
+
+    era5_points.get_point_series(
+        "temperature",
+        2.25,
+        48.75,
+        None if needed_until is None else pd.Timestamp(needed_until),
+    )
+
+    assert len(client.requests) == downloads
+
+
 def test_points_at_zero_degrees_have_one_file():
     """Test that -0.0 and 0.0 give the same file name."""
     longitude, latitude = era5_points.get_grid_point(-0.1, -0.1)
@@ -170,6 +199,21 @@ def test_points_at_zero_degrees_have_one_file():
     assert era5_points._get_file_path("temperature", 0.0, 0.0).endswith(
         "temperature_+0.00_+0.00.parquet"
     )
+
+
+def test_points_are_needed_until_the_same_hour():
+    """Test that the hours needed are those of every point."""
+    with patch.object(era5_points, "get_point_series") as get_point_series:
+        era5_points.get_points_series(
+            "temperature",
+            [(2.25, 48.75), (2.5, 48.75)],
+            pd.Timestamp("2025-01-02"),
+        )
+
+    assert get_point_series.call_args_list == [
+        (("temperature", 2.25, 48.75, pd.Timestamp("2025-01-02")),),
+        (("temperature", 2.5, 48.75, pd.Timestamp("2025-01-02")),),
+    ]
 
 
 def test_series_of_several_points(client):
