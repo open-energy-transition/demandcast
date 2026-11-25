@@ -29,7 +29,7 @@
 DemandCast collects hourly electricity demand, weather and socio-economic data from public sources, cleans and combines the electricity demand, and trains machine learning models that generate hourly time series of the gross electricity demand for future years, or for countries and subdivisions without data, to support energy planning studies.
 
 <!-- status:start -->
-As of 25 November 2026, DemandCast has retrieval modules for the hourly electricity demand of **46 countries and 193 subdivisions**, in 76 countries, from **46 data sources**, with about **2,169 years of data** in total since 1994, in the periods that the data sources cover, before the cleaning and the selection of the complete years for training.
+As of 25 November 2026, DemandCast has retrieval modules for the hourly electricity demand of **46 countries and 194 subdivisions**, in 76 countries, from **47 data sources**, with about **2,175 years of data** in total since 1994, in the periods that the data sources cover, before the cleaning and the selection of the complete years for training.
 <!-- status:end -->
 
 ![Countries and subdivisions for which retrieval modules of electricity demand data are available](webpage/docs/status/available_entities.png)

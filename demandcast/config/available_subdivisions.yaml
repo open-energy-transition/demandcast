@@ -531,6 +531,10 @@ entities:
     subdivision_name: Peninsular Spain
   - country_code: FRA
     country_name: France
+    subdivision_code: 20R
+    subdivision_name: Corsica
+  - country_code: FRA
+    country_name: France
     subdivision_code: CONTINENTAL
     subdivision_name: Continental France
   - country_code: GBR
