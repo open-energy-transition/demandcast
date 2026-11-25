@@ -1,0 +1,62 @@
+# Prepares the environment for the GitHub Copilot coding agent with
+# Python 3.12, uv, the project's dependencies and pre-commit hooks.
+
+name: Copilot setup steps
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/copilot-setup-steps.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/copilot-setup-steps.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  # Copilot coding agent requires the job ID copilot-setup-steps and
+  # only honours steps, permissions, runs-on, services, snapshot and
+  # timeout-minutes (up to 59).
+  copilot-setup-steps:
+    name: "Copilot setup steps"
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: "Install uv and Python"
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          python-version: "3.12"
+          cache-dependency-glob: |
+            demandcast/uv.lock
+            webpage/uv.lock
+
+      - name: "Install the dependencies"
+        working-directory: ./demandcast
+        run: uv sync --locked --extra lstm
+
+      - name: "Install the documentation dependencies"
+        working-directory: ./webpage
+        run: uv sync --locked
+
+      - name: "Cache the hook environments"
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: "Install pre-commit and hook environments"
+        run: |
+          uv tool install pre-commit==4.6.2
+          pre-commit install-hooks
