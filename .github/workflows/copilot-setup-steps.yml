@@ -59,4 +59,4 @@ jobs:
       - name: "Install pre-commit and hook environments"
         run: |
           uv tool install pre-commit==4.6.2
-          uvx pre-commit install-hooks
+          pre-commit install-hooks
