@@ -10,6 +10,8 @@ Description:
 
 import datetime as dt
 
+import cartopy.crs
+import cartopy.feature
 import geopandas
 import shapely
 
@@ -121,9 +123,16 @@ def test_plot(monkeypatch, tmp_path):
     """
     Test that the map draws each place and is saved four times.
 
-    The figures are not drawn into files, so that no map data of
-    Natural Earth is needed.
+    The land and the ocean of Natural Earth are replaced with empty
+    features, and the figures are not drawn into files, so that no map
+    data is downloaded.
     """
+    for feature in ("LAND", "OCEAN"):
+        monkeypatch.setattr(
+            map_of_available_entities.cartopy.feature,
+            feature,
+            cartopy.feature.ShapelyFeature([], cartopy.crs.PlateCarree()),
+        )
     shapes = {"X": shapely.box(0, 0, 2, 1), "X_A": shapely.box(0, 0, 1, 1)}
     monkeypatch.setattr(
         map_of_available_entities.utils.data_sources,
