@@ -877,6 +877,14 @@ entities:
     country_name: Japan
     subdivision_code: Tōhoku
     subdivision_name: Tōhoku
+  - country_code: KAZ
+    country_name: Kazakhstan
+    subdivision_code: NORTH-SOUTH
+    subdivision_name: North-South zone
+  - country_code: KAZ
+    country_name: Kazakhstan
+    subdivision_code: WEST
+    subdivision_name: West zone
   - country_code: MEX
     country_name: Mexico
     subdivision_code: BCA

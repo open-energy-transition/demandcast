@@ -220,6 +220,7 @@ FIN,Finland,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,T
 FJI,Fiji,True,1960.0,2025.0,True,2000.0,2024.0,True,1980.0,2025.0,True,True,True,True
 FLK,Falkland Islands (Malvinas),False,,,True,2000.0,2023.0,False,,,False,False,False,True
 FRA,France,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
+FRA_20R,Subdivision of France,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 FRA_CONTINENTAL,Subdivision of France,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 FRO,Faroe Islands,True,1960.0,2025.0,True,2000.0,2023.0,True,2008.0,2024.0,False,False,False,True
 FSM,"Micronesia, Federated States of",True,1960.0,2025.0,False,,,True,1990.0,2025.0,True,True,True,True
@@ -257,6 +258,7 @@ IDN_BE,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,Fa
 IDN_BT,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 IDN_GO,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 IDN_JA,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
+IDN_JAMALI,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 IDN_JB,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 IDN_JI,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 IDN_JK,Subdivision of Indonesia,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
@@ -345,6 +347,8 @@ JPN_Okinawa,Subdivision of Japan,False,,,True,1990.0,2025.0,True,1980.0,2025.0,F
 JPN_Shikoku,Subdivision of Japan,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 JPN_Tōhoku,Subdivision of Japan,False,,,True,1990.0,2025.0,True,1980.0,2025.0,False,True,True,True
 KAZ,Kazakhstan,True,1960.0,2025.0,True,1990.0,2025.0,True,1990.0,2025.0,True,True,True,True
+KAZ_NORTH-SOUTH,Subdivision of Kazakhstan,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
+KAZ_WEST,Subdivision of Kazakhstan,False,,,True,1990.0,2025.0,True,1990.0,2025.0,False,True,True,True
 KEN,Kenya,True,1960.0,2025.0,True,1990.0,2025.0,True,1980.0,2025.0,True,True,True,True
 KGZ,Kyrgyzstan,True,1960.0,2025.0,True,1990.0,2025.0,True,1990.0,2025.0,True,True,True,True
 KHM,Cambodia,True,1960.0,2025.0,True,1990.0,2025.0,True,1987.0,2025.0,True,True,True,True

@@ -1,0 +1,27 @@
+licence:
+  redistribute: false
+  terms: KOREM's website states no terms of use of its content.
+  url: https://korem.kz/en/news/planovye-i-fakticheskie-znacheniya-generacii-i-potrebleniya-subektov-bre
+definition:
+  - start_date: 2023-08-01
+    quantity: metered consumption of the participants of the balancing market
+    embedded_generation: unknown
+    network_losses: included
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The consumption of each zone is the sum of the actual consumption of the metering points of the participants of the balancing market, among which the network companies buy their losses.
+entities:
+  - subdivision_name: North-South zone
+    subdivision_code: NORTH-SOUTH
+    country_name: Kazakhstan
+    country_code: KAZ
+    start_date: 2023-08-01
+    end_date: today
+    time_zone: Asia/Almaty
+  - subdivision_name: West zone
+    subdivision_code: WEST
+    country_name: Kazakhstan
+    country_code: KAZ
+    start_date: 2023-08-01
+    end_date: today
+    time_zone: Asia/Atyrau

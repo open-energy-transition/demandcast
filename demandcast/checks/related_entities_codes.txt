@@ -157,6 +157,8 @@ JPN_Kyūshū
 JPN_Okinawa
 JPN_Shikoku
 JPN_Tōhoku
+KAZ_NORTH-SOUTH
+KAZ_WEST
 KOR
 LKA
 LTU
