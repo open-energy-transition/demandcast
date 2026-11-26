@@ -4,11 +4,18 @@ License: AGPL-3.0.
 Description:
 
     This module draws a map of the countries and subdivisions with
-    electricity demand data, colored by their years of data. The
-    countries and the standard subdivisions have the shapes of the
-    Natural Earth database. The non-standard subdivisions are made of
-    standard subdivisions, as defined in the YAML files of
-    shapes/subdivisions/ (see utils.shapes).
+    electricity demand data, with each place colored by the years of
+    all the data that covers it, so that no data hides another: the
+    data of a country covers the whole country, and that of a
+    subdivision the places inside its shape. The subdivisions of a
+    country are split into the pieces that the same subdivisions cover,
+    such as the periods of a grid whose area grew, and each piece counts
+    the days of the periods of its country and of its subdivisions,
+    without counting a day twice. The countries and the standard
+    subdivisions have the shapes of the Natural Earth database. The
+    non-standard subdivisions are made of standard subdivisions, as
+    defined in the YAML files of shapes/subdivisions/ (see
+    utils.shapes).
 """
 
 import datetime as dt
@@ -17,9 +24,11 @@ from collections.abc import Mapping
 
 import cartopy.crs
 import cartopy.feature
+import geopandas
 import matplotlib.cm
 import matplotlib.colors
 import matplotlib.pyplot as plt
+import shapely
 
 import utils.data_sources
 import utils.figures
@@ -27,6 +36,12 @@ import utils.shapes
 
 # The classes of the years of available data, with their upper bounds.
 YEAR_CLASSES = {"0-4": 5, "5-9": 10, "10-19": 20, "20+": float("inf")}
+
+# The precision of the coordinates of the pieces, in degrees, and the
+# smallest area of a piece, in square degrees, below which it is a
+# sliver of the borders of the shapes.
+GRID_SIZE = 1e-6
+MIN_PIECE_AREA = 1e-6
 
 
 def get_classes_of_years(
@@ -59,6 +74,138 @@ def get_classes_of_years(
     }
 
 
+def _keep_polygons(geometry: shapely.Geometry) -> shapely.Geometry:
+    """
+    Keep the polygons of a geometry, without its lines and points.
+
+    Parameters
+    ----------
+    geometry : shapely.Geometry
+        The geometry, such as the result of an overlay of shapes that
+        touch along a border.
+
+    Returns
+    -------
+    shapely.Geometry
+        The polygons of the geometry, as one multipolygon.
+    """
+    return shapely.MultiPolygon(
+        [
+            polygon
+            for part in shapely.get_parts(geometry)
+            for polygon in shapely.get_parts(part)
+            if isinstance(polygon, shapely.Polygon)
+        ]
+    )
+
+
+def get_pieces(
+    shapes: Mapping[str, shapely.Geometry],
+) -> list[tuple[shapely.Geometry, tuple[str, ...]]]:
+    """
+    Split shapes into the pieces that the same shapes cover.
+
+    Parameters
+    ----------
+    shapes : Mapping[str, shapely.Geometry]
+        The shape of each code, in degrees of longitude and latitude.
+
+    Returns
+    -------
+    list[tuple[shapely.Geometry, tuple[str, ...]]]
+        Each piece, with the codes of the shapes that cover it, in
+        order.
+    """
+    pieces: list[tuple[shapely.Geometry, frozenset[str]]] = []
+    for code, shape in shapes.items():
+        split = []
+        rest = _keep_polygons(shape)
+        for piece, covers in pieces:
+            for part, part_covers in (
+                (
+                    _keep_polygons(
+                        shapely.intersection(piece, rest, grid_size=GRID_SIZE)
+                    ),
+                    covers | {code},
+                ),
+                (
+                    _keep_polygons(
+                        shapely.difference(piece, shape, grid_size=GRID_SIZE)
+                    ),
+                    covers,
+                ),
+            ):
+                if shapely.area(part) > MIN_PIECE_AREA:
+                    split.append((part, part_covers))
+            rest = _keep_polygons(
+                shapely.difference(rest, piece, grid_size=GRID_SIZE)
+            )
+        if shapely.area(rest) > MIN_PIECE_AREA:
+            split.append((rest, frozenset({code})))
+        pieces = split
+    return [(piece, tuple(sorted(covers))) for piece, covers in pieces]
+
+
+def get_places(
+    periods: Mapping[str, list[tuple[dt.date, dt.date]]],
+) -> list[tuple[shapely.Geometry, list[tuple[dt.date, dt.date]]]]:
+    """
+    Get the places of the map, each with the periods that cover it.
+
+    Parameters
+    ----------
+    periods : Mapping[str, list[tuple[datetime.date, datetime.date]]]
+        The first and last days of each period of the data of each
+        country or subdivision.
+
+    Returns
+    -------
+    list[tuple[shapely.Geometry, list[tuple]]]
+        The shape of each place with data, with the union of the periods
+        of the data that covers it: the countries with data of their
+        own first, then the pieces of the subdivisions of each country
+        (see get_pieces), which the map draws over them.
+    """
+    by_country: dict[str, list[str]] = {}
+    for code in sorted(periods):
+        by_country.setdefault(code.split("_")[0], []).append(code)
+    countries = []
+    subdivisions = []
+    for country, codes in by_country.items():
+        national = list(periods.get(country, []))
+        if national:
+            countries.append(
+                (
+                    utils.shapes.get_entity_shape(
+                        country, make_plot=False
+                    ).union_all(),
+                    national,
+                )
+            )
+        shapes = {
+            code: utils.shapes.get_entity_shape(
+                code, make_plot=False
+            ).union_all()
+            for code in codes
+            if "_" in code
+        }
+        for piece, covers in get_pieces(shapes):
+            subdivisions.append(
+                (
+                    piece,
+                    utils.data_sources.merge_periods(
+                        national
+                        + [
+                            period
+                            for code in covers
+                            for period in periods[code]
+                        ]
+                    ),
+                )
+            )
+    return countries + subdivisions
+
+
 def plot(figure_directory: str) -> None:
     """
     Plot a map of the countries and subdivisions.
@@ -81,9 +228,11 @@ def plot(figure_directory: str) -> None:
     (available_entities_dark_mode.png).
     """
     periods = utils.data_sources.read_all_periods()
-    codes = utils.data_sources.read_all_codes()
+    places = get_places(
+        {code: periods[code] for code in utils.data_sources.read_all_codes()}
+    )
     classes_of_years = get_classes_of_years(
-        {code: periods[code] for code in codes}
+        {str(number): place[1] for number, place in enumerate(places)}
     )
 
     map_projection = cartopy.crs.Robinson(central_longitude=0)
@@ -95,7 +244,9 @@ def plot(figure_directory: str) -> None:
     lower_bound = 0.2
     upper_bound = 0.9
 
-    alpha = 0.8
+    # The pieces of the subdivisions are drawn over their countries,
+    # whose colors they include, so the places are drawn opaque.
+    alpha = 1.0
 
     fig, ax = plt.subplots(
         figsize=(12, 16), subplot_kw={"projection": map_projection}
@@ -115,11 +266,10 @@ def plot(figure_directory: str) -> None:
         for number in range(len(YEAR_CLASSES))
     ]
 
-    for code, class_of_years in classes_of_years.items():
-        entity_shape = utils.shapes.get_entity_shape(code, make_plot=False)
-        color = base_colors[class_of_years]
+    for number, (place, _) in enumerate(places):
+        color = base_colors[classes_of_years[str(number)]]
 
-        entity_shape.plot(
+        geopandas.GeoSeries([place], crs="EPSG:4326").plot(
             ax=ax,
             transform=data_crs,
             facecolor=color,

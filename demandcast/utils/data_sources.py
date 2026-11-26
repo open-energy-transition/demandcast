@@ -621,6 +621,31 @@ def read_date_ranges(
     return start_and_end_dates
 
 
+def merge_periods(
+    periods: list[tuple[dt.date, dt.date]],
+) -> list[tuple[dt.date, dt.date]]:
+    """
+    Merge the periods that overlap or follow each other.
+
+    Parameters
+    ----------
+    periods : list[tuple[datetime.date, datetime.date]]
+        The first and last days of each period, in any order.
+
+    Returns
+    -------
+    list[tuple[datetime.date, datetime.date]]
+        The first and last days of the union of the periods, in order.
+    """
+    merged: list[tuple[dt.date, dt.date]] = []
+    for start, end in sorted(periods):
+        if merged and start <= merged[-1][1] + dt.timedelta(days=1):
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return merged
+
+
 def read_all_periods() -> dict[str, list[tuple[dt.date, dt.date]]]:
     """
     Read the periods of the available data of each code.
@@ -641,13 +666,6 @@ def read_all_periods() -> dict[str, list[tuple[dt.date, dt.date]]]:
         ) in read_date_ranges(data_source).items():
             date_ranges.setdefault(code, []).append(date_range)
 
-    periods: dict[str, list[tuple[dt.date, dt.date]]] = {}
-    for code, ranges in date_ranges.items():
-        merged: list[tuple[dt.date, dt.date]] = []
-        for start, end in sorted(ranges):
-            if merged and start <= merged[-1][1] + dt.timedelta(days=1):
-                merged[-1] = (merged[-1][0], max(merged[-1][1], end))
-            else:
-                merged.append((start, end))
-        periods[code] = merged
-    return periods
+    return {
+        code: merge_periods(ranges) for code, ranges in date_ranges.items()
+    }
