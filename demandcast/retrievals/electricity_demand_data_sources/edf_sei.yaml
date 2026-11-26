@@ -1,0 +1,20 @@
+licence:
+  redistribute: true
+  terms: Licence Ouverte / Open Licence. Use for any purpose with attribution to the source and the date of its last update.
+  url: https://opendata-corse.edf.fr/datasets/production-d-electricite-par-filiere-et-couts-de-production-au-pas-horaire-corse
+definition:
+  - start_date: 2019-01-01
+    quantity: total generation of the island, with the imports
+    embedded_generation: unknown
+    network_losses: included
+    storage_charging: unknown
+    power_plant_use: unknown
+    note: The total of the dataset is the sum of the generation of each source of the island, among which the photovoltaic plants connected to the grid, and of the imports through the links to Sardinia and Italy.
+entities:
+  - subdivision_name: Corsica
+    subdivision_code: 20R
+    country_name: France
+    country_code: FRA
+    start_date: 2019-01-01
+    end_date: 2024-12-31
+    time_zone: Europe/Paris
