@@ -38,7 +38,7 @@ The scenarios (SSP, IAMC and CMIP6), the climate models and the years of each pr
   - `utils/`: shared helpers; CI requires at least 95% test coverage. The countries and subdivisions are in `codes.py` (ISO codes, names, continents), `data_sources.py` (the YAML registry of the data sources), `time_zones.py`, `public_holidays.py` (the public holidays of each code) and `availability.py` (the codes of interest and their data).
   - `benchmark/`: the configuration files of the data of the benchmark of the models and `run.py`, which retrieves and assembles it.
   - `tests/`: the pytest suite, in folders that mirror the code: the tests of `utils/fetcher.py` are in `tests/utils/test_fetcher.py`, and those of the scripts are at the top of `tests/`.
-- `webpage/`: the MkDocs documentation site, a separate uv project.
+- `webpage/`: the documentation site, built with Zensical, a separate uv project.
 
 ## Commands
 
@@ -49,7 +49,7 @@ uv run --extra lstm pytest                   # run the tests
 uv run --extra lstm mypy                     # check the types
 cd ..
 uvx pre-commit run --all-files               # lint, format and check everything
-cd webpage && uv run mkdocs build --strict   # build the documentation, if you changed it
+cd webpage && uv run zensical build --strict # build the documentation, if you changed it
 ```
 
 Run the tests and the pre-commit hooks before you finish: CI runs both.
