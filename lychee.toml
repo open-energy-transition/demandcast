@@ -15,3 +15,9 @@ exclude = [
   '^https://(www\.)?earthdata\.nasa\.gov/',
   '^https://data\.worldbank\.org/',
 ]
+
+# GitHub answers 503 to bursts of requests for the pages of its
+# repositories: send fewer at once, and retry them later.
+max_concurrency = 8
+max_retries = 5
+retry_wait_time = 10
