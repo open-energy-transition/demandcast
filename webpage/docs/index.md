@@ -18,112 +18,62 @@
     </a>
 </p>
 
-## About
+## What DemandCast does
 
-DemandCast collects hourly electricity demand, weather and socio-economic data from public sources, cleans and combines the electricity demand, and trains machine learning models that generate hourly time series of electricity demand for future years, or for countries and subdivisions without data, to support energy planning studies.
+DemandCast estimates how much electricity a country or region uses **in each hour of a year**. Energy planners need these hourly series to size power plants, grids and storage. Many places publish no such data, and no place publishes it for future years. DemandCast fills that gap.
 
-DemandCast models the **gross electricity demand**: the electricity consumed, whatever generation supplies it, including the part that rooftop solar and other generation embedded in the distribution networks supply. Energy system models can then represent that generation explicitly, without counting it twice. Where a data source leaves it out, DemandCast adds an estimate of it when one is published, and flags the series otherwise (see [Data Retrieval](retrieval.md#gross-demand)).
+It works in three stages:
 
-### Features
+1. **Collect** hourly electricity demand from public sources, such as grid operators, together with weather, population and economic data.
+2. **Learn** how demand depends on temperature, time of day, holidays, income and other factors, by training a machine learning model on the places that have data.
+3. **Forecast** the hourly demand of any country or subdivision, for past years without data or for future years under climate and socio-economic scenarios.
 
-- Retrieval of hourly and sub-hourly electricity demand data from public sources.
-- Retrieval of weather and socio-economic data.
-- Cleaning and quality flags of the electricity demand, and combination of the data sources of each country or subdivision into one hourly series.
-- Training and validation of machine learning models.
-- Forecasting using trained machine learning models.
-- Modular design for adding new countries or data sources.
-- A [Docker image](Dockerfile.md), published for each release, for reproducible runs.
+![How DemandCast works](figures/demandcast_illustration.png)
 
-#### Feature roadmap
+DemandCast models the **gross electricity demand**: all the electricity consumed, including the part supplied by rooftop solar and other generation inside the distribution networks. See [Electricity demand data](concepts/electricity-demand.md) for why this matters and how DemandCast handles sources that report something else.
 
-The project is in active development and we are always looking for suggestions and contributions. Below is a non-exhaustive list of planned features:
+## What you can get from it
 
-- Add support to forecast electricity demand in user-defined subnational regions.
-- Enhance model training by integrating new datasets:
-    - New countries and subdivisions with available electricity demand data,
-    - Sectoral electricity demand (agriculture, industry, transport, buildings),
-    - Adoption of EVs, air conditioning, and heat pumps.
-- Add and test new machine learning models for forecasting (e.g., [timesfm](https://github.com/google-research/timesfm)).
-- Improve validation by considering simultaneity of peaks between actual and forecast electricity demand.
-- Package the project for easier installation and usage.
+- **Ready-made forecasts.** The trained model and hourly forecasts for 184 countries and 135 subdivisions from 2000 to 2025 are on [Zenodo](https://doi.org/10.5281/zenodo.18374351). You do not need to run anything to use them.
+- **Your own forecasts.** Run DemandCast to forecast other years, places or scenarios. Start with [Install](getting-started/install.md) and [Your first forecast](getting-started/first-forecast.md).
+- **Clean historical data.** DemandCast downloads, cleans and combines the hourly demand of many public sources. The [Current state](status.md) page shows what it covers. The data itself is not redistributed, because the licences of many sources do not allow it: you retrieve it from the sources yourself.
 
-## Documentation
+## Where to start
 
-The documentation is currently hosted on GitHub pages connected to this repository. It is built with [mkdocs](https://github.com/squidfunk/mkdocs-material).
+| If you want to… | Read |
+|---|---|
+| Understand the idea and the steps | [How DemandCast works](concepts/pipeline.md) |
+| Run it for the first time | [Install](getting-started/install.md), then [Your first forecast](getting-started/first-forecast.md) |
+| Look up an unfamiliar term | [Glossary](concepts/glossary.md) |
+| Use one script | The [how-to guides](guides/retrieve.md), one per script |
+| Know which data sources exist | [Data sources](reference/data-sources.md) |
+| Change the code or add a data source | [Code architecture](reference/architecture.md) and the [contributing guidelines](https://github.com/open-energy-transition/demandcast/blob/main/CONTRIBUTING.md) |
+| Fix an error | [FAQ](help/faq.md) |
 
-To run it locally:
+## Learn more
 
-```bash
-cd webpage
-uv run mkdocs serve
-```
+- [Paper](https://arxiv.org/abs/2510.08000) presented at the [NeurIPS 2025 Workshop](https://www.climatechange.ai/papers/neurips2025/42): Tackling Climate Change with Machine Learning, with its [poster](https://s3.us-east-1.amazonaws.com/climate-change-ai/papers/neurips2025/42/poster.pdf) and [video](https://slideslive.com/39052515/demandcast-global-hourly-electricity-demand-forecasting).
+- [Awesome Electricity Demand](https://github.com/open-energy-transition/Awesome-Electricity-Demand): the list of public sources of hourly electricity demand that DemandCast draws from.
 
-Other online resources include:
+## Roadmap
 
-- [Paper](https://arxiv.org/abs/2510.08000) accepted at the [NeurIPS 2025 Workshop](https://www.climatechange.ai/papers/neurips2025/42): Tackling Climate Change with Machine Learning.
-- [Poster](https://s3.us-east-1.amazonaws.com/climate-change-ai/papers/neurips2025/42/poster.pdf) presented at the NeurIPS 2025 Workshop.
-- [Video presentation](https://slideslive.com/39052515/demandcast-global-hourly-electricity-demand-forecasting) recorded for the NeurIPS 2025 Workshop.
+DemandCast is in active development. Planned features include:
+
+- forecasts for user-defined regions inside countries;
+- more training data: new countries and subdivisions, sectoral demand (agriculture, industry, transport, buildings), and the adoption of electric vehicles, air conditioning and heat pumps;
+- new forecasting models, such as [TimesFM](https://github.com/google-research/timesfm);
+- validation that checks whether forecast and actual peaks happen at the same time;
+- packaging for easier installation.
 
 ## Contributing
 
-We welcome contributions in the form of:
+We welcome new data sources, better models, and improvements to the documentation and tests. Read the [contributing guidelines](https://github.com/open-energy-transition/demandcast/blob/main/CONTRIBUTING.md) and the [Code of Conduct](https://github.com/open-energy-transition/demandcast/blob/main/CODE_OF_CONDUCT.md) before you open a pull request. Issues labelled [good first issue](https://github.com/open-energy-transition/demandcast/labels/good%20first%20issue) are a good place to start.
 
-- Country-specific data retrieval modules
-- New or improved forecasting models
-- Documentation and testing enhancements
-
-Please read the [contributing guidelines](https://github.com/open-energy-transition/demandcast/blob/main/CONTRIBUTING.md) before opening a pull request, and follow our [Code of Conduct](https://github.com/open-energy-transition/demandcast/blob/main/CODE_OF_CONDUCT.md). Issues labelled [good first issue](https://github.com/open-energy-transition/demandcast/labels/good%20first%20issue) are a good place to start.
-
-We also would like to hear your feedback and suggestions. You can share your thoughts by completing this short [survey](https://forms.gle/nMYvCAfzbrUDjqRQ8).
-
-## How DemandCast works
-
-![DemandCast](figures/demandcast_illustration.png)
-
-The [architecture](architecture.md) page describes the scripts, the folders of the code and of the data, and how the modules depend on each other.
-
-## Data sources
-
-The table below provides an overview of the data sources currently used in DemandCast for hourly and sub-hourly electricity demand, weather, and socio-economic data for both historical and future periods.
-
-|Data type|Data sources for the historical period|Data sources for the future period|
-|---|---|---|
-|Hourly and sub-hourly<br>electricity demand|Various public sources listed in the<br>[Awesome Electricity Demand repository](https://github.com/open-energy-transition/Awesome-Electricity-Demand)| -- |
-|Temperature|[ERA5](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels)|[CMIP6](https://cds.climate.copernicus.eu/datasets/projections-cmip6)|
-|Gridded population|[SEDAC GPW v4](https://doi.org/10.7927/H49C6VHW)|[Wang X. et al. (2022)](https://doi.org/10.6084/m9.figshare.19608594)|
-|National population|[World Bank](https://data.worldbank.org/indicator/SP.POP.TOTL)|[IIASA SSP Database](https://data.ece.iiasa.ac.at/ssp)|
-|Gridded GDP, PPP|[Wang T. et al. (2022)](https://zenodo.org/records/7898409)|[Wang T. et al. (2022)](https://zenodo.org/records/7898409)|
-|National GDP per capita, PPP|[World Bank](https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD), [IMF](https://data.imf.org/en/Data-Explorer?datasetUrn=IMF.RES:WEO(6.0.0)&INDICATOR=NGDPRPPPPC)|[IIASA SSP Database](https://data.ece.iiasa.ac.at/ssp)|
-|National annual electricity<br>demand per capita|[Ember](https://ember-energy.org/data/yearly-electricity-data/), completed by the [World Bank](https://data.worldbank.org/indicator/EG.USE.ELEC.KH.PC) scaled to Ember|[IIASA SSP Database](https://tntcat.iiasa.ac.at/SspDb)|
-
-The [current state](status.md) page shows on a map the countries and subdivisions for which retrieval modules of electricity demand data are available in DemandCast, gives their numbers, shows their data by GDP and electricity demand per capita, and shows the forecast errors of the models.
-
-You can find the code that we used to retrieve the data in their respective files inside the [demandcast/retrievals](https://github.com/open-energy-transition/demandcast/tree/main/demandcast/retrievals) folder.
-
-The retrieved data is not redistributed, since the licences of many data sources do not allow it: DemandCast retrieves it from the sources, and the people who work on it share their data folders through a private bucket (see [sharing and publishing](publishing.md)). The trained model and its forecasts are published on Zenodo (see below).
-
-## Dataset of global forecasts
-
-The trained model and the forecasted hourly electricity demand of 184 countries and 135 subdivisions from 2000 to 2025 are available in this [Zenodo repository](https://doi.org/10.5281/zenodo.18374351).
-
-Forecasts for future years, including different climate models and scenarios, will be included in a future release. However, DemandCast is already capable of generating these forecasts for users who wish to produce them independently.
-
-## Getting started
-
-With [uv](https://docs.astral.sh/uv/getting-started/installation/) installed:
-
-```bash
-git clone https://github.com/open-energy-transition/demandcast.git
-cd demandcast/demandcast
-uv sync
-uv run retrieve.py  # the settings are in config/retrieve_config.yaml
-```
-
-Some data sources need API keys. The [getting started guide](getting_started.md) installs DemandCast, sets up the API keys and goes from the retrieval of the data to a forecast. To change the code, add a data source or a model, see the [contributing guidelines](https://github.com/open-energy-transition/demandcast/blob/main/CONTRIBUTING.md).
+We would also like to hear from you: share your feedback in this short [survey](https://forms.gle/nMYvCAfzbrUDjqRQ8).
 
 ## Citation
 
-If you use DemandCast in your work, please cite the [paper](https://arxiv.org/abs/2510.08000). GitHub's "Cite this repository" button, generated from [CITATION.cff](https://github.com/open-energy-transition/demandcast/blob/main/CITATION.cff), provides the reference in other formats.
+If you use DemandCast in your work, please cite the [paper](https://arxiv.org/abs/2510.08000). GitHub's "Cite this repository" button gives the reference in other formats, from [CITATION.cff](https://github.com/open-energy-transition/demandcast/blob/main/CITATION.cff).
 
 ```bibtex
 @inproceedings{steijn2025demandcast,
@@ -138,11 +88,11 @@ If you use DemandCast in your work, please cite the [paper](https://arxiv.org/ab
 
 ## Maintainers
 
-The project is maintained by the [Open Energy Transition](https://openenergytransition.org/) team. The team members currently involved in this project are:
+DemandCast is maintained by the [Open Energy Transition](https://openenergytransition.org/) team:
 
 - [Enrico Antonini](https://github.com/eantonini) (enrico.antonini at openenergytransition dot org)
 - [Vamsi Priya Goli](https://github.com/Vamsipriya22) (goli.vamsi at openenergytransition dot org)
 
 ## License
 
-This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+DemandCast is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).

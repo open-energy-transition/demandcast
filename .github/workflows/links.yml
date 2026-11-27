@@ -34,6 +34,10 @@ jobs:
         with:
           persist-credentials: false
 
+      # On pull requests, the links to the documentation site are left
+      # out: the site is that of main until the merge, so the links to
+      # the pages that a pull request adds or moves would fail. The
+      # weekly check covers them.
       - name: Check the links
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
@@ -44,6 +48,7 @@ jobs:
             AGENTS.md
             CODE_OF_CONDUCT.md
             'webpage/docs/**/*.md'
+            ${{ github.event_name == 'pull_request' && '--exclude ^https://open-energy-transition.github.io/demandcast/' || '' }}
           fail: true
           # The token avoids the rate limit of GitHub for its own links.
           token: ${{ secrets.GITHUB_TOKEN }}

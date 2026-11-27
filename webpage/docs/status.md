@@ -1,6 +1,6 @@
 # Current state
 
-This page shows, at a high level, the electricity demand data that DemandCast retrieves and the errors of the forecasts of its models. Its figures and numbers are drawn by `plot.py` with `figure: status` (see [Analyzing and plotting data](plot.md)).
+This page shows, at a high level, the electricity demand data that DemandCast retrieves and the errors of the forecasts of its models. Its figures and numbers are drawn by `plot.py` with `figure: status` (see [Plot figures](guides/plot.md)).
 
 ## Data
 
@@ -11,11 +11,11 @@ The map shows the countries and subdivisions for which retrieval modules of elec
 ![Countries and subdivisions for which retrieval modules of electricity demand data are available](status/available_entities_light_mode.png#only-light)
 ![Countries and subdivisions for which retrieval modules of electricity demand data are available](status/available_entities_dark_mode.png#only-dark)
 
-The figure below shows the years of data of the countries and subdivisions by GDP PPP per capita and by annual electricity demand per capita of their country, by continent, and how these changed in each country between its first and last year of data. It shows which kinds of countries and subdivisions the training data covers, and therefore where the models extrapolate when they forecast the demand of those without data.
+The figure below sorts the years of data by the GDP PPP per capita and the annual electricity demand per capita of their country, by continent. Its arrows show how each country moved between its first and last year of data. It tells which kinds of countries the training data covers, and so where the models extrapolate when they forecast places without data.
 
 ![Years of hourly and sub-hourly electricity demand data by GDP PPP and annual electricity demand per capita](status/data_availability_by_gdp_ppp_and_electricity_demand.png)
 
-The [data retrieval](retrieval.md) page describes the data sources, and how their data is cleaned and combined.
+The [Data sources](reference/data-sources.md) page lists the data sources, and [Electricity demand data](concepts/electricity-demand.md) explains how their data is cleaned and combined.
 
 ## Forecast errors
 
@@ -38,7 +38,7 @@ The boxes show how the errors spread: for all the countries and subdivisions, fo
 
 ![Distribution of the WAPE of the validation](status/wape_validation_distribution.png)
 
-The figure below compares the actual hourly demand with the forecast for the country or subdivision with the lowest error and for that with the highest: over a full year on the left, and on the right over its typical week, from Monday to Sunday, whose error is the median of the weeks of the year, shaded in the year. The forecast has the annual demand of the actual one, so the two differ by the error of the hourly profile, which the WAPE measures.
+The figure below compares the actual and forecast hourly demand of the country or subdivision with the lowest error and of the one with the highest. The left panels show a full year; the right panels show its typical week, Monday to Sunday, whose error is the median of the weeks of the year (shaded on the left). The forecast has the same annual demand as the actual one, so the two differ only by the hourly profile, which the WAPE measures.
 
 ![Actual and forecast hourly demand of the best and the worst country or subdivision of the validation](status/wape_validation_best_and_worst.png)
 
@@ -56,4 +56,4 @@ The figures show the error of each country and subdivision, their distribution, 
 
 ![Actual and forecast hourly demand of the best and the worst country or subdivision of the cross-validation](status/wape_cross_validation_best_and_worst.png)
 
-The [machine learning](ML.md) page describes the models and how they are validated.
+The [Models](concepts/models.md) page describes the models and how they are validated.

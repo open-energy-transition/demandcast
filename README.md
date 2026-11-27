@@ -38,7 +38,7 @@ The trained model and the forecasted hourly electricity demand of 184 countries 
 
 ## Documentation
 
-The [documentation](https://open-energy-transition.github.io/demandcast/) describes DemandCast, its data sources and its [current state](https://open-energy-transition.github.io/demandcast/status/), and has the [getting started guide](https://open-energy-transition.github.io/demandcast/getting_started/) and the [architecture](https://open-energy-transition.github.io/demandcast/architecture/) of the code. To contribute, read the [contributing guidelines](CONTRIBUTING.md).
+The [documentation](https://open-energy-transition.github.io/demandcast/) describes DemandCast, its data sources and its [current state](https://open-energy-transition.github.io/demandcast/status/), and has the [installation guide](https://open-energy-transition.github.io/demandcast/getting-started/install/) and the [architecture](https://open-energy-transition.github.io/demandcast/reference/architecture/) of the code. To contribute, read the [contributing guidelines](CONTRIBUTING.md).
 
 ## Citation
 

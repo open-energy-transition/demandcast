@@ -32,30 +32,85 @@ theme:
     - navigation.instant
     - navigation.instant.progress
     - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
     - search.highlight
     - search.suggest
-    - toc.integrate
 
 plugins:
   - privacy
   - search
+  # Earlier addresses of moved pages, which published Zenodo records and
+  # other sites link to.
+  - redirects:
+      redirect_maps:
+        getting_started.md: getting-started/first-forecast.md
+        retrieval.md: guides/retrieve.md
+        ML.md: concepts/models.md
+        plot.md: guides/plot.md
+        publishing.md: guides/publish.md
+        Dockerfile.md: guides/docker.md
+        architecture.md: reference/architecture.md
 
 repo_name: open-energy-transition/demandcast
 repo_url: https://github.com/open-energy-transition/demandcast
 
+# Broken links and anchors fail the strict build of the docs workflow.
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+# The snippets of the Current state page are included, not linked.
+not_in_nav: |
+  status/*.md
+
 nav:
-  - index.md
-  - status.md
-  - getting_started.md
-  - retrieval.md
-  - ML.md
-  - plot.md
-  - publishing.md
-  - Dockerfile.md
-  - architecture.md
+  - Home: index.md
+  - Get started:
+      - Install: getting-started/install.md
+      - Your first forecast: getting-started/first-forecast.md
+  - Concepts:
+      - How DemandCast works: concepts/pipeline.md
+      - Electricity demand data: concepts/electricity-demand.md
+      - Quality flags and reviews: concepts/flags.md
+      - Weather and socio-economic inputs: concepts/inputs.md
+      - Models: concepts/models.md
+      - Glossary: concepts/glossary.md
+  - How-to guides:
+      - Retrieve data: guides/retrieve.md
+      - Assemble a dataset: guides/assemble.md
+      - Train and validate: guides/train-validate.md
+      - Cross-validate: guides/cross-validate.md
+      - Forecast: guides/forecast.md
+      - Plot figures: guides/plot.md
+      - Run checks: guides/check.md
+      - Share the data folder: guides/sync.md
+      - Publish a release: guides/publish.md
+      - Use Docker: guides/docker.md
+  - Reference:
+      - Configuration files: reference/configuration.md
+      - Data sources: reference/data-sources.md
+      - Data folder: reference/data-folder.md
+      - Code architecture: reference/architecture.md
+  - Current state: status.md
+  - FAQ: help/faq.md
 
 markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - toc:
+      permalink: true
       toc_depth: 3 # Up to h3 will be included in the table of contents
   # Includes the numbers that plot.py writes for the Current state page.
   - pymdownx.snippets:
