@@ -8,6 +8,7 @@ Description:
 """
 
 import os
+import types
 import zipfile
 from unittest.mock import patch
 
@@ -81,6 +82,36 @@ def test_get_trained_model_path_no_files_found():
 
         with pytest.raises(FileNotFoundError):
             ml_models.files.get_trained_model_path(None, "xgboost")
+
+
+@pytest.mark.parametrize(
+    ("get_path", "folder_function", "message"),
+    [
+        (
+            lambda: ml_models.files.get_trained_model_path(None, "xgboost"),
+            "get_models_folder",
+            "No trained model files found",
+        ),
+        (
+            lambda: ml_models.files.get_assemble_data_path(None),
+            "get_assembled_folder",
+            "No data assembled for training found",
+        ),
+    ],
+)
+def test_latest_file_without_folder(
+    tmp_path, get_path, folder_function, message
+):
+    """Test that a missing folder gives the message of no file."""
+    with (
+        patch.object(
+            utils.paths,
+            folder_function,
+            return_value=str(tmp_path / "missing"),
+        ),
+        pytest.raises(FileNotFoundError, match=message),
+    ):
+        get_path()
 
 
 def test_get_trained_model_path_pt_extension():
@@ -431,3 +462,72 @@ def test_used_validation_set_unknown(manifest, message):
     """
     with pytest.raises(ValueError, match=message):
         ml_models.files.get_used_validation_set(manifest, None)
+
+
+@pytest.mark.parametrize(
+    ("manifest", "algorithm"),
+    [(None, "LSTM"), ({"algorithm": "XGBoost"}, "xgboost")],
+)
+def test_check_model_algorithm(manifest, algorithm):
+    """
+    Test that a model of the algorithm, in any case, is accepted.
+
+    A model without a manifest is not checked.
+    """
+    ml_models.files.check_model_algorithm(manifest, algorithm)
+
+
+def test_check_model_algorithm_of_another_model():
+    """Test that a model of another algorithm is refused."""
+    with pytest.raises(ValueError, match="a model of XGBoost, not of LSTM"):
+        ml_models.files.check_model_algorithm({"algorithm": "XGBoost"}, "LSTM")
+
+
+def test_save_model(tmp_path):
+    """
+    Test that a model is saved under its name, with its extension.
+
+    The module of the model is given a path with the extension, by
+    which XGBoost chooses the format of the file.
+    """
+
+    def save(model, file_path):
+        """Write the model, checking the extension of the path."""
+        assert file_path.endswith(".json")
+        with open(file_path, "w", encoding="utf-8") as file:
+            file.write(model)
+
+    model_path = tmp_path / "xgboost_model_20260102_030405.json"
+
+    ml_models.files.save_model(
+        types.SimpleNamespace(save=save), "model", str(model_path)
+    )
+
+    assert os.listdir(tmp_path) == [model_path.name]
+    assert model_path.read_text(encoding="utf-8") == "model"
+
+
+def test_stopped_save_leaves_no_model(tmp_path):
+    """Test that a save that stops leaves no file in the folder."""
+
+    def save(model, file_path):
+        """
+        Write part of the model, and stop.
+
+        Raises
+        ------
+        KeyboardInterrupt
+            Always, as when the save is killed.
+        """
+        with open(file_path, "w", encoding="utf-8") as file:
+            file.write(model[:2])
+        raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        ml_models.files.save_model(
+            types.SimpleNamespace(save=save),
+            "model",
+            str(tmp_path / "xgboost_model_20260102_030405.json"),
+        )
+
+    assert os.listdir(tmp_path) == []

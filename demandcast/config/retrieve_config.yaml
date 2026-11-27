@@ -1,4 +1,5 @@
-# Configuration read by the retrieve.py script.
+# Configuration read by the retrieve.py script. An option that is only
+# for some variables must be empty, or at its default, for the others.
 
 # REQUIRED.
 # The type of data to be retrieved. Supported types are:
@@ -40,19 +41,19 @@ code:
 # countries and subdivisions of interest.
 file:
 
-# OPTIONAL.
+# OPTIONAL - not for the electricity_demand variable.
 # The year of the data to be retrieved.
 year:
 
-# OPTIONAL.
+# OPTIONAL - not for the electricity_demand variable.
 # Start year for a range of years of data to be retrieved.
 start_year:
 
-# OPTIONAL.
+# OPTIONAL - not for the electricity_demand variable.
 # End year for a range of years of data to be retrieved.
 end_year:
 
-# OPTIONAL.
+# OPTIONAL - not for the electricity_demand variable.
 # Scenario of the data to be retrieved.
 scenario:
 
@@ -61,8 +62,9 @@ scenario:
 # supported).
 weather_variable: temperature
 
-# OPTIONAL.
-# The climate model for the weather data to be retrieved.
+# OPTIONAL - only for the temperature and gridded_weather variables.
+# The climate model for the weather data to be retrieved. Without it, the
+# scenario must be one of every climate model.
 climate_model:
 
 # OPTIONAL - only for the temperature and gridded_weather variables.

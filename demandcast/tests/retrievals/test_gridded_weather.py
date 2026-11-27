@@ -9,8 +9,10 @@ Description:
 """
 
 import os
+import zipfile
 from unittest.mock import patch
 
+import netCDF4
 import numpy as np
 import pandas as pd
 import pytest
@@ -59,8 +61,10 @@ def _write(file_path: str, written: str, last: str | None = None) -> str:
         (2026, "2026-01-02 00:00", "2026-01-01 00:00", None, False),
         # The last year, written before its data was complete.
         (2025, "2025-12-20 00:00", "2025-12-13 23:00", None, True),
-        # A complete year.
-        (2024, "2025-01-10 00:00", "2024-12-31 23:00", None, False),
+        # A complete year, written after its data was final, and one
+        # written before, whose last months were preliminary.
+        (2024, "2025-05-10 00:00", "2024-12-31 23:00", None, False),
+        (2024, "2025-01-10 00:00", "2024-12-31 23:00", None, True),
         # A part of a year copied after the year, such as from a bucket,
         # and a file without data, once they are a day old.
         (2024, "2026-01-01 00:00", "2024-06-30 23:00", None, True),
@@ -108,17 +112,96 @@ def test_is_outdated_in_utc(tmp_path, monkeypatch, frozen_now):
     assert not gridded_weather.is_outdated(file_path, 2026, None, None)
 
 
+@pytest.mark.parametrize(
+    ("retrieved", "now", "outdated"),
+    [
+        # Retrieved complete in January, with the preliminary data of
+        # its last months, which is kept until it is final.
+        ("2026-01-20", "2026-03-01", False),
+        # Then retrieved again once, when the data is final.
+        ("2026-01-20", "2026-05-10", True),
+        ("2026-05-10", "2026-09-01", False),
+    ],
+)
+def test_preliminary_data_is_replaced_once(
+    tmp_path, monkeypatch, retrieved, now, outdated
+):
+    """
+    Test that a year is retrieved again once its data is final.
+
+    ERA5 replaces its preliminary data (ERA5T) with the final data two
+    to three months later, so the files of 2025 retrieved before May
+    2026 are retrieved again once after it.
+    """
+    file_path = _write(
+        str(tmp_path / "data.nc"), "2020-01-01", "2025-12-31 23:00"
+    )
+    with netCDF4.Dataset(file_path, "a") as dataset:
+        dataset.setncattr(gridded_weather.RETRIEVED_KEY, retrieved)
+    monkeypatch.setattr(
+        pd.Timestamp, "now", lambda *_, **__: pd.Timestamp(now)
+    )
+
+    assert gridded_weather.is_outdated(file_path, 2025, None, None) == (
+        outdated
+    )
+
+
+@pytest.mark.parametrize("extension", [".nc", ".parquet"])
+@pytest.mark.parametrize(
+    ("year", "retrieved", "outdated"),
+    [
+        # Retrieved before the year was complete, and before its data
+        # was final.
+        (2025, "2025-12-20T00:00:00", True),
+        (2024, "2025-01-10T00:00:00", True),
+        # Retrieved when its data was final.
+        (2024, "2025-05-10T00:00:00", False),
+    ],
+)
+def test_copies_keep_the_time_of_their_retrieval(
+    tmp_path, extension, year, retrieved, outdated
+):
+    """
+    Test that a copy is checked by when its data was retrieved.
+
+    The files record the time of the retrieval of their data, which a
+    copy, such as from a bucket, keeps, while its time of modification
+    is that of the copy, after the data of 2024 was final.
+    """
+    file_path = str(tmp_path / f"data{extension}")
+    if extension == ".nc":
+        _write(file_path, "2025-12-31", f"{year}-12-31 23:00")
+        with netCDF4.Dataset(file_path, "a") as dataset:
+            dataset.setncattr(gridded_weather.RETRIEVED_KEY, retrieved)
+    else:
+        data = pd.DataFrame({"Temperature - Top 1 (K)": [280.0]})
+        data.attrs = {gridded_weather.RETRIEVED_KEY: retrieved}
+        data.to_parquet(file_path)
+    seconds = pd.Timestamp("2025-12-31").timestamp()
+    os.utime(file_path, (seconds, seconds))
+
+    assert gridded_weather.get_retrieval_time(file_path) == pd.Timestamp(
+        retrieved
+    )
+    assert gridded_weather.is_outdated(file_path, year, None, None) == (
+        outdated
+    )
+
+
 def test_other_files_are_checked_by_their_time(tmp_path, caplog):
     """
     Test that a file that is not netCDF is checked by its time only.
 
     The temperature of a local year is a Parquet file, which xarray
     cannot read, and which ends before the last hour of the year in UTC
-    east of UTC: a complete year is not retrieved again.
+    east of UTC: a complete year is not retrieved again. A file without
+    the time of its retrieval, which cannot be read here, is checked by
+    the time of its last modification.
     """
     file_path = tmp_path / "JPN_Kantō_2024.parquet"
     file_path.write_bytes(b"parquet")
-    seconds = pd.Timestamp("2025-01-10 00:00").timestamp()
+    seconds = pd.Timestamp("2025-05-10 00:00").timestamp()
     os.utime(file_path, (seconds, seconds))
 
     with caplog.at_level("WARNING"):
@@ -204,7 +287,7 @@ def test_few_codes_complete_the_last_year():
     os.makedirs(folder)
     _write(
         os.path.join(folder, "DEU_temperature_2024.nc"),
-        "2025-01-10",
+        "2025-05-10",
         "2024-12-31 23:00",
     )
     _write(
@@ -269,6 +352,115 @@ def test_reanalysis_of_cds_in_a_new_data_folder():
         os.path.join(folder, "DEU_temperature_2024.nc")
     ) as data:
         assert data.attrs[BOUNDS_KEY].tolist() == [5.0, 47.0, 15.0, 55.0]
+        assert (
+            data.attrs[gridded_weather.RETRIEVED_KEY] == "2026-01-02T03:04:05"
+        )
+
+
+def _zip_of_projections(target: str, netcdf_names: list[str]) -> None:
+    """
+    Write a zip file of projections, as the CDS gives them.
+
+    The zip file has a NetCDF file of daily temperatures in a grid of
+    2.8 degrees for each name, and a text file.
+    """
+    folder = os.path.dirname(target)
+    for name in netcdf_names:
+        xarray.Dataset(
+            {"tas": (("time", "lat", "lon"), np.full((2, 2, 2), 290.0))},
+            coords={
+                "time": pd.date_range("2030-01-01 12:00", periods=2),
+                "lat": [46.2, 49.0],
+                "lon": [5.6, 8.4],
+            },
+        ).to_netcdf(os.path.join(folder, name))
+    with zipfile.ZipFile(target, "w") as archive:
+        for name in netcdf_names:
+            archive.write(os.path.join(folder, name), name)
+            os.remove(os.path.join(folder, name))
+        archive.writestr("provenance.txt", "CMIP6")
+
+
+@pytest.mark.parametrize("netcdf_names", [["tas_day.nc"], ["a.nc", "b.nc"]])
+def test_projections_of_a_code_replace_an_empty_grid(netcdf_names):
+    """
+    Test that the projections of a code replace its grid without cells.
+
+    The grid of Liechtenstein, smaller than the cells of the climate
+    model, has no cell, so it is downloaded again, within its bounds and
+    a margin around them. The NetCDF file of the zip file replaces it,
+    and the zip file is removed; a zip file of two NetCDF files is an
+    error.
+    """
+    bounds = [9.47, 47.05, 9.64, 47.27]
+    folder = utils.paths.get_gridded_folder("weather", "processed")
+    os.makedirs(folder)
+    file_path = os.path.join(folder, "LIE_temperature_2030_CESM2_SSP2_4_5.nc")
+    record_bounds(
+        xarray.Dataset(
+            {"tas": (("time", "lat", "lon"), np.zeros((1, 0, 0)))},
+            coords={"time": [0], "lat": [], "lon": []},
+        ),
+        bounds,
+    ).to_netcdf(file_path)
+    requests = []
+
+    class _Client:
+        """A client of the CDS that writes a zip file of projections."""
+
+        def retrieve(self, _dataset, request, target):
+            """Write the zip file, as the CDS does."""
+            requests.append(request)
+            _zip_of_projections(target, netcdf_names)
+
+    with (
+        patch.object(
+            gridded_weather.utils.availability,
+            "check_and_get_codes_with",
+            return_value=["LIE"],
+        ),
+        patch.object(gridded_weather.utils.shapes, "get_entity_shape"),
+        patch.object(
+            gridded_weather.utils.shapes,
+            "get_entity_bounds",
+            return_value=bounds,
+        ),
+        patch.object(
+            gridded_weather, "get_cds_client", return_value=_Client()
+        ),
+    ):
+        if len(netcdf_names) > 1:
+            with pytest.raises(ValueError, match=r"2 \.nc files"):
+                gridded_weather.run_data_retrieval(
+                    "LIE",
+                    None,
+                    2030,
+                    None,
+                    None,
+                    "temperature",
+                    "CESM2",
+                    "SSP2-4.5",
+                )
+            return
+        gridded_weather.run_data_retrieval(
+            "LIE", None, 2030, None, None, "temperature", "CESM2", "SSP2-4.5"
+        )
+
+    assert requests[0]["area"] == pytest.approx([48.77, 7.97, 45.55, 11.14])
+    assert not os.path.exists(file_path.removesuffix(".nc") + ".zip")
+    with xarray.open_dataset(file_path) as grid:
+        assert grid.sizes["lat"] == grid.sizes["lon"] == 2
+        assert grid.attrs[BOUNDS_KEY].tolist() == bounds
+
+
+def test_margin_stays_on_the_globe():
+    """Test that the margin of bounds stays within the globe."""
+    assert gridded_weather._add_margin([179.0, -89.0, 180.0, 90.0], 1.5) == [
+        177.5,
+        -90.0,
+        180.0,
+        90.0,
+    ]
 
 
 def test_file_names():
@@ -296,7 +488,11 @@ BOUNDS = {
 
 
 def _download_global_data(file_path, *_args, **_kwargs):
-    """Write a global grid of temperature, from 0 to 359 degrees E."""
+    """
+    Write a global grid of temperature, from 0 to 359 degrees E.
+
+    The grid records the time of its retrieval, as a download does.
+    """
     longitudes = np.arange(0.0, 360.0, 1.0)
     latitudes = np.arange(30.0, 61.0, 1.0)
     xarray.Dataset(
@@ -307,6 +503,7 @@ def _download_global_data(file_path, *_args, **_kwargs):
             )
         },
         coords={"latitude": latitudes, "longitude": longitudes},
+        attrs={gridded_weather.RETRIEVED_KEY: "2026-01-02T03:04:05"},
     ).to_netcdf(file_path + ".nc")
 
 
@@ -373,6 +570,12 @@ def test_many_codes_split_the_global_data(monkeypatch):
             pytest.approx(8.0),
         )
         assert (float(france.y.min()), float(france.y.max())) == (42.0, 51.0)
+        # The grid of a code has the time of the retrieval of the global
+        # data.
+        assert (
+            france.attrs[gridded_weather.RETRIEVED_KEY]
+            == "2026-01-02T03:04:05"
+        )
 
     # The global data of a past year is not downloaded again, and the
     # countries are extracted again only from newer global data.
@@ -486,6 +689,10 @@ def test_arco_era5():
             os.path.join(folder, f"{code}_temperature_2024.nc")
         )
         assert dataset.attrs[BOUNDS_KEY].tolist() == bounds[code]
+        assert (
+            dataset.attrs[gridded_weather.RETRIEVED_KEY]
+            == "2026-01-02T03:04:05"
+        )
         data = dataset["t2m"]
         assert data.dims == ("valid_time", "y", "x")
         assert data["valid_time"].to_numpy()[-1] == np.datetime64(

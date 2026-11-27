@@ -34,66 +34,34 @@ def _close_figures():
     plt.close("all")
 
 
-def test_plot_by_group_and_comparison(tmp_path):
-    """Test that the two options are refused before any file is read."""
-    with (
-        patch.object(ml_results, "_read_errors") as read_errors,
-        pytest.raises(ValueError, match="cannot be used together"),
-    ):
-        ml_results.plot(str(tmp_path), "a", "b", by_group=True)
-
-    read_errors.assert_not_called()
-
-
 def test_read_errors():
     """Test that the MAPE values are read in percent, by version."""
-    groups = {"income": ["high_income"], "continent": ["AF"]}
-
     mape = ml_results._read_errors(
-        EXAMPLES_FOLDER, "example1", "example2", False, groups, "MAPE"
+        EXAMPLES_FOLDER, "example1", "example2", "MAPE"
     )
     assert list(mape.columns) == ["example1_all", "example2_all"]
     assert len(mape) == 95
     assert mape.loc["AT", "example1_all"] == pytest.approx(8.104806914070335)
     assert mape.loc["AT", "example2_all"] == pytest.approx(9.574320937012813)
 
-    mape = ml_results._read_errors(
-        EXAMPLES_FOLDER, "example1", None, True, groups, "MAPE"
-    )
-    assert list(mape.columns) == [
-        "example1_all",
-        "example1_high_income",
-        "example1_AF",
-    ]
-    assert mape.loc["DZ", "example1_AF"] == pytest.approx(4.378211941703889)
-    assert mape["example1_AF"].notna().sum() == 3
-
     # The earlier versions have no WAPE.
     with pytest.raises(ValueError, match="have no WAPE"):
-        ml_results._read_errors(
-            EXAMPLES_FOLDER, "example1", None, False, groups, "WAPE"
-        )
+        ml_results._read_errors(EXAMPLES_FOLDER, "example1", None, "WAPE")
 
 
 @pytest.mark.parametrize(
-    ("compare_with_version", "by_group", "file_names"),
+    ("compare_with_version", "file_names"),
     [
-        (None, False, ["mape_example1.png", "mape_example1_distribution.png"]),
-        ("example2", False, ["mape_example1_vs_example2.png"]),
-        (
-            None,
-            True,
-            ["mape_example1_by_continent.png", "mape_example1_by_income.png"],
-        ),
+        (None, ["mape_example1.png", "mape_example1_distribution.png"]),
+        ("example2", ["mape_example1_vs_example2.png"]),
     ],
 )
-def test_plot(tmp_path, compare_with_version, by_group, file_names):
+def test_plot(tmp_path, compare_with_version, file_names):
     """Test that each kind of figure is saved."""
     ml_results.plot(
         str(tmp_path),
         "example1",
         compare_with_version,
-        by_group,
         results_directory=EXAMPLES_FOLDER,
         metric="MAPE",
     )
@@ -136,16 +104,14 @@ def test_read_saved_results(tmp_path):
     ).to_parquet(folder / "all_20260102_000000.parquet")
 
     mape = ml_results._read_errors(
-        str(tmp_path), "xgboost_model_1", None, False, {}, "MAPE"
+        str(tmp_path), "xgboost_model_1", None, "MAPE"
     )
 
     assert mape["xgboost_model_1_all"].to_dict() == pytest.approx(
         {"FRA": 10.0, "DEU": 20.0}
     )
-    with pytest.raises(FileNotFoundError, match="has no results all"):
-        ml_results._read_errors(
-            str(tmp_path), "other_model", None, False, {}, "MAPE"
-        )
+    with pytest.raises(FileNotFoundError, match="has no results in"):
+        ml_results._read_errors(str(tmp_path), "other_model", None, "MAPE")
 
 
 @pytest.mark.parametrize(

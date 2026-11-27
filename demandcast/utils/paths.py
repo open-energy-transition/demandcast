@@ -13,7 +13,8 @@ Description:
 
     Everything that the scripts write is in the data folder, which is
     the "data" folder in the code folder, unless the environment
-    variable DEMANDCAST_DATA_FOLDER names another one. Each dataset
+    variable DEMANDCAST_DATA_FOLDER, set in the shell or in the .env
+    file of the code folder, names another one. Each dataset
     has its own folder, with its stages:
 
         data/
@@ -49,8 +50,11 @@ Description:
     same numbers into the README, both in the repository.
 """
 
+import functools
 import os
 from typing import Literal
+
+from dotenv import load_dotenv
 
 # The folder of the code, with the inputs that come with it.
 CODE_FOLDER = os.path.normpath(
@@ -133,6 +137,21 @@ def get_config_file(name: str) -> str:
     return os.path.join(CONFIG_FOLDER, name)
 
 
+@functools.cache
+def _load_env_file(file_path: str) -> None:
+    """
+    Load the variables of a .env file into the environment, once.
+
+    The variables already set, such as in the shell, are kept.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the .env file, which may not exist.
+    """
+    load_dotenv(dotenv_path=file_path)
+
+
 def get_data_folder(*parts: str) -> str:
     """
     Get the data folder, or a folder or file in it.
@@ -145,9 +164,17 @@ def get_data_folder(*parts: str) -> str:
     Returns
     -------
     str
-        The path, under DEMANDCAST_DATA_FOLDER if it is set, and under
+        The path, under DEMANDCAST_DATA_FOLDER if it is set, in the
+        environment or in the .env file of the code folder, and under
         the "data" folder of the code otherwise.
+
+    Notes
+    -----
+    The .env file is loaded before the variable is read, so that a run
+    writes to the same folder before and after it reads an API key,
+    which also loads it.
     """
+    _load_env_file(ENV_FILE)
     data_folder = os.environ.get(DATA_FOLDER_VARIABLE) or os.path.join(
         CODE_FOLDER, "data"
     )

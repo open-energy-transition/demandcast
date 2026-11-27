@@ -22,7 +22,10 @@ Description:
     shape that it was cut with, and is extracted or downloaded again
     when they change (see retrievals/gridded.py). A grid downloaded
     before the bounds were recorded is kept, and one extracted from the
-    global data is extracted again.
+    global data is extracted again. The files of the reanalysis also
+    record the time at which their data was retrieved, which tells,
+    wherever a file is copied, whether its year was complete and its
+    data final (see is_outdated).
 
     The temperature of the most populous cells (see
     retrievals/temperature.py) can also come from the time series of
@@ -34,10 +37,12 @@ Description:
 
 import logging
 import os
+import shutil
 import zipfile
 from collections.abc import Callable
 
 import cdsapi
+import netCDF4
 import pandas as pd
 import xarray
 from tqdm import tqdm
@@ -69,9 +74,22 @@ ARCO_READ_THREADS = 16
 
 # The time after the end of a year until its reanalysis data is
 # complete: ERA5 is published about five days after real time, and
-# updated every day until then.
+# updated every day until then. Its preliminary data (ERA5T) is
+# replaced by the final data two to three months later, so the data of
+# a year is final by REANALYSIS_FINAL_DELAY after its end.
 REANALYSIS_DELAY = pd.Timedelta(days=7)
+REANALYSIS_FINAL_DELAY = pd.Timedelta(days=120)
 REANALYSIS_UPDATE = pd.Timedelta(days=1)
+
+# The margin, in degrees, around the bounds of a code in the requests
+# of its projections. It is more than half a cell of the coarsest
+# climate models, of about 2.8 degrees, so the area has the cell
+# nearest to each point inside the bounds.
+PROJECTION_MARGIN = 1.5
+
+# The attribute of the files of reanalysis data, and of the files made
+# from them, with the time in UTC at which their data was retrieved.
+RETRIEVED_KEY = "demandcast_retrieved"
 
 # The names of the weather variables in the reanalysis and in the
 # projections of the Climate Data Store.
@@ -150,7 +168,8 @@ def _extract_from_arco(
 
     The hours are read a week at a time, for all the codes at once, and
     the files have the variables and coordinates of those of the CDS,
-    and the bounds of each code (see retrievals.gridded.record_bounds).
+    the bounds of each code (see retrievals.gridded.record_bounds) and
+    the time at which the store was opened (see RETRIEVED_KEY).
 
     Parameters
     ----------
@@ -163,6 +182,7 @@ def _extract_from_arco(
     file_paths : dict[str, str]
         The NetCDF file of each code.
     """
+    retrieved = _get_now().isoformat()
     data = _open_arco_year(variable, year)
     parts: dict[str, list[xarray.DataArray]] = {code: [] for code in bounds}
     for start in tqdm(
@@ -172,9 +192,9 @@ def _extract_from_arco(
         hours = data.isel(
             time=slice(start, start + ARCO_HOURS_PER_READ)
         ).compute(num_workers=ARCO_READ_THREADS)
-        for code, (west, south, east, north) in bounds.items():
+        for code, code_bounds in bounds.items():
             parts[code].append(
-                hours.sel(x=slice(west, east), y=slice(south, north))
+                retrievals.gridded.select_bounds(hours, code_bounds)
             )
 
     name = ARCO_VARIABLES[variable][1]
@@ -182,7 +202,8 @@ def _extract_from_arco(
         dataset = retrievals.gridded.record_bounds(
             xarray.concat(parts.pop(code), dim="time")
             .rename(time="valid_time")
-            .to_dataset(name=name),
+            .to_dataset(name=name)
+            .assign_attrs({RETRIEVED_KEY: retrieved}),
             bounds[code],
         )
         with utils.files.writing(file_path) as temporary_path:
@@ -259,6 +280,77 @@ def _get_last_time(file_path: str) -> pd.Timestamp:
     return pd.Timestamp.min
 
 
+def _get_now() -> pd.Timestamp:
+    """
+    Get the current time in UTC.
+
+    Returns
+    -------
+    pandas.Timestamp
+        The current time in UTC, without time zone, as the times of the
+        data and of the files are.
+    """
+    return pd.Timestamp.now(tz="UTC").tz_localize(None)
+
+
+def _record_retrieval_time(file_path: str) -> None:
+    """
+    Record the current time in a NetCDF file, as that of its retrieval.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the NetCDF file, which gets the attribute
+        RETRIEVED_KEY.
+
+    Notes
+    -----
+    The attribute is added to the file in place, without writing its
+    data again, which takes long for the global data of a year.
+    """
+    with netCDF4.Dataset(file_path, "a") as dataset:
+        dataset.setncattr(RETRIEVED_KEY, _get_now().isoformat())
+
+
+def get_retrieval_time(file_path: str) -> pd.Timestamp:
+    """
+    Get the time at which the data of a file was retrieved.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of a NetCDF or Parquet file, which exists.
+
+    Returns
+    -------
+    pandas.Timestamp
+        The time in UTC, without time zone, recorded in the attribute
+        RETRIEVED_KEY of the file, or else the time of its last
+        modification, such as for a file written without the attribute
+        or that cannot be read.
+
+    Notes
+    -----
+    The time of a file copied from elsewhere, such as from a bucket, is
+    that of its copy, while the recorded time stays that of its data.
+    """
+    recorded = None
+    try:
+        if file_path.endswith(".parquet"):
+            # The attributes are read without the columns.
+            recorded = pd.read_parquet(file_path, columns=[]).attrs.get(
+                RETRIEVED_KEY
+            )
+        elif file_path.endswith(".nc"):
+            with xarray.open_dataset(file_path) as dataset:
+                recorded = dataset.attrs.get(RETRIEVED_KEY)
+    except (OSError, ValueError):
+        pass
+    if recorded:
+        return pd.Timestamp(recorded)
+    return pd.Timestamp(os.path.getmtime(file_path), unit="s")
+
+
 def is_outdated(
     file_path: str,
     year: int,
@@ -288,18 +380,23 @@ def is_outdated(
     bool
         Whether the file does not exist, records other bounds than
         those of the current shape of the code, or has reanalysis data
-        written more than a day ago, when the data may have been
-        updated since, and either written before the data of its year
-        was complete or ending before the last hour of a past year.
+        retrieved more than a day ago, when the data may have been
+        updated since, and either retrieved before the data of its year
+        was complete, retrieved before it was final while it now is, or
+        ending before the last hour of a past year.
 
     Notes
     -----
-    This also completes a year retrieved while it was in progress. The
-    end of the data of a NetCDF file of the grid is read from the file,
-    since the time of a file copied from elsewhere, such as from a
-    bucket, is that of its copy. Other files, such as the temperature
-    of a local year, which ends before the last hour of the year in UTC
-    east of UTC, are checked by their time only. The times of the files
+    This completes a year retrieved while it was in progress, and
+    replaces the preliminary data (ERA5T) of the last months of a year
+    retrieved in the first months of the next one with the final data,
+    once, after REANALYSIS_FINAL_DELAY. The time of the retrieval is
+    read from the file (see get_retrieval_time), since the time of a
+    file copied from elsewhere, such as from a bucket, is that of its
+    copy; the end of the data of a NetCDF file of the grid is read from
+    the file too. The temperature of a local year, a Parquet file,
+    ends before the last hour of the year in UTC east of UTC, so it is
+    checked by the time of its retrieval only. The times of the files
     and of the data are in UTC, so the current time is too. A grid that
     records no bounds is kept, since it would be downloaded again; the
     extraction from the global data, which needs no download, redoes
@@ -313,14 +410,19 @@ def is_outdated(
         return True
     if model is not None or scenario is not None:
         return False
-    now = pd.Timestamp.now(tz="UTC").tz_localize(None)
-    written = pd.Timestamp(os.path.getmtime(file_path), unit="s")
-    if written >= now - REANALYSIS_UPDATE:
+    now = _get_now()
+    retrieved = get_retrieval_time(file_path)
+    if retrieved >= now - REANALYSIS_UPDATE:
         return False
-    return written < pd.Timestamp(year + 1, 1, 1) + REANALYSIS_DELAY or (
-        file_path.endswith(".nc")
-        and year < now.year
-        and _get_last_time(file_path) < pd.Timestamp(year, 12, 31, 23)
+    end_of_year = pd.Timestamp(year + 1, 1, 1)
+    return (
+        retrieved < end_of_year + REANALYSIS_DELAY
+        or retrieved < end_of_year + REANALYSIS_FINAL_DELAY <= now
+        or (
+            file_path.endswith(".nc")
+            and year < now.year
+            and _get_last_time(file_path) < pd.Timestamp(year, 12, 31, 23)
+        )
     )
 
 
@@ -431,8 +533,14 @@ def _download_data(
     ------
     ValueError
         If the dataset is not supported, if only one of model or
-        scenario is provided, or if the zip file contains multiple .nc
-        files.
+        scenario is provided, or if the zip file of the projections
+        does not contain one .nc file.
+
+    Notes
+    -----
+    The file of the reanalysis records the time of its retrieval (see
+    RETRIEVED_KEY). The .nc file of the zip file of the projections
+    replaces the file of the same name, if any.
     """
     logging.info(
         f"Downloading gridded {variable} data for the "
@@ -465,30 +573,26 @@ def _download_data(
     else:
         with utils.files.writing(file_path) as temporary_path:
             client.retrieve(dataset, request, temporary_path)
+            _record_retrieval_time(temporary_path)
 
     if dataset == "projections-cmip6":
-        with zipfile.ZipFile(file_path, "r") as zip_ref:
-            zip_ref.extractall(os.path.dirname(file_path))
-
-            for file in zip_ref.namelist():
-                if not file.endswith(".nc"):
-                    os.remove(os.path.join(os.path.dirname(file_path), file))
-
-            extracted_nc_files = [
-                file for file in zip_ref.namelist() if file.endswith(".nc")
+        with zipfile.ZipFile(file_path, "r") as archive:
+            netcdf_files = [
+                name for name in archive.namelist() if name.endswith(".nc")
             ]
-            if len(extracted_nc_files) == 1:
-                os.rename(
-                    os.path.join(
-                        os.path.dirname(file_path), extracted_nc_files[0]
-                    ),
-                    file_path.replace(".zip", ".nc"),
-                )
-            else:
+            if len(netcdf_files) != 1:
                 raise ValueError(
-                    "The zip file contains multiple .nc files. "
-                    "Cannot determine which one to rename."
+                    f"The zip file contains {len(netcdf_files)} .nc files "
+                    "instead of one."
                 )
+            with (
+                archive.open(netcdf_files[0]) as source,
+                utils.files.writing(
+                    file_path.removesuffix(".zip") + ".nc"
+                ) as temporary_path,
+                open(temporary_path, "wb") as target,
+            ):
+                shutil.copyfileobj(source, target)
 
         os.remove(file_path)
 
@@ -764,6 +868,32 @@ def _retrieve_global_data(
         logging.info(f"The gridded {description} has been processed.")
 
 
+def _add_margin(bounds: list[float], margin: float) -> list[float]:
+    """
+    Widen bounds by a margin on each side.
+
+    Parameters
+    ----------
+    bounds : list[float]
+        The bounds, west, south, east and north, in degrees.
+    margin : float
+        The margin, in degrees.
+
+    Returns
+    -------
+    list[float]
+        The bounds, the margin further out, within the longitudes from
+        -180 to 180 and the latitudes from -90 to 90 degrees.
+    """
+    west, south, east, north = bounds
+    return [
+        max(west - margin, -180.0),
+        max(south - margin, -90.0),
+        min(east + margin, 180.0),
+        min(north + margin, 90.0),
+    ]
+
+
 def _record_bounds_in_file(file_path: str, bounds: list[float]) -> None:
     """
     Record the bounds of the shape of a code in the file of its grid.
@@ -791,7 +921,10 @@ def _retrieve_data_of_each_code(
 
     The data of a country or subdivision is downloaded within its
     bounds, straight into the processed folder, and is downloaded again
-    when they change (see is_outdated).
+    when they change (see is_outdated). The projections are downloaded
+    within the bounds and PROJECTION_MARGIN around them, so that the
+    cells of a coarse climate model nearest to the shape are in the
+    file, even when none is inside the bounds.
 
     Parameters
     ----------
@@ -850,7 +983,11 @@ def _retrieve_data_of_each_code(
                     selected_year,
                     selected_model,
                     selected_scenario,
-                    bounds=entity_bounds,
+                    bounds=(
+                        _add_margin(entity_bounds, PROJECTION_MARGIN)
+                        if selected_model
+                        else entity_bounds
+                    ),
                 )
                 _record_bounds_in_file(
                     entity_file_path_without_ext + ".nc", entity_bounds

@@ -40,6 +40,24 @@ SCENARIOS = {
 # The variables of the projections of the climate models.
 CLIMATE_VARIABLES = {"gridded_weather", "temperature"}
 
+# The variables, other than the electricity demand, given by years.
+YEARLY_VARIABLES = set(SCENARIOS) | CLIMATE_VARIABLES
+
+# The variables to which each option applies, for the options that do
+# not apply to all of them. The scenario is checked on its own, and the
+# weather variable, whose only value is temperature, stays in the
+# settings of every variable.
+OPTION_VARIABLES = {
+    "electricity_data_source": {"electricity_demand"},
+    "offline": {"electricity_demand"},
+    "latest_requests": {"electricity_demand"},
+    "year": YEARLY_VARIABLES,
+    "start_year": YEARLY_VARIABLES,
+    "end_year": YEARLY_VARIABLES,
+    "climate_model": CLIMATE_VARIABLES,
+    "reanalysis_source": CLIMATE_VARIABLES,
+}
+
 
 class ConfigModel(utils.config.StrictSettings):
     """Settings of retrieve.py."""
@@ -103,7 +121,8 @@ class ConfigModel(utils.config.StrictSettings):
         Check the settings that some variables need, and the scenario.
 
         The scenario and the climate model are spelt as in the
-        catalogue, whatever their case.
+        catalogue, whatever their case. An option that does not apply
+        to the variable must be empty or at its default.
 
         Returns
         -------
@@ -113,9 +132,22 @@ class ConfigModel(utils.config.StrictSettings):
         Raises
         ------
         ValueError
-            If a required setting is missing, or if the scenario or the
-            climate model is not available for the variable.
+            If a required setting is missing, if an option does not
+            apply to the variable, or if the scenario or the climate
+            model is not available for the variable.
         """
+        for option, variables in OPTION_VARIABLES.items():
+            value = getattr(self, option)
+            if (
+                self.variable not in variables
+                and value is not None
+                and value != type(self).model_fields[option].default
+            ):
+                raise ValueError(
+                    f"The option {option} does not apply to the "
+                    f"{self.variable}, only to {sorted(variables)}: leave "
+                    "it empty."
+                )
         if (
             self.variable == "electricity_demand"
             and not self.electricity_data_source

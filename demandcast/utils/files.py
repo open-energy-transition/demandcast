@@ -8,13 +8,18 @@ Description:
     so that a write that stops, such as that of a killed retrieval,
     never leaves a partial file under its name. The steps that keep the
     files that exist, such as the grids and the downloads, would take a
-    partial file as complete.
+    partial file as complete. It also reads text files with the line
+    endings of Unix, for the checksums of the code of the rules of the
+    cleaning and of the combination. It gives the time in the names of
+    the files, by which the scripts find the latest file.
 """
 
 import contextlib
 import os
 import uuid
 from collections.abc import Iterator
+
+import pandas as pd
 
 
 @contextlib.contextmanager
@@ -46,3 +51,46 @@ def writing(file_path: str) -> Iterator[str]:
     finally:
         if os.path.exists(temporary_path):
             os.remove(temporary_path)
+
+
+def read_with_unix_line_endings(file_path: str) -> bytes:
+    """
+    Read a text file with the line endings of Unix.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the file.
+
+    Returns
+    -------
+    bytes
+        The content of the file, with each CRLF replaced by LF.
+
+    Notes
+    -----
+    Git can check the files out with CRLF on Windows, which must not
+    change a checksum of the code made elsewhere, such as that of a
+    file copied from a bucket.
+    """
+    with open(file_path, "rb") as file:
+        return file.read().replace(b"\r\n", b"\n")
+
+
+def get_time_for_name() -> str:
+    """
+    Get the current time in UTC, as it is written in names of files.
+
+    Returns
+    -------
+    str
+        The time, in the format YYYYMMDD_HHMMSS.
+
+    Notes
+    -----
+    The scripts take the file with the latest time in its name for the
+    latest, such as the latest model. In UTC, the times of the files of
+    computers in different time zones, which share a data folder through
+    a bucket, compare in the order in which the files were written.
+    """
+    return pd.Timestamp.now(tz="UTC").strftime("%Y%m%d_%H%M%S")

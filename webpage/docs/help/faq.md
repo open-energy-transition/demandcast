@@ -22,7 +22,7 @@ Relative paths start from the folder you run the script in, which should be `dem
 
 ### Files appear in two different data folders.
 
-Set `DEMANDCAST_DATA_FOLDER` in your shell, not in `.env`, and give an absolute path. See [Install](../getting-started/install.md#4-choose-where-the-data-goes).
+Give `DEMANDCAST_DATA_FOLDER` an absolute path: a relative one is read from the folder you run the script in. See [Install](../getting-started/install.md#4-choose-where-the-data-goes).
 
 ## API keys
 
@@ -33,10 +33,6 @@ Add the key named in the error to `demandcast/.env`. See the [list of keys](../g
 ### I need `EMBER_API_KEY` for a check or a figure.
 
 `check.py` with `check: data_availability`, and `plot.py` with `figure: data_availability` or `figure: status`, download the Ember data. Add the free key.
-
-### `offline: true` still asks for an API key.
-
-The modules of ENTSO-E, EIA, EPİAŞ and ISO New England read their key before they replay the saved responses. Keep the key in `.env`.
 
 ### Keys work locally but are rejected in Docker.
 
@@ -52,9 +48,9 @@ Use the lowercase name of the data source, as in [Data sources](../reference/dat
 
 The data source does not cover that code. The error lists the codes it covers.
 
-### `year` has no effect on the electricity demand.
+### "The option year does not apply to the electricity_demand".
 
-The electricity demand ignores the year options and downloads all the years in the source's YAML file. To download only recent data, use `latest_requests`.
+The electricity demand has no year options: it downloads all the years in the source's YAML file. To download only recent data, use `latest_requests`.
 
 ### `file` seems to be ignored.
 
@@ -68,9 +64,9 @@ The path of `file` starts from the folder you run the script in. Run from `deman
 
 Weather and socio-economic data are retrieved only for codes in `checks/data_availability_summary.csv`. After you add a data source with new codes, run `check.py` with `check: data_availability`.
 
-### `scenario: SSP3-7.0` fails for the temperature.
+### `scenario: SSP3-7.0` "is not available for every climate model".
 
-Not every climate model has every scenario. Without `climate_model`, only `SSP1-2.6`, `SSP2-4.5` and `SSP5-8.5` work. Set `climate_model` too.
+Not every climate model has every scenario. Without `climate_model`, only `SSP1-2.6`, `SSP2-4.5` and `SSP5-8.5` work. Set `climate_model` too, to one of the models that the error lists.
 
 ### `scenario: SSP2-4.5` fails for the population.
 
@@ -84,10 +80,6 @@ Without year options, it retrieves 1990 to 2100 for every climate model and scen
 
 These sources need files downloaded by hand into `data/electricity_demand/raw/manual_downloads/`. Keep the older files next to the newer ones. See [Retrieve data](../guides/retrieve.md#files-downloaded-by-hand).
 
-### With `latest_requests: 1`, a monthly or yearly source fails at the start of a new period.
-
-The only request left is the new period, which the source has not published yet. Use `latest_requests: 2` or more.
-
 ### TEPCO fails with HTTP 403.
 
 Its website refuses the downloads of its monthly files, from 2025, from outside Japan; the yearly files until 2024 still download. OCCTO covers the same area.
@@ -100,19 +92,19 @@ The other codes were saved. Run again with `code:` set to one failed code to see
 
 Retrieve `population` and `annual_electricity_demand_per_capita` before the electricity demand, or retrieve the demand again with `offline: true` afterwards.
 
-### The annual demand per capita of a country stops in 2023 or 2024.
+### The annual demand per capita of a country is the same in its last years.
 
-The historical data ends with the source's last year. Later years exist only in the scenario files.
+Ember and the World Bank publish late: the last value of a country is carried forward up to last year, as for the population and the GDP PPP per capita.
 
 ## Cleaning, flags and reviews
 
 ### I changed a cleaning or flag rule, ran `assemble.py`, and nothing changed.
 
-`assemble.py` combines the series again but reuses the cleaned data. Retrieve the affected sources again with `offline: true`.
+`assemble.py` cleans again only the sources that have processed data. The log warns about each source whose cleaned data alone was copied, and each combined series without cleaned data: retrieve their electricity demand again.
 
-### Every code is combined again, and it is slow.
+### Every code is cleaned or combined again, and it is slow.
 
-Any change to the code in `cleaning/`, even a comment, or to the reviews or the YAML files of the sources, changes the [fingerprint](../concepts/glossary.md#fingerprint) of the combined series. This is expected.
+Any change to the code in `cleaning/`, even a comment, or to the reviews or the YAML files of the sources, changes the [fingerprint](../concepts/glossary.md#fingerprint) of the combined series; a change to `electricity_demand.py` or `flags.py` also changes that of the cleaned data of every source. This is expected.
 
 ### My review fails with "Input should be a valid string".
 
@@ -136,9 +128,9 @@ The combined file could not be combined again because its cleaned data is missin
 
 ## Assembling, training and forecasting
 
-### `No objects to concatenate` in `assemble.py`.
+### "No … data was found for any of the … codes" in `assemble.py`.
 
-An input has no files for any of the codes, or you gave `scenario_for_temperature` without `climate_model_for_temperature` (or the reverse). Retrieve the input, and give both temperature options.
+The input has no files for any of the codes, in the folder that the error names, for the scenario and climate model that you chose. Retrieve it first.
 
 ### A year is missing from the training data.
 
@@ -174,20 +166,12 @@ Each parallel job copies the data. Lower `n_jobs`.
 
 ## Checks and figures
 
-### `by_group: true` fails with "has no results lower_middle_income".
-
-The scripts write results only for all entities together. `by_group` works only with the results of earlier versions, with `metric: MAPE`.
-
 ### A test fails after I added a data source.
 
 - `test_numbers_of_the_readme_are_current`: run `plot.py` with `figure: status`, or paste the sentence of the error into the README and `webpage/docs/status/numbers.md`.
 - `test_all_codes_were_checked`: run `check.py` with `check: related_entities` and commit the two files it writes in `checks/`.
 
 ## Sharing, publishing and Docker
-
-### `dry_run` says "Would copy 1234 files" but not which.
-
-It only counts them. Files that differ or are unsafe are listed by name.
 
 ### A file differs between my computer and the bucket.
 
@@ -199,15 +183,11 @@ Expected: the downloaded files get new modification times. Nothing is downloaded
 
 ### A temperature year downloaded from the bucket is incomplete.
 
-It was retrieved while its year was in progress. Delete the file and retrieve it again.
+It was extracted before the reanalysis of its year was complete. The file records when it was extracted, which a copy keeps, so the next retrieval of the temperature of that year extracts it again (see [When files are extracted again](../concepts/inputs.md#when-files-are-extracted-again)). Retrieve it before you assemble the data.
 
 ### A folder of the data folder that is a symbolic link is not uploaded.
 
-Point `DEMANDCAST_DATA_FOLDER` at the real folder instead.
-
-### The download crashes with an error about links on a USB or exFAT drive.
-
-`sync.py` needs a file system with hard links.
+`sync.py` does not follow linked folders, and names them in a warning of the log. Point `DEMANDCAST_DATA_FOLDER` at the real folder instead.
 
 ### Where is my Zenodo draft?
 

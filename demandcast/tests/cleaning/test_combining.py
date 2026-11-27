@@ -13,6 +13,7 @@ import pandas as pd
 import pytest
 
 import cleaning.combining
+import cleaning.electricity_demand
 import cleaning.flags
 import cleaning.reviews
 import utils.data_sources
@@ -553,6 +554,73 @@ def test_fingerprint_covers_the_flags_and_the_rule_files():
         for file_path in cleaning.combining.RULE_FILES
         if os.path.isfile(file_path)
     } == {"combining.py", "electricity_demand.py", "flags.py", "reviews.py"}
+
+
+def test_data_cleaned_with_other_rules_is_cleaned_again(caplog):
+    """
+    Test that the combination cleans again the data of other rules.
+
+    The cleaned data of a data source without the fingerprint of the
+    current rules of the cleaning and of the flags is cleaned and
+    flagged again from its processed data before the combination.
+    """
+    processed = _hourly("2021-01-01", "2021-01-31 23:00")
+    processed[:] = 100.0 + 0.01 * pd.RangeIndex(len(processed))
+    processed_path = utils.paths.get_electricity_demand_file(
+        "processed", "CYP", "tsoc"
+    )
+    os.makedirs(os.path.dirname(processed_path), exist_ok=True)
+    processed.to_frame().to_parquet(processed_path)
+    _save_cleaned("CYP", "tsoc", _hourly("2021-01-01", "2021-01-31 23:00"))
+    assert not cleaning.electricity_demand.is_current("CYP", "tsoc")
+
+    with caplog.at_level("INFO"):
+        cleaning.combining.ensure_current_combination("CYP")
+
+    assert "cleaned and flagged again" in caplog.text
+    assert cleaning.electricity_demand.is_current("CYP", "tsoc")
+    assert os.path.exists(
+        utils.paths.get_electricity_demand_file(
+            "cleaned", "CYP", "tsoc", table="flags"
+        )
+    )
+    combined = pd.read_parquet(
+        utils.paths.get_electricity_demand_file("combined", "CYP")
+    )
+    pd.testing.assert_series_equal(
+        combined["Load (MW)"], processed, check_freq=False
+    )
+    assert cleaning.combining.is_current("CYP")
+
+
+def test_data_cleaned_with_other_rules_without_processed_data(caplog):
+    """Test that cleaned data without processed data is kept."""
+    _save_cleaned("CYP", "tsoc", _hourly("2021-01-01", "2021-01-31 23:00"))
+
+    cleaning.combining.ensure_current_combination("CYP")
+
+    assert "has no processed data to clean again" in caplog.text
+    assert cleaning.combining.is_current("CYP")
+
+
+def test_combined_demand_that_cannot_be_combined_again(caplog):
+    """
+    Test that a combined demand without cleaned data is kept.
+
+    Only the combined demand of Cyprus exists, such as when only it was
+    copied from a bucket: it is not current, and is used as it is.
+    """
+    combined = _hourly("2021-01-01", "2021-01-31 23:00").to_frame()
+    combined["Eligible"] = True
+    file_path = utils.paths.get_electricity_demand_file("combined", "CYP")
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    combined.to_parquet(file_path)
+
+    cleaning.combining.ensure_current_combination("CYP")
+
+    assert "cannot be combined again" in caplog.text
+    assert os.path.exists(file_path)
+    assert not cleaning.combining.is_current("CYP")
 
 
 def test_reviewed_net_demand_is_not_for_training(monkeypatch):

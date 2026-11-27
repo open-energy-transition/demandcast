@@ -322,7 +322,7 @@ def get_year_model_and_scenario_combinations(
     return year_model_scenario_list
 
 
-def _extend_historical_years(available_years: list[int]) -> list[int]:
+def extend_historical_years(available_years: list[int]) -> list[int]:
     """
     Extend historical years up to last year if needed.
 
@@ -465,7 +465,7 @@ def get_years_and_scenarios(
         )
 
     extended_available_historical_years = earlier_years + (
-        _extend_historical_years(available_historical_years)
+        extend_historical_years(available_historical_years)
     )
     available_future_years = list(
         range(

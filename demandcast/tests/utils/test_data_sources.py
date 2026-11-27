@@ -181,6 +181,41 @@ def test_read_codes_errors():
         utils.data_sources.read_codes_in(data_source="INVALID_DATA_SOURCE")
 
 
+def test_read_codes_of_a_codes_file(tmp_path):
+    """
+    Test that a codes file is checked.
+
+    Its entities can have the fields of those of the data sources, and
+    a misspelt field, or no list of entities, stops with the path of
+    the file.
+    """
+    codes_file = tmp_path / "codes.yaml"
+    codes_file.write_text(
+        "entities:\n"
+        "  - country_name: France\n"
+        "    country_code: FRA\n"
+        "  - country_code: USA\n"
+        "    subdivision_code: CAL\n"
+        "    end_date: today\n"
+    )
+    assert utils.data_sources.read_codes_in(file_path=str(codes_file)) == [
+        "FRA",
+        "USA_CAL",
+    ]
+
+    codes_file.write_text("entities:\n  - iso_code: FRA\n")
+    with pytest.raises(
+        ValueError,
+        match=r"(?s)codes file .*codes\.yaml is not valid.*country_code\n"
+        r"  Field required.*iso_code\n  Extra inputs",
+    ):
+        utils.data_sources.read_codes_in(file_path=str(codes_file))
+
+    codes_file.write_text("- country_code: FRA\n")
+    with pytest.raises(ValueError, match="is not valid"):
+        utils.data_sources.read_codes_in(file_path=str(codes_file))
+
+
 def test_date_ranges():
     """
     Test if the date ranges are read correctly.

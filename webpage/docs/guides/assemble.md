@@ -59,7 +59,7 @@ Leave every scenario empty for historical data, as for training or for a forecas
 Each scenario and climate model is checked against the catalogue (`utils/catalogue.py`), in any case. A wrong one stops the script with the list of valid values.
 
 !!! warning
-    Give the temperature scenario and its climate model together. With only one, the settings pass the check but no temperature file matches: the log warns "No temperature files found" for each entity, and the script stops with `No objects to concatenate`.
+    Give the temperature scenario and its climate model together: the files of the temperature are named after both, so the script stops at the check of the settings if only one is given. If an input has no file for any of the codes, such as a scenario that was never retrieved, the script stops with `No ... data was found for any of the ... codes`, which names the folder it read.
 
 Choose consistent scenarios: the same SSP for population and GDP, and demand per capita and temperature scenarios of that SSP. For example:
 
@@ -78,7 +78,7 @@ climate_model_for_temperature: CESM2
 ## How the rows are built
 
 1. **Select the entities**, as in [Training or forecasting](#training-or-forecasting).
-2. **Refresh the combined demand** (training only). A combined series that is not current is combined again from the cleaned data, so the eligible hours follow the current reviews (see [When the combination runs again](../concepts/electricity-demand.md#when-the-combination-runs-again)).
+2. **Refresh the combined demand** (training only). The sources cleaned with other cleaning or flag rules are cleaned and flagged again from their processed data, and a combined series that is not current is combined again from the cleaned data, so the eligible hours follow the current rules and reviews (see [When the combination runs again](../concepts/electricity-demand.md#when-the-combination-runs-again)).
 3. **Load each input of each entity.** A missing file is logged and skipped. Then:
     - the electricity demand keeps only its [eligible](../concepts/electricity-demand.md#eligibility-for-training) hours, and the log counts those left out;
     - text columns, such as the data source of each hour, are dropped;
@@ -105,7 +105,7 @@ The log lists the years left out; `_coverage.csv` lists every year.
 
 ## Output files
 
-The files go to the `assembled/` folder of the [data folder](../reference/data-folder.md#assembled-data). `<time>` is the local time of the run, `YYYYMMDD_HHMMSS`. When you give no path, the other scripts take the [latest file](../reference/data-folder.md#which-file-is-the-latest) of the purpose they need.
+The files go to the `assembled/` folder of the [data folder](../reference/data-folder.md#assembled-data). `<time>` is the time of the run in UTC, `YYYYMMDD_HHMMSS` (the local time, in the name of the log). When you give no path, the other scripts take the [latest file](../reference/data-folder.md#which-file-is-the-latest) of the purpose they need.
 
 | File | What it holds |
 |---|---|
@@ -159,5 +159,7 @@ This file records where the demand of the kept hours came from, from the combine
 | An entity is missing from the output | Read the log: one of its inputs lacks the hours of the others, or none of its years has enough hours |
 | `None of the codes in the file are available` | Check the codes; for training, retrieve their electricity demand |
 | `does not say which hours can be used for training` | A combined file without the `Eligible` column could not be combined again: retrieve the electricity demand of the entity again |
+| `No ... data was found for any of the ... codes` | Retrieve that input, for the scenario and climate model you chose |
+| `... must be given together` | Give both `scenario_for_temperature` and `climate_model_for_temperature`, or neither |
 
-For `No objects to concatenate` and a missing year, see the [FAQ](../help/faq.md#assembling-training-and-forecasting).
+For a missing year, see the [FAQ](../help/faq.md#assembling-training-and-forecasting).

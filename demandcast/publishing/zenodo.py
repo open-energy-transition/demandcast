@@ -101,7 +101,7 @@ class ZenodoApi:
         )
         self.access_token = utils.config.read_api_key(
             "SANDBOX_ZENODO_API_KEY" if sandbox else "ZENODO_API_KEY",
-            "the sandbox of Zenodo" if sandbox else "Zenodo",
+            "Zenodo sandbox" if sandbox else "Zenodo",
         )
 
     def request(

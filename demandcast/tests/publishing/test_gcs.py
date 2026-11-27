@@ -251,17 +251,22 @@ def test_download(data_folder):
     assert not (data_folder / "gridded_weather").exists()
 
 
-def test_dry_run(data_folder):
-    """Test that a dry run lists the files to copy without copying."""
+def test_dry_run(data_folder, caplog):
+    """
+    Test that a dry run lists the files to copy without copying.
+
+    The log names each file, one a line.
+    """
     bucket = _FakeBucket({})
 
-    report = gcs.sync(
-        "bucket",
-        "upload",
-        str(data_folder),
-        dry_run=True,
-        client=_FakeClient(bucket),
-    )
+    with caplog.at_level("INFO"):
+        report = gcs.sync(
+            "bucket",
+            "upload",
+            str(data_folder),
+            dry_run=True,
+            client=_FakeClient(bucket),
+        )
 
     assert report.copied == [
         "electricity_demand/cleaned/DEU_entsoe.parquet",
@@ -269,6 +274,14 @@ def test_dry_run(data_folder):
         "same.csv",
     ]
     assert bucket.objects == {}
+    assert [
+        record.message
+        for record in caplog.records
+        if record.message.startswith("Would copy ")
+    ] == [
+        "Would copy 3 files to gs://bucket, and skipped 0 identical files.",
+        *(f"Would copy {name}" for name in report.copied),
+    ]
 
 
 def test_files_written_in_the_meantime(tmp_path):
@@ -376,6 +389,76 @@ def test_symbolic_link_out_of_the_data_folder(data_folder, tmp_path):
 
     assert report.unsafe == ["linked/file.csv"]
     assert not (outside / "file.csv").exists()
+
+
+def test_linked_folders_are_reported(data_folder, tmp_path, caplog):
+    """
+    Test that the folders that are symbolic links are named in the log.
+
+    Their files are not uploaded, and a linked folder that is excluded
+    is not named.
+    """
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "file.csv").write_bytes(b"data")
+    (data_folder / "linked").symlink_to(outside, target_is_directory=True)
+    (data_folder / "logs" / "linked").symlink_to(
+        outside, target_is_directory=True
+    )
+    bucket = _FakeBucket({})
+
+    with caplog.at_level("WARNING"):
+        report = gcs.sync(
+            "bucket", "upload", str(data_folder), client=_FakeClient(bucket)
+        )
+
+    assert "linked/file.csv" not in report.copied
+    assert (
+        "1 folders of the data folder are symbolic links, which are not "
+        "followed, so their files are not uploaded: linked"
+    ) in caplog.messages
+
+
+def test_download_without_hard_links(tmp_path, monkeypatch):
+    """
+    Test that a file system without hard links still gets downloads.
+
+    The file is renamed instead, unless a file has its path, which the
+    rename would overwrite.
+    """
+
+    def refuse_link(*_):
+        """
+        Refuse a hard link, as exFAT does.
+
+        Raises
+        ------
+        PermissionError
+            Always.
+        """
+        raise PermissionError(1, "Operation not permitted")
+
+    monkeypatch.setattr(gcs.os, "link", refuse_link)
+    bucket = _FakeBucket({"a.csv": b"content", "b.csv": b"content"})
+
+    assert gcs._download(bucket.blob("a.csv"), str(tmp_path / "a.csv"))
+    assert [path.name for path in tmp_path.iterdir()] == ["a.csv"]
+    assert (tmp_path / "a.csv").read_bytes() == b"content"
+
+    def write_and_refuse_link(source, destination):
+        """Write the file in the meantime, and refuse the link."""
+        with open(destination, "wb") as file:
+            file.write(b"other copy")
+        refuse_link(source, destination)
+
+    monkeypatch.setattr(gcs.os, "link", write_and_refuse_link)
+
+    assert not gcs._download(bucket.blob("b.csv"), str(tmp_path / "b.csv"))
+    assert (tmp_path / "b.csv").read_bytes() == b"other copy"
+    assert sorted(path.name for path in tmp_path.iterdir()) == [
+        "a.csv",
+        "b.csv",
+    ]
 
 
 def test_download_leaves_no_temporary_file(tmp_path):

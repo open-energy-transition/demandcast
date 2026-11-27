@@ -26,5 +26,5 @@ excluded_folders:
 included_folders:
 
 # OPTIONAL.
-# Whether to only list the files to copy, without copying them.
+# Whether to only list the files to copy in the log, without copying them.
 dry_run: false

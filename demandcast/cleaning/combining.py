@@ -88,9 +88,12 @@ Description:
     data sources is not current, and the assembly of the training data
     combines it again from the cleaned data (see
     ensure_current_combination), so that the training data follows the
-    current rules of the combination and the current reviews. The code
-    counts as whole files, so that any change to them, even to a
-    docstring, combines the series again.
+    current rules of the combination and the current reviews. Before
+    that, the data sources cleaned with other rules of the cleaning or
+    of the flags are cleaned and flagged again from their processed
+    data (see cleaning.electricity_demand.is_current). The code counts
+    as whole files, so that any change to them, even to a docstring,
+    combines the series again.
 """
 
 import hashlib
@@ -100,6 +103,7 @@ import os
 import numpy as np
 import pandas as pd
 
+import cleaning.electricity_demand
 import cleaning.flags
 import cleaning.reviews
 import utils.data_sources
@@ -651,30 +655,6 @@ def _exclude_reviewed_hours(code: str, combined: pd.DataFrame) -> pd.DataFrame:
     return combined.assign(Eligible=exclusions == "", Exclusion=exclusions)
 
 
-def _read_text(file_path: str) -> bytes:
-    """
-    Read a text file with the line endings of Unix.
-
-    Parameters
-    ----------
-    file_path : str
-        The path of the file.
-
-    Returns
-    -------
-    bytes
-        The content of the file, with each CRLF replaced by LF.
-
-    Notes
-    -----
-    Git can check the files out with CRLF on Windows, which must not
-    change the fingerprint of a combined series made elsewhere, such as
-    one copied from a bucket.
-    """
-    with open(file_path, "rb") as file:
-        return file.read().replace(b"\r\n", b"\n")
-
-
 def get_fingerprint(code: str) -> str:
     """
     Get the fingerprint of what decides the combined series of a code.
@@ -702,7 +682,11 @@ def get_fingerprint(code: str) -> str:
     ]
     checksum = hashlib.sha256()
     for file_path in text_paths:
-        checksum.update(hashlib.sha256(_read_text(file_path)).digest())
+        checksum.update(
+            hashlib.sha256(
+                utils.files.read_with_unix_line_endings(file_path)
+            ).digest()
+        )
     for data_source in data_sources:
         flags_path = utils.paths.get_electricity_demand_file(
             "cleaned", code, data_source, table="flags"
@@ -750,15 +734,74 @@ def is_current(code: str) -> bool:
     )
 
 
-def ensure_current_combination(code: str) -> None:
+def _clean_again(code: str) -> None:
     """
-    Combine the electricity demand of a code again if it is not current.
+    Clean and flag again the data sources cleaned with other rules.
 
     Parameters
     ----------
     code : str
         The code of the country or subdivision.
+
+    Notes
+    -----
+    A data source without processed data, such as one whose cleaned
+    data alone was copied from a bucket, cannot be cleaned again, and
+    its cleaned data is kept, with a warning.
     """
+    for data_source in utils.data_sources.get_data_sources_of(code):
+        if cleaning.electricity_demand.is_current(code, data_source):
+            continue
+        processed_exists = os.path.exists(
+            utils.paths.get_electricity_demand_file(
+                "processed", code, data_source
+            )
+        )
+        cleaned_exists = os.path.exists(
+            utils.paths.get_electricity_demand_file(
+                "cleaned", code, data_source
+            )
+        )
+        if processed_exists:
+            logging.info(
+                f"The cleaned electricity demand of {code} from "
+                f"{data_source} does not follow the current rules of the "
+                "cleaning and of the flags, so it is cleaned and flagged "
+                "again from the processed data."
+            )
+            cleaning.electricity_demand.clean_data(code, data_source)
+            cleaning.flags.flag_data(code, data_source)
+        elif cleaned_exists:
+            logging.warning(
+                f"The cleaned electricity demand of {code} from "
+                f"{data_source} does not follow the current rules of the "
+                "cleaning and of the flags, and has no processed data to "
+                "clean again, so it is used as it is. Retrieve the "
+                f"electricity demand of {data_source} again to clean it "
+                "with the current rules."
+            )
+
+
+def ensure_current_combination(code: str) -> None:
+    """
+    Combine the electricity demand of a code again if it is not current.
+
+    The data sources cleaned with other rules are first cleaned and
+    flagged again from their processed data.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+
+    Notes
+    -----
+    A combined series that is not current and cannot be combined again,
+    because no data source has cleaned data of the code, such as when
+    only the combined series was copied from a bucket, is used as it is,
+    with a warning, since it can be the only data of the code.
+    """
+    _clean_again(code)
     if is_current(code):
         return
     logging.info(
@@ -767,7 +810,16 @@ def ensure_current_combination(code: str) -> None:
         "of the data sources, so it is combined again from the cleaned "
         "data."
     )
-    combine_data(code)
+    if combine_data(code) is None and os.path.exists(
+        utils.paths.get_electricity_demand_file("combined", code)
+    ):
+        logging.warning(
+            f"The combined electricity demand of {code} does not follow "
+            "the current rules of the combination, reviews of the flags "
+            "or data sources, and cannot be combined again because no "
+            "data source has cleaned data of it, so it is used as it is. "
+            "Retrieve its electricity demand to combine it again."
+        )
 
 
 def combine_data(code: str) -> pd.DataFrame | None:

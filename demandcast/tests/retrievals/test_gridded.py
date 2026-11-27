@@ -275,3 +275,57 @@ def test_unreadable_grid_is_extracted_again(tmp_path, caplog):
     assert extracted == ["FRA"]
     assert "cannot be read, so it is retrieved again" in caplog.text
     assert retrievals.gridded.is_current(file_path, "FRA")
+
+
+@pytest.mark.parametrize(
+    ("bounds", "x", "y"),
+    [
+        # Bounds with cells inside them.
+        ([0.5, 1.5, 3.5, 2.5], [1, 2, 3], [2]),
+        # Bounds between two cells, nearer to one, or to each.
+        ([1.1, 4.1, 1.3, 4.3], [1], [4]),
+        ([1.2, 4.3, 1.8, 4.7], [1, 2], [4, 5]),
+        # Bounds beyond the last cell.
+        ([5.5, 0.0, 6.5, 0.4], [5], [0]),
+    ],
+)
+def test_bounds_without_cells_get_the_nearest(bounds, x, y):
+    """
+    Test that bounds without a cell inside get the nearest cells.
+
+    A grid coarser than the bounds, such as that of a climate model for
+    a small island, has no cell inside them along x or y. The cells
+    nearest to each of the two bounds are those nearest to any point
+    between them.
+    """
+    grid = retrievals.gridded.select_bounds(_global_grid(), bounds)
+
+    assert grid["x"].to_numpy().tolist() == x
+    assert grid["y"].to_numpy().tolist() == y
+
+
+def test_grid_without_cells_is_extracted_again(tmp_path, shape_bounds, caplog):
+    """
+    Test that a grid without cells is extracted again, with cells.
+
+    The bounds of the shape are between two cells along x, so the grid
+    has the nearest cell. A grid saved without a cell, with the same
+    bounds, is not current.
+    """
+    shape_bounds[:] = [1.1, 0.0, 1.3, 2.0]
+    file_path = os.path.join(tmp_path, "FRA.nc")
+    retrievals.gridded.record_bounds(
+        _global_grid().isel(x=[]), shape_bounds
+    ).to_netcdf(file_path)
+
+    with caplog.at_level("WARNING"):
+        assert not retrievals.gridded.is_current(file_path, "FRA")
+    assert "has no cell, so it is retrieved again" in caplog.text
+
+    extracted: list[str] = []
+    _extract(tmp_path, extracted)
+
+    assert extracted == ["FRA"]
+    with xarray.open_dataarray(file_path) as grid:
+        assert grid["x"].to_numpy().tolist() == [1]
+        assert grid["y"].to_numpy().tolist() == [0, 1, 2]

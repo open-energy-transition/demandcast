@@ -35,7 +35,7 @@ The algorithm and the features are in [`ml_config.yaml`](#ml_configyaml).
 
 ### Output files
 
-`<algorithm>` is `xgboost` or `lstm`, and `<time>` the local time of the run, `YYYYMMDD_HHMMSS`.
+`<algorithm>` is `xgboost` or `lstm`, and `<time>` the time of the run in UTC, `YYYYMMDD_HHMMSS` (the local time, in the names of the logs).
 
 | File | What it holds |
 |---|---|
@@ -65,7 +65,7 @@ The data must be that of the training, with the same checksum. Use `data_path` o
 
 ### What it does
 
-1. Finds the model and checks it against its manifest. A model trained without a testing set stops the script.
+1. Finds the model and checks it against its manifest. A model of another algorithm than `ml_config.yaml`, or trained without a testing set, stops the script.
 2. Reads the data of the training and splits it again, with the testing set and, if the training had one, the validation set.
 3. Checks that the features (in order), target, settings of `ml_config.yaml`, data and sets are those of the training, and stops otherwise (see [When a script refuses a file](../concepts/models.md#when-a-script-refuses-a-file)).
 4. Predicts every set and computes the errors of each entity in each set (see [Metrics](../concepts/models.md#metrics)).

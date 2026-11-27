@@ -481,6 +481,50 @@ def test_unpublished_latest_request(add_data_source):
     assert _read_saved_data("FRA", "yearly") == {"2023-01-01 00:00": 100.0}
 
 
+def test_unpublished_latest_request_alone(add_data_source):
+    """
+    Test that the latest request can be missing when downloaded alone.
+
+    With one latest request, such as for a yearly source in early
+    January, the earlier year has a version in the raw data, so only
+    the latest year is downloaded: its file, not published yet, is
+    skipped, and the earlier year is processed from the raw data.
+    """
+    published = {2023: True, 2024: False}
+
+    def download(request, _code):
+        """
+        Give the demand of a year.
+
+        Returns
+        -------
+        pandas.Series
+            The demand of the request.
+
+        Raises
+        ------
+        DataNotFoundError
+            If the year is not published.
+        """
+        if not published[request]:
+            raise utils.fetcher.DataNotFoundError("HTTP error 404")
+        return _demand(f"{request}-01-01 01:00", [100.0])
+
+    add_data_source(
+        "yearly",
+        ["FRA"],
+        get_available_requests=Mock(return_value=[2023, 2024]),
+        download_and_extract_data_for_request=download,
+    )
+    retrievals.electricity_demand.run_data_retrieval("yearly", None, None)
+
+    retrievals.electricity_demand.run_data_retrieval(
+        "yearly", None, None, latest_requests=1
+    )
+
+    assert _read_saved_data("FRA", "yearly") == {"2023-01-01 00:00": 100.0}
+
+
 def test_request_without_data_is_downloaded_again(
     add_data_source, monkeypatch
 ):

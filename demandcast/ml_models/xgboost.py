@@ -78,8 +78,6 @@ def save(xgb_model: XGBRegressor, file_path: str) -> None:
     """
     xgb_model.save_model(file_path)
 
-    logging.info(f"Trained model saved to {file_path}")
-
 
 def get_initialized_model(config: ConfigModel) -> XGBRegressor:
     """

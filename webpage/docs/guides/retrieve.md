@@ -58,8 +58,7 @@ Each variable is saved in the folder of the same name under the data folder, suc
 | `offline` | `false` | `electricity_demand` | Process the saved raw data again, without the network (see [below](#process-again-without-downloading-offline)). |
 | `latest_requests` | none (all) | `electricity_demand` | A number of 1 or more: download only that many latest requests of each code, plus those never downloaded (see [below](#download-only-the-latest-requests-latest_requests)). |
 
-!!! warning
-    An option that does not apply to the variable is ignored without a warning, such as `year` with `electricity_demand`. Only `scenario` with `electricity_demand` stops with an error.
+An option that does not apply to the variable must be empty or at its default: otherwise the script stops at the check of the settings, such as with `year` for `electricity_demand` or `offline: true` for `population`. Only `weather_variable`, whose only value is `temperature`, can stay set for every variable.
 
 ## Choose countries and subdivisions
 
@@ -89,7 +88,7 @@ These options apply to all variables but `electricity_demand`, whose dates come 
 | Variable | Past years | Future years | `scenario` values |
 |---|---|---|---|
 | `population`, `gdp_ppp_per_capita` | Years of the World Bank (and IMF) data, carried forward to last year | Up to 2100 | [SSP](../concepts/glossary.md#ssp): `SSP1` to `SSP5` |
-| `annual_electricity_demand_per_capita` | Years of the Ember or World Bank data, up to the last year with data | The next year to 2100 | [IAMC](../concepts/glossary.md#iamc-scenario), such as `SSP2-45` or `SSP2-Baseline` |
+| `annual_electricity_demand_per_capita` | Years of the Ember or World Bank data, carried forward to last year | This year to 2100 | [IAMC](../concepts/glossary.md#iamc-scenario), such as `SSP2-45` or `SSP2-Baseline` |
 | `gridded_population` | 2000 to 2020, every 5 years | 2025 to 2100, every 5 years | SSP |
 | `gridded_gdp_ppp` | 2000 to 2020 | 2025 to 2100, every 5 years | SSP |
 | `gridded_weather`, `temperature` | 1990 to last year (ERA5) | This year to 2100 | CMIP6, such as `SSP2-4.5` |
@@ -97,7 +96,7 @@ These options apply to all variables but `electricity_demand`, whose dates come 
 A past year has no scenario. A future year is retrieved for each scenario, or only for `scenario`. For the weather, it is retrieved for each climate model and each of its scenarios, or only for `climate_model`. [Scenarios, climate models and years](../concepts/inputs.md#scenarios-climate-models-and-years) lists the models and their scenarios.
 
 !!! warning
-    Without `climate_model`, `scenario` must exist for every model: only `SSP1-2.6`, `SSP2-4.5` and `SSP5-8.5` do. `SSP3-7.0` alone fails, because `HadGEM3-GC31-LL` lacks it: set `climate_model` too.
+    Without `climate_model`, `scenario` must exist for every model: only `SSP1-2.6`, `SSP2-4.5` and `SSP5-8.5` do. `SSP3-7.0` alone stops the script at the check of the settings, because `HadGEM3-GC31-LL` lacks it: set `climate_model` too, to one of the models that the error lists.
 
 !!! tip
     Always set the years for `gridded_weather` and `temperature`. Otherwise the script retrieves 1990 to 2100 for every model and scenario.
@@ -112,8 +111,7 @@ Set keys and accounts in `demandcast/.env`, as [Install](../getting-started/inst
 
 The values of every environment variable whose name ends in `_API_KEY` or `_PASSWORD` are replaced by `***` in errors, logs and saved raw data.
 
-!!! note
-    `offline: true` still needs the key or account of `entsoe`, `eia`, `epias` and `isone`: their code reads it before asking for the saved responses.
+`offline: true` needs no key or account: the saved requests have them hidden, so a key that is not set gets a stand-in while the saved responses are replayed.
 
 ## Electricity demand
 
@@ -142,7 +140,7 @@ API keys and passwords are hidden in the manifest. Responses to requests that se
 
 ### Process again without downloading (`offline`)
 
-With `offline: true`, the script reads the saved versions of each code instead of downloading, then saves, cleans, flags and combines as usual. Use it after changing the module of a data source, its YAML file or the cleaning. A code without raw data logs a warning and is skipped. `offline` wins over `latest_requests`.
+With `offline: true`, the script reads the saved versions of each code instead of downloading, then saves, cleans, flags and combines as usual. Use it after changing the module of a data source or its YAML file. A change to the cleaning or flag rules needs no new retrieval: `assemble.py` cleans the processed data again (see [When the combination runs again](../concepts/electricity-demand.md#when-the-combination-runs-again)). A code without raw data logs a warning and is skipped. `offline` wins over `latest_requests`.
 
 ### Download only the latest requests (`latest_requests`)
 
@@ -162,7 +160,7 @@ Keep earlier downloads next to later ones. Each hour takes the value of the file
 ### What happens when a request fails
 
 - Temporary errors (timeouts, lost connections, HTTP 408, 425, 429 and 5xx) are tried up to 5 times, 5 seconds apart.
-- If the last of several requests of a code is not found (HTTP 404 or 410), it is skipped with a warning: the file of the latest period may not be published yet. Any other request not found is an error.
+- If the last of several requests of a code is not found (HTTP 404 or 410), it is skipped with a warning: the file of the latest period may not be published yet. This holds also when `latest_requests` leaves it alone, such as `latest_requests: 1` for a yearly source in early January. Any other request not found is an error.
 - A request that returns no data gets no version, so the next retrieval with `latest_requests` downloads it again.
 - When a request fails, the responses of the requests before it stay in the raw data.
 - If responses arrived but their data cannot be read, such as after a format change, they are saved with the error. Once the module is fixed, `offline: true` processes them.

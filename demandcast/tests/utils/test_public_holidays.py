@@ -9,6 +9,7 @@ Description:
 import datetime as dt
 
 import pandas as pd
+import pytest
 
 import utils.public_holidays
 
@@ -109,3 +110,79 @@ def test_country_without_holidays(caplog):
 
     assert indicator.tolist() == [0]
     assert "public holidays of XXX are not known" in caplog.text
+
+
+# The package warns that it has the holidays of India only for some
+# years, which the test checks in the log of DemandCast.
+@pytest.mark.filterwarnings("ignore:Requested Holidays are available only")
+def test_selected_holidays_without_dates_are_logged(caplog):
+    """
+    Test that the years without dates of selected holidays are logged.
+
+    The package has the dates of Holi, Diwali and Dussehra only for the
+    years of its tables, which end before 2040: India then has only its
+    three other selected holidays, such as Republic Day.
+    """
+    times = pd.Series(pd.to_datetime(["2024-01-26 12:00", "2040-01-26 12:00"]))
+
+    with caplog.at_level("WARNING"):
+        indicator = utils.public_holidays.get_holiday_indicator(times, "IND")
+
+    assert indicator.tolist() == [1, 1]
+    assert caplog.messages == [
+        (
+            "The holidays package has no date of some public holidays of "
+            "IND, so these years have none of them: Diwali in 2040; "
+            "Dussehra in 2040; Holi in 2040."
+        )
+    ]
+
+
+def test_weekend_of_the_country_in_local_time():
+    """
+    Test that the weekend days are those of the country, in local time.
+
+    Saudi Arabia (UTC+3) moved its weekend from Thursday and Friday to
+    Friday and Saturday in 2013, and the United Arab Emirates from
+    Friday and Saturday to Saturday and Sunday in 2022. The hour that
+    ends at 21:00 UTC on Wednesday 6 June 2012 starts at 23:00 in
+    Riyadh, on Wednesday; the next one starts on Thursday.
+    """
+    # The Thursday to Sunday of a week of June of each year.
+    first_days = {2012: 7, 2021: 10, 2023: 8, 2024: 6}
+    times = {
+        year: pd.Series(
+            pd.date_range(f"{year}-06-{first_day} 12:00", periods=4, freq="D")
+        )
+        for year, first_day in first_days.items()
+    }
+    weekend = utils.public_holidays.get_weekend_indicator
+
+    assert weekend(times[2012], "SAU").tolist() == [1, 1, 0, 0]
+    assert weekend(times[2024], "SAU").tolist() == [0, 1, 1, 0]
+    assert weekend(times[2021], "ARE").tolist() == [0, 1, 1, 0]
+    assert weekend(times[2023], "ARE").tolist() == [0, 0, 1, 1]
+    assert weekend(times[2024], "FRA").tolist() == [0, 0, 1, 1]
+    assert weekend(
+        pd.Series(pd.to_datetime(["2012-06-06 21:00", "2012-06-06 22:00"])),
+        "SAU",
+    ).tolist() == [0, 1]
+
+
+def test_weekend_of_a_country_without_holidays(monkeypatch):
+    """
+    Test that a country that the package does not know has a weekend.
+
+    Its weekend is Saturday and Sunday: 7 to 10 June 2024 are Friday to
+    Monday.
+    """
+    monkeypatch.setattr(
+        utils.public_holidays, "get_holiday_calendar", lambda _code: None
+    )
+    times = pd.Series(
+        pd.to_datetime([f"2024-06-{day} 12:00" for day in range(7, 11)])
+    )
+
+    assert utils.public_holidays.get_weekend_indicator(
+        times, "SAU"
+    ).tolist() == [0, 1, 1, 0]

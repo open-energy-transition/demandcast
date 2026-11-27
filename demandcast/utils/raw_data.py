@@ -32,7 +32,9 @@ Description:
     To process a version again, its responses are replayed to the code
     of the data source instead of downloads, and its files downloaded
     manually instead of those in their folder: a request without a
-    saved response raises an error, so nothing is downloaded.
+    saved response raises an error, so nothing is downloaded. The API
+    keys and accounts that are not set get a stand-in meanwhile (see
+    get_stand_in), since the saved requests have them hidden.
 """
 
 from __future__ import annotations
@@ -63,6 +65,11 @@ MANUAL_FILE = "FILE"
 # Whether saved responses are replayed instead of downloads.
 _replay = {"active": False}
 
+# The value of the API keys and accounts that are not set, while
+# replaying, and the variables that have it.
+STAND_IN = "demandcast-stand-in"
+_stand_ins: set[str] = set()
+
 
 class RawDataNotFoundError(LookupError):
     """A request without a saved response, while replaying."""
@@ -78,6 +85,39 @@ def is_replaying() -> bool:
         True inside replaying, when the requests send nothing.
     """
     return _replay["active"]
+
+
+def get_stand_in(variable: str) -> str:
+    """
+    Give a stand-in to an API key or account that is not set.
+
+    The stand-in is the value of the environment variable until the
+    replaying ends, so that it is hidden as the keys and passwords are
+    (see utils.fetcher.redact) and the requests match the saved ones.
+
+    Parameters
+    ----------
+    variable : str
+        The environment variable of the key or account.
+
+    Returns
+    -------
+    str
+        The stand-in.
+
+    Raises
+    ------
+    RuntimeError
+        If the saved responses are not replayed: a download needs the
+        real key.
+    """
+    if not is_replaying():
+        raise RuntimeError(
+            "A stand-in of an API key is given only while replaying."
+        )
+    os.environ[variable] = STAND_IN
+    _stand_ins.add(variable)
+    return STAND_IN
 
 
 def _folder(data_source: str) -> str:
@@ -736,6 +776,9 @@ def replaying(
         )
         manual_folder.cleanup()
         _replay["active"] = False
+        for variable in _stand_ins:
+            os.environ.pop(variable, None)
+        _stand_ins.clear()
 
 
 def read_manifest(data_source: str) -> dict[str, Any]:

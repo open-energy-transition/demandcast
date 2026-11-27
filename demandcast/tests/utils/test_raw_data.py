@@ -17,6 +17,7 @@ import pandas as pd
 import pytest
 import requests
 
+import utils.config
 import utils.fetcher
 import utils.paths
 import utils.raw_data
@@ -128,6 +129,47 @@ def test_record_and_replay(server, monkeypatch):
     assert data.content == b"time,value\n"
     assert data.headers["Content-Type"] == "text/csv"
     assert ticket.text == ""
+
+
+def test_replay_without_the_api_key(server, monkeypatch):
+    """
+    Test that the responses are replayed without the API key.
+
+    The saved requests have the key hidden, so a key that is not set
+    gets a stand-in while replaying, as with offline: true, and is not
+    set once the replay ends.
+    """
+    monkeypatch.setattr(utils.config, "load_dotenv", lambda **_: None)
+    monkeypatch.setenv("TEST_API_KEY", "key123")
+    server["https://example.org/data?api_key=key123"] = b"time,value\n"
+    with utils.raw_data.recording("test") as responses:
+        utils.fetcher.fetch_response(
+            "https://example.org/data",
+            request_params={
+                "api_key": utils.config.read_api_key("TEST_API_KEY", "Test")
+            },
+        )
+    monkeypatch.delenv("TEST_API_KEY")
+    server.clear()
+
+    with utils.raw_data.replaying("test", responses):
+        data = utils.fetcher.fetch_response(
+            "https://example.org/data",
+            request_params={
+                "api_key": utils.config.read_api_key("TEST_API_KEY", "Test")
+            },
+        )
+
+    assert data.content == b"time,value\n"
+    assert "TEST_API_KEY" not in os.environ
+    with pytest.raises(ValueError, match="TEST_API_KEY"):
+        utils.config.read_api_key("TEST_API_KEY", "Test")
+
+
+def test_stand_in_only_while_replaying():
+    """Test that a download never gets a stand-in of a key."""
+    with pytest.raises(RuntimeError, match="only while replaying"):
+        utils.raw_data.get_stand_in("TEST_API_KEY")
 
 
 def test_is_replaying():

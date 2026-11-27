@@ -353,6 +353,36 @@ def _parse_data_source_file(
         ) from error
 
 
+class _CodesFileEntity(BaseModel):
+    """
+    A country or subdivision in a codes file.
+
+    Only the codes are read. The other fields of the countries and
+    subdivisions of the data sources are allowed, so that those of a
+    data source can be copied, and any other field, such as a misspelt
+    code, is an error.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    country_code: str
+    subdivision_code: str | None = None
+    country_name: str | None = None
+    subdivision_name: str | None = None
+    time_zone: str | None = None
+    start_date: dt.date | None = None
+    end_date: dt.date | Literal["today"] | None = None
+    same_area: bool | None = None
+
+
+class _CodesFile(BaseModel):
+    """The content of a codes file: its countries and subdivisions."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    entities: list[_CodesFileEntity]
+
+
 def read_entities(data_source: str) -> list[DataSourceEntity]:
     """
     Read the countries and subdivisions of a data source.
@@ -449,7 +479,8 @@ def read_entities_info(
     ----------
     file_path : str, optional
         The path of a YAML file with the information of the countries
-        and subdivisions, whose entities are read as they are.
+        and subdivisions, a codes file, whose entities are checked with
+        `_CodesFileEntity`.
     data_source : str, optional
         The name of the data source, whose YAML file in the folder of
         the data sources is read and checked with `DataSourceEntity`.
@@ -463,8 +494,9 @@ def read_entities_info(
     ------
     ValueError
         If the data source is provided but not valid or its YAML file
-        is not valid, or if both file_path and data_source are
-        provided, or if neither is provided.
+        is not valid, if the codes file is not valid, or if both
+        file_path and data_source are provided, or if neither is
+        provided.
     """
     if file_path == "" and data_source != "":
         # Read and check the YAML file of the data source, with the
@@ -483,7 +515,15 @@ def read_entities_info(
     with open(file_path, encoding="utf-8") as file:
         content = yaml.safe_load(file)
 
-    return content["entities"]
+    try:
+        codes_file = _CodesFile.model_validate(content)
+    except ValidationError as error:
+        raise ValueError(
+            f"The codes file {file_path} is not valid: {error}"
+        ) from error
+    return [
+        entity.model_dump(exclude_unset=True) for entity in codes_file.entities
+    ]
 
 
 def get_data_sources_of(

@@ -216,6 +216,52 @@ def test_hourly_mean_of_the_local_year(time_zone, first_end):
     assert hourly.to_numpy() == pytest.approx(250 + np.asarray(half_hours))
 
 
+@pytest.mark.parametrize("time_of_day", ["00:00", "12:00"])
+@pytest.mark.parametrize(
+    ("time_zone", "year"),
+    [("Asia/Tokyo", 2026), ("America/Los_Angeles", 2100)],
+)
+def test_projections_cover_the_ends_of_their_years(
+    time_of_day, time_zone, year
+):
+    """
+    Test that the projections give every hour of their local years.
+
+    The first projection year and 2100 have no daily means before or
+    after them: the local year starts 9 hours before that of UTC in
+    Tokyo, and ends 8 hours after it in Los Angeles. These hours, and
+    those before the noon of the first day and after that of the last,
+    have the mean of the nearest day. The daily means are placed at
+    noon, whether their times are at the start or in the middle of
+    their days, as in the files of the climate models.
+    """
+    days = pd.date_range(
+        f"{year}-01-01 {time_of_day}", f"{year}-12-31 {time_of_day}"
+    )
+    data = xarray.DataArray(
+        280 + np.arange(len(days), dtype=float)[:, None],
+        coords={"time": days, "cell": [0]},
+        dims=("time", "cell"),
+    )
+
+    hourly = (
+        temperature._extract_temperature_in_local_year(
+            data, year, pytz.timezone(time_zone), projections=True
+        )
+        .to_series()
+        .droplevel("cell")
+    )
+
+    assert len(hourly) == 8760
+    assert hourly.notna().all()
+    assert hourly.iloc[0] == 280
+    assert hourly.iloc[-1] == 280 + 364
+    # The hour from 12:00 to 13:00 on 1 July, the 182nd day.
+    assert hourly[pd.Timestamp(f"{year}-07-01 13:00")] == pytest.approx(
+        280 + 181 + 0.5 / 24
+    )
+
+
 def test_calendar_of_the_hours():
     """
     Test that the hour, day, month and year are those of the starts.
@@ -227,7 +273,7 @@ def test_calendar_of_the_hours():
     series = pd.Series(280.0, index=ends)
 
     database = temperature._build_temperature_database(
-        series, series, pytz.timezone("Europe/Paris")
+        series, series, "FRA", pytz.timezone("Europe/Paris")
     )
 
     friday_end = database.loc[pd.Timestamp("2024-12-27 23:00")]
@@ -240,6 +286,28 @@ def test_calendar_of_the_hours():
     assert year_end["Local year"] == 2024
     assert year_end["Local month of the year"] == 12
     assert database.loc[pd.Timestamp("2025-01-01 00:00"), "Local year"] == 2025
+
+
+def test_weekend_of_the_country():
+    """
+    Test that the weekend days are those of the country, in local time.
+
+    The weekend of Saudi Arabia (UTC+3) is Friday and Saturday: the hour
+    that ends at 21:00 UTC on Thursday 6 June 2024 starts at 23:00 in
+    Riyadh, on Thursday, and the next one on Friday.
+    """
+    ends = pd.date_range("2024-06-06 21:00", "2024-06-09 00:00", freq="h")
+    series = pd.Series(300.0, index=ends)
+
+    database = temperature._build_temperature_database(
+        series, series, "SAU", pytz.timezone("Asia/Riyadh")
+    )
+
+    weekend = database["Local weekend indicator"]
+    assert weekend[pd.Timestamp("2024-06-06 21:00")] == 0
+    assert weekend[pd.Timestamp("2024-06-06 22:00")] == 1
+    assert weekend[pd.Timestamp("2024-06-08 21:00")] == 1
+    assert weekend[pd.Timestamp("2024-06-08 22:00")] == 0
 
 
 def test_database_of_series_that_end_at_different_times():
@@ -255,7 +323,7 @@ def test_database_of_series_that_end_at_different_times():
     top_1 = top_3[:-24] + 1000
 
     database = temperature._build_temperature_database(
-        top_1, top_3, pytz.timezone("Europe/Paris")
+        top_1, top_3, "FRA", pytz.timezone("Europe/Paris")
     )
 
     assert database.index.equals(ends[:-24])
@@ -587,6 +655,74 @@ def test_files_of_another_processing_are_extracted_again(square_shape):
     retrieve()
     assert len(calls) == 3
     assert temperature.has_current_processing(file_path, "FRA")
+
+
+@pytest.mark.usefixtures("square_shape", "frozen_now")
+def test_copy_of_an_incomplete_year_is_extracted_again():
+    """
+    Test that a copy of a year extracted before it was complete is not.
+
+    The file of 2025 records the time of its extraction, two days after
+    the end of the year, before the reanalysis was complete. A copy of
+    the file, such as from a bucket, has a later time of modification,
+    but the recorded time still makes it extracted again a day later.
+    """
+    series = pd.Series(
+        280.0, index=pd.date_range("2025-01-01 01:00", periods=8760, freq="h")
+    )
+    calls = []
+
+    def extract(*_args, **_kwargs):
+        """
+        Record an extraction and give a constant temperature.
+
+        Returns
+        -------
+        tuple[pandas.Series, pandas.Series]
+            The same temperature twice.
+        """
+        calls.append(1)
+        return series, series
+
+    def retrieve():
+        """Retrieve the temperature of France in 2025."""
+        with (
+            patch.object(
+                temperature.utils.availability,
+                "check_and_get_codes_with",
+                return_value=["FRA"],
+            ),
+            patch.object(
+                temperature,
+                "_get_temperature_in_most_populous_cells",
+                side_effect=extract,
+            ),
+        ):
+            temperature.run_data_retrieval(
+                code="FRA",
+                file=None,
+                year=2025,
+                start_year=None,
+                end_year=None,
+                model=None,
+                scenario=None,
+            )
+
+    retrieve()
+    file_path = temperature.os.path.join(
+        temperature.utils.paths.get_indicator_folder("temperature"),
+        "FRA_2025.parquet",
+    )
+    key = temperature.retrievals.gridded_weather.RETRIEVED_KEY
+    assert pd.read_parquet(file_path).attrs[key] == "2026-01-02T03:04:05"
+
+    # The copy, a day later.
+    copy_time = pd.Timestamp("2026-01-03 04:00")
+    os.utime(file_path, (copy_time.timestamp(), copy_time.timestamp()))
+    with patch.object(pd.Timestamp, "now", lambda *_, **__: copy_time):
+        retrieve()
+
+    assert len(calls) == 2
 
 
 def test_population_of_another_shape_is_extracted_again():

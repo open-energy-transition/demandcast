@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 import utils.paths
+import utils.raw_data
 
 
 class StrictSettings(BaseModel):
@@ -37,6 +38,9 @@ def read_api_key(variable: str, service: str) -> str:
 
     The environment variables are loaded first from the .env file in
     the root folder, if any, without overriding those already set.
+    While saved responses are replayed, as with offline: true, a key
+    that is not set gets a stand-in (see utils.raw_data.get_stand_in),
+    since the saved requests have their keys hidden.
 
     Parameters
     ----------
@@ -53,12 +57,15 @@ def read_api_key(variable: str, service: str) -> str:
     Raises
     ------
     ValueError
-        If the key is not set or is empty.
+        If the key is not set or is empty, and the saved responses are
+        not replayed.
     """
     load_dotenv(dotenv_path=utils.paths.ENV_FILE)
 
     # A secret that is not set on GitHub gives an empty key.
     api_key = os.getenv(variable)
+    if not api_key and utils.raw_data.is_replaying():
+        return utils.raw_data.get_stand_in(variable)
     if not api_key:
         raise ValueError(
             f"The {service} API key is not set. Please set the {variable} "

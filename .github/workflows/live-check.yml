@@ -43,17 +43,22 @@ jobs:
           enable-cache: false
 
       # The check counts the failures in a row of each data source from the
-      # report of the previous check, if there is one.
+      # report of the previous check, if there is one: that of the latest
+      # completed run with a report, even if another job of that run, such
+      # as the network tests, failed.
       - name: "Download the report of the previous check"
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          run_id="$(gh run list --workflow live-check.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
-          if [ -n "$run_id" ]; then
-            gh run download "$run_id" --name data-sources-report --dir data/results/checks ||
-              echo "::notice::The previous check has no report."
-          fi
+          run_ids="$(gh run list --workflow live-check.yml --branch main --status completed --limit 20 --json databaseId --jq '.[].databaseId')"
+          for run_id in $run_ids; do
+            if gh run download "$run_id" --name data-sources-report --dir data/results/checks; then
+              echo "Read the report of the run $run_id."
+              exit 0
+            fi
+          done
+          echo "::notice::No previous check has a report."
 
       - name: "Check the data sources"
         env:

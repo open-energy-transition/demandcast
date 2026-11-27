@@ -15,10 +15,7 @@ Description:
     group in MW. If the results have the predictions of their scored
     hours, a third figure shows the actual and forecast hourly demand of
     the codes with the lowest and the highest WAPE, in a year and in its
-    typical week. The errors of two versions can also be compared, and
-    those of the models trained on the data of each income group and
-    continent plotted against those of the model trained on all the
-    data.
+    typical week. The errors of two versions can also be compared.
 
     A version is a trained model, such as xgboost_model_20261029_144400,
     or the algorithm of a cross-validation, such as xgboost. Its errors
@@ -26,9 +23,7 @@ Description:
     cross_validate.py saved for it, as all_<time>.parquet in
     data/results/<case>/with_<version>/using_<data>/, by the time in
     their names, or those of a given file, checked against their
-    manifest (see ml_models.files). The results of the models trained
-    on the data of a group are named after the group, such as
-    high_income_<time>.
+    manifest (see ml_models.files).
 
     The results of earlier versions are in a folder of the version, such
     as data/results/validation/<version>/all.csv, with the columns
@@ -50,7 +45,6 @@ from matplotlib.transforms import offset_copy
 
 import ml_models.files
 import ml_models.reporting
-import utils.codes
 import utils.columns
 import utils.figures
 import utils.manifest
@@ -155,7 +149,6 @@ def _get_figure_width(number_of_entities: int) -> float:
 def _read_results(
     results_directory: str,
     version: str,
-    name: str,
     file_path: str | None = None,
 ) -> ml_models.files.Results:
     """
@@ -168,11 +161,9 @@ def _read_results(
     version : str
         The trained model, or the algorithm of a cross-validation, or
         the folder of the MAPE files of an earlier version.
-    name : str
-        The name of the results: "all", or the name of a group.
     file_path : str | None, optional
         The Parquet file of the results, by default the latest of the
-        version and name.
+        version.
 
     Returns
     -------
@@ -184,9 +175,9 @@ def _read_results(
     Raises
     ------
     FileNotFoundError
-        If the version has no results of the name.
+        If the version has no results.
     """
-    legacy_path = os.path.join(results_directory, version, f"{name}.csv")
+    legacy_path = os.path.join(results_directory, version, "all.csv")
     if os.path.exists(legacy_path):
         return ml_models.files.Results(
             legacy_path,
@@ -199,13 +190,12 @@ def _read_results(
             None,
         )
     file_path = file_path or ml_models.files.find_latest_results(
-        results_directory, version, name
+        results_directory, version
     )
     if file_path is None:
         raise FileNotFoundError(
-            f"The version {version} has no results {name} in "
-            f"{results_directory}: no with_{version}/*/{name}_*.parquet, "
-            f"and no {version}/{name}.csv."
+            f"The version {version} has no results in {results_directory}: "
+            f"no with_{version}/*/all_*.parquet, and no {version}/all.csv."
         )
     results = ml_models.files.read_results(file_path)
     return dataclasses.replace(
@@ -219,7 +209,6 @@ def _read_results(
 def _get_testing_error(
     results: pd.DataFrame,
     version: str,
-    name: str,
     metric: Literal["WAPE", "MAPE"],
 ) -> pd.Series:
     """
@@ -233,8 +222,6 @@ def _get_testing_error(
     version : str
         The trained model, or the algorithm of a cross-validation, or
         the folder of the MAPE files of an earlier version.
-    name : str
-        The name of the results: "all", or the name of a group.
     metric : str
         The metric of the error, "WAPE" or "MAPE".
 
@@ -253,8 +240,8 @@ def _get_testing_error(
     column = f"Testing {metric}"
     if column not in results:
         raise ValueError(
-            f"The results {name} of the version {version} have no {metric}: "
-            "plot them with the MAPE."
+            f"The results of the version {version} have no {metric}: plot "
+            "them with the MAPE."
         )
     return results[column]
 
@@ -263,8 +250,6 @@ def _read_errors(
     results_directory: str,
     version: str,
     compare_with_version: str | None,
-    by_group: bool,
-    groups: dict[str, list[str]],
     metric: Literal["WAPE", "MAPE"],
     results: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
@@ -280,49 +265,29 @@ def _read_errors(
     compare_with_version : str | None
         The version of the ML model whose results are to be considered
         in the comparison.
-    by_group : bool
-        Whether to plot the results by group (income level and
-        continent).
-    groups : dict[str, list[str]]
-        Dictionary mapping case names to their respective groups.
     metric : str
         The metric of the errors, "WAPE" or "MAPE".
     results : pandas.DataFrame | None, optional
-        The results "all" of the version, indexed by their code (see
+        The results of the version, indexed by their code (see
         _read_results), by default the latest.
 
     Returns
     -------
     errors : pandas.DataFrame
         The errors of each country and subdivision, in percent, in a
-        column "<version>_<name>" for each version and results, with
-        the codes of any of them.
+        column "<version>_all" for each version, with the codes of any
+        of them.
     """
     if results is None:
-        results = _read_results(results_directory, version, "all").results
-    columns = {
-        f"{version}_all": _get_testing_error(results, version, "all", metric)
-    }
+        results = _read_results(results_directory, version).results
+    columns = {f"{version}_all": _get_testing_error(results, version, metric)}
 
     if compare_with_version is not None:
         columns[f"{compare_with_version}_all"] = _get_testing_error(
-            _read_results(
-                results_directory, compare_with_version, "all"
-            ).results,
+            _read_results(results_directory, compare_with_version).results,
             compare_with_version,
-            "all",
             metric,
         )
-
-    if by_group:
-        for case_groups in groups.values():
-            for group in case_groups:
-                columns[f"{version}_{group}"] = _get_testing_error(
-                    _read_results(results_directory, version, group).results,
-                    version,
-                    group,
-                    metric,
-                )
 
     return pd.concat(columns, axis=1) * 100
 
@@ -949,113 +914,6 @@ def _plot_comparison(
     plt.close(fig)
 
 
-def _plot_by_group(
-    figure_directory: str,
-    version: str,
-    errors: pd.DataFrame,
-    groups: dict[str, list[str]],
-    description: tuple[str, str],
-    metric: Literal["WAPE", "MAPE"] = "MAPE",
-) -> None:
-    """
-    Plot the errors of the models trained on the data of each group.
-
-    Parameters
-    ----------
-    figure_directory : str
-        The directory where the figure will be saved.
-    version : str
-        The version of the ML model whose results are to be plotted.
-    errors : pandas.DataFrame
-        The errors of each country and subdivision, in percent.
-    groups : dict[str, list[str]]
-        Dictionary mapping case names to their respective groups.
-    description : tuple[str, str]
-        The title of the version and the part of the name of the file
-        (see describe_version).
-    metric : str, optional
-        The metric of the errors, "WAPE" or "MAPE".
-    """
-    group_labels = {
-        "lower_middle_income": "Lower middle income",
-        "upper_middle_income": "Upper middle income",
-        "high_income": "High income",
-        **utils.codes.CONTINENT_NAMES,
-    }
-
-    for case, case_groups in groups.items():
-        # Each group has the axes of a box, of its bars and of a space.
-        if case == "continent":
-            fig, axs = plt.subplots(
-                2,
-                9,
-                figsize=(10, 5),
-                sharey=True,
-                layout="constrained",
-                gridspec_kw={"width_ratios": [1, 5, 0.3] * 2 + [1, 5, 0.001]},
-            )
-        elif case == "income":
-            fig, axs = plt.subplots(
-                1,
-                9,
-                figsize=(10, 2.5),
-                sharey=True,
-                layout="constrained",
-                gridspec_kw={"width_ratios": [1, 5, 0.3] * 2 + [1, 5, 0.001]},
-            )
-        axs = axs.flatten()
-
-        for i, group in enumerate(case_groups):
-            errors_to_plot = errors[[f"{version}_all", f"{version}_{group}"]][
-                errors[f"{version}_{group}"].notna()
-            ]
-
-            errors_to_plot = errors_to_plot.sort_values(by=f"{version}_all")
-
-            _add_box_and_bar_plot(
-                [axs[3 * i], axs[3 * i + 1]],
-                [
-                    errors_to_plot[f"{version}_all"],
-                    errors_to_plot[f"{version}_{group}"],
-                ],
-                marker_size=4,
-                line_width=1.5,
-                fontsize=3.5,
-            )
-            axs[3 * i + 1].set_title(
-                group_labels[group], weight="bold", x=0.38
-            )
-
-            # Turn off the axis for spacing.
-            axs[3 * i + 2].set_axis_off()
-
-        _add_legend(
-            fig,
-            ["Trained on all data", "Trained on data in group"],
-            y_pos=1.06 if case == "continent" else 1.15,
-        )
-        fig.suptitle(
-            description[0],
-            y=1.12 if case == "continent" else 1.3,
-            weight="bold",
-            fontsize=12,
-        )
-
-        _add_explanatory_text(fig, metric)
-
-        fig.supylabel(METRIC_NAMES[metric], weight="bold", x=-0.03)
-
-        _add_grid(fig)
-        utils.figures.save_figure(
-            fig,
-            os.path.join(
-                figure_directory,
-                f"{metric.lower()}_{description[1]}_by_{case}.png",
-            ),
-        )
-        plt.close(fig)
-
-
 def _format_load(load: float) -> str:
     """
     Format a load in MW, or in GW from 1 GW.
@@ -1243,7 +1101,6 @@ def plot(
     figure_directory: str,
     version: str,
     compare_with_version: str | None = None,
-    by_group: bool = False,
     results_directory: str | None = None,
     metric: Literal["WAPE", "MAPE"] = "WAPE",
     results_file: str | None = None,
@@ -1260,9 +1117,6 @@ def plot(
     compare_with_version : str | None, optional
         The version of the ML model whose results are to be considered
         in the comparison.
-    by_group : bool, optional
-        Whether to plot the results of the models trained on the data
-        of each group (income level and continent).
     results_directory : str | None, optional
         The folder of the validation or cross-validation results, by
         default that of the validation results.
@@ -1271,50 +1125,20 @@ def plot(
     results_file : str | None, optional
         The Parquet file of the results of the version, by default the
         latest.
-
-    Raises
-    ------
-    ValueError
-        If by_group is true and compare_with_version is given.
-
-    Notes
-    -----
-    The groups of the income levels leave out the low-income group,
-    which has no validation results.
     """
     if results_directory is None:
         results_directory = utils.paths.get_results_folder("validation")
 
-    groups = {
-        "income": [
-            "lower_middle_income",
-            "upper_middle_income",
-            "high_income",
-        ],
-        "continent": ["AF", "AS", "EU", "OC", "NA", "SA"],
-    }
-
-    if by_group and compare_with_version is not None:
-        raise ValueError(
-            "The by_group and compare_with_version arguments cannot be "
-            "used together."
-        )
-    checked = _read_results(results_directory, version, "all", results_file)
+    checked = _read_results(results_directory, version, results_file)
     errors = _read_errors(
         results_directory,
         version,
         compare_with_version,
-        by_group,
-        groups,
         metric,
         checked.results,
     )
     description = describe_version(results_directory, version, results_file)
-    if by_group:
-        _plot_by_group(
-            figure_directory, version, errors, groups, description, metric
-        )
-    elif compare_with_version is not None:
+    if compare_with_version is not None:
         _plot_comparison(
             figure_directory,
             version,

@@ -175,9 +175,9 @@ def describe(numbers: Numbers) -> str:
     )
 
 
-def update_readme(readme_file: str, text: str) -> None:
+def replace_readme_block(readme_file: str, text: str) -> str:
     """
-    Replace the block of the numbers in the README.
+    Get the README with a new block of the numbers.
 
     Parameters
     ----------
@@ -185,6 +185,11 @@ def update_readme(readme_file: str, text: str) -> None:
         The path of the README.
     text : str
         The text of the block.
+
+    Returns
+    -------
+    str
+        The content of the README, with the text in its block.
 
     Raises
     ------
@@ -200,14 +205,27 @@ def update_readme(readme_file: str, text: str) -> None:
             f"The README {readme_file} has not the markers {STATUS_START} "
             f"and {STATUS_END} of the block of the numbers."
         )
-    readme = (
+    return (
         readme[: start + len(STATUS_START)] + "\n" + text + "\n" + readme[end:]
     )
+
+
+def _write_text(file_path: str, text: str) -> None:
+    """
+    Write a text file, under its name only once complete.
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the file.
+    text : str
+        The text.
+    """
     with (
-        utils.files.writing(readme_file) as temporary_path,
+        utils.files.writing(file_path) as temporary_path,
         open(temporary_path, "w", encoding="utf-8") as file,
     ):
-        file.write(readme)
+        file.write(text)
 
 
 def _find_results(
@@ -485,8 +503,13 @@ def plot(
 
     Notes
     -----
-    All the figures and numbers are made before the README and the page
-    are written, so that a failure leaves both as they were.
+    All the figures and numbers, and the new README, are made before
+    the page and then the README are written, so that a failure leaves
+    both as they were. A case without results, such as on a computer
+    without them, leaves its figures and its text on the page as they
+    were, and so does the description of the models, which names the
+    algorithms of both cases; the page says that a case has no results
+    only if it has no text yet.
     """
     figures.map_of_available_entities.plot(figure_directory)
     figures.data_availability.plot(figure_directory)
@@ -499,20 +522,35 @@ def plot(
         figure_directory, results_files
     )
     drawn_files.update(ml_drawn_files)
+    readme = replace_readme_block(readme_file, text)
     texts = {NUMBERS_FILE: text}
-    for case, ml_text in (
-        ("model", describe_model(validation, cross_validation)),
-        ("validation", describe_validation(validation)),
-        ("cross_validation", describe_cross_validation(cross_validation)),
+    for case, ml_text, found in (
+        (
+            "model",
+            describe_model(validation, cross_validation),
+            validation is not None and cross_validation is not None,
+        ),
+        (
+            "validation",
+            describe_validation(validation),
+            validation is not None,
+        ),
+        (
+            "cross_validation",
+            describe_cross_validation(cross_validation),
+            cross_validation is not None,
+        ),
     ):
-        texts[ML_RESULTS_FILES[case]] = ml_text
+        file_name = ML_RESULTS_FILES[case]
+        if found or not os.path.exists(os.path.join(status_folder, file_name)):
+            texts[file_name] = ml_text
 
-    update_readme(readme_file, text)
     os.makedirs(status_folder, exist_ok=True)
     for file_name, drawn in drawn_files.items():
-        shutil.copyfile(drawn, os.path.join(status_folder, file_name))
+        with utils.files.writing(
+            os.path.join(status_folder, file_name)
+        ) as temporary_path:
+            shutil.copyfile(drawn, temporary_path)
     for file_name, file_text in texts.items():
-        with open(
-            os.path.join(status_folder, file_name), "w", encoding="utf-8"
-        ) as file:
-            file.write(file_text + "\n")
+        _write_text(os.path.join(status_folder, file_name), file_text + "\n")
+    _write_text(readme_file, readme)

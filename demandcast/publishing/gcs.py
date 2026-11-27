@@ -23,6 +23,7 @@ import base64
 import dataclasses
 import logging
 import os
+import pathlib
 import re
 import uuid
 from collections.abc import Iterable
@@ -105,21 +106,60 @@ def list_local_files(
         The path of each file on disk, by its path relative to the data
         folder, with forward slashes, which is its name in the bucket,
         without the temporary files of the downloads.
+
+    Notes
+    -----
+    The folders that are symbolic links are not followed, since they
+    can lead outside the data folder, or back into it, and the log
+    warns of those that are not excluded.
     """
     excluded_folders = tuple(excluded_folders)
     files = {}
-    for folder, _, file_names in os.walk(data_folder):
+    linked_folders = []
+    for folder, folder_names, file_names in os.walk(data_folder):
         relative_folder = os.path.relpath(folder, data_folder)
+        for folder_name in folder_names:
+            name = _get_name(relative_folder, folder_name)
+            if os.path.islink(
+                os.path.join(folder, folder_name)
+            ) and not _is_in_folders(name + "/", excluded_folders):
+                linked_folders.append(name)
         for file_name in file_names:
-            name = os.path.normpath(
-                os.path.join(relative_folder, file_name)
-            ).replace(os.sep, "/")
+            name = _get_name(relative_folder, file_name)
             if not (
                 _is_excluded(name, excluded_folders)
                 or _TEMPORARY_FILE.search(file_name)
             ):
                 files[name] = os.path.join(folder, file_name)
+    if linked_folders:
+        logging.warning(
+            f"{len(linked_folders)} folders of the data folder are symbolic "
+            "links, which are not followed, so their files are not "
+            f"uploaded: {', '.join(sorted(linked_folders))}"
+        )
     return files
+
+
+def _get_name(relative_folder: str, file_name: str) -> str:
+    """
+    Get the name in the bucket of a file or folder of the data folder.
+
+    Parameters
+    ----------
+    relative_folder : str
+        The folder of the file, relative to the data folder.
+    file_name : str
+        The name of the file or folder.
+
+    Returns
+    -------
+    str
+        The path of the file relative to the data folder, with forward
+        slashes.
+    """
+    return os.path.normpath(os.path.join(relative_folder, file_name)).replace(
+        os.sep, "/"
+    )
 
 
 def _is_in_folders(name: str, folders: Iterable[str]) -> bool:
@@ -215,8 +255,9 @@ def get_local_path(data_folder: str, name: str) -> str | None:
     ):
         return None
     file_path = os.path.join(data_folder, *parts)
-    root = os.path.realpath(data_folder)
-    if os.path.commonpath([os.path.realpath(file_path), root]) != root:
+    if not pathlib.Path(os.path.realpath(file_path)).is_relative_to(
+        os.path.realpath(data_folder)
+    ):
         return None
     return file_path
 
@@ -292,9 +333,9 @@ def _download(blob: Any, file_path: str) -> bool:
 
     Notes
     -----
-    The object is downloaded to a temporary file, which is then linked
-    to the path: the link fails if a file was written there in the
-    meantime, so that it is not overwritten.
+    The object is downloaded to a temporary file, which is then given
+    the path without overwriting a file written there in the meantime
+    (see _name_without_overwriting).
     """
     if os.path.exists(file_path):
         return False
@@ -306,13 +347,47 @@ def _download(blob: Any, file_path: str) -> bool:
     try:
         with open(temporary_path, "xb") as file:
             blob.download_to_file(file)
-        os.link(temporary_path, file_path)
+        _name_without_overwriting(temporary_path, file_path)
     except FileExistsError:
         return False
     finally:
         if os.path.exists(temporary_path):
             os.remove(temporary_path)
     return True
+
+
+def _name_without_overwriting(temporary_path: str, file_path: str) -> None:
+    """
+    Give a complete file its path, unless a file has it.
+
+    Parameters
+    ----------
+    temporary_path : str
+        The path of the complete file.
+    file_path : str
+        Its final path.
+
+    Raises
+    ------
+    FileExistsError
+        If a file has the path.
+
+    Notes
+    -----
+    A hard link to the path fails if a file has it, even one written a
+    moment before. File systems without hard links, such as exFAT and
+    some network shares, refuse the link, so the file is renamed
+    instead, if no file has the path: the rename fails on Windows if
+    one is written in the meantime, and overwrites it elsewhere.
+    """
+    try:
+        os.link(temporary_path, file_path)
+    except FileExistsError:
+        raise
+    except OSError:
+        if os.path.lexists(file_path):
+            raise FileExistsError(file_path) from None
+        os.rename(temporary_path, file_path)
 
 
 def _copy(
@@ -377,7 +452,8 @@ def sync(
     excluded_folders : Iterable[str], optional
         The folders of the data folder that are not copied.
     dry_run : bool, optional
-        Whether to only list the files to copy, without copying them.
+        Whether to only list the files to copy in the log, one a line,
+        without copying them.
     client : google.cloud.storage.Client, optional
         The client of Cloud Storage, by default one with the credentials
         of the user.
@@ -436,12 +512,39 @@ def sync(
         else:
             report.different.append(name)
 
+    _log_report(report, bucket_name, direction, dry_run)
+    return report
+
+
+def _log_report(
+    report: SyncReport,
+    bucket_name: str,
+    direction: Literal["upload", "download"],
+    dry_run: bool,
+) -> None:
+    """
+    Write the files of a copy in the log.
+
+    Parameters
+    ----------
+    report : SyncReport
+        The files of the copy.
+    bucket_name : str
+        The name of the bucket.
+    direction : str
+        "upload" or "download".
+    dry_run : bool
+        Whether the files were only listed, each on its own line.
+    """
     logging.info(
         f"{'Would copy' if dry_run else 'Copied'} {len(report.copied)} "
         f"files {'to' if direction == 'upload' else 'from'} "
         f"gs://{bucket_name}, and skipped {len(report.identical)} "
         "identical files."
     )
+    if dry_run:
+        for name in report.copied:
+            logging.info(f"Would copy {name}")
     if report.different:
         logging.warning(
             f"{len(report.different)} files differ between the data folder "
@@ -454,4 +557,3 @@ def sync(
             "paths inside the data folder and were not downloaded: "
             f"{', '.join(report.unsafe)}"
         )
-    return report

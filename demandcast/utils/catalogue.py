@@ -223,7 +223,9 @@ def get_climate_model_and_scenario(
     Raises
     ------
     ValueError
-        If the climate model, or its scenario, is not available.
+        If the climate model, or its scenario, is not available, or if
+        the scenario, without a climate model, is not available for
+        every climate model.
     """
     if climate_model is not None:
         models = {model.upper(): model for model in CLIMATE_MODEL_SCENARIOS}
@@ -244,4 +246,17 @@ def get_climate_model_and_scenario(
         )
     if scenario is not None:
         scenario = get_scenario(scenario, scenarios)
+        models_with_scenario = [
+            model
+            for model, model_scenarios in CLIMATE_MODEL_SCENARIOS.items()
+            if scenario in model_scenarios
+        ]
+        if climate_model is None and len(models_with_scenario) < len(
+            CLIMATE_MODEL_SCENARIOS
+        ):
+            raise ValueError(
+                f"The scenario '{scenario}' is not available for every "
+                "climate model: set the climate model too, to one of "
+                f"{models_with_scenario}."
+            )
     return climate_model, scenario

@@ -87,6 +87,17 @@ def test_read_and_check_ml_configuration_error():
             ml_models.data.read_and_check_ml_configuration()
 
 
+def test_categorical_features_must_be_features():
+    """Test that a categorical feature that is no feature is refused."""
+    with pytest.raises(ValueError, match=r"\['month'\] are not in"):
+        ml_models.data.ConfigModel(
+            algorithm="xgboost",
+            features=["hour"],
+            target="demand",
+            categorical_features=["hour", "month"],
+        )
+
+
 def test_split_temporally_with_related_entities():
     """
     Test that related entities do not train on the held-out years.

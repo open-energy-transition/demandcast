@@ -23,7 +23,6 @@ Figures are PNG files at 300 dpi. Each file gets its final name only once it is 
 | `figure` | required | The figure: `data_availability`, `map_of_available_entities`, `ml_results` or `status`. |
 | `version` | required for `ml_results` | The results to plot: a trained model, such as `xgboost_model_20261029_144400`, for a validation; an algorithm, such as `xgboost`, for a cross-validation; or a folder of MAPE files of an [earlier version](#results-of-earlier-versions). |
 | `compare_with_version` | none | A second version, drawn next to `version`. Only for `ml_results`. |
-| `by_group` | `false` | Draw the errors of the models trained on each income group and continent against those of the model trained on all data. Only for `ml_results`. |
 | `results` | `validation` | Read the results of `validate.py` (`validation`) or of `cross_validate.py` (`cross_validation`). Used by `ml_results`. |
 | `metric` | `WAPE` | The error to plot: `WAPE` or `MAPE`. Used by `ml_results`. |
 | `validation_results` | the latest | The Parquet file of validation results to publish on the Current state page. Only for `status`. |
@@ -32,12 +31,11 @@ Figures are PNG files at 300 dpi. Each file gets its final name only once it is 
 `plot.py` stops before drawing if:
 
 - `ml_results` has no `version`;
-- `by_group` and `compare_with_version` are both set;
-- `version`, `compare_with_version` or `by_group` is set for another figure;
+- `version` or `compare_with_version` is set, or `results` or `metric` is not at its default, for another figure;
 - `validation_results` or `cross_validation_results` is set for a figure other than `status`.
 
 !!! note
-    `results` and `metric` are ignored, not refused, by the other figures. `status` always plots the WAPE of both the validation and the cross-validation.
+    `status` always plots the WAPE of both the validation and the cross-validation.
 
 ## Data availability
 
@@ -106,7 +104,7 @@ This figure shows the testing error of each country or subdivision for a version
 
 ### Figures of one version
 
-Without `compare_with_version` or `by_group`, a version gives:
+Without `compare_with_version`, a version gives:
 
 | File | What it shows |
 |---|---|
@@ -145,25 +143,6 @@ This draws `<metric>_<name>_vs_<other name>.png`. The left panel has a box plot 
 
 Both versions are read from the same `results` folder: two validations or two cross-validations, not one of each. Only the codes with an error in both are drawn; the log lists the others.
 
-### Errors by group
-
-```yaml
-figure: ml_results
-version: example1
-by_group: true
-metric: MAPE
-```
-
-For each code, this compares the error of the model trained on all data (blue) with that of a model trained only on its group (orange), with a box plot and bars. It draws:
-
-- `<metric>_<name>_by_income.png`, for the lower-middle, upper-middle and high-income groups. The low-income group has no results and is left out.
-- `<metric>_<name>_by_continent.png`, for Africa, Asia, Europe, Oceania, North America and South America.
-
-The results of a group are named after it instead of `all`: `AF`, `AS`, `EU`, `NA`, `OC`, `SA`, `lower_middle_income`, `upper_middle_income` and `high_income`.
-
-!!! warning
-    `validate.py` and `cross_validate.py` save only results named `all`. Results by group exist only in the MAPE files of earlier versions, so `by_group` needs such a version and `metric: MAPE`.
-
 ### Results of earlier versions
 
 Earlier versions saved CSV files in a folder named after the version, such as `data/results/validation/<version>/all.csv`, with the columns `entity_code` and `MAPE_test`. When this folder exists, `plot.py` reads it instead of the Parquet files. It has no WAPE and no manifest, so use `metric: MAPE`. Its figures are named `mape_<version>...png` and titled `Version <version>`. `demandcast/tests/figures/mape_examples/` has two examples.
@@ -179,10 +158,10 @@ The `status` figure refreshes the [Current state](../status.md) page and the REA
 1. draws the map and the data availability figure;
 2. counts the countries, subdivisions, data sources and years of data, from the YAML files of the data sources;
 3. finds the validation and cross-validation results to publish, and draws the three WAPE figures of each;
-4. writes the numbers into the README, between `<!-- status:start -->` and `<!-- status:end -->`;
-5. copies the figures into `webpage/docs/status/` and writes the texts there.
+4. copies the figures into `webpage/docs/status/` and writes the texts there;
+5. writes the numbers into the README, between `<!-- status:start -->` and `<!-- status:end -->`.
 
-If a step before 4 fails, the README and the page are left as they were.
+If a step before 4 fails, the README and the page are left as they were. If step 4 fails, the README is left as it was. Each file gets its new content only once it is complete.
 
 ### Files it updates
 
@@ -223,6 +202,6 @@ cross_validation_results: data/results/cross_validation/with_xgboost/using_<data
 
 The files must keep the layout `with_<version>/using_<data>/`, from which the version is read. Their manifest must record their summary and predictions, or `plot.py` stops with an error.
 
-A case without results gets the text "The models have no validation yet." (or "no cross-validation yet"), and no new figure. Its figures of an earlier run stay in `webpage/docs/status/`: delete them, or the page keeps showing them.
+A case without results, such as on a computer that has only the data, leaves its figures and its text in `webpage/docs/status/` as they were, so you can refresh the numbers without the results of the models. The description of the models in `ml_model.md`, which names the algorithms of both cases, is also left as it was unless both cases have results. A case gets the text "The models have no validation yet." (or "no cross-validation yet") only if the page has no text for it yet.
 
 The cross-validation text depends on its holdout. With `holdout: entity`, each country or subdivision is left out in turn: the median WAPE estimates the error for a code without data whose country may have data of other subdivisions. With `holdout: country`, each country is left out with its subdivisions: the median WAPE estimates the error for a country without data.

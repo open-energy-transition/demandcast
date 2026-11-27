@@ -217,19 +217,44 @@ def test_default_configuration_names_no_target(script, message, monkeypatch):
             "weather variable must be specified",
         ),
         ("check", "check: flag\n", "check"),
+        (
+            "check",
+            "check: flags\nmaximum_age_days: 30\n",
+            "maximum_age_days applies only to the check of the data sources",
+        ),
+        (
+            "check",
+            "check: data_availability\nskipped_data_sources:\n  ons: x\n",
+            "skipped_data_sources applies only",
+        ),
+        (
+            "retrieve",
+            (
+                "variable: electricity_demand\nelectricity_data_source: "
+                "entsoe\nyear: 2024\n"
+            ),
+            "option year does not apply to the electricity_demand",
+        ),
+        (
+            "retrieve",
+            "variable: population\noffline: true\n",
+            "option offline does not apply to the population",
+        ),
+        (
+            "retrieve",
+            "variable: population\nclimate_model: CESM2\n",
+            "option climate_model does not apply",
+        ),
         ("plot", "figure: ml_results\n", "version must be provided"),
         (
             "plot",
-            (
-                "figure: ml_results\nversion: a\ncompare_with_version: b\n"
-                "by_group: true\n"
-            ),
-            "cannot be used together",
+            "figure: data_availability\ncompare_with_version: a\n",
+            "only for the ml_results figure",
         ),
         (
             "plot",
-            "figure: data_availability\nby_group: true\n",
-            "must not be provided",
+            "figure: status\nmetric: MAPE\n",
+            "only for the ml_results figure",
         ),
         (
             "plot",
@@ -269,9 +294,27 @@ def test_default_configuration_names_no_target(script, message, monkeypatch):
             "'SSP1-1.9' is not available",
         ),
         (
+            "retrieve",
+            "variable: temperature\nscenario: SSP3-7.0\n",
+            "'SSP3-7.0' is not available for every climate model",
+        ),
+        (
             "assemble",
             "target_use: forecasting\nscenario_for_population: SSP2-45\n",
             "'SSP2-45' is not available",
+        ),
+        (
+            "assemble",
+            "target_use: forecasting\nscenario_for_temperature: SSP2-4.5\n",
+            (
+                "climate_model_for_temperature and scenario_for_temperature "
+                "must be given together"
+            ),
+        ),
+        (
+            "assemble",
+            "target_use: forecasting\nclimate_model_for_temperature: CESM2\n",
+            "must be given together",
         ),
         ("train", "", "reserve_testing_set"),
         (
@@ -442,12 +485,11 @@ def test_check_dispatch(monkeypatch, caplog, name):
             {
                 "figure": "ml_results",
                 "version": "v1",
-                "by_group": True,
                 "results": "cross_validation",
                 "metric": "MAPE",
             },
             "ml_results",
-            ("v1", None, True, RESULTS_FOLDER, "MAPE"),
+            ("v1", None, RESULTS_FOLDER, "MAPE"),
         ),
         (
             {"figure": "status", "validation_results": "a.parquet"},

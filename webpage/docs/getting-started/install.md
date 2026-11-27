@@ -87,14 +87,19 @@ A script that needs a missing key stops with an error that names the variable. K
 
 ## 4. Choose where the data goes
 
-Everything the scripts write (downloads, datasets, models, results and logs) goes in the **data folder**, `demandcast/data/` by default. To keep it somewhere else, such as on a larger disk, set the environment variable `DEMANDCAST_DATA_FOLDER` **in your shell**:
+Everything the scripts write (downloads, datasets, models, results and logs) goes in the **data folder**, `demandcast/data/` by default. To keep it somewhere else, such as on a larger disk, set the environment variable `DEMANDCAST_DATA_FOLDER` in your shell:
 
 ```bash
 export DEMANDCAST_DATA_FOLDER=/path/to/large/disk/demandcast-data
 ```
 
-!!! warning
-    Set `DEMANDCAST_DATA_FOLDER` in your shell (for example in `~/.bashrc`), not in `.env`. The `.env` file is read only when a script first needs an API key, so a data folder set there would apply only to part of a run.
+or add it to `demandcast/.env`, next to your keys:
+
+```
+DEMANDCAST_DATA_FOLDER=/path/to/large/disk/demandcast-data
+```
+
+The scripts read `.env` before they look for the data folder, and a variable set in your shell wins over `.env`. Give an absolute path.
 
 The [Data folder](../reference/data-folder.md) page describes everything inside it.
 

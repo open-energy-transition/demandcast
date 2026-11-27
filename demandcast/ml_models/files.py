@@ -6,7 +6,8 @@ Description:
     This module finds and writes the files of the machine learning
     models. It finds the latest trained model of an algorithm and the
     latest assembled data, unless a path is given. It writes the
-    results of the validation, cross-validation and forecasts in
+    trained models, each under its name only once it is complete, and
+    the results of the validation, cross-validation and forecasts in
     Parquet files named after the model, the data and the time. The
     errors of the validation and cross-validation, which are small
     tables, are also written in CSV files.
@@ -33,6 +34,8 @@ import glob
 import logging
 import os
 import re
+import shutil
+import tempfile
 import zipfile
 from typing import Any, Literal
 
@@ -40,6 +43,7 @@ import pandas as pd
 from pydantic import BaseModel
 
 import ml_models.data
+import ml_models.registry
 import utils.files
 import utils.manifest
 import utils.paths
@@ -105,11 +109,15 @@ def _get_latest_file(folder: str, prefix: str, extension: str) -> str | None:
     -------
     str | None
         The path of the file with the latest time in its name (see
-        _get_time_in_name), or None if there is none.
+        _get_time_in_name), or None if there is none, or no folder.
     """
+    try:
+        file_names = os.listdir(folder)
+    except FileNotFoundError:
+        return None
     times = {
         file_name: time
-        for file_name in os.listdir(folder)
+        for file_name in file_names
         if (time := _get_time_in_name(file_name, prefix, extension))
     }
     if not times:
@@ -415,7 +423,7 @@ def save_results(
     )
     os.makedirs(model_results_folder, exist_ok=True)
 
-    timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = utils.files.get_time_for_name()
     results_file_name = os.path.join(
         model_results_folder, f"{file_name_prefix}_{timestamp}"
     )
@@ -513,6 +521,40 @@ def save_results(
     )
 
     logging.info(f"Model {case} saved to {results_file_name}.parquet.")
+
+
+def save_model(
+    model_module: ml_models.registry.ModelModule, model: Any, model_path: str
+) -> None:
+    """
+    Save a trained model, under its name only once it is complete.
+
+    Parameters
+    ----------
+    model_module : ml_models.registry.ModelModule
+        The module of the model, which saves it.
+    model : Any
+        The trained model.
+    model_path : str
+        The path of the file, with the extension of the model.
+
+    Notes
+    -----
+    The module saves the model under its name in a temporary folder,
+    since XGBoost chooses the format of the file by its extension. The
+    file is then copied next to its path and renamed (see
+    utils.files.writing), so that a save that stops never leaves a
+    partial model, which the scripts would take for the latest.
+    """
+    with (
+        tempfile.TemporaryDirectory() as folder,
+        utils.files.writing(model_path) as temporary_path,
+    ):
+        complete_path = os.path.join(folder, os.path.basename(model_path))
+        model_module.save(model, complete_path)
+        shutil.copyfile(complete_path, temporary_path)
+
+    logging.info(f"Trained model saved to {model_path}")
 
 
 def get_split_membership(
@@ -651,6 +693,36 @@ def _get_preparation_differences(
         if before != now:
             differences.append(f"{name} was {before}, and is {now}")
     return differences
+
+
+def check_model_algorithm(
+    manifest: dict[str, Any] | None, algorithm: str
+) -> None:
+    """
+    Check that a model is a model of the algorithm of the settings.
+
+    Parameters
+    ----------
+    manifest : dict[str, Any] | None
+        The manifest of the model, None for a model without a manifest,
+        which is not checked.
+    algorithm : str
+        The algorithm of the settings, in any case, such as "XGBoost".
+
+    Raises
+    ------
+    ValueError
+        If the manifest records another algorithm.
+    """
+    if manifest is not None and (
+        manifest["algorithm"].lower() != algorithm.lower()
+    ):
+        raise ValueError(
+            f"The model is a model of {manifest['algorithm']}, not of "
+            f"{algorithm}, the algorithm of the settings: give a model of "
+            f"{algorithm}, or set the algorithm of ml_config.yaml to "
+            f"{manifest['algorithm']}."
+        )
 
 
 def check_model_manifest(

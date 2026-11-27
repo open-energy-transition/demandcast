@@ -83,7 +83,7 @@ def test_get_scenario():
     [
         ("mpi-esm1-2-lr", "ssp1-2.6", ("MPI-ESM1-2-LR", "SSP1-2.6")),
         ("CESM2", None, ("CESM2", None)),
-        (None, "ssp4-6.0", (None, "SSP4-6.0")),
+        (None, "ssp2-4.5", (None, "SSP2-4.5")),
         (None, None, (None, None)),
     ],
 )
@@ -101,3 +101,10 @@ def test_get_climate_model_and_scenario_errors():
         utils.catalogue.get_climate_model_and_scenario("CESM3", None)
     with pytest.raises(ValueError, match=r"'SSP4-6\.0' is not available"):
         utils.catalogue.get_climate_model_and_scenario("CESM2", "SSP4-6.0")
+    # Without a climate model, the scenario must be one of every model.
+    with pytest.raises(
+        ValueError,
+        match=r"'SSP3-7\.0' is not available for every climate model: set "
+        r"the climate model too, to one of \['CAMS-CSM1-0', 'CESM2'",
+    ):
+        utils.catalogue.get_climate_model_and_scenario(None, "ssp3-7.0")
