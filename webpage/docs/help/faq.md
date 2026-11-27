@@ -108,9 +108,6 @@ The combined file could not be combined again because its cleaned data is missin
 **`No objects to concatenate` in `assemble.py`.**
 An input has no files for any of the codes, or you gave `scenario_for_temperature` without `climate_model_for_temperature` (or the reverse). Retrieve the input, and give both temperature options.
 
-**A forecast with the climate model `EC-Earth3-Veg-LR` or `HadGEM3-GC31-LL` finds no temperature.**
-`assemble.py` looks for the temperature files with the model name in upper case, while the retrieval keeps its original case. On Linux and other case-sensitive systems, the files are not found.
-
 **A year is missing from the training data.**
 A year needs at least 90% of its hours, and half of the hours of each month. See `assembled_data_for_training_<time>_coverage.csv`.
 
