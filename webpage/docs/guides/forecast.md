@@ -36,7 +36,7 @@ Relative paths are relative to the folder you run from, normally `demandcast/`. 
 4. Scales the predictions of each complete local year to the annual demand and converts them to MW (see [From the predictions to MW](../concepts/models.md#from-the-predictions-to-mw)).
 5. Writes the forecasts and their manifest.
 
-So the forecasts of each complete year (a row for each of its 8760 or 8784 hours) sum to its annual demand: the model gives the hourly shape, and the scenario the total. Incomplete years are not scaled and do not sum exactly.
+So the forecasts of each complete year (a row for each of its 8760 or 8784 hours) sum to its annual demand: the model gives the hourly shape, and the annual demand per capita times the population gives the total. Incomplete years are not scaled and do not sum exactly.
 
 ## Output files
 

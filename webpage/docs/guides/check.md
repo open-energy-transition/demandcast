@@ -75,7 +75,7 @@ For each code, it checks six indicators and the area of the shape, in an equal-a
 A code with history but no projections, such as Kosovo, is retrieved and used for training, but not forecast for future scenarios.
 
 !!! warning
-    Every column of whether a code has data must hold only `True` or `False`. An empty cell, left by an edit by hand, stops the scripts with an error.
+    The `True`/`False` columns must hold only `True` or `False`. An empty cell, such as one left by editing the file by hand, stops the scripts with an error.
 
 ## Live check of the data sources
 

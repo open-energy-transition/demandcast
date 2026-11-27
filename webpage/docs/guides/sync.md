@@ -134,7 +134,7 @@ The scripts check downloaded files by their content, so no extra step is needed:
 
 Some checks use the time a file was written, which for a downloaded file is the time of the download:
 
-- A reanalysis weather file of a past year that ends before the year does is retrieved again a day after the download.
+- A reanalysis weather file of a past year whose data ends before 31 December is retrieved again, but not until a day after the download.
 - The grids of each code are extracted again from a global weather grid that is newer. A download writes `gridded_weather/processed/` before `gridded_weather/raw/` (alphabetical order), so the first retrieval after a full download extracts them again. This takes time but downloads nothing.
 - A temperature file of a year counts as complete if it was written more than seven days after that year ended. So a temperature file made elsewhere while its year was in progress looks complete after a download. Delete it to compute it again.
 

@@ -61,12 +61,12 @@ The combination ranks the sources of a code with `definition`, `compiled`, `repu
 | `eia` | US Energy Information Administration | 13 regions of `USA` | 2020–today | 1 h | excluded | `EIA_API_KEY` | Compiled. Corrects the one-hour delay of CAISO in `USA_CAL` (2022-06-16 to 2025-12-02). |
 | `ema` | Energy Market Authority (Singapore) | `SGP` | 2014–today | 30 min | included | – | Weekly files: several years take up to 10 minutes. |
 | `emi` | Electricity Market Information (New Zealand) | `NZL` | 2005–2020 | 30 min | unknown | – | From 2020-12-22 the IEA gives the two islands. |
-| `entsoe` | European Network of Transmission System Operators for Electricity | 30 countries and 9 subdivisions in 38 countries | 2014–today | 15 min to 1 h | unknown | `ENTSOE_API_KEY` | Compiled. Corrects wrong times of Bulgaria, Northern Ireland and Ukraine. |
+| `entsoe` | European Network of Transmission System Operators for Electricity | 30 countries and 9 subdivisions (38 countries in all) | 2014–today | 15 min to 1 h | unknown | `ENTSOE_API_KEY` | Compiled. Corrects wrong times of Bulgaria, Northern Ireland and Ukraine. |
 | `epias` | EPIAS transparency platform (Turkey) | `TUR` | 2015–today | 1 h | added; included from 2020-12-30 | `EPIAS_USERNAME`, `EPIAS_PASSWORD` | Adds licence-exempt generation until 2020-12-29. |
 | `eskom` | Eskom (South Africa) | `ZAF` | 2021–today | 1 h | excluded | Files `ESK*` (CSV) | Ask for the data with the form of the Eskom data portal; a link arrives by email. |
 | `grupoice` | Grupo ICE (Costa Rica) | `CRI` | 2012–today | 15 min | unknown | – | |
 | `hydroquebec` | Hydro-Québec | `CAN_QC-INTEGRATED` | 2019–2025 | 1 h | unknown | – | Real-time values; a year is added months after it ends. |
-| `iea` | International Energy Agency, Real-Time Electricity Tracker | 45 countries and 94 subdivisions in 70 countries | 2009–today | 1 h | unknown | – | Compiled; republishes `ccei`, `eia`, `entsoe` and `occto`. Times corrected per country. |
+| `iea` | International Energy Agency, Real-Time Electricity Tracker | 45 countries and 94 subdivisions (70 countries in all) | 2009–today | 1 h | unknown | – | Compiled; republishes `ccei`, `eia`, `entsoe` and `occto`. Times corrected per country. |
 | `ieso` | Independent Electricity System Operator (Ontario) | `CAN_ON` | 1994–today | 1 h | excluded | – | Times in Eastern Standard Time all year. |
 | `ismo` | Independent System and Market Operator (Pakistan) | `PAK_NTDC` | 2024–2025 | 1 h | excluded | – | One fiscal year, July 2024 to June 2025; without K-Electric. |
 | `isone` | ISO New England | `USA_NE` | 2019–today | 1 h | added | `ISONE_USERNAME`, `ISONE_PASSWORD` | Native load plus ISO-NE's estimate of the solar behind the meters. |

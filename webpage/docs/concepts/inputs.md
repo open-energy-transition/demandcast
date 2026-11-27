@@ -15,7 +15,7 @@ This page explains every input that DemandCast retrieves besides the electricity
 | Gridded weather | `gridded_weather` | [ERA5](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels) | [CMIP6](https://cds.climate.copernicus.eu/datasets/projections-cmip6) |
 | Temperature | `temperature` | ERA5 | CMIP6 |
 
-Each input has a folder of the same name in the data folder; [The data folder](../reference/data-folder.md#weather-and-gridded-data) lists every file. The models use the temperature, the GDP PPP per capita and the annual electricity demand per capita as [features](glossary.md#feature), and scale their forecasts with the annual electricity demand per capita times the population (see [Models](models.md)). The cleaning uses the same two to flag years whose total demand looks wrong (see [flags](flags.md#annual-total-and-annual-change)).
+Each input has a folder of the same name in the data folder; [The data folder](../reference/data-folder.md#weather-and-gridded-data) lists every file. The models use the temperature, the GDP PPP per capita and the annual electricity demand per capita as [features](glossary.md#feature), and scale their forecasts with the annual electricity demand per capita times the population (see [Models](models.md)). The cleaning uses the annual electricity demand per capita and the population to flag years whose total demand looks wrong (see [flags](flags.md#annual-total-and-annual-change)).
 
 The retrieved data is not redistributed, since the licences of many sources forbid it. You retrieve it yourself, or share a data folder through a private bucket (see [Sync](../guides/sync.md)).
 
@@ -149,7 +149,7 @@ Past values:
 
 Future values:
 
-1. Divide the IIASA GDP PPP (billion 2017 USD) by the IIASA population (million) of each country, scenario and year from 2025, times 1000.
+1. For each country, scenario and year from 2025, divide the IIASA GDP PPP (billion 2017 USD) by the IIASA population (million), and multiply by 1000 to get dollars per person.
 2. Convert from 2017 to 2021 dollars with the US consumer price index.
 3. Interpolate linearly between the five-year steps.
 
@@ -204,7 +204,7 @@ Set `weather_variable: temperature`: it is required, and the only weather variab
 
 The climate models always come from the CDS, with the same five-code rule.
 
-The files are large: about 100 MB per country per year, 5 GB a year for all codes. Check your disk space first.
+The files are large, about 5 GB a year for all codes. Check your disk space first.
 
 ### When files are downloaded again
 
@@ -213,7 +213,7 @@ ERA5 is published about five days after real time and updated daily until then. 
 - it was written less than 7 days after the end of its year, so its last days may still change or be missing; or
 - it is a past year and its last hour is before 23:00 on 31 December, such as a broken file.
 
-Only the temperature reads the current year, west of UTC: its first hours end the last local year of these time zones.
+Only the temperature reads ERA5 in the current year: west of UTC, the last hours of a local year fall in the first hours of the next year in UTC.
 
 A file of a code is also downloaded or extracted again when the bounds of its shape change. A grid cut from a global file is extracted again when the global file is newer.
 
@@ -244,7 +244,7 @@ All three give the same values, because the population cells are on the ERA5 poi
 
 With `points`, the series of a point, from 1990 to about a week ago, takes about 35 seconds and 4 MB. It is saved in `gridded_weather/raw/points/temperature_<latitude>_<longitude>.parquet`, such as `temperature_+48.75_+2.25.parquet`.
 
-- **Updates**: ERA5 first publishes preliminary data, replaced by final data two to three months later. So a saved series is downloaded again from 120 days before its last hour, at most once a day, when the CDS may have later hours and the hours needed reach these 120 days. Earlier years are extracted again without a download.
+- **Updates**: ERA5 first publishes preliminary data, replaced by final data two to three months later. So the last 120 days of a saved series are downloaded again, at most once a day, when the CDS may have newer hours and the years you ask for reach into those 120 days. Earlier years are extracted again without a download.
 - **Queue**: points are downloaded one at a time, since the CDS rejects more queued requests for this dataset. A rejected request is retried every minute, for up to an hour.
 - **Status**: the CDS calls this dataset experimental. The grids remain available through `cds` and `arco`.
 
@@ -297,11 +297,11 @@ Each [entity](glossary.md#entity) has a shape, which `utils/shapes.py` gives for
 
 Small remote islands are cut away from Chile, Spain, Fiji, France, the Netherlands, Norway, New Zealand, Portugal, Russia, Chukotka (`RUS_CHU`) and the United States, together with the parts beyond 180° of longitude. They would add large weather downloads for little demand.
 
-The grids of a code cover the **bounds** of its shape: its box widened by 1° on each side, kept within −180° and 180°, and rounded to 0.25°. Each NetCDF grid records its bounds. When the bounds move, such as after a run of `shapes/eia.py` or a new version of Natural Earth, the next retrieval cuts the population, GDP and weather grids of the code again from the global grids, and downloads again a weather grid downloaded for that code alone. A grid without recorded bounds is cut again from the global grid, but a weather grid downloaded alone is kept.
+The grids of a code cover the **bounds** of its shape: its box widened by 1° on each side, kept within −180° and 180°, and rounded to 0.25°. Each NetCDF grid records its bounds. When the bounds move, such as after a run of `shapes/eia.py` or a new version of Natural Earth, the next retrieval cuts the population, GDP and weather grids of the code again from the global grids, and downloads again a weather grid that was downloaded for that code alone. A grid without recorded bounds is cut again from the global grid, but a weather grid downloaded alone is kept.
 
 What depends on the whole shape, not only its bounds, records the shape's fingerprint instead: the population sums and the temperature. The fingerprint is a SHA-256 checksum of the shape with its coordinates rounded to 10⁻⁶ degrees, so another version of the geometry library gives the same checksum.
 
-Each code also has a time zone, which sets its local years. A country has its only time zone, or that of its capital. A subdivision has the time zone given for it in the YAML files of its data sources, or that of the centre of its shape.
+Each code also has a time zone, which sets its local years. A country with one time zone has that one, and otherwise the time zone of its capital. A subdivision has the time zone given for it in the YAML files of its data sources, or that of the centre of its shape.
 
 ## Order of the retrievals
 

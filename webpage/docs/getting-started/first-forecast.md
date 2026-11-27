@@ -129,7 +129,7 @@ Now measure its error on 2023, which it has not seen:
 uv run validate.py
 ```
 
-With empty settings, `validate.py` takes the latest model and the data it was trained on. The results go to `data/results/validation/`: the error of each country as [WAPE](../concepts/glossary.md#wape) and [MAPE](../concepts/glossary.md#mape), and the hourly predictions of 2023. A WAPE of 5% means that the hourly forecast is off by 5% of the demand, summed over the year. [Train and validate](../guides/train-validate.md) explains every output.
+With empty settings, `validate.py` takes the latest model and the data it was trained on. The results go to `data/results/validation/`: the error of each country as [WAPE](../concepts/glossary.md#wape) and [MAPE](../concepts/glossary.md#mape), and the hourly predictions of 2023. A WAPE of 5% means that the errors of all the hours, without their signs, add up to 5% of the demand of the year. [Train and validate](../guides/train-validate.md) explains every output.
 
 ## Step 5: assemble the forecasting data
 

@@ -193,7 +193,9 @@ To retrieve everything for a new set of codes:
 
 1. `population` and `annual_electricity_demand_per_capita`, so the cleaning can check the annual demand.
 2. `electricity_demand`, once per data source of your codes.
-3. `gdp_ppp_per_capita`, `gridded_population` and `gridded_gdp_ppp`.
-4. `temperature`, which also retrieves the gridded population and weather it needs.
+3. `gdp_ppp_per_capita`.
+4. `temperature`.
+
+These retrievals fetch the gridded population, GDP PPP and weather they need, so you retrieve the gridded variables yourself only to prepare them in advance.
 
 Then [assemble the data](assemble.md).

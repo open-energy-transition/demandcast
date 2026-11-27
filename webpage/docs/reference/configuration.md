@@ -16,7 +16,7 @@ Before it starts, each script checks its settings and stops with a clear error i
 
 - an option is misspelt or does not exist;
 - a required option is missing;
-- a value is not allowed, such as a scenario or climate model that the data does not have (the error lists the valid values).
+- a value is not allowed, such as a scenario or climate model that does not exist (the error lists the valid values). A valid scenario that you have not retrieved passes this check and fails later.
 
 Each option in the default files is marked `REQUIRED` or `OPTIONAL`, with a comment that explains it. An `OPTIONAL` option left empty takes its default value.
 
@@ -47,7 +47,7 @@ The training, validation, cross-validation and forecasting scripts share these f
 | `xgboost_config.yaml` | The settings of the XGBoost model | [Train and validate](../guides/train-validate.md) |
 | `lstm_config.yaml` | The settings of the optional LSTM model | [Train and validate](../guides/train-validate.md) |
 
-## Lists that the code reads
+## Lists of countries, subdivisions and people
 
 These files are data, not settings. You rarely change them, except to add a country or subdivision.
 
@@ -65,10 +65,10 @@ Other inputs that come with the code, rather than with the data, live outside `c
 |---|---|---|
 | `retrievals/electricity_demand_data_sources/*.yaml` | One file per electricity demand data source: its entities, dates, licence and demand definition | [Data sources](data-sources.md) |
 | `shapes/subdivisions/<ISO3>.yaml` | The shapes of the non-standard subdivisions of a country, defined by the standard subdivisions that make them up | [Retrieve data](../guides/retrieve.md) |
-| `checks/reviewed_flags.yaml` | Your reviews of the quality flags of the electricity demand | [Electricity demand data](../concepts/electricity-demand.md) |
+| `checks/reviewed_flags.yaml` | Your reviews of the quality flags of the electricity demand | [Quality flags and reviews](../concepts/flags.md#reviews-of-flags) |
 | `checks/data_availability_summary.csv` | Which countries and subdivisions have all the inputs the models need (written by `check.py`) | [Run checks](../guides/check.md) |
 | `checks/related_entities.csv`, `checks/related_entities_codes.txt` | The shared population of overlapping entities, and the codes considered (written by `check.py`) | [Run checks](../guides/check.md) |
-| `benchmark/*.yaml` | The settings of the retrieval and assembly of the benchmark data (run with `benchmark/run.py`) | [Models](../concepts/models.md) |
+| `benchmark/*.yaml` | The settings of the retrieval and assembly of the benchmark data (run with `uv run python -m benchmark.run`) | [Models](../concepts/models.md#benchmark) |
 
 ## A codes file
 

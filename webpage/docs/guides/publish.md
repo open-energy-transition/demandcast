@@ -150,7 +150,7 @@ Both take the title, description, keywords and related links from `metadata.yaml
 | Creators, contributors, communities | Kept from the record | Creators and contributors from `metadata_file` |
 | Other metadata | Kept from the record, except dates without a start or end, which Zenodo rejects in a draft | Upload type `dataset`, open access, licence CC BY 4.0, language English |
 | Publication date | Today, by your computer's clock | Not set by the script |
-| Files | Only the uploaded ones: the script removes the files that Zenodo copies from the previous version, which keeps them | Only the uploaded ones |
+| Files | Only the uploaded ones: Zenodo copies the files of the previous version into the draft, and the script removes them (the previous version keeps its files) | Only the uploaded ones |
 
 The default `metadata_file`, `config/oet_zenodo_metadata.yaml`, lists the creators (name, affiliation, ORCID) and contributors (name and role, such as `HostingInstitution` or `Sponsor`) of Open Energy Transition's records. For your own record, copy it, change the people, and set `metadata_file` to the copy's name.
 
@@ -177,8 +177,6 @@ Maintainers release a version of the code on GitHub, which also publishes the [D
 
 ## Troubleshooting
 
-The other errors name their fix, such as `The forecasts ... have no manifest`.
-
 | Error | Cause and fix |
 |---|---|
 | `The zenodo_record must be the number of a version of your record` | `zenodo_record` is empty, a quoted number, or a word other than `new`. |
@@ -190,3 +188,5 @@ The other errors name their fix, such as `The forecasts ... have no manifest`.
 | `The ... API key is not set` | Add `ZENODO_API_KEY`, or `SANDBOX_ZENODO_API_KEY` with `sandbox: true`, to `.env`. |
 | `Zenodo ... failed (403)` or `(401)` | The token is wrong, expired, lacks the scopes, or belongs to the other site (Zenodo or Sandbox). |
 | `Zenodo new version creation failed` | The record number is wrong, not yours, or a concept number rather than a version. |
+
+Other errors name their own fix, such as `The forecasts ... have no manifest`.

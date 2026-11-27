@@ -129,7 +129,7 @@ See [Data folder](../reference/data-folder.md).
 
 ### Net demand
 
-Demand that leaves out the part supplied by [embedded generation](#embedded-generation), as seen from the transmission network. On sunny days its midday dips as rooftop solar grows.
+Demand that leaves out the part supplied by [embedded generation](#embedded-generation), as seen from the transmission network. As rooftop solar grows, its midday values dip on sunny days.
 
 ### Non-standard subdivision
 
@@ -141,7 +141,7 @@ A reconstruction of past weather, hour by hour on a grid, that combines observat
 
 ### Related entities
 
-Two entities whose areas overlap enough that the people of the shared area are at least 10% of the people of either one, such as a country and one of its regions. Training and cross-validation keep related entities together so that a model is never tested on data it has seen. See [Run checks](../guides/check.md).
+Two entities whose areas overlap enough that the people of the shared area are at least 10% of the people of either one, such as a country and one of its regions. A model is never trained on an entity related to the one it is scored on, since it would have seen the demand of the same people. See [Models](models.md#related-entities).
 
 ### Resolution
 
@@ -175,7 +175,7 @@ The value a model learns to predict. In DemandCast, it is the hourly demand rela
 
 ### Testing set, validation set, training set
 
-The training set is the data a model learns from. The testing set is the data kept aside to measure its error, here the most recent year of each entity. The optional validation set is the year before, which XGBoost uses to decide when to stop training. See [Train and validate](../guides/train-validate.md).
+The training set is the data a model learns from. The testing set is the data kept aside to measure its error, here the most recent year of each entity. The optional validation set is the year before, which XGBoost can use to decide when to stop training (early stopping). See [Train and validate](../guides/train-validate.md).
 
 ### Verdict
 
