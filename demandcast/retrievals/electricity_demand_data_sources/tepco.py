@@ -13,8 +13,9 @@ Description:
     Kantō region, in units of 10 MW ("万kW") for each hour, at its start
     in the time of Japan, which has no daylight saving time.
 
-    The website of TEPCO refuses the downloads from outside Japan
-    (HTTP 403) since 2026-10-22. OCCTO republishes the same demand,
+    The website of TEPCO refuses the downloads of the monthly files
+    from outside Japan (HTTP 403) since 2026-10-22, while it still
+    serves the yearly files. OCCTO republishes the same demand,
     without the rounding to 10 MW (see occto.py), which fills the hours
     after the data of TEPCO.
 

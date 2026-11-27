@@ -34,7 +34,7 @@ All options but `check` apply only to `data_sources`; the other checks accept an
 | `maximum_age_days` | `60` | `60` | How old, in days, the latest value of a source whose `end_date` is `today` may be. Most sources publish within weeks. |
 | `maximum_age_days_by_source` | none | `caiso: 180`, `tsoc: 700` | Another `maximum_age_days` for some sources. CAISO publishes a month one to four months after it ends. TSOC publishes a yearly file five weeks to nine months after the year ends, so its latest value can be almost two years old. |
 | `time_limit_minutes` | `15` | `15` | After this time, every source that has not answered fails, so a silent website cannot keep the check from ending. |
-| `skipped_data_sources` | none | `tepco: Its website refuses the requests from the runners of GitHub Actions.` | Sources not to check, each with the reason shown in the report. TEPCO answers GitHub Actions runners, where the weekly check runs, with HTTP 403; OCCTO gives the same demand of the Kantō area. |
+| `skipped_data_sources` | none | `tepco: Its website refuses its monthly files outside Japan.` | Sources not to check, each with the reason shown in the report. TEPCO answers the requests for its monthly files, which hold the latest data, from outside Japan with HTTP 403; OCCTO gives the same demand of the Kantō area. |
 
 ## Data availability
 

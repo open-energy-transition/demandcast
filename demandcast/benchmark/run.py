@@ -4,11 +4,11 @@ License: AGPL-3.0.
 Description:
 
     This script retrieves and assembles the data of the benchmark of the
-    machine learning models (see the benchmark results in the machine
-    learning page of the documentation): the electricity demand, the
-    annual electricity demand per capita, the population, the GDP PPP
-    per capita and the temperature of Denmark, Austria and Portugal,
-    assembled for training from 2021 to 2023.
+    machine learning models (see the benchmark in the models page of
+    the documentation): the electricity demand, the annual electricity
+    demand per capita, the population, the GDP PPP per capita and the
+    temperature of Denmark, Austria and Portugal, assembled for
+    training from 2021 to 2023.
 
     Each step runs a script with its configuration file in this folder,
     from the code folder, and the steps stop at the first that fails. A

@@ -56,7 +56,7 @@ end_year:
 # Scenario of the data to be retrieved.
 scenario:
 
-# OPTIONAL.
+# OPTIONAL - REQUIRED for the gridded_weather variable.
 # Variable of the weather data to be retrieved (only "temperature" is
 # supported).
 weather_variable: temperature

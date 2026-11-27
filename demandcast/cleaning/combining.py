@@ -13,7 +13,7 @@ Description:
 
     1. Those whose data covers the area of the shape of the code before
        those that cover only part of it (same_area false in the yaml
-       file of the data source, such as CAISO for California).
+       file of the data source).
     2. The data of the system operators before the data that a source
        republishes (compiled in the yaml file of the data source, such
        as the EIA), and that before the data that a source republishes

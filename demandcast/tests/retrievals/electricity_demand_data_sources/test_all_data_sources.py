@@ -130,6 +130,17 @@ def test_entities(data_source):
 
 
 @pytest.mark.parametrize("data_source", DATA_SOURCES)
+def test_definition_starts_with_the_data(data_source):
+    """Test that the definition starts on the first day of the data."""
+    definition = utils.data_sources.read_definition(data_source)
+    entities = utils.data_sources.read_entities(data_source)
+
+    assert definition[0].start_date == min(
+        entity.start_date for entity in entities
+    )
+
+
+@pytest.mark.parametrize("data_source", DATA_SOURCES)
 def test_module(data_source):
     """Test that the module has the functions of a data source."""
     module = importlib.import_module(

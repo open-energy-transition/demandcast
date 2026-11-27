@@ -32,9 +32,8 @@ time_limit_minutes: 15
 
 # OPTIONAL.
 # The data sources that are not checked, with the reason given in the
-# report. The website of TEPCO answers the requests from the runners of
-# GitHub Actions, where the weekly check runs, with HTTP 403, and those
-# from other computers with its data; OCCTO gives the same demand of the
-# Kanto area.
+# report. The website of TEPCO answers the requests for its monthly
+# files, which hold the latest data, from outside Japan with HTTP 403;
+# OCCTO gives the same demand of the Kanto area.
 skipped_data_sources:
-  tepco: Its website refuses the requests from the runners of GitHub Actions.
+  tepco: Its website refuses its monthly files outside Japan.

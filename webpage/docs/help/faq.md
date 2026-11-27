@@ -90,7 +90,7 @@ The only request left is the new period, which the source has not published yet.
 
 ### TEPCO fails with HTTP 403.
 
-Its website refuses downloads from outside Japan. OCCTO covers the same area.
+Its website refuses the downloads of its monthly files, from 2025, from outside Japan; the yearly files until 2024 still download. OCCTO covers the same area.
 
 ### "The retrieval of … failed for N of M codes."
 

@@ -175,7 +175,7 @@ The value a model learns to predict. In DemandCast, it is the hourly demand rela
 
 ### Testing set, validation set, training set
 
-The training set is the data a model learns from. The testing set is the data kept aside to measure its error, here the most recent year of each entity. The optional validation set is the year before, which XGBoost can use to decide when to stop training (early stopping). See [Train and validate](../guides/train-validate.md).
+The training set is the data a model learns from. The testing set is the data kept aside to measure its error, here the most recent year of each entity. The optional validation set is the year before it, or the most recent year without a testing set, which XGBoost can use to decide when to stop training (early stopping). See [Train and validate](../guides/train-validate.md).
 
 ### Verdict
 

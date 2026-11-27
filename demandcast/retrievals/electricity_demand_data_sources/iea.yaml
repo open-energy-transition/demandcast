@@ -9,7 +9,7 @@ republishes:
   - entsoe
   - occto
 definition:
-  - start_date: 2009-01-01
+  - start_date: 2009-04-13
     quantity: demand of the system operators, republished by the IEA
     embedded_generation: unknown
     network_losses: unknown

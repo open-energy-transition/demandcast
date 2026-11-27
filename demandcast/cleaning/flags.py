@@ -10,16 +10,17 @@ Description:
     - midday_dip: the demand around solar noon falls, compared with the
       morning and afternoon, below what it was in the same quarter of
       earlier years.
-    - midday_rise: the same, when it rises above, and above the year
-      before.
+    - midday_rise: the same, when it rises above, and above the
+      previous year with data.
     - time_lag: the daily profile of a quarter, in local time, is
       shifted by whole hours from that of the same quarter of the other
       years.
     - daylight_saving: the daily profile, in local time, shifts across
       a change of the clocks with the clocks, or against them unlike
       the same changes of the other years.
-    - annual_total: the demand of a year of a country is more than a
-      third away from its annual demand per capita times its population.
+    - annual_total: the demand of a year of a country is below 0.75 or
+      above 4/3 times its annual demand per capita times its
+      population.
     - annual_change: the demand of a year, and its ratio to its annual
       demand per capita times its population, change by more than 10%
       (20% for a subdivision) from the year before.
