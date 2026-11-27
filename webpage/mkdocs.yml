@@ -1,6 +1,7 @@
-# Configuration of the documentation site, built with MkDocs and the
-# Material theme from the docs folder, by the docs workflow
-# (.github/workflows/docs.yml), which deploys it to GitHub Pages.
+# Configuration of the documentation site, built with Zensical from the
+# docs folder by the docs workflow (.github/workflows/docs.yml), which
+# deploys it to GitHub Pages. Zensical reads the format of MkDocs and
+# its Material theme.
 
 site_name: DemandCast
 theme:
@@ -55,17 +56,6 @@ plugins:
 
 repo_name: open-energy-transition/demandcast
 repo_url: https://github.com/open-energy-transition/demandcast
-
-# Broken links and anchors fail the strict build of the docs workflow.
-validation:
-  omitted_files: warn
-  absolute_links: warn
-  unrecognized_links: warn
-  anchors: warn
-
-# The snippets of the Current state page are included, not linked.
-not_in_nav: |
-  status/*.md
 
 nav:
   - Home: index.md

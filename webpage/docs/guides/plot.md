@@ -84,7 +84,7 @@ The years come from the YAML files of the data sources: the map shows what Deman
 | `available_entities_light_mode.png` | DemandCast, in black | Transparent | The Current state page, light theme |
 | `available_entities_dark_mode.png` | DemandCast, in white | Transparent | The Current state page, dark theme |
 
-The Current state page picks the light or dark image with the `#only-light` and `#only-dark` suffixes of MkDocs Material. The other figures have a white background.
+The Current state page picks the light or dark image with the `#only-light` and `#only-dark` suffixes of the theme of the site. The other figures have a white background.
 
 ## Errors of the models
 

@@ -1,5 +1,5 @@
 # The dependencies of the documentation site, installed by uv in the
-# docs workflow (.github/workflows/docs.yml) to build it with MkDocs.
+# docs workflow (.github/workflows/docs.yml) to build it with Zensical.
 
 [project]
 name = "demandcast_documentation"
@@ -7,6 +7,5 @@ version = "0.1.0"
 description = "Documentation for Demandcast"
 requires-python = ">=3.12"
 dependencies = [
-    "mkdocs-material>=9.5.50",
-    "mkdocs-redirects==1.2.2",
+    "zensical>=0.1.3",
 ]

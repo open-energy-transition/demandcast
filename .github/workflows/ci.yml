@@ -206,7 +206,7 @@ jobs:
           cache-dependency-glob: webpage/uv.lock
 
       - name: "Build the documentation"
-        run: uv run --locked mkdocs build --strict
+        run: uv run --locked zensical build --strict
 
   docker-image:
     name: "Docker image"
