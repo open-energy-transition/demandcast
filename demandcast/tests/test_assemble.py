@@ -155,7 +155,7 @@ def _write_inputs(codes: list[str], years: list[int]) -> None:
                 utils.paths.get_indicator_folder("temperature"),
                 f"{code}_{year}",
                 retrievals.temperature._build_temperature_database(
-                    temperature, temperature, time_zone
+                    temperature, temperature, code, time_zone
                 ),
             )
         _save(
@@ -525,6 +525,34 @@ def test_assembly_with_wrong_inputs():
         assemble.run_data_assembly("testing")
     with pytest.raises(ValueError, match="start_year and end_year"):
         assemble.run_data_assembly("training", start_year=2024)
+
+
+@pytest.mark.usefixtures("assembly_inputs")
+def test_assembly_without_files_of_an_input():
+    """
+    Test that an input without any file stops the assembly.
+
+    The temperature of a scenario without a climate model has no file,
+    so the two must be given together. No temperature was retrieved for
+    the climate model and the scenario: the error names them and the
+    folder of the input.
+    """
+    with pytest.raises(ValueError, match="must be given together"):
+        assemble.run_data_assembly(
+            "forecasting", scenario_for_temperature="SSP2-4.5"
+        )
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"No temperature data was found for any of the 3 codes with "
+            r"model CESM2 in scenario SSP5-8\.5 in .*: retrieve it first"
+        ),
+    ):
+        assemble.run_data_assembly(
+            "forecasting",
+            scenario_for_temperature="SSP5-8.5",
+            climate_model_for_temperature="CESM2",
+        )
 
 
 @pytest.mark.usefixtures("assembly_inputs")

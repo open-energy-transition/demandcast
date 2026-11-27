@@ -18,7 +18,7 @@ from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import numpy as np
 import pandas as pd
-from pydantic import ValidationError
+from pydantic import ValidationError, model_validator
 
 import utils.columns
 import utils.config
@@ -39,6 +39,34 @@ class ConfigModel(utils.config.StrictSettings):
     target: str
     categorical_features: list[str] | None = None
     scaling_variables: list[str] | None = None
+
+    @model_validator(mode="after")
+    def _check_categorical_features(self) -> "ConfigModel":
+        """
+        Check that the categorical features are features.
+
+        Returns
+        -------
+        ConfigModel
+            The settings.
+
+        Raises
+        ------
+        ValueError
+            If a categorical feature is not in the features.
+        """
+        missing = [
+            feature
+            for feature in self.categorical_features or []
+            if feature not in self.features
+        ]
+        if missing:
+            raise ValueError(
+                f"The categorical features {missing} are not in the "
+                "features: add them to the features, or remove them from "
+                "the categorical features."
+            )
+        return self
 
 
 class PreparedDataset(TypedDict):

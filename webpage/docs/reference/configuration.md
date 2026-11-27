@@ -86,5 +86,4 @@ entities:
 
 Only the codes are read: `country_code` (ISO 3166 alpha-3) for a country, plus `subdivision_code` for a subdivision, whose full code joins the two with an underscore, such as `USA_CAL`. The names are optional but make the file easier to read. Use the codes of `world_countries.yaml` and `available_subdivisions.yaml`.
 
-!!! warning
-    The file is not checked before use: a misspelt `country_code` key stops the script with a `KeyError`.
+The file is checked before use: a misspelt or unknown field, such as `iso_code`, or a file without `entities`, stops the script with an error that names the file and the field. The other fields of the entities of a data source, such as `start_date`, are allowed, so you can copy them from a data source.

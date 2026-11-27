@@ -9,8 +9,10 @@ Description:
     loop over the years and scenarios of their global grids.
 
     The grid of a country or subdivision covers the bounds of its shape
-    (see utils.shapes.get_entity_bounds), and records them in the
-    attribute BOUNDS_KEY of its NetCDF file. A grid whose bounds differ
+    (see utils.shapes.get_entity_bounds), or the cells nearest to them
+    when a grid coarser than the bounds has no cell inside them, and
+    records them in the attribute BOUNDS_KEY of its NetCDF file. A grid
+    without cells is extracted again. A grid whose bounds differ
     from those of the current shape of its code, such as after a change
     of the definition of a subdivision or of Natural Earth, or that
     records none, is extracted again from the global grid. Only the
@@ -25,7 +27,7 @@ import hashlib
 import logging
 import os
 from collections.abc import Callable
-from typing import Literal
+from typing import Literal, cast
 
 import numpy as np
 import shapely
@@ -50,6 +52,10 @@ BOUNDS_KEY = "demandcast_bounds"
 # The precision of the coordinates of a shape in its fingerprint, in
 # degrees.
 SHAPE_PRECISION = 1e-6
+
+# The names of the coordinates of space of the grids, harmonized or as
+# downloaded (see utils.geospatial.harmonize_coords).
+SPATIAL_DIMENSIONS = ("x", "y", "longitude", "latitude", "lon", "lat")
 
 
 @functools.cache
@@ -153,7 +159,8 @@ def has_current_bounds(
     -------
     bool
         Whether the bounds that the grid records are those of the
-        current shape of the code, false if the file cannot be read.
+        current shape of the code, false if the file cannot be read or
+        the grid has no cell along a coordinate of space.
     """
     try:
         with xarray.open_dataset(file_path) as dataset:
@@ -168,10 +175,18 @@ def has_current_bounds(
                 ),
                 None,
             )
+            empty = any(
+                dataset.sizes.get(name) == 0 for name in SPATIAL_DIMENSIONS
+            )
     except (OSError, ValueError) as error:
         logging.warning(
             f"The grid {file_path} cannot be read, so it is retrieved "
             f"again: {error}"
+        )
+        return False
+    if empty:
+        logging.warning(
+            f"The grid {file_path} has no cell, so it is retrieved again."
         )
         return False
     if recorded is None:
@@ -197,6 +212,48 @@ def is_current(file_path: str, code: str) -> bool:
         shape of the code.
     """
     return os.path.exists(file_path) and has_current_bounds(file_path, code)
+
+
+def select_bounds[T: xarray.DataArray | xarray.Dataset](
+    grid: T, bounds: Bounds
+) -> T:
+    """
+    Select the cells of a grid inside bounds, or else the nearest ones.
+
+    Parameters
+    ----------
+    grid : xarray.DataArray or xarray.Dataset
+        The grid, with the coordinates x and y in increasing order.
+    bounds : Bounds
+        The bounds, west, south, east and north.
+
+    Returns
+    -------
+    xarray.DataArray or xarray.Dataset
+        The cells of the grid inside the bounds along x and along y.
+        Along a coordinate without a cell inside the bounds, the cells
+        nearest to each of the two bounds, one or two.
+
+    Notes
+    -----
+    A grid coarser than the bounds, such as that of a climate model of
+    about 2.8 degrees for a small island, can have no cell inside them.
+    The cells nearest to the two bounds are those nearest to any point
+    between them, so the nearest cell of each point of the shape is in
+    the selection, as the temperature of the most populous cells needs
+    (see retrievals.temperature).
+    """
+    indexers: dict[str, slice | np.ndarray] = {}
+    for name, low, high in (
+        ("x", bounds[0], bounds[2]),
+        ("y", bounds[1], bounds[3]),
+    ):
+        indexers[name] = slice(low, high)
+        if grid[name].sel({name: indexers[name]}).size == 0:
+            indexers[name] = np.unique(
+                grid[name].sel({name: [low, high]}, method="nearest")
+            )
+    return cast("T", grid.sel(indexers))
 
 
 def extract_entity_grids(
@@ -231,9 +288,9 @@ def extract_entity_grids(
 
     Notes
     -----
-    The grid of a country or subdivision covers the bounds of its shape,
-    and is saved in a NetCDF file, with the bounds (see
-    has_current_bounds).
+    The grid of a country or subdivision covers the bounds of its shape
+    (see select_bounds), and is saved in a NetCDF file, with the bounds
+    (see has_current_bounds).
     """
 
     def retrieve(entity_code: str) -> None:
@@ -257,9 +314,7 @@ def extract_entity_grids(
 
         logging.info(f"Extracting the gridded {description} of {entity_code}.")
         bounds = list(get_bounds(entity_code))  # West, South, East, North
-        entity_grid = global_grid.sel(
-            x=slice(bounds[0], bounds[2]), y=slice(bounds[1], bounds[3])
-        )
+        entity_grid = select_bounds(global_grid, bounds)
         with utils.files.writing(file_path) as temporary_path:
             record_bounds(process(entity_grid, bounds), bounds).to_netcdf(
                 temporary_path

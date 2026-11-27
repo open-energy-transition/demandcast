@@ -17,12 +17,14 @@ import pandas as pd
 import pytest
 
 import retrievals.annual_electricity_demand_per_capita as annual_demand
+import utils.catalogue
 import utils.paths
 from retrievals.socio_economic_data_sources import world_bank
 
 
 def test_run_data_retrieval_of_future_scenario():
     """Test that future data is saved where assemble.py reads it."""
+    this_year = pd.Timestamp.now().year
     historical_data = pd.DataFrame(
         {2020: [7000.0], 2021: [7100.0]}, index=["FRA"]
     )
@@ -35,7 +37,10 @@ def test_run_data_retrieval_of_future_scenario():
         patch.object(
             annual_demand.iiasa,
             "extrapolate",
-            side_effect=[pd.Series({2022: 7200.0}), pd.Series({2022: 7300.0})],
+            side_effect=[
+                pd.Series({this_year: 7200.0}),
+                pd.Series({this_year: 7300.0}),
+            ],
         ),
     ):
         # The second run replaces the year with its revised value.
@@ -43,7 +48,7 @@ def test_run_data_retrieval_of_future_scenario():
             annual_demand.run_data_retrieval(
                 code="FRA",
                 file=None,
-                year=2022,
+                year=this_year,
                 start_year=None,
                 end_year=None,
                 scenario="SSP2-45",
@@ -65,7 +70,67 @@ def test_run_data_retrieval_of_future_scenario():
         )
     )["Annual electricity demand per capita (kWh)"]
     assert set(saved) == {7300.0}
-    assert len(saved) == 8760
+    assert (
+        len(saved)
+        == 24
+        * (
+            pd.Timestamp(this_year + 1, 1, 1) - pd.Timestamp(this_year, 1, 1)
+        ).days
+    )
+
+
+def test_last_value_is_carried_forward_to_last_year():
+    """
+    Test that the historical data is extended up to last year.
+
+    France has data up to 2021: the years after it, up to last year,
+    take its value, and the projections start in the current year, from
+    last year.
+    """
+    this_year = pd.Timestamp.now().year
+    historical_data = pd.DataFrame(
+        {2020: [7000.0], 2021: [7100.0]}, index=["FRA"]
+    )
+
+    with (
+        patch.object(
+            annual_demand, "get_historical_data", return_value=historical_data
+        ),
+        patch.object(annual_demand.iiasa, "read"),
+        patch.object(
+            annual_demand.iiasa,
+            "extrapolate",
+            return_value=pd.Series({this_year: 7200.0}),
+        ) as extrapolate,
+    ):
+        annual_demand.run_data_retrieval(
+            code="FRA",
+            file=None,
+            year=None,
+            start_year=this_year - 1,
+            end_year=this_year,
+            scenario="SSP2-45",
+        )
+
+    folder = utils.paths.get_indicator_folder(
+        "annual_electricity_demand_per_capita"
+    )
+    saved = pd.read_parquet(os.path.join(folder, "FRA.parquet"))[
+        "Annual electricity demand per capita (kWh)"
+    ]
+    assert set(saved) == {7100.0}
+    assert (
+        len(saved)
+        == 24
+        * (
+            pd.Timestamp(this_year, 1, 1) - pd.Timestamp(this_year - 1, 1, 1)
+        ).days
+    )
+    assert extrapolate.call_args.args[3:] == (
+        7100.0,
+        this_year - 1,
+        list(range(this_year, utils.catalogue.LAST_PROJECTION_YEAR + 1)),
+    )
 
 
 def test_download_of_world_bank(monkeypatch):

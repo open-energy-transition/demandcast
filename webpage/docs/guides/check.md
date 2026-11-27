@@ -25,7 +25,7 @@ uv run check.py --config config/check_flags_config.yaml        # report of the f
 
 ## Options
 
-All options but `check` apply only to `data_sources`; the other checks accept and ignore them.
+All options but `check` apply only to `data_sources`; with another check, an option that is not empty or at its default stops the script. An unknown name of a data source, in `data_sources`, `maximum_age_days_by_source` or `skipped_data_sources`, stops the check.
 
 | Option | Default | In `check_data_sources_config.yaml` | What it does |
 |---|---|---|---|
@@ -126,7 +126,7 @@ Error messages are cut to 300 characters, with API keys and passwords removed.
 
 `.github/workflows/live-check.yml` runs every Monday at 04:23 UTC, and when started by hand, on the `main` branch only.
 
-1. It downloads the report of the latest successful run on `main`, so the failures in a row continue.
+1. It downloads the report of the latest completed run on `main` that has one, so the failures in a row continue, even when another job of that run, such as the network tests, failed.
 2. It runs `uv run --locked check.py --config config/check_data_sources_config.yaml`, with the keys and accounts of ENTSO-E, EIA, EPIAS and ISO New England from the secrets of the `live-checks` environment.
 3. It adds the Markdown report to the run summary, and uploads both files as the artifact `data-sources-report`, kept 90 days.
 4. A separate job, without the code or the keys, reads the JSON report. If a source has failed two checks in a row or more, it opens an issue labelled `live-check`, titled "Data sources that fail the live check", or updates the open one, with the report as body. Otherwise it closes the open issue.
@@ -210,7 +210,7 @@ related: []
 unrelated: []
 ```
 
-Each pair is a list of two codes, such as `- [<code>, <other code>]`. Use `related` for a grid and the country whose demand includes it, for example. Both lists are empty in the repository. They apply after the shares, `unrelated` after `related`.
+Each pair is a list of two codes, such as `- [<code>, <other code>]`. Use `related` for a grid and the country whose demand includes it, for example. Both lists are empty in the repository. They apply after the shares, `unrelated` after `related`. A code that no data source has, such as a misspelt one, stops the training and the cross-validation with an error.
 
 ### Why a test fails after you add a code
 

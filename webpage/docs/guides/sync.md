@@ -35,7 +35,7 @@ The script reads each local file that has the same size as its object, to comput
 
 ### Safe downloads
 
-A download is written to a temporary `.part` file and then hard-linked to its final name. The link fails if a file appeared at that path in the meantime, so that file is not overwritten. A download that stops halfway leaves no partial file under the final name.
+A download is written to a temporary `.part` file and then hard-linked to its final name. The link fails if a file appeared at that path in the meantime, so that file is not overwritten. A download that stops halfway leaves no partial file under the final name. On a file system without hard links, such as exFAT or some network shares, the temporary file is renamed instead, if no file has its name: there, a file written at that path in the very moment between the check and the rename can be overwritten, except on Windows.
 
 An upload asks Cloud Storage to write the object only if it does not exist yet, so an object that someone else uploads at the same moment is not overwritten either.
 
@@ -68,7 +68,7 @@ To run `sync.py` in Docker, see [Docker](docker.md#copy-the-data-folder-to-or-fr
 3. Read the log (see [Read the result](#read-the-result)). The terminal shows nothing unless the script fails.
 
 !!! tip
-    Start with `dry_run: true` to count the files that the copy would add, without copying anything.
+    Start with `dry_run: true` to list in the log the files that the copy would add, without copying anything.
 
 ## Options
 
@@ -78,7 +78,7 @@ To run `sync.py` in Docker, see [Docker](docker.md#copy-the-data-folder-to-or-fr
 | `bucket` | Yes | empty | The name of your bucket, such as `demandcast-data`, without `gs://`. The script stops while it is empty. |
 | `excluded_folders` | No | `[logs]` | Folders of the data folder that are never copied, such as `logs` or `results/figures`, with their subfolders |
 | `included_folders` | No | empty (all folders) | The only folders to copy, such as `assembled` or `results/forecasts`, with their subfolders |
-| `dry_run` | No | `false` | `true` counts the files that a copy would add, without copying them. Differences and unsafe objects are still listed by name. |
+| `dry_run` | No | `false` | `true` lists in the log the files that a copy would add, one a line, without copying them. Differences and unsafe objects are still listed by name. |
 
 ### Choose the folders to copy
 
@@ -104,6 +104,8 @@ Each run writes `logs/sync_upload_<time>.log` or `logs/sync_download_<time>.log`
 
 - the settings;
 - the number of files copied (or that would be copied, in a dry run) and of identical files skipped;
+- in a dry run, a line `Would copy <path>` for each file that would be copied;
+- a warning with the folders of the data folder that are symbolic links, if any (see [Troubleshooting](#troubleshooting));
 - a warning with the paths of the files that differ, if any;
 - a warning with the names of the unsafe objects, if any.
 
@@ -129,14 +131,13 @@ Each data source has one index of its raw data, `electricity_demand/raw/<source>
 The scripts check downloaded files by their content, so no extra step is needed:
 
 - Manifest paths are relative to the data folder, and the scripts check each file against the checksum in its manifest, which a faithful copy keeps.
-- The combined electricity demand records a [fingerprint](../concepts/glossary.md#fingerprint) of the code, reviews and source files that made it. If yours differ, or the combined file is older than the cleaned data of its sources, `assemble.py` combines it again (see [Electricity demand](../concepts/electricity-demand.md#when-the-combination-runs-again)).
+- The combined electricity demand records a [fingerprint](../concepts/glossary.md#fingerprint) of the code, reviews and source files that made it. If yours differ, or the combined file is older than the cleaned data of its sources, `assemble.py` combines it again (see [Electricity demand](../concepts/electricity-demand.md#when-the-combination-runs-again)). The cleaned data records a fingerprint of the cleaning and flag rules, and is cleaned again from the processed data when yours differ.
 - Temperature files record the fingerprint of their shape, and grids the bounds of their shape. A file made with another shape is computed again.
 
-Some checks use the time a file was written, which for a downloaded file is the time of the download:
+Some checks use the time a file was written:
 
-- A reanalysis weather file of a past year whose data ends before 31 December is retrieved again, but not until a day after the download.
+- Reanalysis weather files and temperature files record when their data was retrieved, which a copy keeps. So a file made elsewhere before its year was complete, or before its data was final, is retrieved or extracted again after a download, as on the computer that made it (see [When files are downloaded again](../concepts/inputs.md#when-files-are-downloaded-again)). A file without that record is judged by its modification time, which for a downloaded file is the time of the download.
 - The grids of each code are extracted again from a global weather grid that is newer. A download writes `gridded_weather/processed/` before `gridded_weather/raw/` (alphabetical order), so the first retrieval after a full download extracts them again. This takes time but downloads nothing.
-- A temperature file of a year counts as complete if it was written more than seven days after that year ended. So a temperature file made elsewhere while its year was in progress looks complete after a download. Delete it to compute it again.
 
 ## Troubleshooting
 
@@ -148,5 +149,4 @@ Some checks use the time a file was written, which for a downloaded file is the 
 | `403` or `Forbidden` | Your Google account has no access to the bucket. Ask its owner. |
 | `Copied 0 files` | Everything is already there, `included_folders` is an empty list, or the folder names do not match (spelling, forward slashes). |
 | Exit status 1 | Some files differ or some objects are unsafe. Read the warnings in the log. |
-| A folder of the data folder is never uploaded | It is a symbolic link to a folder. The script does not follow linked folders, and does not download into them. Point `DEMANDCAST_DATA_FOLDER` to the real folder. |
-| A download fails with an `OSError` about links | The file system has no hard links (such as FAT32 or exFAT). Use another disk for the data folder. |
+| A warning names folders that are symbolic links | The script does not follow folders that are symbolic links, so their files are not uploaded, and it does not download into those that lead outside the data folder. Point `DEMANDCAST_DATA_FOLDER` to the real folder, or exclude them. |

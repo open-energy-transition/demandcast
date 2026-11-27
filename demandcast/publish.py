@@ -182,13 +182,12 @@ def _check_publishable(file_paths: list[str]) -> None:
         assembled data for training or predictions of scored hours,
         with their actual demand.
     """
-    demand_folder = os.path.realpath(
+    demand_folder = pathlib.Path(
         utils.paths.get_data_folder("electricity_demand")
-    )
+    ).resolve()
     for file_path in file_paths:
         in_demand_folder = (
-            os.path.commonpath([os.path.realpath(file_path), demand_folder])
-            == demand_folder
+            pathlib.Path(file_path).resolve().is_relative_to(demand_folder)
         )
         if in_demand_folder or os.path.basename(file_path).startswith(
             DEMAND_FILE_PREFIXES

@@ -149,6 +149,7 @@ def run_forecasting(
         model_path, algorithm.lower(), model_module.FILE_EXTENSION
     )
     manifest = utils.manifest.verify_file(trained_model_path, "model")
+    ml_models.files.check_model_algorithm(manifest, algorithm)
     model = model_module.load(trained_model_path)
     ml_models.data.check_model_features(model, prepared_dataset["features"])
     ml_models.files.check_model_manifest(manifest, ml_config)

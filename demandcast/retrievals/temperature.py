@@ -29,6 +29,18 @@ Description:
     hour, and its local hour, day, month and year are those of its
     start, so that the hour from 23:00 to midnight on a Friday is on a
     Friday and that before midnight on January 1 in the year before.
+    Its weekend indicator tells whether its start is on a weekend day
+    of the country or subdivision (see utils.public_holidays).
+
+    The climate models give daily means of the temperature, which are
+    placed at noon and interpolated to the hours, so the projections
+    have the changes from day to day but no daily cycle: their hours
+    are smoother than those of the reanalysis, on which the models are
+    trained, and their 5th and 95th percentiles are closer together.
+    The CDS gives the temperature of the climate models by day or by
+    month, not by hour. The hours at the ends of the projections,
+    before the noon of their first day and after that of their last,
+    have the mean of that day.
 
     Each Parquet file records the version of the processing that made it
     (PROCESSING_VERSION), which changes when the extraction changes what
@@ -61,15 +73,17 @@ import utils.columns
 import utils.files
 import utils.geospatial
 import utils.paths
+import utils.public_holidays
 import utils.scenarios
 import utils.shapes
 import utils.time_series
 import utils.time_zones
 
-# The version of the processing of the temperature files. Version 1
+# The version of the processing of the temperature files. Version 2
 # ranks the cells by their population inside the shape of the country
-# or subdivision.
-PROCESSING_VERSION = 1
+# or subdivision, gives the weekend days of its country, and gives the
+# projections every hour of the year, up to its ends.
+PROCESSING_VERSION = 2
 
 # The key of the attributes of a temperature file with its processing.
 PROCESSING_KEY = "demandcast_temperature"
@@ -321,15 +335,32 @@ def _extract_temperature_in_local_year(
     xarray.DataArray
         The mean temperature of the hours of the year in local time, at
         their ends in UTC: the hours that start in the year.
+
+    Notes
+    -----
+    The daily means of the climate models are placed at noon in UTC of
+    their days, whether their times are at the start or in the middle
+    of the days, and interpolated linearly to the hours. The hours of
+    the day before the first day and after the last, which the local
+    year can need east and west of UTC, such as at the start of the
+    first projection year and at the end of the last, have the mean of
+    the nearest day.
     """
     if projections:
-        # Add 12 hours to the time coordinate to center the daily data
-        # on noon.
-        temperature_data["time"] = temperature_data["time"] + np.timedelta64(
-            12, "h"
+        days = temperature_data.indexes["time"].floor("D")
+        temperature_data = (
+            temperature_data.assign_coords(time=days + pd.Timedelta(hours=12))
+            .resample(time="1h")
+            .interpolate()
+            .reindex(
+                time=pd.date_range(
+                    days[0] - pd.Timedelta(days=1),
+                    days[-1] + pd.Timedelta(days=2),
+                    freq="h",
+                ),
+                method="nearest",
+            )
         )
-
-        temperature_data = temperature_data.resample(time="1h").interpolate()
 
     # The mean temperature of each hour, at its end.
     temperature_data = temperature_data.rolling(time=2).mean()
@@ -533,6 +564,7 @@ def has_current_processing(file_path: str, code: str) -> bool:
 def _build_temperature_database(
     temperature_time_series_top_1: pd.Series,
     temperature_time_series_top_3: pd.Series,
+    entity_code: str,
     entity_time_zone: dt.tzinfo,
 ) -> pd.DataFrame:
     """
@@ -548,6 +580,10 @@ def _build_temperature_database(
         The temperature time series for the most populous grid cell.
     temperature_time_series_top_3 : pandas.Series
         The temperature time series for the 3 most populous grid cells.
+    entity_code : str
+        The code of the country or subdivision of interest, whose
+        calendar gives the weekend days (see
+        utils.public_holidays.get_weekend_indicator).
     entity_time_zone : datetime.tzinfo
         Time zone of the country or subdivision of interest.
 
@@ -619,8 +655,10 @@ def _build_temperature_database(
 
     temperature_database["Local hour of the day"] = local_time.hour
     temperature_database["Local weekend indicator"] = (
-        local_time.day_of_week >= 5
-    ).astype(int)
+        utils.public_holidays.get_weekend_indicator(
+            temperature_time_series_top_1.index.to_series(), entity_code
+        )
+    )
     temperature_database["Local month of the year"] = local_time.month
     temperature_database[utils.columns.LOCAL_YEAR] = local_time.year
 
@@ -779,6 +817,9 @@ def run_data_retrieval(
                     selected_scenario,
                 )
             ):
+                # The weather that may have changed is retrieved again
+                # before it is read, so the data is that of now.
+                retrieved = pd.Timestamp.now(tz="UTC").tz_localize(None)
                 (
                     temperature_time_series_top_1,
                     temperature_time_series_top_3,
@@ -798,9 +839,13 @@ def run_data_retrieval(
                 temperature_database = _build_temperature_database(
                     temperature_time_series_top_1,
                     temperature_time_series_top_3,
+                    entity_code,
                     entity_time_zone,
                 )
 
+                temperature_database.attrs[
+                    retrievals.gridded_weather.RETRIEVED_KEY
+                ] = retrieved.isoformat()
                 temperature_database.attrs[PROCESSING_KEY] = {
                     "version": PROCESSING_VERSION,
                     "reanalysis_source": None

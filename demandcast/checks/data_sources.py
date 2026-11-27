@@ -519,7 +519,8 @@ def run_check(
     Raises
     ------
     ValueError
-        If a data source is not recognized.
+        If a data source, also of maximum_age_days_by_source or of
+        skipped_data_sources, is not recognized.
 
     Notes
     -----
@@ -533,7 +534,11 @@ def run_check(
     all_data_sources = sorted(utils.data_sources.read_data_sources())
     if data_sources is None:
         data_sources = all_data_sources
-    unknown_data_sources = sorted(set(data_sources) - set(all_data_sources))
+    unknown_data_sources = sorted(
+        set(data_sources)
+        .union(maximum_age_days_by_source or {}, skipped_data_sources or {})
+        .difference(all_data_sources)
+    )
     if unknown_data_sources:
         raise ValueError(
             f"The data sources {unknown_data_sources} are not recognized. "

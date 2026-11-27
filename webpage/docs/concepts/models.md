@@ -61,7 +61,7 @@ A [feature](glossary.md#feature) is an input column of the model. The default `f
 | Feature | Meaning | Categorical |
 |---|---|---|
 | `Local hour of the day` | Hour, 0 to 23 | Yes |
-| `Local weekend indicator` | 1 on a Saturday or Sunday, else 0 | Yes |
+| `Local weekend indicator` | 1 on a weekend day of the entity's country, such as Friday and Saturday in Saudi Arabia, else 0 | Yes |
 | `Local holiday indicator` | 1 on a public holiday of the entity, else 0 | Yes |
 | `Local month of the year` | Month, 1 to 12 | Yes |
 | `Temperature - Top 1 (K)` | Temperature in the most populous grid cell | No |
@@ -81,6 +81,9 @@ The calendar features describe the *start* of each hour in local time: the hour 
 - A subdivision defined by a system operator, such as New England (`USA_NE`), has only the holidays of its country.
 - A country that the package does not know has none, and the log says so.
 - India and its states count only the six holidays on which their demand drops: Republic Day, Independence Day, Mahatma Gandhi's Birthday, Holi, Diwali and Dussehra.
+- The package has the dates of Holi, Diwali and Dussehra, which follow the Hindu lunisolar calendar, only for the years of its tables: 2001 to 2035 in version 0.107. Other years, such as forecasts from 2036, have only the other three, and the log lists the missing holidays and years.
+
+The weekend indicator comes from the same package, when the temperature is extracted: the weekend days of the entity's country, or of its state if it has its own calendar, on each date, since some countries changed them, such as the United Arab Emirates in 2022. A country that the package does not know has Saturday and Sunday.
 
 `Population` is not a feature: it is a scaling variable, used only to convert the predictions to MW.
 
@@ -226,7 +229,7 @@ The scripts check each file against its manifest (kind, name, checksum, version)
 | Script | It stops if |
 |---|---|
 | `train.py`, `validate.py`, `cross_validate.py`, `forecast.py` | The data was assembled for the other purpose (training data given to `forecast.py`, or the reverse) |
-| `validate.py`, `forecast.py` | The target or its transformation, the `features` (in order), the `categorical_features` or the `scaling_variables` differ from the training |
+| `validate.py`, `forecast.py` | The model is of another `algorithm` than `ml_config.yaml`; the target or its transformation, the `features` (in order), the `categorical_features` or the `scaling_variables` differ from the training |
 | `validate.py` | The model was trained without a testing set; the data of the training is missing (no fallback to other data) or differs; or the sets differ from the training |
 | `validate.py`, `cross_validate.py` | The `_provenance.csv` of the dataset differs from the one its manifest records |
 

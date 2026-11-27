@@ -431,3 +431,13 @@ def test_sandbox_needs_its_key(monkeypatch):
 
     assert api.url.startswith("https://sandbox.zenodo.org/")
     assert api.access_token == os.environ["SANDBOX_ZENODO_API_KEY"]
+
+
+def test_missing_sandbox_key(monkeypatch):
+    """Test that a missing key of the sandbox is named in the error."""
+    monkeypatch.setenv("SANDBOX_ZENODO_API_KEY", "")
+
+    with pytest.raises(
+        ValueError, match=r"^The Zenodo sandbox API key is not set\."
+    ):
+        zenodo.ZenodoApi(sandbox=True)

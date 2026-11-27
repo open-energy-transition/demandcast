@@ -477,10 +477,23 @@ def test_run_check_of_all_data_sources(fake_checks):
 
 
 @pytest.mark.usefixtures("fake_checks")
-def test_run_check_of_an_unknown_data_source():
-    """Test that an unknown data source is rejected."""
+@pytest.mark.parametrize(
+    "settings",
+    [
+        {"data_sources": ["ons", "unknown"]},
+        {"maximum_age_days_by_source": {"unknown": 90}},
+        {"skipped_data_sources": {"unknown": "Its website is down."}},
+    ],
+)
+def test_run_check_of_an_unknown_data_source(settings):
+    """
+    Test that an unknown data source is rejected.
+
+    A misspelt name of a data source with its own maximum age, or to
+    skip, would otherwise be ignored.
+    """
     with pytest.raises(ValueError, match=r"\['unknown'\] are not recognized"):
-        checks.data_sources.run_check(["ons", "unknown"])
+        checks.data_sources.run_check(**settings)
 
 
 @pytest.mark.usefixtures("fake_checks")

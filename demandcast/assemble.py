@@ -32,7 +32,6 @@ Description:
 """
 
 import dataclasses
-import datetime as dt
 import functools
 import glob
 import hashlib
@@ -195,8 +194,7 @@ class ConfigModel(utils.config.StrictSettings):
             model, scenario = _get_scenario_and_model(
                 getattr(self, model_field, None),
                 getattr(self, scenario_field),
-                dataset.scenarios,
-                dataset.climate,
+                dataset,
             )
             if dataset.climate:
                 setattr(self, model_field, model)
@@ -207,11 +205,10 @@ class ConfigModel(utils.config.StrictSettings):
 def _get_scenario_and_model(
     selected_model: str | None,
     selected_scenario: str | None,
-    scenarios: tuple[str, ...] | None,
-    climate: bool,
+    dataset: Dataset,
 ) -> tuple[str | None, str | None]:
     """
-    Check the selected climate model and scenario of a variable.
+    Check the selected climate model and scenario of an input.
 
     Parameters
     ----------
@@ -219,25 +216,37 @@ def _get_scenario_and_model(
         The selected climate model.
     selected_scenario : str | None
         The selected scenario.
-    scenarios : tuple[str, ...] | None
-        The scenarios of the variable, from utils/catalogue.py, None to
-        leave the scenario unchecked.
-    climate : bool
-        Whether the variable comes from the climate models, whose
-        scenarios depend on the model.
+    dataset : Dataset
+        The input, with its scenarios from utils/catalogue.py, None to
+        leave the scenario unchecked, and whether it comes from the
+        climate models, whose scenarios depend on the model.
 
     Returns
     -------
     tuple[str | None, str | None]
         The climate model and the scenario, spelt as in the catalogue.
+
+    Raises
+    ------
+    ValueError
+        If the climate model or the scenario of an input of the climate
+        models is given without the other: its files are named after
+        both.
     """
-    if climate:
+    if dataset.climate:
+        if (selected_model is None) != (selected_scenario is None):
+            raise ValueError(
+                f"climate_model_for_{dataset.name} and "
+                f"scenario_for_{dataset.name} must be given together: the "
+                f"projections of the {dataset.description} are saved for "
+                "each climate model and scenario."
+            )
         return utils.catalogue.get_climate_model_and_scenario(
             selected_model, selected_scenario
         )
-    if scenarios is not None and selected_scenario:
+    if dataset.scenarios is not None and selected_scenario:
         selected_scenario = utils.catalogue.get_scenario(
-            selected_scenario, scenarios
+            selected_scenario, dataset.scenarios
         )
     return selected_model, selected_scenario
 
@@ -434,6 +443,13 @@ def _load_dataset(
     dask.dataframe.DataFrame
         The data of all the codes, with the columns "Time (UTC)", those
         of the input and "Entity code".
+
+    Raises
+    ------
+    ValueError
+        If the climate model or the scenario of an input of the climate
+        models is given without the other, or if the input has no data
+        for any of the codes.
     """
     logging.info(f"Loading {dataset.description} data.")
 
@@ -442,7 +458,7 @@ def _load_dataset(
         file_path=file_path,
     )
     selected_model, selected_scenario = _get_scenario_and_model(
-        selected_model, selected_scenario, dataset.scenarios, dataset.climate
+        selected_model, selected_scenario, dataset
     )
 
     result_data = []
@@ -466,6 +482,18 @@ def _load_dataset(
         if entity_data is not None:
             result_data.append(entity_data)
 
+    if not result_data:
+        raise ValueError(
+            f"No {dataset.description} data was found for any of the "
+            f"{len(entity_codes)} codes"
+            + (f" with model {selected_model}" if selected_model else "")
+            + (
+                f" in scenario {selected_scenario}"
+                if selected_scenario
+                else ""
+            )
+            + f" in {dataset.get_folder()}: retrieve it first."
+        )
     combined_data = dask.dataframe.concat(result_data)
     logging.info(
         f"Loaded {dataset.description} data for "
@@ -856,8 +884,7 @@ def run_data_assembly(
 
     output_path = os.path.join(
         assembled_data_folder,
-        f"assembled_data_for_{target_use}_"
-        f"{dt.datetime.now().astimezone():%Y%m%d_%H%M%S}",
+        f"assembled_data_for_{target_use}_{utils.files.get_time_for_name()}",
     )
 
     # Sort the dataset in the order of the entities and of the times,

@@ -34,7 +34,6 @@ class ConfigModel(utils.config.StrictSettings):
     ]
     version: str | None = None
     compare_with_version: str | None = None
-    by_group: bool = False
     results: Literal["validation", "cross_validation"] = "validation"
     metric: Literal["WAPE", "MAPE"] = "WAPE"
     validation_results: str | None = None
@@ -61,20 +60,15 @@ class ConfigModel(utils.config.StrictSettings):
                     "The version must be provided when plotting the ML "
                     "results figure."
                 )
-            if self.by_group and self.compare_with_version is not None:
-                raise ValueError(
-                    "The variables 'by_group' and 'compare_with_version' "
-                    "cannot be used together."
-                )
         elif (
             self.version is not None
             or self.compare_with_version is not None
-            or self.by_group
+            or self.results != "validation"
+            or self.metric != "WAPE"
         ):
             raise ValueError(
-                "The variables 'version', 'compare_with_version', and "
-                "'by_group' must not be provided when plotting data "
-                "availability, map of available entities or status figures."
+                "The variables 'version', 'compare_with_version', 'results' "
+                "and 'metric' are only for the ml_results figure."
             )
         if self.figure != "status" and (
             self.validation_results is not None
@@ -119,7 +113,6 @@ def main(config: ConfigModel) -> None:
             figure_directory,
             str(config.version),
             config.compare_with_version,
-            config.by_group,
             utils.paths.get_results_folder(config.results),
             config.metric,
         )

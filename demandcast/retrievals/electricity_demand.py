@@ -322,11 +322,12 @@ def _retrieve_data(
 
     Notes
     -----
-    If the data of the latest of several requests is not found, it is
-    skipped, because the file of the latest period may not be published
-    yet. A request whose data source gives no data, such as a month of
-    AEMO whose rooftop solar is not published yet, gets no version in
-    the raw data, so that a retrieval of the latest requests downloads
+    If the data of the latest of several available requests is not
+    found, it is skipped, because the file of the latest period may not
+    be published yet, also when it is the only request downloaded. A
+    request whose data source gives no data, such as a month of AEMO
+    whose rooftop solar is not published yet, gets no version in the
+    raw data, so that a retrieval of the latest requests downloads
     it again as a new one. If a request fails, the responses of the
     requests before it are kept in the raw data, so that a long
     retrieval that fails does not lose them: they can be processed
@@ -342,13 +343,16 @@ def _retrieve_data(
     start_date, end_date = utils.data_sources.read_date_ranges(data_source)[
         code
     ]
-    requests = retrieval_module.get_available_requests(
+    available_requests = retrieval_module.get_available_requests(
         code, start_date, end_date
     )
-    if latest_requests is not None:
-        requests = _get_latest_and_new_requests(
-            data_source, code, requests, latest_requests
+    requests = (
+        available_requests
+        if latest_requests is None
+        else _get_latest_and_new_requests(
+            data_source, code, available_requests, latest_requests
         )
+    )
     retrieved = pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%dT%H:%M:%SZ")
     downloads: list[tuple[Any, list[dict[str, Any]], str | None]] = []
     downloaded: dict[str, pd.Series] = {}
@@ -365,7 +369,7 @@ def _retrieve_data(
             except utils.fetcher.DataNotFoundError:
                 # The file of the latest period may not be published
                 # yet.
-                if index < len(requests) - 1 or len(requests) == 1:
+                if index < len(requests) - 1 or len(available_requests) == 1:
                     raise
                 logging.warning(
                     f"The data of the latest request ({request}) of "

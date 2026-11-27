@@ -26,6 +26,11 @@ def shares_and_exceptions(tmp_path, monkeypatch):
     """
     monkeypatch.setattr(utils.paths, "CHECKS_FOLDER", str(tmp_path))
     monkeypatch.setattr(utils.paths, "CONFIG_FOLDER", str(tmp_path))
+    monkeypatch.setattr(
+        utils.data_sources,
+        "read_all_codes",
+        lambda: ["USA", "USA_CAISO", "USA_CAL", "USA_NV"],
+    )
     pd.DataFrame(
         {
             "Entity code": ["USA", "USA_CAL", "USA_CAL"],
@@ -73,6 +78,19 @@ def test_exceptions_to_the_shares(shares_and_exceptions):
         "USA_CAL": {"USA_NV"},
         "USA_NV": {"USA_CAL"},
     }
+
+
+def test_exceptions_with_an_unknown_code(shares_and_exceptions):
+    """Test that a code of the exceptions without data is rejected."""
+    shares_and_exceptions.write_text("related:\n  - [USA_CAL, USA_NVV]\n")
+
+    with pytest.raises(ValueError, match=r"\['USA_NVV'\] of .* are not"):
+        utils.relations.read_related_entities(["USA_CAL"])
+
+
+def test_exceptions_of_the_configuration_are_codes_with_data():
+    """Test that the exceptions of the configuration are valid."""
+    assert utils.relations.read_related_entities([]) == {}
 
 
 def test_superseded_entities():

@@ -491,3 +491,36 @@ def test_level_drops_over_short_gaps():
     assert _local_days(removed, "level_drop") == _days(
         "2022-06-01", "2022-06-30"
     ) - {f"{day:%Y-%m-%d}" for day in missing_days}
+
+
+def test_cleaned_data_records_the_rules(tmp_path, monkeypatch):
+    """
+    Test that the cleaned data records the fingerprint of the rules.
+
+    It is current until a file of the rules changes, but not when only
+    its line endings do, as on Windows.
+    """
+    rule_path = tmp_path / "rules.py"
+    rule_path.write_bytes(b"FROZEN_HOURS = 6\n")
+    monkeypatch.setattr(
+        cleaning.electricity_demand, "RULE_FILES", (str(rule_path),)
+    )
+    assert not cleaning.electricity_demand.is_current("IND", "test")
+
+    _clean(_demand("2024-01-01", 48))
+    assert cleaning.electricity_demand.is_current("IND", "test")
+
+    rule_path.write_bytes(b"FROZEN_HOURS = 6\r\n")
+    assert cleaning.electricity_demand.is_current("IND", "test")
+
+    rule_path.write_bytes(b"FROZEN_HOURS = 8\n")
+    assert not cleaning.electricity_demand.is_current("IND", "test")
+
+
+def test_rule_files_exist():
+    """Test that the rules of the cleaning and the flags are files."""
+    assert {
+        os.path.basename(file_path)
+        for file_path in cleaning.electricity_demand.RULE_FILES
+        if os.path.isfile(file_path)
+    } == {"electricity_demand.py", "flags.py"}

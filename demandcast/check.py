@@ -13,7 +13,7 @@ Description:
 
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 import checks.data_availability
 import checks.data_sources
@@ -33,6 +33,38 @@ class ConfigModel(utils.config.StrictSettings):
     maximum_age_days_by_source: dict[str, int] = Field(default_factory=dict)
     time_limit_minutes: float = 15
     skipped_data_sources: dict[str, str] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _check_options_of_the_check(self) -> "ConfigModel":
+        """
+        Check that the options of the data sources are for their check.
+
+        All the options but the check apply only to the check of the
+        data sources, and must be empty or at their default otherwise.
+
+        Returns
+        -------
+        ConfigModel
+            The settings.
+
+        Raises
+        ------
+        ValueError
+            If an option is given for another check.
+        """
+        if self.check == "data_sources":
+            return self
+        for option, field in type(self).model_fields.items():
+            value = getattr(self, option)
+            if option != "check" and value not in (
+                None,
+                field.get_default(call_default_factory=True),
+            ):
+                raise ValueError(
+                    f"The option {option} applies only to the check of the "
+                    f"data sources, not to {self.check}: leave it empty."
+                )
+        return self
 
 
 def main(config: ConfigModel) -> None:

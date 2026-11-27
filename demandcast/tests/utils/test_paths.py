@@ -61,8 +61,10 @@ def test_files_of_the_repository():
 
 
 @pytest.mark.parametrize("value", [None, ""])
-def test_default_data_folder(monkeypatch, value):
+def test_default_data_folder(monkeypatch, tmp_path, value):
     """Test that the data folder is in the code folder by default."""
+    # Ignore a local .env file that sets the data folder.
+    monkeypatch.setattr(utils.paths, "ENV_FILE", str(tmp_path / ".env"))
     if value is None:
         monkeypatch.delenv(utils.paths.DATA_FOLDER_VARIABLE)
     else:
@@ -79,6 +81,29 @@ def test_data_folder_from_the_environment(monkeypatch, tmp_path):
     assert utils.paths.get_data_folder("a", "b.parquet") == os.path.join(
         tmp_path, "elsewhere", "a", "b.parquet"
     )
+
+
+def test_data_folder_from_the_env_file(monkeypatch, tmp_path):
+    """
+    Test that the .env file can set the data folder.
+
+    The variable of the shell wins over the .env file.
+    """
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        f"{utils.paths.DATA_FOLDER_VARIABLE}={tmp_path / 'from_env_file'}\n"
+    )
+    monkeypatch.setattr(utils.paths, "ENV_FILE", str(env_file))
+    # Remove the variable that the .env file sets, at the end of the
+    # test.
+    monkeypatch.delenv(utils.paths.DATA_FOLDER_VARIABLE)
+
+    assert utils.paths.get_data_folder() == str(tmp_path / "from_env_file")
+
+    monkeypatch.setenv(
+        utils.paths.DATA_FOLDER_VARIABLE, str(tmp_path / "from_shell")
+    )
+    assert utils.paths.get_data_folder() == str(tmp_path / "from_shell")
 
 
 @pytest.mark.parametrize(

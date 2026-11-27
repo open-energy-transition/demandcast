@@ -548,8 +548,6 @@ def save(lstm_model: LSTMRegressor, file_path: str) -> None:
 
     torch.save(checkpoint, output_path)
 
-    logging.info(f"Trained model saved to {output_path}")
-
 
 def get_initialized_model(config: ConfigModel) -> LSTMRegressor:
     """

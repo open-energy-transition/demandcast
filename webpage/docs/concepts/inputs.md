@@ -52,8 +52,7 @@ The projections end in 2100. Past and future meet at a different year for each i
 | Input | Past | Future |
 |---|---|---|
 | Weather | ERA5, 1990 to last year | Climate models, from the current year. The current year is never taken from ERA5, so the statistics of a year always cover a whole year. |
-| Population, GDP PPP per capita | To last year | From the current year |
-| Annual electricity demand per capita | To the last year with data of the country | From the year after |
+| Population, GDP PPP per capita, annual electricity demand per capita | To last year | From the current year |
 
 ## Indicators: from yearly values to hourly files
 
@@ -74,15 +73,15 @@ A retrieval replaces only the years it computes and keeps the others already in 
 Rules that shape the years:
 
 - **Gaps**: a year without data between two years with data takes the value of the year before. The log warns about it.
-- **Recent years**: population and GDP PPP per capita carry their last value forward up to last year, since the World Bank and the IMF publish late. The annual electricity demand per capita does not.
+- **Recent years**: the indicators carry their last value forward up to last year, since the World Bank, the IMF and Ember publish late.
 - **No projections**: some codes, such as Kosovo (`XKX`), have past data but no IIASA projections. They get only past years (used for training, never forecast), and the log says their future years are skipped.
 
 ## Annual electricity demand per capita
 
 | Source | Years | Scenarios |
 |---|---|---|
-| Ember (API), then the World Bank scaled to Ember | First to last year with data of the country | – |
-| IIASA SSP Database v2.0: growth rates | Year after the last year with data, to 2100 | 26 IAMC |
+| Ember (API), then the World Bank scaled to Ember | First year with data of the country to last year | – |
+| IIASA SSP Database v2.0: growth rates | Current year to 2100 | 26 IAMC |
 
 The two past sources count different things:
 
@@ -96,7 +95,8 @@ Past values:
 1. Download Ember's yearly demand per capita of each country, without the regions that group countries, and the World Bank's electric power consumption per capita.
 2. For each country, compute the ratio Ember / World Bank in every year that both have. The country's ratio is their median if there are at least 3 such years; otherwise it is the median ratio of the countries that have one.
 3. Take Ember's value where it exists, and elsewhere the World Bank's value times the ratio. This fills the years before 2000 and about 46 countries that Ember does not cover.
-4. A subdivision gets the value of its country.
+4. The last value is carried forward up to last year.
+5. A subdivision gets the value of its country.
 
 The two sources are not averaged, because an average of two definitions would jump wherever one is missing.
 
@@ -104,7 +104,7 @@ Future values:
 
 1. Read the growth rates of `Final Energy|Electricity per capita` (% per year) from `IAM_regional_annual_electricity_demand_per_capita_growth.xlsx`, downloaded by hand from the SSP Database into `demandcast/retrievals/socio_economic_data_sources/manual_downloads/`.
 2. Each scenario has a rate for each of five world regions (`R5.2ASIA`, `R5.2LAM`, `R5.2MAF`, `R5.2OECD`, `R5.2REF`) for 2005, 2010, then every 10 years to 2090. `iam_regions_mapping.yaml`, next to the module, gives the region of each country; all countries of a region share its rates.
-3. Start from the last past value, and multiply each year by (1 + rate / 100). The rate of a year is that of the last year of the file before it (the first rate for years up to the first year of the file).
+3. Start from the value of last year, and multiply each year by (1 + rate / 100). The rate of a year is that of the last year of the file before it (the first rate for years up to the first year of the file).
 
 The growth rates leave out the losses, as the World Bank does. Applying them to Ember's value assumes that the share of the losses stays the same.
 
@@ -202,20 +202,21 @@ Set `weather_variable: temperature`: it is required, and the only weather variab
 | `cds` (`points`, the default, means `cds` here) | Copernicus Climate Data Store ([CDS](glossary.md#cds)) | Each request waits in a queue, from minutes to hours. For more than five codes, the script downloads a year of the whole globe into `gridded_weather/raw/temperature_<year>.nc` and cuts each code from it. For five or fewer, it downloads a year of each code within its bounds. |
 | `arco` | [ARCO-ERA5](https://github.com/google-research/arco-era5), the analysis-ready ERA5 of Google Research on Google Cloud Storage | No account and no queue. It reads one global map per hour, a week at a time, for all codes at once (about 40 minutes a year). Values are rounded to 0.001 K. Google gives no commitment to keep it up to date. |
 
-The climate models always come from the CDS, with the same five-code rule.
+The climate models always come from the CDS, with the same five-code rule. A code downloaded alone gets 1.5° more on each side of its bounds, more than half a cell of the coarsest models (about 2.8°), so that its file has the model cells nearest to its shape.
 
 The files are large, about 5 GB a year for all codes. Check your disk space first.
 
 ### When files are downloaded again
 
-ERA5 is published about five days after real time and updated daily until then. So a reanalysis file is downloaded again, at most once a day, when:
+ERA5 is published about five days after real time and updated daily until then. Its first, preliminary data (ERA5T) is replaced by final data two to three months later. Each reanalysis file records when its data was retrieved, in its NetCDF attributes; a grid cut from a global file records when the global file was retrieved. A copy, such as from the bucket, keeps that time, while its modification time is that of the copy. A file without the record is judged by its modification time. A reanalysis file is downloaded again, at most once a day, when:
 
-- it was written less than 7 days after the end of its year, so its last days may still change or be missing; or
+- it was retrieved less than 7 days after the end of its year, so its last days may still change or be missing;
+- it was retrieved less than 120 days after the end of its year, so its last months may be preliminary, and those 120 days have passed: it is then downloaded once more, with the final data; or
 - it is a past year and its last hour is before 23:00 on 31 December, such as a broken file.
 
 Only the temperature reads ERA5 in the current year: west of UTC, the last hours of a local year fall in the first hours of the next year in UTC.
 
-A file of a code is also downloaded or extracted again when the bounds of its shape change. A grid cut from a global file is extracted again when the global file is newer.
+A file of a code is also downloaded or extracted again when the bounds of its shape change, or when it has no cell. A grid cut from a global file is extracted again when the global file is newer.
 
 ## Temperature
 
@@ -253,7 +254,10 @@ With `points`, the series of a point, from 1990 to about a week ago, takes about
 Each row is one hour, stored at its end in UTC. The electricity demand of an hour is its mean, so the temperature is too:
 
 - **ERA5**: the mean of the instantaneous temperatures at the start and the end of the hour.
-- **Climate models**: they give daily means. Each day is placed at noon UTC, the hours between are interpolated linearly, then averaged the same way. So the future hourly temperature has no daily cycle. Calendars of 365 or 360 days are converted to the standard calendar, and the missing days are interpolated.
+- **Climate models**: they give daily means; the CDS has no hourly temperature from them. Each day is placed at noon UTC, the hours between are interpolated linearly, then averaged the same way. The hours before the first noon and after the last, which the first projection year and 2100 need, take the mean of the nearest day. Calendars of 365 or 360 days are converted to the standard calendar, and the missing days are interpolated.
+
+!!! warning "Future temperature has no daily cycle"
+    Because they come from daily means, the hourly temperatures of the climate models follow the changes from day to day but not the cycle of the day: the afternoons are not warmer than the nights. The models are trained on ERA5, which has this cycle, so forecasts with climate models see milder hourly extremes than the training data, and their 5th and 95th percentiles of the year are closer together.
 
 A file holds the hours that start in its local year; the local hour, weekday, month and year of an hour are those of its start (23:00 to midnight on a Friday is on a Friday). To cover a whole local year, the script also reads the neighbouring years when they exist.
 
@@ -263,7 +267,7 @@ A file holds the hours that start in its local year; the local hour, weekday, mo
 |---|---|
 | `Time (UTC)` (index) | End of the hour, UTC without time zone |
 | `Local hour of the day` | Local hour of the start of the hour, 0 to 23 |
-| `Local weekend indicator` | 1 if the hour starts on a local Saturday or Sunday, else 0 |
+| `Local weekend indicator` | 1 if the hour starts on a weekend day of the entity, else 0. The weekend days come from the `holidays` package, for the date: Friday and Saturday in Saudi Arabia since 2013, Friday in Iran, Saturday and Sunday in most countries and in those the package does not know |
 | `Local month of the year` | Local month, 1 to 12 |
 | `Local year` | Local year |
 | `Temperature - Top 1 (K)` | Temperature of the most populous cell |
@@ -278,12 +282,12 @@ Only the hours that both Top 1 and Top 3 have are kept.
 
 ### When files are extracted again
 
-A temperature file records the version of the processing, the `reanalysis_source` and the shape fingerprint in its Parquet metadata. It is extracted again when:
+A temperature file records the version of the processing, the `reanalysis_source`, the shape fingerprint and the time it was extracted in its Parquet metadata. It is extracted again when:
 
 - it does not exist;
 - it records another processing version, or none. The version changes when the extraction gives other values for the same weather, such as a new choice of cells;
 - it records the fingerprint of another shape, or none, since the shape decides the cells and their weights;
-- it is ERA5, written more than a day ago, and less than 7 days after the end of its year.
+- it is ERA5, extracted more than a day ago, and either less than 7 days after the end of its year, or less than 120 days after it once those 120 days have passed, as for the [gridded weather](#when-files-are-downloaded-again). The recorded time counts, not the modification time, so a file copied from the bucket is extracted again too.
 
 Extracting again reuses the weather already downloaded; only the weather of cells not used before is downloaded.
 
@@ -297,7 +301,7 @@ Each [entity](glossary.md#entity) has a shape, which `utils/shapes.py` gives for
 
 Small remote islands are cut away from Chile, Spain, Fiji, France, the Netherlands, Norway, New Zealand, Portugal, Russia, Chukotka (`RUS_CHU`) and the United States, together with the parts beyond 180° of longitude. They would add large weather downloads for little demand.
 
-The grids of a code cover the **bounds** of its shape: its box widened by 1° on each side, kept within −180° and 180°, and rounded to 0.25°. Each NetCDF grid records its bounds. When the bounds move, such as after a run of `shapes/eia.py` or a new version of Natural Earth, the next retrieval cuts the population, GDP and weather grids of the code again from the global grids, and downloads again a weather grid that was downloaded for that code alone. A grid without recorded bounds is cut again from the global grid, but a weather grid downloaded alone is kept.
+The grids of a code cover the **bounds** of its shape: its box widened by 1° on each side, kept within −180° and 180°, and rounded to 0.25°. A grid coarser than the bounds, such as a climate model of about 2.8° for Gran Canaria (`ESP_GRAN-CANARIA`) or Hong Kong (`HKG`), can have no cell inside them; the code then gets, along that direction, the cells nearest to its two bounds, which are the nearest to every point between them. Each NetCDF grid records its bounds. When the bounds move, such as after a run of `shapes/eia.py` or a new version of Natural Earth, the next retrieval cuts the population, GDP and weather grids of the code again from the global grids, and downloads again a weather grid that was downloaded for that code alone. A grid without recorded bounds is cut again from the global grid, but a weather grid downloaded alone is kept.
 
 What depends on the whole shape, not only its bounds, records the shape's fingerprint instead: the population sums and the temperature. The fingerprint is a SHA-256 checksum of the shape with its coordinates rounded to 10⁻⁶ degrees, so another version of the geometry library gives the same checksum.
 

@@ -29,6 +29,7 @@ import yaml
 from pydantic import Field
 
 import utils.config
+import utils.data_sources
 import utils.paths
 
 # The share of the people of an entity, in the area that it shares with
@@ -129,6 +130,13 @@ def read_related_entities(codes: list[str]) -> dict[str, set[str]]:
     dict[str, set[str]]
         The codes, among the given ones, related to each given code,
         empty for a code without related entities.
+
+    Raises
+    ------
+    ValueError
+        If an exception of config/related_entities.yaml has a code that
+        no data source has, such as a misspelt one, which would have no
+        effect.
     """
     related: dict[str, set[str]] = {code: set() for code in codes}
 
@@ -174,6 +182,18 @@ def read_related_entities(codes: list[str]) -> dict[str, set[str]]:
     )
     with open(exceptions_file, encoding="utf-8") as file:
         exceptions = _Exceptions.model_validate(yaml.safe_load(file) or {})
+    unknown_codes = sorted(
+        {
+            code
+            for pair in (*exceptions.related, *exceptions.unrelated)
+            for code in pair
+        }.difference(utils.data_sources.read_all_codes())
+    )
+    if unknown_codes:
+        raise ValueError(
+            f"The codes {unknown_codes} of {exceptions_file} are not codes "
+            "of any data source."
+        )
     for code, other in exceptions.related:
         relate(code, other, True)
     for code, other in exceptions.unrelated:

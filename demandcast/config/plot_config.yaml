@@ -21,11 +21,6 @@ version:
 # comparison.
 compare_with_version:
 
-# OPTIONAL - only for the ml_results figure, and not with compare_with_version.
-# Whether to plot the results of the models trained on the data of each group
-# (income level and continent).
-by_group: false
-
 # OPTIONAL - only for the ml_results figure.
 # The results to plot: those of the validations ("validation") or of the
 # cross-validations ("cross_validation") (default: validation).

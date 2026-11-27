@@ -31,9 +31,9 @@ scenario_for_gdp_ppp_per_capita:
 scenario_for_population:
 
 # OPTIONAL.
-# Selected scenario for temperature.
+# Selected scenario for temperature, given with its climate model.
 scenario_for_temperature:
 
 # OPTIONAL.
-# Selected climate model for temperature.
+# Selected climate model for temperature, given with its scenario.
 climate_model_for_temperature:

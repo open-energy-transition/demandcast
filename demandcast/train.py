@@ -20,13 +20,13 @@ import ml_models  # noqa: F401
 import logging
 import os
 
-import pandas as pd
 from pydantic import BaseModel
 
 import ml_models.data
 import ml_models.files
 import ml_models.registry
 import utils.config
+import utils.files
 import utils.paths
 
 
@@ -74,10 +74,7 @@ def run_model_training(
         data_path, ml_config, reserve_testing_set, use_validation_set
     )
 
-    model_name = (
-        f"{algorithm.lower()}_model_"
-        f"{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
-    )
+    model_name = f"{algorithm.lower()}_model_{utils.files.get_time_for_name()}"
 
     model = model_module.train(prepared_dataset, model_config)
     model_folder = utils.paths.get_models_folder(algorithm.lower())
@@ -85,7 +82,7 @@ def run_model_training(
     model_path = os.path.join(
         model_folder, model_name + model_module.FILE_EXTENSION
     )
-    model_module.save(model, model_path)
+    ml_models.files.save_model(model_module, model, model_path)
 
     # Record how the model was trained, for its validations and
     # forecasts.

@@ -31,7 +31,7 @@ Relative paths are relative to the folder you run from, normally `demandcast/`. 
 ## What it does
 
 1. Reads the assembled data, checked against its manifest. Data assembled for training stops the script.
-2. Finds the model, checked against its manifest: the features (in order), categorical features, scaling variables and target must be those of the training.
+2. Finds the model, checked against its manifest: the algorithm, the features (in order), categorical features, scaling variables and target must be those of the training.
 3. Predicts the load relative to the annual mean of each hour.
 4. Scales the predictions of each complete local year to the annual demand and converts them to MW (see [From the predictions to MW](../concepts/models.md#from-the-predictions-to-mw)).
 5. Writes the forecasts and their manifest.
@@ -40,7 +40,7 @@ So the forecasts of each complete year (a row for each of its 8760 or 8784 hours
 
 ## Output files
 
-The files go to `data/results/forecasts/with_<model>/using_<data>/`, where `<model>` and `<data>` are the names of the model and data files without extension. `<time>` is the local time of the run, `YYYYMMDD_HHMMSS`.
+The files go to `data/results/forecasts/with_<model>/using_<data>/`, where `<model>` and `<data>` are the names of the model and data files without extension. `<time>` is the time of the run in UTC, `YYYYMMDD_HHMMSS` (the local time, in the name of the log).
 
 | File | What it holds |
 |---|---|

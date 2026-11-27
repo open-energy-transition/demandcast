@@ -91,7 +91,7 @@ def test_describe():
     )
 
 
-def test_update_readme(tmp_path):
+def test_replace_readme_block(tmp_path):
     """Test that only the block between the markers is replaced."""
     readme_file = tmp_path / "README.md"
     readme_file.write_text(
@@ -99,22 +99,24 @@ def test_update_readme(tmp_path):
         encoding="utf-8",
     )
 
-    status.update_readme(str(readme_file), "new")
-    status.update_readme(str(readme_file), "newer")
+    readme_file.write_text(
+        status.replace_readme_block(str(readme_file), "new"),
+        encoding="utf-8",
+    )
 
-    assert readme_file.read_text(encoding="utf-8") == (
+    assert status.replace_readme_block(str(readme_file), "newer") == (
         f"# Title\n\n{status.STATUS_START}\nnewer\n{status.STATUS_END}\n\n"
         "End\n"
     )
 
 
-def test_update_readme_without_markers(tmp_path):
+def test_replace_readme_block_without_markers(tmp_path):
     """Test that a README without the markers is refused."""
     readme_file = tmp_path / "README.md"
     readme_file.write_text("# Title\n", encoding="utf-8")
 
     with pytest.raises(ValueError, match="markers"):
-        status.update_readme(str(readme_file), "new")
+        status.replace_readme_block(str(readme_file), "new")
 
 
 def test_readme_has_the_markers():
@@ -177,6 +179,76 @@ def test_plot(tmp_path):
         encoding="utf-8"
     ) == text + "\n"
     assert text in readme_file.read_text(encoding="utf-8")
+
+
+def test_plot_keeps_the_page_of_cases_without_results(tmp_path):
+    """
+    Test that a case without results keeps its part of the page.
+
+    Its figures and text, and the description of the models, stay as
+    they were, while the numbers are new.
+    """
+    figure_directory = tmp_path / "figures"
+    figure_directory.mkdir()
+    status_folder = tmp_path / "status"
+    status_folder.mkdir()
+    old_files = {
+        **{
+            file_name: "old figure"
+            for file_names in status.ML_FIGURE_FILES.values()
+            for file_name in file_names
+        },
+        **dict.fromkeys(status.ML_RESULTS_FILES.values(), "old text\n"),
+    }
+    for file_name, content in old_files.items():
+        (status_folder / file_name).write_text(content, encoding="utf-8")
+    readme_file = tmp_path / "README.md"
+    readme_file.write_text(
+        f"{status.STATUS_START}\n{status.STATUS_END}\n", encoding="utf-8"
+    )
+
+    with (
+        patch.object(status.figures.map_of_available_entities, "plot"),
+        patch.object(status.figures.data_availability, "plot"),
+        patch.object(status, "FIGURE_FILES", ()),
+        patch.object(status, "get_numbers", return_value=NUMBERS),
+    ):
+        status.plot(
+            str(figure_directory), str(status_folder), str(readme_file)
+        )
+
+    for file_name, content in old_files.items():
+        assert (status_folder / file_name).read_text(
+            encoding="utf-8"
+        ) == content
+    assert (status_folder / status.NUMBERS_FILE).read_text(
+        encoding="utf-8"
+    ) == status.describe(NUMBERS) + "\n"
+
+
+def test_readme_is_written_after_the_page(tmp_path):
+    """Test that a page that cannot be written leaves the README."""
+    figure_directory = tmp_path / "figures"
+    figure_directory.mkdir()
+    # A file where the folder of the page should be.
+    status_folder = tmp_path / "status"
+    status_folder.write_text("", encoding="utf-8")
+    readme = f"{status.STATUS_START}\nold\n{status.STATUS_END}\n"
+    readme_file = tmp_path / "README.md"
+    readme_file.write_text(readme, encoding="utf-8")
+
+    with (
+        patch.object(status.figures.map_of_available_entities, "plot"),
+        patch.object(status.figures.data_availability, "plot"),
+        patch.object(status, "FIGURE_FILES", ()),
+        patch.object(status, "get_numbers", return_value=NUMBERS),
+        pytest.raises(FileExistsError),
+    ):
+        status.plot(
+            str(figure_directory), str(status_folder), str(readme_file)
+        )
+
+    assert readme_file.read_text(encoding="utf-8") == readme
 
 
 def _summary(
@@ -409,17 +481,17 @@ def test_given_results_are_published(monkeypatch):
     The latest results are those with the latest time in their names.
     """
     monkeypatch.setattr(
-        ml_models.files.pd.Timestamp,
+        pd.Timestamp,
         "now",
-        lambda: pd.Timestamp("2026-11-01 00:00:00"),
+        lambda *_, **__: pd.Timestamp("2026-11-01 00:00:00"),
     )
     latest = _save_results(
         "validation", "xgboost_model_2", _summary({("All", "All"): 0.2})
     )
     monkeypatch.setattr(
-        ml_models.files.pd.Timestamp,
+        pd.Timestamp,
         "now",
-        lambda: pd.Timestamp("2026-10-31 00:00:00"),
+        lambda *_, **__: pd.Timestamp("2026-10-31 00:00:00"),
     )
     given = _save_results(
         "validation", "xgboost_model_1", _summary({("All", "All"): 0.1})

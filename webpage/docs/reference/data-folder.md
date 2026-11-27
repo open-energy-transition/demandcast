@@ -7,7 +7,7 @@ This page lists every file that the scripts write, who writes and reads it, and 
 Everything that the scripts download, compute or log goes to one folder, the *data folder*:
 
 - `demandcast/data/`, next to the scripts, by default;
-- the folder named by the environment variable `DEMANDCAST_DATA_FOLDER`, if it is set and not empty.
+- the folder named by the environment variable `DEMANDCAST_DATA_FOLDER`, in your shell or in `demandcast/.env`, if it is set and not empty.
 
 A relative `DEMANDCAST_DATA_FOLDER` is read from the folder you run the script in, not from the code folder, so prefer an absolute path. [Install](../getting-started/install.md#4-choose-where-the-data-goes) explains how to set it.
 
@@ -15,7 +15,7 @@ Git ignores `demandcast/data/`. Never commit data files: the licences of many da
 
 ## The tree
 
-`<code>` is the code of a country or subdivision, such as `FRA` or `USA_CAL`. `<source>` is an electricity demand data source, such as `entsoe`. `<time>` is the local time of the run, as `YYYYMMDD_HHMMSS`.
+`<code>` is the code of a country or subdivision, such as `FRA` or `USA_CAL`. `<source>` is an electricity demand data source, such as `entsoe`. `<time>` is the time of the run in UTC, as `YYYYMMDD_HHMMSS`, except in the names of the logs, where it is the local time.
 
 ```
 data/
@@ -195,7 +195,7 @@ Most steps keep the files that exist and make only the missing or outdated ones.
 - its shape changed: the grids of a code record the bounds of its shape, and the temperature files and `gridded_population/totals/` the [fingerprint](../concepts/glossary.md#fingerprint) of its shape ([Inputs](../concepts/inputs.md#countries-subdivisions-and-shapes));
 - it may be incomplete: reanalysis weather and temperature files of recent years, and ERA5 point series that the CDS may extend, at most once a day ([Inputs](../concepts/inputs.md#when-files-are-downloaded-again));
 - a temperature file was made by another version of the extraction ([Inputs](../concepts/inputs.md#when-files-are-extracted-again));
-- a combined electricity demand file has another fingerprint (rules, reviews, source YAML files, flags) or is older than a cleaned file of its code ([Electricity demand](../concepts/electricity-demand.md#when-the-combination-runs-again)).
+- a cleaned electricity demand file has another fingerprint of the cleaning and flag rules, and its processed data exists, or a combined electricity demand file has another fingerprint (rules, reviews, source YAML files, flags) or is older than a cleaned file of its code ([Electricity demand](../concepts/electricity-demand.md#when-the-combination-runs-again)).
 
 ## Manifests
 
@@ -247,7 +247,7 @@ A file without a manifest is still used, with a warning in the log, because its 
 
 ### Which file is the latest
 
-When you give no path, the scripts take the file with the latest `<time>` in its name. Only names made exactly of the prefix, the time and the extension count: a copy such as `xgboost_model_20260115_093000 (copy).json`, or a manifest, is never taken. The time is the local time of the computer that ran the script.
+When you give no path, the scripts take the file with the latest `<time>` in its name. Only names made exactly of the prefix, the time and the extension count: a copy such as `xgboost_model_20260115_093000 (copy).json`, or a manifest, is never taken. The time is in UTC, so the files of computers in different time zones, such as files shared through a [bucket](../guides/sync.md), compare in the order in which they were written.
 
 ## Inputs in the code folder
 

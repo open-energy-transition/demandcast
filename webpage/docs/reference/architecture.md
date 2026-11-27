@@ -41,7 +41,7 @@ uv run retrieve.py --config config/retrieve_config.yaml
 
 The machine learning scripts also read `config/ml_config.yaml` and `config/<algorithm>_config.yaml`, always from `config/` (`--config` does not change them), validated in the same strict way by `ml_models/data.py` and `ml_models/registry.py`.
 
-API keys come from environment variables. `utils.config.read_api_key` first loads `demandcast/.env` without overriding variables already set, and treats an empty key as missing. `utils/fetcher.py` hides the values of variables whose names end with `_API_KEY` or `_PASSWORD` (`***`) in messages and raw data. [Install](../getting-started/install.md#3-add-your-api-keys) lists the keys.
+API keys come from environment variables. `utils.config.read_api_key` first loads `demandcast/.env` without overriding variables already set, and treats an empty key as missing, except while saved responses are replayed, when a missing key gets a stand-in (`utils.raw_data.get_stand_in`); `utils.paths.get_data_folder` loads it too, once, before it reads `DEMANDCAST_DATA_FOLDER`. `utils/fetcher.py` hides the values of variables whose names end with `_API_KEY` or `_PASSWORD` (`***`) in messages and raw data. [Install](../getting-started/install.md#3-add-your-api-keys) lists the keys.
 
 ## Code folders
 
@@ -196,7 +196,7 @@ The workflows are in `.github/workflows/`:
 
 | Workflow | When | What it does |
 |---|---|---|
-| `ci.yml` | Pull requests, pushes to `main` | pre-commit, tests (Ubuntu with Python 3.12 and 3.14, Windows with 3.12), coverage, mypy, strict build of this site, Docker build. Documentation-only pull requests skip the tests, mypy and Docker. One "CI result" job gathers the others. |
+| `ci.yml` | Pull requests, pushes to `main` | pre-commit, tests (Ubuntu with Python 3.12 and 3.14, Windows with 3.12), coverage, mypy, strict build of this site, Docker build. Documentation-only pull requests skip mypy and Docker, and run only the tests that read the documentation and the README. One "CI result" job gathers the others. |
 | `codeql.yml` | Pull requests, pushes to `main`, weekly | CodeQL analysis |
 | `dependency-review.yml` | Pull requests | Fails on new dependencies with known vulnerabilities or licences incompatible with AGPL-3.0 |
 | `pr-checks.yml` | Pull requests | Conventional Commits title, DCO sign-off of every commit |

@@ -72,8 +72,14 @@ Description:
     of an hour, such as the hours of India, which end on the half hour
     in UTC, is shared between the two hours. The removed values are
     saved next to the cleaned data, as the periods of each rule.
+
+    The cleaned data records the fingerprint of the code of the rules of
+    the cleaning and of the flags of a data source (RULE_FILES), so that
+    the combination can clean and flag again the data cleaned with other
+    rules (see cleaning.combining.ensure_current_combination).
 """
 
+import hashlib
 import logging
 import os
 
@@ -134,6 +140,62 @@ MIN_COVERAGE = 0.5
 
 # The values around a value whose median time apart is its resolution.
 RESOLUTION_VALUES = 25
+
+# The files of the code of the rules of the cleaning and of the flags of
+# a data source.
+RULE_FILES = tuple(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), f"{name}.py")
+    for name in ("electricity_demand", "flags")
+)
+
+# The key of the attributes of the cleaned data with its fingerprint.
+FINGERPRINT_KEY = "demandcast_cleaning"
+
+
+def get_fingerprint() -> str:
+    """
+    Get the fingerprint of the rules of the cleaning and of the flags.
+
+    Returns
+    -------
+    str
+        The SHA-256 checksum of the code of the rules (RULE_FILES).
+    """
+    checksum = hashlib.sha256()
+    for file_path in RULE_FILES:
+        checksum.update(
+            hashlib.sha256(
+                utils.files.read_with_unix_line_endings(file_path)
+            ).digest()
+        )
+    return checksum.hexdigest()
+
+
+def is_current(code: str, data_source: str) -> bool:
+    """
+    Check whether the cleaned data of a data source follows the rules.
+
+    Parameters
+    ----------
+    code : str
+        The code of the country or subdivision.
+    data_source : str
+        The data source.
+
+    Returns
+    -------
+    bool
+        Whether the cleaned data exists and has the current fingerprint
+        of the rules of the cleaning and of the flags.
+    """
+    file_path = utils.paths.get_electricity_demand_file(
+        "cleaned", code, data_source
+    )
+    return (
+        os.path.exists(file_path)
+        and pd.read_parquet(file_path, columns=[]).attrs.get(FINGERPRINT_KEY)
+        == get_fingerprint()
+    )
 
 
 def _get_resolutions(values: pd.Series) -> pd.Series:
@@ -756,8 +818,10 @@ def clean_data(code: str, data_source: str) -> pd.Series:
         "cleaned", code, data_source
     )
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    cleaned_frame = cleaned.to_frame()
+    cleaned_frame.attrs[FINGERPRINT_KEY] = get_fingerprint()
     with utils.files.writing(file_path) as temporary_path:
-        cleaned.to_frame().to_parquet(temporary_path)
+        cleaned_frame.to_parquet(temporary_path)
     with utils.files.writing(
         utils.paths.get_electricity_demand_file(
             "cleaned", code, data_source, table="removed"

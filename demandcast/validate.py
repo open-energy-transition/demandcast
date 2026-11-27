@@ -72,6 +72,7 @@ def run_model_validation(
         model_path, algorithm.lower(), model_module.FILE_EXTENSION
     )
     manifest = utils.manifest.verify_file(trained_model_path, "model")
+    ml_models.files.check_model_algorithm(manifest, algorithm)
     model = model_module.load(trained_model_path)
 
     data_path = ml_models.files.get_validation_data_path(data_path, manifest)

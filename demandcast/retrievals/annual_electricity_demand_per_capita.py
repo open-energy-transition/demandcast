@@ -139,8 +139,10 @@ def run_data_retrieval(
 
         A subdivision has the data of its country. A year without data
         between two years with data takes the value of the year before
-        it, with a warning. The projections start after the last
-        historical year of the country, from its value.
+        it, with a warning, and the last value is carried forward up to
+        last year, as for the population and the GDP PPP per capita.
+        The projections start after the last historical year, from its
+        value.
 
         Parameters
         ----------
@@ -161,12 +163,14 @@ def run_data_retrieval(
             ],
         ).dropna()
 
-        historical_electricity_demand_per_capita = with_data.reindex(
+        years_up_to_last_with_data = list(
             range(int(with_data.index.min()), int(with_data.index.max()) + 1)
+        )
+        historical_electricity_demand_per_capita = with_data.reindex(
+            utils.scenarios.extend_historical_years(years_up_to_last_with_data)
         ).ffill()
         gap_years = sorted(
-            set(historical_electricity_demand_per_capita.index)
-            - set(with_data.index)
+            set(years_up_to_last_with_data) - set(with_data.index)
         )
         if gap_years:
             logging.warning(

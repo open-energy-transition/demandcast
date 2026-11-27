@@ -38,7 +38,7 @@ Example: with `holdout: entity`, the fold `ARG_A` (a province of Argentina) leav
 
 ## Output files
 
-The files go to `data/results/cross_validation/with_<algorithm>/using_<data>/`, where `<algorithm>` is the algorithm in lower case (such as `xgboost`) and `<data>` the name of the data file without extension. `<time>` is the local time of the run, `YYYYMMDD_HHMMSS`.
+The files go to `data/results/cross_validation/with_<algorithm>/using_<data>/`, where `<algorithm>` is the algorithm in lower case (such as `xgboost`) and `<data>` the name of the data file without extension. `<time>` is the time of the run in UTC, `YYYYMMDD_HHMMSS` (the local time, in the name of the log).
 
 | File | What it holds |
 |---|---|

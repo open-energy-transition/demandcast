@@ -251,8 +251,10 @@ A combined series stores a [fingerprint](glossary.md#fingerprint) in its Parquet
 
 A series is current if it exists, has the `Eligible` column and the current fingerprint, and is not older than any cleaned file of its sources. `assemble.py` combines every series that is not current again from the cleaned data, such as one made before a review changed or one copied from a bucket. It stops with an error if a combined series still has no `Eligible` column.
 
+The cleaned data of each source also stores a fingerprint: a SHA-256 checksum of `electricity_demand.py` and `flags.py`. Before it combines a code, `assemble.py` cleans and flags again, from the processed data, each source whose cleaned data has another fingerprint or none, so a change to the cleaning or flag rules applies without retrieving again.
+
 !!! warning
-    Recombining reads the existing cleaned data and flags. After a change to the cleaning rules (`electricity_demand.py`) or the flags (`flags.py`), these stay as the old code made them. Run `retrieve.py` with `offline: true` to apply the changed rules.
+    A source without processed data, such as one whose cleaned data alone was copied from a bucket, cannot be cleaned again: its cleaned data is used as it is, and the log warns. Likewise, a combined series that is not current but has no cleaned data to combine again is used as it is, with a warning. Retrieve the electricity demand again to bring them up to date.
 
 To combine all the codes again without assembling, run from the `demandcast/` folder:
 
