@@ -211,7 +211,7 @@ The workflows are in `.github/workflows/`:
 
 ## Documentation site
 
-This site is in `webpage/`, a separate uv project built with [Zensical](https://zensical.org/). The pages are Markdown files in `webpage/docs/`; `webpage/mkdocs.yml` sets the navigation, the theme and the extensions.
+This site is in `webpage/`, a separate uv project built with [Zensical](https://zensical.org/). The pages are Markdown files in `webpage/docs/`; `webpage/zensical.toml` sets the navigation, the theme and the extensions.
 
 ```bash
 cd webpage
@@ -219,6 +219,6 @@ uv run zensical serve             # preview at http://localhost:8000
 uv run zensical build --strict    # build as CI does
 ```
 
-The strict build fails on any warning, such as a broken link or a link to an anchor that does not exist. When you move or rename a page, add its old address to `redirect_maps` of the `redirects` plugin in `mkdocs.yml`: Zenodo records and other sites link to it.
+The strict build fails on any warning, such as a broken link or a link to an anchor that does not exist. When you move or rename a page, add its old address to `[project.plugins.redirects.redirect_maps]` in `zensical.toml`: Zenodo records and other sites link to it.
 
 The [Current state](../status.md) page includes files that `plot.py` writes into `webpage/docs/status/`. Update this page when you add a script, a folder or a dependency between packages.
