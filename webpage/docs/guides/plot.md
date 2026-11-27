@@ -223,6 +223,6 @@ cross_validation_results: data/results/cross_validation/with_xgboost/using_<data
 
 The files must keep the layout `with_<version>/using_<data>/`, from which the version is read. Their manifest must record their summary and predictions, or `plot.py` stops with an error.
 
-A case without results gets the text "The models have no validation yet." (or "no cross-validation yet"), and no figure.
+A case without results gets the text "The models have no validation yet." (or "no cross-validation yet"), and no new figure. Its figures of an earlier run stay in `webpage/docs/status/`: delete them, or the page keeps showing them.
 
 The cross-validation text depends on its holdout. With `holdout: entity`, each country or subdivision is left out in turn: the median WAPE estimates the error for a code without data whose country may have data of other subdivisions. With `holdout: country`, each country is left out with its subdivisions: the median WAPE estimates the error for a country without data.

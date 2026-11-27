@@ -53,7 +53,7 @@ uv run --with jupyter jupyter lab
 
 ## 3. Add your API keys
 
-Some data sources require you to register and use a personal key. DemandCast reads the keys from a file named `.env` in the `demandcast/` folder. Create it and add only the keys you need, one per line, with no quotes or comments after the values:
+Some data sources require you to register and use a personal key. DemandCast reads the keys from a file named `.env` in the `demandcast/` folder. Create it and add only the keys you need, one per line, without quotes:
 
 ```bash
 CDS_API_KEY=<your_key>
@@ -68,11 +68,11 @@ ZENODO_API_KEY=<your_key>
 SANDBOX_ZENODO_API_KEY=<your_key>
 ```
 
-Keep comments on their own lines (starting with `#`): Docker's `--env-file` would read a comment after a value as part of the key.
+Put any comment on its own line, starting with `#`: Docker's `--env-file` would read a comment after a value as part of the key.
 
 | Key | Needed for | Where to get it |
 |---|---|---|
-| `CDS_API_KEY` | Gridded weather and temperature | Register on the [Climate Data Store](https://cds.climate.copernicus.eu/) and accept the licences of the ERA5 and CMIP6 datasets |
+| `CDS_API_KEY` | Gridded weather and temperature (not for past years with `reanalysis_source: arco`) | Register on the [Climate Data Store](https://cds.climate.copernicus.eu/) and accept the licences of the ERA5 and CMIP6 datasets |
 | `EMBER_API_KEY` | Annual electricity demand per capita | [Ember API](https://api.ember-energy.org/v1/docs) (free) |
 | `ENTSOE_API_KEY` | The `entsoe` data source | Register on the [ENTSO-E Transparency Platform](https://transparency.entsoe.eu/) and request API access |
 | `EIA_API_KEY` | The `eia` data source | [EIA Open Data](https://www.eia.gov/opendata/) (free) |

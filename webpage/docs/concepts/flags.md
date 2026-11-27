@@ -29,7 +29,7 @@ The midday index of a day compares midday with the morning and the afternoon, in
 
 A system without solar keeps its index within about 0.02 from year to year; the summer index of Great Britain without embedded solar drops from about 1.02 in 2011 to 0.87 in 2026. Using the median of earlier years, not their maximum, stops one unusual year, such as a drought, from flagging all later years.
 
-A rise must also exceed the previous year with data by 0.05, because a change of definition is sudden, while the midday demand of some Indian states rises slowly as farm supply moves to the day.
+A rise must also exceed the previous year with data by 0.05, because a change of definition is sudden, while the midday demand of some Indian states rises slowly as their supply to farms moves to daytime hours.
 
 A dip or rise is kept only if it lasts: the season before or after it, or the same season a year before or after, has the same flag, or it is in the last year with data for its quarter. A single season is noisy in small systems and moves with single events, such as the lockdowns.
 
@@ -50,7 +50,7 @@ Real errors leave 5% to 31%; a change of shape, such as a growing midday dip, le
 
 For each change of the clocks within the data:
 
-1. Take the 14 days before the change and the 14 days after it, skipping the first 24 hours after the change. Each side needs at least 12 days of hours and a value at every local hour.
+1. Take the 14 days before the change and the 14 days after it, skipping the first 24 hours after the change. Each side needs at least 12 days of data and a value at every local hour.
 2. Compute both profiles with the median of each hour, so that a few holidays, such as the carnival in Brazil, do not shift them.
 3. Find the whole-hour move (as for the time lag) and the move in steps of 0.1 hours that best match the profile after to the profile before.
 4. If the whole-hour move is zero, there is no flag.
@@ -110,7 +110,7 @@ reviews:
 | `verdict` | Yes | One of the verdicts below |
 | `note` | Yes | The evidence, in words |
 
-A misspelled field is an error, so a review of some periods never silently becomes a review of all of them. Quote the periods: an unquoted `2020` or `2016-09-28` is read as a number or a date, which is an error. If several reviews match a flag, the first one in the file applies.
+A misspelt field is an error, so a review of some periods never silently becomes a review of all of them. Quote the periods: an unquoted `2020` or `2016-09-28` is read as a number or a date, which is an error. If several reviews match a flag, the first one in the file applies.
 
 | Verdict | Meaning | Effect on the combined series |
 |---|---|---|

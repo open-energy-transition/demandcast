@@ -90,7 +90,7 @@ The [data sources reference](../reference/data-sources.md) lists every source.
 
 ## Cleaning
 
-The cleaning removes values that are very unlikely to be the demand of a system, then averages the rest to hours. The rules look for what errors usually look like, not for the errors of particular sources, so a removed value can still be real, such as a rounded reading.
+The cleaning removes values that cannot plausibly be the demand of a system, then averages the rest to hours. The rules look for what errors usually look like, not for the errors of particular sources, so a removed value can occasionally be real, such as a rounded reading.
 
 ### How values are read
 
@@ -131,7 +131,7 @@ The rules run in this order. Each looks only at the values that earlier rules ke
 4. A run with at least 14 low days is removed (only days with a mean count).
 5. The level is computed once more without the days found, and steps 2 to 4 repeat, so the error of one year does not hide that of another.
 
-Days from 2020-03-15 to 2020-06-30 are never low: the COVID-19 lockdowns really halved the demand of some places. Real drops found include Albania from 2022-12-11 to 2023-12-04 and the Netherlands from 2014-10-20 to 2014-12-19, at about a quarter of their level.
+Days from 2020-03-15 to 2020-06-30 are never low: the COVID-19 lockdowns did halve the demand of some places. Real drops found include Albania from 2022-12-11 to 2023-12-04 and the Netherlands from 2014-10-20 to 2014-12-19, at about a quarter of their level.
 
 ### Resampling to hours
 
@@ -155,7 +155,7 @@ For example, a 15-minute source missing one value in an hour gives the average o
 | `rule` | The rule that removed them |
 | `values` | The number of values removed; the number of hours for `low_coverage` |
 
-`low_coverage` lists only hours that had some values; hours with none are simply missing. The log gives the totals of both.
+`low_coverage` lists only hours that had some values; hours with none are missing. The log gives the totals of both.
 
 ## Flags and reviews
 
@@ -170,7 +170,7 @@ The combination joins the cleaned demand of all the sources of a code into one h
 First, the hours that a review finds to be errors (`source_error` or `reading_error`) are taken out of their source. The sources are then sorted by:
 
 1. **Area**: sources that cover the whole area of the code's shape before those with `same_area: false`.
-2. **Compilation level**: data published by a system operator (level 0), then `compiled: true` (level 1), then `republishes` (one more than the highest source it republishes). A copy cannot count more than the original, even when its definition is less known, as for the CCEI, whose definition differs by province.
+2. **Compilation level**: data published by a system operator (level 0), then `compiled: true` (level 1), then `republishes` (one more than the highest source it republishes). Level comes before definition, so a copy never outranks its original because of its definition, as could happen with the CCEI, whose definition differs by province.
 3. **Definition**: the mean rank of the `embedded_generation` of the source's hours: 0 for `included` or `added`, 1 `partial`, 2 `unknown`, 3 `excluded`. Hours in periods reviewed as `net_demand` count at least 3.
 4. **Length**: more hours first.
 

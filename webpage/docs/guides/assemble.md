@@ -15,7 +15,7 @@ uv run assemble.py --config config/my_assembly.yaml # another settings file
 | Option | Required? | Default | What it does |
 |---|---|---|---|
 | `target_use` | Yes | – | `training`: with the electricity demand, for `train.py`, `validate.py` and `cross_validate.py`. `forecasting`: the inputs only, for `forecast.py` |
-| `file` | No | all entities | A [codes file](../reference/configuration.md#a-codes-file) that lists the countries and subdivisions to assemble. A relative path works from `demandcast/` |
+| `file` | No | all entities | A [codes file](../reference/configuration.md#a-codes-file) that lists the countries and subdivisions to assemble. A relative path starts from the folder you run the script in |
 | `start_year`, `end_year` | No | all years | The first and last [local year](../concepts/glossary.md#local-day) to keep. Give both or neither |
 | `scenario_for_annual_electricity_demand_per_capita` | No | historical | The scenario of the annual electricity demand per capita, such as `SSP2-45` |
 | `scenario_for_gdp_ppp_per_capita` | No | historical | The scenario of the GDP PPP per capita, such as `SSP2` |
@@ -61,7 +61,7 @@ Each scenario and climate model is checked against the catalogue (`utils/catalog
 !!! warning
     Give the temperature scenario and its climate model together. With only one, the settings pass the check but no temperature file matches: the log warns "No temperature files found" for each entity, and the script stops with `No objects to concatenate`.
 
-Choose consistent scenarios: the same SSP for population and GDP, and a demand per capita and a temperature scenario of that SSP. For example:
+Choose consistent scenarios: the same SSP for population and GDP, and demand per capita and temperature scenarios of that SSP. For example:
 
 ```yaml
 target_use: forecasting

@@ -202,7 +202,7 @@ The workflows are in `.github/workflows/`:
 | `pr-checks.yml` | Pull requests | Conventional Commits title, DCO sign-off of every commit |
 | `labeler.yml` | Pull requests | Labels by changed files and title type |
 | `awesome-list.yml` | Pull requests that change data source YAML files | Warns about sources missing from the Awesome Electricity Demand list |
-| `links.yml` | Weekly, pull requests that change Markdown | Checks links with lychee (`lychee.toml`) |
+| `links.yml` | Weekly, pull requests that change Markdown | Checks links with lychee (`lychee.toml`). Pull requests leave out the links to this site, which is that of `main` until the merge. |
 | `live-check.yml` | Weekly, on `main` | Checks the data sources over the network, keeps one issue open with those that fail two checks in a row, runs the `network` tests |
 | `docs.yml` | Pushes to `main` that change `webpage/` | Builds this site and deploys it to GitHub Pages |
 | `docker-publish.yml` | Pushes to `main`, version tags | Publishes, signs and attests the [Docker image](../guides/docker.md#how-the-image-is-published) |

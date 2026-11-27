@@ -36,7 +36,7 @@ Four more scripts support these steps:
 | `check.py` | Checks which inputs each place has, tests the data sources over the network, reports the quality flags of the demand, and finds overlapping places | [Run checks](../guides/check.md) |
 | `sync.py` | Copies the data folder to or from a private cloud bucket, to share it with your team | [Share the data folder](../guides/sync.md) |
 | `publish.py` | Uploads a release (model, settings and forecasts) to Zenodo | [Publish a release](../guides/publish.md) |
-| `benchmark/run.py` | Retrieves and assembles the data of the benchmark of the models | [Models](models.md) |
+| `python -m benchmark.run` | Retrieves and assembles the data of the benchmark of the models | [Models](models.md#benchmark) |
 
 ## What goes in and what comes out
 
@@ -49,10 +49,9 @@ Four more scripts support these steps:
 
 ## The order to run things
 
-1. Retrieve the inputs, in the order given in [Retrieve data](../guides/retrieve.md#recommended-order): population and annual demand per person first, because the cleaning of the electricity demand compares its annual totals with them.
-2. Retrieve the electricity demand of each data source of your countries and subdivisions.
-3. Assemble a training table, train a model, and validate it.
-4. Assemble a forecasting table for the places and years you want, and forecast.
+1. Retrieve the data, in the [recommended order](../guides/retrieve.md#recommended-order): the population and the annual demand per person first, because the cleaning of the electricity demand compares its annual totals with them; then the electricity demand of each data source; then the GDP and the temperature.
+2. Assemble a training table, train a model, and validate it.
+3. Assemble a forecasting table for the places and years you want, and forecast.
 
 [Your first forecast](../getting-started/first-forecast.md) walks through these steps for four European countries.
 

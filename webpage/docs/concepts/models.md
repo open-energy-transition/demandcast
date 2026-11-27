@@ -211,7 +211,7 @@ The testing errors are then summarized by group in `summary_<time>.csv`, next to
 | `Median WAPE`, `Median MAPE` | The WAPE and MAPE of a typical entity of the group |
 | `Pooled WAPE` | The sum of the absolute errors of the group in MWh over the sum of its demand in MWh |
 
-The median tells how well a typical entity is modelled; the pooled WAPE, how well the group's demand is. Example: two years of 100 MW and 1000 MW, the first predicted at twice its shape and the second exactly. Their median WAPE is 50%, their pooled WAPE 9.1%: the large year counts ten times more.
+The median tells how well a typical entity is modelled; the pooled WAPE, how well the group's demand is. Example: two entities with a mean load of 100 MW and 1000 MW have a WAPE of 100% and 0%. Their median WAPE is 50%, and their pooled WAPE is 9.1% (an error of 100 MW over a demand of 1100 MW), because the large one counts ten times more.
 
 ## Manifests
 
