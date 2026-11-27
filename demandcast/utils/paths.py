@@ -36,7 +36,13 @@ Description:
         └── logs/
 
     The gridded weather of a few countries is downloaded for each of
-    them, straight into its processed folder.
+    them, straight into its processed folder. The raw folder of the
+    gridded weather also has points/, with the hourly ERA5 series of
+    single grid points, and the gridded population has totals/, with
+    the population in the shape of each country and subdivision. The
+    folder of the GDP PPP per capita also has the projected GDP PPP per
+    capita of each country, computed once from the files of the IIASA
+    in the code folder.
 
     plot.py also writes the figures and numbers of the current state of
     DemandCast into the documentation, in webpage/docs/status/, and the

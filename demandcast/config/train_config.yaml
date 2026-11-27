@@ -6,7 +6,7 @@ reserve_testing_set: true
 
 # REQUIRED.
 # Whether to keep a validation set out of the training: the year before
-# the testing year. XGBoost uses it to stop the training early, with
+# the testing year, or the latest year without a testing set. XGBoost uses it to stop the training early, with
 # early_stopping_rounds in xgboost_config.yaml; otherwise, and for the
 # LSTM, its year is only left out of the training.
 use_validation_set: false

@@ -87,7 +87,7 @@ The combination ranks the sources of a code with `definition`, `compiled`, `repu
 | `so_ups` | System Operator of the Unified Energy System of Russia | 7 subdivisions of `RUS` | 2001–today | 1 h | unknown | – | One request a day, at least 3 seconds apart: slow. |
 | `sonelgaz` | Sonelgaz (Algeria), on Mendeley Data | `DZA_RIN` | 2008–2020 | 1 h | unknown | – | Values divided by 125/148 to get MW. |
 | `taipower` | Taipower (Taiwan), on Zenodo | `TWN` | 2017–2022 | 10 min | unknown | – | Sum of four areas. |
-| `tepco` | Tokyo Electric Power Company | `JPN_Kantō` | 2016–2026 | 1 h | partial | – | The website refuses downloads from outside Japan since 2026-10-22; OCCTO gives the same demand. |
+| `tepco` | Tokyo Electric Power Company | `JPN_Kantō` | 2016–2026 | 1 h | partial | – | The website refuses its monthly files (from 2025) outside Japan since 2026-10-22; OCCTO gives the same demand. |
 | `tsoc` | Transmission System Operator of Cyprus | `CYP` | 2018–today | 15 min | included | – | Only years that have ended; corrects shifted times. |
 | `wu_et_al` | Wu and Kan, on Zenodo (China) | 31 provinces of `CHN` | 2018 | 1 h | unknown | – | Modelled load: each day has the shape of a typical day. |
 | `xm` | XM (Colombia) | `COL_SIN` | 2000–today | 1 h | unknown | – | Through a proxy, about 25 seconds a month. |

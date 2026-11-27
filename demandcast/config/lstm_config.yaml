@@ -2,8 +2,8 @@
 # the algorithm of ml_config.yaml is LSTM. The values are the defaults.
 
 # OPTIONAL.
-# Lookback window length in timesteps. Each prediction draws on the
-# preceding n_timesteps rows of the same entity.
+# Lookback window length in timesteps. Each prediction draws on its
+# own row and the n_timesteps - 1 rows before it of the same entity.
 n_timesteps: 24
 
 # OPTIONAL.
