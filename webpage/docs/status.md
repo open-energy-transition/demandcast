@@ -1,6 +1,6 @@
 # Current state
 
-This page shows, at a high level, the electricity demand data that DemandCast retrieves and the errors of the forecasts of its models. Its figures and numbers are drawn by `plot.py` with `figure: status` (see [Analyzing and plotting data](plot.md)).
+This page shows, at a high level, the electricity demand data that DemandCast retrieves and the errors of the forecasts of its models. Its figures and numbers are drawn by `plot.py` with `figure: status` (see [Plot figures](guides/plot.md)).
 
 ## Data
 
@@ -15,7 +15,7 @@ The figure below shows the years of data of the countries and subdivisions by GD
 
 ![Years of hourly and sub-hourly electricity demand data by GDP PPP and annual electricity demand per capita](status/data_availability_by_gdp_ppp_and_electricity_demand.png)
 
-The [data retrieval](retrieval.md) page describes the data sources, and how their data is cleaned and combined.
+The [Data sources](reference/data-sources.md) page lists the data sources, and [Electricity demand data](concepts/electricity-demand.md) explains how their data is cleaned and combined.
 
 ## Forecast errors
 
@@ -56,4 +56,4 @@ The figures show the error of each country and subdivision, their distribution, 
 
 ![Actual and forecast hourly demand of the best and the worst country or subdivision of the cross-validation](status/wape_cross_validation_best_and_worst.png)
 
-The [machine learning](ML.md) page describes the models and how they are validated.
+The [Models](concepts/models.md) page describes the models and how they are validated.

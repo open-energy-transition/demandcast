@@ -22,7 +22,7 @@ cd demandcast/demandcast
 uv sync --extra lstm  # create .venv with all dependencies, including the LSTM model
 ```
 
-Some retrieval modules need API keys in a `demandcast/.env` file; see the [getting started guide](https://open-energy-transition.github.io/demandcast/getting_started/). Never commit this file.
+Some retrieval modules need API keys in a `demandcast/.env` file; see the [installation guide](https://open-energy-transition.github.io/demandcast/getting-started/install/). Never commit this file.
 
 We use [pre-commit](https://pre-commit.com/) to lint, format and check files before each commit:
 
@@ -77,7 +77,7 @@ This section is the reference for the interface of a model. Each model is a modu
 
 - add the module to `MODEL_MODULES` in `ml_models/registry.py`, and to the modules that mypy checks in `demandcast/tests/ml_models/test_registry.py`, whose contract test then trains, saves, loads and predicts with the model;
 - put heavy dependencies in an optional extra in `demandcast/pyproject.toml`, like `lstm`;
-- describe the model in `webpage/docs/ML.md`.
+- describe the model in `webpage/docs/concepts/models.md`.
 
 The scripts then use the model when `algorithm` in `demandcast/config/ml_config.yaml` is its name.
 
@@ -122,7 +122,7 @@ Maintainers release a version of DemandCast in three steps:
 2. Once it is merged, draft a release on GitHub with the tag `v2.0.0` on `main` and generated notes, which `.github/release.yml` groups by the labels of the pull requests, with a short summary of the main changes above them.
 3. Publish the release. This creates the tag: the Docker workflow checks that the versions of `pyproject.toml` and `CITATION.cff` are those of the tag and publishes the image with the tags `2.0.0`, `2.0` and `2`.
 
-The forecasts, the trained models and their inputs are released on Zenodo, with `publish.py` (see [sharing and publishing](https://open-energy-transition.github.io/demandcast/publishing/)).
+The forecasts, the trained models and their inputs are released on Zenodo, with `publish.py` (see [publishing a release](https://open-energy-transition.github.io/demandcast/guides/publish/)).
 
 ## AI-assisted contributions
 

@@ -23,7 +23,7 @@ model_path: <path to xgboost_model_<time>.json>
 data_path: <path to assembled_data_for_forecasting_<time>.parquet>
 ```
 
-The errors of the validation and of the cross-validation need the hourly electricity demand, which DemandCast retrieves from the data sources: some need an API key or a free account, and some files are downloaded by hand (see the [data retrieval](https://open-energy-transition.github.io/demandcast/retrieval/) page). With the retrieved data, `assemble.py`, `validate.py` and `cross_validate.py`, with the settings in the manifests, give the errors again, and the models of this record can be scored on the same data. The manifests have the checksum of the assembled data of the training, which tells whether the retrieved data is the same: the data sources revise their data, so it can differ.
+The errors of the validation and of the cross-validation need the hourly electricity demand, which DemandCast retrieves from the data sources: some need an API key or a free account, and some files are downloaded by hand (see the [data retrieval](https://open-energy-transition.github.io/demandcast/guides/retrieve/) page). With the retrieved data, `assemble.py`, `validate.py` and `cross_validate.py`, with the settings in the manifests, give the errors again, and the models of this record can be scored on the same data. The manifests have the checksum of the assembled data of the training, which tells whether the retrieved data is the same: the data sources revise their data, so it can differ.
 
 ## Sources and licences
 

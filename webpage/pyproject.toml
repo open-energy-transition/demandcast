@@ -8,4 +8,5 @@ description = "Documentation for Demandcast"
 requires-python = ">=3.12"
 dependencies = [
     "mkdocs-material>=9.5.50",
+    "mkdocs-redirects==1.2.2",
 ]
